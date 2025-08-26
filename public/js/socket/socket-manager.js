@@ -565,6 +565,11 @@ export class SocketManager {
         logger.debug('Attempting to start game...');
         logger.debug('Socket connected:', this.socket.connected);
         
+        // Play game start sound
+        if (this.soundManager && this.soundManager.isEnabled()) {
+            this.soundManager.playGameStartSound();
+        }
+        
         // Mark game start time in GameManager for results saving
         if (this.gameManager) {
             this.gameManager.markGameStartTime();

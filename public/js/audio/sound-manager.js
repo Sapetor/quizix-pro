@@ -30,7 +30,8 @@ export class SoundManager {
         this.soundFiles = {
             correctAnswer: '/sounds/smw_power-up.wav',
             wrongAnswer: '/sounds/smb2_bonus_chance_lose.wav',
-            questionStart: '/sounds/question-start.mp3',
+            gameStart: '/sounds/smb2_bonus_chance_start.wav',
+            questionStart: '/sounds/smb3_nspade_match.wav',
             gameComplete: '/sounds/smw_castle_clear.wav',
             bellNotification: '/sounds/bell-notification.mp3'
         };
@@ -125,6 +126,9 @@ export class SoundManager {
                 break;
             case 'gameComplete':
                 this.playGameEndingFanfareSynthetic();
+                break;
+            case 'gameStart':
+                this.playGameStartSynthetic();
                 break;
             case 'bellNotification':
                 this.playAnswerSubmissionSynthetic();
@@ -294,6 +298,11 @@ export class SoundManager {
         this.playAudioFile('gameComplete', 0.8);
     }
 
+    playGameStartSound() {
+        logger.debug('🔊 Playing game start sound');
+        this.playAudioFile('gameStart', 0.7);
+    }
+
     // Synthetic fallback methods
     playQuestionStartSynthetic() {
         // Attention-getting but pleasant question start sound
@@ -340,6 +349,23 @@ export class SoundManager {
         incorrectTones.forEach(note => {
             setTimeout(() => {
                 this.playEnhancedSound(note.freq, note.duration, note.type, 0.12);
+            }, note.time * 1000);
+        });
+    }
+
+    playGameStartSynthetic() {
+        logger.debug('🔊 Playing game start sound (synthetic)');
+        // Exciting game start fanfare - energetic and welcoming
+        const startMelody = [
+            { freq: 392, time: 0, duration: 0.2, type: 'sine' },      // G4
+            { freq: 523, time: 0.15, duration: 0.2, type: 'sine' },   // C5
+            { freq: 659, time: 0.3, duration: 0.3, type: 'triangle' }, // E5
+            { freq: 784, time: 0.5, duration: 0.4, type: 'triangle' }  // G5 - triumphant ending
+        ];
+        
+        startMelody.forEach(note => {
+            setTimeout(() => {
+                this.playEnhancedSound(note.freq, note.duration, note.type, 0.15);
             }, note.time * 1000);
         });
     }
