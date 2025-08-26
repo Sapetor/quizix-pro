@@ -1,5 +1,5 @@
 /**
- * Mobile Enhancement Utilities for QuizMaster Pro
+ * Mobile Enhancement Utilities for Quizix Pro
  * Simplified to provide only essential touch feedback improvements
  */
 

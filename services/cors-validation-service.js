@@ -36,7 +36,7 @@ class CORSValidationService {
         // Cloud platform patterns for production deployment
         this.cloudPlatformPatterns = [
             // Railway - specific pattern for your app
-            /^https:\/\/quizmaster-pro-production\.up\.railway\.app$/,
+            /^https:\/\/quizix-pro-production\.up\.railway\.app$/,
             // Railway - general patterns
             /^https:\/\/[a-zA-Z0-9-]+-production\.up\.railway\.app$/,
             /^https:\/\/[a-zA-Z0-9-]+\.railway\.app$/,

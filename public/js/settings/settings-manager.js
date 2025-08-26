@@ -459,7 +459,7 @@ export class SettingsManager {
         
         const link = document.createElement('a');
         link.href = URL.createObjectURL(dataBlob);
-        link.download = 'quizmaster-settings.json';
+        link.download = 'quizix-settings.json';
         link.click();
     }
 

@@ -1,5 +1,5 @@
 /**
- * QuizMaster Pro Application Entry Point
+ * Quizix Pro Application Entry Point
  * Initializes the modular application
  */
 
@@ -65,7 +65,7 @@ function updateLanguageDropdownDisplay(languageCode) {
 document.addEventListener('DOMContentLoaded', async () => {
     const timestamp = new Date().toISOString();
     logger.debug(`🟠 [${timestamp}] main.js DOMContentLoaded event fired`);
-    logger.debug('QuizMaster Pro - Initializing modular application...');
+    logger.debug('Quizix Pro - Initializing modular application...');
     
     // FOUC Prevention: Apply saved font size immediately (should already be done in HTML head)
     const savedFontSize = localStorage.getItem('globalFontSize') || 'medium';
@@ -212,10 +212,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Initialize browser optimizations
         logger.debug('Browser optimization status:', browserOptimizer.getOptimizationStatus());
         
-        logger.debug('QuizMaster Pro - Application initialized successfully');
+        logger.debug('Quizix Pro - Application initialized successfully');
     }, 'app_initialization', () => {
         logger.error('Failed to initialize application');
-        document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h2>Application Error</h2><p>Failed to initialize QuizMaster Pro. Please refresh the page.</p></div>';
+        document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h2>Application Error</h2><p>Failed to initialize Quizix Pro. Please refresh the page.</p></div>';
     });
 });
 

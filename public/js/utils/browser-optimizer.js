@@ -1,6 +1,6 @@
 /**
  * Simple Browser Optimizer
- * Basic browser detection and essential optimizations for QuizMaster Pro
+ * Basic browser detection and essential optimizations for Quizix Pro
  */
 
 import { logger } from '../core/config.js';
