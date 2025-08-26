@@ -1,5 +1,5 @@
 export default {
-        app_title: "QuizMaster Pro",
+        app_title: "Quizix Pro",
         host_game: "Crear Juego",
         join_game: "Unirse al Juego",
         start_game: "Iniciar Juego",
@@ -177,7 +177,7 @@ export default {
         d_is_correct: "D es correcto",
         
         // Additional missing keys
-        page_title: "QuizMaster Pro - Plataforma de Quiz Interactiva",
+        page_title: "Quizix Pro - Plataforma de Quiz Interactiva",
         question_number: "Número de Pregunta",
         leaderboard_title: "Tabla de Clasificación",
         cancel: "Cancelar",

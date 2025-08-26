@@ -1,5 +1,5 @@
 /**
- * Configuration constants for QuizMaster Pro
+ * Configuration constants for Quizix Pro
  * Simplified and focused on essential settings
  */
 

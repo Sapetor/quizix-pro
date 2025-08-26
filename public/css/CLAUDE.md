@@ -1,10 +1,10 @@
 # CSS Architecture and Debugging Guide
 
-This document provides guidance for working with the QuizMaster Pro CSS architecture, specifically focusing on common issues and solutions discovered during development.
+This document provides guidance for working with the Quizix Pro CSS architecture, specifically focusing on common issues and solutions discovered during development.
 
 ## CSS Module Structure
 
-QuizMaster Pro uses a modular CSS architecture with the following structure:
+Quizix Pro uses a modular CSS architecture with the following structure:
 
 ```
 public/css/

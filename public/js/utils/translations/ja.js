@@ -1,5 +1,5 @@
 export default {
-        app_title: "QuizMaster Pro",
+        app_title: "Quizix Pro",
         host_game: "ゲームを作成",
         join_game: "ゲームに参加",
         start_game: "ゲーム開始",
@@ -186,7 +186,7 @@ export default {
         b_is_correct: "Bが正解",
         c_is_correct: "Cが正解",
         d_is_correct: "Dが正解",
-        page_title: "QuizMaster Pro - インタラクティブクイズプラットフォーム",
+        page_title: "Quizix Pro - インタラクティブクイズプラットフォーム",
         question_number: "質問番号",
         leaderboard_title: "リーダーボード",
         cancel: "キャンセル",

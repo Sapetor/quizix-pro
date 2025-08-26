@@ -78,15 +78,37 @@ header {
 .host-container:not(.split-screen) {
     display: flex;
     justify-content: center;
-    padding: 15px;
+    padding: 25px; /* Increased from 15px for better outer spacing */
     min-height: calc(100dvh - 65px); /* Account for sticky header */
 }
 
 .host-container:not(.split-screen) .quiz-editor-section {
     max-width: 1400px;
     width: 100%;
-    padding: 0;
+    padding: 50px 45px; /* Generous padding when live preview is closed for better readability */
     margin: 0 auto;
+}
+
+/* Additional spacing for form elements when live preview is closed */
+.host-container:not(.split-screen) .quiz-editor-section .question-item {
+    margin-bottom: 35px; /* Increased from 24px for better separation */
+}
+
+.host-container:not(.split-screen) .quiz-editor-section input,
+.host-container:not(.split-screen) .quiz-editor-section textarea,
+.host-container:not(.split-screen) .quiz-editor-section select {
+    margin-bottom: 20px; /* Add vertical spacing between form elements */
+}
+
+/* Responsive padding adjustments for mobile devices */
+@media (max-width: 768px) {
+    .host-container:not(.split-screen) {
+        padding: 15px; /* Reduce outer padding on mobile */
+    }
+    
+    .host-container:not(.split-screen) .quiz-editor-section {
+        padding: 30px 25px; /* Reduce interior padding on mobile while maintaining good spacing */
+    }
 }
 
 /* Split Screen Layout */
@@ -124,7 +146,7 @@ header {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 40px 10px 40px 55px; /* top right bottom left - increased left padding for checkbox highlights */
+    padding: 40px 30px; /* Balanced padding for better text alignment */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);

@@ -13,8 +13,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-IMAGE_NAME="quizmaster-pro"
-CONTAINER_NAME="quizmaster-pro-app"
+IMAGE_NAME="quizix-pro"
+CONTAINER_NAME="quizix-pro-app"
 COMPOSE_FILE="docker-compose.yml"
 
 # Functions
@@ -118,7 +118,7 @@ show_status() {
     
     echo ""
     log_info "Application logs (last 20 lines):"
-    $COMPOSE_CMD logs --tail=20 quizmaster-pro
+    $COMPOSE_CMD logs --tail=20 quizix-pro
     
     echo ""
     log_info "Network information:"

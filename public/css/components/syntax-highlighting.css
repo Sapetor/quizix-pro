@@ -1,11 +1,11 @@
 /**
  * One Dark Pro Syntax Highlighting Component
- * Enhanced integration with QuizMaster Pro theming system
+ * Enhanced integration with Quizix Pro theming system
  * Provides professional syntax highlighting for code snippets
  */
 
 /* === BASE HIGHLIGHT.JS INTEGRATION === */
-/* Override default Highlight.js styling to integrate with QuizMaster Pro themes */
+/* Override default Highlight.js styling to integrate with Quizix Pro themes */
 .hljs {
     background: none !important; /* Use our code-blocks.css background */
     color: inherit !important; /* Use our text colors */

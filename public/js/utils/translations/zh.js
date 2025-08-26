@@ -1,5 +1,5 @@
 export default {
-        app_title: "QuizMaster Pro",
+        app_title: "Quizix Pro",
         host_game: "创建游戏",
         join_game: "加入游戏",
         start_game: "开始游戏",
@@ -181,7 +181,7 @@ export default {
         b_is_correct: "B是正确的",
         c_is_correct: "C是正确的",
         d_is_correct: "D是正确的",
-        page_title: "QuizMaster Pro - 互动问答平台",
+        page_title: "Quizix Pro - 互动问答平台",
         question_number: "问题编号",
         leaderboard_title: "排行榜",
         cancel: "取消",

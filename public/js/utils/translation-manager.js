@@ -586,12 +586,21 @@ export function getThemeToggleTitles() {
 export function showAlert(key, params = []) {
     const message = translationManager.getTranslationSync(key, params);
     
+    console.log('🔥 DEBUG: showAlert called with:', { key, message, params });
+    
     // Use toast for known success/error message keys
     if (key.includes('success') || key.includes('loaded') || key.includes('saved') || key.includes('exported') || key.includes('generated')) {
+        console.log('🔥 DEBUG: Showing success toast');
         toastNotifications.success(message);
-    } else if (key.includes('error') || key.includes('failed') || key.includes('invalid')) {
+    } else if (key.includes('error') || key.includes('failed') || key.includes('invalid') || 
+               key.includes('wrong') || key.includes('missing') || key.includes('empty') ||
+               message.toLowerCase().includes('failed') || message.toLowerCase().includes('error') ||
+               message.toLowerCase().includes('invalid') || message.toLowerCase().includes('wrong') ||
+               message.toLowerCase().includes('check your') || message.toLowerCase().includes('try again')) {
+        console.log('🔥 DEBUG: Showing error toast');
         toastNotifications.error(message);
     } else {
+        console.log('🔥 DEBUG: Showing fallback alert');
         // Fallback to regular alert for other message types
         alert(message);
     }

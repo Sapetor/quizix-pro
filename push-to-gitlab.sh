@@ -8,7 +8,7 @@ set -e
 # Configuration
 GITLAB_REGISTRY="registry.k8s"
 USERNAME="jane.doe"  # Your GitLab username
-PROJECT_NAME="quizmaster-pro"  # Your GitLab project name
+PROJECT_NAME="quizix-pro"  # Your GitLab project name
 IMAGE_NAME="$GITLAB_REGISTRY/$USERNAME/$PROJECT_NAME:latest"
 
 # Colors
@@ -73,6 +73,6 @@ echo ""
 echo "Next steps:"
 echo "1. Ask your GitLab admin to pull and run the container:"
 echo "   docker pull $IMAGE_NAME"
-echo "   docker run -d -p 3000:3000 --name quizmaster-pro $IMAGE_NAME"
+echo "   docker run -d -p 3000:3000 --name quizix-pro $IMAGE_NAME"
 echo ""
 echo "2. Or check if GitLab has deployment features in the web interface"

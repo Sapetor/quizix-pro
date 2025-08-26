@@ -1,6 +1,6 @@
-# QuizMaster Pro Docker Deployment Guide
+# Quizix Pro Docker Deployment Guide
 
-This guide provides instructions for deploying QuizMaster Pro in a Docker container with local network access and GitLab connectivity.
+This guide provides instructions for deploying Quizix Pro in a Docker container with local network access and GitLab connectivity.
 
 ## Quick Start
 

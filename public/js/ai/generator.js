@@ -261,99 +261,134 @@ export class AIQuestionGenerator {
     }
 
     async generateQuestions() {
-        return await errorHandler.wrapAsyncOperation(async () => {
-            // Prevent multiple simultaneous generations
-            if (this.isGenerating) {
-                logger.debug('Generation already in progress, ignoring request');
-                return;
+        console.log('🔥 DEBUG: generateQuestions called');
+        
+        // Prevent multiple simultaneous generations
+        if (this.isGenerating) {
+            logger.debug('Generation already in progress, ignoring request');
+            return;
+        }
+        
+        this.isGenerating = true;
+        
+        // Direct validation - show errors to user instead of silent failure
+        let provider, content, questionCount, difficulty, selectedTypes;
+        
+        try {
+            provider = document.getElementById('ai-provider')?.value;
+            content = document.getElementById('source-content')?.value?.trim();
+            questionCount = parseInt(document.getElementById('question-count')?.value) || 1;
+            difficulty = document.getElementById('difficulty-level')?.value || 'medium';
+            
+            console.log('🔥 DEBUG: Form values:', { provider, content: content?.length, questionCount, difficulty });
+            
+            // Get selected question types
+            selectedTypes = [];
+            if (document.getElementById('type-multiple-choice')?.checked) {
+                selectedTypes.push('multiple-choice');
+            }
+            if (document.getElementById('type-true-false')?.checked) {
+                selectedTypes.push('true-false');
+            }
+            if (document.getElementById('type-multiple-correct')?.checked) {
+                selectedTypes.push('multiple-correct');
+            }
+            if (document.getElementById('type-numeric')?.checked) {
+                selectedTypes.push('numeric');
             }
             
-            this.isGenerating = true;
+            logger.debug('Selected question types:', selectedTypes);
             
-            // Direct validation - show errors to user instead of silent failure
-            let provider, content, questionCount, difficulty, selectedTypes;
-            
-            try {
-                provider = document.getElementById('ai-provider')?.value;
-                content = document.getElementById('source-content')?.value?.trim();
-                questionCount = parseInt(document.getElementById('question-count')?.value) || 1;
-                difficulty = document.getElementById('difficulty-level')?.value || 'medium';
-                
-                // Get selected question types
-                selectedTypes = [];
-                if (document.getElementById('type-multiple-choice')?.checked) {
-                    selectedTypes.push('multiple-choice');
-                }
-                if (document.getElementById('type-true-false')?.checked) {
-                    selectedTypes.push('true-false');
-                }
-                if (document.getElementById('type-multiple-correct')?.checked) {
-                    selectedTypes.push('multiple-correct');
-                }
-                if (document.getElementById('type-numeric')?.checked) {
-                    selectedTypes.push('numeric');
-                }
-                
-                logger.debug('Selected question types:', selectedTypes);
-                
-                // Validate required fields
-                if (!provider) {
-                    showAlert('Please select an AI provider');
-                    this.isGenerating = false;
-                    return;
-                }
-                if (!content) {
-                    showAlert('Please enter source content for question generation');
-                    this.isGenerating = false;
-                    return;
-                }
-                
-                if (selectedTypes.length === 0) {
-                    showAlert('Please select at least one question type');
-                    this.isGenerating = false;
-                    return;
-                }
-                
-            } catch (error) {
-                logger.error('Validation error:', error);
-                showAlert('Validation failed: ' + error.message);
+            // Validate required fields with custom red popups
+            if (!provider) {
+                console.log('🔥 DEBUG: No provider selected');
+                this.showCustomAlert('No AI Provider Selected', '❌ Please select an AI provider to generate questions.\n\nAvailable options:\n• OpenAI (paid)\n• Claude (paid)\n• Gemini (paid)\n• Ollama (free, local)', '🤖', 'Select Provider', () => {
+                    const providerSelect = document.getElementById('ai-provider');
+                    if (providerSelect) {
+                        providerSelect.focus();
+                        providerSelect.style.borderColor = '#ef4444';
+                        setTimeout(() => providerSelect.style.borderColor = '', 3000);
+                    }
+                });
                 this.isGenerating = false;
                 return;
             }
             
-            // Store the requested count for use throughout the process
-            this.requestedQuestionCount = questionCount;
-
-            // Check for API key if required
-            const needsApiKey = this.providers[provider]?.apiKey;
-            if (needsApiKey) {
-                const apiKey = await secureStorage.getSecureItem(`api_key_${provider}`);
-                logger.debug(`API key validation for ${provider}:`, {
-                    exists: !!apiKey,
-                    length: apiKey?.length || 0,
-                    type: typeof apiKey
+            if (!content) {
+                console.log('🔥 DEBUG: No content provided');
+                this.showCustomAlert('No Content Provided', '❌ Please enter source content for question generation.\n\n💡 You can provide:\n• Text passages to create questions about\n• Topics you want questions on\n• Educational content to quiz students about\n• Any material you want to turn into quiz questions', '📝', 'Add Content', () => {
+                    const contentTextarea = document.getElementById('source-content');
+                    if (contentTextarea) {
+                        contentTextarea.focus();
+                        contentTextarea.style.borderColor = '#ef4444';
+                        setTimeout(() => contentTextarea.style.borderColor = '', 3000);
+                    }
                 });
-                
-                if (!apiKey || apiKey.trim().length === 0) {
-                    logger.warn(`Missing or empty API key for provider: ${provider}`);
-                    showAlert('please_enter_api_key');
-                    this.isGenerating = false;
-                    return;
-                }
+                this.isGenerating = false;
+                return;
             }
-
-            // Show loading state
-            const generateBtn = document.getElementById('generate-questions');
-            const statusDiv = document.getElementById('generation-status');
             
-            if (generateBtn) generateBtn.disabled = true;
-            if (statusDiv) statusDiv.style.display = 'block';
+            if (selectedTypes.length === 0) {
+                console.log('🔥 DEBUG: No question types selected');
+                this.showCustomAlert('No Question Types Selected', '❌ Please select at least one question type to generate.\n\n✅ Available types:\n• Multiple Choice (4 options, 1 correct)\n• True/False (factual statements)\n• Multiple Correct (select all that apply)\n• Numeric (number-based answers)', '📊', 'Select Types', () => {
+                    const typesSection = document.querySelector('.question-types');
+                    if (typesSection) {
+                        typesSection.scrollIntoView({ behavior: 'smooth' });
+                        typesSection.style.borderColor = '#ef4444';
+                        setTimeout(() => typesSection.style.borderColor = '', 3000);
+                    }
+                });
+                this.isGenerating = false;
+                return;
+            }
+            
+        } catch (error) {
+            console.log('🔥 DEBUG: Validation error:', error);
+            logger.error('Validation error:', error);
+            this.showCustomAlert('Validation Error', `❌ Form validation failed: ${error.message}\n\nPlease check your inputs and try again.`, '⚠️', 'Check Form', null);
+            this.isGenerating = false;
+            return;
+        }
+        
+        // Store the requested count for use throughout the process
+        this.requestedQuestionCount = questionCount;
 
+        // Check for API key if required
+        const needsApiKey = this.providers[provider]?.apiKey;
+        console.log('🔥 DEBUG: Provider needs API key:', { provider, needsApiKey });
+        
+        if (needsApiKey) {
+            const apiKey = await secureStorage.getSecureItem(`api_key_${provider}`);
+            logger.debug(`API key validation for ${provider}:`, {
+                exists: !!apiKey,
+                length: apiKey?.length || 0,
+                type: typeof apiKey
+            });
+            
+            if (!apiKey || apiKey.trim().length === 0) {
+                console.log('🔥 DEBUG: Missing API key, showing popup');
+                logger.warn(`Missing or empty API key for provider: ${provider}`);
+                this.showApiKeyErrorPopup(provider, 'missing');
+                this.isGenerating = false;
+                return;
+            }
+        }
+
+        // Show loading state
+        const generateBtn = document.getElementById('generate-questions');
+        const statusDiv = document.getElementById('generation-status');
+        
+        if (generateBtn) generateBtn.disabled = true;
+        if (statusDiv) statusDiv.style.display = 'block';
+
+        try {
+            console.log('🔥 DEBUG: Starting question generation with provider:', provider);
+            
+            // Build prompt based on content type and settings, including selected question types
+            const prompt = this.buildPrompt(content, questionCount, difficulty, selectedTypes);
+            
+            let questions = [];
             try {
-                // Build prompt based on content type and settings, including selected question types
-                const prompt = this.buildPrompt(content, questionCount, difficulty, selectedTypes);
-                
-                let questions = [];
                 switch (provider) {
                     case 'ollama':
                         questions = await this.generateWithOllama(prompt);
@@ -371,39 +406,67 @@ export class AIQuestionGenerator {
                         questions = await this.generateWithGemini(prompt);
                         break;
                 }
-
-                if (questions && questions.length > 0) {
-                    // Double-check the count one more time before processing
-                    if (questions.length > this.requestedQuestionCount) {
-                        questions = questions.slice(0, this.requestedQuestionCount);
-                    }
-                    
-                    // Process questions without showing alerts from within
-                    await this.processGeneratedQuestions(questions, false);
-                    this.closeModal();
-                    
-                    // Show single success message after processing is complete
-                    setTimeout(() => {
-                        showAlert('successfully_generated_questions', [questions.length]);
-                        this.isGenerating = false;
-                    }, TIMING.ANIMATION_DURATION);
+            } catch (providerError) {
+                console.log('🔥 DEBUG: Provider error caught:', providerError.message);
+                
+                // Handle API key related errors with custom popup
+                if (providerError.message.includes('Invalid') && providerError.message.includes('API key')) {
+                    console.log('🔥 DEBUG: Invalid API key error detected');
+                    this.showApiKeyErrorPopup(provider, 'invalid', providerError.message);
+                    return;
+                } else if (providerError.message.includes('401') || providerError.message.includes('Unauthorized')) {
+                    console.log('🔥 DEBUG: 401 Unauthorized error detected');
+                    this.showApiKeyErrorPopup(provider, 'invalid', 'Unauthorized - please check your API key');
+                    return;
+                } else if (providerError.message.includes('429') || providerError.message.includes('rate limit')) {
+                    console.log('🔥 DEBUG: Rate limit error detected');
+                    this.showApiKeyErrorPopup(provider, 'network', 'Rate limit exceeded - please try again in a few minutes');
+                    return;
+                } else if (providerError.message.includes('quota') || providerError.message.includes('billing')) {
+                    console.log('🔥 DEBUG: Quota/billing error detected');
+                    this.showApiKeyErrorPopup(provider, 'invalid', 'Account quota exceeded or billing issue - please check your account');
+                    return;
                 } else {
-                    throw new Error('No questions generated by AI provider');
+                    console.log('🔥 DEBUG: Other provider error, showing custom alert');
+                    // For other errors, show a custom red alert instead of green showAlert
+                    this.showCustomAlert('Generation Failed', `❌ ${providerError.message}\n\n🔧 Possible solutions:\n• Check your API key is correct\n• Verify your account has credits\n• Try with different content\n• Wait a moment and try again`, '⚠️', 'Try Again', null);
+                    return;
                 }
-
-            } finally {
-                // Reset UI
-                if (generateBtn) generateBtn.disabled = false;
-                if (statusDiv) statusDiv.style.display = 'none';
-                this.isGenerating = false;
             }
-        }, {
-            errorType: errorHandler.errorTypes.SYSTEM,
-            context: 'question-generation',
-            userMessage: 'Failed to generate questions. Please check your settings and try again.',
-            retryable: false,
-            fallback: null
-        });
+
+            console.log('🔥 DEBUG: Generation completed, questions:', questions?.length);
+
+            if (questions && questions.length > 0) {
+                // Double-check the count one more time before processing
+                if (questions.length > this.requestedQuestionCount) {
+                    questions = questions.slice(0, this.requestedQuestionCount);
+                }
+                
+                // Process questions without showing alerts from within
+                await this.processGeneratedQuestions(questions, false);
+                this.closeModal();
+                
+                // Show single success message after processing is complete
+                setTimeout(() => {
+                    showAlert('successfully_generated_questions', [questions.length]);
+                    this.isGenerating = false;
+                }, TIMING.ANIMATION_DURATION);
+            } else {
+                console.log('🔥 DEBUG: No questions generated');
+                this.showCustomAlert('No Questions Generated', '❌ The AI provider returned no questions.\n\n🔧 Try:\n• Providing more detailed content\n• Using different question types\n• Rephrasing your content\n• Checking if your content is suitable for quiz questions', '📝', 'Edit Content', () => {
+                    const contentTextarea = document.getElementById('source-content');
+                    if (contentTextarea) {
+                        contentTextarea.focus();
+                    }
+                });
+            }
+
+        } finally {
+            // Reset UI
+            if (generateBtn) generateBtn.disabled = false;
+            if (statusDiv) statusDiv.style.display = 'none';
+            this.isGenerating = false;
+        }
     }
 
     buildPrompt(content, questionCount, difficulty, selectedTypes) {
@@ -554,8 +617,13 @@ Please respond with only valid JSON. Do not include explanations or additional t
                     throw new Error('Invalid OpenAI API key. Please check your credentials.');
                 } else if (response.status === 429) {
                     throw new Error('OpenAI rate limit exceeded. Please try again later.');
+                } else if (response.status === 402) {
+                    throw new Error('OpenAI billing issue. Please check your account balance and payment method.');
+                } else if (response.status === 403) {
+                    throw new Error('OpenAI API access forbidden. Please check your API key permissions.');
                 } else {
-                    throw new Error(`OpenAI error: ${response.status}`);
+                    const errorText = await response.text();
+                    throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
                 }
             }
 
@@ -574,8 +642,11 @@ Please respond with only valid JSON. Do not include explanations or additional t
     }
 
     async generateWithClaude(prompt) {
-        return await errorHandler.safeNetworkOperation(async () => {
+        console.log('🔥 DEBUG: generateWithClaude called');
+        
+        try {
             const apiKey = await secureStorage.getSecureItem('api_key_claude');
+            console.log('🔥 DEBUG: Claude API key retrieved:', !!apiKey);
             
             const response = await fetch('/api/claude/generate', {
                 method: 'POST',
@@ -588,18 +659,34 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 })
             });
 
+            console.log('🔥 DEBUG: Claude API response status:', response.status);
+
             if (!response.ok) {
+                let errorMessage = `Claude API error (${response.status})`;
+                
                 if (response.status === 401) {
-                    throw new Error('Invalid Claude API key. Please check your credentials.');
+                    errorMessage = 'Invalid Claude API key. Please check your credentials.';
                 } else if (response.status === 429) {
-                    throw new Error('Claude rate limit exceeded. Please try again later.');
+                    errorMessage = 'Claude rate limit exceeded. Please try again later.';
+                } else if (response.status === 402) {
+                    errorMessage = 'Claude billing issue. Please check your account balance.';
+                } else if (response.status === 403) {
+                    errorMessage = 'Claude API access forbidden. Please check your API key permissions.';
                 } else {
-                    throw new Error(`Claude API error: ${response.status}`);
+                    try {
+                        const errorText = await response.text();
+                        errorMessage = `Claude API error (${response.status}): ${errorText}`;
+                    } catch (e) {
+                        errorMessage = `Claude API error (${response.status})`;
+                    }
                 }
+                
+                console.log('🔥 DEBUG: Claude API error message:', errorMessage);
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
-            logger.debug('Claude API response:', data);
+            console.log('🔥 DEBUG: Claude API success, parsing response');
             
             // Claude API returns content in data.content[0].text format
             let content = '';
@@ -612,11 +699,16 @@ Please respond with only valid JSON. Do not include explanations or additional t
             }
             
             return this.parseAIResponse(content);
-        }, {
-            context: 'claude-generation',
-            userMessage: 'Failed to generate questions with Claude. Please check your API key and try again.',
-            retryable: true
-        });
+            
+        } catch (error) {
+            console.log('🔥 DEBUG: Claude generation error caught:', error.message);
+            
+            // Show error popup directly
+            this.showSimpleErrorPopup('Claude Error', error.message, '❌');
+            
+            // Re-throw to stop further processing
+            throw error;
+        }
     }
 
     async generateWithGemini(prompt) {
@@ -650,12 +742,16 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 return this.parseAIResponse(content);
                 
             } catch (error) {
-                if (error.message.includes('API key')) {
+                if (error.message.includes('API key') || error.message.includes('invalid_api_key')) {
                     throw new Error('Invalid Gemini API key. Please check your credentials.');
-                } else if (error.message.includes('quota') || error.message.includes('429')) {
+                } else if (error.message.includes('quota') || error.message.includes('429') || error.message.includes('RATE_LIMIT_EXCEEDED')) {
                     throw new Error('Gemini rate limit exceeded. Please try again later.');
-                } else if (error.message.includes('safety') || error.message.includes('blocked')) {
+                } else if (error.message.includes('billing') || error.message.includes('QUOTA_EXCEEDED')) {
+                    throw new Error('Gemini quota exceeded. Please check your account billing and quotas.');
+                } else if (error.message.includes('safety') || error.message.includes('blocked') || error.message.includes('SAFETY')) {
                     throw new Error('Content blocked by Gemini safety filters. Try rephrasing your prompt.');
+                } else if (error.message.includes('permission') || error.message.includes('forbidden') || error.message.includes('403')) {
+                    throw new Error('Gemini API access forbidden. Please check your API key permissions.');
                 } else {
                     throw new Error(`Gemini API error: ${error.message}`);
                 }
@@ -840,11 +936,11 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 
                 if (needsApiKey) {
                     apiKeySection.style.display = 'block';
-                    // Load saved API key if exists
-                    const savedKey = await secureStorage.getSecureItem(`api_key_${provider}`);
+                    // Clear API key input to force user to enter fresh key every time
                     const apiKeyInput = document.getElementById('ai-api-key');
-                    if (savedKey && apiKeyInput) {
-                        apiKeyInput.value = savedKey;
+                    if (apiKeyInput) {
+                        apiKeyInput.value = '';
+                        apiKeyInput.placeholder = 'Enter your API key';
                     }
                 } else {
                     apiKeySection.style.display = 'none';
@@ -1208,6 +1304,13 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 logger.debug('🚀 OpenModal - Provider select set to:', providerSelect.value);
             }
 
+            // Clear API key input field to force fresh entry every time
+            const apiKeyInput = document.getElementById('ai-api-key');
+            if (apiKeyInput) {
+                apiKeyInput.value = '';
+                apiKeyInput.placeholder = 'Enter your API key';
+            }
+
             // Show the model selection div immediately
             const modelSelection = document.getElementById('model-selection');
             logger.debug('🚀 OpenModal - Model selection div found:', !!modelSelection);
@@ -1269,6 +1372,115 @@ Please respond with only valid JSON. Do not include explanations or additional t
         if (modal) {
             modal.style.display = 'none';
         }
+    }
+
+    /**
+     * Show API key error popup with detailed information
+     * @param {string} provider - The AI provider name
+     * @param {string} errorType - Type of error: 'missing', 'invalid', or 'network'
+     * @param {string} specificMessage - Specific error message from the API
+     */
+    showApiKeyErrorPopup(provider, errorType = 'missing', specificMessage = '') {
+        console.log('🔥 DEBUG: showApiKeyErrorPopup called', { provider, errorType, specificMessage });
+        
+        const providerName = this.providers[provider]?.name || provider;
+        let title, message, icon;
+
+        if (specificMessage) {
+            // Show the actual error message prominently
+            title = `${providerName} Error`;
+            message = specificMessage;
+            icon = '❌';
+        } else if (errorType === 'missing') {
+            title = `API Key Required`;
+            message = `Please enter your API key for ${providerName}`;
+            icon = '🔑';
+        } else {
+            title = `${providerName} Error`;
+            message = `There was an issue with ${providerName}. Please check your API key.`;
+            icon = '❌';
+        }
+
+        // Create simple red error popup
+        this.showSimpleErrorPopup(title, message, icon);
+    }
+
+    /**
+     * Create and display a custom API key error modal
+     */
+    showSimpleErrorPopup(title, message, icon) {
+        console.log('🔥 DEBUG: showSimpleErrorPopup called', { title, message, icon });
+        
+        // Remove any existing error modal
+        const existingModal = document.getElementById('simple-error-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create simple red error modal
+        const modalHTML = `
+            <div id="simple-error-modal" class="modal" style="display: flex !important; z-index: 20000 !important; background: rgba(0,0,0,0.7) !important;">
+                <div class="modal-content" style="
+                    max-width: 400px !important; 
+                    margin: auto !important; 
+                    background: white !important; 
+                    border-radius: 8px !important;
+                    text-align: center !important;
+                    padding: 30px !important;
+                    border: 3px solid #dc2626 !important;
+                ">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">${icon}</div>
+                    <h3 style="margin: 0 0 15px 0 !important; color: #dc2626 !important; font-size: 1.3rem;">${title}</h3>
+                    <p style="margin: 0 0 25px 0 !important; color: #dc2626 !important; font-size: 16px !important; font-weight: 500 !important;">${message}</p>
+                    <button id="simple-error-ok" style="
+                        background: #dc2626 !important;
+                        color: white !important;
+                        border: none !important;
+                        padding: 12px 30px !important;
+                        border-radius: 6px !important;
+                        font-size: 16px !important;
+                        cursor: pointer !important;
+                        font-weight: 600 !important;
+                    ">OK</button>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        const modal = document.getElementById('simple-error-modal');
+        const okBtn = document.getElementById('simple-error-ok');
+
+        if (!modal) {
+            console.error('Failed to create error modal');
+            alert(title + '\n\n' + message);
+            return;
+        }
+
+        // Close modal
+        const closeModal = () => {
+            modal.remove();
+            document.body.style.overflow = '';
+        };
+
+        if (okBtn) {
+            okBtn.addEventListener('click', closeModal);
+        }
+
+        // Close on overlay click or escape key
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        
+        document.addEventListener('keydown', function escapeHandler(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        });
+
+        document.body.style.overflow = 'hidden';
+        console.log('🔥 DEBUG: Simple error popup displayed');
     }
 }
 

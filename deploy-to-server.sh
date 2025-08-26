@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 # Configuration - EDIT THESE VALUES
 GITLAB_SERVER="10.80.21.11"
 GITLAB_USER="your-username"  # Replace with your SSH username
-PROJECT_DIR="/opt/quizmaster-pro"
+PROJECT_DIR="/opt/quizix-pro"
 
 # Functions
 log_info() {
@@ -71,7 +71,7 @@ check_prerequisites() {
 build_local() {
     log_info "Building Docker image locally..."
     
-    if ! docker build -t quizmaster-pro:latest .; then
+    if ! docker build -t quizix-pro:latest .; then
         log_error "Failed to build Docker image locally"
         exit 1
     fi
@@ -96,15 +96,15 @@ deploy_copy_files() {
         cd $PROJECT_DIR
         
         # Stop existing container if running
-        docker stop quizmaster-pro-app 2>/dev/null || true
-        docker rm quizmaster-pro-app 2>/dev/null || true
+        docker stop quizix-pro-app 2>/dev/null || true
+        docker rm quizix-pro-app 2>/dev/null || true
         
         # Build and run
         docker-compose -f docker-compose.server.yml build
         docker-compose -f docker-compose.server.yml up -d
         
         # Show status
-        docker ps | grep quizmaster-pro
+        docker ps | grep quizix-pro
     "
     
     log_success "Deployment completed via file copy"
@@ -119,25 +119,25 @@ deploy_image_transfer() {
     
     # Save image to file
     log_info "Saving Docker image to file..."
-    docker save quizmaster-pro:latest > /tmp/quizmaster-pro.tar
+    docker save quizix-pro:latest > /tmp/quizix-pro.tar
     
     # Copy image to server
     log_info "Copying image to server..."
-    scp /tmp/quizmaster-pro.tar "$GITLAB_USER@$GITLAB_SERVER:/tmp/"
+    scp /tmp/quizix-pro.tar "$GITLAB_USER@$GITLAB_SERVER:/tmp/"
     
     # Load and run on server
     log_info "Loading and starting container on server..."
     ssh "$GITLAB_USER@$GITLAB_SERVER" "
         # Load image
-        docker load < /tmp/quizmaster-pro.tar
+        docker load < /tmp/quizix-pro.tar
         
         # Stop existing container
-        docker stop quizmaster-pro-app 2>/dev/null || true
-        docker rm quizmaster-pro-app 2>/dev/null || true
+        docker stop quizix-pro-app 2>/dev/null || true
+        docker rm quizix-pro-app 2>/dev/null || true
         
         # Run container
         docker run -d \\
-            --name quizmaster-pro-app \\
+            --name quizix-pro-app \\
             --restart unless-stopped \\
             -p 3000:3000 \\
             -e NODE_ENV=production \\
@@ -145,20 +145,20 @@ deploy_image_transfer() {
             -e GITLAB_URL=https://localhost:8080 \\
             -v \$HOME/quizmaster-data/results:/app/results \\
             -v \$HOME/quizmaster-data/uploads:/app/uploads \\
-            quizmaster-pro:latest
+            quizix-pro:latest
         
         # Create data directories
         mkdir -p \$HOME/quizmaster-data/{results,uploads}
         
         # Show status
-        docker ps | grep quizmaster-pro
+        docker ps | grep quizix-pro
         
         # Clean up
-        rm /tmp/quizmaster-pro.tar
+        rm /tmp/quizix-pro.tar
     "
     
     # Clean up local temp file
-    rm /tmp/quizmaster-pro.tar
+    rm /tmp/quizix-pro.tar
     
     log_success "Deployment completed via image transfer"
 }
@@ -168,7 +168,7 @@ check_deployment() {
     log_info "Checking deployment status..."
     
     # Check if container is running
-    if ssh "$GITLAB_USER@$GITLAB_SERVER" "docker ps | grep quizmaster-pro-app" > /dev/null; then
+    if ssh "$GITLAB_USER@$GITLAB_SERVER" "docker ps | grep quizix-pro-app" > /dev/null; then
         log_success "Container is running on server"
     else
         log_error "Container is not running on server"
@@ -185,7 +185,7 @@ check_deployment() {
     
     # Show access information
     log_success "QuizMaster Pro is accessible at: http://$GITLAB_SERVER:3000"
-    log_info "Container logs: ssh $GITLAB_USER@$GITLAB_SERVER 'docker logs quizmaster-pro-app'"
+    log_info "Container logs: ssh $GITLAB_USER@$GITLAB_SERVER 'docker logs quizix-pro-app'"
 }
 
 # Show usage

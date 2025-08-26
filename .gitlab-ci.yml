@@ -40,13 +40,13 @@ deploy:
     - apk add --no-cache curl docker-cli
   script:
     # Stop existing container
-    - docker stop quizmaster-pro-app || true
-    - docker rm quizmaster-pro-app || true
+    - docker stop quizix-pro-app || true
+    - docker rm quizix-pro-app || true
     
     # Run new container
     - |
       docker run -d \
-        --name quizmaster-pro-app \
+        --name quizix-pro-app \
         --restart unless-stopped \
         -p 3000:3000 \
         -e NODE_ENV=production \

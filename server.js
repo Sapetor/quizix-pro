@@ -1256,7 +1256,7 @@ app.get('/api/ping', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    server: 'QuizMaster Pro',
+    server: 'Quizix Pro',
     clientType: isMobile ? 'mobile' : 'desktop',
     performance: {
       qrGeneration: {

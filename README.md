@@ -1,4 +1,4 @@
-# 🧠 QuizMaster Pro - Advanced Interactive Quiz Platform
+# 🧠 Quizix Pro - Advanced Interactive Quiz Platform
 
 A sophisticated quiz platform that runs locally on your network, featuring LaTeX equations, image support, multiple question types, and advanced scoring mechanics.
 

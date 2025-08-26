@@ -1192,9 +1192,9 @@ select option {
     margin-left: 20px; /* Add left margin for breathing room from container edge */
 }
 
-/* Add left margin to "Create Your Quiz" heading for better spacing */
+/* Heading spacing is now handled by balanced container padding */
 .quiz-editor-section h2:first-of-type {
-    margin-left: 20px; /* Match the spacing with checkboxes below */
+    margin-left: 0; /* Removed since container padding is now balanced */
 }
 
 .advanced-options {

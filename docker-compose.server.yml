@@ -4,13 +4,13 @@
 version: '3.8'
 
 services:
-  quizmaster-pro:
+  quizix-pro:
     build:
       context: .
       dockerfile: Dockerfile
       target: production
-    image: quizmaster-pro:latest
-    container_name: quizmaster-pro-app
+    image: quizix-pro:latest
+    container_name: quizix-pro-app
     restart: unless-stopped
     
     # Environment configuration for server deployment
