@@ -15,6 +15,9 @@ import { translationManager, showAlert } from '../utils/translation-manager.js';
 import { secureStorage } from '../services/secure-storage-service.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 
+// Import XLSX library for Excel processing
+const XLSX = window.XLSX;
+
 export class AIQuestionGenerator {
     constructor() {
         this.providers = {
@@ -302,42 +305,21 @@ export class AIQuestionGenerator {
             // Validate required fields with custom red popups
             if (!provider) {
                 console.log('🔥 DEBUG: No provider selected');
-                this.showCustomAlert('No AI Provider Selected', '❌ Please select an AI provider to generate questions.\n\nAvailable options:\n• OpenAI (paid)\n• Claude (paid)\n• Gemini (paid)\n• Ollama (free, local)', '🤖', 'Select Provider', () => {
-                    const providerSelect = document.getElementById('ai-provider');
-                    if (providerSelect) {
-                        providerSelect.focus();
-                        providerSelect.style.borderColor = '#ef4444';
-                        setTimeout(() => providerSelect.style.borderColor = '', 3000);
-                    }
-                });
+                this.showSimpleErrorPopup('No AI Provider Selected', '❌ Please select an AI provider to generate questions.\n\nAvailable options:\n• OpenAI (paid)\n• Claude (paid)\n• Gemini (paid)\n• Ollama (free, local)', '🤖');
                 this.isGenerating = false;
                 return;
             }
             
             if (!content) {
                 console.log('🔥 DEBUG: No content provided');
-                this.showCustomAlert('No Content Provided', '❌ Please enter source content for question generation.\n\n💡 You can provide:\n• Text passages to create questions about\n• Topics you want questions on\n• Educational content to quiz students about\n• Any material you want to turn into quiz questions', '📝', 'Add Content', () => {
-                    const contentTextarea = document.getElementById('source-content');
-                    if (contentTextarea) {
-                        contentTextarea.focus();
-                        contentTextarea.style.borderColor = '#ef4444';
-                        setTimeout(() => contentTextarea.style.borderColor = '', 3000);
-                    }
-                });
+                this.showSimpleErrorPopup('No Content Provided', '❌ Please enter source content for question generation.\n\n💡 You can provide:\n• Text passages to create questions about\n• Topics you want questions on\n• Educational content to quiz students about\n• Any material you want to turn into quiz questions', '📝');
                 this.isGenerating = false;
                 return;
             }
             
             if (selectedTypes.length === 0) {
                 console.log('🔥 DEBUG: No question types selected');
-                this.showCustomAlert('No Question Types Selected', '❌ Please select at least one question type to generate.\n\n✅ Available types:\n• Multiple Choice (4 options, 1 correct)\n• True/False (factual statements)\n• Multiple Correct (select all that apply)\n• Numeric (number-based answers)', '📊', 'Select Types', () => {
-                    const typesSection = document.querySelector('.question-types');
-                    if (typesSection) {
-                        typesSection.scrollIntoView({ behavior: 'smooth' });
-                        typesSection.style.borderColor = '#ef4444';
-                        setTimeout(() => typesSection.style.borderColor = '', 3000);
-                    }
-                });
+                this.showSimpleErrorPopup('No Question Types Selected', '❌ Please select at least one question type to generate.\n\n✅ Available types:\n• Multiple Choice (4 options, 1 correct)\n• True/False (factual statements)\n• Multiple Correct (select all that apply)\n• Numeric (number-based answers)');
                 this.isGenerating = false;
                 return;
             }
@@ -345,7 +327,7 @@ export class AIQuestionGenerator {
         } catch (error) {
             console.log('🔥 DEBUG: Validation error:', error);
             logger.error('Validation error:', error);
-            this.showCustomAlert('Validation Error', `❌ Form validation failed: ${error.message}\n\nPlease check your inputs and try again.`, '⚠️', 'Check Form', null);
+            this.showSimpleErrorPopup('Validation Error', `❌ Form validation failed: ${error.message}\n\nPlease check your inputs and try again.`);
             this.isGenerating = false;
             return;
         }
@@ -383,6 +365,13 @@ export class AIQuestionGenerator {
 
         try {
             console.log('🔥 DEBUG: Starting question generation with provider:', provider);
+            
+            // Check if this is batched Excel processing
+            if (this.batchInfo) {
+                logger.debug('🔄 Starting batched Excel processing');
+                await this.processBatchedGeneration();
+                return; // processBatchedGeneration handles the full flow
+            }
             
             // Build prompt based on content type and settings, including selected question types
             const prompt = this.buildPrompt(content, questionCount, difficulty, selectedTypes);
@@ -429,7 +418,7 @@ export class AIQuestionGenerator {
                 } else {
                     console.log('🔥 DEBUG: Other provider error, showing custom alert');
                     // For other errors, show a custom red alert instead of green showAlert
-                    this.showCustomAlert('Generation Failed', `❌ ${providerError.message}\n\n🔧 Possible solutions:\n• Check your API key is correct\n• Verify your account has credits\n• Try with different content\n• Wait a moment and try again`, '⚠️', 'Try Again', null);
+                    this.showSimpleErrorPopup('Generation Failed', `❌ ${providerError.message}\n\n🔧 Possible solutions:\n• Check your API key is correct\n• Verify your account has credits\n• Try with different content\n• Wait a moment and try again`);
                     return;
                 }
             }
@@ -444,6 +433,7 @@ export class AIQuestionGenerator {
                 
                 // Process questions without showing alerts from within
                 await this.processGeneratedQuestions(questions, false);
+                this.playCompletionChime();
                 this.closeModal();
                 
                 // Show single success message after processing is complete
@@ -453,12 +443,7 @@ export class AIQuestionGenerator {
                 }, TIMING.ANIMATION_DURATION);
             } else {
                 console.log('🔥 DEBUG: No questions generated');
-                this.showCustomAlert('No Questions Generated', '❌ The AI provider returned no questions.\n\n🔧 Try:\n• Providing more detailed content\n• Using different question types\n• Rephrasing your content\n• Checking if your content is suitable for quiz questions', '📝', 'Edit Content', () => {
-                    const contentTextarea = document.getElementById('source-content');
-                    if (contentTextarea) {
-                        contentTextarea.focus();
-                    }
-                });
+                this.showSimpleErrorPopup('No Questions Generated', '❌ The AI provider returned no questions.\n\n🔧 Try:\n• Providing more detailed content\n• Using different question types\n• Rephrasing your content\n• Checking if your content is suitable for quiz questions');
             }
 
         } finally {
@@ -469,12 +454,168 @@ export class AIQuestionGenerator {
         }
     }
 
+    async processBatchedGeneration() {
+        if (!this.batchInfo) {
+            logger.warn('processBatchedGeneration called without batch info');
+            return;
+        }
+        
+        const { totalBatches, currentBatch, originalData, filename, batchSize } = this.batchInfo;
+        
+        // Update status to show batch progress
+        const statusDiv = document.getElementById('generation-status');
+        if (statusDiv) {
+            // Ensure status div is visible for batch processing
+            statusDiv.style.display = 'block';
+            
+            const statusText = statusDiv.querySelector('span');
+            if (statusText) {
+                statusText.textContent = `Processing batch ${currentBatch} of ${totalBatches}...`;
+            } else {
+                // Create status text if it doesn't exist
+                const newStatusText = document.createElement('span');
+                newStatusText.textContent = `Processing batch ${currentBatch} of ${totalBatches}...`;
+                statusDiv.appendChild(newStatusText);
+            }
+        }
+        
+        // Process next batch
+        const batchStart = (currentBatch - 1) * batchSize;
+        const batchEnd = Math.min(batchStart + batchSize, this.batchInfo.totalQuestions);
+        logger.debug(`📦 Processing batch ${currentBatch}: questions ${batchStart + 1}-${batchEnd}`);
+        
+        const structuredText = this.convertExcelToStructuredText(
+            originalData, 
+            filename, 
+            batchStart, 
+            batchSize
+        );
+        
+        logger.debug(`📦 Batch ${currentBatch} structured text length:`, structuredText.length);
+        
+        // Get form values
+        const provider = document.getElementById('ai-provider')?.value || 'ollama';
+        const difficulty = document.getElementById('difficulty-level')?.value || 'medium';
+        const selectedTypes = ['multiple-choice']; // Default for Excel conversion
+        
+        // Build prompt and generate
+        const prompt = this.buildPrompt(structuredText, batchSize, difficulty, selectedTypes);
+        
+        let questions = [];
+        try {
+            switch (provider) {
+                case 'ollama':
+                    questions = await this.generateWithOllama(prompt);
+                    break;
+                case 'openai':
+                    questions = await this.generateWithOpenAI(prompt);
+                    break;
+                case 'claude':
+                    questions = await this.generateWithClaude(prompt);
+                    break;
+                case 'gemini':
+                    questions = await this.generateWithGemini(prompt);
+                    break;
+            }
+        } catch (error) {
+            logger.error('Batch generation error:', error);
+            showAlert(`Batch ${currentBatch} failed: ${error.message}`, 'error');
+            return;
+        }
+        
+        if (questions && questions.length > 0) {
+            // Process questions for this batch
+            await this.processGeneratedQuestions(questions, false);
+            
+            logger.debug(`✅ Batch ${currentBatch} completed: ${questions.length} questions processed`);
+            
+            // Check if we have more batches
+            if (currentBatch < totalBatches) {
+                // Prepare next batch
+                this.batchInfo.currentBatch++;
+                
+                // Add delay between batches to be respectful to APIs
+                setTimeout(() => {
+                    this.processBatchedGeneration();
+                }, 2000); // 2-second delay between batches
+            } else {
+                // All batches complete!
+                this.playCompletionChime();
+                this.closeModal();
+                showAlert(`🎉 All ${totalBatches} batches completed! ${this.batchInfo.totalQuestions} questions generated successfully.`, 'success');
+                
+                // Reset batch info
+                this.batchInfo = null;
+                this.isGenerating = false;
+                
+                // Reset UI
+                const generateBtn = document.getElementById('generate-questions');
+                const statusDiv = document.getElementById('generation-status');
+                if (generateBtn) generateBtn.disabled = false;
+                if (statusDiv) statusDiv.style.display = 'none';
+            }
+        } else {
+            showAlert(`Batch ${currentBatch} generated no questions`, 'warning');
+            this.batchInfo = null;
+            this.isGenerating = false;
+        }
+    }
+
+    playCompletionChime() {
+        // Create and play completion sound similar to Claude Code's hook chime
+        try {
+            // Create a pleasant completion chime using Web Audio API
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Create a sequence of pleasant tones
+            const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 - major chord
+            const duration = 0.3;
+            
+            frequencies.forEach((frequency, index) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + index * 0.15);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime + index * 0.15);
+                gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + index * 0.15 + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.15 + duration);
+                
+                oscillator.start(audioContext.currentTime + index * 0.15);
+                oscillator.stop(audioContext.currentTime + index * 0.15 + duration);
+            });
+            
+            logger.debug('🔔 Completion chime played');
+        } catch (error) {
+            logger.debug('Could not play completion chime:', error);
+            // Fallback: try to play a system beep
+            try {
+                const utterance = new SpeechSynthesisUtterance('');
+                utterance.volume = 0;
+                speechSynthesis.speak(utterance);
+            } catch (fallbackError) {
+                logger.debug('Fallback chime also failed');
+            }
+        }
+    }
+
     buildPrompt(content, questionCount, difficulty, selectedTypes) {
         // Safety check for parameters
         if (!selectedTypes || !Array.isArray(selectedTypes)) {
             logger.warn('buildPrompt called with invalid selectedTypes:', selectedTypes);
             selectedTypes = ['multiple-choice']; // Default fallback
         }
+        
+        // Check if this is Excel-converted content
+        if (content.includes('# Quiz Questions from Excel File:') && content.includes('INSTRUCTIONS FOR AI:')) {
+            return this.buildExcelConversionPrompt(content, selectedTypes);
+        }
+        
+        // Original prompt logic for generating questions from general content
         const contentType = this.detectContentType(content);
         // Use translation manager to get current app language (more reliable than localStorage)
         const language = translationManager.getCurrentLanguage() || 'en';
@@ -518,25 +659,56 @@ export class AIQuestionGenerator {
         // Build structure example showing all selected types
         const structureExample = `Return ONLY a valid JSON array with structures EXACTLY like these:\n[${structureExamples.join(',\n')}]`;
 
-        return `${typeDescription}\n\nContent: ${content}\n\n${structureExample}
+        return `${typeDescription}\n\nCONTENT TO CREATE QUESTIONS FROM:\n${content}\n\n${structureExample}\n\nCRITICAL REQUIREMENTS: \n- Generate ALL questions in ${targetLanguage} language\n- Generate EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} - no more, no less\n- EVERY SINGLE QUESTION MUST be directly based on the content provided above - read it carefully and create questions that test understanding of THAT specific content\n- If the content is about topic X, ALL questions must be about topic X - no generic questions about other topics\n- Questions must reference specific facts, concepts, names, dates, or details mentioned in the provided content\n- Do NOT create questions about general knowledge unless that knowledge is specifically mentioned in the content\n- Mix different question types from the selected types: ${selectedTypes.join(', ')}\n- For true/false questions: Create single factual statements about the content, NOT binary choices between opposites (e.g., "Tom is a cat" not "Choose happy or sad")\n- For numeric questions: Numbers must come from the content (dates, counts, measurements), NOT random math problems\n- Return ONLY the JSON array, no other text\n- Use EXACTLY these JSON structures:\n  * Multiple-choice: correctAnswer as integer index (0, 1, 2, or 3), options array with 4 items\n  * True-false: Single factual statement about content, options must be ["True", "False"], correctAnswer as string ("true" or "false")  \n  * Multiple-correct: correctAnswers as array of indices [0, 1, 2, 3], options array\n  * Numeric: Answer derived from content, NO options array, correctAnswer as number, tolerance as number\n- All questions must have "timeLimit" field (15-40 seconds based on difficulty)\n- Make sure all JSON is properly formatted and valid\n- Do not include any explanations or additional text\n- If you generate more than ${questionCount} question${questionCount === 1 ? '' : 's'}, you have failed the task\n- REMEMBER: Every question must test something specific from the content above - reread the content if needed`;
+    }
 
-CRITICAL REQUIREMENTS: 
-- Generate ALL questions in ${targetLanguage} language
-- Generate EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} - no more, no less
-- ALL questions MUST be directly related to the provided content - no off-topic questions
-- Mix different question types from the selected types: ${selectedTypes.join(', ')}
-- For true/false questions: Create single factual statements about the content, NOT binary choices between opposites (e.g., "Tom is a cat" not "Choose happy or sad")
-- For numeric questions: Numbers must come from the content (dates, counts, measurements), NOT random math problems
-- Return ONLY the JSON array, no other text
-- Use EXACTLY these JSON structures:
-  * Multiple-choice: correctAnswer as integer index (0, 1, 2, or 3), options array with 4 items
-  * True-false: Single factual statement about content, options must be ["True", "False"], correctAnswer as string ("true" or "false")  
-  * Multiple-correct: correctAnswers as array of indices [0, 1, 2, 3], options array
-  * Numeric: Answer derived from content, NO options array, correctAnswer as number, tolerance as number
-- All questions must have "timeLimit" field (15-40 seconds based on difficulty)
-- Make sure all JSON is properly formatted and valid
-- Do not include any explanations or additional text
-- If you generate more than ${questionCount} question${questionCount === 1 ? '' : 's'}, you have failed the task`;
+    buildExcelConversionPrompt(content, selectedTypes) {
+        const language = translationManager.getCurrentLanguage() || 'en';
+        const languageNames = {
+            'en': 'English',
+            'es': 'Spanish', 
+            'fr': 'French',
+            'de': 'German',
+            'it': 'Italian',
+            'pt': 'Portuguese', 
+            'pl': 'Polish',
+            'ja': 'Japanese',
+            'zh': 'Chinese'
+        };
+        const targetLanguage = languageNames[language] || 'English';
+
+        return `CONVERT EXCEL QUESTIONS TO JSON - DO NOT MAKE UP NEW QUESTIONS
+
+You must convert ONLY the questions that are in this Excel data. Do not create any new questions.
+
+${content}
+
+STEP BY STEP INSTRUCTIONS:
+1. Find each "Question X:" section in the Excel data above
+2. For each question, copy the exact text and answers from the Excel
+3. Convert to JSON format shown below
+4. Do NOT translate or change any text
+5. Do NOT create questions not in the Excel
+
+JSON TEMPLATE - Use exactly this format:
+{"question": "EXACT_TEXT_FROM_EXCEL_COLUMN_A", "type": "multiple-choice", "options": ["EXACT_TEXT_FROM_COLUMN_B", "EXACT_TEXT_FROM_COLUMN_C", "EXACT_TEXT_FROM_COLUMN_D", "EXACT_TEXT_FROM_COLUMN_E"], "correctAnswer": 0, "timeLimit": 30}
+
+CRITICAL RULES:
+- Use ONLY questions that appear in the Excel data above
+- COPY TEXT EXACTLY AS WRITTEN - do NOT change, rephrase, translate, or modify ANY words
+- DO NOT fix grammar, spelling, or punctuation - use the exact text from Excel
+- DO NOT add punctuation marks if they're not in the original text
+- DO NOT change question marks, periods, or any formatting
+- CRITICAL: Use the CORRECT_ANSWER_INDEX provided for each question:
+  * Look for "CORRECT_ANSWER_INDEX: [number]" in the data
+  * Use that exact number as the correctAnswer field
+  * Do NOT try to figure out the correct answer yourself
+  * The correctAnswer field must be 0, 1, 2, or 3 (not A, B, C, D)
+- Return valid JSON array format: [{"question": ...}, {"question": ...}]
+- NO explanations, NO extra text, ONLY the JSON array
+- PRESERVE EXACT TEXT: Copy every word, space, and character exactly as it appears in the Excel
+
+Start converting now. Return only the JSON array.`;
     }
 
 
@@ -771,6 +943,34 @@ Please respond with only valid JSON. Do not include explanations or additional t
             // Clean up the response text
             let cleanText = responseText.trim();
             
+            // Handle code models that might return comments or explanations
+            // Remove common code comments at the start of response
+            cleanText = cleanText.replace(/^\/\/[^\n]*\n?/gm, ''); // Remove // comments
+            cleanText = cleanText.replace(/^\/\*[\s\S]*?\*\/\n?/gm, ''); // Remove /* */ comments
+            cleanText = cleanText.replace(/^#[^\n]*\n?/gm, ''); // Remove # comments
+            cleanText = cleanText.replace(/^<!--[\s\S]*?-->\n?/gm, ''); // Remove HTML comments
+            
+            // Remove explanation text before JSON (common with code models)
+            const explanationPatterns = [
+                /^Here's?\s+(?:the|a)\s+JSON.*?:\s*/i,
+                /^(?:Here\s+is|This\s+is)\s+.*?:\s*/i,
+                /^(?:Based\s+on|From)\s+.*?:\s*/i,
+                /^(?:The\s+)?(?:JSON|Array)\s+(?:response|output)\s*:?\s*/i,
+                /^(?:Generated\s+)?(?:Questions?|Quiz)\s*:?\s*/i
+            ];
+            
+            for (const pattern of explanationPatterns) {
+                cleanText = cleanText.replace(pattern, '');
+            }
+            
+            cleanText = cleanText.trim();
+            
+            // Detect if response is primarily code (common with code-specialized models like CodeLlama)
+            const codePatterns = /^(from\s+\w+\s+import|import\s+\w+|def\s+\w+|class\s+\w+|function\s+\w+|var\s+\w+|const\s+\w+|let\s+\w+)/m;
+            if (codePatterns.test(cleanText) && !cleanText.includes('[') && !cleanText.includes('{')) {
+                throw new Error('Code models like CodeLlama are designed for code generation, not quiz creation. Please use Ollama with a general model like llama3.2 instead.');
+            }
+            
             // Extract JSON from markdown code blocks if present
             const jsonMatch = cleanText.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
             if (jsonMatch) {
@@ -791,6 +991,9 @@ Please respond with only valid JSON. Do not include explanations or additional t
             if (startBracket !== -1 && endBracket !== -1 && endBracket > startBracket) {
                 cleanText = cleanText.substring(startBracket, endBracket + 1);
             }
+            
+            // Try to fix common JSON issues for Claude/large models
+            cleanText = this.fixCommonJsonIssues(cleanText);
             
             logger.debug('🔍 ParseAIResponse - Clean text for parsing:', cleanText.substring(0, 300) + '...');
             
@@ -827,7 +1030,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
             
         } catch (error) {
             logger.error('🔍 ParseAIResponse - JSON parsing failed:', error);
-            logger.debug('🔍 ParseAIResponse - Failed text:', responseText.substring(0, 500));
+            logger.error('🔍 ParseAIResponse - Failed text:', responseText.substring(0, 1000));
             
             // Try to extract questions manually if JSON parsing fails
             try {
@@ -839,6 +1042,38 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 throw new Error(`Invalid JSON response from AI provider. Response: ${responseText.substring(0, 100)}...`);
             }
         }
+    }
+
+    fixCommonJsonIssues(jsonText) {
+        let fixed = jsonText;
+        
+        // Fix trailing commas before closing brackets/braces
+        fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+        
+        // Fix incomplete JSON by trying to close it properly
+        if (fixed.includes('[') && !fixed.endsWith(']')) {
+            // Count opening vs closing brackets
+            const openBrackets = (fixed.match(/\[/g) || []).length;
+            const closeBrackets = (fixed.match(/\]/g) || []).length;
+            
+            if (openBrackets > closeBrackets) {
+                // Try to find the last complete question object and truncate there
+                const lastCompleteObject = fixed.lastIndexOf('"}');
+                if (lastCompleteObject !== -1) {
+                    fixed = fixed.substring(0, lastCompleteObject + 2) + ']';
+                    logger.debug('🔧 Fixed incomplete JSON by truncating to last complete object');
+                }
+            }
+        }
+        
+        // Fix common quote issues
+        fixed = fixed.replace(/'/g, '"'); // Replace single quotes with double quotes
+        
+        // Fix missing quotes around property names
+        fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+        
+        logger.debug('🔧 Applied JSON fixes, length changed from', jsonText.length, 'to', fixed.length);
+        return fixed;
     }
 
     extractQuestionsManually(responseText) {
@@ -1097,6 +1332,14 @@ Please respond with only valid JSON. Do not include explanations or additional t
     handleFileUpload(file) {
         if (!file) return;
         
+        // Check if file is Excel format
+        const fileExtension = file.name.toLowerCase().split('.').pop();
+        if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+            this.handleExcelUpload(file);
+            return;
+        }
+        
+        // Handle text-based files as before
         const reader = new FileReader();
         reader.onload = (e) => {
             const content = e.target.result;
@@ -1107,6 +1350,343 @@ Please respond with only valid JSON. Do not include explanations or additional t
             }
         };
         reader.readAsText(file);
+    }
+
+    handleExcelUpload(file) {
+        if (!XLSX) {
+            logger.error('XLSX library not loaded');
+            showAlert('Excel processing library not available', 'error');
+            return;
+        }
+        
+        logger.debug('🗂️ Processing Excel file:', file.name);
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // Use the first sheet
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                // Convert to array of objects
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                logger.debug('🗂️ Excel data parsed:', jsonData.length, 'rows');
+                
+                // Convert Excel data to structured text for AI processing
+                const structuredText = this.convertExcelToStructuredText(jsonData, file.name);
+                
+                if (structuredText) {
+                    // Put the structured text in the content textarea for AI processing
+                    const contentTextarea = document.getElementById('source-content');
+                    if (contentTextarea) {
+                        contentTextarea.value = structuredText;
+                        this.detectContentType(structuredText);
+                    }
+                    
+                    // Auto-fill question count field with detected questions
+                    const questionCountField = document.getElementById('question-count');
+                    if (questionCountField && this.detectedQuestionCount) {
+                        const previousCount = questionCountField.value;
+                        questionCountField.value = this.detectedQuestionCount;
+                        logger.debug('🗂️ Auto-filled question count from', previousCount, 'to', this.detectedQuestionCount);
+                    }
+                    
+                    // Note: Batch processing alert will be shown by convertExcelToStructuredText if needed
+                    logger.debug('🗂️ Excel converted to structured text for AI');
+                } else {
+                    throw new Error('No valid data found in Excel file');
+                }
+                
+            } catch (error) {
+                logger.error('🗂️ Excel processing failed:', error);
+                showAlert('Failed to process Excel file: ' + error.message, 'error');
+            }
+        };
+        
+        reader.onerror = (error) => {
+            logger.error('🗂️ File reading failed:', error);
+            showAlert('Failed to read Excel file', 'error');
+        };
+        
+        reader.readAsArrayBuffer(file);
+    }
+
+    convertExcelToStructuredText(jsonData, filename, batchStart = 0, batchSize = null) {
+        if (!jsonData || jsonData.length < 2) {
+            throw new Error('Excel file must contain at least a header row and one data row');
+        }
+        
+        // Smart batching based on model capabilities  
+        const totalRows = jsonData.length - 1; // Subtract header row
+        const provider = document.getElementById('ai-provider')?.value || 'ollama';
+        
+        // Dynamic batch sizes based on AI provider capabilities
+        const batchSizes = {
+            'ollama': 5,        // Small local models work better with fewer questions
+            'huggingface': 5,   // Free tier models are limited
+            'openai': 10,       // Powerful models can handle more
+            'claude': 10,       // Powerful models can handle more
+            'gemini': 10        // Powerful models can handle more
+        };
+        
+        const optimalBatchSize = batchSizes[provider] || 5;
+        const actualBatchSize = batchSize || optimalBatchSize;
+        
+        // Determine if we need batching (only on initial call, not recursive)
+        if (totalRows > optimalBatchSize && batchSize === null && !this.batchInfo) {
+            // Store batch info for later processing
+            this.batchInfo = {
+                totalQuestions: totalRows,
+                batchSize: optimalBatchSize,
+                totalBatches: Math.ceil(totalRows / optimalBatchSize),
+                currentBatch: 1,
+                originalData: jsonData,
+                filename: filename
+            };
+            
+            const modelName = provider === 'ollama' ? 
+                localStorage.getItem('ollama_selected_model') || 'Unknown Model' : 
+                provider.charAt(0).toUpperCase() + provider.slice(1);
+            
+            showAlert(`Excel file has ${totalRows} questions. Processing in ${this.batchInfo.totalBatches} batches of ${optimalBatchSize} questions each with ${modelName} for better accuracy.`, 'info');
+            
+            // Process first batch
+            return this.convertExcelToStructuredText(jsonData, filename, 0, optimalBatchSize);
+        }
+        
+        // Create batch-specific data with consistent header handling
+        let batchData = jsonData;
+        if (batchSize !== null) {
+            const hasHeaders = jsonData[0] && jsonData[0].some(cell => 
+                cell && typeof cell === 'string' && 
+                (cell.toLowerCase().includes('question') || cell.toLowerCase().includes('pregunta'))
+            );
+            
+            const headerRows = hasHeaders ? 1 : 0;
+            const startRow = headerRows + batchStart;
+            const endRow = Math.min(startRow + batchSize, jsonData.length);
+            
+            // ALWAYS include original headers for consistent format detection
+            // This ensures all batches see the same header structure
+            batchData = hasHeaders ? 
+                [jsonData[0], ...jsonData.slice(startRow, endRow)] :
+                jsonData.slice(startRow, endRow);
+                
+            logger.debug(`📦 Batch data: headers=${hasHeaders}, startRow=${startRow}, endRow=${endRow}, batchData.length=${batchData.length}`);
+        }
+        
+        // Use enhanced format detection
+        const structuredText = this.formatExcelDataWithDetection(batchData, filename, batchStart, batchSize);
+        
+        logger.debug('🗂️ Converted Excel batch to structured text:', structuredText.length, 'characters');
+        
+        // Store the detected question count for auto-filling (only on first batch)
+        if (batchStart === 0) {
+            this.detectedQuestionCount = totalRows;
+        }
+        
+        return structuredText;
+    }
+
+    detectExcelFormat(jsonData) {
+        if (!jsonData || jsonData.length < 2) {
+            return { questionCol: 0, answerCols: [1, 2, 3, 4], hasHeaders: false };
+        }
+        
+        const headerRow = jsonData[0];
+        const dataRow = jsonData[1];
+        
+        // Check if first row looks like headers
+        const hasHeaders = headerRow && headerRow.some(cell => 
+            cell && typeof cell === 'string' && 
+            (cell.toLowerCase().includes('question') || 
+             cell.toLowerCase().includes('pregunta') ||
+             cell.toLowerCase().includes('answer') ||
+             cell.toLowerCase().includes('respuesta') ||
+             cell.toLowerCase().includes('option') ||
+             cell.toLowerCase().includes('opción') ||
+             cell.toLowerCase().includes('correct') ||
+             cell.toLowerCase().includes('correcto'))
+        );
+        
+        let questionCol = 0;
+        let answerCols = [];
+        let correctAnswerCol = -1;
+        
+        if (hasHeaders) {
+            // Try to identify columns by headers
+            headerRow.forEach((header, index) => {
+                if (!header) return;
+                
+                const headerLower = header.toString().toLowerCase();
+                
+                // Question column
+                if (headerLower.includes('question') || headerLower.includes('pregunta')) {
+                    questionCol = index;
+                }
+                // Answer/option columns
+                else if (headerLower.includes('answer') || headerLower.includes('respuesta') ||
+                         headerLower.includes('option') || headerLower.includes('opción')) {
+                    answerCols.push(index);
+                }
+                // Correct answer column
+                else if (headerLower.includes('correct') || headerLower.includes('correcto')) {
+                    correctAnswerCol = index;
+                }
+            });
+            
+            // If we didn't find specific answer columns, assume they follow the question
+            if (answerCols.length === 0) {
+                for (let i = questionCol + 1; i < headerRow.length && i < questionCol + 5; i++) {
+                    if (headerRow[i] && headerRow[i].toString().trim()) {
+                        answerCols.push(i);
+                    }
+                }
+            }
+        } else {
+            // No headers - use default assumption but try to be smarter
+            // Look at the data to infer structure
+            if (dataRow) {
+                // Find the column with the longest text (likely the question)
+                let longestTextCol = 0;
+                let longestLength = 0;
+                
+                dataRow.forEach((cell, index) => {
+                    if (cell && cell.toString().length > longestLength) {
+                        longestLength = cell.toString().length;
+                        longestTextCol = index;
+                    }
+                });
+                
+                questionCol = longestTextCol;
+                
+                // Assume next 4 columns are answers
+                for (let i = 0; i < dataRow.length; i++) {
+                    if (i !== questionCol && dataRow[i] && dataRow[i].toString().trim()) {
+                        answerCols.push(i);
+                    }
+                }
+            }
+        }
+        
+        // Ensure we have some answer columns
+        if (answerCols.length === 0) {
+            // Default fallback
+            answerCols = [1, 2, 3, 4].filter(col => col < (headerRow?.length || 5));
+        }
+        
+        logger.debug('🔍 Excel format detected:', {
+            hasHeaders,
+            questionCol,
+            answerCols,
+            correctAnswerCol
+        });
+        
+        // Debug: Show what columns we think contain what
+        logger.debug('🔍 Column interpretation:', {
+            questionColumn: `Column ${String.fromCharCode(65 + questionCol)}`,
+            answerColumns: answerCols.map(col => `Column ${String.fromCharCode(65 + col)}`),
+            correctAnswerColumn: correctAnswerCol !== -1 ? `Column ${String.fromCharCode(65 + correctAnswerCol)}` : 'Not detected'
+        });
+        
+        return {
+            hasHeaders,
+            questionCol,
+            answerCols,
+            correctAnswerCol
+        };
+    }
+
+    formatExcelDataWithDetection(jsonData, filename, batchStart = 0, batchSize = null) {
+        const format = this.detectExcelFormat(jsonData);
+        const totalRows = jsonData.length - (format.hasHeaders ? 1 : 0);
+        
+        let structuredText = `# Quiz Questions from Excel File: ${filename}\n\n`;
+        structuredText += `IMPORTANT: These are existing questions from an Excel file. Convert them exactly as written.\n\n`;
+        
+        // Add batch information if applicable
+        if (this.batchInfo && batchSize !== null) {
+            const batchEnd = Math.min(batchStart + batchSize, this.batchInfo.totalQuestions);
+            structuredText += `BATCH PROCESSING: Questions ${batchStart + 1} to ${batchEnd} (Batch ${this.batchInfo.currentBatch} of ${this.batchInfo.totalBatches})\n\n`;
+        }
+        
+        if (format.hasHeaders) {
+            const headerRow = jsonData[0];
+            structuredText += `Detected Format:\n`;
+            structuredText += `- Question Column: ${headerRow[format.questionCol] || 'Column ' + String.fromCharCode(65 + format.questionCol)}\n`;
+            structuredText += `- Answer Columns: ${format.answerCols.map(col => headerRow[col] || 'Column ' + String.fromCharCode(65 + col)).join(', ')}\n\n`;
+        } else {
+            structuredText += `Detected Format: Question in Column ${String.fromCharCode(65 + format.questionCol)}, Answers in Columns ${format.answerCols.map(col => String.fromCharCode(65 + col)).join(', ')}\n\n`;
+        }
+        
+        structuredText += `EXCEL QUESTIONS TO CONVERT:\n\n`;
+        
+        // Process data rows
+        const startRow = format.hasHeaders ? 1 : 0;
+        let questionNumber = batchStart + 1; // Continue numbering from batch start
+        
+        for (let i = startRow; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            
+            // Skip completely empty rows
+            if (!row || row.length === 0 || row.every(cell => !cell || cell.toString().trim() === '')) {
+                continue;
+            }
+            
+            structuredText += `Question ${questionNumber}:\n`;
+            
+            // Question text
+            if (row[format.questionCol]) {
+                structuredText += `  Question: ${row[format.questionCol].toString().trim()}\n`;
+            }
+            
+            // Handle your specific Excel format: A=Question, B=Correct, C/D/E=Wrong
+            const allAnswers = [];
+            const correctAnswerText = row[1] ? row[1].toString().trim() : ''; // Column B
+            const wrongAnswers = [];
+            
+            // Collect wrong answers from columns C, D, E (indices 2, 3, 4)
+            for (let i = 2; i <= 4; i++) {
+                if (row[i] && row[i].toString().trim()) {
+                    wrongAnswers.push(row[i].toString().trim());
+                }
+            }
+            
+            // Arrange answers: Correct answer first, then wrong answers
+            if (correctAnswerText) {
+                allAnswers.push(correctAnswerText);
+                wrongAnswers.forEach(wrong => allAnswers.push(wrong));
+                
+                // Output all options with correct answer first
+                allAnswers.forEach((answer, index) => {
+                    structuredText += `  Option ${index + 1}: ${answer}\n`;
+                });
+                
+                // Correct answer is always first (index 0)
+                const correctAnswerIndex = 0;
+                structuredText += `  CORRECT_ANSWER_INDEX: ${correctAnswerIndex}\n`;
+                logger.debug(`📝 Question ${questionNumber}: Column B="${correctAnswerText}" placed at index ${correctAnswerIndex}, all answers=[${allAnswers.join(', ')}]`);
+            } else {
+                // Fallback if no correct answer found
+                structuredText += `  ERROR: No correct answer found in Column B\n`;
+                logger.error(`📝 Question ${questionNumber}: No correct answer found in Column B`);
+            }
+            
+            structuredText += `\n`;
+            questionNumber++;
+        }
+        
+        structuredText += `\nINSTRUCTIONS FOR AI:\n`;
+        structuredText += `- Convert these existing questions to JSON format\n`;
+        structuredText += `- Copy ALL text EXACTLY as written - do not change any words\n`;
+        structuredText += `- Use CORRECT_ANSWER_INDEX number provided for each question\n`;
+        structuredText += `- Do NOT translate or modify the language\n`;
+        
+        return structuredText;
     }
 
     async processGeneratedQuestions(questions, showAlerts = true) {

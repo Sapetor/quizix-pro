@@ -735,18 +735,27 @@ export class QuizManager {
             }
             
             // Handle remove button visibility - show only when multiple questions exist
-            const removeButton = questionItem.querySelector('.remove-question');
-            if (removeButton) {
-                const shouldShow = hasMultipleQuestions ? 'block' : 'none';
-                
-                logger.debug(`Question ${index + 1}: removeButton found, setting display to "${shouldShow}"`);
-                
-                // Always set the display style, don't check if it's different
-                removeButton.style.display = shouldShow;
-                logger.debug(`Question ${index + 1}: Set removeButton display to "${shouldShow}"`);
-            } else {
-                logger.warn(`Question ${index + 1}: removeButton NOT found!`);
+            let removeButton = questionItem.querySelector('.remove-question');
+            
+            // If remove button doesn't exist, create it
+            if (!removeButton) {
+                removeButton = document.createElement('button');
+                removeButton.className = 'btn secondary remove-question';
+                removeButton.onclick = () => {
+                    questionItem.remove();
+                    this.updateRemoveButtonVisibility();
+                    this.updateQuestionNumbering();
+                };
+                removeButton.setAttribute('data-translate', 'remove');
+                removeButton.textContent = 'Remove';
+                questionItem.appendChild(removeButton);
+                logger.debug(`Question ${index + 1}: Created missing remove button`);
             }
+            
+            const shouldShow = hasMultipleQuestions ? 'block' : 'none';
+            removeButton.style.display = shouldShow;
+            logger.debug(`Question ${index + 1}: Set removeButton display to "${shouldShow}"`);
+            
         });
         
         logger.debug(`Updated questions UI for ${questionItems.length} questions`);
@@ -1360,8 +1369,10 @@ export class QuizManager {
             logger.debug('🔧 AddGeneratedQuestion - Using existing empty question');
             targetElement = firstQuestion;
             
-            // Populate immediately since no new DOM element was created
+            // Use same processing as addQuestionFromData for consistency
+            this.cleanTranslationKeysInElement(targetElement);
             this.populateQuestionElement(targetElement, questionData);
+            translationManager.translateContainer(targetElement);
         } else {
             // Add a new question
             logger.debug('🔧 AddGeneratedQuestion - Creating new question element');
@@ -1375,7 +1386,10 @@ export class QuizManager {
                     
                     if (targetElement) {
                         logger.debug('🔧 AddGeneratedQuestion - New element created, populating data');
+                        // Use same processing as addQuestionFromData for consistency
+                        this.cleanTranslationKeysInElement(targetElement);
                         this.populateQuestionElement(targetElement, questionData);
+                        translationManager.translateContainer(targetElement);
                     } else {
                         logger.error('🔧 AddGeneratedQuestion - Failed to find new question element');
                     }

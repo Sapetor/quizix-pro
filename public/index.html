@@ -99,6 +99,8 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
             onerror="console.warn('MathJax CDN failed, app will function without LaTeX rendering')"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- SheetJS for Excel file processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Chart.js for results analytics visualizations - Fixed for ES6 compatibility -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <!-- Highlight.js for One Dark Pro syntax highlighting -->
@@ -1157,8 +1159,8 @@
                     
                     <div class="file-upload-section">
                         <label for="content-file" data-translate="or_upload_file">Or upload a file:</label>
-                        <input type="file" id="content-file" accept=".txt,.pdf,.docx,.md" class="input-field">
-                        <small data-translate="supported_formats">Supported formats: TXT, PDF, DOCX, Markdown</small>
+                        <input type="file" id="content-file" accept=".txt,.pdf,.docx,.md,.xlsx,.xls" class="input-field">
+                        <small data-translate="supported_formats">Supported formats: TXT, PDF, DOCX, Markdown, Excel</small>
                     </div>
                 </div>
                 
