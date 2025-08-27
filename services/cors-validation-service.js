@@ -70,18 +70,13 @@ class CORSValidationService {
      * @returns {boolean} - Whether the origin is allowed
      */
     isOriginAllowed(origin) {
-        logger.info(`CORS DEBUG: Validating origin: ${origin}`);
-        logger.info(`CORS DEBUG: Environment - isDevelopment: ${this.isDevelopment}, isProduction: ${this.isProduction}`);
-        
         // Allow requests with no origin (same-origin, mobile apps, etc.)
         if (!origin) {
-            logger.info(`CORS DEBUG: Allowed - no origin (same-origin)`);
             return true;
         }
 
         // Check against explicitly allowed origins
         if (this.allowedOrigins.has(origin)) {
-            logger.info(`CORS DEBUG: Allowed - in explicit allowed origins`);
             return true;
         }
 
@@ -89,22 +84,16 @@ class CORSValidationService {
         if (this.isProduction) {
             const localCheck = this.isLocalNetworkOrigin(origin);
             const cloudCheck = this.isCloudPlatformOrigin(origin);
-            const result = localCheck || cloudCheck;
-            logger.info(`CORS DEBUG: Production mode - local: ${localCheck}, cloud: ${cloudCheck}, final: ${result}`);
-            return result;
+            return localCheck || cloudCheck;
         }
 
         // Development mode: be more permissive with local networks only
         if (this.isDevelopment) {
-            const result = this.isLocalNetworkOrigin(origin);
-            logger.info(`CORS DEBUG: Development mode - local network check: ${result}`);
-            return result;
+            return this.isLocalNetworkOrigin(origin);
         }
 
         // Default fallback: only local networks
-        const result = this.isLocalNetworkOrigin(origin);
-        logger.info(`CORS DEBUG: Default mode - local network check: ${result}`);
-        return result;
+        return this.isLocalNetworkOrigin(origin);
     }
 
     /**
@@ -149,27 +138,18 @@ class CORSValidationService {
         try {
             const url = new URL(origin);
             
-            logger.info(`CORS DEBUG: Checking cloud platform for origin: ${origin}`);
-            logger.info(`CORS DEBUG: Protocol: ${url.protocol}, Host: ${url.host}`);
-            
             // Must be HTTPS for cloud platforms (security requirement)
             if (url.protocol !== 'https:') {
-                logger.info(`CORS DEBUG: Rejected - not HTTPS: ${url.protocol}`);
                 return false;
             }
 
             // Check against cloud platform patterns
-            for (let i = 0; i < this.cloudPlatformPatterns.length; i++) {
-                const pattern = this.cloudPlatformPatterns[i];
-                const matches = pattern.test(origin);
-                logger.info(`CORS DEBUG: Pattern ${i} (${pattern.toString()}): ${matches ? 'MATCH' : 'no match'}`);
-                if (matches) {
-                    logger.info(`CORS: Allowed cloud platform origin: ${origin}`);
+            for (const pattern of this.cloudPlatformPatterns) {
+                if (pattern.test(origin)) {
                     return true;
                 }
             }
 
-            logger.info(`CORS DEBUG: No cloud platform pattern matched for: ${origin}`);
             return false;
         } catch (error) {
             logger.error('CORS: Invalid cloud platform origin URL:', origin, error.message);

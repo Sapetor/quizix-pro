@@ -20,8 +20,7 @@
     "node-fetch": "^3.3.2",
     "qrcode": "^1.5.4",
     "socket.io": "^4.7.2",
-    "uuid": "^9.0.0",
-    "xlsx": "^0.18.5"
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.17",

@@ -97,8 +97,8 @@ git push origin modular-architecture  # Triggers Railway deploy
 
 ## Security
 
-- Designed for local network use
+- Designed for local network and cloud deployment
 - AES-GCM encryption for API keys
-- CORS configured for local network access
+- CORS configured for local network and cloud platform access
 - Image upload restrictions with size limits
 - I usually have the server running. Let me know that you want to restart it and I will do it, otherwise just let me check, unless I tell you to do it yourself.
