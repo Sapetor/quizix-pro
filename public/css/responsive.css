@@ -3,6 +3,21 @@
  * Safe extraction - conditional rules that only apply at specific screen sizes
  */
 
+/* ============================================
+   DESKTOP/MOBILE INTERFACE SEPARATION
+   ============================================ */
+
+/* Mobile-only elements - hidden by default, shown only on mobile devices */
+.mobile-only {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-only {
+        display: block !important;
+    }
+}
+
 /* Large Desktop Optimizations (1400px+) */
 @media (min-width: 1400px) {
     .container {
@@ -17,10 +32,6 @@
 /* Tablet Portrait and Small Desktop (1024px and below) */
 @media (max-width: 1024px) {
     .left-toolbar {
-        display: none !important;
-    }
-    
-    .desktop-only {
         display: none !important;
     }
     
@@ -53,12 +64,311 @@
 
 /* Mobile and Small Tablet (768px and below) */
 @media (max-width: 768px) {
+    /* Hide desktop header controls on mobile */
+    .language-selector,
+    .font-size-control,
+    #fullscreen-toggle,
+    #theme-toggle {
+        display: none !important;
+    }
+    
+    /* Clean mobile header design */
+    header {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        border-bottom: none !important;
+        box-shadow: none !important;
+        padding: 20px 0 10px 0;
+    }
+    
+    /* Hide desktop title on mobile */
+    .desktop-title {
+        display: none !important;
+    }
+    
+    /* Mobile title with welcome text */
+    .mobile-title {
+        text-align: center;
+        margin: 0;
+    }
+    
+    .mobile-title .welcome-text {
+        display: block;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        font-weight: 400;
+        margin-bottom: 2px;
+        letter-spacing: 0.3px;
+    }
+    
+    .mobile-title h1 {
+        font-size: 1.8rem !important;
+        font-weight: 600;
+        margin: 0;
+        color: var(--text-primary);
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        letter-spacing: 0.5px;
+    }
+    
+    /* Mobile Header Layout */
+    .mobile-title {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        padding: 12px 16px !important;
+    }
+    
+    .mobile-title-content {
+        flex: 1;
+        text-align: center;
+    }
+    
+    .mobile-header-controls {
+        display: flex !important;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+    }
+    
+    /* Compact Mobile Header Controls */
+    .mobile-header .language-selector {
+        position: relative;
+    }
+    
+    .mobile-header .language-dropdown {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 8px !important;
+        padding: 4px 8px !important;
+        font-size: 0.8em !important;
+        min-width: auto !important;
+        display: flex !important;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .mobile-header .language-dropdown-selected {
+        flex-direction: row !important;
+        gap: 4px !important;
+        padding: 0 !important;
+    }
+    
+    .mobile-header .language-flag {
+        font-size: 1.2em !important;
+    }
+    
+    .mobile-header .language-name {
+        font-size: 0.75em !important;
+        display: none; /* Hide text, show only flag */
+    }
+    
+    .mobile-header .language-dropdown-arrow {
+        font-size: 0.7em !important;
+        margin-left: 2px;
+    }
+    
+    .mobile-header.mobile-control-btn {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 8px !important;
+        padding: 6px 8px !important;
+        color: var(--text-secondary);
+        font-size: 0.8em !important;
+        display: flex !important;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+    
+    .mobile-header.mobile-control-btn:hover {
+        background: rgba(255, 255, 255, 0.15) !important;
+    }
+    
+    .mobile-header .control-icon {
+        font-size: 1.2em !important;
+    }
+    
+    .mobile-header .control-label {
+        font-size: 0.7em !important;
+        display: none; /* Hide text, show only icon */
+    }
+    
+    /* Hide connection status on mobile */
+    .header-controls {
+        display: none !important;
+    }
+    
+    /* Style mobile secondary controls as Airbnb-style bottom navigation */
+    .secondary-controls {
+        position: fixed !important;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--bg-primary);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 12px 20px 20px 20px; /* Extra bottom padding for safe area */
+        z-index: 1000;
+        box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Dark theme support for bottom navigation */
+    [data-theme="dark"] .secondary-controls {
+        background: rgba(30, 41, 59, 0.95) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Airbnb-style horizontal layout for bottom controls */
+    .secondary-controls .control-group {
+        display: flex !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        max-width: 400px;
+        margin: 0 auto;
+        gap: 60px; /* Increase gap for better spacing */
+        padding: 0 20px;
+    }
+    
+    /* Style language selector for bottom nav */
+    .language-selector.mobile-lang {
+        background: none !important;
+        border: none !important;
+        padding: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        cursor: pointer;
+    }
+    
+    .language-selector.mobile-lang .language-dropdown {
+        background: transparent !important;
+        border: none !important;
+        padding: 8px 12px !important;
+        font-size: 0.75em !important;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        min-width: auto !important;
+    }
+    
+    .language-selector.mobile-lang .language-dropdown-selected {
+        flex-direction: column !important;
+        gap: 4px !important;
+        padding: 0 !important;
+        background: none !important;
+        border: none !important;
+    }
+    
+    .language-selector.mobile-lang .language-flag {
+        font-size: 1.5em !important;
+    }
+    
+    .language-selector.mobile-lang .language-name {
+        font-size: 0.75em !important;
+        color: var(--text-secondary) !important;
+        font-weight: 500;
+    }
+    
+    .language-selector.mobile-lang .language-dropdown-arrow {
+        display: none !important;
+    }
+    
+    /* Style theme toggle for bottom nav */
+    .mobile-control-btn {
+        background: none !important;
+        border: none !important;
+        padding: 8px 12px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 4px !important;
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition: color 0.2s ease;
+    }
+    
+    .mobile-control-btn:hover {
+        color: var(--text-primary);
+    }
+    
+    .mobile-control-btn .control-icon {
+        font-size: 1.5em !important;
+    }
+    
+    .mobile-control-btn .control-label {
+        font-size: 0.75em !important;
+        font-weight: 500;
+        color: inherit;
+    }
+    
     /* Container and Layout */
     .container {
-        padding: 12px;
+        padding: 12px 12px 90px 12px; /* Increase bottom padding for lifted buttons */
         display: flex;
         flex-direction: column;
         overflow-x: hidden;
+    }
+    
+    /* Adjust main menu to fit content without scrolling */
+    #main-menu {
+        min-height: calc(100vh - 120px) !important; /* Adjust for reduced carousel height */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    
+    /* Ensure mobile-only content is compact */
+    .mobile-only {
+        flex: 1;
+        display: flex !important;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    /* Compact carousel styling */
+    .quick-start-carousel {
+        padding: 15px 20px 10px 20px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    /* Reduce carousel track height */
+    .carousel-track {
+        min-height: auto !important;
+    }
+    
+    .carousel-container {
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    /* Remove carousel frames entirely on mobile for cleaner look */
+    .slide-visual {
+        display: none !important;
+    }
+    
+    /* Hide original slide icon completely */
+    .slide-icon {
+        display: none !important;
+    }
+    
+    /* Lift Host/Join buttons higher above bottom navigation */
+    .primary-actions {
+        padding: 20px 20px 20px 20px !important;
+        gap: 15px !important;
+        margin-bottom: 35px !important; /* Increase space above bottom navigation */
+        position: relative;
+        z-index: 100;
+    }
+    
+    .large-action-btn {
+        padding: 16px 28px !important; /* Slightly larger for better touch */
+        font-size: 1.1em !important;
+        min-height: 50px !important;
+        font-weight: 600;
     }
     
     /* Quiz editor padding for mobile - reduced but maintain left space for checkboxes */
@@ -523,5 +833,398 @@
     .tf-option:active,
     .btn:active {
         transform: none;
+    }
+}
+
+/* ============================================
+   AIRBNB-STYLE MOBILE MENU ENHANCEMENTS
+   ============================================ */
+
+/* Hide old menu options on mobile only - Keep desktop intact */
+@media (max-width: 768px) {
+    /* Hide original menu options structure on mobile */
+    #main-menu .menu-options {
+        display: none;
+    }
+    
+    #main-menu .user-manual {
+        display: none;
+    }
+    
+    /* Hide desktop header controls on mobile */
+    .desktop-only {
+        display: none !important;
+    }
+}
+
+/* Desktop title visibility */
+@media (min-width: 769px) {
+    .desktop-title {
+        display: block !important;
+    }
+    
+    .mobile-title {
+        display: none !important;
+    }
+}
+
+/* ============================================
+   SWIPEABLE CAROUSEL (AIRBNB-STYLE)
+   ============================================ */
+
+.quick-start-carousel {
+    padding: 20px;
+    margin-bottom: auto; /* Push bottom controls to bottom */
+}
+
+.quick-start-carousel h3 {
+    text-align: center;
+    margin-bottom: 24px;
+    color: var(--text-primary);
+    font-size: 1.4em;
+    font-weight: 600;
+}
+
+.carousel-container {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.carousel-track {
+    display: flex;
+    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+    will-change: transform;
+}
+
+.carousel-slide {
+    min-width: 100%;
+    padding: 0 12px;
+    box-sizing: border-box;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.carousel-slide.active {
+    opacity: 1;
+}
+
+/* Slide Visual (like Airbnb's image frame) */
+.slide-visual {
+    position: relative;
+    height: 220px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, 
+        rgba(var(--accent-primary-rgb), 0.1) 0%, 
+        rgba(var(--accent-secondary-rgb), 0.05) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.slide-icon {
+    font-size: 4em;
+    z-index: 2;
+    position: relative;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Background patterns for different slides */
+.slide-bg-pattern {
+    position: absolute;
+    inset: 0;
+    opacity: 0.1;
+    z-index: 1;
+}
+
+.host-pattern {
+    background: radial-gradient(circle at 30% 70%, #4f46e5 0%, transparent 50%),
+                radial-gradient(circle at 70% 30%, #06b6d4 0%, transparent 50%);
+}
+
+.join-pattern {
+    background: radial-gradient(circle at 70% 70%, #10b981 0%, transparent 50%),
+                radial-gradient(circle at 30% 30%, #f59e0b 0%, transparent 50%);
+}
+
+.features-pattern {
+    background: radial-gradient(circle at 50% 50%, #8b5cf6 0%, transparent 50%),
+                radial-gradient(circle at 20% 80%, #ef4444 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, #06b6d4 0%, transparent 50%);
+}
+
+/* Slide Content */
+.slide-content {
+    text-align: left;
+}
+
+.slide-content h4 {
+    font-size: 1.3em;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.slide-steps {
+    padding-left: 20px;
+    margin: 0;
+}
+
+.slide-steps li {
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    font-size: 0.95em;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Carousel Dots (like Airbnb) */
+.carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.carousel-dot.active {
+    background: var(--accent-primary);
+    transform: scale(1.2);
+}
+
+.carousel-dot:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   MOBILE BOTTOM CONTROLS (AIRBNB-STYLE)
+   ============================================ */
+
+.mobile-bottom-controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-primary);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    z-index: 100;
+}
+
+/* Main Action Buttons */
+.main-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.large-action-btn {
+    flex: 1;
+    padding: 16px 24px;
+    font-size: 1.1em;
+    font-weight: 600;
+    border-radius: 12px;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Secondary Controls */
+.secondary-controls {
+    display: flex;
+    justify-content: center;
+}
+
+.control-group {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+/* Mobile Language Selector */
+.language-selector.mobile-lang {
+    position: relative;
+}
+
+.language-selector.mobile-lang .language-dropdown {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 8px 12px;
+    min-width: 140px;
+    font-size: 0.9em;
+}
+
+.language-selector.mobile-lang .language-dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(12px);
+    /* Hide dropdown by default */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px) scale(0.95);
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 2000;
+}
+
+/* Show mobile dropdown when open */
+.language-selector.mobile-lang .language-dropdown.open .language-dropdown-options {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+/* Mobile Control Button */
+.mobile-control-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mobile-control-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.mobile-control-btn .control-icon {
+    font-size: 1.2em;
+}
+
+.mobile-control-btn .control-label {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+}
+
+/* ============================================
+   TOUCH AND SWIPE INTERACTIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+    .carousel-container {
+        overflow: hidden;
+        touch-action: pan-y;
+    }
+    
+    .carousel-track {
+        cursor: grab;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+    
+    .carousel-track:active {
+        cursor: grabbing;
+    }
+    
+    /* Smooth scrolling for mobile */
+    .carousel-track {
+        scroll-snap-type: x mandatory;
+    }
+    
+    .carousel-slide {
+        scroll-snap-align: center;
+    }
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+/* Small mobile phones */
+@media (max-width: 375px) {
+    .slide-visual {
+        height: 180px;
+    }
+    
+    .slide-icon {
+        font-size: 3em;
+    }
+    
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .main-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .control-group {
+        flex-direction: column;
+        gap: 12px;
+    }
+}
+
+/* Large mobile phones */
+@media (min-width: 769px) and (max-width: 1024px) {
+    /* Show desktop controls on tablets */
+    .desktop-only {
+        display: block !important;
+    }
+    
+    /* Hide mobile bottom controls on tablets */
+    .mobile-bottom-controls {
+        display: none;
+    }
+    
+    /* Show original menu structure on tablets */
+    #main-menu .menu-options,
+    #main-menu .user-manual {
+        display: block;
+    }
+    
+    /* Hide carousel on tablets */
+    .quick-start-carousel {
+        display: none;
     }
 }

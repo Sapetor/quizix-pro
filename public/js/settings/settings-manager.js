@@ -71,26 +71,51 @@ export class SettingsManager {
      */
     applyTheme(theme) {
         const body = document.body;
-        const themeToggle = document.getElementById('theme-toggle');
+        
+        // Get all theme toggle buttons (desktop, mobile header, mobile bottom)
+        const themeToggleButtons = [
+            document.getElementById('theme-toggle'),
+            document.getElementById('theme-toggle-mobile-header'),
+            document.getElementById('theme-toggle-mobile'), // fallback if still exists
+            document.getElementById('mobile-theme-toggle')  // fallback if still exists
+        ].filter(button => button !== null); // Remove null elements
         
         if (theme === 'dark') {
             body.classList.add('dark-theme');
             body.classList.remove('light-theme');
             body.setAttribute('data-theme', 'dark');
             document.documentElement.setAttribute('data-theme', 'dark');
-            if (themeToggle) {
-                themeToggle.textContent = '🌙'; // Moon represents dark mode
+            
+            // Update all theme toggle buttons with universal symbol
+            themeToggleButtons.forEach(themeToggle => {
+                // Update icon span if it exists (for mobile header controls)
+                const iconSpan = themeToggle.querySelector('.control-icon');
+                if (iconSpan) {
+                    iconSpan.textContent = '🌗'; // Universal theme toggle symbol
+                } else {
+                    // Update button text/icon directly
+                    themeToggle.textContent = '🌗'; // Universal theme toggle symbol
+                }
                 themeToggle.title = getThemeToggleTitles().switchToLight;
-            }
+            });
         } else {
             body.classList.add('light-theme');
             body.classList.remove('dark-theme');
             body.setAttribute('data-theme', 'light');
             document.documentElement.setAttribute('data-theme', 'light');
-            if (themeToggle) {
-                themeToggle.textContent = '☀️'; // Sun represents light mode
+            
+            // Update all theme toggle buttons with universal symbol
+            themeToggleButtons.forEach(themeToggle => {
+                // Update icon span if it exists (for mobile header controls)
+                const iconSpan = themeToggle.querySelector('.control-icon');
+                if (iconSpan) {
+                    iconSpan.textContent = '🌗'; // Universal theme toggle symbol
+                } else {
+                    // Update button text/icon directly
+                    themeToggle.textContent = '🌗'; // Universal theme toggle symbol
+                }
                 themeToggle.title = getThemeToggleTitles().switchToDark;
-            }
+            });
         }
         
         this.settings.theme = theme;
@@ -334,17 +359,29 @@ export class SettingsManager {
      * Update settings UI elements
      */
     updateSettingsUI() {
-        // Update theme toggle
-        const themeToggle = document.getElementById('theme-toggle');
-        if (themeToggle) {
+        // Update all theme toggle buttons (desktop and mobile)
+        const themeToggleButtons = [
+            document.getElementById('theme-toggle'),
+            document.getElementById('theme-toggle-mobile-header'),
+            document.getElementById('theme-toggle-mobile'),
+            document.getElementById('mobile-theme-toggle')
+        ].filter(button => button !== null);
+        
+        themeToggleButtons.forEach(themeToggle => {
+            // Use a single universal theme toggle symbol
+            const iconSpan = themeToggle.querySelector('.control-icon');
+            if (iconSpan) {
+                iconSpan.textContent = '🌗'; // Half moon symbol represents both themes
+            } else {
+                themeToggle.textContent = '🌗';
+            }
+            // Update title based on current theme
             if (this.settings.theme === 'dark') {
-                themeToggle.textContent = '🌙'; // Moon represents dark mode
                 themeToggle.title = getThemeToggleTitles().switchToLight;
             } else {
-                themeToggle.textContent = '☀️'; // Sun represents light mode
                 themeToggle.title = getThemeToggleTitles().switchToDark;
             }
-        }
+        });
         
         // Update sound toggle
         const soundToggle = document.getElementById('sound-toggle');

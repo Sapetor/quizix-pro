@@ -65,6 +65,13 @@ header {
     transition: var(--transition-smooth);
 }
 
+/* Prevent wrapping on desktop - keep controls horizontal */
+@media (min-width: 769px) {
+    .header-controls {
+        flex-wrap: nowrap;
+    }
+}
+
 /* Host Container Layout System */
 .host-container {
     width: 100%;

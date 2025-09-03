@@ -13,6 +13,7 @@ import { browserOptimizer } from './utils/browser-optimizer.js'; // Browser-spec
 import { contentDensityManager } from './utils/content-density-manager.js'; // Smart content spacing and sizing
 import { mobileLayoutManager } from './utils/mobile-layout-manager.js'; // Smart mobile layout for different content types
 import './utils/mobile-enhancements.js'; // Mobile UX enhancements and touch interactions
+import './utils/mobile-carousel.js'; // Airbnb-style mobile carousel for main menu
 
 /**
  * Update language dropdown display to show the currently selected language

@@ -1,5 +1,6 @@
 export default {
         app_title: "Quizix Pro",
+        welcome_to: "Bienvenido a",
         host_game: "Crear Juego",
         join_game: "Unirse al Juego",
         start_game: "Iniciar Juego",
@@ -27,6 +28,7 @@ export default {
         browse_games: "Examinar Juegos Disponibles",
         refresh: "Actualizar",
         back_to_join: "Volver a Unirse",
+        return_to_main: "Volver al Menú Principal",
         game_pin: "PIN del Juego",
         share_game: "Compartir Juego",
         players_joined: "Jugadores Unidos",

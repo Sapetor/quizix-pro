@@ -221,9 +221,21 @@ export class QuizGame {
             }
         });
         safeAddEventListener('join-btn', 'click', () => this.uiManager.showScreen('join-screen'));
+        
+        // Mobile button handlers (same functionality as desktop)
+        safeAddEventListener('host-btn-mobile', 'click', () => {
+            this.uiManager.showScreen('host-screen');
+            // Show horizontal toolbar when entering host mode
+            const horizontalToolbar = document.getElementById('horizontal-toolbar');
+            if (horizontalToolbar) {
+                horizontalToolbar.style.display = 'flex';
+            }
+        });
+        safeAddEventListener('join-btn-mobile', 'click', () => this.uiManager.showScreen('join-screen'));
         safeAddEventListener('browse-games', 'click', () => this.uiManager.showGameBrowser());
         safeAddEventListener('refresh-games', 'click', () => this.uiManager.refreshActiveGames());
         safeAddEventListener('back-to-join', 'click', () => this.uiManager.showScreen('join-screen'));
+        safeAddEventListener('return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
 
         // Language selection
         document.querySelectorAll('[data-lang]').forEach(btn => {

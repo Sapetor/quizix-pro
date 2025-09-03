@@ -16,16 +16,58 @@
 import { translationManager } from './translation-manager.js';
 import { logger, LIMITS, TIMING, UI, ANIMATION } from '../core/config.js';
 
+/**
+ * Update welcome text with proper translation
+ * This ensures the mobile header welcome text is always in sync with the selected language
+ */
+function updateWelcomeText(langCode) {
+    const welcomeElement = document.querySelector('.welcome-text[data-translate="welcome_to"]');
+    if (welcomeElement) {
+        const translations = {
+            'en': 'Welcome to',
+            'es': 'Bienvenido a', 
+            'fr': 'Bienvenue à',
+            'de': 'Willkommen bei',
+            'it': 'Benvenuto a',
+            'pt': 'Bem-vindo ao',
+            'pl': 'Witamy w',
+            'ja': 'にようこそ',
+            'zh': '欢迎来到'
+        };
+        
+        const newText = translations[langCode] || translations['en'];
+        welcomeElement.textContent = newText;
+        logger.debug(`📱 Updated mobile welcome text to: ${newText} (${langCode})`);
+    }
+}
+
 // Global functions that need to be accessible from HTML
 
 // Language dropdown functions
 export function toggleLanguageDropdown() {
+    // For mobile, use the mobile-specific dropdown (now in header)
+    if (window.innerWidth <= 768) {
+        const mobileHeaderDropdown = document.getElementById('mobile-language-selector-header');
+        if (mobileHeaderDropdown) {
+            mobileHeaderDropdown.classList.toggle('open');
+            return;
+        }
+        
+        // Fallback to old mobile dropdown if header one doesn't exist
+        const mobileDropdown = document.getElementById('mobile-language-selector');
+        if (mobileDropdown) {
+            mobileDropdown.classList.toggle('open');
+            return;
+        }
+    }
+    
+    // For desktop, use the desktop dropdown
     const dropdown = document.getElementById('language-selector');
     if (dropdown) {
         const isOpening = !dropdown.classList.contains('open');
         dropdown.classList.toggle('open');
         
-        // Handle mobile positioning for fixed dropdown
+        // Handle mobile positioning for fixed dropdown (legacy fallback)
         if (isOpening && window.innerWidth <= 768) {
             positionMobileDropdown(dropdown);
         }
@@ -148,29 +190,44 @@ export async function selectLanguage(langCode, event) {
     
     logger.debug(`🌐 Switching language to: ${langCode}`);
     
-    // Close dropdown and restore to original position
-    const dropdown = document.getElementById('language-selector');
-    if (dropdown) {
-        dropdown.classList.remove('open');
-        restoreDropdownToOriginalPosition(dropdown);
+    // Close dropdowns and restore to original position
+    const desktopDropdown = document.getElementById('language-selector');
+    const mobileDropdown = document.getElementById('mobile-language-selector');
+    const mobileHeaderDropdown = document.getElementById('mobile-language-selector-header');
+    
+    if (desktopDropdown) {
+        desktopDropdown.classList.remove('open');
+        restoreDropdownToOriginalPosition(desktopDropdown);
     }
     
-    // Update selected language display
-    const selectedFlag = dropdown.querySelector('.language-dropdown-selected .language-flag');
-    const selectedName = dropdown.querySelector('.language-dropdown-selected .language-name');
-    const selectedOption = dropdown.querySelector(`[data-value="${langCode}"]`);
-    
-    if (selectedFlag && selectedName && selectedOption) {
-        selectedFlag.textContent = selectedOption.querySelector('.language-flag').textContent;
-        selectedName.textContent = selectedOption.querySelector('.language-name').textContent;
-        selectedName.setAttribute('data-translate', selectedOption.querySelector('.language-name').getAttribute('data-translate'));
+    if (mobileDropdown) {
+        mobileDropdown.classList.remove('open');
     }
     
-    // Update selected state
-    dropdown.querySelectorAll('.language-option').forEach(option => {
-        option.classList.remove('selected');
+    if (mobileHeaderDropdown) {
+        mobileHeaderDropdown.classList.remove('open');
+    }
+    
+    // Update all language selectors (desktop, mobile bottom, mobile header)
+    [desktopDropdown, mobileDropdown, mobileHeaderDropdown].forEach(dropdown => {
+        if (!dropdown) return;
+        
+        const selectedFlag = dropdown.querySelector('.language-dropdown-selected .language-flag');
+        const selectedName = dropdown.querySelector('.language-dropdown-selected .language-name');
+        const selectedOption = dropdown.querySelector(`[data-value="${langCode}"]`);
+        
+        if (selectedFlag && selectedName && selectedOption) {
+            selectedFlag.textContent = selectedOption.querySelector('.language-flag').textContent;
+            selectedName.textContent = selectedOption.querySelector('.language-name').textContent;
+            selectedName.setAttribute('data-translate', selectedOption.querySelector('.language-name').getAttribute('data-translate'));
+        }
+        
+        // Update selected state
+        dropdown.querySelectorAll('.language-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        if (selectedOption) selectedOption.classList.add('selected');
     });
-    selectedOption.classList.add('selected');
     
     try {
         // Use the setLanguage method which handles change + UI update
@@ -179,6 +236,9 @@ export async function selectLanguage(langCode, event) {
         if (success) {
             logger.debug(`✅ Language changed successfully to: ${langCode}`);
             logger.debug(`🔄 UI updated for language: ${langCode}`);
+            
+            // Manual fix for welcome text that might not be updated by translation system
+            updateWelcomeText(langCode);
         } else {
             logger.error(`❌ Failed to change language to: ${langCode}`);
         }
@@ -499,22 +559,63 @@ export function setGlobalFontSize(scale) {
 
 export function toggleTheme() {
     logger.debug('Global theme toggle function called');
-    if (window.game && window.game.toggleTheme) {
+    
+    // First try to use app's settings manager
+    if (window.app && window.app.settingsManager && typeof window.app.settingsManager.toggleTheme === 'function') {
+        logger.debug('Using app.settingsManager.toggleTheme');
+        window.app.settingsManager.toggleTheme();
+    } else if (window.game && window.game.toggleTheme) {
+        logger.debug('Using game.toggleTheme');
         window.game.toggleTheme();
     } else {
         // Fallback theme toggle implementation
         logger.debug('Using fallback theme toggle');
         const body = document.body;
-        const themeToggle = document.getElementById('theme-toggle');
         
         const currentTheme = body.getAttribute('data-theme') || 'light';
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         
+        // Apply theme classes properly
+        if (newTheme === 'dark') {
+            body.classList.add('dark-theme');
+            body.classList.remove('light-theme');
+        } else {
+            body.classList.add('light-theme');
+            body.classList.remove('dark-theme');
+        }
+        
         body.setAttribute('data-theme', newTheme);
         document.documentElement.setAttribute('data-theme', newTheme);
-        if (themeToggle) {
-            themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️'; // Moon for dark, sun for light
-        }
+        
+        // Update all theme toggle buttons with correct icon logic
+        const themeToggleButtons = [
+            document.getElementById('theme-toggle'),
+            document.getElementById('theme-toggle-mobile-header'),
+            document.getElementById('theme-toggle-mobile'),
+            document.getElementById('mobile-theme-toggle')
+        ].filter(button => button !== null);
+        
+        themeToggleButtons.forEach(themeToggle => {
+            if (themeToggle) {
+                const iconSpan = themeToggle.querySelector('.control-icon');
+                if (newTheme === 'dark') {
+                    // In dark mode, show sun (indicates "switch to light")
+                    if (iconSpan) {
+                        iconSpan.textContent = '☀️';
+                    } else {
+                        themeToggle.textContent = '☀️';
+                    }
+                } else {
+                    // In light mode, show moon (indicates "switch to dark")
+                    if (iconSpan) {
+                        iconSpan.textContent = '🌙';
+                    } else {
+                        themeToggle.textContent = '🌙';
+                    }
+                }
+            }
+        });
+        
         localStorage.setItem('theme', newTheme);
         logger.debug('Theme switched to:', newTheme);
     }

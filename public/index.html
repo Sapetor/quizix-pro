@@ -131,7 +131,7 @@
                 const fontIcon = document.getElementById('font-size-icon');
                 
                 if (themeToggle) {
-                    themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+                    themeToggle.textContent = '🌗'; // Universal theme toggle symbol
                 }
                 
                 if (fontIcon) {
@@ -334,9 +334,77 @@
 <body>
     <div class="container">
         <header>
-            <h1 data-translate="app_title">Quizix Pro</h1>
+            <!-- Desktop Title -->
+            <h1 class="desktop-title" data-translate="app_title">Quizix Pro</h1>
+            
+            <!-- Mobile Title with Welcome -->
+            <div class="mobile-title mobile-only">
+                <div class="mobile-title-content">
+                    <span class="welcome-text" data-translate="welcome_to">Welcome to</span>
+                    <h1 data-translate="app_title">Quizix Pro</h1>
+                </div>
+                
+                <!-- Mobile Controls in Header -->
+                <div class="mobile-header-controls">
+                    <!-- Language Selector -->
+                    <div class="language-selector mobile-lang mobile-header">
+                        <div id="mobile-language-selector-header" class="language-dropdown mobile" data-onclick="toggleLanguageDropdown">
+                            <div class="language-dropdown-selected">
+                                <span class="language-flag">🇪🇸</span>
+                                <span class="language-name" data-translate="language_es">Español</span>
+                            </div>
+                            <div class="language-dropdown-arrow">▼</div>
+                            <div class="language-dropdown-options" id="mobile-language-options-header">
+                                <div class="language-option" data-value="es" onclick="selectLanguage('es', event)">
+                                    <span class="language-flag">🇪🇸</span>
+                                    <span class="language-name" data-translate="language_es">Español</span>
+                                </div>
+                                <div class="language-option" data-value="en" onclick="selectLanguage('en', event)">
+                                    <span class="language-flag">🇺🇸</span>
+                                    <span class="language-name" data-translate="language_en">English</span>
+                                </div>
+                                <div class="language-option" data-value="fr" onclick="selectLanguage('fr', event)">
+                                    <span class="language-flag">🇫🇷</span>
+                                    <span class="language-name" data-translate="language_fr">Français</span>
+                                </div>
+                                <div class="language-option" data-value="de" onclick="selectLanguage('de', event)">
+                                    <span class="language-flag">🇩🇪</span>
+                                    <span class="language-name" data-translate="language_de">Deutsch</span>
+                                </div>
+                                <div class="language-option" data-value="it" onclick="selectLanguage('it', event)">
+                                    <span class="language-flag">🇮🇹</span>
+                                    <span class="language-name" data-translate="language_it">Italiano</span>
+                                </div>
+                                <div class="language-option" data-value="pt" onclick="selectLanguage('pt', event)">
+                                    <span class="language-flag">🇵🇹</span>
+                                    <span class="language-name" data-translate="language_pt">Português</span>
+                                </div>
+                                <div class="language-option" data-value="pl" onclick="selectLanguage('pl', event)">
+                                    <span class="language-flag">🇵🇱</span>
+                                    <span class="language-name" data-translate="language_pl">Polski</span>
+                                </div>
+                                <div class="language-option" data-value="ja" onclick="selectLanguage('ja', event)">
+                                    <span class="language-flag">🇯🇵</span>
+                                    <span class="language-name" data-translate="language_ja">日本語</span>
+                                </div>
+                                <div class="language-option" data-value="zh" onclick="selectLanguage('zh', event)">
+                                    <span class="language-flag">🇨🇳</span>
+                                    <span class="language-name" data-translate="language_zh">中文</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle-mobile-header" class="mobile-control-btn mobile-header" onclick="toggleTheme()" data-title-translate="toggle_dark_mode_tooltip">
+                        <span class="control-icon">🌗</span>
+                        <span class="control-label" data-translate="theme">theme</span>
+                    </button>
+                </div>
+            </div>
             
             <div class="header-controls">
+                <!-- Desktop Language Selector (hidden on mobile) -->
                 <div class="language-selector">
                     <div id="language-selector" class="language-dropdown" data-onclick="toggleLanguageDropdown">
                         <div class="language-dropdown-selected">
@@ -428,7 +496,8 @@
                     </div>
                 </div>
                 
-                <!-- Global Font Size Control -->
+                <!-- Desktop Theme and Controls (hidden on mobile) -->
+                <!-- Global Font Size Control (hidden on mobile) -->
                 <div class="font-size-control">
                     <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size_tooltip" onclick="toggleGlobalFontSize();">
                         <span id="font-size-icon">A</span>
@@ -441,12 +510,14 @@
         </header>
 
         <div id="main-menu" class="screen active">
-            <div class="menu-options">
+            <!-- Original Desktop Menu Options (hidden on mobile) -->
+            <div class="menu-options desktop-menu">
                 <button id="host-btn" class="btn primary" data-translate="host_game">Host a Game</button>
                 <button id="join-btn" class="btn secondary" data-translate="join_game">Join Game</button>
             </div>
             
-            <div class="user-manual">
+            <!-- Original Desktop User Manual (hidden on mobile) -->
+            <div class="user-manual desktop-menu">
                 <h3 data-translate="quick_start_guide">📚 Quick Start Guide</h3>
                 
                 <div class="manual-sections">
@@ -481,6 +552,84 @@
                             <span class="feature-item">📝 <span data-translate="feature_types">Multiple question types</span></span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Mobile-Only Swipeable Quick Start Guide (Airbnb-style) -->
+            <div class="quick-start-carousel mobile-only">
+                <h3 data-translate="quick_start_guide">📚 Quick Start Guide</h3>
+                
+                <div class="carousel-container">
+                    <div class="carousel-track">
+                        <!-- Slide 1: Join a Game (now first) -->
+                        <div class="carousel-slide active" data-slide="0">
+                            <div class="slide-visual">
+                                <div class="slide-icon">🎮</div>
+                                <div class="slide-bg-pattern join-pattern"></div>
+                            </div>
+                            <div class="slide-content">
+                                <h4 data-translate="join_steps_title">To Join a Quiz:</h4>
+                                <ol class="slide-steps">
+                                    <li data-translate="join_step_1">Click 'Join Game'</li>
+                                    <li data-translate="join_step_2">Enter the 6-digit Game PIN or scan QR code</li>
+                                    <li data-translate="join_step_3">Enter your name and join game</li>
+                                    <li data-translate="join_step_4">Or browse and select from open lobbies</li>
+                                </ol>
+                            </div>
+                        </div>
+                        
+                        <!-- Slide 2: Host a Game (now second) -->
+                        <div class="carousel-slide" data-slide="1">
+                            <div class="slide-visual">
+                                <div class="slide-icon">🎯</div>
+                                <div class="slide-bg-pattern host-pattern"></div>
+                            </div>
+                            <div class="slide-content">
+                                <h4 data-translate="host_steps_title">To Host a Quiz:</h4>
+                                <ol class="slide-steps">
+                                    <li data-translate="host_step_1">Click 'Host a Game'</li>
+                                    <li data-translate="host_step_2">Create questions or use AI Generator</li>
+                                    <li data-translate="host_step_3">Share the Game PIN with players</li>
+                                    <li data-translate="host_step_4">Start the game when ready</li>
+                                </ol>
+                            </div>
+                        </div>
+                        
+                        <!-- Slide 3: Key Features -->
+                        <div class="carousel-slide" data-slide="2">
+                            <div class="slide-visual">
+                                <div class="slide-icon">✨</div>
+                                <div class="slide-bg-pattern features-pattern"></div>
+                            </div>
+                            <div class="slide-content">
+                                <h4 data-translate="features_title">Key Features:</h4>
+                                <div class="features-grid">
+                                    <span class="feature-item">🤖 <span data-translate="feature_ai">AI question generation</span></span>
+                                    <span class="feature-item">⚡ <span data-translate="feature_realtime">Real-time multiplayer</span></span>
+                                    <span class="feature-item">📐 <span data-translate="feature_math">LaTeX math support</span></span>
+                                    <span class="feature-item">🖼️ <span data-translate="feature_images">Image questions</span></span>
+                                    <span class="feature-item">🌍 <span data-translate="feature_multilang">Multi-language support</span></span>
+                                    <span class="feature-item">📝 <span data-translate="feature_types">Multiple question types</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Carousel dots (like Airbnb) -->
+                    <div class="carousel-dots">
+                        <button class="carousel-dot active" data-slide="0" aria-label="Go to slide 1"></button>
+                        <button class="carousel-dot" data-slide="1" aria-label="Go to slide 2"></button>
+                        <button class="carousel-dot" data-slide="2" aria-label="Go to slide 3"></button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mobile-Only Bottom Controls Section (Airbnb-style) -->
+            <div class="mobile-bottom-controls mobile-only">
+                <!-- Main Action Buttons -->
+                <div class="main-actions">
+                    <button id="host-btn-mobile" class="btn primary large-action-btn" data-translate="host_game">Host a Game</button>
+                    <button id="join-btn-mobile" class="btn secondary large-action-btn" data-translate="join_game">Join Game</button>
                 </div>
             </div>
         </div>
@@ -937,6 +1086,10 @@
                 </div>
                 
                 <button id="browse-games" class="btn secondary">🔍 <span data-translate="browse_games">Browse Available Games</span></button>
+                
+                <div class="join-actions">
+                    <button id="return-to-main" class="btn secondary return-btn">🏠 <span data-translate="return_to_main">Return to Main Menu</span></button>
+                </div>
             </div>
         </div>
         
