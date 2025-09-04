@@ -165,7 +165,7 @@ export default {
         your_answer: "Sua resposta",
         
         // User Manual
-        quick_start_guide: "📚 Guia de Início Rápido",
+        quick_start_guide: "Guia de Início Rápido",
         host_steps_title: "🎯 Para Criar um Quiz:",
         host_step_1: "Clique em 'Criar Jogo'",
         host_step_2: "Crie perguntas ou use o Gerador IA",
@@ -176,7 +176,7 @@ export default {
         join_step_2: "Digite o PIN de 6 dígitos ou escaneie o código QR",
         join_step_3: "Digite seu nome e entre no jogo",
         join_step_4: "Ou navegue e selecione lobbies abertos",
-        features_title: "✨ Recursos Principais:",
+        features_title: "Recursos Principais:",
         feature_ai: "Geração de perguntas por IA",
         feature_realtime: "Multijogador em tempo real",
         feature_math: "Suporte a matemática LaTeX",

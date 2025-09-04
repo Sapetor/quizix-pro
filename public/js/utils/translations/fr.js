@@ -176,7 +176,7 @@ export default {
         your_answer: "Votre réponse",
         
         // User Manual
-        quick_start_guide: "📚 Guide de Démarrage Rapide",
+        quick_start_guide: "Guide de Démarrage Rapide",
         host_steps_title: "🎯 Pour Créer un Quiz :",
         host_step_1: "Cliquez sur 'Créer un Jeu'",
         host_step_2: "Créez des questions ou utilisez le Générateur IA",
@@ -187,7 +187,7 @@ export default {
         join_step_2: "Entrez le Code PIN à 6 chiffres ou scannez le code QR",
         join_step_3: "Entrez votre nom et rejoignez le jeu",
         join_step_4: "Ou parcourez et sélectionnez des lobbies ouverts",
-        features_title: "✨ Fonctionnalités Principales :",
+        features_title: "Fonctionnalités Principales :",
         feature_ai: "Génération de questions par IA",
         feature_realtime: "Multijoueur en temps réel",
         feature_math: "Support des mathématiques LaTeX",

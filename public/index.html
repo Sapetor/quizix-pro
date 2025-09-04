@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     
     <!-- Preload critical CSS -->
-    <link rel="preload" href="css/main.css?v=10.8" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="css/main.css?v=10.8"></noscript>
+    <link rel="preload" href="css/main.css?v=11.2" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="css/main.css?v=11.2"></noscript>
     
     <!-- Preload critical JavaScript -->
     <link rel="preload" href="js/main.js" as="script" crossorigin="anonymous">
@@ -346,6 +346,12 @@
                 
                 <!-- Mobile Controls in Header -->
                 <div class="mobile-header-controls">
+                    <!-- Return to Main Button (only visible when not on main menu) -->
+                    <button id="mobile-return-to-main" class="mobile-control-btn mobile-header return-to-main-btn mobile-only" onclick="returnToMainFromHeader()" data-title-translate="return_to_main" style="display: none;">
+                        <span class="control-icon">🏠</span>
+                        <span class="control-label" data-translate="return_to_main">Return to Main Menu</span>
+                    </button>
+                    
                     <!-- Language Selector -->
                     <div class="language-selector mobile-lang mobile-header">
                         <div id="mobile-language-selector-header" class="language-dropdown mobile" data-onclick="toggleLanguageDropdown">
@@ -853,6 +859,11 @@
             <!-- Floating Back to Top Button -->
             <button id="back-to-top-float" class="back-to-top-float" onclick="scrollToTop()" style="display: none;">
                 ⬆️
+            </button>
+            
+            <!-- Mobile Quiz Management FAB -->
+            <button id="mobile-quiz-fab" class="mobile-quiz-fab" onclick="showMobileQuizSheet()" aria-label="Quiz Actions">
+                ⚙️
             </button>
             
         </div>
@@ -1473,6 +1484,82 @@
                 <span id="modal-feedback-text"></span>
             </div>
             <div class="score-display" id="modal-score-display"></div>
+        </div>
+    </div>
+
+    <!-- Mobile Quiz Actions Bottom Sheet -->
+    <div id="mobile-quiz-sheet-overlay" class="mobile-quiz-sheet-overlay" onclick="hideMobileQuizSheet()">
+        <div id="mobile-quiz-sheet" class="mobile-quiz-sheet" onclick="event.stopPropagation()">
+            <div class="mobile-quiz-sheet-header">
+                <div class="mobile-quiz-sheet-handle" onclick="hideMobileQuizSheet()"></div>
+                <h3 class="mobile-quiz-sheet-title" data-translate="quiz_actions">Quiz Actions</h3>
+                <button class="mobile-quiz-sheet-close" onclick="hideMobileQuizSheet()">×</button>
+            </div>
+            
+            <div class="mobile-quiz-sheet-content">
+                <!-- Primary Actions -->
+                <div class="mobile-quiz-primary-actions">
+                    <button class="mobile-quiz-action-btn primary" onclick="handleMobileLoadQuiz()">
+                        <div class="mobile-quiz-action-icon">📂</div>
+                        <div class="mobile-quiz-action-label" data-translate="load_quiz">Load Quiz</div>
+                        <div class="mobile-quiz-action-subtitle" data-translate="open_saved_quiz">Open saved quiz</div>
+                    </button>
+                    
+                    <button class="mobile-quiz-action-btn primary" onclick="handleMobileStartGame()">
+                        <div class="mobile-quiz-action-icon">🎯</div>
+                        <div class="mobile-quiz-action-label" data-translate="start_game">Start Game</div>
+                        <div class="mobile-quiz-action-subtitle" data-translate="begin_hosting">Begin hosting</div>
+                    </button>
+                    
+                    <button class="mobile-quiz-action-btn" onclick="handleMobileSaveQuiz()">
+                        <div class="mobile-quiz-action-icon">💾</div>
+                        <div class="mobile-quiz-action-label" data-translate="save_quiz">Save Quiz</div>
+                        <div class="mobile-quiz-action-subtitle" data-translate="save_progress">Save progress</div>
+                    </button>
+                    
+                    <button class="mobile-quiz-action-btn" onclick="handleMobilePreview()">
+                        <div class="mobile-quiz-action-icon">👁️</div>
+                        <div class="mobile-quiz-action-label" data-translate="preview">Preview</div>
+                        <div class="mobile-quiz-action-subtitle" data-translate="test_questions">Test questions</div>
+                    </button>
+                </div>
+                
+                <!-- Secondary Actions -->
+                <div class="mobile-quiz-secondary-actions">
+                    <div class="mobile-quiz-secondary-title" data-translate="more_options">More Options</div>
+                    <div class="mobile-quiz-secondary-grid">
+                        <button class="mobile-quiz-secondary-btn" onclick="handleMobileAI()">
+                            <div class="mobile-quiz-secondary-icon">🤖</div>
+                            <div class="mobile-quiz-secondary-label" data-translate="ai_generator">AI Generator</div>
+                        </button>
+                        
+                        <button class="mobile-quiz-secondary-btn" onclick="handleMobileImport()">
+                            <div class="mobile-quiz-secondary-icon">📥</div>
+                            <div class="mobile-quiz-secondary-label" data-translate="import">Import</div>
+                        </button>
+                        
+                        <button class="mobile-quiz-secondary-btn" onclick="handleMobileExport()">
+                            <div class="mobile-quiz-secondary-icon">📤</div>
+                            <div class="mobile-quiz-secondary-label" data-translate="export">Export</div>
+                        </button>
+                        
+                        <button class="mobile-quiz-secondary-btn" onclick="handleMobileResults()">
+                            <div class="mobile-quiz-secondary-icon">📊</div>
+                            <div class="mobile-quiz-secondary-label" data-translate="results">Results</div>
+                        </button>
+                        
+                        <button class="mobile-quiz-secondary-btn" onclick="scrollToTop()">
+                            <div class="mobile-quiz-secondary-icon">⬆️</div>
+                            <div class="mobile-quiz-secondary-label" data-translate="scroll_to_top">To Top</div>
+                        </button>
+                        
+                        <button class="mobile-quiz-secondary-btn" onclick="scrollToBottom()">
+                            <div class="mobile-quiz-secondary-icon">⬇️</div>
+                            <div class="mobile-quiz-secondary-label" data-translate="to_bottom">To Bottom</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

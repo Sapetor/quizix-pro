@@ -236,6 +236,7 @@ export class QuizGame {
         safeAddEventListener('refresh-games', 'click', () => this.uiManager.refreshActiveGames());
         safeAddEventListener('back-to-join', 'click', () => this.uiManager.showScreen('join-screen'));
         safeAddEventListener('return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
+        safeAddEventListener('mobile-return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
 
         // Language selection
         document.querySelectorAll('[data-lang]').forEach(btn => {

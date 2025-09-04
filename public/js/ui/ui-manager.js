@@ -8,7 +8,7 @@ import { TIMING, logger } from '../core/config.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 import { uiStateManager } from '../utils/ui-state-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
-import { initializeAutoHideToolbar, disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/globals.js';
+import { initializeAutoHideToolbar, disableAutoHideToolbar, isAutoHideToolbarActive, updateMobileReturnButtonVisibility } from '../utils/globals.js';
 
 export class UIManager {
     constructor() {
@@ -30,6 +30,9 @@ export class UIManager {
             targetScreen.classList.add('active');
             this.currentScreen = screenId;
             logger.debug('Successfully switched to screen:', screenId);
+            
+            // Update mobile return button visibility
+            updateMobileReturnButtonVisibility(screenId);
             
             // Container layout handled automatically
             

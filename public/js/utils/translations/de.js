@@ -166,7 +166,7 @@ export default {
         your_answer: "Ihre Antwort",
         
         // User Manual
-        quick_start_guide: "📚 Schnellstart-Anleitung",
+        quick_start_guide: "Schnellstart-Anleitung",
         host_steps_title: "🎯 Um ein Quiz zu erstellen:",
         host_step_1: "Klicken Sie auf 'Spiel erstellen'",
         host_step_2: "Erstellen Sie Fragen oder nutzen Sie den KI-Generator",
@@ -177,7 +177,7 @@ export default {
         join_step_2: "Geben Sie die 6-stellige PIN ein oder scannen Sie den QR-Code",
         join_step_3: "Geben Sie Ihren Namen ein und treten Sie bei",
         join_step_4: "Oder durchsuchen Sie offene Lobbys",
-        features_title: "✨ Hauptfunktionen:",
+        features_title: "Hauptfunktionen:",
         feature_ai: "KI-Fragenerstellung",
         feature_realtime: "Echtzeit-Mehrspieler",
         feature_math: "LaTeX-Mathematik-Unterstützung",

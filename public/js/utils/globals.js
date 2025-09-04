@@ -985,6 +985,38 @@ window.QM = function(functionName, ...args) {
 // Expose the function registry for debugging
 window.QM.functions = globalFunctions;
 
+/**
+ * Return to main menu from mobile header
+ * This function is called from HTML onclick in mobile header
+ */
+export function returnToMainFromHeader() {
+    logger.debug('📱 Mobile header: Return to main menu clicked');
+    if (window.game && window.game.uiManager) {
+        window.game.uiManager.showScreen('main-menu');
+    } else {
+        // Fallback: direct navigation
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(screen => screen.style.display = 'none');
+        const mainMenu = document.getElementById('main-menu');
+        if (mainMenu) {
+            mainMenu.style.display = 'block';
+        }
+    }
+}
+
+/**
+ * Update mobile header return button visibility
+ * Shows button on all screens except main menu
+ */
+export function updateMobileReturnButtonVisibility(currentScreen) {
+    const returnButton = document.getElementById('mobile-return-to-main');
+    if (returnButton) {
+        const shouldShow = currentScreen !== 'main-menu' && currentScreen !== '';
+        returnButton.style.display = shouldShow ? 'flex' : 'none';
+        logger.debug(`📱 Mobile return button: ${shouldShow ? 'shown' : 'hidden'} for screen: ${currentScreen}`);
+    }
+}
+
 // REQUIRED GLOBAL ASSIGNMENTS: Essential functions with specific usage patterns
 // These assignments are required and SHOULD NOT be removed without careful analysis
 
@@ -999,6 +1031,7 @@ window.scrollToCurrentQuestion = scrollToCurrentQuestion; // HTML onclick
 window.selectLanguage = selectLanguage;                   // HTML onclick
 window.updateQuestionType = updateQuestionType;           // HTML onchange
 window.updateTimeLimit = updateTimeLimit;                 // HTML onchange
+window.returnToMainFromHeader = returnToMainFromHeader;   // HTML onclick
 
 // === Cross-module communication (REQUIRED) ===
 // These functions are accessed by other JS modules and need global availability

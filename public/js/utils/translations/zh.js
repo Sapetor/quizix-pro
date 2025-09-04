@@ -159,7 +159,7 @@ export default {
         your_answer: "你的答案",
         
         // User Manual
-        quick_start_guide: "📚 快速入门指南",
+        quick_start_guide: "快速入门指南",
         host_steps_title: "🎯 创建测验：",
         host_step_1: "点击'创建游戏'",
         host_step_2: "创建问题或使用AI生成器",
@@ -170,7 +170,7 @@ export default {
         join_step_2: "输入6位PIN码或扫描二维码",
         join_step_3: "输入您的姓名并加入游戏",
         join_step_4: "或浏览并选择开放大厅",
-        features_title: "✨ 主要功能：",
+        features_title: "主要功能：",
         feature_ai: "AI问题生成",
         feature_realtime: "实时多人游戏",
         feature_math: "LaTeX数学支持",

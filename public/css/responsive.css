@@ -16,6 +16,11 @@
     .mobile-only {
         display: block !important;
     }
+    
+    /* Hide desktop menu on mobile */
+    .desktop-menu {
+        display: none !important;
+    }
 }
 
 /* Large Desktop Optimizations (1400px+) */
@@ -78,7 +83,7 @@
         backdrop-filter: none !important;
         border-bottom: none !important;
         box-shadow: none !important;
-        padding: 20px 0 10px 0;
+        padding: 12px 0 6px 0; /* Reduced from 20px 0 10px 0 */
     }
     
     /* Hide desktop title on mobile */
@@ -94,20 +99,21 @@
     
     .mobile-title .welcome-text {
         display: block;
-        font-size: 0.9rem;
+        font-size: 0.8rem; /* Reduced from 0.9rem */
         color: var(--text-secondary);
         font-weight: 400;
-        margin-bottom: 2px;
+        margin-bottom: 1px; /* Reduced from 2px */
         letter-spacing: 0.3px;
     }
     
     .mobile-title h1 {
-        font-size: 1.8rem !important;
+        font-size: 1.6rem !important; /* Reduced from 1.8rem */
         font-weight: 600;
         margin: 0;
         color: var(--text-primary);
         text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         letter-spacing: 0.5px;
+        line-height: 1.1; /* Tighter line height */
     }
     
     /* Mobile Header Layout */
@@ -116,7 +122,7 @@
         justify-content: space-between !important;
         align-items: center !important;
         width: 100% !important;
-        padding: 12px 16px !important;
+        padding: 8px 16px !important; /* Reduced from 12px */
     }
     
     .mobile-title-content {
@@ -127,7 +133,7 @@
     .mobile-header-controls {
         display: flex !important;
         align-items: center;
-        gap: 12px;
+        gap: 16px; /* Increase gap for better visual spacing */
         flex-shrink: 0;
     }
     
@@ -137,25 +143,35 @@
     }
     
     .mobile-header .language-dropdown {
-        background: rgba(255, 255, 255, 0.1) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 8px !important;
-        padding: 4px 8px !important;
+        background: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 6px 8px !important;
         font-size: 0.8em !important;
         min-width: auto !important;
         display: flex !important;
         align-items: center;
-        gap: 4px;
+        justify-content: center;
+        gap: 0;
+        color: var(--text-secondary);
+        transition: color 0.2s ease;
+    }
+    
+    .mobile-header .language-dropdown:hover {
+        color: var(--text-primary);
     }
     
     .mobile-header .language-dropdown-selected {
         flex-direction: row !important;
-        gap: 4px !important;
+        gap: 0 !important;
         padding: 0 !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .mobile-header .language-flag {
-        font-size: 1.2em !important;
+        font-size: 1.4em !important; /* Match house icon size */
     }
     
     .mobile-header .language-name {
@@ -166,24 +182,27 @@
     .mobile-header .language-dropdown-arrow {
         font-size: 0.7em !important;
         margin-left: 2px;
+        display: none; /* Hide arrow, show only flag */
     }
     
     .mobile-header.mobile-control-btn {
-        background: rgba(255, 255, 255, 0.1) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 8px !important;
+        background: none !important;
+        border: none !important;
+        border-radius: 0 !important;
         padding: 6px 8px !important;
         color: var(--text-secondary);
         font-size: 0.8em !important;
         display: flex !important;
         align-items: center;
+        justify-content: center;
         gap: 4px;
         cursor: pointer;
-        transition: background 0.2s ease;
+        transition: color 0.2s ease;
     }
     
     .mobile-header.mobile-control-btn:hover {
-        background: rgba(255, 255, 255, 0.15) !important;
+        background: none !important;
+        color: var(--text-primary) !important;
     }
     
     .mobile-header .control-icon {
@@ -315,7 +334,7 @@
     
     /* Adjust main menu to fit content without scrolling */
     #main-menu {
-        min-height: calc(100vh - 120px) !important; /* Adjust for reduced carousel height */
+        min-height: calc(100vh - 80px) !important; /* Further reduced from 120px to account for compressed header and carousel */
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -331,8 +350,8 @@
     
     /* Compact carousel styling */
     .quick-start-carousel {
-        padding: 15px 20px 10px 20px !important;
-        margin-bottom: 10px !important;
+        padding: 6px 20px 4px 20px !important; /* Further reduced from 8px 20px 6px 20px */
+        margin-bottom: 4px !important; /* Reduced from 6px */
     }
     
     /* Reduce carousel track height */
@@ -357,23 +376,93 @@
     
     /* Lift Host/Join buttons higher above bottom navigation */
     .primary-actions {
-        padding: 20px 20px 20px 20px !important;
-        gap: 15px !important;
-        margin-bottom: 35px !important; /* Increase space above bottom navigation */
+        padding: 16px 20px 16px 20px !important; /* Reduced top/bottom from 20px to 16px */
+        gap: 12px !important; /* Reduced from 15px */
+        margin-bottom: 20px !important; /* Further reduced from 30px */
         position: relative;
         z-index: 100;
     }
     
     .large-action-btn {
-        padding: 16px 28px !important; /* Slightly larger for better touch */
-        font-size: 1.1em !important;
-        min-height: 50px !important;
+        padding: 12px 24px !important; /* Reduced from 16px 28px for compact design */
+        font-size: 1.05em !important; /* Slightly reduced from 1.1em */
+        min-height: 44px !important; /* Reduced from 50px */
         font-weight: 600;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
     /* Quiz editor padding for mobile - reduced but maintain left space for checkboxes */
     .quiz-editor-section {
-        padding: 20px 15px 20px 35px; /* Optimized for mobile touch */
+        padding: 16px 12px 16px 30px !important; /* More compact */
+    }
+    
+    /* Phase 1: Optimize field sizes for mobile quiz editor */
+    .quiz-editor-section input,
+    .quiz-editor-section textarea,
+    .quiz-editor-section select {
+        padding: 12px 14px !important; /* Reduced from 16px */
+        font-size: 0.95rem !important; /* Reduced for better density */
+        min-height: 44px; /* Touch-friendly but compact */
+        border-radius: 8px; /* Slightly smaller border radius */
+    }
+    
+    .quiz-editor-section textarea {
+        padding: 10px 14px !important; /* Even more compact for text areas */
+        line-height: 1.4; /* Tighter line spacing */
+        min-height: 80px; /* Smaller minimum height */
+    }
+    
+    /* Phase 2: Improve typography scale */
+    .quiz-editor-section label {
+        font-size: 0.9rem !important;
+        font-weight: 500;
+        margin-bottom: 6px !important; /* Reduced spacing */
+    }
+    
+    .quiz-editor-section h2,
+    .quiz-editor-section h3 {
+        font-size: 1.3rem !important; /* More proportional */
+        margin: 1rem 0 0.75rem 0 !important;
+    }
+    
+    /* Phase 4: Optimize button sizing */
+    .quiz-editor-section .btn {
+        padding: 10px 16px !important;
+        font-size: 0.9rem !important;
+        min-height: 40px !important; /* Touch-friendly but compact */
+        border-radius: 6px;
+    }
+    
+    .quiz-editor-section .btn.small {
+        padding: 8px 12px !important;
+        font-size: 0.85rem !important;
+        min-height: 36px;
+    }
+    
+    /* Phase 5: Mobile-specific spacing */
+    .quiz-editor-section .form-group {
+        margin-bottom: 16px !important; /* Reduced from default */
+    }
+    
+    .quiz-editor-section .form-row {
+        gap: 12px !important;
+    }
+    
+    /* Optimize question sections spacing */
+    .quiz-editor-section .question-item {
+        margin-bottom: 20px !important;
+        padding: 16px 12px !important;
+    }
+    
+    /* Compact option inputs */
+    .quiz-editor-section .options-container {
+        gap: 12px !important;
+    }
+    
+    .quiz-editor-section .options-container .option-input {
+        margin-bottom: 8px !important;
     }
     
     /* Ensure language dropdown is visible on mobile */
@@ -382,15 +471,45 @@
         overflow: visible; /* Ensure dropdown is not clipped */
     }
     
-    /* Fix join-container overflow that clips language dropdown on mobile */
+    /* Mobile-optimized join container - compact layout */
     .join-container {
         overflow: visible; /* Allow language dropdown to escape container */
+        padding: 25px 20px; /* Reduced from 40px 30px */
+        margin-top: 20px; /* Add some top margin for better centering */
     }
     
     /* Compensate for join-container overflow change on mobile */
     .join-container::before {
         border-radius: var(--border-radius-large); /* Maintain rounded appearance */
         overflow: hidden; /* Keep glass effect contained */
+    }
+    
+    /* Compact join screen elements for mobile */
+    .join-container h2 {
+        font-size: 2rem !important; /* Reduced from 2.5rem */
+        margin-bottom: 1.5rem !important; /* Reduced from 2rem */
+    }
+    
+    .join-container input {
+        margin-bottom: 1rem !important; /* Reduced from 1.5rem */
+        padding: 14px 20px !important; /* Reduced from 18px 24px */
+        font-size: 1rem !important; /* Reduced from 1.1rem */
+    }
+    
+    .join-container .btn.primary {
+        padding: 12px 24px !important; /* Reduced from 16px 32px */
+        margin: 0.5rem 0 1.5rem 0 !important; /* Reduced from 1rem 0 2rem 0 */
+        font-size: 1.1rem !important; /* Reduced from 1.2rem */
+    }
+    
+    .join-divider {
+        margin: 1.5rem 0 !important; /* Reduced from 2rem 0 */
+    }
+    
+    .join-container .btn.secondary {
+        padding: 12px 20px !important; /* Reduced from 14px 28px */
+        font-size: 1rem !important; /* Reduced from 1.1rem */
+        margin-bottom: 0.5rem; /* Add some margin between buttons */
     }
     
     /* Ensure header doesn't clip language dropdown on mobile */
@@ -545,9 +664,36 @@
         padding: 8px;
     }
     
-    /* Extra small mobile dropdown fixes */
+    /* Extra small mobile dropdown fixes and ultra-compact layout */
     .join-container {
         overflow: visible; /* Ensure dropdown visibility on very small screens */
+        padding: 20px 15px !important; /* Even more compact on tiny screens */
+        margin-top: 10px !important; /* Minimal top margin */
+    }
+    
+    /* Ultra-compact styling for very small screens */
+    .join-container h2 {
+        font-size: 1.8rem !important; /* Even smaller title */
+        margin-bottom: 1rem !important; /* Minimal spacing */
+    }
+    
+    .join-container input {
+        margin-bottom: 0.8rem !important; /* Tighter spacing */
+        padding: 12px 16px !important; /* More compact inputs */
+    }
+    
+    .join-container .btn.primary {
+        padding: 10px 20px !important; /* Compact primary button */
+        margin: 0.3rem 0 1rem 0 !important; /* Tighter margins */
+    }
+    
+    .join-divider {
+        margin: 1rem 0 !important; /* Minimal divider spacing */
+    }
+    
+    .join-container .btn.secondary {
+        padding: 10px 16px !important; /* Compact secondary buttons */
+        margin-bottom: 0.3rem !important; /* Minimal spacing between buttons */
     }
     
     .header-controls .language-selector {
@@ -873,15 +1019,15 @@
    ============================================ */
 
 .quick-start-carousel {
-    padding: 20px;
+    padding: 8px; /* Further reduced from 12px for mobile */
     margin-bottom: auto; /* Push bottom controls to bottom */
 }
 
 .quick-start-carousel h3 {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 12px; /* Further reduced from 16px */
     color: var(--text-primary);
-    font-size: 1.4em;
+    font-size: 1.1em; /* Significantly reduced from 1.4em */
     font-weight: 600;
 }
 
@@ -963,19 +1109,19 @@
 }
 
 .slide-content h4 {
-    font-size: 1.3em;
+    font-size: 1.0em; /* Significantly reduced from 1.3em */
     font-weight: 600;
-    margin-bottom: 16px;
+    margin-bottom: 12px; /* Reduced from 16px */
     color: var(--text-primary);
 }
 
 .slide-steps {
-    padding-left: 20px;
+    padding-left: 16px; /* Reduced from 20px */
     margin: 0;
 }
 
 .slide-steps li {
-    margin-bottom: 8px;
+    margin-bottom: 6px; /* Reduced from 8px */
     color: var(--text-secondary);
     line-height: 1.5;
     font-size: 0.95em;
@@ -1005,7 +1151,7 @@
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-top: 20px;
+    margin-top: 8px; /* Further reduced from 12px */
 }
 
 .carousel-dot {
@@ -1028,6 +1174,41 @@
     background: rgba(255, 255, 255, 0.5);
 }
 
+/* Mobile-specific carousel dots - ensure visibility */
+@media (max-width: 768px) {
+    .carousel-dots {
+        margin-top: 10px !important;
+        margin-bottom: 8px; /* Add some bottom margin */
+    }
+    
+    .carousel-dot {
+        width: 10px; /* Slightly larger for mobile */
+        height: 10px;
+        background: rgba(255, 255, 255, 0.4); /* More visible on mobile */
+        touch-action: manipulation; /* Better touch interaction */
+    }
+    
+    .carousel-dot.active {
+        background: var(--accent-primary) !important;
+        transform: scale(1.3); /* Slightly larger active state */
+    }
+}
+
+/* Light theme carousel dots - ensure visibility */
+@media (max-width: 768px) {
+    [data-theme="light"] .carousel-dot {
+        background: rgba(0, 0, 0, 0.3) !important; /* Dark dots for light theme */
+    }
+    
+    [data-theme="light"] .carousel-dot:hover {
+        background: rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    [data-theme="light"] .carousel-dot.active {
+        background: var(--accent-primary) !important; /* Keep blue active state */
+    }
+}
+
 /* ============================================
    MOBILE BOTTOM CONTROLS (AIRBNB-STYLE)
    ============================================ */
@@ -1039,23 +1220,32 @@
     right: 0;
     background: var(--bg-primary);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 20px;
+    padding: 12px 20px; /* Reduced from 20px to 12px top/bottom */
     z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center the buttons horizontally */
 }
 
 /* Main Action Buttons */
 .main-actions {
     display: flex;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 0; /* Removed margin since we're centering in container */
+    width: 100%;
+    max-width: 400px; /* Limit maximum width for better centering */
 }
 
 .large-action-btn {
     flex: 1;
-    padding: 16px 24px;
-    font-size: 1.1em;
+    padding: 12px 24px; /* Reduced from 16px to 12px top/bottom */
+    font-size: 1.05em; /* Slightly reduced from 1.1em */
     font-weight: 600;
     border-radius: 12px;
+    min-height: 44px; /* Add explicit minimum height */
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center text within button */
     min-height: 56px;
     display: flex;
     align-items: center;
@@ -1080,12 +1270,20 @@
 }
 
 .language-selector.mobile-lang .language-dropdown {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
+    background: none;
+    border: none;
+    border-radius: 0;
     padding: 8px 12px;
     min-width: 140px;
     font-size: 0.9em;
+    position: relative;
+    z-index: 9999; /* High z-index for the trigger button */
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+}
+
+.language-selector.mobile-lang .language-dropdown:hover {
+    color: var(--text-primary);
 }
 
 .language-selector.mobile-lang .language-dropdown-options {
@@ -1106,7 +1304,7 @@
     transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
     max-height: 300px;
     overflow-y: auto;
-    z-index: 2000;
+    z-index: 10000; /* Very high z-index to ensure dropdown appears above join container */
 }
 
 /* Show mobile dropdown when open */
@@ -1145,6 +1343,38 @@
     color: var(--text-secondary);
 }
 
+/* Return to Main Button in Mobile Header */
+.return-to-main-btn.mobile-header {
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 6px 8px !important; /* Consistent padding with other buttons */
+    color: var(--text-secondary) !important;
+    font-size: 0.8em !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    /* Remove margin - let flexbox gap handle spacing */
+}
+
+.return-to-main-btn.mobile-header:hover {
+    background: none !important;
+    color: var(--text-primary) !important;
+}
+
+.return-to-main-btn.mobile-header .control-icon {
+    font-size: 1.4em !important; /* Slightly larger than theme toggle to better match moon size */
+}
+
+.return-to-main-btn.mobile-header .control-label {
+    font-size: 0.7em !important;
+    color: var(--text-secondary);
+    display: none; /* Hide text on mobile, show only icon */
+}
+
 /* ============================================
    TOUCH AND SWIPE INTERACTIONS
    ============================================ */
@@ -1172,6 +1402,316 @@
     
     .carousel-slide {
         scroll-snap-align: center;
+    }
+}
+
+/* ============================================
+   MOBILE QUIZ EDITOR CONTROLS
+   ============================================ */
+
+/* Hide mobile elements on desktop */
+@media (min-width: 769px) {
+    .mobile-quiz-fab,
+    .mobile-quiz-sheet-overlay,
+    .mobile-quiz-sheet,
+    .mobile-bottom-controls,
+    .mobile-only {
+        display: none !important;
+    }
+    
+    /* Ensure desktop menu is visible with proper layout */
+    .desktop-menu.menu-options {
+        display: grid !important; /* Preserve grid layout for centering */
+    }
+    
+    .desktop-menu {
+        display: block !important;
+    }
+}
+
+/* Mobile Quiz Management FAB - Only visible in quiz editor on mobile */
+@media (max-width: 768px) {
+    .mobile-quiz-fab {
+        position: fixed;
+        bottom: 30px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        background: var(--accent-primary);
+        border: none;
+        border-radius: 50%;
+        display: none; /* Hidden by default, shown only in quiz editor */
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+        cursor: pointer;
+        z-index: 1000;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        color: white;
+        font-size: 1.5em;
+    }
+
+    /* Show FAB only when in host-screen (quiz editor) */
+    .container:has(#host-screen.screen.active) .mobile-quiz-fab {
+        display: flex !important;
+    }
+
+    .mobile-quiz-fab:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    }
+
+    .mobile-quiz-fab:active {
+        transform: scale(0.95);
+    }
+
+    .mobile-quiz-fab.expanded {
+        border-radius: 16px;
+        width: auto;
+        padding: 0 16px;
+        min-width: 56px;
+    }
+}
+
+/* Mobile Quiz Actions Bottom Sheet */
+@media (max-width: 768px) {
+    .mobile-quiz-sheet-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 2000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .mobile-quiz-sheet-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .mobile-quiz-sheet {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--bg-primary);
+        border-radius: 20px 20px 0 0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(20px);
+        transform: translateY(100%);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        max-height: 80vh; /* Increased from 70vh for better access */
+        overflow-y: auto;
+        overflow-x: hidden;
+        /* Smooth scrolling for better mobile experience */
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .mobile-quiz-sheet.active {
+        transform: translateY(0);
+    }
+
+    /* Sheet Header */
+    .mobile-quiz-sheet-header {
+        padding: 20px 20px 0 20px;
+        text-align: center;
+        position: relative;
+    }
+
+    .mobile-quiz-sheet-handle {
+        width: 40px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 2px;
+        margin: 0 auto 16px auto;
+        cursor: pointer;
+    }
+
+    .mobile-quiz-sheet-title {
+        font-size: 1.2em;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .mobile-quiz-sheet-close {
+        position: absolute;
+        top: 16px;
+        right: 20px;
+        background: none;
+        border: none;
+        font-size: 1.5em;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .mobile-quiz-sheet-close:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+    }
+
+    /* Sheet Content */
+    .mobile-quiz-sheet-content {
+        padding: 20px 20px 30px 20px; /* Extra bottom padding for safe scrolling */
+    }
+
+    /* Primary Actions Grid */
+    .mobile-quiz-primary-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .mobile-quiz-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 20px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: var(--text-primary);
+        min-height: 100px;
+        justify-content: center;
+    }
+
+    .mobile-quiz-action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--accent-primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .mobile-quiz-action-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Remove persistent highlight states on mobile */
+    .mobile-quiz-action-btn:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+
+    /* Ensure buttons return to normal state after interaction */
+    .mobile-quiz-action-btn {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    .mobile-quiz-action-btn.primary {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: var(--accent-primary);
+    }
+
+    .mobile-quiz-action-btn.primary:hover {
+        background: rgba(59, 130, 246, 0.2);
+    }
+
+    .mobile-quiz-action-icon {
+        font-size: 2em;
+        margin-bottom: 4px;
+    }
+
+    .mobile-quiz-action-label {
+        font-size: 0.9em;
+        font-weight: 500;
+        text-align: center;
+        line-height: 1.3;
+    }
+
+    .mobile-quiz-action-subtitle {
+        font-size: 0.75em;
+        color: var(--text-secondary);
+        text-align: center;
+        margin-top: 4px;
+    }
+
+    /* Secondary Actions */
+    .mobile-quiz-secondary-actions {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 20px;
+    }
+
+    .mobile-quiz-secondary-title {
+        font-size: 0.9em;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .mobile-quiz-secondary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+    }
+
+    .mobile-quiz-secondary-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: var(--text-primary);
+    }
+
+    .mobile-quiz-secondary-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Ensure secondary buttons also reset properly */
+    .mobile-quiz-secondary-btn {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    .mobile-quiz-secondary-btn:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+
+    .mobile-quiz-secondary-btn:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+    }
+
+    .mobile-quiz-secondary-icon {
+        font-size: 1.3em;
+    }
+
+    .mobile-quiz-secondary-label {
+        font-size: 0.75em;
+        text-align: center;
+        line-height: 1.2;
     }
 }
 
