@@ -15,6 +15,7 @@ import { mobileLayoutManager } from './utils/mobile-layout-manager.js'; // Smart
 import './utils/mobile-enhancements.js'; // Mobile UX enhancements and touch interactions
 import './utils/mobile-carousel.js'; // Airbnb-style mobile carousel for main menu
 import './utils/mobile-quiz-controls.js'; // Mobile quiz management controls (FAB and bottom sheet)
+import './utils/mobile-question-carousel.js'; // Mobile question carousel for quiz editor
 
 /**
  * Update language dropdown display to show the currently selected language

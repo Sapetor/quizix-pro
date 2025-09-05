@@ -158,7 +158,7 @@ export default {
         
         // Question editor keys
         enter_question: "Enter your question (supports LaTeX: $x^2 + y^2 = z^2$)",
-        time_seconds: "Time (sec)",
+        time_seconds: "Time (s)",
         correct_answer: "Correct Answer",
         tolerance: "Tolerance (+/-)",
         enter_question_with_latex: "Enter your question (supports LaTeX)",
