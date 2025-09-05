@@ -14,6 +14,7 @@ export default {
         load_quiz: "Charger le Quiz",
         import_quiz: "Importer le Quiz",
         preview_quiz: "Aperçu du Quiz",
+        tools: "Outils",
         create_quiz: "Créez votre Quiz",
         live_preview: "Aperçu en Direct",
         toggle_live_preview: "Aperçu en Direct",

@@ -10,6 +10,7 @@ export default {
         load_quiz: "Wczytaj Quiz",
         import_quiz: "Importuj Quiz",
         preview_quiz: "Podgląd Quizu",
+        tools: "Narzędzia",
         create_quiz: "Utwórz Swój Quiz",
         live_preview: "Podgląd na Żywo",
         toggle_live_preview: "Podgląd na Żywo",

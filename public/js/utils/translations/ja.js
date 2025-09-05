@@ -10,6 +10,7 @@ export default {
         load_quiz: "クイズを読み込み",
         import_quiz: "クイズをインポート",
         preview_quiz: "クイズプレビュー",
+        tools: "ツール",
         create_quiz: "クイズを作成",
         live_preview: "ライブプレビュー",
         toggle_live_preview: "ライブプレビュー",

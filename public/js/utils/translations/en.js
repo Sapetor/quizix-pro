@@ -15,6 +15,7 @@ export default {
         import_quiz: "Import Quiz",
         preview_quiz: "Preview Quiz",
         quiz_actions: "Quiz Actions",
+        tools: "Tools",
         open_saved_quiz: "Open saved quiz",
         begin_hosting: "Begin hosting",
         save_progress: "Save progress",

@@ -10,6 +10,7 @@ export default {
         load_quiz: "加载问答",
         import_quiz: "导入问答",
         preview_quiz: "预览问答",
+        tools: "工具",
         create_quiz: "创建你的问答",
         live_preview: "实时预览",
         toggle_live_preview: "实时预览",

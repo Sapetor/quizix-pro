@@ -15,6 +15,7 @@ export default {
         import_quiz: "Importar Quiz",
         preview_quiz: "Vista Previa del Quiz",
         quiz_actions: "Acciones del Quiz",
+        tools: "Herramientas",
         open_saved_quiz: "Abrir quiz guardado",
         begin_hosting: "Comenzar partida",
         save_progress: "Guardar progreso",
