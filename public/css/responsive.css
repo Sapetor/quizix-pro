@@ -500,7 +500,7 @@
     [data-theme="light"] .quiz-editor-section label,
     .light-theme .quiz-editor-section label {
         color: rgba(30, 41, 59, 0.8) !important; /* Better dark text for light mode */
-        font-weight: 600 !important; /* Slightly bolder for light backgrounds */
+        /* Remove bold styling - use desktop weight */
     }
     
     .quiz-editor-section h2,
@@ -1843,67 +1843,79 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Carousel Dots (like Airbnb) */
+/* Carousel Dots (like Airbnb) - Updated to match preview carousel */
 .carousel-dots {
     display: flex;
     justify-content: center;
-    gap: 8px;
-    margin-top: 8px; /* Further reduced from 12px */
+    gap: 0.75rem;
+    margin-top: 8px;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .carousel-dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     border: none;
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.4);
     cursor: pointer;
     transition: all 0.3s ease;
     padding: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .carousel-dot.active {
-    background: var(--accent-primary);
-    transform: scale(1.2);
+    background: #3b82f6;
+    transform: scale(1.3);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
 }
 
 .carousel-dot:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(59, 130, 246, 0.7);
+    transform: scale(1.15);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
 }
 
 /* Mobile-specific carousel dots - ensure visibility */
 @media (max-width: 768px) {
     .carousel-dots {
         margin-top: 10px !important;
-        margin-bottom: 8px; /* Add some bottom margin */
+        margin-bottom: 8px;
     }
     
     .carousel-dot {
-        width: 10px; /* Slightly larger for mobile */
-        height: 10px;
-        background: rgba(255, 255, 255, 0.4); /* More visible on mobile */
         touch-action: manipulation; /* Better touch interaction */
     }
     
     .carousel-dot.active {
-        background: var(--accent-primary) !important;
+        background: #3b82f6 !important;
         transform: scale(1.3); /* Slightly larger active state */
     }
 }
 
-/* Light theme carousel dots - ensure visibility */
-@media (max-width: 768px) {
-    [data-theme="light"] .carousel-dot {
-        background: rgba(0, 0, 0, 0.3) !important; /* Dark dots for light theme */
-    }
-    
-    [data-theme="light"] .carousel-dot:hover {
-        background: rgba(0, 0, 0, 0.5) !important;
-    }
-    
-    [data-theme="light"] .carousel-dot.active {
-        background: var(--accent-primary) !important; /* Keep blue active state */
-    }
+/* Light theme carousel dots - matching preview carousel */
+[data-theme="light"] .carousel-dots {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(30, 41, 59, 0.1);
+}
+
+[data-theme="light"] .carousel-dot {
+    background: rgba(30, 41, 59, 0.3);
+}
+
+[data-theme="light"] .carousel-dot:hover {
+    background: rgba(59, 130, 246, 0.7);
+}
+
+[data-theme="light"] .carousel-dot.active {
+    background: #3b82f6;
 }
 
 /* ============================================
@@ -2483,5 +2495,310 @@
     /* Hide carousel on tablets */
     .quick-start-carousel {
         display: none;
+    }
+}
+
+/* Mobile editor - use desktop styles with better backgrounds for visibility */
+@media (max-width: 768px) {
+    [data-theme="light"] .quiz-editor-section input,
+    [data-theme="light"] .quiz-editor-section textarea,
+    [data-theme="light"] .quiz-editor-section select {
+        /* Just improve background visibility, inherit desktop text styles */
+        background: rgba(255, 255, 255, 0.9) !important;
+        border: 1px solid rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    /* Light mode mobile navigation arrows - better contrast */
+    [data-theme="light"] .mobile-nav-btn {
+        color: #1e293b !important; /* Dark arrows for light mode */
+        background: rgba(255, 255, 255, 0.9) !important; /* Light background */
+        border: 1px solid rgba(30, 41, 59, 0.3) !important; /* Dark border */
+        font-weight: bold !important; /* Bold arrows for visibility */
+    }
+    
+    [data-theme="light"] .mobile-nav-btn:hover:not(:disabled) {
+        background: rgba(59, 130, 246, 0.1) !important;
+        border-color: rgba(59, 130, 246, 0.4) !important;
+        color: #1e293b !important;
+    }
+    
+    /* Fix ALL text colors in mobile editor light mode - comprehensive */
+    [data-theme="light"] .quiz-editor-section *,
+    [data-theme="light"] .quiz-editor-section label,
+    [data-theme="light"] .quiz-editor-section .checkbox-group label,
+    [data-theme="light"] .quiz-editor-section .question-header h3,
+    [data-theme="light"] .quiz-editor-section .form-group label,
+    [data-theme="light"] .quiz-editor-section .question-controls label,
+    [data-theme="light"] .quiz-editor-section span,
+    [data-theme="light"] .quiz-editor-section div,
+    [data-theme="light"] .quiz-editor-section p,
+    [data-theme="light"] .mobile-question-title {
+        color: #1e293b !important; /* Dark text for light mode */
+    }
+    
+    /* Hide redundant "Question X" title in mobile since navigation shows "Question X of Y" */
+    .mobile-question-title {
+        display: none !important;
+    }
+    
+    /* Add navigation explanation for mobile editor */
+    .mobile-quiz-controls::before {
+        content: "Navigation: ← → (questions) + (add new)";
+        display: block !important;
+        font-size: 0.75rem !important;
+        color: #64748b !important;
+        text-align: center !important;
+        margin-bottom: 8px !important;
+        font-style: italic !important;
+    }
+    
+    [data-theme="light"] .mobile-quiz-controls::before {
+        color: #64748b !important; /* Ensure explanation text is visible */
+    }
+    
+    /* ============================================
+       MOBILE PREVIEW SHOWCASE
+       ============================================ */
+       
+    .mobile-preview-showcase {
+        padding: 2rem 1rem;
+        margin: 1rem 0 8rem 0; /* Added 8rem bottom margin to prevent clipping */
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .preview-showcase-header {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .preview-showcase-header h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #3b82f6, #a855f7);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .preview-showcase-header p {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    
+    .preview-showcase-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .preview-carousel-container {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .preview-carousel {
+        position: relative;
+        width: 220px;
+        height: 320px;
+        overflow: hidden;
+    }
+    
+    .preview-phone-frame {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 200px;
+        height: 300px;
+        background: linear-gradient(145deg, #1e293b, #334155);
+        border-radius: 20px;
+        padding: 12px;
+        box-shadow: 
+            0 10px 25px rgba(0, 0, 0, 0.3),
+            0 4px 10px rgba(0, 0, 0, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        opacity: 0;
+        transition: all 0.5s ease-in-out;
+        pointer-events: none;
+    }
+    
+    .preview-phone-frame.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    .preview-phone-frame::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 2px;
+    }
+    
+    .preview-screen {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: #0f172a;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .preview-screenshot {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+    
+    .preview-overlay {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+    }
+    
+    .preview-badge {
+        background: rgba(59, 130, 246, 0.9);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        backdrop-filter: blur(8px);
+    }
+    
+    /* Preview Carousel Navigation - Separate from quickstart guide */
+    .preview-carousel-navigation {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 1rem;
+        position: relative;
+        z-index: 10;
+    }
+    
+    .preview-carousel-nav {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(8px);
+    }
+    
+    .preview-carousel-nav:hover {
+        background: rgba(59, 130, 246, 0.2);
+        border-color: rgba(59, 130, 246, 0.4);
+        color: white;
+        transform: scale(1.05);
+    }
+    
+    /* Preview Carousel Dots - Using quickstart guide style */
+    .preview-carousel-dots {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        padding: 0.5rem 1rem;
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        width: fit-content;
+    }
+    
+    .preview-carousel-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        padding: 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .preview-carousel-dot.active {
+        background: #3b82f6;
+        transform: scale(1.3);
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+    }
+    
+    .preview-carousel-dot:hover {
+        background: rgba(59, 130, 246, 0.7);
+        transform: scale(1.15);
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Light theme adaptations */
+    [data-theme="light"] .mobile-preview-showcase {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    
+    [data-theme="light"] .preview-showcase-header p {
+        color: rgba(30, 41, 59, 0.7);
+    }
+    
+    [data-theme="light"] .preview-phone-frame {
+        background: linear-gradient(145deg, #f1f5f9, #e2e8f0);
+        border: 2px solid rgba(59, 130, 246, 0.2);
+    }
+    
+    [data-theme="light"] .preview-phone-frame::before {
+        background: rgba(30, 41, 59, 0.3);
+    }
+    
+    [data-theme="light"] .preview-screen {
+        background: #ffffff;
+    }
+    
+    [data-theme="light"] .preview-carousel-nav {
+        border: 1px solid rgba(30, 41, 59, 0.2);
+        background: rgba(255, 255, 255, 0.8);
+        color: rgba(30, 41, 59, 0.8);
+    }
+    
+    [data-theme="light"] .preview-carousel-nav:hover {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.4);
+        color: #3b82f6;
+    }
+    
+    [data-theme="light"] .preview-carousel-dots {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(30, 41, 59, 0.1);
+    }
+    
+    [data-theme="light"] .preview-carousel-dot {
+        background: rgba(30, 41, 59, 0.3);
+    }
+    
+    [data-theme="light"] .preview-carousel-dot:hover {
+        background: rgba(59, 130, 246, 0.7);
+    }
+    
+    [data-theme="light"] .preview-carousel-dot.active {
+        background: #3b82f6;
     }
 }
