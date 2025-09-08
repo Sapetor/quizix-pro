@@ -119,7 +119,7 @@ export default {
         medium: "普通",
         hard: "難しい",
         enter_question: "質問を入力（LaTeX対応：$x^2 + y^2 = z^2$）",
-        time_seconds: "時間（秒）",
+        time_seconds: "時間(s)",
         correct_answer: "正解",
         tolerance: "許容範囲（+/-）",
         enter_question_with_latex: "質問を入力（LaTeX対応）",

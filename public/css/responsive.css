@@ -403,9 +403,9 @@
         max-height: none !important;
     }
     
-    /* Quiz editor padding for mobile - ultra-compact with smart spacing */
+    /* Quiz editor padding for mobile - ultra-compact with symmetric spacing */
     .quiz-editor-section {
-        padding: 4px 8px 4px 20px !important; /* Ultra-compact */
+        padding: 4px 12px !important; /* Symmetric padding for proper centering */
         background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%) !important;
         border-radius: 12px !important;
         margin: 8px 4px !important;
@@ -536,45 +536,48 @@
         flex-wrap: wrap !important;
     }
     
-    /* Clean mobile question meta layout - Tight but neat */
+    /* Clean mobile question meta layout - Type and Time compact */
     .quiz-editor-section .question-meta {
         display: grid !important;
-        grid-template-columns: 1fr 1fr 70px !important; /* Type | Difficulty | Time */
-        gap: 8px !important;
-        margin-bottom: 8px !important;
+        grid-template-columns: calc(100% - 80px) 80px !important; /* Type takes available space, Time gets 80px */
+        gap: 6px !important;
+        margin-bottom: 6px !important;
         padding: 8px !important;
         background: rgba(255, 255, 255, 0.04) !important;
-        border-radius: 8px !important;
+        border-radius: 6px !important;
         border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
     
     /* Question type selector */
     .quiz-editor-section .question-meta .question-type {
-        font-size: 0.85rem !important;
-        padding: 8px !important;
-        height: 36px !important;
+        font-size: 0.75rem !important;
+        padding: 6px 4px !important;
+        height: 32px !important;
         background: rgba(255, 255, 255, 0.06) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
         border-radius: 6px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        min-width: 0 !important;
     }
     
-    /* Question difficulty selector */
+    /* Question difficulty selector - Hidden on mobile */
     .quiz-editor-section .question-meta .question-difficulty {
-        font-size: 0.85rem !important;
-        padding: 8px !important;
-        height: 36px !important;
-        background: rgba(255, 255, 255, 0.06) !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 6px !important;
+        display: none !important;
     }
     
-    /* Time container */
+    /* Time container - Very compact */
     .quiz-editor-section .question-meta .time-container {
         display: flex !important;
         flex-direction: column !important;
         justify-content: center !important;
         align-items: center !important;
-        gap: 2px !important;
+        gap: 1px !important;
     }
     
     /* Light mode question meta */
@@ -586,10 +589,8 @@
     
     /* Light mode selectors */
     [data-theme="light"] .quiz-editor-section .question-meta .question-type,
-    [data-theme="light"] .quiz-editor-section .question-meta .question-difficulty,
     [data-theme="light"] .quiz-editor-section .question-meta .time-container input,
     .light-theme .quiz-editor-section .question-meta .question-type,
-    .light-theme .quiz-editor-section .question-meta .question-difficulty,
     .light-theme .quiz-editor-section .question-meta .time-container input {
         background: rgba(255, 255, 255, 0.8) !important;
         border: 1px solid rgba(59, 130, 246, 0.2) !important;
@@ -599,22 +600,24 @@
     /* Time input container styling is now handled in the main .question-meta rule above */
     
     .quiz-editor-section .question-meta .time-container label {
-        font-size: 0.7rem !important;
-        margin-bottom: 2px !important;
+        font-size: 0.55rem !important;
+        margin-bottom: 1px !important;
         color: var(--text-secondary) !important;
         font-weight: 500 !important;
     }
     
     .quiz-editor-section .question-meta .time-container input {
-        width: 56px !important;
-        padding: 6px !important;
+        width: 70px !important;
+        max-width: 70px !important;
+        padding: 4px 6px !important;
         height: 28px !important;
-        font-size: 0.8rem !important;
+        font-size: 0.7rem !important;
         text-align: center !important;
         background: rgba(255, 255, 255, 0.06) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 6px !important;
+        border-radius: 4px !important;
         font-weight: 600 !important;
+        box-sizing: border-box !important;
     }
     
     /* Make dropdowns full width on mobile for better visibility */
@@ -638,7 +641,7 @@
     
     .quiz-editor-section .time-limit-container input {
         width: 100% !important;
-        max-width: 120px !important;
+        max-width: 70px !important;
     }
     
     /* Ultra-compact question sections with better visual appeal */
@@ -1049,6 +1052,65 @@
     
     .mobile-carousel-container {
         display: block !important;
+    }
+    
+    /* Mobile question navigation bar */
+    .mobile-question-nav {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 12px 16px !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 8px !important;
+        margin-bottom: 12px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    /* Mobile navigation buttons */
+    .mobile-nav-btn,
+    .mobile-add-question-btn {
+        background: rgba(59, 130, 246, 0.1) !important;
+        border: 1px solid rgba(59, 130, 246, 0.3) !important;
+        color: var(--text-primary) !important;
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1.1rem !important;
+        font-weight: bold !important;
+        cursor: pointer !important;
+        flex-shrink: 0 !important;
+    }
+    
+    .mobile-nav-btn:hover,
+    .mobile-add-question-btn:hover {
+        background: rgba(59, 130, 246, 0.2) !important;
+        border-color: rgba(59, 130, 246, 0.5) !important;
+    }
+    
+    .mobile-nav-btn:disabled {
+        opacity: 0.5 !important;
+        cursor: not-allowed !important;
+    }
+    
+    /* Mobile question title */
+    .mobile-question-title {
+        flex: 1 !important;
+        text-align: center !important;
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        color: var(--text-primary) !important;
+        margin: 0 12px !important;
+    }
+    
+    
+    /* Light mode mobile navigation */
+    [data-theme="light"] .mobile-question-nav,
+    .light-theme .mobile-question-nav {
+        background: rgba(59, 130, 246, 0.08) !important;
+        border-color: rgba(59, 130, 246, 0.2) !important;
     }
     
     /* Ensure language dropdown is visible on mobile */

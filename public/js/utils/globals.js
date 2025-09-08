@@ -318,10 +318,31 @@ window.addEventListener('orientationchange', () => {
 
 export function togglePreviewMode() {
     logger.debug('Preview mode toggle function called');
-    if (window.game && window.game.togglePreviewMode) {
-        window.game.togglePreviewMode();
+    
+    // Check if mobile device
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Use mobile preview manager if available
+        if (window.game && window.game.previewManager && window.game.previewManager.togglePreviewMode) {
+            logger.debug('Using mobile preview manager');
+            window.game.previewManager.togglePreviewMode();
+        } else if (window.game && window.game.togglePreviewMode) {
+            // Fallback to game manager
+            window.game.togglePreviewMode();
+        } else {
+            logger.debug('Preview mode not available');
+        }
     } else {
-        logger.debug('Preview mode not implemented in modular version yet');
+        // Desktop - use existing logic
+        if (window.game && window.game.previewManager && window.game.previewManager.togglePreviewMode) {
+            logger.debug('Using preview manager for desktop');
+            window.game.previewManager.togglePreviewMode();
+        } else if (window.game && window.game.togglePreviewMode) {
+            window.game.togglePreviewMode();
+        } else {
+            logger.debug('Preview mode not implemented in modular version yet');
+        }
     }
 }
 

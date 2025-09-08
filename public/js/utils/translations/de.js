@@ -121,7 +121,7 @@ export default {
         medium: "Mittel",
         hard: "Schwer",
         enter_question: "Geben Sie Ihre Frage ein (unterstützt LaTeX: $x^2 + y^2 = z^2$)",
-        time_seconds: "Zeit (Sek)",
+        time_seconds: "Zeit (s)",
         correct_answer: "Richtige Antwort",
         tolerance: "Toleranz (+/-)",
         enter_question_with_latex: "Geben Sie Ihre Frage ein (unterstützt LaTeX)",

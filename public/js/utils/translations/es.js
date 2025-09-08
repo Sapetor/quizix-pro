@@ -107,7 +107,7 @@ export default {
         
         // Question editor keys
         enter_question: "Introduce tu pregunta (soporta LaTeX: $x^2 + y^2 = z^2$)",
-        time_seconds: "Tiempo (seg)",
+        time_seconds: "Tiempo (s)",
         correct_answer: "Respuesta Correcta",
         tolerance: "Tolerancia (+/-)",
         enter_question_with_latex: "Introduce tu pregunta (soporta LaTeX)",
@@ -316,6 +316,9 @@ export default {
         confirm_delete_result: "¿Está seguro de que desea eliminar este resultado del quiz? Esta acción no se puede deshacer.",
         analytics_export_coming_soon: "¡La exportación de reportes de analíticas estará disponible pronto!",
         
+        // Missing preview translations
+        no_questions_to_preview: "No hay preguntas para previsualizar",
+        
         // Missing critical keys found in analysis
         Features: "Características",
         Quiz: "Quiz",
@@ -326,5 +329,8 @@ export default {
         date_completed: "Fecha completada",
         delete_result: "Eliminar resultado",
         download_csv: "Descargar CSV",
-        close: "Cerrar"
+        close: "Cerrar",
+        
+        // Question type display
+        numeric_answer: "Respuesta Numérica"
 };

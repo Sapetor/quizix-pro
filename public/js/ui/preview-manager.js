@@ -40,27 +40,37 @@ export class PreviewManager {
     }
 
     /**
+     * Check if device is mobile
+     */
+    isMobileDevice() {
+        return window.innerWidth <= 768;
+    }
+
+    /**
      * Toggle preview mode
      */
     togglePreviewMode() {
         const toggleBtn = document.getElementById('toggle-preview');
-        const previewSection = document.querySelector('.quiz-preview-section');
-        const hostContainer = document.querySelector('.host-container');
         
-        if (!previewSection || !hostContainer) {
-            logger.warn('Preview elements not found');
-            return;
-        }
-
         this.previewMode = !this.previewMode;
         
         if (this.previewMode) {
-            // Show preview
-            previewSection.style.display = 'block';
-            hostContainer.classList.add('split-screen');
-            
-            // Initialize split layout (handles resize handle, drag functionality, and ratios)
-            this.splitLayoutManager.initializeSplitLayout();
+            // Check if mobile and handle exclusively
+            if (this.isMobileDevice()) {
+                // Mobile: Show full-screen overlay preview ONLY
+                this.showMobilePreview();
+            } else {
+                // Desktop: Show split-screen preview ONLY
+                const previewSection = document.querySelector('.quiz-preview-section');
+                const hostContainer = document.querySelector('.host-container');
+                
+                if (!previewSection || !hostContainer) {
+                    logger.warn('Preview elements not found for desktop');
+                    return;
+                }
+                
+                this.showDesktopSplitPreview(previewSection, hostContainer);
+            }
             
             // Update button styling and text
             if (toggleBtn) {
@@ -69,44 +79,17 @@ export class PreviewManager {
                 toggleBtn.textContent = translationManager.getTranslationSync('close_live_preview') || 'Close Live Preview';
                 toggleBtn.setAttribute('data-translate', 'close_live_preview');
             }
-            
-            // Initialize preview with async support
-            this.initializeSplitPreview().catch(error => {
-                logger.warn('Preview initialization error:', error);
-                // Fallback to synchronous initialization
-                this.setupSplitPreviewEventListeners();
-                this.updateSplitPreview();
-            });
-            // initializeSplitPreview() already calls updateSplitPreview() which handles rendering
         } else {
-            // Clean up listeners first
-            this.cleanupPreviewListeners();
-            this.splitLayoutManager.cleanupSplitLayout();
-            
-            // Clear any pending timeouts to prevent glitchy behavior
-            clearTimeout(this.autoScrollTimeout);
-            clearTimeout(this.updatePreviewTimeout);
-            
-            // Stop any pending debounced updates
-            if (this.updatePreviewDebounced && this.updatePreviewDebounced.cancel) {
-                this.updatePreviewDebounced.cancel();
-            }
-            
-            // Temporarily disable ALL transitions to prevent glitching
-            hostContainer.style.transition = 'none';
-            previewSection.style.transition = 'none';
-            
-            // Force a reflow to ensure transitions are disabled
-            hostContainer.offsetHeight;
-            
-            // Hide preview and remove split-screen class simultaneously
-            previewSection.style.display = 'none';
-            hostContainer.classList.remove('split-screen');
-            
-            // Hide resize handle
-            const resizeHandle = document.getElementById('split-resize-handle');
-            if (resizeHandle) {
-                resizeHandle.style.display = 'none';
+            // Close preview mode - handle mobile vs desktop exclusively
+            if (this.isMobileDevice()) {
+                this.hideMobilePreview();
+            } else {
+                const previewSection = document.querySelector('.quiz-preview-section');
+                const hostContainer = document.querySelector('.host-container');
+                
+                if (previewSection && hostContainer) {
+                    this.hideDesktopSplitPreview(previewSection, hostContainer);
+                }
             }
             
             // Update button styling and text
@@ -116,15 +99,70 @@ export class PreviewManager {
                 toggleBtn.textContent = translationManager.getTranslationSync('toggle_live_preview') || 'Live Preview';
                 toggleBtn.setAttribute('data-translate', 'toggle_live_preview');
             }
-            
-            // Re-enable transitions after layout changes are complete
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    hostContainer.style.transition = '';
-                    previewSection.style.transition = '';
-                }, 50);
-            });
         }
+    }
+
+    /**
+     * Show desktop split-screen preview
+     */
+    showDesktopSplitPreview(previewSection, hostContainer) {
+        // Show preview
+        previewSection.style.display = 'block';
+        hostContainer.classList.add('split-screen');
+        
+        // Initialize split layout (handles resize handle, drag functionality, and ratios)
+        this.splitLayoutManager.initializeSplitLayout();
+        
+        // Initialize preview with async support
+        this.initializeSplitPreview().catch(error => {
+            logger.warn('Preview initialization error:', error);
+            // Fallback to synchronous initialization
+            this.setupSplitPreviewEventListeners();
+            this.updateSplitPreview();
+        });
+    }
+
+    /**
+     * Hide desktop split-screen preview
+     */
+    hideDesktopSplitPreview(previewSection, hostContainer) {
+        // Clean up listeners first
+        this.cleanupPreviewListeners();
+        this.splitLayoutManager.cleanupSplitLayout();
+        
+        // Clear any pending timeouts to prevent glitchy behavior
+        clearTimeout(this.autoScrollTimeout);
+        clearTimeout(this.updatePreviewTimeout);
+        
+        // Stop any pending debounced updates
+        if (this.updatePreviewDebounced && this.updatePreviewDebounced.cancel) {
+            this.updatePreviewDebounced.cancel();
+        }
+        
+        // Temporarily disable ALL transitions to prevent glitching
+        hostContainer.style.transition = 'none';
+        previewSection.style.transition = 'none';
+        
+        // Force a reflow to ensure transitions are disabled
+        hostContainer.offsetHeight;
+        
+        // Hide preview and remove split-screen class simultaneously
+        previewSection.style.display = 'none';
+        hostContainer.classList.remove('split-screen');
+        
+        // Hide resize handle
+        const resizeHandle = document.getElementById('split-resize-handle');
+        if (resizeHandle) {
+            resizeHandle.style.display = 'none';
+        }
+        
+        // Re-enable transitions after layout changes are complete
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                hostContainer.style.transition = '';
+                previewSection.style.transition = '';
+            }, 50);
+        });
     }
 
     /**
@@ -750,6 +788,729 @@ export class PreviewManager {
         };
     }
 
+
+    /**
+     * Show mobile full-screen carousel preview
+     */
+    showMobilePreview() {
+        logger.debug('Showing mobile preview as full-screen overlay');
+        
+        // CRITICAL: Hide ALL page content to create true full-screen overlay
+        // Store references for restoration later
+        this.hiddenElements = [];
+        
+        const elementsToHide = [
+            document.querySelector('.container'),
+            document.querySelector('.host-container'),  
+            document.querySelector('.quiz-editor-section'),
+            document.querySelector('header'),
+            document.querySelector('.banner'),
+            document.querySelector('.page-header'),
+            document.querySelector('.mobile-quiz-fab')
+        ];
+        
+        elementsToHide.forEach((element, index) => {
+            if (element && !element.contains(document.getElementById('mobile-preview-container'))) {
+                // Store original display value for restoration
+                this.hiddenElements[index] = {
+                    element: element,
+                    originalDisplay: element.style.display || ''
+                };
+                element.style.display = 'none';
+                logger.debug(`Hidden element:`, element.className || element.tagName);
+            }
+        });
+        
+        // Also hide any desktop preview elements
+        const desktopPreviews = document.querySelectorAll('.quiz-preview-section:not(#mobile-preview-container .quiz-preview-section)');
+        desktopPreviews.forEach(preview => {
+            preview.style.display = 'none';
+        });
+        
+        // Store original body styles to restore later  
+        const body = document.body;
+        this.originalBodyOverflow = body.style.overflow;
+        this.originalBodyHeight = body.style.height;
+        
+        // Prevent body scrolling while preview is active
+        body.style.overflow = 'hidden';
+        body.style.height = '100vh';
+        
+        // Create or show mobile preview container as full-screen overlay
+        this.createMobilePreviewContainer();
+        this.currentPreviewQuestion = 0;
+        this.updateMobilePreview();
+    }
+
+    /**
+     * Hide mobile full-screen carousel preview
+     */
+    hideMobilePreview() {
+        logger.debug('Hiding mobile preview overlay');
+        
+        // Restore ALL hidden elements using stored references
+        if (this.hiddenElements) {
+            this.hiddenElements.forEach(hiddenElement => {
+                if (hiddenElement && hiddenElement.element) {
+                    hiddenElement.element.style.display = hiddenElement.originalDisplay;
+                    logger.debug(`Restored element:`, hiddenElement.element.className || hiddenElement.element.tagName);
+                }
+            });
+            this.hiddenElements = null;
+        }
+        
+        // Restore original body styles
+        const body = document.body;
+        if (this.originalBodyOverflow !== undefined) {
+            body.style.overflow = this.originalBodyOverflow;
+        }
+        if (this.originalBodyHeight !== undefined) {
+            body.style.height = this.originalBodyHeight;
+        }
+        
+        // Remove mobile preview overlay container
+        const mobilePreview = document.getElementById('mobile-preview-container');
+        if (mobilePreview) {
+            mobilePreview.remove();
+            logger.debug('Mobile preview overlay removed');
+        }
+        
+        // Clean up listeners
+        this.cleanupMobilePreviewListeners();
+    }
+
+    /**
+     * Create mobile preview container with same style as desktop
+     */
+    createMobilePreviewContainer() {
+        // Remove existing container if it exists
+        const existing = document.getElementById('mobile-preview-container');
+        if (existing) {
+            existing.remove();
+        }
+
+        // Create the mobile preview container using the same structure as desktop
+        const container = document.createElement('div');
+        container.id = 'mobile-preview-container';
+        container.className = 'mobile-preview-container mobile-only';
+        
+        // Use desktop-inspired layout with mobile optimizations - arrows only in nav buttons
+        container.innerHTML = `
+            <div class="quiz-preview-section mobile-preview-modal">
+                <!-- Mobile Header with Title and Close Button -->
+                <div class="preview-modal-header mobile-header">
+                    <div class="preview-title-section">
+                        <h2>📱 <span data-translate="live_preview">Vista Previa en Vivo</span></h2>
+                    </div>
+                    <div class="close-button-container">
+                        <button id="mobile-preview-close" class="close-btn modern-close" data-translate-title="close_live_preview">
+                            <span data-translate="close_live_preview">Cerrar</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Navigation Bar with arrow-only buttons -->
+                <div class="preview-navigation-bar mobile-nav">
+                    <div class="preview-nav-section">
+                        <button id="mobile-preview-prev" class="nav-btn mobile-nav-btn">◀</button>
+                        <button id="mobile-preview-next" class="nav-btn mobile-nav-btn">▶</button>
+                    </div>
+                    <span id="mobile-preview-counter-display" class="question-counter mobile-counter"><span data-translate="question">Pregunta</span> 1 <span data-translate="of">de</span> 1</span>
+                </div>
+                
+                <!-- Preview Content Area -->
+                <div id="mobile-preview-viewport" class="preview-viewport mobile-viewport">
+                    <div id="mobile-preview-content" class="preview-content mobile-content">
+                        <div class="player-question-area mobile-question-area">
+                            <div id="mobile-preview-question-counter-display" class="question-counter-display mobile-q-counter">
+                                <span data-translate="question">Pregunta</span> 1 <span data-translate="of">de</span> 1
+                            </div>
+                            <div id="mobile-preview-question-text" class="preview-question-text mobile-question">No questions to preview</div>
+                        </div>
+                        
+                        <div id="mobile-preview-answer-area" class="preview-answer-area mobile-answers">
+                            <!-- Answer content will be inserted here -->
+                            <div class="preview-answer-type preview-multiple-choice" style="display: none;">
+                                <div class="preview-options mobile-options" id="mobile-preview-options">
+                                    <!-- Options will be inserted here -->
+                                </div>
+                            </div>
+                            
+                            <div class="preview-answer-type preview-multiple-correct" style="display: none;">
+                                <div class="preview-checkbox-options mobile-checkbox-options" id="mobile-preview-checkbox-options">
+                                    <!-- Checkbox options will be inserted here -->
+                                </div>
+                            </div>
+                            
+                            <div class="preview-answer-type preview-true-false" style="display: none;">
+                                <div class="preview-tf-options mobile-tf-options" id="mobile-preview-tf-options">
+                                    <!-- True/False options will be inserted here -->
+                                </div>
+                            </div>
+                            
+                            <div class="preview-answer-type preview-numeric" style="display: none;">
+                                <div class="preview-numeric-input mobile-numeric" id="mobile-preview-numeric">
+                                    <input type="number" placeholder="Enter your answer" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Always append directly to body for true full-screen experience
+        document.body.appendChild(container);
+        
+        // CRITICAL: Ensure the container is positioned properly for full-screen WITH BACKGROUND
+        container.style.cssText = `
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 999999 !important;
+            background: var(--background-primary) !important;
+            overflow: hidden !important;
+        `;
+        
+        // CRITICAL: Ensure the quiz-preview-section child uses full container height
+        const previewSection = container.querySelector('.quiz-preview-section');
+        if (previewSection) {
+            previewSection.style.cssText = `
+                height: 100vh !important;
+                max-height: 100vh !important;
+                width: 100% !important;
+                display: flex !important;
+                flex-direction: column !important;
+            `;
+        }
+        
+        // Apply mobile-specific styling for enhanced desktop-like appearance
+        this.applyMobilePreviewStyles(container);
+        
+        logger.debug('Mobile preview container created and positioned for full-screen with solid background');
+        
+        // Setup mobile preview event listeners
+        this.setupMobilePreviewListeners();
+    }
+
+    /**
+     * Apply mobile-specific styling to enhance desktop-like appearance
+     */
+    applyMobilePreviewStyles(container) {
+        // Enhanced mobile header styling
+        const header = container.querySelector('.mobile-header');
+        if (header) {
+            Object.assign(header.style, {
+                background: 'var(--background-secondary)',
+                borderBottom: '2px solid var(--border-primary)',
+                padding: '12px 16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                minHeight: '50px'
+            });
+        }
+        
+        // Modern close button styling
+        const closeBtn = container.querySelector('.modern-close');
+        if (closeBtn) {
+            Object.assign(closeBtn.style, {
+                background: 'var(--danger-color)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                fontSize: '18px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                transition: 'transform 0.1s ease'
+            });
+        }
+        
+        // Mobile navigation bar styling  
+        const navBar = container.querySelector('.mobile-nav');
+        if (navBar) {
+            Object.assign(navBar.style, {
+                background: 'var(--background-tertiary)',
+                borderBottom: '1px solid var(--border-primary)',
+                padding: '8px 16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                minHeight: '48px',
+                flexWrap: 'wrap',
+                gap: '8px'
+            });
+        }
+        
+        // Mobile navigation buttons styling - optimized for arrow-only design
+        const navButtons = container.querySelectorAll('.mobile-nav-btn');
+        navButtons.forEach(btn => {
+            Object.assign(btn.style, {
+                background: 'var(--primary-color)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                padding: '10px',
+                fontSize: '18px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold'
+            });
+        });
+        
+        // Question counter styling
+        const counter = container.querySelector('.mobile-counter');
+        if (counter) {
+            Object.assign(counter.style, {
+                background: 'var(--accent-color)',
+                color: 'white',
+                padding: '6px 12px',
+                borderRadius: '15px',
+                fontWeight: '600',
+                fontSize: '14px',
+                whiteSpace: 'nowrap'
+            });
+        }
+        
+        // Mobile viewport styling - TOP-ALIGNED to prevent clipping
+        const viewport = container.querySelector('.mobile-viewport');
+        if (viewport) {
+            Object.assign(viewport.style, {
+                flex: '1',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                padding: '20px 16px 40px 16px',
+                background: 'var(--background-primary)',
+                maxHeight: 'calc(100vh - 120px)',
+                minHeight: '300px',
+                WebkitOverflowScrolling: 'touch',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+                justifyContent: 'flex-start'
+            });
+        }
+        
+        // Mobile question area styling - dynamic height
+        const questionArea = container.querySelector('.mobile-question-area');
+        if (questionArea) {
+            Object.assign(questionArea.style, {
+                margin: '0 0 20px 0',
+                padding: '20px 16px',
+                background: 'var(--background-secondary)',
+                borderRadius: '12px',
+                border: '1px solid var(--border-primary)',
+                minHeight: 'auto',
+                height: 'auto',
+                overflow: 'visible',
+                flexShrink: '0',
+                boxSizing: 'border-box'
+            });
+        }
+        
+        // Mobile question text styling
+        const questionText = container.querySelector('.mobile-question');
+        if (questionText) {
+            Object.assign(questionText.style, {
+                fontSize: '18px',
+                fontWeight: '600',
+                lineHeight: '1.4',
+                color: 'var(--text-primary)',
+                marginTop: '16px',
+                paddingTop: '8px',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word'
+            });
+        }
+
+        // Mobile question counter styling
+        const questionCounter = container.querySelector('.mobile-q-counter');
+        if (questionCounter) {
+            Object.assign(questionCounter.style, {
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid var(--border-primary)',
+                fontSize: '14px',
+                color: 'var(--text-secondary)'
+            });
+        }
+        
+        // Close button container styling
+        const closeButtonContainer = container.querySelector('.close-button-container');
+        if (closeButtonContainer) {
+            Object.assign(closeButtonContainer.style, {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '10px 20px',
+                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                transition: 'all 0.2s ease',
+                cursor: 'pointer',
+                minWidth: '120px'
+            });
+        }
+
+        // Close button text styling
+        const closeButton = container.querySelector('#mobile-preview-close');
+        if (closeButton) {
+            Object.assign(closeButton.style, {
+                background: 'none',
+                border: 'none',
+                color: 'white',
+                fontWeight: '600',
+                fontSize: '14px',
+                cursor: 'pointer',
+                padding: '0',
+                width: '100%',
+                textAlign: 'center'
+            });
+        }
+
+        // Mobile content container
+        const mobileContent = container.querySelector('.mobile-content');
+        if (mobileContent) {
+            Object.assign(mobileContent.style, {
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0',
+                height: 'auto',
+                minHeight: 'auto',
+                alignItems: 'stretch',
+                justifyContent: 'flex-start',
+                width: '100%'
+            });
+        }
+
+        // Mobile answers area styling - centered
+        const answersArea = container.querySelector('.mobile-answers');
+        if (answersArea) {
+            Object.assign(answersArea.style, {
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                flexShrink: '0',
+                height: 'auto',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                width: '100%',
+                maxWidth: '100%',
+                margin: '0 auto',
+                padding: '0',
+                boxSizing: 'border-box'
+            });
+        }
+        
+        // Mobile answer options styling - consistent sizing
+        const answerOptions = container.querySelectorAll('.player-option, .checkbox-option, .tf-option');
+        answerOptions.forEach(option => {
+            Object.assign(option.style, {
+                wordWrap: 'break-word',
+                width: '90%',
+                maxWidth: '600px',
+                padding: '20px',
+                margin: '0 auto 12px auto',
+                borderRadius: '12px',
+                lineHeight: '1.5',
+                fontSize: '16px',
+                background: 'var(--background-secondary)',
+                border: '2px solid var(--border-primary)',
+                color: 'var(--text-primary)',
+                display: 'block',
+                boxSizing: 'border-box'
+            });
+        });
+        
+        // Mobile code blocks - minimal responsive fixes
+        const codeBlocks = container.querySelectorAll('pre, code');
+        codeBlocks.forEach(code => {
+            Object.assign(code.style, {
+                maxWidth: '100%',
+                overflowX: 'auto'
+            });
+        });
+        
+        // Delayed rendering triggers
+        setTimeout(() => {
+            if (this.previewRenderer?.mathJaxService) {
+                this.previewRenderer.mathJaxService.renderAll(container).catch(error => 
+                    logger.warn('MathJax rendering failed:', error)
+                );
+            }
+            this.updateMobileCorrectAnswerStyling(container);
+        }, 200);
+    }
+
+    /**
+     * Update correct answer styling after content is rendered
+     */
+    updateMobileCorrectAnswerStyling(container) {
+        // Unified correct answer styling for all option types
+        const correctSelectors = ['.correct', '.correct-preview', '[data-correct]', 'input[checked]'];
+        const correctElements = container.querySelectorAll(correctSelectors.join(', '));
+        
+        correctElements.forEach(element => {
+            const option = element.matches('.player-option, .checkbox-option, .tf-option') 
+                ? element 
+                : element.closest('.player-option, .checkbox-option, .tf-option');
+                
+            if (option) {
+                Object.assign(option.style, {
+                    background: 'rgba(34, 197, 94, 0.15)',
+                    border: '3px solid #22c55e',
+                    color: '#15803d',
+                    fontWeight: '600',
+                    boxShadow: '0 4px 12px rgba(34, 197, 94, 0.25)'
+                });
+            }
+        });
+    }
+
+    /**
+     * Setup mobile preview event listeners
+     */
+    setupMobilePreviewListeners() {
+        const closeBtn = document.getElementById('mobile-preview-close');
+        const prevBtn = document.getElementById('mobile-preview-prev');
+        const nextBtn = document.getElementById('mobile-preview-next');
+        const track = document.getElementById('mobile-preview-track');
+        
+        // Close button
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.togglePreviewMode(); // This will close the preview
+            });
+        }
+        
+        // Navigation buttons
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                this.navigateMobilePreview(-1);
+            });
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                this.navigateMobilePreview(1);
+            });
+        }
+        
+        // Touch/swipe support on the preview content area
+        const container = document.getElementById('mobile-preview-container');
+        const previewContent = container ? container.querySelector('.preview-content-split') : null;
+        if (previewContent) {
+            this.setupMobileSwipeListeners(previewContent);
+        }
+    }
+
+    /**
+     * Setup mobile swipe listeners for carousel
+     */
+    setupMobileSwipeListeners(track) {
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+        let isDragging = false;
+        
+        track.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            isDragging = true;
+        }, { passive: true });
+        
+        track.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            
+            currentX = e.touches[0].clientX;
+            const deltaX = currentX - startX;
+            const deltaY = e.touches[0].clientY - startY;
+            
+            // Only prevent default if horizontal swipe is more significant than vertical
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        track.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            
+            const deltaX = currentX - startX;
+            const threshold = 50; // minimum swipe distance
+            
+            if (Math.abs(deltaX) > threshold) {
+                if (deltaX > 0) {
+                    // Swipe right - go to previous
+                    this.navigateMobilePreview(-1);
+                } else {
+                    // Swipe left - go to next
+                    this.navigateMobilePreview(1);
+                }
+            }
+            
+            isDragging = false;
+            startX = 0;
+            currentX = 0;
+        }, { passive: true });
+    }
+
+    /**
+     * Navigate mobile preview carousel
+     */
+    navigateMobilePreview(direction) {
+        const questionItems = document.querySelectorAll('.question-item');
+        const totalQuestions = questionItems.length;
+        
+        if (totalQuestions === 0) return;
+        
+        const newIndex = this.currentPreviewQuestion + direction;
+        
+        if (newIndex >= 0 && newIndex < totalQuestions) {
+            this.currentPreviewQuestion = newIndex;
+            this.updateMobilePreview();
+        }
+    }
+
+    /**
+     * Update mobile preview with current question using desktop rendering
+     */
+    updateMobilePreview() {
+        const questionItems = document.querySelectorAll('.question-item');
+        const totalQuestions = questionItems.length;
+        const counterDisplay = document.getElementById('mobile-preview-counter-display');
+        const counterSplit = document.getElementById('mobile-preview-counter-display');
+        const prevBtn = document.getElementById('mobile-preview-prev');
+        const nextBtn = document.getElementById('mobile-preview-next');
+        
+        if (totalQuestions === 0) {
+            this.showEmptyMobilePreview();
+            return;
+        }
+
+        // Update navigation
+        this.updateMobilePreviewNavigation(totalQuestions);
+        
+        // Validate and clamp currentPreviewQuestion to valid range
+        if (this.currentPreviewQuestion < 0) {
+            this.currentPreviewQuestion = 0;
+        }
+        if (this.currentPreviewQuestion >= totalQuestions) {
+            this.currentPreviewQuestion = totalQuestions - 1;
+        }
+        
+        // Get current question data
+        const currentQuestion = questionItems[this.currentPreviewQuestion];
+        
+        if (!currentQuestion) {
+            logger.error(`Current question not found at index ${this.currentPreviewQuestion}`);
+            return;
+        }
+
+        const questionData = this.extractQuestionDataForPreview(currentQuestion);
+        questionData.questionNumber = this.currentPreviewQuestion + 1;
+        questionData.totalQuestions = totalQuestions;
+        
+        // Use the same rendering as desktop preview
+        this.previewRenderer.renderMobileQuestionPreview(questionData);
+        
+        // Render MathJax after content is ready - updated for new mobile preview structure
+        setTimeout(() => {
+            // Find the mobile preview container - updated selectors for redesigned structure
+            const mobileContainer = document.querySelector('#mobile-preview-container .mobile-content') || 
+                                   document.querySelector('#mobile-preview-container .preview-content') ||
+                                   document.querySelector('#mobile-preview-container');
+            
+            if (mobileContainer && this.previewRenderer.mathJaxService) {
+                logger.debug('Rendering MathJax for mobile preview container');
+                this.previewRenderer.mathJaxService.renderAll(mobileContainer).then(() => {
+                    logger.debug('Mobile preview MathJax rendering completed successfully');
+                }).catch(error => {
+                    logger.warn('Mobile preview MathJax rendering failed:', error);
+                });
+            } else {
+                logger.warn('Mobile container or MathJax service not found for mobile preview rendering');
+            }
+        }, 300);
+    }
+
+    /**
+     * Show empty mobile preview
+     */
+    showEmptyMobilePreview() {
+        const previewText = document.getElementById('mobile-preview-question-text');
+        const counterDisplay = document.getElementById('mobile-preview-counter-display');
+        
+        if (previewText) {
+            previewText.textContent = translationManager.getTranslationSync('no_questions_to_preview') || 'No questions to preview';
+        }
+        if (counterDisplay) {
+            counterDisplay.innerHTML = `<span data-translate="question">Pregunta</span> 0 <span data-translate="of">de</span> 0`;
+        }
+        
+        // Hide all answer areas
+        document.querySelectorAll('#mobile-preview-answer-area .preview-answer-type').forEach(type => {
+            type.style.display = 'none';
+        });
+    }
+
+    /**
+     * Update mobile preview navigation
+     */
+    updateMobilePreviewNavigation(totalQuestions) {
+        const counterDisplay = document.getElementById('mobile-preview-counter-display');
+        const questionCounterDisplay = document.getElementById('mobile-preview-question-counter-display');
+        const prevBtn = document.getElementById('mobile-preview-prev');
+        const nextBtn = document.getElementById('mobile-preview-next');
+        
+        const questionNumber = this.currentPreviewQuestion + 1;
+        
+        // Update navigation bar counter
+        if (counterDisplay) {
+            counterDisplay.innerHTML = `<span data-translate="question">Pregunta</span> ${questionNumber} <span data-translate="of">de</span> ${totalQuestions}`;
+        }
+        
+        // Update question area counter
+        if (questionCounterDisplay) {
+            questionCounterDisplay.innerHTML = `<span data-translate="question">Pregunta</span> ${questionNumber} <span data-translate="of">de</span> ${totalQuestions}`;
+        }
+        
+        // Update translations for the newly inserted content
+        if (translationManager && translationManager.updateGameTranslations) {
+            translationManager.updateGameTranslations();
+        }
+        
+        if (prevBtn) {
+            prevBtn.disabled = this.currentPreviewQuestion === 0;
+        }
+        if (nextBtn) {
+            nextBtn.disabled = this.currentPreviewQuestion >= totalQuestions - 1;
+        }
+    }
+
+    // Old mobile rendering methods removed - now using desktop-style rendering
+
+    /**
+     * Cleanup mobile preview listeners
+     */
+    cleanupMobilePreviewListeners() {
+        // Mobile preview listeners are cleaned up when container is removed
+        // Touch listeners are also removed with the container
+    }
 
     /**
      * Check if preview mode is active

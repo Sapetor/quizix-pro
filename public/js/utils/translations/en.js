@@ -354,6 +354,9 @@ export default {
         connection_fair: "Fair",
         connection_poor: "Poor",
         connection: "Connection",
+        
+        // Question type display
+        numeric_answer: "Numeric Answer",
 
         // Image upload error messages
         please_select_image: "Please select an image file",
@@ -363,5 +366,8 @@ export default {
 
         // Confirmation dialogs
         confirm_delete_result: "Are you sure you want to delete this quiz result? This action cannot be undone.",
-        analytics_export_coming_soon: "Analytics report export coming soon!"
+        analytics_export_coming_soon: "Analytics report export coming soon!",
+        
+        // Missing preview translations
+        no_questions_to_preview: "No questions to preview"
 };

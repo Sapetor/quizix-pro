@@ -3,6 +3,8 @@
  * Provides touch-friendly question navigation with arrow buttons and indicator dots
  */
 
+import { getTranslation } from './translation-manager.js';
+
 class MobileQuestionCarousel {
     constructor() {
         this.currentIndex = 0;
@@ -213,7 +215,7 @@ class MobileQuestionCarousel {
         }
         
         if (title) {
-            title.textContent = `Question ${this.currentIndex + 1} of ${this.questions.length}`;
+            title.textContent = getTranslation('question_x_of_y', [this.currentIndex + 1, this.questions.length]);
         }
     }
 

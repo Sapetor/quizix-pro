@@ -115,7 +115,7 @@ export default {
         medium: "Medio",
         hard: "Difficile",
         enter_question: "Inserisci la tua domanda (supporta LaTeX: $x^2 + y^2 = z^2$)",
-        time_seconds: "Tempo (sec)",
+        time_seconds: "Tempo (s)",
         correct_answer: "Risposta Corretta",
         tolerance: "Tolleranza (+/-)",
         enter_question_with_latex: "Inserisci la tua domanda (supporta LaTeX)",

@@ -114,7 +114,7 @@ export default {
         medium: "中等",
         hard: "困难",
         enter_question: "输入您的问题（支持LaTeX：$x^2 + y^2 = z^2$）",
-        time_seconds: "时间（秒）",
+        time_seconds: "时间(s)",
         correct_answer: "正确答案",
         tolerance: "容差（+/-）",
         enter_question_with_latex: "输入您的问题（支持LaTeX）",

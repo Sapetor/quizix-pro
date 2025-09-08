@@ -5,17 +5,31 @@
 
 // Mobile quiz sheet state management
 let mobileQuizSheetVisible = false;
+let isShowingSheet = false; // Prevent double-clicks
 
 /**
  * Show the mobile quiz actions bottom sheet
  */
 function showMobileQuizSheet() {
+    // Prevent rapid successive clicks
+    if (isShowingSheet) {
+        console.debug('Sheet already opening, ignoring click');
+        return;
+    }
+    
     const overlay = document.getElementById('mobile-quiz-sheet-overlay');
     const sheet = document.getElementById('mobile-quiz-sheet');
+    const fab = document.getElementById('mobile-quiz-fab');
     
     if (!overlay || !sheet) {
         console.warn('Mobile quiz sheet elements not found');
         return;
+    }
+    
+    // Mark as opening and disable FAB temporarily
+    isShowingSheet = true;
+    if (fab) {
+        fab.classList.add('clicking');
     }
     
     // Show overlay first
@@ -24,6 +38,14 @@ function showMobileQuizSheet() {
     // Add active class after a small delay for smooth animation
     setTimeout(() => {
         sheet.classList.add('active');
+        
+        // Reset the click protection after animation
+        setTimeout(() => {
+            isShowingSheet = false;
+            if (fab) {
+                fab.classList.remove('clicking');
+            }
+        }, 200);
     }, 10);
     
     mobileQuizSheetVisible = true;
@@ -38,8 +60,15 @@ function showMobileQuizSheet() {
 function hideMobileQuizSheet() {
     const overlay = document.getElementById('mobile-quiz-sheet-overlay');
     const sheet = document.getElementById('mobile-quiz-sheet');
+    const fab = document.getElementById('mobile-quiz-fab');
     
     if (!overlay || !sheet) return;
+    
+    // Reset click protection
+    isShowingSheet = false;
+    if (fab) {
+        fab.classList.remove('clicking');
+    }
     
     // Clear any active/focus states from buttons
     const activeButtons = sheet.querySelectorAll('.mobile-quiz-action-btn:focus, .mobile-quiz-secondary-btn:focus');

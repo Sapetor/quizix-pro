@@ -414,7 +414,15 @@ export class PreviewRenderer {
         optionsContainer.innerHTML = '';
         
         if (!options || options.length === 0) {
-            optionsContainer.innerHTML = '<p><em>No options defined</em></p>';
+            // Simple translation map for "No options"
+            const translations = {
+                es: 'Sin opciones', fr: 'Aucune option', de: 'Keine Optionen',
+                it: 'Nessuna opzione', pt: 'Sem opções', pl: 'Brak opcji',
+                ja: 'オプションなし', zh: '无选项'
+            };
+            const lang = translationManager.getCurrentLanguage();
+            const noOptionsText = translations[lang] || 'No options';
+            optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
             return;
         }
         
@@ -457,7 +465,15 @@ export class PreviewRenderer {
         logger.debug('Multiple correct preview data:', { options, correctAnswers });
         
         if (!options || options.length === 0) {
-            optionsContainer.innerHTML = '<p><em>No options defined</em></p>';
+            // Simple translation map for "No options"
+            const translations = {
+                es: 'Sin opciones', fr: 'Aucune option', de: 'Keine Optionen',
+                it: 'Nessuna opzione', pt: 'Sem opções', pl: 'Brak opcji',
+                ja: 'オプションなし', zh: '无选项'
+            };
+            const lang = translationManager.getCurrentLanguage();
+            const noOptionsText = translations[lang] || 'No options';
+            optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
             return;
         }
         
@@ -587,15 +603,31 @@ export class PreviewRenderer {
 
 
     /**
-     * Format code blocks in text
+     * Format code blocks in text - matches mathRenderer.formatCodeBlocks()
      */
     formatCodeBlocks(text) {
         if (!text) return '';
         
-        // Replace code blocks with styled spans
-        return text
-            .replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>')
-            .replace(/`([^`]+)`/g, '<code>$1</code>');
+        // Convert code blocks (```language ... ```) - matches mathRenderer approach
+        text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, language, code) => {
+            const lang = language || 'text';
+            const trimmedCode = code.trim();
+            return `<pre><code class="language-${lang}">${this.escapeHtml(trimmedCode)}</code></pre>`;
+        });
+        
+        // Convert inline code (`code`)
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        return text;
+    }
+
+    /**
+     * Escape HTML entities in text - matches mathRenderer approach
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     /**
@@ -631,5 +663,329 @@ export class PreviewRenderer {
             logger.warn('Preview MathJax rendering error:', error);
             this.mathJaxRenderingInProgress = false;
         }
+    }
+
+    /**
+     * Render a mobile question preview using the same styling as desktop
+     */
+    renderMobileQuestionPreview(data) {
+        logger.debug('Rendering mobile question preview:', data);
+        
+        // Clear previous content and reset states
+        this.clearAllMobileAnswerTypes();
+        
+        // Render question text
+        this.renderMobileQuestionText(data.question);
+        
+        // Render answer type
+        this.renderMobileAnswerType(data);
+        
+        // Handle image if present
+        if (data.image) {
+            this.handleMobileQuestionImage(data.image);
+        }
+    }
+
+    /**
+     * Clear all mobile answer types
+     */
+    clearAllMobileAnswerTypes() {
+        document.querySelectorAll('#mobile-preview-answer-area .preview-answer-type').forEach(type => {
+            type.style.display = 'none';
+        });
+    }
+
+    /**
+     * Render mobile question text
+     */
+    renderMobileQuestionText(questionText) {
+        const previewElement = document.getElementById('mobile-preview-question-text');
+        
+        if (!previewElement) {
+            logger.warn('Mobile preview question text element not found');
+            return;
+        }
+        
+        const hasLatex = this.hasLatexContent(questionText);
+        const formattedText = this.formatCodeBlocks(questionText);
+        previewElement.innerHTML = formattedText;
+        
+        if (hasLatex) {
+            previewElement.setAttribute('data-has-latex', 'true');
+            // CRITICAL: Trigger MathJax rendering immediately after content insertion
+            this.triggerMobileLatexRendering(previewElement);
+        } else {
+            previewElement.removeAttribute('data-has-latex');
+        }
+        
+        // Apply syntax highlighting for code blocks
+        this.applyMobileCodeHighlighting(previewElement);
+    }
+
+    /**
+     * Trigger MathJax rendering specifically for mobile preview elements
+     */
+    triggerMobileLatexRendering(element) {
+        if (window.MathJax?.typesetPromise) {
+            // Use MathJax 3 API - immediate rendering
+            window.MathJax.typesetPromise([element]).then(() => {
+                logger.debug('Mobile LaTeX rendered:', element.id);
+            }).catch(error => {
+                logger.warn('Mobile LaTeX failed:', error);
+            });
+        } else if (window.MathJax?.Hub) {
+            // Fallback to MathJax 2 API - immediate rendering
+            window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, element]);
+            logger.debug('Mobile LaTeX queued:', element.id);
+        }
+    }
+
+    /**
+     * Apply syntax highlighting for code blocks in mobile preview
+     */
+    applyMobileCodeHighlighting(element) {
+        const codeBlocks = element.querySelectorAll('pre code');
+        
+        if (codeBlocks.length > 0) {
+            // Try to apply Highlight.js if available (like in-game)
+            if (window.hljs && window.hljs.highlightElement) {
+                codeBlocks.forEach(codeBlock => {
+                    // Add proper classes and apply Highlight.js
+                    if (!codeBlock.classList.contains('hljs')) {
+                        window.hljs.highlightElement(codeBlock);
+                        
+                        // Mark parent pre as having syntax highlighting
+                        const preElement = codeBlock.closest('pre');
+                        if (preElement) {
+                            preElement.classList.add('has-syntax-highlighting');
+                        }
+                    }
+                });
+                logger.debug('Mobile Highlight.js applied to', codeBlocks.length, 'blocks');
+            } else {
+                // Fallback: Use existing CSS classes that match the game styling
+                codeBlocks.forEach(codeBlock => {
+                    // Ensure proper CSS classes are applied (will inherit from code-blocks.css)
+                    const preElement = codeBlock.closest('pre');
+                    if (preElement && !preElement.classList.contains('has-syntax-highlighting')) {
+                        // CSS will handle the dark background and proper styling
+                        // No custom styling needed - let the CSS do the work
+                    }
+                });
+                logger.debug('Mobile code styling applied via CSS classes to', codeBlocks.length, 'blocks');
+            }
+        }
+    }
+
+    /**
+     * Render mobile answer type
+     */
+    renderMobileAnswerType(data) {
+        switch (data.type) {
+            case 'multiple-choice':
+                this.renderMobileMultipleChoicePreview(data.options, data.correctAnswer);
+                break;
+            case 'multiple-correct':
+                this.renderMobileMultipleCorrectPreview(data.options, data.correctAnswers);
+                break;
+            case 'true-false':
+                this.renderMobileTrueFalsePreview(data.correctAnswer);
+                break;
+            case 'numeric':
+                this.renderMobileNumericPreview(data.correctAnswer);
+                break;
+            default:
+                logger.warn('Unknown mobile question type:', data.type);
+        }
+    }
+
+    /**
+     * Render mobile multiple choice options
+     */
+    renderMobileMultipleChoicePreview(options, correctAnswer) {
+        const container = document.querySelector('#mobile-preview-answer-area .preview-multiple-choice');
+        const optionsContainer = document.getElementById('mobile-preview-options');
+        
+        if (!container || !optionsContainer) {
+            logger.warn('Mobile multiple choice preview containers not found');
+            return;
+        }
+        
+        container.style.display = 'block';
+        optionsContainer.innerHTML = '';
+        
+        if (!options || options.length === 0) {
+            // Simple translation map for "No options"
+            const translations = {
+                es: 'Sin opciones', fr: 'Aucune option', de: 'Keine Optionen',
+                it: 'Nessuna opzione', pt: 'Sem opções', pl: 'Brak opcji',
+                ja: 'オプションなし', zh: '无选项'
+            };
+            const lang = translationManager.getCurrentLanguage();
+            const noOptionsText = translations[lang] || 'No options';
+            optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
+            return;
+        }
+        
+        options.forEach((option, index) => {
+            if (!option || option.trim() === '' || option === 'Option text') {
+                return;
+            }
+            
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'player-option preview-option';
+            optionDiv.setAttribute('data-option', index);
+            
+            // Add correct answer styling
+            if (index === correctAnswer) {
+                optionDiv.classList.add('correct');
+            }
+            
+            const optionLetter = translationManager.getOptionLetter(index);
+            const hasLatex = this.hasLatexContent(option);
+            const formattedContent = `${optionLetter}: ${this.formatCodeBlocks(option)}`;
+            
+            this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
+        });
+    }
+
+    /**
+     * Render mobile multiple correct options
+     */
+    renderMobileMultipleCorrectPreview(options, correctAnswers) {
+        const container = document.querySelector('#mobile-preview-answer-area .preview-multiple-correct');
+        const optionsContainer = document.getElementById('mobile-preview-checkbox-options');
+        
+        if (!container || !optionsContainer) {
+            logger.warn('Mobile multiple correct preview containers not found');
+            return;
+        }
+        
+        container.style.display = 'block';
+        optionsContainer.innerHTML = '';
+        
+        if (!options || options.length === 0) {
+            // Simple translation map for "No options"
+            const translations = {
+                es: 'Sin opciones', fr: 'Aucune option', de: 'Keine Optionen',
+                it: 'Nessuna opzione', pt: 'Sem opções', pl: 'Brak opcji',
+                ja: 'オプションなし', zh: '无选项'
+            };
+            const lang = translationManager.getCurrentLanguage();
+            const noOptionsText = translations[lang] || 'No options';
+            optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
+            return;
+        }
+        
+        options.forEach((option, index) => {
+            if (!option || option.trim() === '' || option === 'Option text') {
+                return;
+            }
+            
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'checkbox-option preview-checkbox';
+            optionDiv.setAttribute('data-option', index);
+            
+            // Add correct answer styling
+            if (correctAnswers && correctAnswers.includes(index)) {
+                optionDiv.classList.add('correct');
+            }
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.disabled = true;
+            if (correctAnswers && correctAnswers.includes(index)) {
+                checkbox.checked = true;
+            }
+            
+            const optionLetter = translationManager.getOptionLetter(index);
+            const hasLatex = this.hasLatexContent(option);
+            const formattedContent = `${optionLetter}: ${this.formatCodeBlocks(option)}`;
+            
+            optionDiv.appendChild(checkbox);
+            optionDiv.insertAdjacentHTML('beforeend', ' ' + formattedContent);
+            
+            if (hasLatex) {
+                optionDiv.setAttribute('data-has-latex', 'true');
+                optionDiv.classList.add('tex2jax_process');
+            }
+            
+            // Apply syntax highlighting for code blocks
+            this.applyMobileCodeHighlighting(optionDiv);
+            
+            optionsContainer.appendChild(optionDiv);
+        });
+        
+        // Single LaTeX rendering call for entire container
+        this.triggerMobileLatexRendering(optionsContainer);
+    }
+
+    /**
+     * Render mobile true/false options
+     */
+    renderMobileTrueFalsePreview(correctAnswer) {
+        const container = document.querySelector('#mobile-preview-answer-area .preview-true-false');
+        const optionsContainer = document.getElementById('mobile-preview-tf-options');
+        
+        if (!container || !optionsContainer) {
+            logger.warn('Mobile true/false preview containers not found');
+            return;
+        }
+        
+        container.style.display = 'block';
+        optionsContainer.innerHTML = '';
+        
+        // Create True option
+        const trueOption = document.createElement('div');
+        trueOption.className = 'tf-option preview-option';
+        trueOption.setAttribute('data-option', 'true');
+        if (correctAnswer === true) {
+            trueOption.classList.add('correct');
+        }
+        trueOption.textContent = translationManager.getTranslationSync('true') || 'True';
+        
+        // Create False option
+        const falseOption = document.createElement('div');
+        falseOption.className = 'tf-option preview-option';
+        falseOption.setAttribute('data-option', 'false');
+        if (correctAnswer === false) {
+            falseOption.classList.add('correct');
+        }
+        falseOption.textContent = translationManager.getTranslationSync('false') || 'False';
+        
+        optionsContainer.appendChild(trueOption);
+        optionsContainer.appendChild(falseOption);
+    }
+
+    /**
+     * Render mobile numeric input
+     */
+    renderMobileNumericPreview(correctAnswer) {
+        const container = document.querySelector('#mobile-preview-answer-area .preview-numeric');
+        const inputContainer = document.getElementById('mobile-preview-numeric');
+        
+        if (!container || !inputContainer) {
+            logger.warn('Mobile numeric preview containers not found');
+            return;
+        }
+        
+        container.style.display = 'block';
+        
+        const input = inputContainer.querySelector('input[type="number"]');
+        if (input) {
+            input.placeholder = translationManager.getTranslationSync('enter_your_answer') || 'Enter your answer';
+            if (correctAnswer !== undefined && correctAnswer !== null) {
+                input.value = correctAnswer;
+            }
+        }
+    }
+
+    /**
+     * Handle mobile question image
+     */
+    handleMobileQuestionImage(imageUrl) {
+        // Similar to desktop image handling, but for mobile container
+        // Implementation depends on where image should be displayed in mobile layout
+        logger.debug('Mobile image handling not yet implemented:', imageUrl);
     }
 }

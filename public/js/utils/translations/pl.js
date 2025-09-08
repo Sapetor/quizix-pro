@@ -95,7 +95,7 @@ export default {
         
         // Question editor keys
         enter_question: "Wprowadź swoje pytanie (obsługuje LaTeX: $x^2 + y^2 = z^2$)",
-        time_seconds: "Czas (sek)",
+        time_seconds: "Czas (s)",
         correct_answer: "Poprawna Odpowiedź",
         tolerance: "Tolerancja (+/-)",
         enter_question_with_latex: "Wprowadź swoje pytanie (obsługuje LaTeX)",
@@ -315,5 +315,8 @@ export default {
         date_completed: "Data ukończenia",
         delete_result: "Usuń wynik",
         download_csv: "Pobierz CSV",
-        close: "Zamknij"
+        close: "Zamknij",
+        
+        // Question type display
+        numeric_answer: "Odpowiedź Liczbowa"
 };
