@@ -946,9 +946,7 @@ export class PreviewManager {
                 <!-- Bottom Navigation Bar - Easy thumb access -->
                 <div class="mobile-bottom-nav">
                     <button id="mobile-preview-prev" class="nav-btn mobile-nav-btn mobile-nav-prev">◀</button>
-                    <button id="mobile-preview-close" class="close-btn mobile-close-btn" data-translate="close_live_preview">
-                        <span data-translate="close">Close</span>
-                    </button>
+                    <button id="mobile-preview-close" class="close-btn mobile-close-btn" data-translate="close">Close</button>
                     <button id="mobile-preview-next" class="nav-btn mobile-nav-btn mobile-nav-next">▶</button>
                 </div>
             </div>
@@ -958,12 +956,14 @@ export class PreviewManager {
         document.body.appendChild(container);
         
         // Update translations for dynamically created elements
-        if (translationManager && translationManager.updateGameTranslations) {
-            // Use setTimeout to ensure DOM is fully rendered before translation updates
-            setTimeout(() => {
+        setTimeout(() => {
+            try {
                 translationManager.updateGameTranslations();
-            }, 50);
-        }
+                console.log('Mobile preview translations updated');
+            } catch (error) {
+                console.warn('Error updating mobile preview translations:', error);
+            }
+        }, 100);
         
         // Get theme for container background
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
