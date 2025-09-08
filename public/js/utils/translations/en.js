@@ -379,5 +379,15 @@ export default {
         import: "Import",
         export: "Export", 
         results: "Results",
-        to_top: "To Top"
+        to_top: "To Top",
+        
+        // Accessibility labels
+        previous_slide: "Previous",
+        next_slide: "Next", 
+        go_to_slide: "Go to slide",
+        editing_tools: "Editing Tools",
+        connected_players: "Connected Players",
+        game_info_controls: "Game Information and Controls",
+        click_to_copy_pin: "Click to copy PIN",
+        start_quiz_game: "Start the quiz game"
 };

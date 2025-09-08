@@ -911,7 +911,7 @@ export class PreviewManager {
                             <div id="mobile-preview-question-counter-display" class="question-counter-display mobile-q-counter">
                                 <span data-translate="question">Question</span> 1 <span data-translate="of">of</span> 1
                             </div>
-                            <div id="mobile-preview-question-text" class="preview-question-text mobile-question">No questions to preview</div>
+                            <div id="mobile-preview-question-text" class="preview-question-text mobile-question" data-translate="no_questions_to_preview">No questions to preview</div>
                         </div>
                         
                         <div id="mobile-preview-answer-area" class="preview-answer-area mobile-answers">
