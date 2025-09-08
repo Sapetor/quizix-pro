@@ -894,31 +894,17 @@ export class PreviewManager {
         container.id = 'mobile-preview-container';
         container.className = 'mobile-preview-container mobile-only';
         
-        // Use desktop-inspired layout with mobile optimizations - arrows only in nav buttons
+        // Redesigned layout with bottom navigation for better mobile UX
         container.innerHTML = `
             <div class="quiz-preview-section mobile-preview-modal">
-                <!-- Mobile Header with Title and Close Button -->
+                <!-- Simplified Mobile Header -->
                 <div class="preview-modal-header mobile-header">
                     <div class="preview-title-section">
-                        <h2>📱 <span data-translate="live_preview">Vista Previa en Vivo</span></h2>
-                    </div>
-                    <div class="close-button-container">
-                        <button id="mobile-preview-close" class="close-btn modern-close" data-translate-title="close_live_preview">
-                            <span data-translate="close_live_preview">Cerrar</span>
-                        </button>
+                        <h3><span data-translate="live_preview">Vista Previa en Vivo</span></h3>
                     </div>
                 </div>
                 
-                <!-- Navigation Bar with arrow-only buttons -->
-                <div class="preview-navigation-bar mobile-nav">
-                    <div class="preview-nav-section">
-                        <button id="mobile-preview-prev" class="nav-btn mobile-nav-btn">◀</button>
-                        <button id="mobile-preview-next" class="nav-btn mobile-nav-btn">▶</button>
-                    </div>
-                    <span id="mobile-preview-counter-display" class="question-counter mobile-counter"><span data-translate="question">Pregunta</span> 1 <span data-translate="of">de</span> 1</span>
-                </div>
-                
-                <!-- Preview Content Area -->
+                <!-- Preview Content Area - Now takes most of the screen -->
                 <div id="mobile-preview-viewport" class="preview-viewport mobile-viewport">
                     <div id="mobile-preview-content" class="preview-content mobile-content">
                         <div class="player-question-area mobile-question-area">
@@ -955,6 +941,15 @@ export class PreviewManager {
                             </div>
                         </div>
                     </div>
+                </div>
+                
+                <!-- Bottom Navigation Bar - Easy thumb access -->
+                <div class="mobile-bottom-nav">
+                    <button id="mobile-preview-prev" class="nav-btn mobile-nav-btn mobile-nav-prev">◀</button>
+                    <button id="mobile-preview-close" class="close-btn mobile-close-btn" data-translate="close_live_preview">
+                        <span data-translate="close">Cerrar</span>
+                    </button>
+                    <button id="mobile-preview-next" class="nav-btn mobile-nav-btn mobile-nav-next">▶</button>
                 </div>
             </div>
         `;
@@ -1013,44 +1008,27 @@ export class PreviewManager {
             });
         }
         
-        // Modern close button styling
-        const closeBtn = container.querySelector('.modern-close');
-        if (closeBtn) {
-            Object.assign(closeBtn.style, {
-                background: 'var(--danger-color)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '50%',
-                width: '36px',
-                height: '36px',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                transition: 'transform 0.1s ease'
-            });
-        }
-        
-        // Mobile navigation bar styling  
-        const navBar = container.querySelector('.mobile-nav');
-        if (navBar) {
-            Object.assign(navBar.style, {
-                background: 'var(--background-tertiary)',
-                borderBottom: '1px solid var(--border-primary)',
-                padding: '8px 16px',
+        // Bottom Navigation Bar styling - unified frame
+        const bottomNav = container.querySelector('.mobile-bottom-nav');
+        if (bottomNav) {
+            Object.assign(bottomNav.style, {
+                position: 'fixed',
+                bottom: '0',
+                left: '0',
+                right: '0',
+                background: 'var(--background-secondary)',
+                borderTop: '2px solid var(--border-primary)',
+                padding: '12px 20px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                minHeight: '48px',
-                flexWrap: 'wrap',
-                gap: '8px'
+                gap: '15px',
+                boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+                zIndex: '1000'
             });
         }
         
-        // Mobile navigation buttons styling - optimized for arrow-only design
+        // Navigation arrow buttons - circular for thumb-friendly access
         const navButtons = container.querySelectorAll('.mobile-nav-btn');
         navButtons.forEach(btn => {
             Object.assign(btn.style, {
@@ -1058,18 +1036,39 @@ export class PreviewManager {
                 color: 'white',
                 border: 'none',
                 borderRadius: '50%',
-                padding: '10px',
-                fontSize: '18px',
+                width: '48px',
+                height: '48px',
+                fontSize: '20px',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                width: '40px',
-                height: '40px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
             });
         });
+        
+        // Close button - guaranteed red rectangular button in center
+        const closeBtn = container.querySelector('.mobile-close-btn');
+        if (closeBtn) {
+            Object.assign(closeBtn.style, {
+                background: '#ef4444', // Explicit red color
+                color: 'white',
+                border: 'none',
+                borderRadius: '25px',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+                minWidth: '100px'
+            });
+        }
         
         // Question counter styling
         const counter = container.querySelector('.mobile-counter');
@@ -1085,16 +1084,17 @@ export class PreviewManager {
             });
         }
         
-        // Mobile viewport styling - TOP-ALIGNED to prevent clipping
+        // Mobile viewport styling - account for bottom navigation
         const viewport = container.querySelector('.mobile-viewport');
         if (viewport) {
             Object.assign(viewport.style, {
                 flex: '1',
                 overflowY: 'auto',
                 overflowX: 'hidden',
-                padding: '20px 16px 40px 16px',
+                padding: '20px 16px',
+                paddingBottom: '100px', // Space for bottom nav
                 background: 'var(--background-primary)',
-                maxHeight: 'calc(100vh - 120px)',
+                maxHeight: 'calc(100vh - 170px)', // Account for header + bottom nav
                 minHeight: '300px',
                 WebkitOverflowScrolling: 'touch',
                 boxSizing: 'border-box',
@@ -1149,37 +1149,14 @@ export class PreviewManager {
             });
         }
         
-        // Close button container styling
-        const closeButtonContainer = container.querySelector('.close-button-container');
-        if (closeButtonContainer) {
-            Object.assign(closeButtonContainer.style, {
+        // Clean header styling - center the title
+        const titleSection = container.querySelector('.preview-title-section');
+        if (titleSection) {
+            Object.assign(titleSection.style, {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '10px 20px',
-                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
-                transition: 'all 0.2s ease',
-                cursor: 'pointer',
-                minWidth: '120px'
-            });
-        }
-
-        // Close button text styling
-        const closeButton = container.querySelector('#mobile-preview-close');
-        if (closeButton) {
-            Object.assign(closeButton.style, {
-                background: 'none',
-                border: 'none',
-                color: 'white',
-                fontWeight: '600',
-                fontSize: '14px',
-                cursor: 'pointer',
-                padding: '0',
-                width: '100%',
-                textAlign: 'center'
+                width: '100%'
             });
         }
 
