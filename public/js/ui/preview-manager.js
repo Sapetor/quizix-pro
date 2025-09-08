@@ -959,7 +959,10 @@ export class PreviewManager {
         
         // Update translations for dynamically created elements
         if (translationManager && translationManager.updateGameTranslations) {
-            translationManager.updateGameTranslations();
+            // Use setTimeout to ensure DOM is fully rendered before translation updates
+            setTimeout(() => {
+                translationManager.updateGameTranslations();
+            }, 50);
         }
         
         // Get theme for container background

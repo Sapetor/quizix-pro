@@ -50,6 +50,14 @@ function showMobileQuizSheet() {
     
     mobileQuizSheetVisible = true;
     
+    // Update translations for the mobile quiz sheet
+    if (typeof translationManager !== 'undefined' && translationManager.updateGameTranslations) {
+        // Use setTimeout to ensure DOM is fully rendered before translation updates
+        setTimeout(() => {
+            translationManager.updateGameTranslations();
+        }, 50);
+    }
+    
     // Prevent body scroll when sheet is open
     document.body.style.overflow = 'hidden';
 }
