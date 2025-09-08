@@ -16,11 +16,17 @@ class MainMenuCarousel {
     }
     
     init() {
-        // Only initialize if we're on mobile and the carousel exists
-        if (window.innerWidth > 768) return;
-        
+        // Initialize if the carousel exists (removed mobile-only restriction)
         const carousel = document.getElementById('preview-carousel');
-        if (!carousel) return;
+        if (!carousel) {
+            console.log('MainMenuCarousel: preview-carousel element not found');
+            return;
+        }
+        
+        console.log('MainMenuCarousel: Initializing carousel', {
+            screenWidth: window.innerWidth,
+            userAgent: navigator.userAgent
+        });
         
         this.setupElements();
         this.setupEventListeners();
@@ -185,28 +191,43 @@ class MainMenuCarousel {
 let mainMenuCarousel = null;
 
 function initMainMenuCarousel() {
-    // Only initialize on mobile
-    if (window.innerWidth <= 768) {
+    // Initialize carousel regardless of screen size (the CSS handles mobile-only display)
+    if (!mainMenuCarousel) {
         mainMenuCarousel = new MainMenuCarousel();
     }
 }
 
-// Initialize on DOM ready and window resize
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initMainMenuCarousel);
-} else {
-    initMainMenuCarousel();
-}
-
-// Reinitialize on window resize
-window.addEventListener('resize', () => {
-    if (mainMenuCarousel) {
-        mainMenuCarousel.destroy();
-        mainMenuCarousel = null;
+// Initialize on DOM ready with multiple fallbacks
+function ensureInitialization() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initMainMenuCarousel);
+    } else {
+        // DOM is already ready, init immediately
+        initMainMenuCarousel();
     }
     
-    // Small delay to ensure resize is complete
-    setTimeout(initMainMenuCarousel, 100);
+    // Additional fallback with delay for slower mobile devices
+    setTimeout(() => {
+        if (!mainMenuCarousel) {
+            initMainMenuCarousel();
+        }
+    }, 500);
+}
+
+// Start initialization
+ensureInitialization();
+
+// Reinitialize on window resize (less aggressive)
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        if (mainMenuCarousel) {
+            mainMenuCarousel.destroy();
+            mainMenuCarousel = null;
+            initMainMenuCarousel();
+        }
+    }, 250);
 });
 
 // Export for potential external use

@@ -23,6 +23,27 @@
     }
 }
 
+/* Additional mobile breakpoints for better device coverage */
+@media screen and (max-width: 480px) {
+    .mobile-only {
+        display: block !important;
+    }
+}
+
+/* Ensure mobile-only works on various mobile device sizes */
+@media screen and (max-device-width: 768px) {
+    .mobile-only {
+        display: block !important;
+    }
+}
+
+/* Support for mobile devices in landscape */
+@media screen and (max-height: 768px) and (orientation: landscape) {
+    .mobile-only {
+        display: block !important;
+    }
+}
+
 /* Large Desktop Optimizations (1400px+) */
 @media (min-width: 1400px) {
     .container {
@@ -2691,8 +2712,8 @@
     }
     
     .preview-carousel-nav {
-        width: 36px;
-        height: 36px;
+        width: 44px; /* Larger touch targets for mobile */
+        height: 44px;
         border-radius: 50%;
         border: 1px solid rgba(255, 255, 255, 0.2);
         background: rgba(255, 255, 255, 0.05);
@@ -2704,6 +2725,9 @@
         cursor: pointer;
         transition: all 0.2s ease;
         backdrop-filter: blur(8px);
+        -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+        touch-action: manipulation; /* Improve touch responsiveness */
+        user-select: none; /* Prevent text selection */
     }
     
     .preview-carousel-nav:hover {
@@ -2727,15 +2751,19 @@
     }
     
     .preview-carousel-dot {
-        width: 10px;
-        height: 10px;
+        width: 12px; /* Slightly larger for better touch targets */
+        height: 12px;
         border-radius: 50%;
         border: none;
         background: rgba(255, 255, 255, 0.4);
         cursor: pointer;
         transition: all 0.3s ease;
-        padding: 0;
+        padding: 8px; /* Add padding for larger touch area */
+        margin: -8px; /* Negative margin to maintain visual size */
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        user-select: none;
     }
     
     .preview-carousel-dot.active {
