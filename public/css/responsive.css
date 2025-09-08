@@ -2731,22 +2731,6 @@
         border-radius: 12px;
     }
     
-    .preview-overlay {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-    }
-    
-    .preview-badge {
-        background: rgba(59, 130, 246, 0.9);
-        color: white;
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 500;
-        backdrop-filter: blur(8px);
-    }
-    
     /* Preview Carousel Navigation - Separate from quickstart guide */
     .preview-carousel-navigation {
         display: flex;

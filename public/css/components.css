@@ -1160,6 +1160,7 @@ select option {
     height: auto !important;
 }
 
+
 /* AI Generator Modal - Light mode text readability fixes */
 [data-theme="light"] .ai-generator-modal,
 [data-theme="light"] #ai-generator-modal,

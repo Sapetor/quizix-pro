@@ -337,8 +337,10 @@ export default {
         // Mobile preview showcase
         see_it_in_action: "Velo en Acción",
         preview_description: "Experimenta preguntas interactivas con ecuaciones matemáticas, imágenes y opciones de opción múltiple",
-        sample_question: "Pregunta de Muestra",
-        latex_math: "Matemáticas LaTeX",
-        mobile_optimized: "Optimizado para Móvil",
-        real_time: "Tiempo Real"
+        
+        // Mobile editor menu items
+        import: "Importar",
+        export: "Exportar", 
+        results: "Resultados",
+        to_top: "Ir Arriba"
 };

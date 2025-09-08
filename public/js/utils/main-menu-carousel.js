@@ -19,14 +19,8 @@ class MainMenuCarousel {
         // Initialize if the carousel exists (removed mobile-only restriction)
         const carousel = document.getElementById('preview-carousel');
         if (!carousel) {
-            console.log('MainMenuCarousel: preview-carousel element not found');
             return;
         }
-        
-        console.log('MainMenuCarousel: Initializing carousel', {
-            screenWidth: window.innerWidth,
-            userAgent: navigator.userAgent
-        });
         
         this.setupElements();
         this.setupEventListeners();

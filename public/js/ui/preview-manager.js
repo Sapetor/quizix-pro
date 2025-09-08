@@ -900,7 +900,7 @@ export class PreviewManager {
                 <!-- Simplified Mobile Header -->
                 <div class="preview-modal-header mobile-header">
                     <div class="preview-title-section">
-                        <h3><span data-translate="live_preview">Vista Previa en Vivo</span></h3>
+                        <h3><span data-translate="live_preview">Live Preview</span></h3>
                     </div>
                 </div>
                 
@@ -909,7 +909,7 @@ export class PreviewManager {
                     <div id="mobile-preview-content" class="preview-content mobile-content">
                         <div class="player-question-area mobile-question-area">
                             <div id="mobile-preview-question-counter-display" class="question-counter-display mobile-q-counter">
-                                <span data-translate="question">Pregunta</span> 1 <span data-translate="of">de</span> 1
+                                <span data-translate="question">Question</span> 1 <span data-translate="of">of</span> 1
                             </div>
                             <div id="mobile-preview-question-text" class="preview-question-text mobile-question">No questions to preview</div>
                         </div>
@@ -947,7 +947,7 @@ export class PreviewManager {
                 <div class="mobile-bottom-nav">
                     <button id="mobile-preview-prev" class="nav-btn mobile-nav-btn mobile-nav-prev">◀</button>
                     <button id="mobile-preview-close" class="close-btn mobile-close-btn" data-translate="close_live_preview">
-                        <span data-translate="close">Cerrar</span>
+                        <span data-translate="close">Close</span>
                     </button>
                     <button id="mobile-preview-next" class="nav-btn mobile-nav-btn mobile-nav-next">▶</button>
                 </div>
@@ -957,6 +957,14 @@ export class PreviewManager {
         // Always append directly to body for true full-screen experience
         document.body.appendChild(container);
         
+        // Update translations for dynamically created elements
+        if (translationManager && translationManager.updateGameTranslations) {
+            translationManager.updateGameTranslations();
+        }
+        
+        // Get theme for container background
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        
         // CRITICAL: Ensure the container is positioned properly for full-screen WITH BACKGROUND
         container.style.cssText = `
             position: fixed !important;
@@ -965,7 +973,7 @@ export class PreviewManager {
             width: 100vw !important;
             height: 100vh !important;
             z-index: 999999 !important;
-            background: var(--background-primary) !important;
+            background: ${isDark ? '#0d1117' : '#ffffff'} !important;
             overflow: hidden !important;
         `;
         
@@ -991,24 +999,27 @@ export class PreviewManager {
     }
 
     /**
-     * Apply mobile-specific styling to enhance desktop-like appearance
+     * Apply mobile-specific styling with proper theme detection
      */
     applyMobilePreviewStyles(container) {
-        // Enhanced mobile header styling
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        
+        // Mobile header styling with theme awareness
         const header = container.querySelector('.mobile-header');
         if (header) {
             Object.assign(header.style, {
-                background: 'var(--background-secondary)',
-                borderBottom: '2px solid var(--border-primary)',
+                background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.95)',
+                borderBottom: isDark ? '2px solid rgba(255,255,255,0.2)' : '2px solid rgba(0,0,0,0.1)',
                 padding: '12px 16px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                minHeight: '50px'
+                minHeight: '50px',
+                color: isDark ? '#f0f6fc' : '#1e293b'
             });
         }
         
-        // Bottom Navigation Bar styling - unified frame
+        // Bottom Navigation Bar styling with theme awareness  
         const bottomNav = container.querySelector('.mobile-bottom-nav');
         if (bottomNav) {
             Object.assign(bottomNav.style, {
@@ -1016,36 +1027,36 @@ export class PreviewManager {
                 bottom: '0',
                 left: '0',
                 right: '0',
-                background: 'var(--background-secondary)',
-                borderTop: '2px solid var(--border-primary)',
+                background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.95)',
+                borderTop: isDark ? '2px solid rgba(255,255,255,0.2)' : '2px solid rgba(0,0,0,0.1)',
                 padding: '12px 20px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 gap: '15px',
-                boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+                boxShadow: isDark ? '0 -2px 10px rgba(0,0,0,0.3)' : '0 -2px 10px rgba(0,0,0,0.1)',
                 zIndex: '1000'
             });
         }
         
-        // Navigation arrow buttons - circular for thumb-friendly access
+        // Navigation arrow buttons - always visible dark arrows on light background
         const navButtons = container.querySelectorAll('.mobile-nav-btn');
         navButtons.forEach(btn => {
             Object.assign(btn.style, {
-                background: 'var(--primary-color)',
-                color: 'white',
-                border: 'none',
+                background: '#ffffff', // Always white background for contrast
+                color: '#1e293b', // Always dark arrows for visibility  
+                border: '2px solid #1e293b', // Always dark border
                 borderRadius: '50%',
                 width: '48px',
                 height: '48px',
-                fontSize: '20px',
+                fontSize: '24px',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 'bold',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+                fontWeight: '900',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
             });
         });
         
@@ -1074,7 +1085,7 @@ export class PreviewManager {
         const counter = container.querySelector('.mobile-counter');
         if (counter) {
             Object.assign(counter.style, {
-                background: 'var(--accent-color)',
+                background: '#10b981',
                 color: 'white',
                 padding: '6px 12px',
                 borderRadius: '15px',
@@ -1084,7 +1095,7 @@ export class PreviewManager {
             });
         }
         
-        // Mobile viewport styling - account for bottom navigation
+        // Mobile viewport styling with theme awareness
         const viewport = container.querySelector('.mobile-viewport');
         if (viewport) {
             Object.assign(viewport.style, {
@@ -1092,9 +1103,9 @@ export class PreviewManager {
                 overflowY: 'auto',
                 overflowX: 'hidden',
                 padding: '20px 16px',
-                paddingBottom: '100px', // Space for bottom nav
-                background: 'var(--background-primary)',
-                maxHeight: 'calc(100vh - 170px)', // Account for header + bottom nav
+                paddingBottom: '100px',
+                background: isDark ? '#0d1117' : '#ffffff',
+                maxHeight: 'calc(100vh - 170px)',
                 minHeight: '300px',
                 WebkitOverflowScrolling: 'touch',
                 boxSizing: 'border-box',
@@ -1105,15 +1116,15 @@ export class PreviewManager {
             });
         }
         
-        // Mobile question area styling - dynamic height
+        // Mobile question area styling with theme awareness
         const questionArea = container.querySelector('.mobile-question-area');
         if (questionArea) {
             Object.assign(questionArea.style, {
                 margin: '0 0 20px 0',
                 padding: '20px 16px',
-                background: 'var(--background-secondary)',
+                background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)',
                 borderRadius: '12px',
-                border: '1px solid var(--border-primary)',
+                border: isDark ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)',
                 minHeight: 'auto',
                 height: 'auto',
                 overflow: 'visible',
@@ -1122,14 +1133,14 @@ export class PreviewManager {
             });
         }
         
-        // Mobile question text styling
+        // Mobile question text styling with theme awareness
         const questionText = container.querySelector('.mobile-question');
         if (questionText) {
             Object.assign(questionText.style, {
                 fontSize: '18px',
                 fontWeight: '600',
                 lineHeight: '1.4',
-                color: 'var(--text-primary)',
+                color: isDark ? '#f0f6fc' : '#1e293b',
                 marginTop: '16px',
                 paddingTop: '8px',
                 wordWrap: 'break-word',
@@ -1137,28 +1148,46 @@ export class PreviewManager {
             });
         }
 
-        // Mobile question counter styling
+        // Mobile question counter styling with theme awareness
         const questionCounter = container.querySelector('.mobile-q-counter');
         if (questionCounter) {
             Object.assign(questionCounter.style, {
                 marginBottom: '12px',
                 paddingBottom: '8px',
-                borderBottom: '1px solid var(--border-primary)',
+                borderBottom: isDark ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)',
                 fontSize: '14px',
-                color: 'var(--text-secondary)'
+                color: isDark ? '#8b949e' : '#64748b'
             });
         }
         
-        // Clean header styling - center the title
+        // Header styling with theme awareness
         const titleSection = container.querySelector('.preview-title-section');
         if (titleSection) {
             Object.assign(titleSection.style, {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '100%'
+                width: '100%',
+                color: isDark ? '#f0f6fc' : '#1e293b'
             });
         }
+        
+        // Header title text with theme awareness
+        const headerTitle = container.querySelector('.preview-title-section h3');
+        if (headerTitle) {
+            Object.assign(headerTitle.style, {
+                color: isDark ? '#f0f6fc' : '#1e293b',
+                fontSize: '18px',
+                fontWeight: '600',
+                margin: '0'
+            });
+        }
+        
+        // All text elements get theme-appropriate colors
+        const allTextElements = container.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, div, label');
+        allTextElements.forEach(element => {
+            element.style.color = isDark ? '#f0f6fc' : '#1e293b';
+        });
 
         // Mobile content container
         const mobileContent = container.querySelector('.mobile-content');
@@ -1194,9 +1223,10 @@ export class PreviewManager {
             });
         }
         
-        // Mobile answer options styling - consistent sizing
+        // Mobile answer options styling - preserve colorful options, only style layout
         const answerOptions = container.querySelectorAll('.player-option, .checkbox-option, .tf-option');
         answerOptions.forEach(option => {
+            // Only apply layout styles, not colors - let the preview renderer handle colors
             Object.assign(option.style, {
                 wordWrap: 'break-word',
                 width: '90%',
@@ -1206,11 +1236,9 @@ export class PreviewManager {
                 borderRadius: '12px',
                 lineHeight: '1.5',
                 fontSize: '16px',
-                background: 'var(--background-secondary)',
-                border: '2px solid var(--border-primary)',
-                color: 'var(--text-primary)',
                 display: 'block',
                 boxSizing: 'border-box'
+                // Don't set background, border, or color - preserve colorful styling
             });
         });
         
@@ -1422,6 +1450,9 @@ export class PreviewManager {
             } else {
                 logger.warn('Mobile container or MathJax service not found for mobile preview rendering');
             }
+            
+            // Apply theme-aware styling to dynamically created answer options
+            this.applyThemeAwareAnswerStyling();
         }, 300);
     }
 
@@ -1436,7 +1467,7 @@ export class PreviewManager {
             previewText.textContent = translationManager.getTranslationSync('no_questions_to_preview') || 'No questions to preview';
         }
         if (counterDisplay) {
-            counterDisplay.innerHTML = `<span data-translate="question">Pregunta</span> 0 <span data-translate="of">de</span> 0`;
+            counterDisplay.innerHTML = `<span data-translate="question">Question</span> 0 <span data-translate="of">of</span> 0`;
         }
         
         // Hide all answer areas
@@ -1458,18 +1489,20 @@ export class PreviewManager {
         
         // Update navigation bar counter
         if (counterDisplay) {
-            counterDisplay.innerHTML = `<span data-translate="question">Pregunta</span> ${questionNumber} <span data-translate="of">de</span> ${totalQuestions}`;
+            counterDisplay.innerHTML = `<span data-translate="question">Question</span> ${questionNumber} <span data-translate="of">of</span> ${totalQuestions}`;
         }
         
         // Update question area counter
         if (questionCounterDisplay) {
-            questionCounterDisplay.innerHTML = `<span data-translate="question">Pregunta</span> ${questionNumber} <span data-translate="of">de</span> ${totalQuestions}`;
+            questionCounterDisplay.innerHTML = `<span data-translate="question">Question</span> ${questionNumber} <span data-translate="of">of</span> ${totalQuestions}`;
         }
         
         // Update translations for the newly inserted content
-        if (translationManager && translationManager.updateGameTranslations) {
-            translationManager.updateGameTranslations();
-        }
+        setTimeout(() => {
+            if (translationManager && translationManager.updateGameTranslations) {
+                translationManager.updateGameTranslations();
+            }
+        }, 50);
         
         if (prevBtn) {
             prevBtn.disabled = this.currentPreviewQuestion === 0;
@@ -1487,6 +1520,42 @@ export class PreviewManager {
     cleanupMobilePreviewListeners() {
         // Mobile preview listeners are cleaned up when container is removed
         // Touch listeners are also removed with the container
+    }
+
+    /**
+     * Apply theme-aware styling to dynamically created answer options while preserving colorful options
+     */
+    applyThemeAwareAnswerStyling() {
+        const container = document.getElementById('mobile-preview-container');
+        if (!container) return;
+        
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        
+        // Only style non-colorful options (checkbox options should remain neutral)
+        const checkboxOptions = container.querySelectorAll('.checkbox-option');
+        checkboxOptions.forEach(option => {
+            Object.assign(option.style, {
+                background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)',
+                border: isDark ? '2px solid rgba(255,255,255,0.2)' : '2px solid rgba(0,0,0,0.1)',
+                color: isDark ? '#f0f6fc' : '#1e293b'
+            });
+        });
+        
+        // DON'T override .player-option styles - they should keep their colorful appearance
+        // Just ensure text is readable on colorful backgrounds
+        const colorfulOptions = container.querySelectorAll('.player-option');
+        colorfulOptions.forEach(option => {
+            // Only set text color, preserve background colors
+            option.style.color = 'white'; // White text works on all colorful backgrounds
+        });
+        
+        // Apply theme-appropriate colors to text elements but NOT to answer options
+        const textElements = container.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span:not(.player-option *), div:not(.player-option):not(.mobile-nav-btn):not(.mobile-close-btn), label, input, textarea');
+        textElements.forEach(element => {
+            element.style.color = isDark ? '#f0f6fc' : '#1e293b';
+        });
+        
+        logger.debug(`Applied theme-aware styling preserving colorful options: ${checkboxOptions.length} checkbox options, ${colorfulOptions.length} colorful options`);
     }
 
     /**

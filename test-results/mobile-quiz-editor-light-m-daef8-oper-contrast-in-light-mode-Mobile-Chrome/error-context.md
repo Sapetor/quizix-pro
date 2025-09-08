@@ -1,0 +1,65 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]: Bienvenido a
+          - heading "Quizix Pro" [level=1] [ref=e7]
+        - generic [ref=e8]:
+          - button "🏠" [ref=e9] [cursor=pointer]:
+            - generic [ref=e10] [cursor=pointer]: 🏠
+          - generic [ref=e14] [cursor=pointer]: 🇪🇸
+          - button "🌗" [ref=e15] [cursor=pointer]:
+            - generic [ref=e16] [cursor=pointer]: 🌗
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - heading "Guía de Inicio Rápido" [level=3] [ref=e19]
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e23]:
+              - heading "🎮 Para Unirse a un Quiz:" [level=4] [ref=e24]
+              - list [ref=e25]:
+                - listitem [ref=e26]: Haz clic en 'Unirse al Juego'
+                - listitem [ref=e27]: Ingresa el PIN de 6 dígitos o escanea el código QR
+                - listitem [ref=e28]: Ingresa tu nombre y únete al juego
+                - listitem [ref=e29]: O explora y selecciona salas abiertas
+            - generic [ref=e31]:
+              - heading "🎯 Para Crear un Quiz:" [level=4] [ref=e32]
+              - list [ref=e33]:
+                - listitem [ref=e34]: Haz clic en 'Crear Juego'
+                - listitem [ref=e35]: Crea preguntas o usa el Generador IA
+                - listitem [ref=e36]: Comparte el PIN del juego con los jugadores
+                - listitem [ref=e37]: Inicia el juego cuando esté listo
+            - generic [ref=e39]:
+              - heading "Características Principales:" [level=4] [ref=e40]
+              - generic [ref=e41]:
+                - generic [ref=e42]:
+                  - text: 🤖
+                  - generic [ref=e43]: Generación de preguntas con IA
+                - generic [ref=e44]:
+                  - text: ⚡
+                  - generic [ref=e45]: Multijugador en tiempo real
+                - generic [ref=e46]:
+                  - text: 📐
+                  - generic [ref=e47]: Soporte para matemáticas LaTeX
+                - generic [ref=e48]:
+                  - text: 🖼️
+                  - generic [ref=e49]: Preguntas con imágenes
+                - generic [ref=e50]:
+                  - text: 🌍
+                  - generic [ref=e51]: Soporte multiidioma
+                - generic [ref=e52]:
+                  - text: 📝
+                  - generic [ref=e53]: Múltiples tipos de preguntas
+          - generic [ref=e54]:
+            - button "Go to slide 1" [ref=e55] [cursor=pointer]
+            - button "Go to slide 2" [ref=e56] [cursor=pointer]
+            - button "Go to slide 3" [ref=e57] [cursor=pointer]
+      - generic [ref=e59]:
+        - button "Crear Juego" [ref=e60] [cursor=pointer]
+        - button "Unirse al Juego" [ref=e61] [cursor=pointer]
+  - text: 🟢
+```

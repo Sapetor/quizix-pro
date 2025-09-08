@@ -374,8 +374,10 @@ export default {
         // Mobile preview showcase
         see_it_in_action: "See it in Action",
         preview_description: "Experience interactive questions with math equations, images, and multiple choice options",
-        sample_question: "Sample Question",
-        latex_math: "LaTeX Math",
-        mobile_optimized: "Mobile Optimized",
-        real_time: "Real-time"
+        
+        // Mobile editor menu items
+        import: "Import",
+        export: "Export", 
+        results: "Results",
+        to_top: "To Top"
 };
