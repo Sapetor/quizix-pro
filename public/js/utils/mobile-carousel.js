@@ -11,6 +11,8 @@ class MobileCarousel {
         this.track = this.container.querySelector('.carousel-track');
         this.slides = this.container.querySelectorAll('.carousel-slide');
         this.dots = this.container.querySelectorAll('.carousel-dot');
+        this.prevBtn = this.container.querySelector('#quickstart-carousel-prev');
+        this.nextBtn = this.container.querySelector('#quickstart-carousel-next');
         
         this.currentIndex = 0;
         this.isTransitioning = false;
@@ -26,6 +28,9 @@ class MobileCarousel {
         
         // Set up dot navigation
         this.setupDotNavigation();
+        
+        // Set up arrow navigation
+        this.setupArrowNavigation();
         
         // Set up touch events for mobile swiping
         this.setupTouchEvents();
@@ -46,6 +51,20 @@ class MobileCarousel {
                 this.goToSlide(index);
             });
         });
+    }
+    
+    setupArrowNavigation() {
+        if (this.prevBtn) {
+            this.prevBtn.addEventListener('click', () => {
+                this.previousSlide();
+            });
+        }
+        
+        if (this.nextBtn) {
+            this.nextBtn.addEventListener('click', () => {
+                this.nextSlide();
+            });
+        }
     }
     
     setupTouchEvents() {
