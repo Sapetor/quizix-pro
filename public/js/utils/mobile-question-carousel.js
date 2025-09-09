@@ -173,8 +173,11 @@ class MobileQuestionCarousel {
         // Update navigation
         this.updateNavigation();
 
-        // Show current question (like preview system)
-        this.showCurrentQuestion();
+        // Delay showing current question to ensure quiz data is fully populated
+        // This fixes the issue where alternatives don't appear on mobile
+        setTimeout(() => {
+            this.showCurrentQuestion();
+        }, 150); // Slightly longer than the 100ms delay in populateTypeSpecificData
     }
 
     /**
@@ -270,6 +273,18 @@ class MobileQuestionCarousel {
                 }
             }
         });
+        
+        // Additional sync for question options that might not be captured above
+        // Specifically sync multiple choice options
+        const originalOptions = original.querySelectorAll('.option');
+        const cloneOptions = clone.querySelectorAll('.option');
+        originalOptions.forEach((option, index) => {
+            if (cloneOptions[index]) {
+                cloneOptions[index].value = option.value;
+            }
+        });
+        
+        console.debug('Form values synced from original to clone, including question options');
     }
 
     /**
