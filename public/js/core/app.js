@@ -1077,7 +1077,8 @@ export class QuizGame {
         body.setAttribute('data-theme', newTheme);
         document.documentElement.setAttribute('data-theme', newTheme);
         if (themeToggle) {
-            themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️'; // Moon for dark, sun for light
+            // Show what will happen on next click (consistent with SettingsManager)
+            themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
         }
         localStorage.setItem('theme', newTheme);
         logger.debug('Theme switched to:', newTheme);

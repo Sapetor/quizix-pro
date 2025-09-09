@@ -86,15 +86,15 @@ export class SettingsManager {
             body.setAttribute('data-theme', 'dark');
             document.documentElement.setAttribute('data-theme', 'dark');
             
-            // Update all theme toggle buttons with universal symbol
+            // Update all theme toggle buttons - show sun (switch to light)
             themeToggleButtons.forEach(themeToggle => {
                 // Update icon span if it exists (for mobile header controls)
                 const iconSpan = themeToggle.querySelector('.control-icon');
                 if (iconSpan) {
-                    iconSpan.textContent = '🌗'; // Universal theme toggle symbol
+                    iconSpan.textContent = '☀️'; // Sun icon - click to switch to light
                 } else {
                     // Update button text/icon directly
-                    themeToggle.textContent = '🌗'; // Universal theme toggle symbol
+                    themeToggle.textContent = '☀️'; // Sun icon - click to switch to light
                 }
                 themeToggle.title = getThemeToggleTitles().switchToLight;
             });
@@ -104,15 +104,15 @@ export class SettingsManager {
             body.setAttribute('data-theme', 'light');
             document.documentElement.setAttribute('data-theme', 'light');
             
-            // Update all theme toggle buttons with universal symbol
+            // Update all theme toggle buttons - show moon (switch to dark)
             themeToggleButtons.forEach(themeToggle => {
                 // Update icon span if it exists (for mobile header controls)
                 const iconSpan = themeToggle.querySelector('.control-icon');
                 if (iconSpan) {
-                    iconSpan.textContent = '🌗'; // Universal theme toggle symbol
+                    iconSpan.textContent = '🌙'; // Moon icon - click to switch to dark
                 } else {
                     // Update button text/icon directly
-                    themeToggle.textContent = '🌗'; // Universal theme toggle symbol
+                    themeToggle.textContent = '🌙'; // Moon icon - click to switch to dark
                 }
                 themeToggle.title = getThemeToggleTitles().switchToDark;
             });
@@ -368,17 +368,23 @@ export class SettingsManager {
         ].filter(button => button !== null);
         
         themeToggleButtons.forEach(themeToggle => {
-            // Use a single universal theme toggle symbol
             const iconSpan = themeToggle.querySelector('.control-icon');
-            if (iconSpan) {
-                iconSpan.textContent = '🌗'; // Half moon symbol represents both themes
-            } else {
-                themeToggle.textContent = '🌗';
-            }
-            // Update title based on current theme
+            // Update icon based on current theme - show what will happen on click
             if (this.settings.theme === 'dark') {
+                // Currently dark, show sun (click to switch to light)
+                if (iconSpan) {
+                    iconSpan.textContent = '☀️';
+                } else {
+                    themeToggle.textContent = '☀️';
+                }
                 themeToggle.title = getThemeToggleTitles().switchToLight;
             } else {
+                // Currently light, show moon (click to switch to dark)
+                if (iconSpan) {
+                    iconSpan.textContent = '🌙';
+                } else {
+                    themeToggle.textContent = '🌙';
+                }
                 themeToggle.title = getThemeToggleTitles().switchToDark;
             }
         });
