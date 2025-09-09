@@ -2366,7 +2366,7 @@ select option {
     position: relative;
     display: flex;
     align-items: center;
-    margin: 0 12px;
+    margin: 0 6px; /* Reduced margin for compact dot-only display */
     font-size: 13px;
     user-select: none;
 }
@@ -2374,14 +2374,16 @@ select option {
 .connection-indicator {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
+    justify-content: center;
+    gap: 0; /* No gap needed since text is hidden */
+    padding: 8px; /* Reduced padding for dot-only display */
     background: var(--glass-light);
     border: 1px solid var(--glass-border);
-    border-radius: 20px;
+    border-radius: 50%; /* Round shape for dot container */
     cursor: pointer;
     transition: all 0.2s ease;
-    min-width: 110px;
+    width: 32px; /* Fixed compact size for dot-only display */
+    height: 32px; /* Fixed compact size for dot-only display */
 }
 
 .connection-indicator:hover {
@@ -2469,12 +2471,14 @@ select option {
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .connection-status {
-        margin: 0 8px;
+        margin: 0 4px; /* Further reduced margin for mobile dot-only display */
     }
     
     .connection-indicator {
-        padding: 4px 8px;
-        min-width: 90px;
+        padding: 6px; /* Compact padding for mobile dot-only display */
+        width: 28px; /* Smaller on mobile */
+        height: 28px; /* Smaller on mobile */
+        min-width: unset; /* Remove min-width constraint */
     }
     
     .connection-text {
