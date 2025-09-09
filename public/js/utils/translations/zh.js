@@ -25,6 +25,7 @@ export default {
         browse_games: "浏览可用游戏",
         refresh: "刷新",
         back_to_join: "返回加入",
+        return_to_main: "返回主菜单",
         game_pin: "游戏PIN码",
         share_game: "分享游戏",
         players_joined: "已加入玩家",

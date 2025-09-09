@@ -69,6 +69,7 @@ export default {
         game_finished: "Jeu Terminé",
         play_again: "Rejouer",
         new_game: "Nouveau Jeu",
+        return_to_main: "Retour au Menu Principal",
         exit_to_main: "Retour au Menu Principal",
         question_x_of_y: "Question {0} sur {1}",
         option_letter_a: "A",

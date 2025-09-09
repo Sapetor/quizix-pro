@@ -26,6 +26,7 @@ export default {
         browse_games: "Procurar Jogos Disponíveis",
         refresh: "Atualizar",
         back_to_join: "Voltar para Juntar-se",
+        return_to_main: "Voltar ao Menu Principal",
         game_pin: "PIN do Jogo",
         share_game: "Compartilhar Jogo",
         players_joined: "Jogadores Conectados",

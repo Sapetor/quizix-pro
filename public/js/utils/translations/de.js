@@ -71,6 +71,7 @@ export default {
         game_finished: "Spiel beendet",
         play_again: "Nochmal spielen",
         new_game: "Neues Spiel",
+        return_to_main: "Zurück zum Hauptmenü",
         exit_to_main: "Zurück zum Hauptmenü",
         question_x_of_y: "Frage {0} von {1}",
         option_letter_a: "A",

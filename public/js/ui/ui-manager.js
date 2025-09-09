@@ -46,6 +46,18 @@ export class UIManager {
                 if (headerStartBtn) headerStartBtn.style.display = 'block';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
                 
+                // Translate toolbar tooltips after making it visible
+                setTimeout(() => {
+                    if (horizontalToolbar) {
+                        translationManager.translateContainer(horizontalToolbar);
+                    }
+                    // Also translate header controls that become visible
+                    const header = document.querySelector('header');
+                    if (header) {
+                        translationManager.translateContainer(header);
+                    }
+                }, 50);
+                
                 // Remove any transition classes when returning to host screen
                 const container = document.querySelector('.container');
                 if (container) {

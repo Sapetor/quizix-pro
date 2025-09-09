@@ -1026,15 +1026,22 @@ export function returnToMainFromHeader() {
 }
 
 /**
- * Update mobile header return button visibility
- * Shows button on all screens except main menu
+ * Update mobile and desktop header return button visibility
+ * Shows buttons on all screens except main menu
  */
 export function updateMobileReturnButtonVisibility(currentScreen) {
-    const returnButton = document.getElementById('mobile-return-to-main');
-    if (returnButton) {
-        const shouldShow = currentScreen !== 'main-menu' && currentScreen !== '';
-        returnButton.style.display = shouldShow ? 'flex' : 'none';
+    const mobileReturnButton = document.getElementById('mobile-return-to-main');
+    const desktopReturnButton = document.getElementById('desktop-return-to-main');
+    const shouldShow = currentScreen !== 'main-menu' && currentScreen !== '';
+    
+    if (mobileReturnButton) {
+        mobileReturnButton.style.display = shouldShow ? 'flex' : 'none';
         logger.debug(`📱 Mobile return button: ${shouldShow ? 'shown' : 'hidden'} for screen: ${currentScreen}`);
+    }
+    
+    if (desktopReturnButton) {
+        desktopReturnButton.style.display = shouldShow ? 'inline-block' : 'none';
+        logger.debug(`💻 Desktop return button: ${shouldShow ? 'shown' : 'hidden'} for screen: ${currentScreen}`);
     }
 }
 

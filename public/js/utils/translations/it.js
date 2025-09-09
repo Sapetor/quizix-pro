@@ -292,6 +292,7 @@ export default {
         question_will_appear_here: "La domanda apparirà qui",
         question_alternatives: "Alternative della Domanda",
         players_have_answered: "giocatori hanno risposto",
+        return_to_main: "Torna al Menu Principale",
         exit_to_main: "Torna al Menu Principale",
         
         // Additional tooltips

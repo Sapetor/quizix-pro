@@ -25,6 +25,7 @@ export default {
         browse_games: "利用可能なゲームを閲覧",
         refresh: "更新",
         back_to_join: "参加に戻る",
+        return_to_main: "メインメニューに戻る",
         game_pin: "ゲームPIN",
         share_game: "ゲームを共有",
         players_joined: "参加プレイヤー",
