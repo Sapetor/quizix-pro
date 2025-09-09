@@ -958,7 +958,8 @@ export class PreviewManager {
         // Update translations for dynamically created elements
         setTimeout(() => {
             try {
-                translationManager.updateGameTranslations();
+                // Translate the mobile preview container specifically
+                translationManager.translateContainer(container);
                 console.log('Mobile preview translations updated');
             } catch (error) {
                 console.warn('Error updating mobile preview translations:', error);
