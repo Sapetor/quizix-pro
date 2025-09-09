@@ -24,42 +24,48 @@ import './utils/mobile-question-carousel.js'; // Mobile question carousel for qu
  */
 function updateLanguageDropdownDisplay(languageCode) {
     try {
-        const dropdown = document.getElementById('language-selector');
-        if (!dropdown) {
-            logger.debug('Language dropdown not found during initialization');
+        // Update all language selectors (desktop, mobile bottom, mobile header)
+        const desktopDropdown = document.getElementById('language-selector');
+        const mobileDropdown = document.getElementById('mobile-language-selector');
+        const mobileHeaderDropdown = document.getElementById('mobile-language-selector-header');
+        
+        const dropdowns = [desktopDropdown, mobileDropdown, mobileHeaderDropdown].filter(d => d);
+        
+        if (dropdowns.length === 0) {
+            logger.debug('No language dropdowns found during initialization');
             return;
         }
 
-        const selectedFlag = dropdown.querySelector('.language-dropdown-selected .language-flag');
-        const selectedName = dropdown.querySelector('.language-dropdown-selected .language-name');
-        const optionElement = dropdown.querySelector(`[data-value="${languageCode}"]`);
+        dropdowns.forEach(dropdown => {
+            const selectedFlag = dropdown.querySelector('.language-dropdown-selected .language-flag');
+            const selectedName = dropdown.querySelector('.language-dropdown-selected .language-name');
+            const optionElement = dropdown.querySelector(`[data-value="${languageCode}"]`);
 
-        if (selectedFlag && selectedName && optionElement) {
-            const optionFlag = optionElement.querySelector('.language-flag');
-            const optionName = optionElement.querySelector('.language-name');
-            
-            if (optionFlag && optionName) {
-                // Update displayed flag and name
-                selectedFlag.textContent = optionFlag.textContent;
-                selectedName.textContent = optionName.textContent;
+            if (selectedFlag && selectedName && optionElement) {
+                const optionFlag = optionElement.querySelector('.language-flag');
+                const optionName = optionElement.querySelector('.language-name');
                 
-                // Update translation key if present
-                const translateKey = optionName.getAttribute('data-translate');
-                if (translateKey) {
-                    selectedName.setAttribute('data-translate', translateKey);
+                if (optionFlag && optionName) {
+                    // Update displayed flag and name
+                    selectedFlag.textContent = optionFlag.textContent;
+                    selectedName.textContent = optionName.textContent;
+                    
+                    // Update translation key if present
+                    const translateKey = optionName.getAttribute('data-translate');
+                    if (translateKey) {
+                        selectedName.setAttribute('data-translate', translateKey);
+                    }
+                    
+                    // Update selected state in options
+                    dropdown.querySelectorAll('.language-option').forEach(option => {
+                        option.classList.remove('selected');
+                    });
+                    optionElement.classList.add('selected');
                 }
-                
-                // Update selected state in options
-                dropdown.querySelectorAll('.language-option').forEach(option => {
-                    option.classList.remove('selected');
-                });
-                optionElement.classList.add('selected');
-                
-                logger.debug(`Updated language dropdown display to: ${languageCode}`);
             }
-        } else {
-            logger.warn(`Could not find language option for: ${languageCode}`);
-        }
+        });
+        
+        logger.debug(`Updated all language dropdown displays to: ${languageCode}`);
     } catch (error) {
         logger.error('Error updating language dropdown display:', error);
     }
@@ -100,7 +106,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 100);
             
             // Update language dropdown display to show current language
-            updateLanguageDropdownDisplay(savedLanguage);
+            // Use setTimeout to ensure DOM is fully rendered
+            setTimeout(() => {
+                updateLanguageDropdownDisplay(savedLanguage);
+            }, 100);
             
             // Log memory savings
             const memoryInfo = translationManager.getMemoryInfo();
