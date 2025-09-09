@@ -192,6 +192,11 @@ export default {
         submit: "Prześlij",
         next: "Następne",
         previous: "Poprzednie",
+        
+        // Navigation and accessibility
+        go_to_slide_1: "Przejdź do slajdu 1",
+        go_to_slide_2: "Przejdź do slajdu 2",
+        go_to_slide_3: "Przejdź do slajdu 3",
         adjust_font_size: "Dostosuj Rozmiar Czcionki",
         spacing: "Odstępy",
         button_size: "Rozmiar Przycisków",
@@ -201,7 +206,6 @@ export default {
         edit_question: "Edytuj Pytanie",
         back_to_top: "Na Górę",
         quick_actions: "Szybkie Akcje",
-        tools: "Narzędzia",
         global_time_limit: "Globalny Limit Czasu",
         mixed: "Mieszane",
         quiz_complete: "Quiz Ukończony",
