@@ -884,6 +884,7 @@ select option {
     padding: 12px 20px;
     font-size: 15px;
     min-height: 48px;
+    min-width: 140px; /* Prevent narrowing at different zoom levels */
     border-radius: 12px;
     font-weight: 700;
     letter-spacing: -0.01em;
