@@ -274,16 +274,60 @@ export class QuestionRenderer {
     }
 
     /**
+     * Create missing player option elements dynamically (mobile compatibility fix)
+     */
+    createPlayerOptionElements(data, optionsContainer) {
+        logger.debug('Creating player option elements dynamically');
+        
+        // Clear existing content to avoid conflicts
+        optionsContainer.innerHTML = '';
+        
+        // Create the required number of option buttons
+        const numOptions = Math.max(data.options.length, 4); // Ensure at least 4 options (A, B, C, D)
+        
+        for (let i = 0; i < numOptions; i++) {
+            const button = document.createElement('button');
+            button.className = 'player-option';
+            button.setAttribute('data-option', i.toString());
+            button.style.display = i < data.options.length ? 'block' : 'none';
+            
+            // Add basic styling to match existing buttons
+            button.style.margin = '8px 0';
+            button.style.padding = '12px 16px';
+            button.style.border = '2px solid rgba(255, 255, 255, 0.2)';
+            button.style.borderRadius = '8px';
+            button.style.background = 'rgba(255, 255, 255, 0.05)';
+            button.style.color = 'inherit';
+            button.style.cursor = 'pointer';
+            button.style.width = '100%';
+            button.style.textAlign = 'left';
+            button.style.fontSize = 'inherit';
+            
+            optionsContainer.appendChild(button);
+        }
+        
+        logger.debug(`Created ${numOptions} player option elements`);
+    }
+
+    /**
      * Setup player multiple choice options
      */
     setupPlayerMultipleChoiceOptions(data, optionsContainer) {
-        const existingButtons = optionsContainer.querySelectorAll('.player-option');
+        let existingButtons = optionsContainer.querySelectorAll('.player-option');
         
         // Debug Android DOM issues
         logger.debug(`Found ${existingButtons.length} player option buttons, need ${data.options.length}`);
+        
+        // If no existing buttons found, create them (fixes mobile DOM issues)
         if (existingButtons.length === 0) {
-            logger.error('No .player-option elements found - DOM structure missing!');
-            return;
+            logger.warn('No .player-option elements found - creating them dynamically for mobile compatibility');
+            this.createPlayerOptionElements(data, optionsContainer);
+            existingButtons = optionsContainer.querySelectorAll('.player-option');
+            
+            if (existingButtons.length === 0) {
+                logger.error('Failed to create .player-option elements - critical DOM issue!');
+                return;
+            }
         }
         
         existingButtons.forEach((button, index) => {
