@@ -205,6 +205,11 @@ export default {
         submit: "Enviar",
         next: "Próximo",
         previous: "Anterior",
+        
+        // Navigation and accessibility
+        go_to_slide_1: "Ir para o slide 1",
+        go_to_slide_2: "Ir para o slide 2",
+        go_to_slide_3: "Ir para o slide 3",
         adjust_font_size: "Ajustar Tamanho da Fonte",
         spacing: "Espaçamento",
         button_size: "Tamanho do Botão",
@@ -321,5 +326,13 @@ export default {
         
         // Carousel section
         see_it_in_action: "Veja em Ação",
-        preview_description: "Experimente perguntas interativas com equações matemáticas, imagens e opções de múltipla escolha"
+        preview_description: "Experimente perguntas interativas com equações matemáticas, imagens e opções de múltipla escolha",
+        
+        // Mobile tools menu keys
+        quiz_actions: "Ações do Quiz",
+        open_saved_quiz: "Abrir quiz salvo",
+        begin_hosting: "Iniciar hospedagem",
+        save_progress: "Salvar progresso",
+        test_questions: "Testar perguntas",
+        more_options: "Mais Opções"
 };

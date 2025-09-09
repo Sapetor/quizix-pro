@@ -199,6 +199,11 @@ export default {
         submit: "提交",
         next: "下一个",
         previous: "上一个",
+        
+        // Navigation and accessibility
+        go_to_slide_1: "转到幻灯片 1",
+        go_to_slide_2: "转到幻灯片 2",
+        go_to_slide_3: "转到幻灯片 3",
         adjust_font_size: "调整字体大小",
         spacing: "间距",
         button_size: "按钮大小",
@@ -319,5 +324,13 @@ export default {
         
         // Carousel section
         see_it_in_action: "查看实际效果",
-        preview_description: "体验包含数学方程式、图像和多选项的互动问题"
+        preview_description: "体验包含数学方程式、图像和多选项的互动问题",
+        
+        // Mobile tools menu keys
+        quiz_actions: "测验操作",
+        open_saved_quiz: "打开已保存的测验",
+        begin_hosting: "开始主持",
+        save_progress: "保存进度",
+        test_questions: "测试问题",
+        more_options: "更多选项"
 };

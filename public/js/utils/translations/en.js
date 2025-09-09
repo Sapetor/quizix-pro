@@ -236,6 +236,11 @@ export default {
         submit: "Submit",
         next: "Next",
         previous: "Previous",
+        
+        // Navigation and accessibility
+        go_to_slide_1: "Go to slide 1",
+        go_to_slide_2: "Go to slide 2", 
+        go_to_slide_3: "Go to slide 3",
         adjust_font_size: "Adjust Font Size",
         spacing: "Spacing",
         button_size: "Button Size",

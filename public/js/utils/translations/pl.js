@@ -327,5 +327,13 @@ export default {
         preview_description: "Doświadcz interaktywnych pytań z równaniami matematycznymi, obrazami i opcjami wielokrotnego wyboru",
         
         // Question type display
-        numeric_answer: "Odpowiedź Liczbowa"
+        numeric_answer: "Odpowiedź Liczbowa",
+        
+        // Mobile tools menu keys
+        quiz_actions: "Akcje Quizu",
+        open_saved_quiz: "Otwórz zapisany quiz",
+        begin_hosting: "Rozpocznij prowadzenie", 
+        save_progress: "Zapisz postęp",
+        test_questions: "Testuj pytania",
+        more_options: "Więcej Opcji"
 };

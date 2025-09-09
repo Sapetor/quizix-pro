@@ -204,6 +204,11 @@ export default {
         submit: "送信",
         next: "次へ",
         previous: "前へ",
+        
+        // Navigation and accessibility
+        go_to_slide_1: "スライド1に移動",
+        go_to_slide_2: "スライド2に移動",
+        go_to_slide_3: "スライド3に移動",
         adjust_font_size: "フォントサイズ調整",
         spacing: "間隔",
         button_size: "ボタンサイズ",
@@ -320,5 +325,13 @@ export default {
         
         // Carousel section
         see_it_in_action: "実際に見てみよう",
-        preview_description: "数式、画像、多択問題を使ったインタラクティブな質問を体験しましょう"
+        preview_description: "数式、画像、多択問題を使ったインタラクティブな質問を体験しましょう",
+        
+        // Mobile tools menu keys
+        quiz_actions: "クイズアクション",
+        open_saved_quiz: "保存されたクイズを開く",
+        begin_hosting: "ホストを開始",
+        save_progress: "進捗を保存",
+        test_questions: "問題をテスト",
+        more_options: "その他のオプション"
 };

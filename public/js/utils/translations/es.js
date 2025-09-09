@@ -204,6 +204,11 @@ export default {
         submit: "Enviar",
         next: "Siguiente",
         previous: "Anterior",
+        
+        // Navigation and accessibility
+        go_to_slide_1: "Ir a la diapositiva 1",
+        go_to_slide_2: "Ir a la diapositiva 2",
+        go_to_slide_3: "Ir a la diapositiva 3",
         adjust_font_size: "Ajustar Tamaño de Fuente",
         spacing: "Espaciado",
         button_size: "Tamaño de Botón",
