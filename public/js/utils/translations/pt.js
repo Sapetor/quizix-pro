@@ -316,5 +316,9 @@ export default {
         date_completed: "Data de conclusão",
         delete_result: "Excluir resultado",
         download_csv: "Baixar CSV",
-        close: "Fechar"
+        close: "Fechar",
+        
+        // Carousel section
+        see_it_in_action: "Veja em Ação",
+        preview_description: "Experimente perguntas interativas com equações matemáticas, imagens e opções de múltipla escolha"
 };

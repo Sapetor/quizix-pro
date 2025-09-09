@@ -343,5 +343,9 @@ export default {
         date_completed: "Date d'achèvement",
         delete_result: "Supprimer le résultat",
         download_csv: "Télécharger CSV",
-        close: "Fermer"
+        close: "Fermer",
+        
+        // Carousel section
+        see_it_in_action: "Voyez-le en Action",
+        preview_description: "Découvrez des questions interactives avec des équations mathématiques, des images et des options à choix multiples"
 };

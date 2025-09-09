@@ -315,5 +315,9 @@ export default {
         date_completed: "完了日",
         delete_result: "結果を削除",
         download_csv: "CSV をダウンロード",
-        close: "閉じる"
+        close: "閉じる",
+        
+        // Carousel section
+        see_it_in_action: "実際に見てみよう",
+        preview_description: "数式、画像、多択問題を使ったインタラクティブな質問を体験しましょう"
 };

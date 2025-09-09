@@ -314,5 +314,9 @@ export default {
         date_completed: "完成日期",
         delete_result: "删除结果",
         download_csv: "下载CSV",
-        close: "关闭"
+        close: "关闭",
+        
+        // Carousel section
+        see_it_in_action: "查看实际效果",
+        preview_description: "体验包含数学方程式、图像和多选项的互动问题"
 };

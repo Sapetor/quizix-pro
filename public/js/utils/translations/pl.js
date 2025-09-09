@@ -317,6 +317,10 @@ export default {
         download_csv: "Pobierz CSV",
         close: "Zamknij",
         
+        // Carousel section
+        see_it_in_action: "Zobacz w Akcji",
+        preview_description: "Doświadcz interaktywnych pytań z równaniami matematycznymi, obrazami i opcjami wielokrotnego wyboru",
+        
         // Question type display
         numeric_answer: "Odpowiedź Liczbowa"
 };
