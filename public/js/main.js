@@ -192,18 +192,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
         
-        // Apply saved theme immediately
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.body.setAttribute('data-theme', savedTheme);
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        
-        // Update theme toggle icon to match current theme
-        const themeToggle = document.getElementById('theme-toggle');
-        if (themeToggle) {
-            themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️'; // Moon for dark, sun for light
-        }
-        
-        logger.debug('Applied theme:', savedTheme);
+        // Theme initialization is handled by SettingsManager
+        // Remove conflicting theme initialization to prevent race conditions
+        logger.debug('Theme initialization delegated to SettingsManager');
         
         // Initialize global font size after DOM is ready
         setTimeout(() => {

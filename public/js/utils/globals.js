@@ -637,7 +637,14 @@ export function toggleTheme() {
             }
         });
         
-        localStorage.setItem('theme', newTheme);
+        // Save to quizSettings format for consistency with SettingsManager
+        try {
+            const savedSettings = JSON.parse(localStorage.getItem('quizSettings') || '{}');
+            savedSettings.theme = newTheme;
+            localStorage.setItem('quizSettings', JSON.stringify(savedSettings));
+        } catch (error) {
+            logger.warn('Failed to save theme to quizSettings:', error);
+        }
         logger.debug('Theme switched to:', newTheme);
     }
 }
