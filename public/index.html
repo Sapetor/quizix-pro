@@ -127,12 +127,36 @@
                 }
                 
                 
-                const themeToggle = document.getElementById('theme-toggle');
+                // Initialize theme toggles (desktop and mobile)
+                const themeToggleButtons = [
+                    document.getElementById('theme-toggle'),
+                    document.getElementById('theme-toggle-mobile-header')
+                ].filter(button => button !== null);
+                
                 const fontIcon = document.getElementById('font-size-icon');
                 
-                if (themeToggle) {
-                    themeToggle.textContent = '🌗'; // Universal theme toggle symbol
+                // Set initial theme emoji based on saved theme
+                const savedTheme = localStorage.getItem('quizSettings');
+                let currentTheme = 'light'; // default
+                if (savedTheme) {
+                    try {
+                        const settings = JSON.parse(savedTheme);
+                        currentTheme = settings.theme || 'light';
+                    } catch (e) {
+                        currentTheme = 'light';
+                    }
                 }
+                
+                themeToggleButtons.forEach(button => {
+                    const iconSpan = button.querySelector('.control-icon');
+                    const emoji = currentTheme === 'dark' ? '🌙' : '☀️';
+                    
+                    if (iconSpan) {
+                        iconSpan.textContent = emoji;
+                    } else {
+                        button.textContent = emoji;
+                    }
+                });
                 
                 if (fontIcon) {
                     const icons = { small: 'A⁻', medium: 'A', large: 'A⁺', xlarge: 'A⁺⁺' };
@@ -146,7 +170,11 @@
             const body = document.body;
             if (!body) return; // Safety check
             
-            const themeToggle = document.getElementById('theme-toggle');
+            // Get all theme toggle buttons (desktop and mobile)
+            const themeToggleButtons = [
+                document.getElementById('theme-toggle'),
+                document.getElementById('theme-toggle-mobile-header')
+            ].filter(button => button !== null);
             
             const currentTheme = body.getAttribute('data-theme') || 'light';
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -155,9 +183,18 @@
             body.setAttribute('data-theme', newTheme);
             document.documentElement.setAttribute('data-theme', newTheme);
             
-            if (themeToggle) {
-                themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
-            }
+            // Update all theme toggle buttons
+            themeToggleButtons.forEach(button => {
+                const iconSpan = button.querySelector('.control-icon');
+                const newEmoji = newTheme === 'dark' ? '🌙' : '☀️';
+                
+                if (iconSpan) {
+                    iconSpan.textContent = newEmoji;
+                } else {
+                    button.textContent = newEmoji;
+                }
+            });
+            
             localStorage.setItem('theme', newTheme);
         };
         
@@ -403,7 +440,7 @@
                     
                     <!-- Theme Toggle -->
                     <button id="theme-toggle-mobile-header" class="mobile-control-btn mobile-header" onclick="toggleTheme()" data-title-translate="toggle_dark_mode_tooltip">
-                        <span class="control-icon">🌗</span>
+                        <span class="control-icon">☀️</span>
                         <span class="control-label" data-translate="theme">theme</span>
                     </button>
                 </div>
@@ -626,13 +663,13 @@
                     
                     <!-- Carousel navigation with arrows and dots -->
                     <div class="carousel-navigation-container">
-                        <button class="carousel-nav prev" id="quickstart-carousel-prev" aria-label="Previous">‹</button>
+                        <button class="carousel-nav prev" id="quickstart-carousel-prev" data-translate-aria-label="previous">‹</button>
                         <div class="carousel-dots">
-                            <button class="carousel-dot active" data-slide="0" aria-label="Go to slide 1"></button>
-                            <button class="carousel-dot" data-slide="1" aria-label="Go to slide 2"></button>
-                            <button class="carousel-dot" data-slide="2" aria-label="Go to slide 3"></button>
+                            <button class="carousel-dot active" data-slide="0" data-translate-aria-label="go_to_slide_1"></button>
+                            <button class="carousel-dot" data-slide="1" data-translate-aria-label="go_to_slide_2"></button>
+                            <button class="carousel-dot" data-slide="2" data-translate-aria-label="go_to_slide_3"></button>
                         </div>
-                        <button class="carousel-nav next" id="quickstart-carousel-next" aria-label="Next">›</button>
+                        <button class="carousel-nav next" id="quickstart-carousel-next" data-translate-aria-label="next">›</button>
                     </div>
                 </div>
             </div>
@@ -665,13 +702,13 @@
                         
                         <!-- Carousel Navigation -->
                         <div class="preview-carousel-navigation">
-                            <button class="preview-carousel-nav prev" id="preview-carousel-prev" aria-label="Previous">‹</button>
+                            <button class="preview-carousel-nav prev" id="preview-carousel-prev" data-translate-aria-label="previous">‹</button>
                             <div class="preview-carousel-dots" id="preview-carousel-dots">
-                                <button class="preview-carousel-dot active" data-index="0"></button>
-                                <button class="preview-carousel-dot" data-index="1"></button>
-                                <button class="preview-carousel-dot" data-index="2"></button>
+                                <button class="preview-carousel-dot active" data-index="0" data-translate-aria-label="go_to_slide_1"></button>
+                                <button class="preview-carousel-dot" data-index="1" data-translate-aria-label="go_to_slide_2"></button>
+                                <button class="preview-carousel-dot" data-index="2" data-translate-aria-label="go_to_slide_3"></button>
                             </div>
-                            <button class="preview-carousel-nav next" id="preview-carousel-next" aria-label="Next">›</button>
+                            <button class="preview-carousel-nav next" id="preview-carousel-next" data-translate-aria-label="next">›</button>
                         </div>
                     </div>
                 </div>
