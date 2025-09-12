@@ -136,11 +136,11 @@
                 const fontIcon = document.getElementById('font-size-icon');
                 
                 // Set initial theme emoji based on saved theme
-                const savedTheme = localStorage.getItem('quizSettings');
+                const savedQuizSettings = localStorage.getItem('quizSettings');
                 let currentTheme = 'light'; // default
-                if (savedTheme) {
+                if (savedQuizSettings) {
                     try {
-                        const settings = JSON.parse(savedTheme);
+                        const settings = JSON.parse(savedQuizSettings);
                         currentTheme = settings.theme || 'light';
                     } catch (e) {
                         currentTheme = 'light';
