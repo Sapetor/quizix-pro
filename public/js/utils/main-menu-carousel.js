@@ -10,7 +10,7 @@ class MainMenuCarousel {
         this.dots = [];
         this.autoPlayInterval = null;
         this.isAutoPlaying = false;
-        this.autoPlayDelay = 4000; // 4 seconds
+        this.autoPlayDelay = 5000; // 5 seconds for better readability
         
         this.init();
     }
@@ -38,18 +38,31 @@ class MainMenuCarousel {
     }
     
     setupEventListeners() {
-        // Navigation buttons
+        // Navigation buttons with auto-play management
         if (this.prevBtn) {
-            this.prevBtn.addEventListener('click', () => this.prevSlide());
+            this.prevBtn.addEventListener('click', () => {
+                this.pauseAutoPlay();
+                this.prevSlide();
+                setTimeout(() => this.resumeAutoPlay(), 2000);
+            });
         }
         
         if (this.nextBtn) {
-            this.nextBtn.addEventListener('click', () => this.nextSlide());
+            this.nextBtn.addEventListener('click', () => {
+                this.pauseAutoPlay();
+                this.nextSlide();
+                setTimeout(() => this.resumeAutoPlay(), 2000);
+            });
         }
         
-        // Dots navigation
+        // Dots navigation with pause on interaction
         this.dots.forEach((dot, index) => {
-            dot.addEventListener('click', () => this.goToSlide(index));
+            dot.addEventListener('click', () => {
+                this.pauseAutoPlay();
+                this.goToSlide(index);
+                // Resume after 2 seconds of no interaction
+                setTimeout(() => this.resumeAutoPlay(), 2000);
+            });
         });
         
         // Touch/swipe support
@@ -106,15 +119,20 @@ class MainMenuCarousel {
             
             // Minimum swipe distance
             if (Math.abs(diffX) > 50) {
+                this.pauseAutoPlay();
                 if (diffX > 0) {
                     this.nextSlide(); // Swipe left = next
                 } else {
                     this.prevSlide(); // Swipe right = previous
                 }
+                // Resume after user interaction settles
+                setTimeout(() => this.resumeAutoPlay(), 3000);
+            } else {
+                // Just a tap, resume normally
+                this.resumeAutoPlay();
             }
             
             isDragging = false;
-            this.resumeAutoPlay();
         }, { passive: true });
     }
     

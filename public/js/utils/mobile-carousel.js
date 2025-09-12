@@ -38,8 +38,8 @@ class MobileCarousel {
         // Set up keyboard navigation
         this.setupKeyboardEvents();
         
-        // Auto-play (optional - can be enabled if desired)
-        // this.setupAutoPlay();
+        // Auto-play enabled for better UX showcase
+        this.setupAutoPlay(6000); // 6 seconds - slower than bottom carousel
         
         // Initialize first slide
         this.updateSlide(0, false);
@@ -193,14 +193,24 @@ class MobileCarousel {
     }
     
     setupAutoPlay(interval = 5000) {
+        if (this.slides.length <= 1) return; // Don't autoplay if only one slide
+        
+        this.autoPlayDelay = interval;
+        this.isAutoPlaying = true;
         this.autoPlayInterval = setInterval(() => {
             this.nextSlide();
         }, interval);
         
-        // Pause auto-play on user interaction
+        // Enhanced pause/resume logic
         this.container.addEventListener('touchstart', () => this.pauseAutoPlay());
         this.container.addEventListener('mouseenter', () => this.pauseAutoPlay());
         this.container.addEventListener('mouseleave', () => this.resumeAutoPlay());
+        this.container.addEventListener('focusin', () => this.pauseAutoPlay());
+        this.container.addEventListener('focusout', () => this.resumeAutoPlay());
+        
+        // Pause on window blur/focus for better performance
+        window.addEventListener('blur', () => this.pauseAutoPlay());
+        window.addEventListener('focus', () => this.resumeAutoPlay());
     }
     
     pauseAutoPlay() {
@@ -208,11 +218,15 @@ class MobileCarousel {
             clearInterval(this.autoPlayInterval);
             this.autoPlayInterval = null;
         }
+        this.isAutoPlaying = false;
     }
     
     resumeAutoPlay() {
-        if (!this.autoPlayInterval) {
-            this.setupAutoPlay();
+        if (!this.isAutoPlaying && this.slides.length > 1) {
+            this.isAutoPlaying = true;
+            this.autoPlayInterval = setInterval(() => {
+                this.nextSlide();
+            }, this.autoPlayDelay || 6000);
         }
     }
     
