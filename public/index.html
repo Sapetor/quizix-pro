@@ -114,16 +114,31 @@
             const scaleValues = { small: 0.9, medium: 1.0, large: 1.3, xlarge: 1.6 };
             document.documentElement.style.setProperty('--global-font-scale', scaleValues[savedFontSize]);
             
+            // Get theme from unified quizSettings storage
+            let initialTheme = 'light'; // default
+            const savedQuizSettings = localStorage.getItem('quizSettings');
+            if (savedQuizSettings) {
+                try {
+                    const settings = JSON.parse(savedQuizSettings);
+                    initialTheme = settings.theme || 'light';
+                } catch (e) {
+                    // Fallback to old storage format if parsing fails
+                    initialTheme = localStorage.getItem('theme') || 'light';
+                }
+            } else {
+                // Fallback to old storage format if quizSettings doesn't exist
+                initialTheme = localStorage.getItem('theme') || 'light';
+            }
+            
             // Apply theme immediately to prevent color shift
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.documentElement.setAttribute('data-theme', initialTheme);
             
             // Set theme and update icons when DOM is ready
             document.addEventListener('DOMContentLoaded', () => {
                 if (document.body) {
-                    document.body.setAttribute('data-theme', savedTheme);
+                    document.body.setAttribute('data-theme', initialTheme);
                     // Ensure both html and body have the same theme for consistent CSS matching
-                    document.documentElement.setAttribute('data-theme', savedTheme);
+                    document.documentElement.setAttribute('data-theme', initialTheme);
                 }
                 
                 
@@ -135,21 +150,9 @@
                 
                 const fontIcon = document.getElementById('font-size-icon');
                 
-                // Set initial theme emoji based on saved theme
-                const savedQuizSettings = localStorage.getItem('quizSettings');
-                let currentTheme = 'light'; // default
-                if (savedQuizSettings) {
-                    try {
-                        const settings = JSON.parse(savedQuizSettings);
-                        currentTheme = settings.theme || 'light';
-                    } catch (e) {
-                        currentTheme = 'light';
-                    }
-                }
-                
                 themeToggleButtons.forEach(button => {
                     const iconSpan = button.querySelector('.control-icon');
-                    const emoji = currentTheme === 'dark' ? '🌙' : '☀️';
+                    const emoji = initialTheme === 'dark' ? '🌙' : '☀️';
                     
                     if (iconSpan) {
                         iconSpan.textContent = emoji;
