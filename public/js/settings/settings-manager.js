@@ -428,11 +428,17 @@ export class SettingsManager {
      * Initialize settings event listeners
      */
     initializeEventListeners() {
-        // Theme toggle
-        const themeToggle = document.getElementById('theme-toggle');
-        if (themeToggle) {
-            themeToggle.addEventListener('click', () => this.toggleTheme());
-        }
+        // Theme toggle (desktop and mobile)
+        const themeToggleButtons = [
+            document.getElementById('theme-toggle'),
+            document.getElementById('theme-toggle-mobile-header')
+        ].filter(button => button !== null);
+        
+        themeToggleButtons.forEach(themeToggle => {
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => this.toggleTheme());
+            }
+        });
         
         // Sound toggle
         const soundToggle = document.getElementById('sound-toggle');
