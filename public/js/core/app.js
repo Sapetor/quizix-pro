@@ -317,17 +317,8 @@ export class QuizGame {
             this.gameManager.submitMultipleCorrectAnswer();
         });
 
-        // Theme and settings controls (fallback in case SettingsManager doesn't catch them)
-        safeAddEventListener('theme-toggle', 'click', () => {
-            logger.debug('Theme toggle clicked!');
-            if (this.settingsManager && typeof this.settingsManager.toggleTheme === 'function') {
-                logger.debug('Using SettingsManager toggleTheme');
-                this.settingsManager.toggleTheme();
-            } else {
-                logger.debug('Using fallback toggleTheme');
-                this.toggleTheme();
-            }
-        });
+        // Theme toggle is now handled by SettingsManager.initializeEventListeners()
+        // Removed conflicting fallback event listener
         safeAddEventListener('fullscreen-toggle', 'click', () => {
             if (this.settingsManager.toggleFullscreen) {
                 this.settingsManager.toggleFullscreen();
