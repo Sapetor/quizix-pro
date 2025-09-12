@@ -620,18 +620,18 @@ export function toggleTheme() {
             if (themeToggle) {
                 const iconSpan = themeToggle.querySelector('.control-icon');
                 if (newTheme === 'dark') {
-                    // In dark mode, show sun (indicates "switch to light")
-                    if (iconSpan) {
-                        iconSpan.textContent = '☀️';
-                    } else {
-                        themeToggle.textContent = '☀️';
-                    }
-                } else {
-                    // In light mode, show moon (indicates "switch to dark")
+                    // In dark mode, show moon (current state)
                     if (iconSpan) {
                         iconSpan.textContent = '🌙';
                     } else {
                         themeToggle.textContent = '🌙';
+                    }
+                } else {
+                    // In light mode, show sun (current state)
+                    if (iconSpan) {
+                        iconSpan.textContent = '☀️';
+                    } else {
+                        themeToggle.textContent = '☀️';
                     }
                 }
             }

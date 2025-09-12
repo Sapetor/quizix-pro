@@ -86,15 +86,15 @@ export class SettingsManager {
             body.setAttribute('data-theme', 'dark');
             document.documentElement.setAttribute('data-theme', 'dark');
             
-            // Update all theme toggle buttons - show sun (switch to light)
+            // Update all theme toggle buttons - show moon (current state: dark)
             themeToggleButtons.forEach(themeToggle => {
                 // Update icon span if it exists (for mobile header controls)
                 const iconSpan = themeToggle.querySelector('.control-icon');
                 if (iconSpan) {
-                    iconSpan.textContent = '☀️'; // Sun icon - click to switch to light
+                    iconSpan.textContent = '🌙'; // Moon icon - currently dark
                 } else {
                     // Update button text/icon directly
-                    themeToggle.textContent = '☀️'; // Sun icon - click to switch to light
+                    themeToggle.textContent = '🌙'; // Moon icon - currently dark
                 }
                 themeToggle.title = getThemeToggleTitles().switchToLight;
             });
@@ -104,15 +104,15 @@ export class SettingsManager {
             body.setAttribute('data-theme', 'light');
             document.documentElement.setAttribute('data-theme', 'light');
             
-            // Update all theme toggle buttons - show moon (switch to dark)
+            // Update all theme toggle buttons - show sun (current state: light)
             themeToggleButtons.forEach(themeToggle => {
                 // Update icon span if it exists (for mobile header controls)
                 const iconSpan = themeToggle.querySelector('.control-icon');
                 if (iconSpan) {
-                    iconSpan.textContent = '🌙'; // Moon icon - click to switch to dark
+                    iconSpan.textContent = '☀️'; // Sun icon - currently light
                 } else {
                     // Update button text/icon directly
-                    themeToggle.textContent = '🌙'; // Moon icon - click to switch to dark
+                    themeToggle.textContent = '☀️'; // Sun icon - currently light
                 }
                 themeToggle.title = getThemeToggleTitles().switchToDark;
             });
@@ -369,21 +369,21 @@ export class SettingsManager {
         
         themeToggleButtons.forEach(themeToggle => {
             const iconSpan = themeToggle.querySelector('.control-icon');
-            // Update icon based on current theme - show what will happen on click
+            // Update icon based on current theme - show current state
             if (this.settings.theme === 'dark') {
-                // Currently dark, show sun (click to switch to light)
-                if (iconSpan) {
-                    iconSpan.textContent = '☀️';
-                } else {
-                    themeToggle.textContent = '☀️';
-                }
-                themeToggle.title = getThemeToggleTitles().switchToLight;
-            } else {
-                // Currently light, show moon (click to switch to dark)
+                // Currently dark, show moon (current state)
                 if (iconSpan) {
                     iconSpan.textContent = '🌙';
                 } else {
                     themeToggle.textContent = '🌙';
+                }
+                themeToggle.title = getThemeToggleTitles().switchToLight;
+            } else {
+                // Currently light, show sun (current state)
+                if (iconSpan) {
+                    iconSpan.textContent = '☀️';
+                } else {
+                    themeToggle.textContent = '☀️';
                 }
                 themeToggle.title = getThemeToggleTitles().switchToDark;
             }
