@@ -429,11 +429,66 @@ select option {
     100% { transform: rotate(360deg); }
 }
 
-/* Focus Enhancement */
+/* === ENHANCED FOCUS INDICATORS FOR ACCESSIBILITY === */
+/* Modern focus ring system with theme support */
 *:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
     border-radius: 4px;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    transition: var(--theme-transition-fast);
+}
+
+/* Enhanced button focus states */
+.btn:focus-visible,
+button:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15), var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+/* Quiz option focus states */
+.player-option:focus-visible,
+.checkbox-option:focus-visible,
+.tf-option:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.12), var(--shadow-lg);
+    transform: translateY(-2px) scale(1.02);
+}
+
+/* Form element focus enhancements */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1), var(--shadow-md);
+}
+
+/* High contrast focus for better visibility */
+@media (prefers-contrast: high) {
+    *:focus-visible {
+        outline-width: 3px;
+        outline-color: #000000;
+        background-color: #FFFF00;
+    }
+    
+    [data-theme="dark"] *:focus-visible {
+        outline-color: #FFFFFF;
+        background-color: #0000FF;
+        color: #FFFFFF;
+    }
+}
+
+/* Reduced motion support for focus */
+@media (prefers-reduced-motion: reduce) {
+    *:focus-visible {
+        transform: none !important;
+        transition: outline 0.1s ease, box-shadow 0.1s ease !important;
+    }
 }
 
 /* Critical Component Styles from styles.css */
@@ -3124,4 +3179,294 @@ select option {
         rgba(59, 130, 246, 0.1) 0%,
         rgba(16, 185, 129, 0.05) 100%);
     color: #1e293b;
+}
+
+/* === ENHANCED MICRO-INTERACTIONS & BUTTON FEEDBACK === */
+
+/* Smooth button hover states with elastic animation */
+.btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Elastic ease-out */
+}
+
+.btn:not(:disabled):active {
+    transform: translateY(0px) scale(0.98);
+    transition: all 0.1s ease;
+}
+
+/* Enhanced quiz option interactions */
+.player-option:not(:disabled) {
+    transition: var(--theme-transition-smooth);
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+}
+
+.player-option:not(:disabled):hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1);
+}
+
+.player-option:not(:disabled):active {
+    transform: translateY(-1px) scale(1.01);
+    transition: transform 0.1s ease;
+}
+
+/* Ripple effect for interactive elements */
+.btn-ripple,
+.player-option,
+.checkbox-option {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-ripple::before,
+.player-option::before,
+.checkbox-option::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.btn-ripple:active::before,
+.player-option:active::before,
+.checkbox-option:active::before {
+    width: 300px;
+    height: 300px;
+    opacity: 1;
+    transition: width 0.1s ease, height 0.1s ease, opacity 0.1s ease;
+}
+
+/* Modal entrance animations */
+.modal {
+    animation: modalSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-content {
+    animation: modalFadeIn 0.3s ease-out 0.1s both;
+}
+
+/* Card hover effects */
+.card,
+.question-card,
+.result-card {
+    transition: var(--theme-transition-smooth);
+    cursor: pointer;
+}
+
+.card:hover,
+.question-card:hover,
+.result-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15), 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Input field focus animations */
+input:focus,
+textarea:focus,
+select:focus {
+    transform: scale(1.02);
+    transition: var(--theme-transition-smooth);
+}
+
+/* Theme toggle enhanced feedback */
+.theme-toggle {
+    transition: var(--theme-transition-smooth);
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-toggle:hover {
+    transform: rotateY(15deg) scale(1.1);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+}
+
+.theme-toggle:active {
+    transform: rotateY(0deg) scale(0.95);
+    transition: transform 0.1s ease;
+}
+
+/* Language selector smooth dropdown */
+.language-selector {
+    transition: var(--theme-transition-smooth);
+}
+
+.language-selector:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced loading states */
+.loading-spinner {
+    animation: smoothSpin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+}
+
+/* Stagger animations for quiz options */
+.quiz-options-container .player-option,
+.quiz-options-container .checkbox-option,
+.quiz-options-container .tf-option {
+    opacity: 0;
+    animation: staggerIn 0.4s ease-out forwards;
+}
+
+.quiz-options-container .player-option:nth-child(1),
+.quiz-options-container .checkbox-option:nth-child(1),
+.quiz-options-container .tf-option:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.quiz-options-container .player-option:nth-child(2),
+.quiz-options-container .checkbox-option:nth-child(2),
+.quiz-options-container .tf-option:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.quiz-options-container .player-option:nth-child(3),
+.quiz-options-container .checkbox-option:nth-child(3),
+.quiz-options-container .tf-option:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.quiz-options-container .player-option:nth-child(4),
+.quiz-options-container .checkbox-option:nth-child(4),
+.quiz-options-container .tf-option:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+.quiz-options-container .player-option:nth-child(5),
+.quiz-options-container .checkbox-option:nth-child(5),
+.quiz-options-container .tf-option:nth-child(5) {
+    animation-delay: 0.5s;
+}
+
+.quiz-options-container .player-option:nth-child(6),
+.quiz-options-container .checkbox-option:nth-child(6),
+.quiz-options-container .tf-option:nth-child(6) {
+    animation-delay: 0.6s;
+}
+
+/* Progress bar smooth animations */
+.progress-bar {
+    transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Tooltip hover effects */
+.tooltip-trigger:hover .tooltip {
+    animation: tooltipFadeIn 0.2s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Success/Error feedback animations */
+.success-feedback {
+    animation: successPulse 0.6s ease-out;
+}
+
+.error-feedback {
+    animation: errorShake 0.4s ease-out;
+}
+
+@keyframes successPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Smooth scroll behavior */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Enhanced carousel navigation */
+.carousel-nav,
+.carousel-nav-btn {
+    transition: var(--theme-transition-smooth);
+    position: relative;
+}
+
+.carousel-nav:hover,
+.carousel-nav-btn:hover {
+    transform: scale(1.15);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-nav:active,
+.carousel-nav-btn:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+}
+
+/* Floating action button effect */
+.floating-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: var(--theme-transition-smooth);
+    z-index: 1000;
+}
+
+.floating-btn:hover {
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Micro-animation delays to prevent overwhelming */
+.delayed-hover {
+    transition-delay: 0.05s;
+}
+
+.delayed-hover:hover {
+    transition-delay: 0s;
+}
+
+/* Reduced motion alternatives */
+@media (prefers-reduced-motion: reduce) {
+    .btn:hover,
+    .player-option:hover,
+    .card:hover {
+        transform: none;
+        transition: box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+    
+    .modal {
+        animation: none;
+    }
+    
+    .stagger-item {
+        animation: none;
+        opacity: 1;
+    }
+    
+    .floating-btn:hover {
+        transform: none;
+    }
 }

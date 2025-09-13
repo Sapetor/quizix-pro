@@ -17,7 +17,7 @@ body {
     background-attachment: fixed;
     min-height: 100dvh;
     color: var(--text-primary);
-    transition: var(--transition-smooth);
+    transition: var(--color-transition), background 0.4s ease;
     font-weight: 400;
     line-height: 1.6;
     letter-spacing: -0.01em;
@@ -321,5 +321,29 @@ blockquote {
     vertical-align: middle;
     max-width: 100%;
     overflow-x: auto;
+}
+
+/* === SMOOTH THEME TRANSITIONS === */
+/* Apply smooth transitions to all theme-dependent elements */
+*:not(.no-transition) {
+    transition: var(--color-transition);
+}
+
+/* Specific elements that need enhanced transitions */
+.card, .modal, .dropdown, .button, .input, .textarea, .select {
+    transition: var(--theme-transition-smooth);
+}
+
+/* Fast transitions for interactive elements */
+button, .btn, .player-option, .checkbox-option, .tf-option {
+    transition: var(--theme-transition-fast), transform 0.15s ease;
+}
+
+/* Prevent transitions on initial load */
+body:not(.loaded) *,
+body:not(.loaded) *:before,
+body:not(.loaded) *:after {
+    transition: none !important;
+    animation: none !important;
 }
 

@@ -311,6 +311,14 @@ class TranslationManager {
             element.placeholder = this.getTranslationSync(translationKey);
         });
 
+        // Translate aria-label attributes
+        document.querySelectorAll('[data-translate-aria-label]').forEach(element => {
+            const translationKey = element.getAttribute('data-translate-aria-label');
+            if (translationKey) {
+                element.setAttribute('aria-label', this.getTranslationSync(translationKey));
+            }
+        });
+
         // Translate option elements (for select dropdowns)
         document.querySelectorAll('option[data-translate]').forEach(element => {
             const translationKey = element.getAttribute('data-translate');
@@ -450,6 +458,14 @@ class TranslationManager {
         container.querySelectorAll('[data-translate-placeholder]').forEach(element => {
             const translationKey = element.getAttribute('data-translate-placeholder');
             element.placeholder = this.getTranslationSync(translationKey);
+        });
+
+        // Translate aria-label attributes
+        container.querySelectorAll('[data-translate-aria-label]').forEach(element => {
+            const translationKey = element.getAttribute('data-translate-aria-label');
+            if (translationKey) {
+                element.setAttribute('aria-label', this.getTranslationSync(translationKey));
+            }
         });
 
         // Translate option elements (for select dropdowns)

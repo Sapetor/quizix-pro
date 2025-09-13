@@ -1905,25 +1905,26 @@
 .carousel-dots {
     display: flex;
     justify-content: center;
-    gap: 0.75rem;
+    gap: 1.2rem; /* Same spacing as preview carousel */
     padding: 0.5rem 1rem;
     background: rgba(0, 0, 0, 0.4);
-    border-radius: 20px;
+    border-radius: 25px; /* Same rounded shape as preview carousel */
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     width: fit-content;
 }
 
 .carousel-dot {
-    width: 10px;
-    height: 10px;
+    width: 6px; /* Refined size, closer to bottom carousel */
+    height: 6px;
     border-radius: 50%;
     border: none;
     background: rgba(255, 255, 255, 0.4);
     cursor: pointer;
     transition: all 0.3s ease;
-    padding: 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    padding: 12px; /* Larger touch area */
+    margin: -12px; /* Maintain layout */
+    box-shadow: none; /* Clean, minimal appearance */
 }
 
 .carousel-dot.active {
@@ -1943,15 +1944,38 @@
     .carousel-dots {
         margin-top: 10px !important;
         margin-bottom: 8px;
+        gap: 1.8rem !important; /* Increase spacing between dots to make them less close */
     }
     
     .carousel-dot {
+        width: 10px !important; /* Original top carousel size */
+        height: 10px !important;
+        border-radius: 50% !important;
+        padding: 0 !important; /* Original had no padding */
+        margin: 0 !important; /* Original had no margin */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Original shadow */
         touch-action: manipulation; /* Better touch interaction */
     }
     
     .carousel-dot.active {
         background: #3b82f6 !important;
         transform: scale(1.3); /* Slightly larger active state */
+    }
+    
+    /* Nuclear option - override everything for carousel dots */
+    .carousel-dots .carousel-dot,
+    button.carousel-dot,
+    .carousel-dot[data-slide] {
+        width: 10px !important; /* Original size */
+        height: 10px !important;
+        border-radius: 50% !important;
+        padding: 0 !important; /* Original no padding */
+        margin: 0 !important; /* Original no margin */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Original shadow */
+        min-width: unset !important;
+        min-height: unset !important;
+        font-size: 0px !important;
+        line-height: 0 !important;
     }
 }
 
@@ -2344,10 +2368,11 @@
         font-size: 1.5em;
         color: var(--text-secondary);
         cursor: pointer;
-        padding: 4px;
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
+        padding: 6px 12px; /* Wider padding for better touch area */
+        border-radius: 8px; /* Rounded rectangle instead of circle */
+        width: auto; /* Auto width to accommodate wider padding */
+        min-width: 44px; /* Ensure minimum touch target */
+        height: 44px; /* Standard touch target height */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -2768,30 +2793,30 @@
         transform: scale(1.05);
     }
     
-    /* Preview Carousel Dots - Using quickstart guide style */
+    /* Preview Carousel Dots - Matching top carousel exactly */
     .preview-carousel-dots {
         display: flex;
         justify-content: center;
-        gap: 1.5rem; /* Increased spacing between dots */
-        padding: 0.75rem 1.5rem; /* Increased padding for better spacing */
+        gap: 1.8rem; /* Same spacing as top carousel mobile */
+        padding: 0.5rem 1rem; /* Same padding as top carousel */
         background: rgba(0, 0, 0, 0.4);
-        border-radius: 20px;
+        border-radius: 25px; /* Same radius as top carousel */
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         width: fit-content;
     }
     
     .preview-carousel-dot {
-        width: 12px; /* Slightly larger for better touch targets */
-        height: 12px;
+        width: 10px; /* Original top carousel size */
+        height: 10px;
         border-radius: 50%;
         border: none;
         background: rgba(255, 255, 255, 0.4);
         cursor: pointer;
         transition: all 0.3s ease;
-        padding: 8px; /* Add padding for larger touch area */
-        margin: -8px; /* Negative margin to maintain visual size */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        padding: 0; /* Original no padding */
+        margin: 0; /* Original no margin */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Original shadow */
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
         user-select: none;
@@ -2845,8 +2870,8 @@
     }
     
     [data-theme="light"] .preview-carousel-dots {
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid rgba(30, 41, 59, 0.1);
+        background: rgba(255, 255, 255, 0.9) !important; /* Same as top carousel light theme */
+        border: 1px solid rgba(30, 41, 59, 0.1) !important;
     }
     
     [data-theme="light"] .preview-carousel-dot {
@@ -2859,6 +2884,81 @@
     
     [data-theme="light"] .preview-carousel-dot.active {
         background: #3b82f6;
+    }
+    
+    /* Nuclear option for preview carousel dots - Ultra high specificity */
+    .mobile-preview-showcase .preview-carousel-dots .preview-carousel-dot,
+    .mobile-preview-showcase button.preview-carousel-dot,
+    .mobile-preview-showcase .preview-carousel-dot[data-slide],
+    .mobile-preview-showcase .preview-carousel-dot[data-index],
+    div.mobile-preview-showcase .preview-carousel-dots button.preview-carousel-dot,
+    div.mobile-preview-showcase button.preview-carousel-dot[data-index] {
+        width: 10px !important; /* Original top carousel size */
+        height: 10px !important;
+        border-radius: 50% !important;
+        padding: 0 !important; /* Original no padding */
+        margin: 0 !important; /* Original no margin */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Original shadow */
+        min-width: unset !important;
+        min-height: unset !important;
+        font-size: 0px !important;
+        line-height: 0 !important;
+        border: none !important;
+        background: rgba(255, 255, 255, 0.4) !important;
+        transform: none !important; /* Reset any transforms */
+    }
+    
+    /* Active state for preview carousel dots - Ultra high specificity */
+    .mobile-preview-showcase .preview-carousel-dots .preview-carousel-dot.active,
+    .mobile-preview-showcase button.preview-carousel-dot.active,
+    .mobile-preview-showcase .preview-carousel-dot[data-slide].active,
+    .mobile-preview-showcase .preview-carousel-dot[data-index].active,
+    div.mobile-preview-showcase .preview-carousel-dots button.preview-carousel-dot.active,
+    div.mobile-preview-showcase button.preview-carousel-dot[data-index].active {
+        background: #3b82f6 !important; /* Blue for active only */
+        transform: scale(1.3) !important;
+        width: 10px !important; /* Original size when active */
+        height: 10px !important;
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.4) !important; /* Original active shadow */
+    }
+    
+    /* Extreme override for bottom carousel - Force original appearance */
+    button.preview-carousel-dot[data-index] {
+        width: 10px !important;
+        height: 10px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        background: rgba(255, 255, 255, 0.4) !important;
+    }
+    
+    button.preview-carousel-dot[data-index].active {
+        background: #3b82f6 !important;
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.4) !important;
+        transform: scale(1.3) !important;
+    }
+    
+    /* Extreme override - Force all button elements in preview carousel */
+    .mobile-preview-showcase .preview-carousel-navigation button[class*="preview-carousel-dot"] {
+        width: 10px !important; /* Original size */
+        height: 10px !important;
+        min-width: 10px !important;
+        min-height: 10px !important;
+        max-width: 10px !important;
+        max-height: 10px !important;
+        border-radius: 50% !important;
+        padding: 0 !important; /* Original no padding */
+        margin: 0 !important; /* Original no margin */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Original shadow */
+        background: rgba(255, 255, 255, 0.4) !important;
+        border: none !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+    }
+    
+    .mobile-preview-showcase .preview-carousel-navigation button[class*="preview-carousel-dot"].active {
+        background: #3b82f6 !important;
+        transform: scale(1.3) !important;
     }
 }
 
@@ -2918,5 +3018,144 @@
         .players-list {
             max-height: 25vh;
         }
+    }
+    
+    /* === COMPREHENSIVE MOBILE TOUCH TARGET CONSISTENCY === */
+    /* Ensure all interactive elements meet 44x44px minimum touch target */
+    
+    /* Universal button touch targets */
+    button,
+    .btn,
+    .player-option,
+    .checkbox-option,
+    .tf-option,
+    .mobile-quiz-action-btn,
+    .mobile-quiz-secondary-btn,
+    .carousel-nav,
+    .nav-btn {
+        min-height: 44px !important;
+        min-width: 44px !important;
+        padding: 12px 16px !important;
+        border-radius: 8px !important;
+        touch-action: manipulation; /* Prevent double-tap zoom */
+        cursor: pointer;
+        position: relative;
+    }
+    
+    /* Enhanced touch feedback for mobile */
+    button:active,
+    .btn:active,
+    .player-option:active,
+    .checkbox-option:active,
+    .tf-option:active {
+        transform: scale(0.96);
+        transition: transform 0.1s ease;
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Form element touch targets */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    textarea,
+    select {
+        min-height: 44px !important;
+        padding: 12px 16px !important;
+        font-size: 16px !important; /* Prevent zoom on iOS */
+        border-radius: 8px !important;
+        touch-action: manipulation;
+    }
+    
+    /* Checkbox and radio touch areas */
+    input[type="checkbox"],
+    input[type="radio"] {
+        min-width: 24px !important;
+        min-height: 24px !important;
+        margin: 10px !important; /* Creates 44x44 touch area */
+    }
+    
+    /* Touch-friendly quiz options */
+    .quiz-editor-section .player-option,
+    .quiz-editor-section .checkbox-option {
+        min-height: 48px !important;
+        padding: 14px 16px !important;
+        margin: 6px 0 !important;
+        font-size: 16px !important;
+        line-height: 1.3 !important;
+    }
+    
+    /* Navigation and control buttons */
+    .theme-toggle,
+    .language-selector,
+    .preview-nav-btn,
+    .carousel-nav-btn,
+    .close-btn {
+        min-height: 44px !important;
+        min-width: 44px !important;
+        padding: 10px !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    /* Mobile-specific enhancements */
+    .mobile-menu-btn,
+    .mobile-back-btn,
+    .mobile-save-btn {
+        min-height: 48px !important;
+        min-width: 48px !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+    }
+    
+    /* AI Generator and toolbar buttons */
+    .ai-generator-btn,
+    .toolbar-btn,
+    .quiz-action-btn {
+        min-height: 44px !important;
+        padding: 12px 20px !important;
+        font-size: 16px !important;
+        white-space: nowrap !important;
+    }
+    
+    /* Ensure adequate spacing between touch targets */
+    .btn + .btn,
+    .player-option + .player-option,
+    .checkbox-option + .checkbox-option {
+        margin-top: 8px !important;
+    }
+    
+    /* Touch target visual feedback */
+    .touch-highlight:active {
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3) !important;
+    }
+    
+    /* Prevent accidental touches on small elements */
+    .small-text,
+    .helper-text,
+    .metadata {
+        pointer-events: none;
+        user-select: none;
+    }
+    
+    /* Ensure interactive elements are clearly defined */
+    button:not(:disabled),
+    .btn:not(:disabled),
+    .player-option:not(:disabled),
+    .checkbox-option:not(:disabled) {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    button:not(:disabled):hover,
+    .btn:not(:disabled):hover,
+    .player-option:not(:disabled):hover,
+    .checkbox-option:not(:disabled):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transition: var(--theme-transition-fast);
     }
 }

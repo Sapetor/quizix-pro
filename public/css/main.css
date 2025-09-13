@@ -65,3 +65,36 @@
  * 
  * Total: ~3,700 lines (was 4,733 - 22% reduction through optimization)
  */
+
+/* CRITICAL OVERRIDE: Make both carousels look like ORIGINAL top carousel */
+@media (max-width: 768px) {
+    /* Restore both carousels to original top carousel appearance */
+    .preview-carousel-dot,
+    .carousel-dot {
+        width: 10px !important;       /* Original top carousel size */
+        height: 10px !important;
+        border-radius: 50% !important;
+        padding: 0 !important;        /* Original had NO padding */
+        margin: 0 !important;         /* Original had NO margin */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Original shadow */
+        background: rgba(255, 255, 255, 0.4) !important;
+        border: none !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        touch-action: manipulation !important;
+    }
+    
+    .preview-carousel-dot.active,
+    .carousel-dot.active {
+        background: #3b82f6 !important;
+        transform: scale(1.3) !important;
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.4) !important; /* Original active shadow */
+    }
+    
+    .preview-carousel-dot:hover,
+    .carousel-dot:hover {
+        background: rgba(59, 130, 246, 0.7) !important;
+        transform: scale(1.15) !important;
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.3) !important;
+    }
+}

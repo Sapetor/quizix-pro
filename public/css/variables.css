@@ -99,6 +99,12 @@
     --leading-relaxed: 1.75;
 
 /* CSS Custom Properties */
+    /* === SMOOTH THEME TRANSITIONS === */
+    --theme-transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --theme-transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --theme-transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --color-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+
     /* Background Variables */
     --bg-primary: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
     /* Default theme values - overridden by theme-specific sections below */
