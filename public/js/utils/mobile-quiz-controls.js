@@ -169,14 +169,14 @@ function handleMobileStartGame() {
     // Check if we have questions first
     const questions = document.querySelectorAll('.question-item');
     if (questions.length === 0) {
-        alert('Please add at least one question before starting the game.');
+        alert(translationManager.getTranslationSync('please_add_question_alert') || 'Please add at least one question before starting the game.');
         return;
     }
     
     // Check if quiz has a title
     const quizTitle = document.getElementById('quiz-title');
     if (quizTitle && !quizTitle.value.trim()) {
-        if (!confirm('Your quiz doesn\'t have a title. Start anyway?')) {
+        if (!confirm(translationManager.getTranslationSync('confirm_start_without_title') || 'Your quiz doesn\'t have a title. Start anyway?')) {
             return;
         }
     }

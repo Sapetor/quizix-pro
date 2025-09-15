@@ -683,8 +683,7 @@ export function initializeAutoHideToolbar() {
     // Initially hide the header and show hint
     hideToolbar();
     
-    // Mouse move event listener for showing header
-    document.addEventListener('mousemove', handleMouseMove);
+    // No general mouse move listener - header only shows when hovering over the tab
     
     // Keyboard escape to show header
     document.addEventListener('keydown', handleKeyDown);
@@ -698,14 +697,8 @@ export function initializeAutoHideToolbar() {
     });
     
     headerElement.addEventListener('mouseleave', (e) => {
-        // Check if mouse is still within the safe zone before starting hide timer
-        const safeZone = 120;
-        
-        // Only start hide timer if mouse moves significantly away from header
-        if (e.clientY > safeZone) {
-            startHideTimer();
-        }
-        // If mouse is still near the header area, don't hide yet
+        // Start hide timer when leaving the header (no safe zone needed since we only show on tab hover)
+        startHideTimer();
     });
     
     logger.debug('Auto-hide header initialized successfully');
@@ -736,48 +729,13 @@ function createHintElement() {
     });
     
     hintElement.addEventListener('mouseleave', (e) => {
-        // Use longer timeout for hint element to be more forgiving
-        const safeZone = 120;
-        if (e.clientY > safeZone) {
-            startHideTimer();
-        }
+        // Start hide timer when leaving the hint tab
+        startHideTimer();
     });
     
     logger.debug('Header hint element created');
 }
 
-function handleMouseMove(e) {
-    if (!isAutoHideEnabled || !headerElement) return;
-    
-    // Check if language dropdown is open - don't hide toolbar during dropdown interaction
-    const languageDropdown = document.getElementById('language-selector');
-    const isDropdownOpen = languageDropdown && languageDropdown.classList.contains('open');
-    
-    // Expanded trigger zone from 30px to 80px for easier access
-    const showTriggerZone = 80;
-    // Larger safe zone where toolbar won't hide (120px)
-    const safeZone = 120;
-    
-    if (e.clientY <= showTriggerZone) {
-        // Show toolbar when mouse enters trigger zone
-        if (autoHideTimeout) {
-            clearTimeout(autoHideTimeout);
-            autoHideTimeout = null;
-        }
-        
-        // Show immediately if not already visible
-        if (!headerElement.classList.contains('visible')) {
-            showToolbar();
-        }
-    } else if (e.clientY > safeZone) {
-        // Only start hide timer if mouse moves outside the safe zone
-        // AND dropdown is not open
-        if (headerElement.classList.contains('visible') && !isDropdownOpen) {
-            startHideTimer();
-        }
-    }
-    // If mouse is between showTriggerZone and safeZone, do nothing (keep current state)
-}
 
 function handleKeyDown(e) {
     if (!isAutoHideEnabled || !headerElement) return;
@@ -845,8 +803,7 @@ export function disableAutoHideToolbar() {
     
     logger.debug('Disabling auto-hide header');
     
-    // Remove event listeners
-    document.removeEventListener('mousemove', handleMouseMove);
+    // Remove event listeners (handleMouseMove was removed when we changed to tab-only hover)
     document.removeEventListener('keydown', handleKeyDown);
     
     // Clear timeout

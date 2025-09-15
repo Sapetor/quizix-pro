@@ -140,6 +140,7 @@ export default {
         enter_numeric_answer: "Entrez la réponse numérique",
 
         // Language selector keys
+        theme: "Theme",
         language_en: "Anglais",
         language_es: "Espagnol",
         language_pl: "Polonais",
@@ -149,6 +150,18 @@ export default {
         language_pt: "Portugais",
         language_ja: "Japonais",
         language_zh: "Chinois",
+        
+        // Additional missing keys
+        copied: "Copié !",
+        download_csv: "Télécharger CSV",
+        error_loading_results: "Erreur lors du chargement des résultats",
+        untitled_quiz: "Quiz Sans Titre",
+        quiz_results_detail: "Détail des Résultats du Quiz",
+        unknown: "Inconnu",
+        loading: "Chargement...",
+        view_all_results: "Voir Tous les Résultats",
+        please_add_question_alert: "Veuillez ajouter au moins une question avant de commencer le jeu.",
+        confirm_start_without_title: "Votre quiz n'a pas de titre. Commencer quand même ?",
 
         // Tooltip keys
         start_quiz_tooltip: "Commencer le quiz avec les questions actuelles",

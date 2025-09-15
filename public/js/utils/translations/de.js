@@ -134,6 +134,9 @@ export default {
         remove_image: "Bild entfernen",
         remove: "Entfernen",
         enter_numeric_answer: "Numerische Antwort eingeben",
+        
+        // Theme and language selector keys
+        theme: "Theme",
         language_en: "Englisch",
         language_es: "Spanisch",
         language_pl: "Polnisch",
@@ -143,6 +146,18 @@ export default {
         language_pt: "Portugiesisch",
         language_ja: "Japanisch",
         language_zh: "Chinesisch",
+        
+        // Additional missing keys
+        copied: "Kopiert!",
+        download_csv: "CSV herunterladen",
+        error_loading_results: "Fehler beim Laden der Ergebnisse",
+        untitled_quiz: "Unbenanntes Quiz",
+        quiz_results_detail: "Quiz-Ergebnisse Detail",
+        unknown: "Unbekannt",
+        loading: "Laden...",
+        view_all_results: "Alle Ergebnisse Anzeigen",
+        please_add_question_alert: "Bitte fügen Sie mindestens eine Frage hinzu, bevor Sie das Spiel starten.",
+        confirm_start_without_title: "Ihr Quiz hat keinen Titel. Trotzdem starten?",
         start_quiz_tooltip: "Quiz mit aktuellen Fragen starten",
         toggle_fullscreen_tooltip: "Vollbildmodus umschalten",
         toggle_dark_mode_tooltip: "Dunkles/helles Design umschalten",

@@ -627,9 +627,10 @@ export class ResultsViewer {
         }
 
         // Set basic info
-        document.getElementById('result-detail-title').textContent = `${fullResult.quizTitle || 'Untitled Quiz'} - Results`;
-        document.getElementById('detail-quiz-title').textContent = fullResult.quizTitle || 'Untitled Quiz';
-        document.getElementById('detail-game-pin').textContent = fullResult.gamePin || 'Unknown';
+        const untitledQuiz = translationManager.getTranslationSync('untitled_quiz') || 'Untitled Quiz';
+        document.getElementById('result-detail-title').textContent = `${fullResult.quizTitle || untitledQuiz} - Results`;
+        document.getElementById('detail-quiz-title').textContent = fullResult.quizTitle || untitledQuiz;
+        document.getElementById('detail-game-pin').textContent = fullResult.gamePin || (translationManager.getTranslationSync('unknown') || 'Unknown');
         document.getElementById('detail-date').textContent = this.formatDate(fullResult.saved);
         document.getElementById('detail-participants').textContent = fullResult.results?.length || 0;
         document.getElementById('detail-avg-score').textContent = `${this.calculateAverageScore(fullResult)}%`;

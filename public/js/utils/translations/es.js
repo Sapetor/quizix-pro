@@ -120,7 +120,8 @@ export default {
         remove: "Eliminar",
         enter_numeric_answer: "Introduce respuesta numérica",
         
-        // Language selector keys
+        // Theme and language selector keys
+        theme: "Tema",
         language_en: "Inglés",
         language_es: "Español",
         language_pl: "Polaco",
@@ -142,6 +143,18 @@ export default {
         toggle_preview_tooltip: "Alternar vista previa en vivo",
         import_quiz_tooltip: "Importar quiz desde archivo",
         export_quiz_tooltip: "Exportar quiz a archivo",
+        
+        // Additional missing keys
+        copied: "¡Copiado!",
+        download_csv: "Descargar CSV",
+        error_loading_results: "Error cargando resultados",
+        untitled_quiz: "Quiz Sin Título",
+        quiz_results_detail: "Detalle de Resultados del Quiz",
+        unknown: "Desconocido",
+        loading: "Cargando...",
+        view_all_results: "Ver Todos los Resultados",
+        please_add_question_alert: "Por favor, agrega al menos una pregunta antes de iniciar el juego.",
+        confirm_start_without_title: "Tu quiz no tiene título. ¿Iniciar de todos modos?",
         back_to_top_tooltip: "Ir al principio",
         go_to_bottom_tooltip: "Ir al final",
         preview_settings_tooltip: "Configuración de vista previa",

@@ -747,7 +747,7 @@ export class QuizManager {
                     this.updateQuestionNumbering();
                 };
                 removeButton.setAttribute('data-translate', 'remove');
-                removeButton.textContent = 'Remove';
+                removeButton.textContent = translationManager.getTranslationSync('remove') || 'Remove';
                 questionItem.appendChild(removeButton);
                 logger.debug(`Question ${index + 1}: Created missing remove button`);
             }
@@ -785,7 +785,7 @@ export class QuizManager {
                     this.updateQuestionNumbering();
                 };
                 removeButton.setAttribute('data-translate', 'remove');
-                removeButton.textContent = 'Remove';
+                removeButton.textContent = translationManager.getTranslationSync('remove') || 'Remove';
                 questionItem.appendChild(removeButton);
             }
             

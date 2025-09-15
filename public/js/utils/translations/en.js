@@ -171,7 +171,8 @@ export default {
         remove: "Remove",
         enter_numeric_answer: "Enter numeric answer",
         
-        // Language selector keys
+        // Theme and language selector keys
+        theme: "Theme",
         language_en: "English",
         language_es: "Spanish", 
         language_pl: "Polish",
@@ -394,5 +395,17 @@ export default {
         connected_players: "Connected Players",
         game_info_controls: "Game Information and Controls",
         click_to_copy_pin: "Click to copy PIN",
-        start_quiz_game: "Start the quiz game"
+        start_quiz_game: "Start the quiz game",
+        
+        // Additional missing keys
+        copied: "Copied!",
+        download_csv: "Download CSV",
+        error_loading_results: "Error loading results",
+        untitled_quiz: "Untitled Quiz",
+        quiz_results_detail: "Quiz Results Detail",
+        unknown: "Unknown",
+        loading: "Loading...",
+        view_all_results: "View All Results",
+        please_add_question_alert: "Please add at least one question before starting the game.",
+        confirm_start_without_title: "Your quiz doesn't have a title. Start anyway?"
 };

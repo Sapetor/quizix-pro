@@ -354,7 +354,7 @@ export class QuizGame {
                 const originalBg = pinElement.style.backgroundColor;
                 
                 pinElement.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
-                targetElement.textContent = 'Copied!';
+                targetElement.textContent = translationManager.getTranslationSync('copied') || 'Copied!';
                 
                 // Show toast notification
                 if (typeof translationManager !== 'undefined' && translationManager.showAlert) {

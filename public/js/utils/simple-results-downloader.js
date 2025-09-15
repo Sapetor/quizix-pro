@@ -111,7 +111,7 @@ export class SimpleResultsDownloader {
             if (downloadButton) {
                 downloadButton.onclick = () => this.downloadSelected();
                 downloadButton.disabled = results.length === 0;
-                downloadButton.textContent = 'Download CSV';
+                downloadButton.textContent = translationManager.getTranslationSync('download_csv') || 'Download CSV';
             }
             
         } catch (error) {
@@ -121,7 +121,7 @@ export class SimpleResultsDownloader {
             // Show error in dropdown
             const errorOption = document.createElement('option');
             errorOption.value = '';
-            errorOption.textContent = 'Error loading results';
+            errorOption.textContent = translationManager.getTranslationSync('error_loading_results') || 'Error loading results';
             errorOption.disabled = true;
             dropdown.appendChild(errorOption);
             
@@ -194,7 +194,7 @@ export class SimpleResultsDownloader {
         try {
             if (downloadButton) {
                 downloadButton.disabled = true;
-                downloadButton.textContent = 'Loading...';
+                downloadButton.textContent = translationManager.getTranslationSync('loading') || 'Loading...';
             }
             
             logger.debug(`📊 Downloading result: ${filename}`);
@@ -228,7 +228,7 @@ export class SimpleResultsDownloader {
         } finally {
             if (downloadButton) {
                 downloadButton.disabled = false;
-                downloadButton.textContent = 'Download CSV';
+                downloadButton.textContent = translationManager.getTranslationSync('download_csv') || 'Download CSV';
             }
         }
     }
@@ -274,7 +274,7 @@ export class SimpleResultsDownloader {
 
         const viewAllBtn = document.createElement('button');
         viewAllBtn.className = 'view-all-results-btn';
-        viewAllBtn.textContent = 'View All Results';
+        viewAllBtn.textContent = translationManager.getTranslationSync('view_all_results') || 'View All Results';
         viewAllBtn.style.cssText = `
             margin-left: 10px;
             padding: 8px 16px;

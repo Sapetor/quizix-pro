@@ -232,7 +232,12 @@ export class ConnectionStatus {
         }
         
         if (qualityValue) {
-            qualityValue.textContent = this.connectionQuality || '-';
+            const qualityText = this.connectionQuality === 'excellent' ? translationManager.getTranslationSync('connection_excellent') :
+                              this.connectionQuality === 'good' ? translationManager.getTranslationSync('connection_good') :
+                              this.connectionQuality === 'fair' ? translationManager.getTranslationSync('connection_fair') :
+                              this.connectionQuality === 'poor' ? translationManager.getTranslationSync('connection_poor') : 
+                              this.connectionQuality === 'offline' ? translationManager.getTranslationSync('offline') : '-';
+            qualityValue.textContent = qualityText;
         }
 
         // Update tooltip
