@@ -28,20 +28,92 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 **Core Structure:**
 - **Modular ES6** with proper imports/exports
 - **Service-oriented** architecture with dedicated services
+- **Manager pattern** with single responsibility principle
 - **Centralized configuration** in `public/js/core/config.js`
 - **Unified error handling** via `unified-error-handler.js`
 - **Encrypted security** layer for sensitive data
 
-**Key Files:**
-- `public/js/game/game-manager.js` - Main game logic
-- `public/js/quiz/quiz-manager.js` - Quiz creation and editing
-- `public/js/core/app.js` - Application initialization
-- `public/js/utils/unified-error-handler.js` - Unified error handling
-- `public/js/settings/settings-manager.js` - Unified settings and theme management
-- `public/js/utils/mobile-carousel.js` - Mobile quickstart carousel with auto-play
-- `public/js/utils/main-menu-carousel.js` - Mobile preview carousel with auto-play
-- `public/js/utils/mobile-question-carousel.js` - Mobile quiz editing carousel
-- `services/cors-validation-service.js` - CORS validation
+**Backend (Node.js/Express - server.js):**
+- **2213 lines** of production-grade server code
+- Socket.IO real-time multiplayer communication (100+ event handlers)
+- RESTful API with 15+ endpoints for quiz/results management
+- QR code generation with performance caching
+- Multer file upload with security validation (5MB limit)
+- Compression middleware for mobile optimization
+- Advanced logging with performance monitoring
+- AI integration proxy (Claude, Ollama, HuggingFace)
+
+**Key API Endpoints:**
+- `POST /upload` - Secure image upload for quiz questions
+- `POST /api/save-quiz` - Persist quiz to disk as JSON
+- `GET /api/quizzes` - List all available quizzes
+- `GET /api/quiz/:filename` - Load specific quiz data
+- `POST /api/save-results` - Archive game results with metadata
+- `GET /api/results` - List saved results with filtering
+- `GET /api/qr/:pin` - Generate QR code with caching
+- `POST /api/claude/generate` - AI question generation proxy
+- `GET /api/results/:filename/export/:format` - Export as CSV/JSON
+
+**Frontend Core Managers:**
+- `public/js/core/app.js` - Application initialization (QuizGame class, 1193 lines)
+- `public/js/game/game-manager.js` - Game flow and player interaction (1772 lines)
+- `public/js/quiz/quiz-manager.js` - Quiz creation, editing, validation
+- `public/js/ui/ui-manager.js` - Screen navigation and modal management
+- `public/js/socket/socket-manager.js` - WebSocket event handling (633 lines)
+- `public/js/settings/settings-manager.js` - Theme and settings persistence
+- `public/js/audio/sound-manager.js` - Audio effects and notifications
+
+**Game Submodules:**
+- `public/js/game/modules/game-display-manager.js` - Question rendering and DOM updates
+- `public/js/game/modules/game-state-manager.js` - Centralized state tracking
+- `public/js/game/modules/player-interaction-manager.js` - Player answer handling
+- `public/js/game/modules/timer-manager.js` - Question timer logic
+- `public/js/game/modules/question-renderer.js` - Dynamic question display
+
+**UI and Preview:**
+- `public/js/ui/preview-manager.js` - Live preview modal with LaTeX rendering
+- `public/js/ui/modules/preview-renderer.js` - Preview content generation
+
+**Utility Modules:**
+- `public/js/utils/unified-error-handler.js` - Error boundary system
+- `public/js/utils/translation-manager.js` - i18n with 9 languages
+- `public/js/utils/math-renderer.js` - LaTeX/MathJax rendering
+- `public/js/utils/results-viewer.js` - Results viewing interface
+- `public/js/utils/simple-results-downloader.js` - CSV/JSON export
+- `public/js/utils/mobile-carousel.js` - Mobile quickstart carousel (6s intervals)
+- `public/js/utils/main-menu-carousel.js` - Preview carousel (5s intervals)
+- `public/js/utils/mobile-question-carousel.js` - Quiz editing carousel
+- `public/js/utils/toast-notifications.js` - Toast notification system
+- `public/js/utils/modal-feedback.js` - Modal result feedback
+- `public/js/utils/ui-state-manager.js` - Game state UI tracking
+- `public/js/utils/keyboard-shortcuts.js` - Keyboard command handling
+- `public/js/utils/connection-status.js` - Network status indicator (32px circular)
+- `public/js/utils/question-utils.js` - Question manipulation helpers
+- `public/js/utils/dom.js` - Safe DOM manipulation wrapper
+- `public/js/utils/storage.js` - LocalStorage management
+
+**Services:**
+- `services/cors-validation-service.js` - CORS configuration for local/cloud
+- `public/js/services/navigation-service.js` - Screen navigation logic
+- `public/js/services/results-manager-service.js` - Results data management
+- `public/js/services/secure-storage-service.js` - AES-GCM encrypted storage
+
+**CSS Architecture:**
+- `public/css/main.css` - Entry point with @import statements
+- `public/css/main.bundle.css` - Optimized production bundle (PostCSS)
+- `public/css/variables.css` - Design system (colors, spacing, typography)
+- `public/css/base.css` - Global styles, reset, utilities
+- `public/css/layout.css` - Grid/flex layouts, responsive breakpoints
+- `public/css/responsive.css` - Mobile optimizations (768px breakpoint)
+- `public/css/game.css` - Game-specific styling
+- `public/css/components.css` - Reusable component styles
+- `public/css/animations.css` - Keyframe animations and transitions
+- `public/css/toolbar.css` - Horizontal toolbar styling
+- `public/css/preview.css` - Live preview modal
+- `public/css/toasts.css` - Toast notification styles
+- `public/css/analytics.css` - Results viewer and analytics
+- `public/css/components/syntax-highlighting.css` - Code syntax highlighting
+- `public/css/components/code-blocks.css` - LaTeX/code rendering
 
 ## Development Guidelines
 
@@ -52,8 +124,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 4. **Use logger instead of console** for all debugging
 5. **Test imports after refactoring** utility files
 6. **Check timing dependencies** - mobile carousels have delays for proper DOM population
-7. **Validate translation keys** - ensure all UI elements have proper translations in all 8 languages
+7. **Validate translation keys** - ensure all UI elements have proper translations in all 9 languages (EN, ES, FR, DE, IT, PT, PL, JA, ZH)
 8. **Test zoom compatibility** - buttons and layouts should work at 150%+ zoom levels
+9. **Verify Socket.IO events** - check both client and server event handlers when modifying real-time features
+10. **Test mobile carousels** - auto-play, pause/resume, gesture handling must work correctly
 
 **Best Practices:**
 - Keep functions focused on single responsibilities
@@ -63,6 +137,101 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - Use unified SettingsManager for all theme/settings operations
 - Implement auto-play carousels with intelligent pause/resume
 - Handle mobile viewport differences with responsive CSS
+- Clean up event listeners and timers to prevent memory leaks
+- Use try-catch blocks with unified error handler for critical operations
+
+## Project Structure
+
+```
+/mnt/c/Users/APR2025/quizmaster-pro/
+├── public/                 # Frontend assets
+│   ├── css/               # Modular CSS with PostCSS build
+│   ├── js/                # ES6 modular JavaScript
+│   │   ├── core/          # App initialization and config
+│   │   ├── game/          # Game logic and modules
+│   │   ├── quiz/          # Quiz creation and editing
+│   │   ├── ui/            # UI management and preview
+│   │   ├── socket/        # WebSocket communication
+│   │   ├── settings/      # Settings and theme management
+│   │   ├── audio/         # Sound effects
+│   │   ├── services/      # Frontend services
+│   │   └── utils/         # Utilities and helpers
+│   ├── images/            # Media assets
+│   ├── uploads/           # User-uploaded quiz images
+│   └── index.html         # SPA entry point
+├── services/              # Backend Node.js services
+├── tests/                 # Playwright test suite
+├── test-results/          # Test execution artifacts
+├── playwright-report/     # Test reports with screenshots
+├── quizzes/              # Saved quiz files (JSON)
+├── results/              # Quiz game results archives
+├── docs/                 # Documentation
+├── debug/                # Debug UI tools
+├── server.js             # Express backend (2213 lines)
+└── package.json          # Dependencies and scripts
+```
+
+## Key Features
+
+**Quiz Creation:**
+- Multiple question types: Multiple-choice, Multiple-correct, True/False, Numeric
+- Difficulty levels: Easy, Medium, Hard (with point multipliers 1x, 1.5x, 2x)
+- LaTeX/MathJax support for mathematical equations
+- Image upload and display (5MB limit)
+- Question randomization and answer shuffling
+- Global or per-question time settings
+- AI question generation (Claude, Ollama, HuggingFace)
+
+**Game Flow:**
+1. Host creates quiz and enters lobby
+2. QR code generation for mobile player joining
+3. Players join via PIN or scan QR
+4. Host starts game, questions displayed in sequence
+5. Players submit answers, real-time statistics shown
+6. Manual or automatic advancement to next question
+7. Final leaderboard with confetti celebration
+8. Results download in CSV/JSON format
+
+**Analytics & Results:**
+- Real-time answer statistics during gameplay
+- Detailed CSV export with player-centric format
+- Advanced analytics CSV with question breakdowns
+- Success rate, average response time calculations
+- Player performance tracking
+- Most common wrong answers identification
+- Results viewer interface with filtering and sorting
+
+**Mobile Features:**
+- Responsive design with 768px breakpoint
+- Auto-playing carousels with gesture support (swipe, tap)
+- Touch-friendly button sizing (44x44px minimum)
+- Mobile-specific FAB for quiz editing tools
+- Reduced MathJax rendering delays on mobile
+- Zoom compatibility at 150%+ levels
+- Compact connection status (32px circular)
+
+**AI Integration:**
+- Claude API for intelligent question generation
+- Ollama local model support
+- HuggingFace model integration
+- Secure API key storage with AES-GCM encryption
+- Question quality validation and formatting
+
+## Testing Infrastructure
+
+**Playwright Tests:**
+- Mobile quiz editor testing in light mode
+- Test reports with screenshots and error context
+- Located in `tests/` directory
+- Artifacts saved to `test-results/`
+- HTML reports in `playwright-report/`
+
+**Debug Tools:**
+- Real game state simulation
+- Mobile viewport testing
+- Theme switching validation
+- Carousel auto-play testing
+- Located at `/debug/ui-debug-showcase.html` and `/debug/advanced-ui-debugger.html`
 
 ## Production Deployment
 
@@ -123,10 +292,18 @@ git push origin modular-architecture  # Triggers Railway deploy
 ## Internationalization
 
 **Multi-Language Support:**
-- **8 Languages**: English, Spanish, French, German, Italian, Portuguese, Polish, Japanese, Chinese
-- **Translation Files**: Located in `public/js/utils/translations/`
+- **9 Languages**: English (EN), Spanish (ES), French (FR), German (DE), Italian (IT), Portuguese (PT), Polish (PL), Japanese (JA), Chinese (ZH)
+- **Translation Files**: Located in `public/js/utils/translations/` (en.js, es.js, fr.js, de.js, it.js, pt.js, pl.js, ja.js, zh.js)
+- **200+ Translation Keys**: Comprehensive coverage of all UI elements
 - **Mobile Menu**: Complete translations for all mobile editor tools
 - **Dynamic Updates**: Real-time language switching with UI updates
+- **Placeholder Support**: Dynamic content formatting with translation placeholders
+
+**Translation Architecture:**
+- Centralized TranslationManager for language switching
+- LocalStorage persistence of language preference
+- Lazy loading of translation files
+- Fallback to English for missing keys
 
 **Fixed Translation Issues:**
 - Removed duplicate "tools" entries causing Polish parsing conflicts
@@ -172,17 +349,62 @@ git push origin modular-architecture  # Triggers Railway deploy
 - Added comprehensive touch gesture support for all interactive elements
 
 **Translation System:**
-- Complete 8-language support with missing key additions
+- Complete 9-language support (EN, ES, FR, DE, IT, PT, PL, JA, ZH) with missing key additions
 - Fixed Polish language parsing conflicts from duplicate entries
 - Enhanced mobile menu translations for all supported languages
+- 200+ translation keys with comprehensive UI coverage
 
 ## Security
 
-- Designed for local network and cloud deployment
-- AES-GCM encryption for API keys
-- CORS configured for local network and cloud platform access
-- Image upload restrictions with size limits
+**Security Measures:**
+- **AES-GCM Encryption**: Secure storage for API keys via `secure-storage-service.js`
+- **CORS Validation**: Configurable via `cors-validation-service.js` for local network and cloud deployment
+- **File Upload Security**:
+  - 5MB size limit enforced
+  - File type validation (images only)
+  - Filename sanitization to prevent path traversal attacks
+  - Multer middleware with security configuration
+- **Input Validation**:
+  - HTML escaping to prevent XSS attacks
+  - Socket.IO event validation
+  - Quiz data validation on save/load
+- **Environment Variables**: Sensitive configuration via `.env` files
+- **HTTPS Support**: Ready for SSL/TLS in production
+- **Network Configuration**:
+  - Local network IP detection with WSL compatibility
+  - Railway cloud deployment with secure environment
+  - Environment-aware CORS policies
+
+**Server Notes:**
+- Server runs on port 3000 by default
+- No hot reload - refresh browser after JS changes
 - I usually have the server running. Let me know that you want to restart it and I will do it, otherwise just let me check, unless I tell you to do it yourself.
+
+## Performance & Memory Management
+
+**Optimizations:**
+- **CSS Bundling**: PostCSS with autoprefixer and cssnano for production
+- **Static File Caching**: ETags and cache headers for efficient asset delivery
+- **Mobile-Specific Caching**: Optimized cache headers for mobile browsers
+- **QR Code Caching**: Reduces generation overhead for repeated PIN access
+- **Connection Pooling**: Efficient file operations with connection reuse
+- **MathJax Smart Loading**: FOUC prevention with intelligent loading strategy
+- **Lazy Loading**: AI generator and results viewer loaded on demand
+- **Compression Middleware**: Gzip compression for all responses
+
+**Memory Management:**
+- **Event Listener Tracking**: Cleanup tracked listeners to prevent memory leaks
+- **Timer Management**: Proper cleanup of setInterval/setTimeout references
+- **Player Reference Cleanup**: Game state reset and player data cleanup between games
+- **DOM Reference Release**: Clear references to removed DOM elements
+- **Socket.IO Cleanup**: Proper disconnection and event listener removal
+
+**State Management Patterns:**
+- Centralized state in dedicated managers (GameStateManager, UIStateManager)
+- Immutable state updates where possible
+- Event-driven architecture with clear data flow
+- LocalStorage management with error boundaries
+- Persistent settings with validation and fallbacks
 
 ## Known Patterns & Architecture Notes
 
@@ -196,9 +418,24 @@ git push origin modular-architecture  # Triggers Railway deploy
 - Mobile-specific carousels in separate utility files
 - Translation files follow `/[language].js` naming convention
 - All mobile UI components have corresponding CSS in `responsive.css`
+- Game submodules organized by responsibility in `game/modules/`
+- Services separated into frontend (`public/js/services/`) and backend (`services/`)
+
+**Socket.IO Real-Time Communication:**
+- **100+ Event Handlers**: Comprehensive client-server event system
+- **Key Events**: `create-game`, `join-game`, `start-game`, `submit-answer`, `next-question`, `game-ended`
+- **Player Management**: Real-time player join/leave notifications
+- **Answer Statistics**: Live answer distribution and player response tracking
+- **Automatic Advancement**: Optional auto-progression to next question
+- **Connection Handling**: Reconnection logic with game state recovery
+- **Error Propagation**: Socket errors surfaced to UI with user-friendly messages
 
 **Testing Considerations:**
 - Always test theme toggles across desktop and mobile variants
 - Verify carousel auto-play behavior during user interactions
 - Test zoom compatibility at 150%+ levels for layout integrity
-- Validate translation keys across all 8 supported languages
+- Validate translation keys across all 9 supported languages (EN, ES, FR, DE, IT, PT, PL, JA, ZH)
+- Test Socket.IO events with multiple concurrent players
+- Verify LaTeX/MathJax rendering across different browsers
+- Test mobile gestures (swipe, tap) on actual mobile devices
+- Validate file uploads with different image types and sizes

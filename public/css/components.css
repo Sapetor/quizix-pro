@@ -1255,6 +1255,18 @@ select:focus-visible {
     margin-left: 0; /* Removed since container padding is now balanced */
 }
 
+/* AI Generator Source Content Textarea - Constrain resize behavior for responsive design */
+#source-content {
+    resize: vertical !important; /* Only allow vertical resizing to prevent layout issues */
+    max-width: 100% !important; /* Prevent horizontal overflow beyond container */
+    min-width: 100% !important; /* Maintain full container width */
+    width: 100% !important; /* Force full width */
+    min-height: 200px !important; /* Reasonable minimum for usability */
+    max-height: 500px !important; /* Prevent excessive height */
+    overflow-y: auto !important; /* Add scrollbar when content exceeds max-height */
+    box-sizing: border-box !important; /* Include padding in width calculation */
+}
+
 .advanced-options {
     margin-top: 8px; /* Much closer spacing */
     padding-top: 8px;

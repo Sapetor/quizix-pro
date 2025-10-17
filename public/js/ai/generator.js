@@ -659,7 +659,7 @@ export class AIQuestionGenerator {
         // Build structure example showing all selected types
         const structureExample = `Return ONLY a valid JSON array with structures EXACTLY like these:\n[${structureExamples.join(',\n')}]`;
 
-        return `${typeDescription}\n\nCONTENT TO CREATE QUESTIONS FROM:\n${content}\n\n${structureExample}\n\nCRITICAL REQUIREMENTS: \n- Generate ALL questions in ${targetLanguage} language\n- Generate EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} - no more, no less\n- EVERY SINGLE QUESTION MUST be directly based on the content provided above - read it carefully and create questions that test understanding of THAT specific content\n- If the content is about topic X, ALL questions must be about topic X - no generic questions about other topics\n- Questions must reference specific facts, concepts, names, dates, or details mentioned in the provided content\n- Do NOT create questions about general knowledge unless that knowledge is specifically mentioned in the content\n- Mix different question types from the selected types: ${selectedTypes.join(', ')}\n- For true/false questions: Create single factual statements about the content, NOT binary choices between opposites (e.g., "Tom is a cat" not "Choose happy or sad")\n- For numeric questions: Numbers must come from the content (dates, counts, measurements), NOT random math problems\n- Return ONLY the JSON array, no other text\n- Use EXACTLY these JSON structures:\n  * Multiple-choice: correctAnswer as integer index (0, 1, 2, or 3), options array with 4 items\n  * True-false: Single factual statement about content, options must be ["True", "False"], correctAnswer as string ("true" or "false")  \n  * Multiple-correct: correctAnswers as array of indices [0, 1, 2, 3], options array\n  * Numeric: Answer derived from content, NO options array, correctAnswer as number, tolerance as number\n- All questions must have "timeLimit" field (15-40 seconds based on difficulty)\n- Make sure all JSON is properly formatted and valid\n- Do not include any explanations or additional text\n- If you generate more than ${questionCount} question${questionCount === 1 ? '' : 's'}, you have failed the task\n- REMEMBER: Every question must test something specific from the content above - reread the content if needed`;
+        return `${typeDescription}\n\nCONTENT TO CREATE QUESTIONS FROM:\n${content}\n\n${structureExample}\n\nCRITICAL REQUIREMENTS: \n- Generate ALL questions in ${targetLanguage} language\n- Generate EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} - no more, no less\n- EVERY SINGLE QUESTION MUST be directly based on the content provided above - read it carefully and create questions that test understanding of THAT specific content\n- If the content is about topic X, ALL questions must be about topic X - no generic questions about other topics\n- Questions must reference specific facts, concepts, names, dates, or details mentioned in the provided content\n- Do NOT create questions about general knowledge unless that knowledge is specifically mentioned in the content\n- Mix different question types from the selected types: ${selectedTypes.join(', ')}\n- For true/false questions: Create single factual statements about the content, NOT binary choices between opposites (e.g., "Tom is a cat" not "Choose happy or sad")\n- For numeric questions: Numbers must come from the content (dates, counts, measurements), NOT random math problems\n- Return ONLY the JSON array, no other text\n- Use EXACTLY these JSON structures:\n  * Multiple-choice: correctAnswer as integer index (0, 1, 2, or 3), options array with 4 items\n  * True-false: Single factual statement about content, options must be ["True", "False"], correctAnswer as string ("true" or "false")  \n  * Multiple-correct: correctAnswers as array of indices [0, 1, 2, 3], options array\n  * Numeric: Answer derived from content, NO options array, correctAnswer as number, tolerance as number\n- All questions must have "timeLimit" field (15-40 seconds based on difficulty)\n- Make sure all JSON is properly formatted and valid\n- Do not include any explanations or additional text\n- If you generate more than ${questionCount} question${questionCount === 1 ? '' : 's'}, you have failed the task\n- REMEMBER: Every question must test something specific from the content above - reread the content if needed\n\nIMAGE/DIAGRAM GENERATION (OPTIONAL):\n- If a question would benefit from a visual aid, you can GENERATE the image code directly in the response\n- Add these OPTIONAL fields:\n  * "imageData": The actual SVG code OR Mermaid diagram syntax (not a description - the actual code!)\n  * "imageType": Either "svg" or "mermaid"\n- When to include images:\n  * Processes, workflows, sequences → Generate Mermaid flowchart syntax in imageData\n  * Simple shapes, diagrams, illustrations → Generate SVG XML code in imageData\n  * ONLY add images when they genuinely enhance understanding - not every question needs one\n\nMERMAID SYNTAX (for processes/flowcharts):\n- Write valid Mermaid code: graph TD; A[Start] --> B[Step]; B --> C[End];\n- Example: graph LR; A[Evaporation] --> B[Condensation]; B --> C[Precipitation]; C --> A;\n- Keep simple (3-6 nodes max)\n\nSVG CODE (for shapes/diagrams):\n- Write valid SVG XML with viewBox="0 0 400 300"\n- Example: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><circle cx="200" cy="150" r="80" fill="#4CAF50"/><text x="200" y="160" text-anchor="middle" fill="white">Cell</text></svg>\n\nEXAMPLES:\nMermaid: {"question": "First step in water cycle?", "type": "multiple-choice", "options": ["Evaporation", "Condensation", "Precipitation", "Collection"], "correctAnswer": 0, "timeLimit": 25, "imageData": "graph LR; A[Evaporation] --> B[Condensation]; B --> C[Precipitation]; C --> D[Collection]; D --> A;", "imageType": "mermaid"}\nSVG: {"question": "Which shape has 3 sides?", "type": "multiple-choice", "options": ["Triangle", "Square", "Pentagon", "Hexagon"], "correctAnswer": 0, "timeLimit": 20, "imageData": "<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 200 200\\"><polygon points=\\"100,20 20,180 180,180\\" fill=\\"#2196F3\\"/></svg>", "imageType": "svg"}\n\nCRITICAL: Put the COMPLETE code in imageData - don't truncate!`;
     }
 
     buildExcelConversionPrompt(content, selectedTypes) {
@@ -1046,74 +1046,155 @@ Please respond with only valid JSON. Do not include explanations or additional t
 
     fixCommonJsonIssues(jsonText) {
         let fixed = jsonText;
-        
+
         // Fix trailing commas before closing brackets/braces
         fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
-        
-        // Fix incomplete JSON by trying to close it properly
+
+        // Fix common quote issues first
+        fixed = fixed.replace(/'/g, '"'); // Replace single quotes with double quotes
+
+        // Fix missing quotes around property names
+        fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+
+        // Fix incomplete JSON by finding complete question objects
         if (fixed.includes('[') && !fixed.endsWith(']')) {
+            logger.debug('🔧 Detected incomplete JSON, attempting to fix');
+
             // Count opening vs closing brackets
             const openBrackets = (fixed.match(/\[/g) || []).length;
             const closeBrackets = (fixed.match(/\]/g) || []).length;
-            
-            if (openBrackets > closeBrackets) {
-                // Try to find the last complete question object and truncate there
-                const lastCompleteObject = fixed.lastIndexOf('"}');
-                if (lastCompleteObject !== -1) {
-                    fixed = fixed.substring(0, lastCompleteObject + 2) + ']';
-                    logger.debug('🔧 Fixed incomplete JSON by truncating to last complete object');
+            const openBraces = (fixed.match(/\{/g) || []).length;
+            const closeBraces = (fixed.match(/\}/g) || []).length;
+
+            if (openBrackets > closeBrackets || openBraces > closeBraces) {
+                // Extract complete question objects using more reliable pattern matching
+                // Look for complete question objects that end with } or },
+                const completeObjectPattern = /\{[^}]*"question"[^}]*"type"[^}]*\}/g;
+                const completeObjects = fixed.match(completeObjectPattern) || [];
+
+                if (completeObjects.length > 0) {
+                    // Reconstruct the JSON array with only complete objects
+                    fixed = '[' + completeObjects.join(',') + ']';
+                    logger.debug(`🔧 Extracted ${completeObjects.length} complete question objects from truncated JSON`);
+                } else {
+                    // Fallback: Try to find the last complete property and close from there
+                    const lastCompleteProperty = Math.max(
+                        fixed.lastIndexOf('"}'),
+                        fixed.lastIndexOf('"]'),
+                        fixed.lastIndexOf('}')
+                    );
+
+                    if (lastCompleteProperty !== -1) {
+                        // Find how many closing braces/brackets we need
+                        const textBeforeEnd = fixed.substring(0, lastCompleteProperty + 2);
+                        const unclosedBraces = (textBeforeEnd.match(/\{/g) || []).length -
+                                              (textBeforeEnd.match(/\}/g) || []).length;
+                        const unclosedBrackets = (textBeforeEnd.match(/\[/g) || []).length -
+                                                (textBeforeEnd.match(/\]/g) || []).length;
+
+                        fixed = textBeforeEnd + '}'.repeat(Math.max(0, unclosedBraces)) +
+                                               ']'.repeat(Math.max(0, unclosedBrackets));
+                        logger.debug('🔧 Fixed incomplete JSON by closing unclosed braces and brackets');
+                    }
                 }
             }
         }
-        
-        // Fix common quote issues
-        fixed = fixed.replace(/'/g, '"'); // Replace single quotes with double quotes
-        
-        // Fix missing quotes around property names
-        fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
-        
+
+        // Additional validation: Try to parse and see if we can improve further
+        try {
+            JSON.parse(fixed);
+            logger.debug('🔧 JSON fix successful - valid JSON produced');
+        } catch (e) {
+            logger.warn('🔧 Fixed JSON still invalid, but will attempt to parse anyway:', e.message);
+        }
+
         logger.debug('🔧 Applied JSON fixes, length changed from', jsonText.length, 'to', fixed.length);
         return fixed;
     }
 
     extractQuestionsManually(responseText) {
-        // Try to find question-like patterns in the text
+        logger.debug('🔍 Manual extraction attempting to find questions in text');
+
+        // First, try to extract individual JSON objects even if the array is malformed
+        const jsonObjectPattern = /\{[\s\S]*?"question"\s*:\s*"[^"]*?"[\s\S]*?"type"\s*:\s*"[^"]*?"[\s\S]*?\}/g;
+        const jsonObjects = responseText.match(jsonObjectPattern);
+
+        if (jsonObjects && jsonObjects.length > 0) {
+            logger.debug(`🔍 Found ${jsonObjects.length} JSON-like objects, attempting to parse each`);
+            const questions = [];
+
+            for (const objText of jsonObjects) {
+                try {
+                    // Try to fix and parse each object individually
+                    let fixedObj = objText;
+
+                    // Fix trailing commas
+                    fixedObj = fixedObj.replace(/,(\s*\})/g, '$1');
+
+                    // Fix single quotes
+                    fixedObj = fixedObj.replace(/'/g, '"');
+
+                    // Try to parse
+                    const parsed = JSON.parse(fixedObj);
+
+                    if (parsed.question && parsed.type) {
+                        questions.push(parsed);
+                        logger.debug('🔍 Successfully parsed JSON object:', parsed.question.substring(0, 50) + '...');
+                    }
+                } catch (e) {
+                    logger.warn('🔍 Failed to parse individual JSON object:', e.message);
+                }
+            }
+
+            if (questions.length > 0) {
+                const requestedCount = this.requestedQuestionCount || 1;
+                const limited = questions.slice(0, requestedCount);
+                logger.debug(`🔍 Manual extraction successful: found ${limited.length} valid questions`);
+                return limited;
+            }
+        }
+
+        // Fallback: Try to find question-like patterns in plain text
+        logger.debug('🔍 Attempting text pattern matching fallback');
         const questionPattern = /(?:question|q\d+)[:\s]*(.+?)(?:options?|choices?)[:\s]*(.+?)(?:answer|correct)[:\s]*(.+?)(?=(?:question|q\d+|$))/gis;
         const matches = [...responseText.matchAll(questionPattern)];
-        
+
         if (matches.length > 0) {
             let questions = matches.map(match => {
                 const question = match[1].trim();
                 const optionsText = match[2].trim();
                 const answerText = match[3].trim();
-                
+
                 // Extract options (A, B, C, D format)
                 const options = optionsText.split(/[ABCD][\):\.]?\s*/).filter(opt => opt.trim()).slice(0, 4);
-                
+
                 // Try to determine correct answer
                 let correctAnswer = 0;
                 if (answerText.match(/^[A]$/i)) correctAnswer = 0;
                 else if (answerText.match(/^[B]$/i)) correctAnswer = 1;
                 else if (answerText.match(/^[C]$/i)) correctAnswer = 2;
                 else if (answerText.match(/^[D]$/i)) correctAnswer = 3;
-                
+
                 return {
                     question: question,
                     options: options.length >= 4 ? options.slice(0, 4) : ['Option A', 'Option B', 'Option C', 'Option D'],
                     correctAnswer: correctAnswer,
-                    type: 'multiple-choice'
+                    type: 'multiple-choice',
+                    timeLimit: 30
                 };
             });
-            
+
             // Limit to requested count
             const requestedCount = this.requestedQuestionCount || 1;
             if (questions.length > requestedCount) {
                 questions = questions.slice(0, requestedCount);
             }
-            
+
+            logger.debug(`🔍 Text pattern matching found ${questions.length} questions`);
             return questions;
         }
-        
+
+        logger.error('🔍 All manual extraction methods failed');
         throw new Error('Could not extract questions from response');
     }
 
@@ -1691,12 +1772,12 @@ Please respond with only valid JSON. Do not include explanations or additional t
 
     async processGeneratedQuestions(questions, showAlerts = true) {
         logger.debug('🔄 ProcessGeneratedQuestions - Starting with questions:', questions.length);
-        
+
         // Add questions to the main quiz
         if (window.game && window.game.quizManager) {
             let validCount = 0;
             let invalidCount = 0;
-            
+
             // Process questions SEQUENTIALLY to avoid race conditions with DOM creation
             for (let index = 0; index < questions.length; index++) {
                 const questionData = questions[index];
@@ -1706,48 +1787,146 @@ Please respond with only valid JSON. Do not include explanations or additional t
                     hasOptions: !!questionData.options,
                     optionsLength: questionData.options?.length,
                     correctAnswer: questionData.correctAnswer,
-                    correctAnswers: questionData.correctAnswers
+                    correctAnswers: questionData.correctAnswers,
+                    hasImageData: !!questionData.imageData,
+                    imageType: questionData.imageType
                 });
-                
+
+                // Generate image if AI provided image data
+                if (questionData.imageData && questionData.imageType) {
+                    logger.debug(`🖼️ Rendering ${questionData.imageType} image for question ${index + 1}`);
+                    try {
+                        const imageUrl = await this.renderImageData(questionData.imageData, questionData.imageType);
+                        if (imageUrl) {
+                            questionData.image = imageUrl;
+                            logger.debug(`✅ Image rendered successfully: ${imageUrl.substring(0, 50)}...`);
+                        }
+                    } catch (error) {
+                        logger.warn(`⚠️ Image rendering failed for question ${index + 1}:`, error.message);
+                        // Continue without image - don't fail the whole question
+                    }
+                    // Remove temporary fields
+                    delete questionData.imageData;
+                    delete questionData.imageType;
+                }
+
                 // Validate and add each question
                 if (this.validateGeneratedQuestion(questionData)) {
                     logger.debug(`✅ ProcessGeneratedQuestions - Question ${index + 1} is valid, adding to quiz`);
-                    
+
                     // Add question and wait for DOM updates to complete
                     await new Promise(resolve => {
                         // Check if this will create a new DOM element
                         const questionElements = document.querySelectorAll('.question-item');
                         const firstQuestion = questionElements[0];
                         const needsNewElement = !(firstQuestion && window.game.quizManager.isEmptyQuestion(firstQuestion));
-                        
+
                         window.game.quizManager.addGeneratedQuestion(questionData, showAlerts);
-                        
+
                         // Wait longer if we created a new DOM element
                         const waitTime = needsNewElement ? 400 : 50;
                         setTimeout(resolve, waitTime);
                     });
-                    
+
                     validCount++;
                 } else {
                     logger.warn(`❌ ProcessGeneratedQuestions - Question ${index + 1} is invalid, skipping:`, questionData);
                     invalidCount++;
                 }
             }
-            
+
             logger.debug('🔄 ProcessGeneratedQuestions - Summary:', {
                 total: questions.length,
                 valid: validCount,
                 invalid: invalidCount
             });
-            
+
         } else {
             logger.warn('🔄 ProcessGeneratedQuestions - Window.game.quizManager not available, using fallback');
             // Fallback: dispatch custom event
-            const event = new CustomEvent('questionsGenerated', { 
-                detail: { questions } 
+            const event = new CustomEvent('questionsGenerated', {
+                detail: { questions }
             });
             document.dispatchEvent(event);
         }
+    }
+
+    /**
+     * Render image data (SVG or Mermaid) to a data URL
+     * @param {string} imageData - SVG code or Mermaid syntax provided by AI
+     * @param {string} imageType - Type: 'svg' or 'mermaid'
+     * @returns {Promise<string>} - Data URL of the rendered image
+     */
+    async renderImageData(imageData, imageType) {
+        logger.debug(`🖼️ renderImageData called: type=${imageType}`);
+
+        try {
+            if (imageType === 'mermaid') {
+                return await this.renderMermaidToSVG(imageData);
+            } else if (imageType === 'svg') {
+                return this.svgToDataURL(imageData);
+            } else {
+                logger.warn(`Unknown image type: ${imageType}`);
+                return null;
+            }
+        } catch (error) {
+            logger.error(`Image rendering failed for type ${imageType}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Render Mermaid syntax to SVG data URL
+     * @param {string} mermaidCode - Mermaid diagram syntax provided by AI
+     * @returns {Promise<string>} - Data URL of the rendered SVG
+     */
+    async renderMermaidToSVG(mermaidCode) {
+        logger.debug('🖼️ Rendering Mermaid diagram');
+
+        // Clean up the code (remove any markdown wrapping)
+        let cleanCode = mermaidCode.replace(/```mermaid/g, '').replace(/```/g, '').trim();
+
+        // Dynamically import Mermaid if not already loaded
+        if (!window.mermaid) {
+            logger.debug('Loading Mermaid library...');
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.textContent = `
+                import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+                window.mermaid = mermaid;
+                mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            `;
+            document.head.appendChild(script);
+
+            // Wait for Mermaid to load
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+
+        // Render Mermaid diagram to SVG
+        const id = 'mermaid-' + Date.now();
+        const { svg } = await window.mermaid.render(id, cleanCode);
+
+        // Convert SVG to data URL
+        const dataUrl = this.svgToDataURL(svg);
+
+        logger.debug('✅ Mermaid diagram rendered successfully');
+        return dataUrl;
+    }
+
+    /**
+     * Convert SVG code to data URL
+     * @param {string} svgCode - SVG XML code
+     * @returns {string} - Data URL
+     */
+    svgToDataURL(svgCode) {
+        // Ensure SVG has xmlns attribute
+        if (!svgCode.includes('xmlns=')) {
+            svgCode = svgCode.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+
+        // Convert to data URL
+        const encoded = btoa(unescape(encodeURIComponent(svgCode)));
+        return 'data:image/svg+xml;base64,' + encoded;
     }
 
     validateGeneratedQuestion(question) {

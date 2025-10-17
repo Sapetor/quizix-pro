@@ -494,28 +494,32 @@ export function addQuestion() {
     questionDiv.innerHTML = questionUtils.generateQuestionHTML(questionCount);
     
     questionsContainer.appendChild(questionDiv);
-    
+
     const newQuestionCount = questionsContainer.children.length;
     logger.debug(`Question added, new count: ${newQuestionCount}`);
-    
+
     // Translate the newly added question element
     translationManager.translateContainer(questionDiv);
-    
+
     // Update remove button visibility for ALL questions
-    const allQuestions = questionsContainer.querySelectorAll('.question-item');
-    const hasMultipleQuestions = allQuestions.length > 1;
-    
-    logger.debug(`Updating remove buttons for ${allQuestions.length} questions, hasMultipleQuestions: ${hasMultipleQuestions}`);
-    
-    allQuestions.forEach((questionItem, index) => {
-        const removeButton = questionItem.querySelector('.remove-question');
-        if (removeButton) {
-            const shouldShow = hasMultipleQuestions ? 'block' : 'none';
-            removeButton.style.display = shouldShow;
-            logger.debug(`Question ${index + 1}: Set remove button display to "${shouldShow}"`);
-        } else {
-            logger.warn(`Question ${index + 1}: Remove button not found!`);
-        }
+    // Use requestAnimationFrame to ensure DOM is fully parsed before querying
+    requestAnimationFrame(() => {
+        const allQuestions = questionsContainer.querySelectorAll('.question-item');
+        const hasMultipleQuestions = allQuestions.length > 1;
+
+        logger.debug(`Updating remove buttons for ${allQuestions.length} questions, hasMultipleQuestions: ${hasMultipleQuestions}`);
+
+        allQuestions.forEach((questionItem, index) => {
+            const removeButton = questionItem.querySelector('.remove-question');
+            if (removeButton) {
+                const shouldShow = hasMultipleQuestions ? 'block' : 'none';
+                removeButton.style.display = shouldShow;
+                logger.debug(`Question ${index + 1}: Set remove button display to "${shouldShow}"`);
+            } else {
+                // Only log as debug instead of warn - this is expected during DOM parsing
+                logger.debug(`Question ${index + 1}: Remove button not yet available (DOM still parsing)`);
+            }
+        });
     });
     
     // Also call the quiz manager's update function if available
