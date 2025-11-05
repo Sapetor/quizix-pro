@@ -1,58 +1,84 @@
-# Optional: Ingress for external access
-# Uncomment and customize based on your ingress controller
+# Option 1: Standalone Ingress for QuizMaster Pro
+# Uses path-based routing (no host specified) like your lab-apps ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: quizmaster-ingress
+  namespace: quizmaster
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Increased timeout for Socket.IO WebSocket connections (your server uses 60, but Socket.IO needs more)
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # Critical for Socket.IO - enables WebSocket support
+    nginx.ingress.kubernetes.io/websocket-services: "quizmaster-pro"
+    # Session affinity for Socket.IO sticky sessions
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "quizmaster-affinity"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "10800"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          # QuizMaster Pro will be accessible at: http://your-cluster-ip/quiz
+          - path: /quiz
+            pathType: Prefix
+            backend:
+              service:
+                name: quizmaster-pro
+                port:
+                  number: 3000
 
-# For Nginx Ingress Controller:
-# apiVersion: networking.k8s.io/v1
-# kind: Ingress
-# metadata:
-#   name: quizmaster-pro
-#   namespace: quizmaster
+---
+# Option 2: Integrate into your existing lab-apps ingress
+# INSTRUCTIONS:
+# If you prefer to use a single ingress for all apps, add this path to your existing
+# k8s/ingress.yaml file in the 'lab' namespace:
+#
+# In your existing ingress.yaml, add this path under spec.rules[0].http.paths:
+#
+#   - path: /quiz
+#     pathType: Prefix
+#     backend:
+#       service:
+#         name: quizmaster-pro
+#         port:
+#           number: 3000
+#
+# Then update the annotations in your lab-apps ingress to include:
+#
 #   annotations:
-#     # WebSocket support for Socket.IO
-#     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-#     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+#     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"  # Change from 60 to 3600
 #     nginx.ingress.kubernetes.io/websocket-services: "quizmaster-pro"
 #     nginx.ingress.kubernetes.io/affinity: "cookie"
 #     nginx.ingress.kubernetes.io/session-cookie-name: "quizmaster-affinity"
-#     # For HTTPS (uncomment if using cert-manager):
-#     # cert-manager.io/cluster-issuer: "letsencrypt-prod"
-# spec:
-#   ingressClassName: nginx
-#   # tls:
-#   #   - hosts:
-#   #       - quiz.yourdomain.com
-#   #     secretName: quizmaster-tls
-#   rules:
-#     - host: quiz.yourdomain.com
-#       http:
-#         paths:
-#           - path: /
-#             pathType: Prefix
-#             backend:
-#               service:
-#                 name: quizmaster-pro
-#                 port:
-#                   number: 3000
+#
+# IMPORTANT: QuizMaster Pro service must be in the same namespace as your ingress.
+# If you want to use the 'lab' namespace instead of 'quizmaster', change the namespace
+# in 01-quizmaster-pro.yaml from 'quizmaster' to 'lab'
 
 ---
-# Alternative: LoadBalancer Service for direct external access
-# Use this if you don't have an Ingress controller
-# Uncomment to enable:
-
+# Option 3: Cross-namespace service reference (if keeping separate namespaces)
+# If you want to keep QuizMaster in 'quizmaster' namespace but access from 'lab' ingress:
+#
+# Create an ExternalName service in 'lab' namespace that points to 'quizmaster':
+#
 # apiVersion: v1
 # kind: Service
 # metadata:
-#   name: quizmaster-pro-lb
-#   namespace: quizmaster
+#   name: quizmaster-proxy
+#   namespace: lab
 # spec:
-#   type: LoadBalancer
-#   sessionAffinity: ClientIP
-#   sessionAffinityConfig:
-#     clientIP:
-#       timeoutSeconds: 10800
-#   selector:
-#     app: quizmaster-pro
+#   type: ExternalName
+#   externalName: quizmaster-pro.quizmaster.svc.cluster.local
 #   ports:
-#     - name: http
-#       port: 80
-#       targetPort: 3000
+#     - port: 3000
+#
+# Then in your lab-apps ingress, reference:
+#   backend:
+#     service:
+#       name: quizmaster-proxy
+#       port:
+#         number: 3000

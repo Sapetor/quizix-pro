@@ -2,6 +2,26 @@
 
 This deployment is configured to match your cluster's patterns and uses the `quizmaster` namespace.
 
+## 🎯 Cluster Pattern Matching
+
+This configuration has been adapted to match your cluster's deployment patterns:
+
+✅ **Single unified YAML** - All resources in one file with `---` separators
+✅ **Path-based routing** - Uses `/quiz` path (not host-based like `quiz.domain.com`)
+✅ **RollingUpdate strategy** - Matches your server deployment pattern
+✅ **nginx ingress** - Compatible with your existing `lab-apps` ingress
+✅ **No SSL redirect** - Matches your cluster's HTTP configuration
+✅ **Simple labels** - Uses `{ app: quizmaster-pro }` format
+✅ **ReadWriteOnce PVCs** - Uses cluster default storage class
+✅ **ConfigMap with envFrom** - Consistent with your server pattern
+✅ **imagePullPolicy** - Ready for both IfNotPresent and Always
+
+**Key additions for QuizMaster Pro:**
+- 🔌 **Socket.IO support** - Extended timeout (3600s vs your 60s) + WebSocket annotations
+- ❤️ **Health probes** - `/health` and `/ready` endpoints
+- 💾 **Persistent storage** - 3 PVCs for quizzes, results, and uploads
+- 📍 **Session affinity** - ClientIP sticky sessions for multiplayer games
+
 ## Quick Start
 
 ### 1. Build Docker Image
@@ -105,23 +125,88 @@ kubectl create secret docker-registry dockerhub-cred \
 
 ## External Access
 
-### Option 1: Ingress (Recommended)
+Your cluster uses **path-based routing** (no host/domain names). QuizMaster Pro provides 3 ingress options:
 
-Edit `02-quizmaster-ingress.yaml` and uncomment the ingress configuration for your controller (nginx, traefik, etc.).
+### Option 1: Standalone Ingress (Simplest)
 
-**For nginx ingress:**
-1. Uncomment the nginx Ingress section
-2. Update `host: quiz.yourdomain.com`
-3. Apply: `kubectl apply -f 02-quizmaster-ingress.yaml`
+Deploy QuizMaster Pro with its own ingress:
 
-### Option 2: LoadBalancer
-
-Uncomment the LoadBalancer service in `02-quizmaster-ingress.yaml`:
 ```bash
 kubectl apply -f 02-quizmaster-ingress.yaml
-kubectl get svc -n quizmaster quizmaster-pro-lb
 ```
-Use the EXTERNAL-IP to access the app.
+
+Access at: **`http://your-cluster-ip/quiz`**
+
+This creates a separate ingress in the `quizmaster` namespace with:
+- Path: `/quiz` → QuizMaster Pro
+- Increased timeout (3600s) for Socket.IO WebSocket connections
+- Session affinity for sticky sessions
+
+### Option 2: Integrate into Existing lab-apps Ingress (Recommended)
+
+Add QuizMaster Pro to your existing `lab-apps` ingress:
+
+**1. Change namespace to `lab` in `01-quizmaster-pro.yaml`:**
+```bash
+# Replace all instances of 'namespace: quizmaster' with 'namespace: lab'
+sed -i 's/namespace: quizmaster/namespace: lab/g' k8s/01-quizmaster-pro.yaml
+```
+
+**2. Update your existing `ingress.yaml` to add:**
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lab-apps
+  namespace: lab
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"  # ⚠️ Changed from 60 to 3600
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # ⚠️ Add these new annotations for Socket.IO:
+    nginx.ingress.kubernetes.io/websocket-services: "quizmaster-pro"
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "quizmaster-affinity"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /lab
+            pathType: Prefix
+            backend:
+              service:
+                name: client
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: server
+                port:
+                  number: 3000
+          # ⚠️ Add this new path:
+          - path: /quiz
+            pathType: Prefix
+            backend:
+              service:
+                name: quizmaster-pro
+                port:
+                  number: 3000
+```
+
+**3. Apply the changes:**
+```bash
+kubectl apply -f 01-quizmaster-pro.yaml
+kubectl apply -f your-ingress.yaml
+```
+
+Access at: **`http://your-cluster-ip/quiz`**
+
+### Option 3: Cross-Namespace Access
+
+Keep QuizMaster in `quizmaster` namespace but access from `lab` ingress using ExternalName service. See instructions in `02-quizmaster-ingress.yaml`.
 
 ## Health Checks
 
