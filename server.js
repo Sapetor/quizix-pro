@@ -353,6 +353,47 @@ app.post('/api/claude/generate', async (req, res) => {
   }
 });
 
+// Health check endpoints for Kubernetes
+// Liveness probe - simple check if server is running
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Readiness probe - check if server is ready to accept traffic
+app.get('/ready', (req, res) => {
+  try {
+    // Check if required directories exist and are accessible
+    const checks = {
+      quizzes: fs.existsSync('quizzes') && fs.statSync('quizzes').isDirectory(),
+      results: fs.existsSync('results') && fs.statSync('results').isDirectory(),
+      uploads: fs.existsSync('public/uploads') && fs.statSync('public/uploads').isDirectory()
+    };
+
+    const allReady = Object.values(checks).every(check => check === true);
+
+    if (allReady) {
+      res.status(200).json({
+        status: 'ready',
+        checks,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(503).json({
+        status: 'not ready',
+        checks,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('Readiness check error:', error);
+    res.status(503).json({
+      status: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 const games = new Map();
 const players = new Map();
 
@@ -1000,3 +1041,41 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('');
   }
 });
+
+// Graceful shutdown handler for Kubernetes
+function gracefulShutdown(signal) {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+
+  // Stop accepting new connections
+  server.close(() => {
+    console.log('HTTP server closed');
+
+    // Clean up all active games and timers
+    games.forEach((game, pin) => {
+      console.log(`Cleaning up game ${pin}...`);
+      if (game.questionTimer) {
+        clearTimeout(game.questionTimer);
+      }
+      if (game.advanceTimer) {
+        clearTimeout(game.advanceTimer);
+      }
+    });
+
+    // Close Socket.IO connections
+    io.close(() => {
+      console.log('Socket.IO connections closed');
+      console.log('Graceful shutdown complete');
+      process.exit(0);
+    });
+  });
+
+  // Force shutdown after 30 seconds if graceful shutdown fails
+  setTimeout(() => {
+    console.error('Graceful shutdown timeout. Forcing exit...');
+    process.exit(1);
+  }, 30000);
+}
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

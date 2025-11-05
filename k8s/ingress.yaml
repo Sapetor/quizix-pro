@@ -1,0 +1,78 @@
+# Optional: Ingress for external access
+# Uncomment and customize for your environment
+#
+# Prerequisites:
+# - Ingress controller installed (nginx, traefik, etc.)
+# - cert-manager for TLS certificates (optional)
+# - DNS configured to point to your cluster
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: quizmaster-pro
+  namespace: quizmaster
+  labels:
+    app: quizmaster-pro
+  annotations:
+    # Nginx Ingress Controller annotations for WebSocket support
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "quizmaster-pro"
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "quizmaster-affinity"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "10800"
+
+    # For HTTPS/TLS (uncomment if using cert-manager)
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+    # Traefik annotations (if using Traefik instead of nginx)
+    # traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    # traefik.ingress.kubernetes.io/router.tls: "true"
+
+spec:
+  ingressClassName: nginx  # Change to your ingress class (nginx, traefik, etc.)
+
+  # TLS configuration (uncomment and customize)
+  # tls:
+  #   - hosts:
+  #       - quiz.yourdomain.com
+  #     secretName: quizmaster-tls
+
+  rules:
+    # Replace with your actual domain
+    - host: quiz.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: quizmaster-pro
+                port:
+                  number: 3000
+
+---
+# Alternative: LoadBalancer Service for direct external access
+# Use this if you don't need Ingress/domain name
+# Uncomment to use LoadBalancer instead of Ingress
+
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: quizmaster-pro-lb
+#   namespace: quizmaster
+#   labels:
+#     app: quizmaster-pro
+# spec:
+#   type: LoadBalancer
+#   sessionAffinity: ClientIP
+#   sessionAffinityConfig:
+#     clientIP:
+#       timeoutSeconds: 10800
+#   ports:
+#     - port: 80
+#       targetPort: 3000
+#       protocol: TCP
+#       name: http
+#   selector:
+#     app: quizmaster-pro

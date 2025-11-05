@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: quizmaster-pro
+  namespace: quizmaster
+  labels:
+    app: quizmaster-pro
+spec:
+  type: ClusterIP
+
+  # Session affinity is CRITICAL for Socket.IO to work correctly
+  # This ensures clients always connect to the same pod
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 hours
+
+  ports:
+    - port: 3000
+      targetPort: http
+      protocol: TCP
+      name: http
+
+  selector:
+    app: quizmaster-pro
