@@ -1,0 +1,146 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: quizmaster
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: quizmaster-config
+  namespace: quizmaster
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: quizmaster-quizzes
+  namespace: quizmaster
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: quizmaster-results
+  namespace: quizmaster
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: quizmaster-uploads
+  namespace: quizmaster
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quizmaster-pro
+  namespace: quizmaster
+spec:
+  selector:
+    app: quizmaster-pro
+  # Session affinity is critical for Socket.IO sticky sessions
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 hours
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quizmaster-pro
+  namespace: quizmaster
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: quizmaster-pro }
+  template:
+    metadata:
+      labels: { app: quizmaster-pro }
+    spec:
+      # Uncomment if your Docker Hub repo is private
+      # imagePullSecrets:
+      #   - name: dockerhub-cred
+
+      # Init container to ensure directories exist
+      initContainers:
+        - name: init-dirs
+          image: busybox:1.36
+          command: ['sh', '-c', 'mkdir -p /app/quizzes /app/results /app/uploads && chmod 755 /app/quizzes /app/results /app/uploads']
+          volumeMounts:
+            - name: quizzes
+              mountPath: /app/quizzes
+            - name: results
+              mountPath: /app/results
+            - name: uploads
+              mountPath: /app/uploads
+
+      containers:
+        - name: quizmaster-pro
+          # TODO: Replace with your actual image
+          image: your-registry/quizmaster-pro:latest
+          imagePullPolicy: IfNotPresent
+
+          envFrom:
+            - configMapRef:
+                name: quizmaster-config
+
+          ports:
+            - containerPort: 3000
+
+          # Liveness probe - restart if unhealthy
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # Readiness probe - don't send traffic until ready
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: quizzes
+              mountPath: /app/quizzes
+            - name: results
+              mountPath: /app/results
+            - name: uploads
+              mountPath: /app/public/uploads
+
+      volumes:
+        - name: quizzes
+          persistentVolumeClaim:
+            claimName: quizmaster-quizzes
+        - name: results
+          persistentVolumeClaim:
+            claimName: quizmaster-results
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: quizmaster-uploads

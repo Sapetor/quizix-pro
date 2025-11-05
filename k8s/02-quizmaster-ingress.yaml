@@ -1,0 +1,58 @@
+# Optional: Ingress for external access
+# Uncomment and customize based on your ingress controller
+
+# For Nginx Ingress Controller:
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: quizmaster-pro
+#   namespace: quizmaster
+#   annotations:
+#     # WebSocket support for Socket.IO
+#     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+#     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+#     nginx.ingress.kubernetes.io/websocket-services: "quizmaster-pro"
+#     nginx.ingress.kubernetes.io/affinity: "cookie"
+#     nginx.ingress.kubernetes.io/session-cookie-name: "quizmaster-affinity"
+#     # For HTTPS (uncomment if using cert-manager):
+#     # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+# spec:
+#   ingressClassName: nginx
+#   # tls:
+#   #   - hosts:
+#   #       - quiz.yourdomain.com
+#   #     secretName: quizmaster-tls
+#   rules:
+#     - host: quiz.yourdomain.com
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: quizmaster-pro
+#                 port:
+#                   number: 3000
+
+---
+# Alternative: LoadBalancer Service for direct external access
+# Use this if you don't have an Ingress controller
+# Uncomment to enable:
+
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: quizmaster-pro-lb
+#   namespace: quizmaster
+# spec:
+#   type: LoadBalancer
+#   sessionAffinity: ClientIP
+#   sessionAffinityConfig:
+#     clientIP:
+#       timeoutSeconds: 10800
+#   selector:
+#     app: quizmaster-pro
+#   ports:
+#     - name: http
+#       port: 80
+#       targetPort: 3000
