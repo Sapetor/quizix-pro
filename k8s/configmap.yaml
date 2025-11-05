@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: quizmaster-config
+  namespace: quizmaster
+  labels:
+    app: quizmaster-pro
+data:
+  # Application configuration
+  NODE_ENV: "production"
+  PORT: "3000"
+
+  # Optional: Override network IP detection
+  # NETWORK_IP: "your-cluster-ip"

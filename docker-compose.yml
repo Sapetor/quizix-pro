@@ -1,81 +1,40 @@
-# QuizMaster Pro Docker Compose Configuration
-# Provides local network deployment with GitLab connectivity
-
 version: '3.8'
 
 services:
-  quizix-pro:
+  quizmaster-pro:
     build:
       context: .
       dockerfile: Dockerfile
-      target: production
-    image: quizix-pro:latest
-    container_name: quizix-pro-app
-    restart: unless-stopped
-    
-    # Environment configuration
-    environment:
-      - NODE_ENV=production
-      - DEBUG_ENABLED=false
-      - DEBUG_CURRENT_LEVEL=1
-      # GitLab connectivity (adjust as needed)
-      - GITLAB_URL=${GITLAB_URL:-http://gitlab.local}
-      - GITLAB_TOKEN=${GITLAB_TOKEN:-}
-    
-    # Port mapping for local network access
+    image: quizmaster-pro:latest
+    container_name: quizmaster-pro
     ports:
       - "3000:3000"
-    
-    # Volume mounts for persistent data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
     volumes:
-      - ./results:/app/results
-      - ./uploads:/app/uploads
-      - quiz_data:/app/public/uploads
-    
-    # Network configuration
+      # Persistent storage for data
+      - quizzes-data:/app/quizzes
+      - results-data:/app/results
+      - uploads-data:/app/public/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     networks:
       - quizmaster-network
-    
-    # Host mapping for GitLab connectivity
-    extra_hosts:
-      - "gitlab.local:10.80.21.11"  # Your GitLab server IP
-    
-    # Health check configuration
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/ping', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
 
-# Network configuration for GitLab connectivity
+volumes:
+  quizzes-data:
+    driver: local
+  results-data:
+    driver: local
+  uploads-data:
+    driver: local
+
 networks:
   quizmaster-network:
     driver: bridge
-    ipam:
-      driver: default
-      config:
-        # Adjust subnet to match your local network configuration
-        # This allows container to reach GitLab on local network
-        - subnet: 172.20.0.0/16
-          gateway: 172.20.0.1
-    driver_opts:
-      com.docker.network.bridge.name: quizmaster-bridge
-      com.docker.network.bridge.enable_icc: "true"
-      com.docker.network.bridge.enable_ip_masquerade: "true"
-      com.docker.network.driver.mtu: 1500
-
-# Named volumes for data persistence
-volumes:
-  quiz_data:
-    driver: local

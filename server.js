@@ -2211,3 +2211,43 @@ if (process.platform === 'win32') {
     gracefulShutdown('SIGINT');
   });
 }
+// Health check endpoints for Kubernetes
+// Liveness probe - simple check if server is running
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Readiness probe - check if server is ready to accept traffic
+app.get('/ready', (req, res) => {
+  try {
+    // Check if required directories exist and are accessible
+    const checks = {
+      quizzes: fs.existsSync('quizzes') && fs.statSync('quizzes').isDirectory(),
+      results: fs.existsSync('results') && fs.statSync('results').isDirectory(),
+      uploads: fs.existsSync('public/uploads') && fs.statSync('public/uploads').isDirectory()
+    };
+
+    const allReady = Object.values(checks).every(check => check === true);
+
+    if (allReady) {
+      res.status(200).json({
+        status: 'ready',
+        checks,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(503).json({
+        status: 'not ready',
+        checks,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('Readiness check error:', error);
+    res.status(503).json({
+      status: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
