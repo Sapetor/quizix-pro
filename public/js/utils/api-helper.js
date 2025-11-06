@@ -7,13 +7,18 @@ import { logger } from '../core/config.js';
 
 export class APIHelper {
     static getBaseUrl() {
-        return `${window.location.protocol}//${window.location.host}`;
+        // Get base path from <base> tag for Kubernetes path-based routing
+        const basePath = document.querySelector('base')?.getAttribute('href') || '/';
+        return `${window.location.protocol}//${window.location.host}${basePath}`;
     }
     
     static getApiUrl(endpoint) {
         // Remove leading slash if present to avoid double slashes
         const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-        return `${this.getBaseUrl()}/${cleanEndpoint}`;
+        const baseUrl = this.getBaseUrl();
+        // Remove trailing slash from base URL to avoid double slashes
+        const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+        return `${cleanBaseUrl}/${cleanEndpoint}`;
     }
     
     static async fetchAPI(endpoint, options = {}) {
