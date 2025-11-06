@@ -1051,6 +1051,7 @@ export class QuizManager {
 
     /**
      * Resolve image source from various formats
+     * Kubernetes-aware: Prepends base path for path-based routing
      */
     resolveImageSource(imageData) {
         if (imageData.startsWith('data:')) {
@@ -1060,8 +1061,12 @@ export class QuizManager {
             // Full URL - use directly
             return imageData;
         } else {
-            // Relative path - prefix with /
-            return `/${imageData}`;
+            // Relative path - prefix with / and add base path for Kubernetes
+            const imagePath = imageData.startsWith('/') ? imageData : `/${imageData}`;
+            const basePath = document.querySelector('base')?.getAttribute('href') || '/';
+            const cleanBasePath = basePath.replace(/\/$/, ''); // Remove trailing slash
+            const fullPath = cleanBasePath === '' ? imagePath : cleanBasePath + imagePath;
+            return fullPath;
         }
     }
 
