@@ -17,17 +17,20 @@ metadata:
     nginx.ingress.kubernetes.io/affinity: "cookie"
     nginx.ingress.kubernetes.io/session-cookie-name: "quizmaster-affinity"
     nginx.ingress.kubernetes.io/session-cookie-max-age: "10800"
-    # Rewrite /quizmaster to / so app receives requests at root path
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    # Enable regex matching for path capture
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # Rewrite /quizmaster/xyz to /xyz preserving the path
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
           # Access at: http://your-cluster-ip/quizmaster
-          # Path matches namespace per cluster validation policy
-          - path: /quizmaster
-            pathType: Prefix
+          # Regex pattern captures path after /quizmaster for rewrite
+          # /quizmaster/api/ping -> /api/ping, /quizmaster -> /
+          - path: /quizmaster(/|$)(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: quizmaster-pro
