@@ -933,7 +933,12 @@ function setLanguage(lang) {
 
 class KahootGame {
     constructor() {
+        // Get base path from <base> tag for Kubernetes path-based routing
+        const basePath = document.querySelector('base')?.getAttribute('href') || '/';
+        const cleanPath = basePath.replace(/\/$/, ''); // Remove trailing slash
+
         this.socket = io(window.location.origin, {
+            path: cleanPath + '/socket.io',
             transports: ['websocket', 'polling'],
             timeout: 60000,
             forceNew: true,
@@ -1563,7 +1568,7 @@ class KahootGame {
 
     async loadQRCode(pin) {
         try {
-            const response = await fetch(`/api/qr/${pin}`);
+            const response = await fetch(`api/qr/${pin}`);
             const data = await response.json();
             
             if (data.qrCode) {
@@ -2996,7 +3001,7 @@ class KahootGame {
         }
         
         try {
-            const response = await fetch('/api/save-quiz', {
+            const response = await fetch('api/save-quiz', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -3018,7 +3023,7 @@ class KahootGame {
     
     async showLoadQuizModal() {
         try {
-            const response = await fetch('/api/quizzes');
+            const response = await fetch('api/quizzes');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -3051,7 +3056,7 @@ class KahootGame {
     
     async loadQuiz(filename) {
         try {
-            const response = await fetch(`/api/quiz/${filename}`);
+            const response = await fetch(`api/quiz/${filename}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -3280,7 +3285,7 @@ class KahootGame {
         gamesContainer.innerHTML = `<div class="loading-games">${getTranslation('loading_games')}</div>`;
 
         try {
-            const response = await fetch('/api/active-games');
+            const response = await fetch('api/active-games');
             const data = await response.json();
 
             if (data.games && data.games.length > 0) {
@@ -4393,7 +4398,7 @@ class AIQuestionGenerator {
         modelSelect.innerHTML = `<option value="">${getTranslation('loading_models')}</option>`;
         
         try {
-            const response = await fetch('/api/ollama/models');
+            const response = await fetch('api/ollama/models');
             
             if (!response.ok) {
                 throw new Error(getTranslation('failed_fetch_models'));
@@ -4805,7 +4810,7 @@ IMPORTANT: Generate completely new and unique questions. Do not repeat any previ
         }
         
         try {
-            const response = await fetch('/api/claude/generate', {
+            const response = await fetch('api/claude/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
