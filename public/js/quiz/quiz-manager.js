@@ -1052,6 +1052,7 @@ export class QuizManager {
     /**
      * Resolve image source from various formats
      * Kubernetes-aware: Prepends base path for path-based routing
+     * Handles both old paths (with base path) and new paths (without base path)
      */
     resolveImageSource(imageData) {
         if (imageData.startsWith('data:')) {
@@ -1061,11 +1062,30 @@ export class QuizManager {
             // Full URL - use directly
             return imageData;
         } else {
-            // Relative path - prefix with / and add base path for Kubernetes
-            const imagePath = imageData.startsWith('/') ? imageData : `/${imageData}`;
+            // Get base path for Kubernetes
             const basePath = document.querySelector('base')?.getAttribute('href') || '/';
             const cleanBasePath = basePath.replace(/\/$/, ''); // Remove trailing slash
-            const fullPath = cleanBasePath === '' ? imagePath : cleanBasePath + imagePath;
+
+            // First, strip any existing base path from imageData to get clean path
+            let cleanPath = imageData;
+            if (cleanBasePath && cleanBasePath !== '' && imageData.startsWith(cleanBasePath)) {
+                // Remove base path if already present (handles old stored paths)
+                cleanPath = imageData.substring(cleanBasePath.length);
+                logger.debug(`Quiz-manager stripped base path: ${imageData} → ${cleanPath}`);
+            }
+
+            // Normalize to /uploads/filename.gif format
+            if (!cleanPath.startsWith('/uploads/')) {
+                if (cleanPath.startsWith('uploads/')) {
+                    cleanPath = '/' + cleanPath;
+                } else if (!cleanPath.startsWith('/')) {
+                    cleanPath = `/uploads/${cleanPath}`;
+                }
+            }
+
+            // Now prepend base path for display
+            const fullPath = cleanBasePath === '' ? cleanPath : cleanBasePath + cleanPath;
+            logger.debug(`Quiz-manager resolved: ${imageData} → ${cleanPath} → ${fullPath}`);
             return fullPath;
         }
     }
