@@ -7,6 +7,7 @@ import { translationManager, showErrorAlert, showSuccessAlert } from './translat
 import { unifiedErrorHandler as errorHandler } from './unified-error-handler.js';
 import { logger } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
+import { APIHelper } from './api-helper.js';
 
 export class SimpleResultsDownloader {
     constructor() {
@@ -198,9 +199,9 @@ export class SimpleResultsDownloader {
             }
             
             logger.debug(`📊 Downloading result: ${filename}`);
-            
+
             // Simple direct API call - no over-engineered service layer
-            const response = await fetch(`/api/results/${filename}/export/csv`);
+            const response = await fetch(APIHelper.getApiUrl(`api/results/${filename}/export/csv`));
             
             if (!response.ok) {
                 throw new Error(`Download failed: ${response.status}`);

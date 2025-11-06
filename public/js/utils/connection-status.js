@@ -5,6 +5,7 @@
 
 import { logger } from '../core/config.js';
 import { translationManager } from './translation-manager.js';
+import { APIHelper } from './api-helper.js';
 
 export class ConnectionStatus {
     constructor() {
@@ -145,7 +146,7 @@ export class ConnectionStatus {
         
         try {
             // Ping the server with a lightweight request
-            const response = await fetch('api/ping', {
+            const response = await fetch(APIHelper.getApiUrl('api/ping'), {
                 method: 'GET',
                 cache: 'no-cache',
                 signal: AbortSignal.timeout(5000) // 5 second timeout

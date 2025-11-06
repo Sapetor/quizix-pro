@@ -13,6 +13,7 @@
 import { logger, AI, TIMING } from '../core/config.js';
 import { translationManager, showAlert } from '../utils/translation-manager.js';
 import { secureStorage } from '../services/secure-storage-service.js';
+import { APIHelper } from '../utils/api-helper.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 
 // Import XLSX library for Excel processing
@@ -820,7 +821,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
             const apiKey = await secureStorage.getSecureItem('api_key_claude');
             console.log('🔥 DEBUG: Claude API key retrieved:', !!apiKey);
             
-            const response = await fetch('api/claude/generate', {
+            const response = await fetch(APIHelper.getApiUrl('api/claude/generate'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

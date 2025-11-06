@@ -18,6 +18,7 @@ import { translationManager, showErrorAlert, createQuestionCounter } from '../ut
 import { toastNotifications } from '../utils/toast-notifications.js';
 import { connectionStatus } from '../utils/connection-status.js';
 import { keyboardShortcuts } from '../utils/keyboard-shortcuts.js';
+import { APIHelper } from '../utils/api-helper.js';
 import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
 import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/globals.js';
 // Results viewer will be lazy loaded when needed
@@ -136,7 +137,7 @@ export class QuizGame {
             }
 
             // Upload to server
-            const response = await fetch('/upload', {
+            const response = await fetch(APIHelper.getApiUrl('upload'), {
                 method: 'POST',
                 body: formData
             });
@@ -766,7 +767,7 @@ export class QuizGame {
             logger.debug('Loading quiz for game startup...');
             
             // First check if we can fetch the quiz list
-            const response = await fetch('api/quizzes');
+            const response = await fetch(APIHelper.getApiUrl('api/quizzes'));
             if (!response.ok) {
                 throw new Error(`Failed to fetch quizzes: ${response.status} ${response.statusText}`);
             }
@@ -868,7 +869,7 @@ export class QuizGame {
             const filename = 'advanced_quiz_with_latex_images.json';
             logger.debug('Attempting to load:', filename);
             
-            const response = await fetch(`/api/quiz/${filename}`);
+            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${filename}`));
             if (!response.ok) {
                 throw new Error(`Failed to load quiz: ${response.status}`);
             }

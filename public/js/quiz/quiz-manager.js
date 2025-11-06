@@ -9,6 +9,7 @@ import { MathRenderer } from '../utils/math-renderer.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
 import { logger } from '../core/config.js';
+import { APIHelper } from '../utils/api-helper.js';
 
 export class QuizManager {
     constructor(uiManager) {
@@ -223,7 +224,7 @@ export class QuizManager {
                 return;
             }
             
-            const response = await fetch('api/save-quiz', {
+            const response = await fetch(APIHelper.getApiUrl('api/save-quiz'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -270,7 +271,7 @@ export class QuizManager {
         
         // Load quizzes list with performance optimization
         try {
-            const response = await fetch('api/quizzes');
+            const response = await fetch(APIHelper.getApiUrl('api/quizzes'));
             const data = await response.json();
             
             if (quizList) {
@@ -473,7 +474,7 @@ export class QuizManager {
             logger.debug('Starting bulletproof quiz loading for:', filename);
             
             // Basic fetch and structure check only
-            const response = await fetch(`/api/quiz/${filename}`);
+            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${filename}`));
             const data = await response.json();
             
             if (response.ok && data && data.questions && Array.isArray(data.questions)) {

@@ -267,7 +267,7 @@ export class UIManager {
 
         try {
             // Use API helper to ensure proper URL handling across different network configurations
-            const data = await APIHelper.fetchAPIJSON('/api/active-games');
+            const data = await APIHelper.fetchAPIJSON('api/active-games');
 
             if (data.games && data.games.length > 0) {
                 gamesContainer.innerHTML = '';

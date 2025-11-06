@@ -13,6 +13,7 @@ import { uiStateManager } from '../utils/ui-state-manager.js';
 import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
 import { GameDisplayManager } from './modules/game-display-manager.js';
 import { GameStateManager as ModularGameStateManager } from './modules/game-state-manager.js';
+import { APIHelper } from '../utils/api-helper.js';
 import { PlayerInteractionManager } from './modules/player-interaction-manager.js';
 import { TimerManager } from './modules/timer-manager.js';
 import { QuestionRenderer } from './modules/question-renderer.js';
@@ -1749,7 +1750,7 @@ export class GameManager {
             });
 
             // Save results to server
-            const response = await fetch('api/save-results', {
+            const response = await fetch(APIHelper.getApiUrl('api/save-results'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -7,6 +7,7 @@ import { translationManager, showErrorAlert, showSuccessAlert } from './translat
 import { unifiedErrorHandler as errorHandler } from './unified-error-handler.js';
 import { logger } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
+import { APIHelper } from './api-helper.js';
 
 export class ResultsViewer {
     constructor() {
@@ -616,7 +617,7 @@ export class ResultsViewer {
         let fullResult = result;
         if (!result.results && result.filename) {
             try {
-                const response = await fetch(`/api/results/${result.filename}`);
+                const response = await fetch(APIHelper.getApiUrl(`api/results/${result.filename}`));
                 if (response.ok) {
                     fullResult = await response.json();
                     fullResult.filename = result.filename; // Preserve filename
@@ -868,7 +869,7 @@ export class ResultsViewer {
             let fullResult = result;
             if (!result.results && result.filename) {
                 try {
-                    const response = await fetch(`/api/results/${result.filename}`);
+                    const response = await fetch(APIHelper.getApiUrl(`api/results/${result.filename}`));
                     if (response.ok) {
                         fullResult = await response.json();
                         fullResult.filename = result.filename;

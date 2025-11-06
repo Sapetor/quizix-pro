@@ -6,6 +6,7 @@
 
 import { logger } from '../core/config.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
+import { APIHelper } from '../utils/api-helper.js';
 
 export class ResultsManagerService {
     constructor() {
@@ -111,7 +112,7 @@ export class ResultsManagerService {
 
         try {
             logger.debug('📊 Fetching results from /api/results...');
-            const response = await this.fetchWithRetry('/api/results');
+            const response = await this.fetchWithRetry(APIHelper.getApiUrl('api/results'));
             
             if (!response.ok) {
                 const errorText = await response.text();
@@ -155,7 +156,7 @@ export class ResultsManagerService {
             }
 
             logger.debug(`📊 Fetching detailed result for ${filename}`);
-            const response = await this.fetchWithRetry(`/api/results/${filename}`);
+            const response = await this.fetchWithRetry(APIHelper.getApiUrl(`api/results/${filename}`));
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch result details: ${response.status}`);
@@ -185,10 +186,10 @@ export class ResultsManagerService {
             let url;
             if (format === 'analytics') {
                 // Current comprehensive analytics format
-                url = `/api/results/${filename}/export/${type}`;
+                url = APIHelper.getApiUrl(`api/results/${filename}/export/${type}`);
             } else {
                 // Simple player-centric format
-                url = `/api/results/${filename}/export/${type}?type=simple`;
+                url = APIHelper.getApiUrl(`api/results/${filename}/export/${type}?type=simple`);
             }
             
             const response = await this.fetchWithRetry(url);
@@ -248,8 +249,8 @@ export class ResultsManagerService {
     async deleteResult(filename) {
         try {
             logger.debug(`📊 Deleting result: ${filename}`);
-            
-            const response = await this.fetchWithRetry(`/api/results/${filename}`, {
+
+            const response = await this.fetchWithRetry(APIHelper.getApiUrl(`api/results/${filename}`), {
                 method: 'DELETE'
             });
             
