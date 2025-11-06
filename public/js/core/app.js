@@ -149,14 +149,18 @@ export class QuizGame {
             const result = await response.json();
             logger.debug('Upload successful:', result);
 
-            // Construct proper image URL with base path for Kubernetes
+            // Store the server path (without base path) for portability
+            // The server returns /uploads/filename.gif which is portable across deployments
+            const serverPath = result.url; // e.g., /uploads/filename.gif
+
+            // Construct display URL with base path for Kubernetes
             const basePath = document.querySelector('base')?.getAttribute('href') || '/';
             const cleanBasePath = basePath.replace(/\/$/, ''); // Remove trailing slash
-            const imageUrl = result.url.startsWith('/') ? cleanBasePath + result.url : result.url;
-            logger.debug('Image URL with base path:', imageUrl);
+            const displayUrl = serverPath.startsWith('/') ? cleanBasePath + serverPath : serverPath;
+            logger.debug('Image paths - Server:', serverPath, 'Display:', displayUrl);
 
-            // Update the image preview
-            this.updateImagePreview(inputElement, imageUrl);
+            // Update the image preview (pass both server path and display URL)
+            this.updateImagePreview(inputElement, serverPath, displayUrl);
 
         } catch (error) {
             logger.error('Image upload failed:', error);
@@ -177,9 +181,10 @@ export class QuizGame {
     /**
      * Update image preview after successful upload
      * @param {HTMLInputElement} inputElement - The file input element
-     * @param {string} imageUrl - The uploaded image URL
+     * @param {string} serverPath - The server path to store (portable, e.g., /uploads/file.gif)
+     * @param {string} displayUrl - The full URL to display (with base path for Kubernetes)
      */
-    updateImagePreview(inputElement, imageUrl) {
+    updateImagePreview(inputElement, serverPath, displayUrl) {
         const questionItem = inputElement.closest('.question-item');
         if (!questionItem) {
             logger.error('Could not find question item for image preview');
@@ -194,9 +199,10 @@ export class QuizGame {
             return;
         }
 
-        // Set the image source and data-url attribute
-        imageElement.src = imageUrl;
-        imageElement.dataset.url = imageUrl; // This is crucial for quiz saving
+        // Set the display URL for showing the image
+        imageElement.src = displayUrl || serverPath;
+        // Store the server path (without base path) for quiz saving - this is crucial for portability
+        imageElement.dataset.url = serverPath;
         imageElement.alt = 'Question Image';
 
         // Show the preview
@@ -208,7 +214,7 @@ export class QuizGame {
             imageUploadDiv.style.opacity = '1';
         }
 
-        logger.debug('Image preview updated successfully:', imageUrl);
+        logger.debug('Image preview updated - Server path:', serverPath, 'Display URL:', displayUrl || serverPath);
     }
 
     /**
