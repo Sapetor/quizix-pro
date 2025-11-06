@@ -147,6 +147,7 @@ export class PreviewRenderer {
     /**
      * Set image source with data URI or path handling
      * Enhanced with WSL-aware retry logic for file serving delays
+     * Kubernetes-aware: Prepends base path for path-based routing
      */
     setSplitImageSource(img, imageData) {
         if (!imageData || imageData.trim() === '') {
@@ -169,10 +170,15 @@ export class PreviewRenderer {
                 // Just filename, add full path
                 cleanPath = `/uploads/${imageData}`;
             }
-            
-            logger.debug(`Setting image source: ${imageData} → ${cleanPath}`);
+
+            // Prepend base path for Kubernetes path-based routing
+            const basePath = document.querySelector('base')?.getAttribute('href') || '/';
+            const cleanBasePath = basePath.replace(/\/$/, ''); // Remove trailing slash
+            const fullPath = cleanBasePath === '' ? cleanPath : cleanBasePath + cleanPath;
+
+            logger.debug(`Setting image source: ${imageData} → ${cleanPath} → ${fullPath}`);
             // Use retry logic for uploaded images to handle WSL file serving delays
-            this.loadImageWithRetry(img, cleanPath, 3, 1, img.closest('#preview-question-image-split'));
+            this.loadImageWithRetry(img, fullPath, 3, 1, img.closest('#preview-question-image-split'));
         }
     }
 
