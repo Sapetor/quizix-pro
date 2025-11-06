@@ -223,7 +223,7 @@ export class QuizManager {
                 return;
             }
             
-            const response = await fetch('/api/save-quiz', {
+            const response = await fetch('api/save-quiz', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -270,7 +270,7 @@ export class QuizManager {
         
         // Load quizzes list with performance optimization
         try {
-            const response = await fetch('/api/quizzes');
+            const response = await fetch('api/quizzes');
             const data = await response.json();
             
             if (quizList) {

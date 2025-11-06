@@ -820,7 +820,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
             const apiKey = await secureStorage.getSecureItem('api_key_claude');
             console.log('🔥 DEBUG: Claude API key retrieved:', !!apiKey);
             
-            const response = await fetch('/api/claude/generate', {
+            const response = await fetch('api/claude/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

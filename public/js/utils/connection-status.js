@@ -145,7 +145,7 @@ export class ConnectionStatus {
         
         try {
             // Ping the server with a lightweight request
-            const response = await fetch('/api/ping', {
+            const response = await fetch('api/ping', {
                 method: 'GET',
                 cache: 'no-cache',
                 signal: AbortSignal.timeout(5000) // 5 second timeout

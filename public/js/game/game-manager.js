@@ -1749,7 +1749,7 @@ export class GameManager {
             });
 
             // Save results to server
-            const response = await fetch('/api/save-results', {
+            const response = await fetch('api/save-results', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

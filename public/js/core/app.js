@@ -29,7 +29,10 @@ export class QuizGame {
         logger.info('Initializing QuizGame...');
         
         // Initialize socket connection
-        this.socket = io();
+        // Initialize socket connection with base path support for Kubernetes
+        const basePath = document.querySelector('base')?.getAttribute('href') || '/';
+        const cleanPath = basePath.replace(//$/, ');
+        this.socket = io({ path: cleanPath + '/socket.io' });
         
         // Initialize all managers with error handling
         try {
@@ -762,7 +765,7 @@ export class QuizGame {
             logger.debug('Loading quiz for game startup...');
             
             // First check if we can fetch the quiz list
-            const response = await fetch('/api/quizzes');
+            const response = await fetch('api/quizzes');
             if (!response.ok) {
                 throw new Error(`Failed to fetch quizzes: ${response.status} ${response.statusText}`);
             }
