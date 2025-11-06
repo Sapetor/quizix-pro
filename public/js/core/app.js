@@ -149,8 +149,14 @@ export class QuizGame {
             const result = await response.json();
             logger.debug('Upload successful:', result);
 
+            // Construct proper image URL with base path for Kubernetes
+            const basePath = document.querySelector('base')?.getAttribute('href') || '/';
+            const cleanBasePath = basePath.replace(/\/$/, ''); // Remove trailing slash
+            const imageUrl = result.url.startsWith('/') ? cleanBasePath + result.url : result.url;
+            logger.debug('Image URL with base path:', imageUrl);
+
             // Update the image preview
-            this.updateImagePreview(inputElement, result.url);
+            this.updateImagePreview(inputElement, imageUrl);
 
         } catch (error) {
             logger.error('Image upload failed:', error);
