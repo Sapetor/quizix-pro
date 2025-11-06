@@ -28,12 +28,12 @@ export class SoundManager {
         
         // Define sound file paths
         this.soundFiles = {
-            correctAnswer: '/sounds/smw_power-up.wav',
-            wrongAnswer: '/sounds/smb2_bonus_chance_lose.wav',
-            gameStart: '/sounds/smb2_bonus_chance_start.wav',
-            questionStart: '/sounds/smb3_nspade_match.wav',
-            gameComplete: '/sounds/smw_castle_clear.wav',
-            bellNotification: '/sounds/bell-notification.mp3'
+            correctAnswer: 'sounds/smw_power-up.wav',
+            wrongAnswer: 'sounds/smb2_bonus_chance_lose.wav',
+            gameStart: 'sounds/smb2_bonus_chance_start.wav',
+            questionStart: 'sounds/smb3_nspade_match.wav',
+            gameComplete: 'sounds/smw_castle_clear.wav',
+            bellNotification: 'sounds/bell-notification.mp3'
         };
         
         try {

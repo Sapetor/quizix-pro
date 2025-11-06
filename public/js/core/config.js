@@ -142,13 +142,13 @@ export const ANIMATION = {
 
 // API endpoints
 export const API = {
-    SAVE_QUIZ: '/api/save-quiz',
-    LOAD_QUIZZES: '/api/quizzes',
-    LOAD_QUIZ: '/api/quiz',
-    SAVE_RESULTS: '/api/save-results',
-    UPLOAD: '/upload',
-    QR_CODE: '/api/qr',
-    CLAUDE_GENERATE: '/api/claude/generate',
+    SAVE_QUIZ: 'api/save-quiz',
+    LOAD_QUIZZES: 'api/quizzes',
+    LOAD_QUIZ: 'api/quiz',
+    SAVE_RESULTS: 'api/save-results',
+    UPLOAD: 'upload',
+    QR_CODE: 'api/qr',
+    CLAUDE_GENERATE: 'api/claude/generate',
 };
 
 // Socket.IO event names

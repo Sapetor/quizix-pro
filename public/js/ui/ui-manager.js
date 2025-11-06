@@ -230,7 +230,7 @@ export class UIManager {
 
     async loadQRCode(pin) {
         try {
-            const data = await APIHelper.fetchAPIJSON(`/api/qr/${pin}`);
+            const data = await APIHelper.fetchAPIJSON(`api/qr/${pin}`);
             
             if (data.qrCode) {
                 const qrImage = document.getElementById('qr-code-image');
