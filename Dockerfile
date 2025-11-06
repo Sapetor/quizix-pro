@@ -33,6 +33,7 @@ COPY --from=production-deps --chown=nodejs:nodejs /app/node_modules ./node_modul
 # Copy application code
 COPY --chown=nodejs:nodejs server.js ./
 COPY --chown=nodejs:nodejs public ./public/
+COPY --chown=nodejs:nodejs services ./services/
 
 # Create directories for persistent data with proper permissions
 RUN mkdir -p quizzes results public/uploads && \
