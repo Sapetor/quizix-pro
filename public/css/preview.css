@@ -296,27 +296,50 @@
     /* Base styling comes from .checkbox-option in components.css */
 }
 
-/* Preview option styling for correct answers */
+/* Preview option styling for correct answers - GREEN HALO approach */
+/* Keep colorful backgrounds but add distinctive green border/glow */
 .preview-option.correct-preview,
 .preview-checkbox.correct-preview,
-.preview-tf.correct-preview {
-    background: rgba(46, 213, 115, 0.8) !important;
-    border: 2px solid #2ed573 !important;
-    color: #fff !important;
-    font-weight: 600;
+.preview-tf.correct-preview,
+.player-option.correct,
+.preview-content .player-option.correct,
+.preview-content-split .player-option.correct {
+    border: 4px solid #22c55e !important;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
+                0 4px 20px rgba(34, 197, 94, 0.5) !important;
+    outline: 2px solid rgba(34, 197, 94, 0.6);
+    outline-offset: 2px;
+    font-weight: 700;
+    transform: scale(1.02);
 }
 
-/* Override colorful checkbox styling for correct answers with maximum specificity */
+/* Enhanced green halo for checkbox options - maintains colorful backgrounds */
 .checkbox-option.preview-checkbox.correct-preview[data-option="0"],
 .checkbox-option.preview-checkbox.correct-preview[data-option="1"],
 .checkbox-option.preview-checkbox.correct-preview[data-option="2"],
 .checkbox-option.preview-checkbox.correct-preview[data-option="3"],
 .checkbox-option.preview-checkbox.correct-preview[data-option="4"],
 .checkbox-option.preview-checkbox.correct-preview[data-option="5"] {
-    background: rgba(46, 213, 115, 0.8) !important;
-    border: 2px solid #2ed573 !important;
-    color: #fff !important;
-    box-shadow: 0 4px 20px rgba(46, 213, 115, 0.3) !important;
+    border: 4px solid #22c55e !important;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
+                0 4px 20px rgba(34, 197, 94, 0.5) !important;
+    outline: 2px solid rgba(34, 197, 94, 0.6);
+    outline-offset: 2px;
+    transform: scale(1.02);
+}
+
+/* Hover states for correct answers - enhanced green glow */
+.preview-option.correct-preview:hover,
+.preview-checkbox.correct-preview:hover,
+.player-option.correct:hover,
+.preview-content .player-option.correct:hover,
+.preview-content-split .player-option.correct:hover,
+.checkbox-option.preview-checkbox.correct-preview:hover {
+    border-color: #16a34a !important;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.4),
+                0 6px 24px rgba(34, 197, 94, 0.6) !important;
+    outline-color: rgba(34, 197, 94, 0.8);
+    transform: scale(1.04) !important;
 }
 
 .preview-content .player-options,
