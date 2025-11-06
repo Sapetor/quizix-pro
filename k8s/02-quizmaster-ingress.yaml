@@ -1,5 +1,6 @@
-# Option 1: Standalone Ingress for QuizMaster Pro
-# Uses path-based routing (no host specified) like your lab-apps ingress
+# Standalone Ingress for QuizMaster Pro
+# Uses path-based routing matching cluster's namespace isolation policy
+# Path must match namespace name: /quizmaster for quizmaster namespace
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -7,24 +8,29 @@ metadata:
   namespace: quizmaster
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    # Increased timeout for Socket.IO WebSocket connections (your server uses 60, but Socket.IO needs more)
+    # Increased timeout for Socket.IO WebSocket connections
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    nginx.ingress.kubernetes.io/use-regex: "true"
     # Critical for Socket.IO - enables WebSocket support
     nginx.ingress.kubernetes.io/websocket-services: "quizmaster-pro"
     # Session affinity for Socket.IO sticky sessions
     nginx.ingress.kubernetes.io/affinity: "cookie"
     nginx.ingress.kubernetes.io/session-cookie-name: "quizmaster-affinity"
     nginx.ingress.kubernetes.io/session-cookie-max-age: "10800"
+    # Enable regex matching for path capture
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # Rewrite /quizmaster/xyz to /xyz preserving the path
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
-          # QuizMaster Pro will be accessible at: http://your-cluster-ip/quiz
-          - path: /quiz
-            pathType: Prefix
+          # Access at: http://your-cluster-ip/quizmaster
+          # Regex pattern captures path after /quizmaster for rewrite
+          # /quizmaster/api/ping -> /api/ping, /quizmaster -> /
+          - path: /quizmaster(/|$)(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: quizmaster-pro
