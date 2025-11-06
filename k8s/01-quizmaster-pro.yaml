@@ -101,8 +101,8 @@ spec:
       containers:
         - name: quizmaster-pro
           # TODO: Replace with your actual image
-          image: your-registry/quizmaster-pro:latest
-          imagePullPolicy: IfNotPresent
+          image: sapetor/quizmaster-pro:latest
+          imagePullPolicy: Always
 
           envFrom:
             - configMapRef:
