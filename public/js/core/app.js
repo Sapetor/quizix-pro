@@ -30,7 +30,7 @@ export class QuizGame {
         
         // Initialize socket connection with base path support for Kubernetes
         const basePath = document.querySelector('base')?.getAttribute('href') || '/';
-        const cleanPath = basePath.replace(/\/$/, ');
+        const cleanPath = basePath.replace(/\/$/, '');
         this.socket = io({ path: cleanPath + '/socket.io' });
         
         // Initialize socket connection
