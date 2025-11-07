@@ -78,6 +78,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `public/js/utils/unified-error-handler.js` - Error boundary system
 - `public/js/utils/translation-manager.js` - i18n with 9 languages
 - `public/js/utils/math-renderer.js` - LaTeX/MathJax rendering
+- `public/js/utils/image-path-resolver.js` - **Centralized image path handling for Kubernetes deployments** (single source of truth)
 - `public/js/utils/results-viewer.js` - Results viewing interface
 - `public/js/utils/simple-results-downloader.js` - CSV/JSON export
 - `public/js/utils/mobile-carousel.js` - Mobile quickstart carousel (6s intervals)
@@ -128,6 +129,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 8. **Test zoom compatibility** - buttons and layouts should work at 150%+ zoom levels
 9. **Verify Socket.IO events** - check both client and server event handlers when modifying real-time features
 10. **Test mobile carousels** - auto-play, pause/resume, gesture handling must work correctly
+11. **Use ImagePathResolver for all image paths** - Never manually construct image paths; always use `imagePathResolver.toStoragePath()` for saving and `imagePathResolver.toDisplayPath()` for display
 
 **Best Practices:**
 - Keep functions focused on single responsibilities
@@ -135,10 +137,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - Preserve DOM structure in manipulations
 - Document complex algorithms
 - Use unified SettingsManager for all theme/settings operations
+- **Use ImagePathResolver for all image operations** - centralized path handling for Kubernetes compatibility
 - Implement auto-play carousels with intelligent pause/resume
 - Handle mobile viewport differences with responsive CSS
 - Clean up event listeners and timers to prevent memory leaks
 - Use try-catch blocks with unified error handler for critical operations
+
+**Image Path Handling Pattern:**
+```javascript
+import { imagePathResolver } from '../utils/image-path-resolver.js';
+
+// When saving quiz (store portable path)
+const storagePath = imagePathResolver.toStoragePath(imageUrl);
+imageElement.dataset.url = storagePath; // Save: /uploads/file.gif
+
+// When displaying image (add environment base path)
+const displayPath = imagePathResolver.toDisplayPath(storagePath);
+imageElement.src = displayPath; // Display: /quizmaster/uploads/file.gif
+
+// When rendering in game (full absolute URL)
+const absoluteUrl = imagePathResolver.toAbsoluteUrl(storagePath);
+imageElement.src = absoluteUrl; // Display: http://host/quizmaster/uploads/file.gif
+```
 
 ## Project Structure
 
@@ -353,6 +373,16 @@ git push origin modular-architecture  # Triggers Railway deploy
 - Fixed Polish language parsing conflicts from duplicate entries
 - Enhanced mobile menu translations for all supported languages
 - 200+ translation keys with comprehensive UI coverage
+
+**Image Path Handling (Kubernetes Fix):**
+- **MAJOR REFACTOR**: Created centralized `ImagePathResolver` utility for all image path operations
+- Fixed image display in Kubernetes deployment with path-based routing (`/quizmaster/` base path)
+- Eliminated ~120 lines of duplicated path logic across 4 files (95% code reduction)
+- Proper separation of storage paths (portable) vs display paths (environment-specific)
+- Backward compatible with old quizzes that have base paths stored in JSON
+- Clean API: `toStoragePath()`, `toDisplayPath()`, `toAbsoluteUrl()`, `isValidImagePath()`
+- Images now display correctly in editor, live preview, and gameplay (host + player)
+- Single source of truth for path resolution - easier to maintain and debug
 
 ## Security
 
