@@ -302,7 +302,8 @@ export class PreviewManager {
         };
 
         this.listeners.changeHandler = (e) => {
-            if (e.target.matches('.question-type, .time-input, .question-difficulty')) {
+            // Include .correct-answer dropdown for multiple-choice questions
+            if (e.target.matches('.question-type, .time-input, .question-difficulty, .correct-answer')) {
                 this.updatePreviewDebounced();
             }
         };
@@ -314,7 +315,8 @@ export class PreviewManager {
         };
 
         this.listeners.checkboxHandler = (e) => {
-            if (e.target.matches('input[type="checkbox"][name^="multiple-correct-"]')) {
+            // Match correct-option checkboxes for multiple-correct questions
+            if (e.target.matches('.correct-option, input[type="checkbox"][name^="multiple-correct-"]')) {
                 this.updatePreviewDebounced();
             }
         };

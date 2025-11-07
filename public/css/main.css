@@ -4,46 +4,46 @@
  */
 
 /* CSS Variables - MUST be first for theme switching */
-@import './variables.css?v=10.1';
+@import './variables.css';
 
 /* Base styles - Reset, typography, global styles */
-@import './base.css?v=10.1';
+@import './base.css';
 
 /* Layout systems - Grid, containers, screen management */
-@import './layout.css?v=10.1';
+@import './layout.css';
 
 /* UI components - Buttons, inputs, cards */
-@import './components.css?v=10.1';
+@import './components.css';
 
 /* Code blocks component - Unified code styling (Phase 1 refactor) */
-@import './components/code-blocks.css?v=10.1';
+@import './components/code-blocks.css';
 
 /* Syntax highlighting - One Dark Pro theme integration */
-@import './components/syntax-highlighting.css?v=10.1';
+@import './components/syntax-highlighting.css';
 
 /* Modal systems - All modal dialogs and overlays */
-@import './modals.css?v=10.1';
+@import './modals.css';
 
 /* Game screens - Lobby, gameplay, results */
-@import './game.css?v=10.1';
+@import './game.css';
 
 /* Live preview system - Split-screen preview functionality */
-@import './preview.css?v=10.1';
+@import './preview.css';
 
 /* Left toolbar - Navigation and tools */
-@import './toolbar.css?v=10.1';
+@import './toolbar.css';
 
 /* Toast notifications - Non-intrusive notifications */
-@import './toasts.css?v=10.1';
+@import './toasts.css';
 
 /* Responsive design - Media queries and mobile optimizations */
-@import './responsive.css?v=10.1';
+@import './responsive.css';
 
 /* Animations and transitions - Keyframes and motion */
-@import './animations.css?v=10.1';
+@import './animations.css';
 
 /* Analytics - Question analytics and statistical visualizations */
-@import './analytics.css?v=10.1';
+@import './analytics.css';
 
 /* Mobile enhancements consolidated into responsive.css */
 
