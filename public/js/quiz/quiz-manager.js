@@ -10,6 +10,7 @@ import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-hand
 import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
 import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
+import { imagePathResolver } from '../utils/image-path-resolver.js';
 
 export class QuizManager {
     constructor(uiManager) {
@@ -1050,44 +1051,11 @@ export class QuizManager {
     }
 
     /**
-     * Resolve image source from various formats
-     * Kubernetes-aware: Prepends base path for path-based routing
-     * Handles both old paths (with base path) and new paths (without base path)
+     * Resolve image source from various formats using centralized resolver
+     * Delegates to imagePathResolver for consistent path handling
      */
     resolveImageSource(imageData) {
-        if (imageData.startsWith('data:')) {
-            // Data URI - use directly
-            return imageData;
-        } else if (imageData.startsWith('http')) {
-            // Full URL - use directly
-            return imageData;
-        } else {
-            // Get base path for Kubernetes
-            const basePath = document.querySelector('base')?.getAttribute('href') || '/';
-            const cleanBasePath = basePath.replace(/\/$/, ''); // Remove trailing slash
-
-            // First, strip any existing base path from imageData to get clean path
-            let cleanPath = imageData;
-            if (cleanBasePath && cleanBasePath !== '' && imageData.startsWith(cleanBasePath)) {
-                // Remove base path if already present (handles old stored paths)
-                cleanPath = imageData.substring(cleanBasePath.length);
-                logger.debug(`Quiz-manager stripped base path: ${imageData} → ${cleanPath}`);
-            }
-
-            // Normalize to /uploads/filename.gif format
-            if (!cleanPath.startsWith('/uploads/')) {
-                if (cleanPath.startsWith('uploads/')) {
-                    cleanPath = '/' + cleanPath;
-                } else if (!cleanPath.startsWith('/')) {
-                    cleanPath = `/uploads/${cleanPath}`;
-                }
-            }
-
-            // Now prepend base path for display
-            const fullPath = cleanBasePath === '' ? cleanPath : cleanBasePath + cleanPath;
-            logger.debug(`Quiz-manager resolved: ${imageData} → ${cleanPath} → ${fullPath}`);
-            return fullPath;
-        }
+        return imagePathResolver.toDisplayPath(imageData);
     }
 
     /**

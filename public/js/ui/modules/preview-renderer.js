@@ -7,6 +7,7 @@
 import { translationManager } from '../../utils/translation-manager.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
 import { logger } from '../../core/config.js';
+import { imagePathResolver } from '../../utils/image-path-resolver.js';
 
 export class PreviewRenderer {
     constructor() {
@@ -146,9 +147,8 @@ export class PreviewRenderer {
 
     /**
      * Set image source with data URI or path handling
+     * Uses centralized path resolver for consistent handling
      * Enhanced with WSL-aware retry logic for file serving delays
-     * Kubernetes-aware: Prepends base path for path-based routing
-     * Handles both old paths (with base path) and new paths (without base path)
      */
     setSplitImageSource(img, imageData) {
         if (!imageData || imageData.trim() === '') {
@@ -156,36 +156,15 @@ export class PreviewRenderer {
             return;
         }
 
-        if (imageData.startsWith('data:')) {
-            img.src = imageData;
+        // Use centralized resolver for consistent path handling
+        const displayPath = imagePathResolver.toDisplayPath(imageData);
+
+        // Data URIs are handled directly, file paths use retry logic
+        if (displayPath.startsWith('data:')) {
+            img.src = displayPath;
         } else {
-            // Get base path for Kubernetes
-            const basePath = document.querySelector('base')?.getAttribute('href') || '/';
-            const cleanBasePath = basePath.replace(/\/$/, ''); // Remove trailing slash
-
-            // First, strip any existing base path from imageData to get clean path
-            let cleanPath = imageData;
-            if (cleanBasePath && cleanBasePath !== '' && imageData.startsWith(cleanBasePath)) {
-                // Remove base path if already present (handles old stored paths)
-                cleanPath = imageData.substring(cleanBasePath.length);
-                logger.debug(`Stripped existing base path: ${imageData} → ${cleanPath}`);
-            }
-
-            // Normalize to /uploads/filename.gif format
-            if (!cleanPath.startsWith('/uploads/')) {
-                if (cleanPath.startsWith('uploads/')) {
-                    cleanPath = '/' + cleanPath;
-                } else if (!cleanPath.startsWith('/')) {
-                    cleanPath = `/uploads/${cleanPath}`;
-                }
-            }
-
-            // Now prepend base path for display
-            const fullPath = cleanBasePath === '' ? cleanPath : cleanBasePath + cleanPath;
-
-            logger.debug(`Setting image source: ${imageData} → ${cleanPath} → ${fullPath}`);
             // Use retry logic for uploaded images to handle WSL file serving delays
-            this.loadImageWithRetry(img, fullPath, 3, 1, img.closest('#preview-question-image-split'));
+            this.loadImageWithRetry(img, displayPath, 3, 1, img.closest('#preview-question-image-split'));
         }
     }
 
