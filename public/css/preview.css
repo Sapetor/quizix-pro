@@ -360,13 +360,27 @@
     flex-direction: column;
     gap: 10px;
     max-width: 95%; /* Use maximum available width for optimal space usage */
-    margin: 0;
-    align-items: flex-start; /* Left-align the checkboxes */
-    text-align: left;
+    margin: 0 auto; /* Center the container like multiple-choice */
+    align-items: center; /* Center the checkboxes like multiple-choice */
+    width: 100%; /* Match multiple-choice width */
 }
 
 /* Checkbox options inherit base styling from .checkbox-option in components.css */
-/* Only preview-specific adjustments needed here */
+/* Sizing adjustments to match multiple-choice options */
+.preview-content .checkbox-option.preview-checkbox,
+.preview-content-split .checkbox-option.preview-checkbox {
+    padding: 15px 20px; /* Match .player-option padding */
+    font-size: 1.1rem; /* Match .player-option font size */
+    font-weight: 600; /* Match .player-option font weight */
+    min-height: 55px; /* Match .player-option min-height (vs default 45px) */
+    width: 100%; /* Match .player-option width */
+    max-width: 95%; /* Match .player-option max-width */
+    margin: 8px 0; /* Match .player-option margin */
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
 .preview-content .player-checkbox-options,
 .preview-content-split .player-checkbox-options {
     max-width: 700px; /* Updated to match above */
