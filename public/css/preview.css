@@ -296,51 +296,7 @@
     /* Base styling comes from .checkbox-option in components.css */
 }
 
-/* Preview option styling for correct answers - GREEN HALO approach */
-/* Keep colorful backgrounds but add distinctive green border/glow */
-.preview-option.correct-preview,
-.preview-checkbox.correct-preview,
-.preview-tf.correct-preview,
-.player-option.correct,
-.preview-content .player-option.correct,
-.preview-content-split .player-option.correct {
-    border: 4px solid #22c55e !important;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
-                0 4px 20px rgba(34, 197, 94, 0.5) !important;
-    outline: 2px solid rgba(34, 197, 94, 0.6);
-    outline-offset: 2px;
-    font-weight: 700;
-    transform: scale(1.02);
-}
-
-/* Enhanced green halo for checkbox options - maintains colorful backgrounds */
-.checkbox-option.preview-checkbox.correct-preview[data-option="0"],
-.checkbox-option.preview-checkbox.correct-preview[data-option="1"],
-.checkbox-option.preview-checkbox.correct-preview[data-option="2"],
-.checkbox-option.preview-checkbox.correct-preview[data-option="3"],
-.checkbox-option.preview-checkbox.correct-preview[data-option="4"],
-.checkbox-option.preview-checkbox.correct-preview[data-option="5"] {
-    border: 4px solid #22c55e !important;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
-                0 4px 20px rgba(34, 197, 94, 0.5) !important;
-    outline: 2px solid rgba(34, 197, 94, 0.6);
-    outline-offset: 2px;
-    transform: scale(1.02);
-}
-
-/* Hover states for correct answers - enhanced green glow */
-.preview-option.correct-preview:hover,
-.preview-checkbox.correct-preview:hover,
-.player-option.correct:hover,
-.preview-content .player-option.correct:hover,
-.preview-content-split .player-option.correct:hover,
-.checkbox-option.preview-checkbox.correct-preview:hover {
-    border-color: #16a34a !important;
-    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.4),
-                0 6px 24px rgba(34, 197, 94, 0.6) !important;
-    outline-color: rgba(34, 197, 94, 0.8);
-    transform: scale(1.04) !important;
-}
+/* Placeholder for correct answer styling - moved after colorful rules for proper cascade */
 
 .preview-content .player-options,
 .preview-content-split .player-options {
@@ -1108,6 +1064,81 @@ pre code {
     border: 2px solid rgba(6, 182, 212, 0.4);
     color: #f8fafc;
 }
+
+/* ========================================================================
+   CORRECT ANSWER STYLING - Must come AFTER colorful rules for cascade
+   ======================================================================== */
+
+/* GREEN HALO approach for multiple-choice correct answers */
+/* Maintains colorful backgrounds while adding distinctive green border/glow */
+.preview-content .player-option.correct,
+.preview-content-split .player-option.correct {
+    border: 4px solid #22c55e !important;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
+                0 4px 20px rgba(34, 197, 94, 0.5) !important;
+    outline: 2px solid rgba(34, 197, 94, 0.6);
+    outline-offset: 2px;
+    font-weight: 700 !important;
+    transform: scale(1.02) !important;
+}
+
+/* GREEN HALO for multiple-correct checkbox options - HIGH SPECIFICITY */
+/* Must override the colorful nth-child rules above */
+.preview-content .player-checkbox-options .checkbox-option.correct-preview,
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview {
+    border: 4px solid #22c55e !important;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
+                0 4px 20px rgba(34, 197, 94, 0.5) !important;
+    outline: 2px solid rgba(34, 197, 94, 0.6);
+    outline-offset: 2px;
+    font-weight: 700 !important;
+    transform: scale(1.02) !important;
+}
+
+/* Specific overrides for each nth-child to ensure green halo wins */
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(1),
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(1),
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(2),
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(2),
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(3),
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(3),
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(4),
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(4),
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(5),
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(5),
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(6),
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(6) {
+    border: 4px solid #22c55e !important;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
+                0 4px 20px rgba(34, 197, 94, 0.5) !important;
+    outline: 2px solid rgba(34, 197, 94, 0.6);
+    outline-offset: 2px;
+    font-weight: 700 !important;
+    transform: scale(1.02) !important;
+}
+
+/* Dark theme variants for correct answers */
+[data-theme="dark"] .preview-content .player-option.correct,
+[data-theme="dark"] .preview-content-split .player-option.correct,
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option.correct-preview,
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option.correct-preview {
+    border-color: #22c55e !important;
+    outline-color: rgba(34, 197, 94, 0.6);
+}
+
+/* Hover states for correct answers - enhanced green glow */
+.preview-content .player-option.correct:hover,
+.preview-content-split .player-option.correct:hover,
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:hover,
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:hover {
+    border-color: #16a34a !important;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.4),
+                0 6px 24px rgba(34, 197, 94, 0.6) !important;
+    outline-color: rgba(34, 197, 94, 0.8);
+    transform: scale(1.04) !important;
+}
+
+/* ======================================================================== */
 
 [data-theme="dark"] .preview-content .player-option:hover,
 [data-theme="dark"] .preview-content-split .player-option:hover {
