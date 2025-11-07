@@ -21,6 +21,7 @@ import { keyboardShortcuts } from '../utils/keyboard-shortcuts.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
 import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/globals.js';
+import { imagePathResolver } from '../utils/image-path-resolver.js';
 // Results viewer will be lazy loaded when needed
 
 export class QuizGame {
@@ -149,14 +150,12 @@ export class QuizGame {
             const result = await response.json();
             logger.debug('Upload successful:', result);
 
-            // Construct proper image URL with base path for Kubernetes
-            const basePath = document.querySelector('base')?.getAttribute('href') || '/';
-            const cleanBasePath = basePath.replace(/\/$/, ''); // Remove trailing slash
-            const imageUrl = result.url.startsWith('/') ? cleanBasePath + result.url : result.url;
-            logger.debug('Image URL with base path:', imageUrl);
+            // Use centralized path resolver for consistent handling
+            const storagePath = imagePathResolver.toStoragePath(result.url);
+            const displayPath = imagePathResolver.toDisplayPath(storagePath);
 
             // Update the image preview
-            this.updateImagePreview(inputElement, imageUrl);
+            this.updateImagePreview(inputElement, storagePath, displayPath);
 
         } catch (error) {
             logger.error('Image upload failed:', error);
@@ -177,9 +176,10 @@ export class QuizGame {
     /**
      * Update image preview after successful upload
      * @param {HTMLInputElement} inputElement - The file input element
-     * @param {string} imageUrl - The uploaded image URL
+     * @param {string} storagePath - The portable storage path (e.g., /uploads/file.gif)
+     * @param {string} displayPath - The environment-specific display path
      */
-    updateImagePreview(inputElement, imageUrl) {
+    updateImagePreview(inputElement, storagePath, displayPath) {
         const questionItem = inputElement.closest('.question-item');
         if (!questionItem) {
             logger.error('Could not find question item for image preview');
@@ -194,9 +194,10 @@ export class QuizGame {
             return;
         }
 
-        // Set the image source and data-url attribute
-        imageElement.src = imageUrl;
-        imageElement.dataset.url = imageUrl; // This is crucial for quiz saving
+        // Set the display path for showing the image
+        imageElement.src = displayPath;
+        // Store the portable storage path for quiz saving - crucial for cross-environment compatibility
+        imageElement.dataset.url = storagePath;
         imageElement.alt = 'Question Image';
 
         // Show the preview
@@ -208,7 +209,7 @@ export class QuizGame {
             imageUploadDiv.style.opacity = '1';
         }
 
-        logger.debug('Image preview updated successfully:', imageUrl);
+        logger.debug('Image preview updated - Storage:', storagePath, 'Display:', displayPath);
     }
 
     /**

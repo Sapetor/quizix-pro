@@ -10,6 +10,7 @@ import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-hand
 import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
 import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
+import { imagePathResolver } from '../utils/image-path-resolver.js';
 
 export class QuizManager {
     constructor(uiManager) {
@@ -1050,24 +1051,11 @@ export class QuizManager {
     }
 
     /**
-     * Resolve image source from various formats
-     * Kubernetes-aware: Prepends base path for path-based routing
+     * Resolve image source from various formats using centralized resolver
+     * Delegates to imagePathResolver for consistent path handling
      */
     resolveImageSource(imageData) {
-        if (imageData.startsWith('data:')) {
-            // Data URI - use directly
-            return imageData;
-        } else if (imageData.startsWith('http')) {
-            // Full URL - use directly
-            return imageData;
-        } else {
-            // Relative path - prefix with / and add base path for Kubernetes
-            const imagePath = imageData.startsWith('/') ? imageData : `/${imageData}`;
-            const basePath = document.querySelector('base')?.getAttribute('href') || '/';
-            const cleanBasePath = basePath.replace(/\/$/, ''); // Remove trailing slash
-            const fullPath = cleanBasePath === '' ? imagePath : cleanBasePath + imagePath;
-            return fullPath;
-        }
+        return imagePathResolver.toDisplayPath(imageData);
     }
 
     /**

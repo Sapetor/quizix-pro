@@ -8,6 +8,7 @@ import { translationManager, getTranslation } from '../../utils/translation-mana
 import { logger } from '../../core/config.js';
 import { MathRenderer } from '../../utils/math-renderer.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
+import { imagePathResolver } from '../../utils/image-path-resolver.js';
 
 export class GameDisplayManager {
     constructor(uiManager) {
@@ -102,22 +103,8 @@ export class GameDisplayManager {
             imageContainer.appendChild(img);
         }
         
-        // Set image source with proper path handling
-        // Kubernetes-aware: Prepends base path for path-based routing
-        let imageSrc;
-        if (data.image.startsWith('data:')) {
-            imageSrc = data.image; // Data URI
-        } else if (data.image.startsWith('http')) {
-            imageSrc = data.image; // Full URL
-        } else {
-            // Construct proper URL from relative path with Kubernetes base path support
-            const baseUrl = window.location.origin;
-            const basePath = document.querySelector('base')?.getAttribute('href') || '/';
-            const cleanBasePath = basePath.replace(/\/$/, ''); // Remove trailing slash
-            const imagePath = data.image.startsWith('/') ? data.image : `/${data.image}`;
-            const fullPath = cleanBasePath === '' ? imagePath : cleanBasePath + imagePath;
-            imageSrc = `${baseUrl}${fullPath}`;
-        }
+        // Set image source using centralized path resolver
+        const imageSrc = imagePathResolver.toAbsoluteUrl(data.image);
         
         img.alt = 'Question Image';
         
