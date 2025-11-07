@@ -613,7 +613,8 @@ select:focus-visible {
 }
 
 /* When checkbox is checked, use neutral highlight */
-.checkbox-option:has(input[type="checkbox"]:checked) {
+/* EXCLUDE preview checkboxes - they need colorful backgrounds */
+.checkbox-option:not(.preview-checkbox):has(input[type="checkbox"]:checked) {
     background: rgba(255, 255, 255, 0.1) !important;
     border-color: var(--color-success-500) !important;
     color: var(--color-success-500) !important;
