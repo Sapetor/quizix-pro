@@ -1171,20 +1171,20 @@ pre code {
     width: 100%;
 }
 
-/* Enhanced True/False buttons with default colors */
+/* Enhanced True/False buttons with default colors - matched to multiple-choice sizing */
 .preview-content .tf-option,
 .preview-content-split .tf-option {
-    padding: 18px 25px;
-    font-size: 1.2rem;
+    padding: 15px 20px; /* Match .player-option */
+    font-size: 1.1rem; /* Match .player-option */
     font-weight: 700;
     border: 3px solid rgba(255,255,255,0.4);
     border-radius: var(--border-radius-medium);
     cursor: pointer;
     transition: all 0.3s ease;
-    margin: 10px 0;
-    min-height: 60px;
+    margin: 8px 0; /* Match .player-option */
+    min-height: 55px; /* Match .player-option */
     flex: 1;
-    max-width: 350px; /* Increased from 250px for better proportion */
+    max-width: 350px; /* Keep wider for True/False horizontal layout */
     display: flex;
     align-items: center;
     justify-content: center;
