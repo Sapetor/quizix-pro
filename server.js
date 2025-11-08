@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config();
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -13,6 +16,10 @@ const { CORSValidationService } = require('./services/cors-validation-service');
 
 // Detect production environment (Railway sets NODE_ENV automatically)
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
+
+// Base path configuration for Kubernetes/path-based routing
+// Auto-detect: production uses /quizmaster/, development uses /
+const BASE_PATH = process.env.BASE_PATH || (isProduction ? '/quizmaster/' : '/');
 
 // Server-side logging utility - temporarily verbose for debugging
 const DEBUG = {
@@ -43,6 +50,9 @@ const logger = {
         }
     }
 };
+
+// Log base path configuration on startup
+logger.info(`Base path configured: ${BASE_PATH}`);
 
 // WSL Performance monitoring utility
 const WSLMonitor = {
@@ -149,7 +159,10 @@ app.use((req, res, next) => {
 });
 
 // Static file serving with mobile-optimized caching headers and proper MIME types
-app.use(express.static('public', {
+// NOTE: index.html is disabled from static serving so it can be handled by custom route
+// Mount static files at BASE_PATH to support Kubernetes path-based routing
+const staticMiddleware = express.static('public', {
+  index: false,         // Disable automatic index.html serving
   // Balanced caching for mobile and WSL performance
   maxAge: isProduction ? '1y' : '4h', // Increased dev cache for mobile
   etag: true,           // Enable ETags for efficient cache validation
@@ -214,6 +227,82 @@ app.use(express.static('public', {
       // Add mobile-friendly headers
       res.setHeader('X-Mobile-Optimized', 'true');
       
+      // Enable keep-alive for mobile connections
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Keep-Alive', 'timeout=30, max=100');
+    }
+  }
+});
+
+// Static file serving with mobile-optimized caching headers and proper MIME types
+// NOTE: Serve from root - Kubernetes Ingress strips the base path before forwarding
+// Only the <base> tag in HTML uses the full path
+app.use(express.static('public', {
+  index: false,         // Disable automatic index.html serving
+  // Balanced caching for mobile and WSL performance
+  maxAge: isProduction ? '1y' : '4h', // Increased dev cache for mobile
+  etag: true,           // Enable ETags for efficient cache validation
+  lastModified: true,   // Include Last-Modified headers
+  cacheControl: true,   // Enable Cache-Control headers
+
+  // Mobile-optimized headers with proper MIME types for ES6 modules
+  setHeaders: (res, path, stat) => {
+    const userAgent = res.req.headers['user-agent'] || '';
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+
+    // Critical fix: Proper MIME types for JavaScript modules
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      // Reduced cache time for development to see changes quickly
+      const maxAge = isProduction
+        ? (isMobile ? 172800 : 86400) // Production: 48 hours mobile, 24 hours desktop
+        : (isMobile ? 300 : 300);     // Development: 5 minutes for quick updates
+      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+
+    // CSS files
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      const maxAge = isProduction
+        ? (isMobile ? 172800 : 86400)
+        : (isMobile ? 300 : 300);
+      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+
+    // HTML files
+    if (path.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    }
+
+    // JSON files
+    if (path.endsWith('.json')) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    }
+
+    // Optimize image caching for mobile bandwidth
+    if (path.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      const maxAge = isMobile ? 7200 : 3600; // 2 hours mobile, 1 hour desktop
+      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+    }
+
+    // Special handling for index.html - shorter cache but with validation
+    if (path.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate'); // 5 minutes with validation
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+
+    // Enable compression for text-based files
+    if (path.match(/\.(js|css|html|json|svg|txt)$/i)) {
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+
+    // Mobile-specific optimizations
+    if (isMobile) {
+      // Add mobile-friendly headers
+      res.setHeader('X-Mobile-Optimized', 'true');
+
       // Enable keep-alive for mobile connections
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('Keep-Alive', 'timeout=30, max=100');
@@ -290,6 +379,34 @@ if (!fs.existsSync('public/uploads')) {
   fs.mkdirSync('public/uploads', { recursive: true });
   logger.info('Created uploads directory: public/uploads');
 }
+
+// Dynamic index.html serving with environment-specific base path
+// This route serves index.html with the correct <base> tag for the environment
+const serveIndexHtml = (req, res) => {
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+
+  fs.readFile(indexPath, 'utf8', (err, data) => {
+    if (err) {
+      logger.error('Error reading index.html:', err);
+      return res.status(500).send('Error loading application');
+    }
+
+    // Replace the base href with the environment-specific value
+    const modifiedHtml = data.replace(
+      /<base href="[^"]*">/,
+      `<base href="${BASE_PATH}">`
+    );
+
+    logger.debug(`Serving index.html with base path: ${BASE_PATH}`);
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+    res.send(modifiedHtml);
+  });
+};
+
+// Serve index.html at root (Ingress strips the /quizmaster/ prefix)
+app.get('/', serveIndexHtml);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -2215,6 +2332,22 @@ if (process.platform === 'win32') {
 // Liveness probe - simple check if server is running
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Diagnostic endpoint to check BASE_PATH configuration
+app.get('/debug/config', (req, res) => {
+  res.status(200).json({
+    BASE_PATH: BASE_PATH,
+    BASE_PATH_raw: JSON.stringify(BASE_PATH),
+    BASE_PATH_length: BASE_PATH.length,
+    BASE_PATH_type: typeof BASE_PATH,
+    BASE_PATH_equals_slash: BASE_PATH === '/',
+    BASE_PATH_not_equals_slash: BASE_PATH !== '/',
+    NODE_ENV: process.env.NODE_ENV,
+    isProduction: isProduction,
+    staticMountedAt: BASE_PATH !== '/' ? BASE_PATH : '/ (root)',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Readiness probe - check if server is ready to accept traffic
