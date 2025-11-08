@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config();
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -13,6 +16,11 @@ const { CORSValidationService } = require('./services/cors-validation-service');
 
 // Detect production environment (Railway sets NODE_ENV automatically)
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
+
+// Base path configuration for Kubernetes/path-based routing
+// Defaults to '/' for local development
+// Set to '/quizmaster/' for Kubernetes deployment
+const BASE_PATH = process.env.BASE_PATH || '/';
 
 // Server-side logging utility - temporarily verbose for debugging
 const DEBUG = {
@@ -43,6 +51,9 @@ const logger = {
         }
     }
 };
+
+// Log base path configuration on startup
+logger.info(`Base path configured: ${BASE_PATH}`);
 
 // WSL Performance monitoring utility
 const WSLMonitor = {
@@ -149,7 +160,9 @@ app.use((req, res, next) => {
 });
 
 // Static file serving with mobile-optimized caching headers and proper MIME types
+// NOTE: index.html is disabled from static serving so it can be handled by custom route
 app.use(express.static('public', {
+  index: false,         // Disable automatic index.html serving
   // Balanced caching for mobile and WSL performance
   maxAge: isProduction ? '1y' : '4h', // Increased dev cache for mobile
   etag: true,           // Enable ETags for efficient cache validation
@@ -290,6 +303,31 @@ if (!fs.existsSync('public/uploads')) {
   fs.mkdirSync('public/uploads', { recursive: true });
   logger.info('Created uploads directory: public/uploads');
 }
+
+// Dynamic index.html serving with environment-specific base path
+// This route serves index.html with the correct <base> tag for the environment
+app.get('/', (req, res) => {
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+
+  fs.readFile(indexPath, 'utf8', (err, data) => {
+    if (err) {
+      logger.error('Error reading index.html:', err);
+      return res.status(500).send('Error loading application');
+    }
+
+    // Replace the base href with the environment-specific value
+    const modifiedHtml = data.replace(
+      /<base href="[^"]*">/,
+      `<base href="${BASE_PATH}">`
+    );
+
+    logger.debug(`Serving index.html with base path: ${BASE_PATH}`);
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+    res.send(modifiedHtml);
+  });
+});
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
