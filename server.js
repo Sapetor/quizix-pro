@@ -18,9 +18,8 @@ const { CORSValidationService } = require('./services/cors-validation-service');
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
 
 // Base path configuration for Kubernetes/path-based routing
-// Defaults to '/' for local development
-// Set to '/quizmaster/' for Kubernetes deployment
-const BASE_PATH = process.env.BASE_PATH || '/';
+// Auto-detect: production uses /quizmaster/, development uses /
+const BASE_PATH = process.env.BASE_PATH || (isProduction ? '/quizmaster/' : '/');
 
 // Server-side logging utility - temporarily verbose for debugging
 const DEBUG = {
