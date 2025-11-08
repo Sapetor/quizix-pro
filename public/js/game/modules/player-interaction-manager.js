@@ -18,6 +18,7 @@ export class PlayerInteractionManager {
         this.selectAnswer = this.selectAnswer.bind(this);
         this.submitMultipleCorrectAnswer = this.submitMultipleCorrectAnswer.bind(this);
         this.submitNumericAnswer = this.submitNumericAnswer.bind(this);
+        this.submitOrderingAnswer = this.submitOrderingAnswer.bind(this);
     }
 
     /**
@@ -91,6 +92,8 @@ export class PlayerInteractionManager {
                 return this.submitMultipleCorrectAnswerInternal();
             case 'numeric':
                 return this.submitNumericAnswerInternal();
+            case 'ordering':
+                return this.submitOrderingAnswerInternal();
             case 'direct':
                 return this.submitAnswer(directAnswer);
             default:
@@ -141,6 +144,36 @@ export class PlayerInteractionManager {
         }
         
         logger.debug('Submitting numeric answer:', answer);
+        this.submitAnswer(answer);
+    }
+
+    /**
+     * Submit ordering answer
+     */
+    submitOrderingAnswer() {
+        return this.submitAnswerByType('ordering');
+    }
+
+    /**
+     * Submit ordering answer - internal implementation
+     */
+    submitOrderingAnswerInternal() {
+        const container = document.getElementById('player-ordering-container');
+        if (!container) {
+            logger.error('Ordering container not found');
+            return;
+        }
+
+        // Get the current order of items
+        const items = container.querySelectorAll('.ordering-display-item');
+        const answer = Array.from(items).map(item => parseInt(item.dataset.originalIndex));
+
+        if (answer.length === 0) {
+            this.showError(getTranslation('please_arrange_items'));
+            return;
+        }
+
+        logger.debug('Submitting ordering answer:', answer);
         this.submitAnswer(answer);
     }
 

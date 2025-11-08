@@ -1580,6 +1580,22 @@ class Game {
           isCorrect = Math.abs(answer - question.correctAnswer) <= tolerance;
         }
         break;
+
+      case 'ordering':
+        if (Array.isArray(answer) && Array.isArray(question.correctOrder)) {
+          // Calculate partial credit based on correct positions
+          let correctPositions = 0;
+          for (let i = 0; i < answer.length; i++) {
+            if (answer[i] === question.correctOrder[i]) {
+              correctPositions++;
+            }
+          }
+
+          // Award partial credit based on percentage of correct positions
+          const percentCorrect = correctPositions / question.correctOrder.length;
+          isCorrect = percentCorrect; // Store as a decimal for partial credit
+        }
+        break;
     }
 
     const timeTaken = Date.now() - this.questionStartTime;
@@ -1590,10 +1606,21 @@ class Game {
       'medium': 2,
       'hard': 3
     }[question.difficulty] || 2;
-    
+
     const basePoints = 100 * difficultyMultiplier;
     const scaledTimeBonus = Math.floor(timeBonus * difficultyMultiplier / 10);
-    const points = isCorrect ? basePoints + scaledTimeBonus : 0;
+
+    // Handle partial credit for ordering questions
+    let points = 0;
+    if (question.type === 'ordering' && typeof isCorrect === 'number') {
+      // isCorrect is a decimal (0-1) representing percentage correct
+      points = Math.floor((basePoints + scaledTimeBonus) * isCorrect);
+      // Convert to boolean for storage (consider >0.5 as correct for statistics)
+      const wasCorrect = isCorrect >= 0.5;
+      isCorrect = wasCorrect;
+    } else {
+      points = isCorrect ? basePoints + scaledTimeBonus : 0;
+    }
 
     player.answers[this.currentQuestion] = {
       answer,
@@ -2082,6 +2109,10 @@ io.on('connection', (socket) => {
               break;
             case 'numeric':
               correctOption = correctAnswer.toString();
+              break;
+            case 'ordering':
+              const correctOrder = question.correctOrder || [];
+              correctOption = correctOrder.map(idx => question.options[idx]).join(' → ');
               break;
           }
           

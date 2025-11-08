@@ -146,11 +146,21 @@ export default {
         
         // Question type dropdown keys (used in editor)
         multiple_choice: "Multiple Choice",
-        true_false: "True/False", 
+        true_false: "True/False",
         multiple_correct: "Multiple Correct Answers",
         multiple_correct_instruction: "Select all correct answers - more than one option may be correct!",
         numeric: "Numeric Answer",
-        
+        ordering: "Ordering",
+        ordering_instruction: "Enter items in the correct order (top to bottom):",
+        ordering_player_instruction: "Drag items to arrange them in the correct order",
+        ordering_item_1: "First item",
+        ordering_item_2: "Second item",
+        ordering_item_3: "Third item",
+        ordering_item_4: "Fourth item",
+        ordering_needs_two_items: "Ordering questions need at least 2 items",
+        invalid_ordering: "Invalid ordering configuration",
+        please_arrange_items: "Please arrange the items before submitting",
+
         // Difficulty dropdown keys (used in editor)
         easy: "Easy",
         medium: "Medium",

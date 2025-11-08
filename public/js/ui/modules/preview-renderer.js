@@ -388,6 +388,11 @@ export class PreviewRenderer {
                 document.getElementById('preview-numeric-split').style.display = 'block';
                 this.renderSplitNumericPreview();
                 break;
+
+            case 'ordering':
+                document.getElementById('preview-ordering-split').style.display = 'block';
+                this.renderSplitOrderingPreview(data.options, data.correctOrder);
+                break;
         }
     }
 
@@ -530,11 +535,49 @@ export class PreviewRenderer {
     renderSplitNumericPreview() {
         const container = document.getElementById('preview-numeric-split');
         const input = container?.querySelector('input');
-        
+
         if (input) {
             input.placeholder = 'Enter numeric answer...';
             input.disabled = true;
         }
+    }
+
+    /**
+     * Render ordering preview
+     */
+    renderSplitOrderingPreview(options, correctOrder) {
+        const container = document.getElementById('preview-ordering-split');
+        if (!container) {
+            logger.warn('Preview ordering container not found');
+            return;
+        }
+
+        if (!options || options.length === 0) {
+            container.innerHTML = '<p>No ordering options available</p>';
+            return;
+        }
+
+        let html = `
+            <div class="ordering-player-instruction" data-translate="ordering_player_instruction">
+                Drag items to arrange them in the correct order
+            </div>
+            <div class="ordering-display">
+        `;
+
+        options.forEach((option, index) => {
+            html += `
+                <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}">
+                    <div class="ordering-item-number">${index + 1}</div>
+                    <div class="ordering-item-content">${option}</div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+
+        // Translate the instruction
+        translationManager.translateContainer(container);
     }
 
     /**
@@ -785,6 +828,9 @@ export class PreviewRenderer {
                 break;
             case 'numeric':
                 this.renderMobileNumericPreview(data.correctAnswer);
+                break;
+            case 'ordering':
+                this.renderMobileOrderingPreview(data.options, data.correctOrder);
                 break;
             default:
                 logger.warn('Unknown mobile question type:', data.type);

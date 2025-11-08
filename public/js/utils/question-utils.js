@@ -33,6 +33,7 @@ export class QuestionUtils {
                     <option value="multiple-correct" data-translate="multiple_correct">Multiple Correct Answers</option>
                     <option value="true-false" data-translate="true_false">True/False</option>
                     <option value="numeric" data-translate="numeric">Numeric Answer</option>
+                    <option value="ordering" data-translate="ordering">Ordering</option>
                 </select>
                 
                 <select class="question-difficulty">
@@ -99,7 +100,33 @@ export class QuestionUtils {
                 <label data-translate="tolerance">Tolerance</label>
                 <input type="number" class="numeric-tolerance" placeholder="0.1" step="any" value="0.1">
             </div>
-            
+
+            <div class="answer-options ordering-options" style="display: none;">
+                <div class="ordering-instruction" data-translate="ordering_instruction">Enter items in the correct order (top to bottom):</div>
+                <div class="ordering-items">
+                    <div class="ordering-item" data-order="0">
+                        <span class="ordering-handle">☰</span>
+                        <input type="text" class="ordering-option" data-option="0" placeholder="First item" data-translate-placeholder="ordering_item_1">
+                        <span class="ordering-number">1</span>
+                    </div>
+                    <div class="ordering-item" data-order="1">
+                        <span class="ordering-handle">☰</span>
+                        <input type="text" class="ordering-option" data-option="1" placeholder="Second item" data-translate-placeholder="ordering_item_2">
+                        <span class="ordering-number">2</span>
+                    </div>
+                    <div class="ordering-item" data-order="2">
+                        <span class="ordering-handle">☰</span>
+                        <input type="text" class="ordering-option" data-option="2" placeholder="Third item" data-translate-placeholder="ordering_item_3">
+                        <span class="ordering-number">3</span>
+                    </div>
+                    <div class="ordering-item" data-order="3">
+                        <span class="ordering-handle">☰</span>
+                        <input type="text" class="ordering-option" data-option="3" placeholder="Fourth item" data-translate-placeholder="ordering_item_4">
+                        <span class="ordering-number">4</span>
+                    </div>
+                </div>
+            </div>
+
             <button class="btn secondary remove-question" onclick="removeQuestion(this)" data-translate="remove">Remove</button>
         `;
     }
@@ -172,9 +199,18 @@ export class QuestionUtils {
                         questions.push(question);
                     }
                     break;
+
+                case 'ordering':
+                    const orderingOptions = Array.from(item.querySelectorAll('.ordering-options .ordering-option')).map(opt => opt.value.trim());
+                    if (orderingOptions.every(opt => opt)) {
+                        question.options = orderingOptions;
+                        question.correctOrder = orderingOptions.map((_, index) => index);
+                        questions.push(question);
+                    }
+                    break;
             }
         });
-        
+
         return questions;
     }
 
@@ -191,7 +227,7 @@ export class QuestionUtils {
             const q = questions[i];
             logger.debug(`Validating question ${i}:`, q);
             
-            if (q.question && q.type && q.correctAnswer !== undefined) {
+            if (q.question && q.type && (q.correctAnswer !== undefined || q.correctAnswers !== undefined || q.correctOrder !== undefined)) {
                 logger.debug('Basic validation passed for question', i);
                 
                 // Basic LaTeX validation
@@ -207,7 +243,7 @@ export class QuestionUtils {
                 q.timeLimit = q.timeLimit || 20;
                 
                 // Validate question type
-                if (['multiple-choice', 'true-false', 'multiple-correct', 'numeric'].includes(q.type)) {
+                if (['multiple-choice', 'true-false', 'multiple-correct', 'numeric', 'ordering'].includes(q.type)) {
                     logger.debug('Question type validation passed for question', i);
                     validQuestions.push(q);
                 } else {
@@ -433,13 +469,22 @@ export class QuestionUtils {
             case 'numeric':
                 const numAnswer = questionItem.querySelector('.numeric-answer');
                 const numTolerance = questionItem.querySelector('.numeric-tolerance');
-                
+
                 if (numAnswer && questionData.correctAnswer !== undefined) {
                     numAnswer.value = questionData.correctAnswer;
                 }
                 if (numTolerance && questionData.tolerance !== undefined) {
                     numTolerance.value = questionData.tolerance;
                 }
+                break;
+
+            case 'ordering':
+                const orderingOptions = questionItem.querySelectorAll('.ordering-options .ordering-option');
+                orderingOptions.forEach((option, index) => {
+                    if (questionData.options && questionData.options[index]) {
+                        option.value = questionData.options[index];
+                    }
+                });
                 break;
         }
     }
