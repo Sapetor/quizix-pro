@@ -245,6 +245,71 @@ app.use(express.static('public', {
   lastModified: true,   // Include Last-Modified headers
   cacheControl: true,   // Enable Cache-Control headers
 
+  // Mobile-optimized headers with proper MIME types for ES6 modules
+  setHeaders: (res, path, stat) => {
+    const userAgent = res.req.headers['user-agent'] || '';
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+
+    // Critical fix: Proper MIME types for JavaScript modules
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      // Reduced cache time for development to see changes quickly
+      const maxAge = isProduction
+        ? (isMobile ? 172800 : 86400) // Production: 48 hours mobile, 24 hours desktop
+        : (isMobile ? 300 : 300);     // Development: 5 minutes for quick updates
+      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+
+    // CSS files
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      const maxAge = isProduction
+        ? (isMobile ? 172800 : 86400)
+        : (isMobile ? 300 : 300);
+      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+
+    // HTML files
+    if (path.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    }
+
+    // JSON files
+    if (path.endsWith('.json')) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    }
+
+    // Optimize image caching for mobile bandwidth
+    if (path.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      const maxAge = isMobile ? 7200 : 3600; // 2 hours mobile, 1 hour desktop
+      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+    }
+
+    // Special handling for index.html - shorter cache but with validation
+    if (path.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate'); // 5 minutes with validation
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+
+    // Enable compression for text-based files
+    if (path.match(/\.(js|css|html|json|svg|txt)$/i)) {
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+
+    // Mobile-specific optimizations
+    if (isMobile) {
+      // Add mobile-friendly headers
+      res.setHeader('X-Mobile-Optimized', 'true');
+
+      // Enable keep-alive for mobile connections
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Keep-Alive', 'timeout=30, max=100');
+    }
+  }
+}));
+
 // Error handling middleware for static files
 app.use((err, req, res, next) => {
   if (err) {
