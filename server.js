@@ -239,8 +239,13 @@ const staticMiddleware = express.static('public', {
 // This ensures files are served at /quizmaster/js/... in K8s and /js/... locally
 if (BASE_PATH && BASE_PATH !== '/') {
   // For Kubernetes: serve static files with base path prefix
-  app.use(BASE_PATH, staticMiddleware);
+  // Log all static file requests for debugging
+  app.use(BASE_PATH, (req, res, next) => {
+    logger.debug(`Static file request: ${req.method} ${req.originalUrl} -> ${req.path}`);
+    next();
+  }, staticMiddleware);
   logger.info(`Static files mounted at: ${BASE_PATH}`);
+  logger.info(`Example: ${BASE_PATH}js/main.js, ${BASE_PATH}images/file.png`);
 } else {
   // For local development: serve static files at root
   app.use(staticMiddleware);
@@ -2284,6 +2289,22 @@ if (process.platform === 'win32') {
 // Liveness probe - simple check if server is running
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Diagnostic endpoint to check BASE_PATH configuration
+app.get('/debug/config', (req, res) => {
+  res.status(200).json({
+    BASE_PATH: BASE_PATH,
+    BASE_PATH_raw: JSON.stringify(BASE_PATH),
+    BASE_PATH_length: BASE_PATH.length,
+    BASE_PATH_type: typeof BASE_PATH,
+    BASE_PATH_equals_slash: BASE_PATH === '/',
+    BASE_PATH_not_equals_slash: BASE_PATH !== '/',
+    NODE_ENV: process.env.NODE_ENV,
+    isProduction: isProduction,
+    staticMountedAt: BASE_PATH !== '/' ? BASE_PATH : '/ (root)',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Readiness probe - check if server is ready to accept traffic
