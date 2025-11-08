@@ -234,22 +234,16 @@ const staticMiddleware = express.static('public', {
   }
 });
 
-// Mount static middleware at BASE_PATH for Kubernetes compatibility
-// This ensures files are served at /quizmaster/js/... in K8s and /js/... locally
-if (BASE_PATH && BASE_PATH !== '/') {
-  // For Kubernetes: serve static files with base path prefix
-  // Log all static file requests for debugging
-  app.use(BASE_PATH, (req, res, next) => {
-    logger.debug(`Static file request: ${req.method} ${req.originalUrl} -> ${req.path}`);
-    next();
-  }, staticMiddleware);
-  logger.info(`Static files mounted at: ${BASE_PATH}`);
-  logger.info(`Example: ${BASE_PATH}js/main.js, ${BASE_PATH}images/file.png`);
-} else {
-  // For local development: serve static files at root
-  app.use(staticMiddleware);
-  logger.info('Static files mounted at: / (root)');
-}
+// Static file serving with mobile-optimized caching headers and proper MIME types
+// NOTE: Serve from root - Kubernetes Ingress strips the base path before forwarding
+// Only the <base> tag in HTML uses the full path
+app.use(express.static('public', {
+  index: false,         // Disable automatic index.html serving
+  // Balanced caching for mobile and WSL performance
+  maxAge: isProduction ? '1y' : '4h', // Increased dev cache for mobile
+  etag: true,           // Enable ETags for efficient cache validation
+  lastModified: true,   // Include Last-Modified headers
+  cacheControl: true,   // Enable Cache-Control headers
 
 // Error handling middleware for static files
 app.use((err, req, res, next) => {
@@ -262,17 +256,9 @@ app.use((err, req, res, next) => {
 });
 
 // Special handling for JavaScript files to prevent 500 errors
-// Support both local (/js/*) and Kubernetes (/quizmaster/js/*) paths
-const jsPathPattern = BASE_PATH === '/' ? '/js/*' : `${BASE_PATH}js/*`;
-app.get(jsPathPattern, (req, res, next) => {
+app.get('/js/*', (req, res, next) => {
   try {
-    // Remove BASE_PATH prefix to get the actual file path
-    let requestPath = req.path;
-    if (BASE_PATH !== '/' && requestPath.startsWith(BASE_PATH)) {
-      requestPath = requestPath.substring(BASE_PATH.length - 1); // Keep leading /
-    }
-
-    const filePath = path.join(__dirname, 'public', requestPath);
+    const filePath = path.join(__dirname, 'public', req.path);
     logger.info(`JS request: ${req.path} -> ${filePath}`);
     
     // Check if file exists before attempting to serve
@@ -354,14 +340,7 @@ const serveIndexHtml = (req, res) => {
   });
 };
 
-// Handle root requests for both local (/) and Kubernetes (/quizmaster/)
-if (BASE_PATH && BASE_PATH !== '/') {
-  // For Kubernetes: handle both the base path and trailing paths
-  app.get(BASE_PATH, serveIndexHtml);
-  app.get(BASE_PATH.replace(/\/$/, ''), serveIndexHtml); // Without trailing slash
-  logger.info(`Index.html route registered at: ${BASE_PATH}`);
-}
-// Always handle root path for local development
+// Serve index.html at root (Ingress strips the /quizmaster/ prefix)
 app.get('/', serveIndexHtml);
 
 const storage = multer.diskStorage({
