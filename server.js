@@ -1060,26 +1060,33 @@ function getCachedLocalIP() {
 // Environment-aware game URL generation for QR codes
 function getGameUrl(pin, req) {
   // Check if we're in a cloud deployment environment
-  const isCloudDeployment = process.env.RAILWAY_ENVIRONMENT === 'production' || 
+  const isCloudDeployment = process.env.RAILWAY_ENVIRONMENT === 'production' ||
                             process.env.NODE_ENV === 'production' ||
-                            process.env.VERCEL_ENV || 
+                            process.env.VERCEL_ENV ||
                             process.env.HEROKU_APP_NAME;
-  
+
+  // Normalize BASE_PATH - remove trailing slash for consistent URL construction
+  const basePath = BASE_PATH === '/' ? '' : BASE_PATH.replace(/\/$/, '');
+
   if (isCloudDeployment) {
     // Use the request's host header for cloud deployments
     const host = req.get('host');
     const protocol = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
-    const gameUrl = `${protocol}://${host}?pin=${pin}`;
-    
+    const gameUrl = `${protocol}://${host}${basePath}/?pin=${pin}`;
+
     logger.info(`QR Code: Cloud deployment URL: ${gameUrl}`);
     return gameUrl;
   } else {
-    // Use local IP detection for local deployments
+    // Use local IP detection for local deployments (including Kubernetes clusters)
     const localIP = getCachedLocalIP();
     const port = process.env.PORT || 3000;
-    const gameUrl = `http://${localIP}:${port}?pin=${pin}`;
-    
-    logger.debug(`QR Code: Local network URL: ${gameUrl}`);
+
+    // For Kubernetes with path-based routing, omit port and include BASE_PATH
+    // For local development, include port and BASE_PATH (usually /)
+    const portSuffix = basePath ? '' : `:${port}`;
+    const gameUrl = `http://${localIP}${portSuffix}${basePath}/?pin=${pin}`;
+
+    logger.debug(`QR Code: Local network URL: ${gameUrl} (BASE_PATH: ${BASE_PATH})`);
     return gameUrl;
   }
 }

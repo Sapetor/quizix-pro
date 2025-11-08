@@ -11,6 +11,7 @@ metadata:
 data:
   NODE_ENV: "production"
   PORT: "3000"
+  # Note: BASE_PATH auto-detects to /quizmaster/ when NODE_ENV=production
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
