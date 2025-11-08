@@ -12,3 +12,6 @@ data:
 
   # Optional: Override network IP detection
   # NETWORK_IP: "your-cluster-ip"
+
+  # Note: BASE_PATH auto-detects to /quizmaster/ when NODE_ENV=production
+  # Only set this if you need to override the auto-detection
