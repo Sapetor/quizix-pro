@@ -161,7 +161,8 @@ app.use((req, res, next) => {
 
 // Static file serving with mobile-optimized caching headers and proper MIME types
 // NOTE: index.html is disabled from static serving so it can be handled by custom route
-app.use(express.static('public', {
+// Mount static files at BASE_PATH to support Kubernetes path-based routing
+const staticMiddleware = express.static('public', {
   index: false,         // Disable automatic index.html serving
   // Balanced caching for mobile and WSL performance
   maxAge: isProduction ? '1y' : '4h', // Increased dev cache for mobile
@@ -232,7 +233,19 @@ app.use(express.static('public', {
       res.setHeader('Keep-Alive', 'timeout=30, max=100');
     }
   }
-}));
+});
+
+// Mount static middleware at BASE_PATH for Kubernetes compatibility
+// This ensures files are served at /quizmaster/js/... in K8s and /js/... locally
+if (BASE_PATH && BASE_PATH !== '/') {
+  // For Kubernetes: serve static files with base path prefix
+  app.use(BASE_PATH, staticMiddleware);
+  logger.info(`Static files mounted at: ${BASE_PATH}`);
+} else {
+  // For local development: serve static files at root
+  app.use(staticMiddleware);
+  logger.info('Static files mounted at: / (root)');
+}
 
 // Error handling middleware for static files
 app.use((err, req, res, next) => {
@@ -245,9 +258,17 @@ app.use((err, req, res, next) => {
 });
 
 // Special handling for JavaScript files to prevent 500 errors
-app.get('/js/*', (req, res, next) => {
+// Support both local (/js/*) and Kubernetes (/quizmaster/js/*) paths
+const jsPathPattern = BASE_PATH === '/' ? '/js/*' : `${BASE_PATH}js/*`;
+app.get(jsPathPattern, (req, res, next) => {
   try {
-    const filePath = path.join(__dirname, 'public', req.path);
+    // Remove BASE_PATH prefix to get the actual file path
+    let requestPath = req.path;
+    if (BASE_PATH !== '/' && requestPath.startsWith(BASE_PATH)) {
+      requestPath = requestPath.substring(BASE_PATH.length - 1); // Keep leading /
+    }
+
+    const filePath = path.join(__dirname, 'public', requestPath);
     logger.info(`JS request: ${req.path} -> ${filePath}`);
     
     // Check if file exists before attempting to serve
@@ -306,7 +327,7 @@ if (!fs.existsSync('public/uploads')) {
 
 // Dynamic index.html serving with environment-specific base path
 // This route serves index.html with the correct <base> tag for the environment
-app.get('/', (req, res) => {
+const serveIndexHtml = (req, res) => {
   const indexPath = path.join(__dirname, 'public', 'index.html');
 
   fs.readFile(indexPath, 'utf8', (err, data) => {
@@ -327,7 +348,17 @@ app.get('/', (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
     res.send(modifiedHtml);
   });
-});
+};
+
+// Handle root requests for both local (/) and Kubernetes (/quizmaster/)
+if (BASE_PATH && BASE_PATH !== '/') {
+  // For Kubernetes: handle both the base path and trailing paths
+  app.get(BASE_PATH, serveIndexHtml);
+  app.get(BASE_PATH.replace(/\/$/, ''), serveIndexHtml); // Without trailing slash
+  logger.info(`Index.html route registered at: ${BASE_PATH}`);
+}
+// Always handle root path for local development
+app.get('/', serveIndexHtml);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
