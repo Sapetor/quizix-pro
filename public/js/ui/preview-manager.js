@@ -294,7 +294,7 @@ export class PreviewManager {
     setupRealTimeSplitPreviewUpdates() {
         // Store listener references for cleanup
         this.listeners.inputHandler = (e) => {
-            if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-tolerance')) {
+            if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-tolerance, .ordering-option')) {
                 this.updatePreviewDebounced();
                 // Smart auto-scroll with debouncing to prevent jumping
                 this.smartAutoScrollToEditedQuestion(e.target);

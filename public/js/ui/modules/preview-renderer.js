@@ -557,6 +557,16 @@ export class PreviewRenderer {
             return;
         }
 
+        // Distinct colors for tracking items
+        const itemColors = [
+            'rgba(59, 130, 246, 0.15)',   // Blue
+            'rgba(16, 185, 129, 0.15)',   // Green
+            'rgba(245, 158, 11, 0.15)',   // Orange
+            'rgba(239, 68, 68, 0.15)',    // Red
+            'rgba(139, 92, 246, 0.15)',   // Purple
+            'rgba(236, 72, 153, 0.15)'    // Pink
+        ];
+
         let html = `
             <div class="ordering-player-instruction" data-translate="ordering_player_instruction">
                 Drag items to arrange them in the correct order
@@ -565,8 +575,9 @@ export class PreviewRenderer {
         `;
 
         options.forEach((option, index) => {
+            const bgColor = itemColors[index % itemColors.length];
             html += `
-                <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}">
+                <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${index + 1}</div>
                     <div class="ordering-item-content">${option}</div>
                 </div>
@@ -1037,6 +1048,16 @@ export class PreviewRenderer {
             return;
         }
 
+        // Distinct colors for tracking items
+        const itemColors = [
+            'rgba(59, 130, 246, 0.15)',   // Blue
+            'rgba(16, 185, 129, 0.15)',   // Green
+            'rgba(245, 158, 11, 0.15)',   // Orange
+            'rgba(239, 68, 68, 0.15)',    // Red
+            'rgba(139, 92, 246, 0.15)',   // Purple
+            'rgba(236, 72, 153, 0.15)'    // Pink
+        ];
+
         let html = `
             <div class="ordering-player-instruction" data-translate="ordering_player_instruction">
                 Drag items to arrange them in the correct order
@@ -1045,8 +1066,9 @@ export class PreviewRenderer {
         `;
 
         options.forEach((option, index) => {
+            const bgColor = itemColors[index % itemColors.length];
             html += `
-                <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}">
+                <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${index + 1}</div>
                     <div class="ordering-item-content">${option}</div>
                 </div>
