@@ -773,6 +773,7 @@
                                     <option value="multiple-correct" data-translate="multiple_correct">Multiple Correct Answers</option>
                                     <option value="true-false" data-translate="true_false">True/False</option>
                                     <option value="numeric" data-translate="numeric_answer">Numeric Answer</option>
+                                    <option value="ordering" data-translate="ordering">Ordering</option>
                                 </select>
                                 
                                 <select class="question-difficulty">
@@ -838,6 +839,32 @@
                                 <input type="number" class="numeric-answer" placeholder="Enter numeric answer" step="any" data-translate-placeholder="enter_numeric_answer">
                                 <label data-translate="tolerance">Tolerance (+/-):</label>
                                 <input type="number" class="numeric-tolerance" placeholder="0.1" step="any" value="0.1">
+                            </div>
+
+                            <div class="answer-options ordering-options" style="display: none;">
+                                <div class="ordering-instruction" data-translate="ordering_instruction">Enter items in the correct order (top to bottom):</div>
+                                <div class="ordering-items">
+                                    <div class="ordering-item" data-order="0">
+                                        <span class="ordering-handle">☰</span>
+                                        <input type="text" class="ordering-option" data-option="0" placeholder="First item" data-translate-placeholder="ordering_item_1">
+                                        <span class="ordering-number">1</span>
+                                    </div>
+                                    <div class="ordering-item" data-order="1">
+                                        <span class="ordering-handle">☰</span>
+                                        <input type="text" class="ordering-option" data-option="1" placeholder="Second item" data-translate-placeholder="ordering_item_2">
+                                        <span class="ordering-number">2</span>
+                                    </div>
+                                    <div class="ordering-item" data-order="2">
+                                        <span class="ordering-handle">☰</span>
+                                        <input type="text" class="ordering-option" data-option="2" placeholder="Third item" data-translate-placeholder="ordering_item_3">
+                                        <span class="ordering-number">3</span>
+                                    </div>
+                                    <div class="ordering-item" data-order="3">
+                                        <span class="ordering-handle">☰</span>
+                                        <input type="text" class="ordering-option" data-option="3" placeholder="Fourth item" data-translate-placeholder="ordering_item_4">
+                                        <span class="ordering-number">4</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
