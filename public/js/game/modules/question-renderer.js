@@ -535,14 +535,8 @@ export class QuestionRenderer {
         optionsContainer.style.flexDirection = 'column';
         optionsContainer.style.alignItems = 'center';
 
-        // Setup submit button event listener
-        const submitButton = document.getElementById('submit-ordering');
-        if (submitButton) {
-            // Use tracked event listeners from GameManager
-            this.gameManager.addEventListenerTracked(submitButton, 'click', () => {
-                this.gameManager.playerInteractionManager.submitOrderingAnswer();
-            });
-        }
+        // Submit button will be wired up by PlayerInteractionManager.bindPlayerEventListeners()
+        // No need to add event listener here
 
         // Initialize drag-and-drop after a short delay to ensure DOM is ready
         setTimeout(() => {

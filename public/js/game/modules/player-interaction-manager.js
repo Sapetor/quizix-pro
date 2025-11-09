@@ -306,7 +306,7 @@ export class PlayerInteractionManager {
         if (numericSubmitBtn) {
             numericSubmitBtn.addEventListener('click', this.submitNumericAnswer);
         }
-        
+
         // Enter key for numeric input
         const numericInput = document.getElementById('numeric-answer-input');
         if (numericInput) {
@@ -316,7 +316,13 @@ export class PlayerInteractionManager {
                 }
             });
         }
-        
+
+        // Ordering submit button
+        const orderingSubmitBtn = document.getElementById('submit-ordering');
+        if (orderingSubmitBtn) {
+            orderingSubmitBtn.addEventListener('click', this.submitOrderingAnswer);
+        }
+
         logger.debug('Player interaction event listeners setup');
     }
 
@@ -334,7 +340,12 @@ export class PlayerInteractionManager {
         if (numericSubmitBtn) {
             numericSubmitBtn.removeEventListener('click', this.submitNumericAnswer);
         }
-        
+
+        const orderingSubmitBtn = document.getElementById('submit-ordering');
+        if (orderingSubmitBtn) {
+            orderingSubmitBtn.removeEventListener('click', this.submitOrderingAnswer);
+        }
+
         logger.debug('Player interaction event listeners removed');
     }
 
