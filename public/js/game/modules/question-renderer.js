@@ -93,13 +93,19 @@ export class QuestionRenderer {
             if (hostMultipleChoice) {
                 hostMultipleChoice.classList.add('numeric-question-type');
             }
+        } else if (data.type === 'ordering') {
+            hostOptionsContainer.style.display = 'block';
+            if (hostMultipleChoice) {
+                hostMultipleChoice.classList.remove('numeric-question-type');
+            }
+            this.setupHostOrderingOptions(data, hostOptionsContainer);
         } else {
             hostOptionsContainer.style.display = 'block';
             // Remove the numeric-question-type class for non-numeric questions
             if (hostMultipleChoice) {
                 hostMultipleChoice.classList.remove('numeric-question-type');
             }
-            
+
             if (data.type === 'true-false') {
                 this.setupHostTrueFalseOptions(hostOptionsContainer);
             } else {
@@ -171,6 +177,60 @@ export class QuestionRenderer {
         }
         
         logger.debug('Host multiple choice options set up');
+    }
+
+    /**
+     * Setup host ordering options display
+     */
+    setupHostOrderingOptions(data, hostOptionsContainer) {
+        if (!data.options || data.options.length === 0) {
+            logger.warn('No ordering options to display');
+            return;
+        }
+
+        // Shuffle the options for display (host sees them out of order)
+        const shuffledIndices = this.shuffleArray(data.options.map((_, i) => i));
+
+        // Distinct colors for tracking items
+        const itemColors = [
+            'rgba(59, 130, 246, 0.15)',   // Blue
+            'rgba(16, 185, 129, 0.15)',   // Green
+            'rgba(245, 158, 11, 0.15)',   // Orange
+            'rgba(239, 68, 68, 0.15)',    // Red
+            'rgba(139, 92, 246, 0.15)',   // Purple
+            'rgba(236, 72, 153, 0.15)'    // Pink
+        ];
+
+        let html = '<div class="ordering-display">';
+
+        shuffledIndices.forEach((originalIndex, displayIndex) => {
+            const option = data.options[originalIndex];
+            const bgColor = itemColors[originalIndex % itemColors.length];
+            html += `
+                <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
+                    <div class="ordering-item-number">${displayIndex + 1}</div>
+                    <div class="ordering-item-content">${this.displayManager.mathRenderer.formatCodeBlocks(option)}</div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        hostOptionsContainer.innerHTML = html;
+        hostOptionsContainer.style.display = 'block';
+
+        logger.debug('Host ordering options set up');
+    }
+
+    /**
+     * Shuffle array using Fisher-Yates algorithm
+     */
+    shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
     }
 
     /**
@@ -267,8 +327,10 @@ export class QuestionRenderer {
             this.setupPlayerTrueFalseOptions(data, optionsContainer);
         } else if (data.type === 'numeric') {
             this.setupPlayerNumericOptions(data, optionsContainer);
+        } else if (data.type === 'ordering') {
+            this.setupPlayerOrderingOptions(data, optionsContainer);
         }
-        
+
         // Use GameDisplayManager for MathJax rendering after options are set up
         this.displayManager.renderQuestionMath(optionsContainer, TIMING.RENDER_DELAY);
     }
@@ -439,6 +501,105 @@ export class QuestionRenderer {
         }
         
         logger.debug('Player numeric options set up');
+    }
+
+    /**
+     * Setup player ordering options
+     */
+    setupPlayerOrderingOptions(data, optionsContainer) {
+        if (!data.options || data.options.length === 0) {
+            logger.warn('No ordering options to display');
+            return;
+        }
+
+        logger.debug('Setting up player ordering options');
+
+        // Shuffle the options for the player
+        const shuffledIndices = this.shuffleArray(data.options.map((_, i) => i));
+
+        // Distinct colors for tracking items during swaps
+        const itemColors = [
+            'rgba(59, 130, 246, 0.15)',   // Blue
+            'rgba(16, 185, 129, 0.15)',   // Green
+            'rgba(245, 158, 11, 0.15)',   // Orange
+            'rgba(239, 68, 68, 0.15)',    // Red
+            'rgba(139, 92, 246, 0.15)',   // Purple
+            'rgba(236, 72, 153, 0.15)'    // Pink
+        ];
+
+        let html = `
+            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
+            <div class="ordering-display" id="player-ordering-container">
+        `;
+
+        shuffledIndices.forEach((originalIndex, displayIndex) => {
+            const option = data.options[originalIndex];
+            const bgColor = itemColors[originalIndex % itemColors.length];
+            html += `
+                <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
+                    <div class="ordering-item-number">${displayIndex + 1}</div>
+                    <div class="ordering-item-content">${this.displayManager.mathRenderer.formatCodeBlocks(option)}</div>
+                </div>
+            `;
+        });
+
+        html += `
+            </div>
+            <button class="ordering-submit-button btn primary" id="submit-ordering" data-translate="submit_answer"></button>
+        `;
+
+        optionsContainer.innerHTML = html;
+        optionsContainer.style.display = 'flex';
+        optionsContainer.style.flexDirection = 'column';
+        optionsContainer.style.alignItems = 'center';
+
+        // Translate all text in the container
+        translationManager.translateContainer(optionsContainer);
+
+        // Wire up submit button
+        const submitButton = document.getElementById('submit-ordering');
+        if (submitButton) {
+            submitButton.disabled = false;
+            // Use tracked event listeners from GameManager
+            this.gameManager.addEventListenerTracked(submitButton, 'click', () => {
+                this.gameManager.submitOrderingAnswer();
+            });
+        }
+
+        // Initialize drag-and-drop after a short delay to ensure DOM is ready
+        setTimeout(() => {
+            this.initializePlayerOrderingDragDrop();
+        }, 100);
+
+        logger.debug('Player ordering options set up');
+    }
+
+    /**
+     * Initialize drag-and-drop for player ordering
+     */
+    initializePlayerOrderingDragDrop() {
+        // Dynamically import and initialize the ordering drag-drop component
+        import('../../utils/ordering-drag-drop.js').then(module => {
+            const OrderingDragDrop = module.OrderingDragDrop;
+            const container = document.getElementById('player-ordering-container');
+
+            if (!container) {
+                logger.warn('Player ordering container not found');
+                return;
+            }
+
+            // Initialize drag-drop
+            this.orderingDragDrop = new OrderingDragDrop(container, {
+                itemSelector: '.ordering-display-item',
+                onOrderChange: (order) => {
+                    logger.debug('Order changed:', order);
+                }
+            });
+
+            logger.debug('Player ordering drag-drop initialized');
+        }).catch(err => {
+            logger.error('Failed to load ordering drag-drop module:', err);
+        });
     }
 
     /**

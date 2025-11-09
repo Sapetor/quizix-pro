@@ -110,8 +110,22 @@ export class QuizManager {
             const tolerance = parseFloat(questionElement.querySelector('.numeric-tolerance')?.value) || 0;
             questionData.correctAnswer = correctAnswer;
             questionData.tolerance = tolerance;
+        } else if (questionType === 'ordering') {
+            const options = [];
+            const optionInputs = questionElement.querySelectorAll('.ordering-options .ordering-option');
+            optionInputs.forEach(input => {
+                if (input.value.trim()) {
+                    options.push(input.value.trim());
+                }
+            });
+
+            // The correct order is the order they entered items (0, 1, 2, 3...)
+            const correctOrder = options.map((_, index) => index);
+
+            questionData.options = options;
+            questionData.correctOrder = correctOrder;
         }
-        
+
         // Extract image data - check both src and dataset.url
         const imageElement = questionElement.querySelector('.question-image');
         if (imageElement) {
@@ -195,6 +209,15 @@ export class QuizManager {
             
             if (question.type === 'numeric' && isNaN(question.correctAnswer)) {
                 errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_numeric_answer')}`);
+            }
+
+            if (question.type === 'ordering') {
+                if (!question.options || question.options.length < 2) {
+                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('ordering_needs_two_items')}`);
+                }
+                if (!question.correctOrder || question.correctOrder.length !== question.options?.length) {
+                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_ordering')}`);
+                }
             }
         });
         

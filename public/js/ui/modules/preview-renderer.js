@@ -388,6 +388,11 @@ export class PreviewRenderer {
                 document.getElementById('preview-numeric-split').style.display = 'block';
                 this.renderSplitNumericPreview();
                 break;
+
+            case 'ordering':
+                document.getElementById('preview-ordering-split').style.display = 'block';
+                this.renderSplitOrderingPreview(data.options, data.correctOrder);
+                break;
         }
     }
 
@@ -530,11 +535,58 @@ export class PreviewRenderer {
     renderSplitNumericPreview() {
         const container = document.getElementById('preview-numeric-split');
         const input = container?.querySelector('input');
-        
+
         if (input) {
             input.placeholder = 'Enter numeric answer...';
             input.disabled = true;
         }
+    }
+
+    /**
+     * Render ordering preview
+     */
+    renderSplitOrderingPreview(options, correctOrder) {
+        const container = document.getElementById('preview-ordering-split');
+        if (!container) {
+            logger.warn('Preview ordering container not found');
+            return;
+        }
+
+        if (!options || options.length === 0) {
+            container.innerHTML = '<p>No ordering options available</p>';
+            return;
+        }
+
+        // Distinct colors for tracking items
+        const itemColors = [
+            'rgba(59, 130, 246, 0.15)',   // Blue
+            'rgba(16, 185, 129, 0.15)',   // Green
+            'rgba(245, 158, 11, 0.15)',   // Orange
+            'rgba(239, 68, 68, 0.15)',    // Red
+            'rgba(139, 92, 246, 0.15)',   // Purple
+            'rgba(236, 72, 153, 0.15)'    // Pink
+        ];
+
+        let html = `
+            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
+            <div class="ordering-display">
+        `;
+
+        options.forEach((option, index) => {
+            const bgColor = itemColors[index % itemColors.length];
+            html += `
+                <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
+                    <div class="ordering-item-number">${index + 1}</div>
+                    <div class="ordering-item-content">${option}</div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+
+        // Translate the instruction
+        translationManager.translateContainer(container);
     }
 
     /**
@@ -786,6 +838,9 @@ export class PreviewRenderer {
             case 'numeric':
                 this.renderMobileNumericPreview(data.correctAnswer);
                 break;
+            case 'ordering':
+                this.renderMobileOrderingPreview(data.options, data.correctOrder);
+                break;
             default:
                 logger.warn('Unknown mobile question type:', data.type);
         }
@@ -970,6 +1025,57 @@ export class PreviewRenderer {
                 input.value = correctAnswer;
             }
         }
+    }
+
+    /**
+     * Render mobile ordering preview
+     */
+    renderMobileOrderingPreview(options, correctOrder) {
+        const container = document.querySelector('#mobile-preview-answer-area .preview-ordering');
+        const orderingContainer = document.getElementById('mobile-preview-ordering');
+
+        if (!container || !orderingContainer) {
+            logger.warn('Mobile ordering preview containers not found');
+            return;
+        }
+
+        container.style.display = 'block';
+
+        if (!options || options.length === 0) {
+            orderingContainer.innerHTML = '<p>No ordering options available</p>';
+            return;
+        }
+
+        // Distinct colors for tracking items
+        const itemColors = [
+            'rgba(59, 130, 246, 0.15)',   // Blue
+            'rgba(16, 185, 129, 0.15)',   // Green
+            'rgba(245, 158, 11, 0.15)',   // Orange
+            'rgba(239, 68, 68, 0.15)',    // Red
+            'rgba(139, 92, 246, 0.15)',   // Purple
+            'rgba(236, 72, 153, 0.15)'    // Pink
+        ];
+
+        let html = `
+            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
+            <div class="ordering-display">
+        `;
+
+        options.forEach((option, index) => {
+            const bgColor = itemColors[index % itemColors.length];
+            html += `
+                <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
+                    <div class="ordering-item-number">${index + 1}</div>
+                    <div class="ordering-item-content">${option}</div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        orderingContainer.innerHTML = html;
+
+        // Translate the instruction
+        translationManager.translateContainer(orderingContainer);
     }
 
     /**

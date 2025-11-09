@@ -99,7 +99,17 @@ export default {
         multiple_correct: "Múltiples Respuestas Correctas",
         multiple_correct_instruction: "Selecciona todas las respuestas correctas - ¡más de una opción puede ser correcta!",
         numeric: "Respuesta Numérica",
-        
+        ordering: "Ordenamiento",
+        ordering_instruction: "Introduce los elementos en el orden correcto (de arriba a abajo):",
+        ordering_player_instruction: "Arrastra los elementos para ordenarlos correctamente",
+        ordering_item_1: "Primer elemento",
+        ordering_item_2: "Segundo elemento",
+        ordering_item_3: "Tercer elemento",
+        ordering_item_4: "Cuarto elemento",
+        ordering_needs_two_items: "Las preguntas de ordenamiento necesitan al menos 2 elementos",
+        invalid_ordering: "Configuración de ordenamiento inválida",
+        please_arrange_items: "Por favor ordena los elementos antes de enviar",
+
         // Difficulty dropdown keys (used in editor)
         easy: "Fácil",
         medium: "Medio",

@@ -294,7 +294,7 @@ export class PreviewManager {
     setupRealTimeSplitPreviewUpdates() {
         // Store listener references for cleanup
         this.listeners.inputHandler = (e) => {
-            if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-tolerance')) {
+            if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-tolerance, .ordering-option')) {
                 this.updatePreviewDebounced();
                 // Smart auto-scroll with debouncing to prevent jumping
                 this.smartAutoScrollToEditedQuestion(e.target);
@@ -578,15 +578,24 @@ export class PreviewManager {
                 }
                 logger.debug('Numeric correct answer:', correctAnswer);
                 break;
+
+            case 'ordering':
+                const orderingOptions = questionItem.querySelectorAll('.ordering-options .ordering-option');
+                options = Array.from(orderingOptions)
+                    .map(opt => opt.value?.trim())
+                    .filter(opt => opt && opt !== '');
+                logger.debug('Ordering options:', options);
+                break;
         }
-        
+
         const extractedData = {
             question: questionText,
             type: questionType,
             image: imageUrl,
             options: options,
             correctAnswer: correctAnswer,
-            correctAnswers: correctAnswers
+            correctAnswers: correctAnswers,
+            correctOrder: options.length > 0 ? options.map((_, i) => i) : []
         };
         
         logger.debug('Extracted question data:', extractedData);

@@ -189,6 +189,10 @@ export class GameManager {
             'numeric': {
                 containerId: 'player-numeric',
                 optionsSelector: '.numeric-input-container'
+            },
+            'ordering': {
+                containerId: 'player-ordering',
+                optionsSelector: '.ordering-container'
             }
         };
         
@@ -328,6 +332,13 @@ export class GameManager {
      */
     submitNumericAnswer() {
         this.interactionManager.submitNumericAnswer();
+    }
+
+    /**
+     * Submit ordering answer
+     */
+    submitOrderingAnswer() {
+        this.interactionManager.submitOrderingAnswer();
     }
 
     // Answer submission feedback now handled by GameDisplayManager
