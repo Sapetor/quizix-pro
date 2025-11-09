@@ -160,6 +160,53 @@ const absoluteUrl = imagePathResolver.toAbsoluteUrl(storagePath);
 imageElement.src = absoluteUrl; // Display: http://host/quizmaster/uploads/file.gif
 ```
 
+## Adding New Question Types
+
+**📖 See: `/docs/ADD-QUESTION-TYPE.md` for comprehensive guide**
+
+Adding a new question type requires changes across **40+ code locations in 13+ files**. Key areas:
+
+**Critical Steps:**
+1. **CSS Bundle** - ALWAYS run `npm run build` after editing `components.css`
+   - Verify: `grep -c "your-class" public/css/main.bundle.css`
+   - Stale bundle is the #1 source of "works locally but not in production" bugs
+
+2. **Default Question (HTML)** - Update hardcoded question in `index.html` (~line 767-870)
+   - Add dropdown option + answer options section
+   - Otherwise new users won't see the type on first load
+
+3. **Live Preview Updates** - Add input class to listener in `preview-manager.js` (~line 297)
+   - Otherwise real-time preview won't update as users type
+
+4. **Submit Button Pattern** - Wire up in setup method, NOT bindPlayerEventListeners()
+   - Follow numeric question pattern: `gameManager.addEventListenerTracked()`
+
+**Files Requiring Updates:**
+- `public/js/utils/question-utils.js` (5 locations)
+- `public/index.html` (3 locations - dropdown, default question, player container)
+- `public/js/game/game-manager.js` (containerMap + submit method)
+- `public/js/game/modules/question-renderer.js` (host + player setup methods)
+- `public/js/game/modules/player-interaction-manager.js` (submit handlers)
+- `server.js` (validation + scoring)
+- `public/js/ui/preview-manager.js` (data extraction + input listener)
+- `public/js/ui/modules/preview-renderer.js` (desktop + mobile renderers)
+- `public/css/components.css` (full styling section + `npm run build`)
+- `public/js/utils/translations/*.js` (all 9 languages)
+
+**Common Pitfalls:**
+- CSS bundle not rebuilt (stale styles)
+- Preview data extraction missing (shows "no options")
+- Input listener not updated (no real-time preview)
+- Submit button not wired (button does nothing)
+- Missing from default question (not visible on first load)
+- containerMap entry missing ("unknown question type" error)
+
+**Lessons Learned from Ordering Implementation:**
+- Time: ~8 hours (mostly debugging missing pieces)
+- With checklist: 2-3 hours estimated
+- Main issues: Scattered definitions, no single source of truth
+- Improvements needed: Central config, standardize patterns, automate CSS build
+
 ## Project Structure
 
 ```
@@ -194,7 +241,7 @@ imageElement.src = absoluteUrl; // Display: http://host/quizmaster/uploads/file.
 ## Key Features
 
 **Quiz Creation:**
-- Multiple question types: Multiple-choice, Multiple-correct, True/False, Numeric
+- Multiple question types: Multiple-choice, Multiple-correct, True/False, Numeric, Ordering
 - Difficulty levels: Easy, Medium, Hard (with point multipliers 1x, 1.5x, 2x)
 - LaTeX/MathJax support for mathematical equations
 - Image upload and display (5MB limit)
