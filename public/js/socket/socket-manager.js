@@ -15,7 +15,28 @@ export class SocketManager {
         this.uiManager = uiManager;
         this.soundManager = soundManager;
         this.currentPlayerName = null; // Store current player name for language updates
-        
+
+        // Track event names for cleanup
+        this.socketEvents = [
+            'connect', 'disconnect', 'game-created', 'game-available',
+            'player-joined', 'game-started', 'question-start', 'question-end',
+            'question-timeout', 'show-next-button', 'hide-next-button',
+            'game-end', 'player-result', 'answer-submitted', 'statistics-update',
+            'leaderboard-update', 'show-leaderboard', 'answer-statistics',
+            'players-update', 'player-list-update', 'error', 'game-not-found',
+            'player-limit-reached', 'invalid-pin', 'name-taken',
+            'host-statistics', 'player-disconnected', 'all-players-answered',
+            'force-disconnect', 'reconnect', 'reconnect_error', 'reconnect_failed'
+        ];
+
+        // Bind language change handler for cleanup
+        this.languageChangeHandler = (event) => {
+            logger.debug('Language changed, updating personalized messages');
+            if (this.currentPlayerName) {
+                this.updatePlayerWelcomeMessage(this.currentPlayerName);
+            }
+        };
+
         this.initializeSocketListeners();
         this.initializeLanguageListener();
     }
@@ -522,14 +543,8 @@ export class SocketManager {
      */
     initializeLanguageListener() {
         // Listen for language change events to update personalized messages
-        document.addEventListener('languageChanged', (event) => {
-            logger.debug('Language changed, updating personalized messages');
-            
-            // Update the player welcome message if we have a current player name
-            if (this.currentPlayerName) {
-                this.updatePlayerWelcomeMessage(this.currentPlayerName);
-            }
-        });
+        document.addEventListener('languageChanged', this.languageChangeHandler);
+        logger.debug('Language change listener initialized');
     }
 
     /**
@@ -629,5 +644,37 @@ export class SocketManager {
      */
     disconnect() {
         this.socket.disconnect();
+    }
+
+    /**
+     * Cleanup all event listeners to prevent memory leaks
+     */
+    cleanup() {
+        logger.debug('SocketManager cleanup started');
+
+        try {
+            // Remove all socket event listeners
+            let removedCount = 0;
+            this.socketEvents.forEach(eventName => {
+                try {
+                    this.socket.off(eventName);
+                    removedCount++;
+                } catch (error) {
+                    logger.warn(`Error removing socket event "${eventName}":`, error);
+                }
+            });
+            logger.debug(`Removed ${removedCount} socket event listeners`);
+
+            // Remove document language change listener
+            document.removeEventListener('languageChanged', this.languageChangeHandler);
+            logger.debug('Removed language change listener');
+
+            // Clear current player name
+            this.currentPlayerName = null;
+
+            logger.debug('SocketManager cleanup completed successfully');
+        } catch (error) {
+            logger.error('Error during SocketManager cleanup:', error);
+        }
     }
 }

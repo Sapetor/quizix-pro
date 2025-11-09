@@ -13,12 +13,15 @@ export class PlayerInteractionManager {
         this.gameDisplayManager = gameDisplayManager;
         this.soundManager = soundManager;
         this.socketManager = socketManager;
-        
+
         // Bind methods to maintain context
         this.selectAnswer = this.selectAnswer.bind(this);
         this.submitMultipleCorrectAnswer = this.submitMultipleCorrectAnswer.bind(this);
         this.submitNumericAnswer = this.submitNumericAnswer.bind(this);
-        this.submitOrderingAnswer = this.submitOrderingAnswer.bind(this);
+
+        // Store global event handler references for cleanup
+        this.globalClickHandlerPlayerOption = this.handlePlayerOptionClick.bind(this);
+        this.globalClickHandlerTrueFalse = this.handleTrueFalseClick.bind(this);
     }
 
     /**
@@ -92,8 +95,6 @@ export class PlayerInteractionManager {
                 return this.submitMultipleCorrectAnswerInternal();
             case 'numeric':
                 return this.submitNumericAnswerInternal();
-            case 'ordering':
-                return this.submitOrderingAnswerInternal();
             case 'direct':
                 return this.submitAnswer(directAnswer);
             default:
@@ -148,36 +149,6 @@ export class PlayerInteractionManager {
     }
 
     /**
-     * Submit ordering answer
-     */
-    submitOrderingAnswer() {
-        return this.submitAnswerByType('ordering');
-    }
-
-    /**
-     * Submit ordering answer - internal implementation
-     */
-    submitOrderingAnswerInternal() {
-        const container = document.getElementById('player-ordering-container');
-        if (!container) {
-            logger.error('Ordering container not found');
-            return;
-        }
-
-        // Get the current order of items
-        const items = container.querySelectorAll('.ordering-display-item');
-        const answer = Array.from(items).map(item => parseInt(item.dataset.originalIndex));
-
-        if (answer.length === 0) {
-            this.showError(getTranslation('please_arrange_items'));
-            return;
-        }
-
-        logger.debug('Submitting ordering answer:', answer);
-        this.submitAnswer(answer);
-    }
-
-    /**
      * Submit answer to server
      */
     submitAnswer(answer) {
@@ -209,26 +180,6 @@ export class PlayerInteractionManager {
         // Play submission sound
         if (this.soundManager && this.soundManager.soundsEnabled) {
             this.soundManager.playEnhancedSound(1000, 0.2, 'sine', 0.15);
-        }
-    }
-
-    /**
-     * Format answer for display
-     */
-    formatAnswerForDisplay(answer) {
-        const gameState = this.gameStateManager.getGameState();
-        const questionType = gameState.currentQuestion?.type;
-        
-        if (questionType === 'multiple-choice') {
-            return `${translationManager.getOptionLetter(answer)}: ${gameState.currentQuestion?.options?.[answer] || answer}`;
-        } else if (questionType === 'multiple-correct') {
-            return Array.isArray(answer) 
-                ? answer.map(a => `${translationManager.getOptionLetter(a)}: ${gameState.currentQuestion?.options?.[a] || a}`).join(', ')
-                : answer;
-        } else if (questionType === 'true-false') {
-            const tfText = getTrueFalseText(); return answer === true || answer === 'true' ? tfText.true : tfText.false;
-        } else {
-            return answer.toString();
         }
     }
 
@@ -274,33 +225,41 @@ export class PlayerInteractionManager {
     }
 
     /**
+     * Handle player option click events
+     */
+    handlePlayerOptionClick(event) {
+        if (event.target.classList.contains('player-option')) {
+            const answer = parseInt(event.target.dataset.answer);
+            if (!isNaN(answer)) {
+                this.selectAnswer(answer);
+            }
+        }
+    }
+
+    /**
+     * Handle true/false option click events
+     */
+    handleTrueFalseClick(event) {
+        if (event.target.classList.contains('tf-option')) {
+            const answer = event.target.dataset.answer === 'true';
+            this.selectAnswer(answer);
+        }
+    }
+
+    /**
      * Setup event listeners for player interactions
      */
     setupEventListeners() {
-        // Multiple choice option clicks
-        document.addEventListener('click', (event) => {
-            if (event.target.classList.contains('player-option')) {
-                const answer = parseInt(event.target.dataset.answer);
-                if (!isNaN(answer)) {
-                    this.selectAnswer(answer);
-                }
-            }
-        });
-        
-        // True/false option clicks
-        document.addEventListener('click', (event) => {
-            if (event.target.classList.contains('tf-option')) {
-                const answer = event.target.dataset.answer === 'true';
-                this.selectAnswer(answer);
-            }
-        });
-        
+        // Add global click handlers (using stored references for cleanup)
+        document.addEventListener('click', this.globalClickHandlerPlayerOption);
+        document.addEventListener('click', this.globalClickHandlerTrueFalse);
+
         // Multiple correct submit button
         const mcSubmitBtn = document.getElementById('submit-multiple-correct');
         if (mcSubmitBtn) {
             mcSubmitBtn.addEventListener('click', this.submitMultipleCorrectAnswer);
         }
-        
+
         // Numeric submit button
         const numericSubmitBtn = document.getElementById('submit-numeric');
         if (numericSubmitBtn) {
@@ -317,9 +276,6 @@ export class PlayerInteractionManager {
             });
         }
 
-        // Note: Ordering submit button is wired up in question-renderer.js setupPlayerOrderingOptions()
-        // to match the pattern used by numeric questions
-
         logger.debug('Player interaction event listeners setup');
     }
 
@@ -327,20 +283,22 @@ export class PlayerInteractionManager {
      * Remove event listeners
      */
     removeEventListeners() {
+        // Remove global click handlers - CRITICAL for preventing memory leaks
+        document.removeEventListener('click', this.globalClickHandlerPlayerOption);
+        document.removeEventListener('click', this.globalClickHandlerTrueFalse);
+
         // Remove specific event listeners
         const mcSubmitBtn = document.getElementById('submit-multiple-correct');
         if (mcSubmitBtn) {
             mcSubmitBtn.removeEventListener('click', this.submitMultipleCorrectAnswer);
         }
-        
+
         const numericSubmitBtn = document.getElementById('submit-numeric');
         if (numericSubmitBtn) {
             numericSubmitBtn.removeEventListener('click', this.submitNumericAnswer);
         }
 
-        // Note: Ordering submit button listener removed by GameManager tracked event cleanup
-
-        logger.debug('Player interaction event listeners removed');
+        logger.debug('Player interaction event listeners removed (including global handlers)');
     }
 
     /**

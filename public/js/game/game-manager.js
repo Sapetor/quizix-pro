@@ -17,7 +17,6 @@ import { APIHelper } from '../utils/api-helper.js';
 import { PlayerInteractionManager } from './modules/player-interaction-manager.js';
 import { TimerManager } from './modules/timer-manager.js';
 import { QuestionRenderer } from './modules/question-renderer.js';
-import { NavigationService } from '../services/navigation-service.js';
 
 export class GameManager {
     constructor(socket, uiManager, soundManager, socketManager = null) {
@@ -31,7 +30,6 @@ export class GameManager {
         this.timerManager = new TimerManager();
         this.interactionManager = new PlayerInteractionManager(this.stateManager, this.displayManager, soundManager, socketManager);
         this.questionRenderer = new QuestionRenderer(this.displayManager, this.stateManager, uiManager, this);
-        this.navigationService = new NavigationService(uiManager);
         
         // Initialize DOM Manager with common game elements
         dom.initializeGameElements();
@@ -1003,7 +1001,9 @@ export class GameManager {
         
         // Show leaderboard screen
         const gameState = this.stateManager.getGameState();
-        this.navigationService.navigateBasedOnState(gameState, 'leaderboard');
+        const screenId = gameState.isHost ? 'leaderboard-screen' : 'player-game-screen';
+        this.uiManager.showScreen(screenId);
+        logger.debug('Navigated to leaderboard:', screenId);
     }
 
     /**
@@ -1044,7 +1044,7 @@ export class GameManager {
             
             // Switch to leaderboard screen first to ensure proper display context
             logger.debug('🎉 HOST: Switching to leaderboard-screen');
-            this.navigationService.navigateTo('leaderboard-screen');
+            this.uiManager.showScreen('leaderboard-screen');
             
             // Show confetti celebration after screen switch with minimal delay
             setTimeout(() => {
@@ -1145,7 +1145,7 @@ export class GameManager {
         this.showGameCompleteConfetti();
         
         logger.debug('Switching to player-final-screen');
-        this.navigationService.navigateTo('player-final-screen');
+        this.uiManager.showScreen('player-final-screen');
     }
 
     /**

@@ -21,11 +21,11 @@ const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWA
 // Auto-detect: production uses /quizmaster/, development uses /
 const BASE_PATH = process.env.BASE_PATH || (isProduction ? '/quizmaster/' : '/');
 
-// Server-side logging utility - temporarily verbose for debugging
+// Server-side logging utility
 const DEBUG = {
-    ENABLED: true, // Always enabled for debugging
+    ENABLED: false, // Set to true only for debugging
     LEVELS: { ERROR: 1, WARN: 2, INFO: 3, DEBUG: 4 },
-    CURRENT_LEVEL: 4 // Show all logs for debugging Railway issues
+    CURRENT_LEVEL: 2 // Show errors and warnings only
 };
 
 const logger = {

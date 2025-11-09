@@ -13,10 +13,10 @@ import { browserOptimizer } from './utils/browser-optimizer.js'; // Browser-spec
 import { contentDensityManager } from './utils/content-density-manager.js'; // Smart content spacing and sizing
 import { mobileLayoutManager } from './utils/mobile-layout-manager.js'; // Smart mobile layout for different content types
 import './utils/mobile-enhancements.js'; // Mobile UX enhancements and touch interactions
-import './utils/mobile-carousel.js'; // Airbnb-style mobile carousel for main menu
-import './utils/main-menu-carousel.js'; // Main menu preview carousel
+import './utils/mobile-carousel-adapter.js'; // Airbnb-style mobile carousel (uses UnifiedCarousel)
+import './utils/main-menu-carousel-adapter.js'; // Main menu preview carousel (uses UnifiedCarousel)
 import './utils/mobile-quiz-controls.js'; // Mobile quiz management controls (FAB and bottom sheet)
-import './utils/mobile-question-carousel.js'; // Mobile question carousel for quiz editor
+import './utils/mobile-question-carousel-adapter.js'; // Mobile question carousel for quiz editor
 
 /**
  * Update language dropdown display to show the currently selected language

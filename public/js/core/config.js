@@ -5,10 +5,10 @@
 
 // Development/Production Configuration
 export const DEBUG = {
-    ENABLED: true, // Set to false for production builds
+    ENABLED: false, // Set to true only for debugging
     LEVELS: {
         ERROR: 1,
-        WARN: 2, 
+        WARN: 2,
         INFO: 3,
         DEBUG: 4
     },
