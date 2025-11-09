@@ -567,23 +567,62 @@ export class PreviewRenderer {
             'rgba(236, 72, 153, 0.15)'    // Pink
         ];
 
-        let html = `
-            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
-            <div class="ordering-display">
-        `;
+        // Clear container and create structure
+        container.innerHTML = '';
 
+        // Create instruction element
+        const instruction = document.createElement('div');
+        instruction.className = 'ordering-player-instruction';
+        instruction.setAttribute('data-translate', 'ordering_player_instruction');
+        container.appendChild(instruction);
+
+        // Create ordering display container
+        const orderingDisplay = document.createElement('div');
+        orderingDisplay.className = 'ordering-display';
+        container.appendChild(orderingDisplay);
+
+        // Create each ordering item with proper LaTeX handling
         options.forEach((option, index) => {
             const bgColor = itemColors[index % itemColors.length];
-            html += `
-                <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
-                    <div class="ordering-item-number">${index + 1}</div>
-                    <div class="ordering-item-content">${option}</div>
-                </div>
-            `;
-        });
 
-        html += '</div>';
-        container.innerHTML = html;
+            // Create ordering item container
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'ordering-display-item';
+            itemDiv.setAttribute('data-original-index', index);
+            itemDiv.setAttribute('data-order-index', index);
+            itemDiv.style.background = bgColor;
+
+            // Create number element
+            const numberDiv = document.createElement('div');
+            numberDiv.className = 'ordering-item-number';
+            numberDiv.textContent = index + 1;
+            itemDiv.appendChild(numberDiv);
+
+            // Create content element with LaTeX support
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'ordering-item-content';
+
+            // Format content and check for LaTeX
+            const hasLatex = this.hasLatexContent(option);
+            const formattedContent = this.formatCodeBlocks(option);
+
+            if (hasLatex) {
+                contentDiv.innerHTML = formattedContent;
+                contentDiv.classList.add('tex2jax_process');
+                contentDiv.style.opacity = '1';
+
+                // Render LaTeX
+                this.mathJaxService.render([contentDiv]).catch(error => {
+                    logger.warn('MathJax ordering item rendering error:', error);
+                });
+            } else {
+                contentDiv.innerHTML = formattedContent;
+                contentDiv.style.opacity = '1';
+            }
+
+            itemDiv.appendChild(contentDiv);
+            orderingDisplay.appendChild(itemDiv);
+        });
 
         // Translate the instruction
         translationManager.translateContainer(container);
@@ -1056,23 +1095,62 @@ export class PreviewRenderer {
             'rgba(236, 72, 153, 0.15)'    // Pink
         ];
 
-        let html = `
-            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
-            <div class="ordering-display">
-        `;
+        // Clear container and create structure
+        orderingContainer.innerHTML = '';
 
+        // Create instruction element
+        const instruction = document.createElement('div');
+        instruction.className = 'ordering-player-instruction';
+        instruction.setAttribute('data-translate', 'ordering_player_instruction');
+        orderingContainer.appendChild(instruction);
+
+        // Create ordering display container
+        const orderingDisplay = document.createElement('div');
+        orderingDisplay.className = 'ordering-display';
+        orderingContainer.appendChild(orderingDisplay);
+
+        // Create each ordering item with proper LaTeX handling
         options.forEach((option, index) => {
             const bgColor = itemColors[index % itemColors.length];
-            html += `
-                <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
-                    <div class="ordering-item-number">${index + 1}</div>
-                    <div class="ordering-item-content">${option}</div>
-                </div>
-            `;
-        });
 
-        html += '</div>';
-        orderingContainer.innerHTML = html;
+            // Create ordering item container
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'ordering-display-item';
+            itemDiv.setAttribute('data-original-index', index);
+            itemDiv.setAttribute('data-order-index', index);
+            itemDiv.style.background = bgColor;
+
+            // Create number element
+            const numberDiv = document.createElement('div');
+            numberDiv.className = 'ordering-item-number';
+            numberDiv.textContent = index + 1;
+            itemDiv.appendChild(numberDiv);
+
+            // Create content element with LaTeX support
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'ordering-item-content';
+
+            // Format content and check for LaTeX
+            const hasLatex = this.hasLatexContent(option);
+            const formattedContent = this.formatCodeBlocks(option);
+
+            if (hasLatex) {
+                contentDiv.innerHTML = formattedContent;
+                contentDiv.classList.add('tex2jax_process');
+                contentDiv.style.opacity = '1';
+
+                // Render LaTeX
+                this.mathJaxService.render([contentDiv]).catch(error => {
+                    logger.warn('MathJax mobile ordering item rendering error:', error);
+                });
+            } else {
+                contentDiv.innerHTML = formattedContent;
+                contentDiv.style.opacity = '1';
+            }
+
+            itemDiv.appendChild(contentDiv);
+            orderingDisplay.appendChild(itemDiv);
+        });
 
         // Translate the instruction
         translationManager.translateContainer(orderingContainer);
