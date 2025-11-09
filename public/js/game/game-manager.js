@@ -189,6 +189,10 @@ export class GameManager {
             'numeric': {
                 containerId: 'player-numeric',
                 optionsSelector: '.numeric-input-container'
+            },
+            'ordering': {
+                containerId: 'player-ordering',
+                optionsSelector: '.ordering-container'
             }
         };
         
