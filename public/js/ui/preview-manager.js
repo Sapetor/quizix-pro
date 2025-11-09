@@ -578,15 +578,24 @@ export class PreviewManager {
                 }
                 logger.debug('Numeric correct answer:', correctAnswer);
                 break;
+
+            case 'ordering':
+                const orderingOptions = questionItem.querySelectorAll('.ordering-options .ordering-option');
+                options = Array.from(orderingOptions)
+                    .map(opt => opt.value?.trim())
+                    .filter(opt => opt && opt !== '');
+                logger.debug('Ordering options:', options);
+                break;
         }
-        
+
         const extractedData = {
             question: questionText,
             type: questionType,
             image: imageUrl,
             options: options,
             correctAnswer: correctAnswer,
-            correctAnswers: correctAnswers
+            correctAnswers: correctAnswers,
+            correctOrder: options.length > 0 ? options.map((_, i) => i) : []
         };
         
         logger.debug('Extracted question data:', extractedData);
