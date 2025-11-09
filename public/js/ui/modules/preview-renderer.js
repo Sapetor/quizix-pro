@@ -568,9 +568,7 @@ export class PreviewRenderer {
         ];
 
         let html = `
-            <div class="ordering-player-instruction" data-translate="ordering_player_instruction">
-                Drag items to arrange them in the correct order
-            </div>
+            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
             <div class="ordering-display">
         `;
 
@@ -1059,9 +1057,7 @@ export class PreviewRenderer {
         ];
 
         let html = `
-            <div class="ordering-player-instruction" data-translate="ordering_player_instruction">
-                Drag items to arrange them in the correct order
-            </div>
+            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
             <div class="ordering-display">
         `;
 

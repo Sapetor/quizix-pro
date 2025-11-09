@@ -528,9 +528,7 @@ export class QuestionRenderer {
         ];
 
         let html = `
-            <div class="ordering-player-instruction" data-translate="ordering_player_instruction">
-                Drag items to arrange them in the correct order
-            </div>
+            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
             <div class="ordering-display" id="player-ordering-container">
         `;
 
@@ -547,15 +545,16 @@ export class QuestionRenderer {
 
         html += `
             </div>
-            <button class="ordering-submit-button btn primary" id="submit-ordering" data-translate="submit_answer">
-                Submit Answer
-            </button>
+            <button class="ordering-submit-button btn primary" id="submit-ordering" data-translate="submit_answer"></button>
         `;
 
         optionsContainer.innerHTML = html;
         optionsContainer.style.display = 'flex';
         optionsContainer.style.flexDirection = 'column';
         optionsContainer.style.alignItems = 'center';
+
+        // Translate all text in the container
+        translationManager.translateContainer(optionsContainer);
 
         // Wire up submit button
         const submitButton = document.getElementById('submit-ordering');
