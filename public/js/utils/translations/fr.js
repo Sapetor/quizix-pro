@@ -118,6 +118,16 @@ export default {
         multiple_correct: "Réponses Multiples Correctes",
         multiple_correct_instruction: "Sélectionnez toutes les bonnes réponses - plusieurs options peuvent être correctes !",
         numeric: "Réponse Numérique",
+        ordering: "Classement",
+        ordering_instruction: "Entrez les éléments dans le bon ordre (de haut en bas) :",
+        ordering_player_instruction: "Faites glisser les éléments pour les organiser dans le bon ordre",
+        ordering_item_1: "Premier élément",
+        ordering_item_2: "Deuxième élément",
+        ordering_item_3: "Troisième élément",
+        ordering_item_4: "Quatrième élément",
+        ordering_needs_two_items: "Les questions de classement nécessitent au moins 2 éléments",
+        invalid_ordering: "Configuration de classement invalide",
+        please_arrange_items: "Veuillez organiser les éléments avant de soumettre",
 
         // Difficulty dropdown keys
         easy: "Facile",

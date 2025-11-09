@@ -1019,6 +1019,48 @@ export class PreviewRenderer {
     }
 
     /**
+     * Render mobile ordering preview
+     */
+    renderMobileOrderingPreview(options, correctOrder) {
+        const container = document.querySelector('#mobile-preview-answer-area .preview-ordering');
+        const orderingContainer = document.getElementById('mobile-preview-ordering');
+
+        if (!container || !orderingContainer) {
+            logger.warn('Mobile ordering preview containers not found');
+            return;
+        }
+
+        container.style.display = 'block';
+
+        if (!options || options.length === 0) {
+            orderingContainer.innerHTML = '<p>No ordering options available</p>';
+            return;
+        }
+
+        let html = `
+            <div class="ordering-player-instruction" data-translate="ordering_player_instruction">
+                Drag items to arrange them in the correct order
+            </div>
+            <div class="ordering-display">
+        `;
+
+        options.forEach((option, index) => {
+            html += `
+                <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}">
+                    <div class="ordering-item-number">${index + 1}</div>
+                    <div class="ordering-item-content">${option}</div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        orderingContainer.innerHTML = html;
+
+        // Translate the instruction
+        translationManager.translateContainer(orderingContainer);
+    }
+
+    /**
      * Handle mobile question image
      */
     handleMobileQuestionImage(imageUrl) {
