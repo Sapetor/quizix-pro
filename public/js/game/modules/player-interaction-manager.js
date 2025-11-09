@@ -317,11 +317,8 @@ export class PlayerInteractionManager {
             });
         }
 
-        // Ordering submit button
-        const orderingSubmitBtn = document.getElementById('submit-ordering');
-        if (orderingSubmitBtn) {
-            orderingSubmitBtn.addEventListener('click', this.submitOrderingAnswer);
-        }
+        // Note: Ordering submit button is wired up in question-renderer.js setupPlayerOrderingOptions()
+        // to match the pattern used by numeric questions
 
         logger.debug('Player interaction event listeners setup');
     }
@@ -341,10 +338,7 @@ export class PlayerInteractionManager {
             numericSubmitBtn.removeEventListener('click', this.submitNumericAnswer);
         }
 
-        const orderingSubmitBtn = document.getElementById('submit-ordering');
-        if (orderingSubmitBtn) {
-            orderingSubmitBtn.removeEventListener('click', this.submitOrderingAnswer);
-        }
+        // Note: Ordering submit button listener removed by GameManager tracked event cleanup
 
         logger.debug('Player interaction event listeners removed');
     }

@@ -334,6 +334,13 @@ export class GameManager {
         this.interactionManager.submitNumericAnswer();
     }
 
+    /**
+     * Submit ordering answer
+     */
+    submitOrderingAnswer() {
+        this.interactionManager.submitOrderingAnswer();
+    }
+
     // Answer submission feedback now handled by GameDisplayManager
 
     /**

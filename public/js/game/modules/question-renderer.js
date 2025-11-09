@@ -191,12 +191,23 @@ export class QuestionRenderer {
         // Shuffle the options for display (host sees them out of order)
         const shuffledIndices = this.shuffleArray(data.options.map((_, i) => i));
 
+        // Distinct colors for tracking items
+        const itemColors = [
+            'rgba(59, 130, 246, 0.15)',   // Blue
+            'rgba(16, 185, 129, 0.15)',   // Green
+            'rgba(245, 158, 11, 0.15)',   // Orange
+            'rgba(239, 68, 68, 0.15)',    // Red
+            'rgba(139, 92, 246, 0.15)',   // Purple
+            'rgba(236, 72, 153, 0.15)'    // Pink
+        ];
+
         let html = '<div class="ordering-display">';
 
         shuffledIndices.forEach((originalIndex, displayIndex) => {
             const option = data.options[originalIndex];
+            const bgColor = itemColors[originalIndex % itemColors.length];
             html += `
-                <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}">
+                <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${displayIndex + 1}</div>
                     <div class="ordering-item-content">${this.displayManager.mathRenderer.formatCodeBlocks(option)}</div>
                 </div>
@@ -506,6 +517,16 @@ export class QuestionRenderer {
         // Shuffle the options for the player
         const shuffledIndices = this.shuffleArray(data.options.map((_, i) => i));
 
+        // Distinct colors for tracking items during swaps
+        const itemColors = [
+            'rgba(59, 130, 246, 0.15)',   // Blue
+            'rgba(16, 185, 129, 0.15)',   // Green
+            'rgba(245, 158, 11, 0.15)',   // Orange
+            'rgba(239, 68, 68, 0.15)',    // Red
+            'rgba(139, 92, 246, 0.15)',   // Purple
+            'rgba(236, 72, 153, 0.15)'    // Pink
+        ];
+
         let html = `
             <div class="ordering-player-instruction" data-translate="ordering_player_instruction">
                 Drag items to arrange them in the correct order
@@ -515,8 +536,9 @@ export class QuestionRenderer {
 
         shuffledIndices.forEach((originalIndex, displayIndex) => {
             const option = data.options[originalIndex];
+            const bgColor = itemColors[originalIndex % itemColors.length];
             html += `
-                <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}">
+                <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${displayIndex + 1}</div>
                     <div class="ordering-item-content">${this.displayManager.mathRenderer.formatCodeBlocks(option)}</div>
                 </div>
@@ -535,8 +557,15 @@ export class QuestionRenderer {
         optionsContainer.style.flexDirection = 'column';
         optionsContainer.style.alignItems = 'center';
 
-        // Submit button will be wired up by PlayerInteractionManager.bindPlayerEventListeners()
-        // No need to add event listener here
+        // Wire up submit button
+        const submitButton = document.getElementById('submit-ordering');
+        if (submitButton) {
+            submitButton.disabled = false;
+            // Use tracked event listeners from GameManager
+            this.gameManager.addEventListenerTracked(submitButton, 'click', () => {
+                this.gameManager.submitOrderingAnswer();
+            });
+        }
 
         // Initialize drag-and-drop after a short delay to ensure DOM is ready
         setTimeout(() => {
