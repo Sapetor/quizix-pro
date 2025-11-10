@@ -35,8 +35,13 @@
    - Uses `QuestionTypeRegistry.getPlayerContainerConfig()`
    - **Reduction: -25 lines**
 
+6. **question-utils.js** ✅
+   - Removed 8 dead methods: collectQuestions, validateQuestions, hasLatexErrors, etc.
+   - Kept only: generateQuestionHTML, shuffleArray, randomizeAnswers
+   - **Reduction: 620 lines → 260 lines (-360 lines, 58% smaller)**
+
 ### Total Code Elimination
-**~280 lines of duplicate code removed**
+**~640 lines of duplicate/dead code removed**
 
 ## 🎯 Impact
 
@@ -70,14 +75,6 @@ Adding a new question type requires:
 5. **Preview extraction** - Duplicate logic with wrong selectors
 
 ## 📊 Remaining Scattered Logic (Non-Critical)
-
-### Dead Code (Can be removed)
-**File:** `public/js/utils/question-utils.js`
-- `QuestionUtils` class (lines 130-516)
-- Contains duplicate extraction/population logic
-- Not used anywhere (instance created but not exported)
-- Methods: `collectQuestions()`, `populateQuestionOptions()`, `addGeneratedQuestions()`
-- **Potential removal: ~385 lines**
 
 ### Appropriate Switch Statements (Keep as-is)
 These are UI-specific rendering logic, not data handling:
@@ -117,11 +114,7 @@ These are UI-specific rendering logic, not data handling:
 
 ## 📈 Next Steps (Optional)
 
-### A. Finish Cleanup
-- Remove dead QuestionUtils class (-385 lines)
-- Clean up any remaining imports
-
-### B. Move to Bigger Refactors
+### A. Move to Bigger Refactors
 Per REFACTORING_PLAN_REVISED.md:
 1. Break up monolithic files
    - server.js (2,424 lines)
@@ -129,19 +122,20 @@ Per REFACTORING_PLAN_REVISED.md:
 2. Simplify over-engineered features
 3. Complete incomplete features
 
-### C. Stop Here
+### B. Stop Here
 - Registry goal achieved ✓
 - Major pain point solved ✓
-- 280+ lines eliminated ✓
+- 640 lines eliminated ✓
 - Return to feature development
 
 ## 🏆 Success Metrics
 
 - ✅ Single source of truth for question types
-- ✅ ~280 lines of duplicate code eliminated
-- ✅ All bugs fixed
+- ✅ ~640 lines of duplicate/dead code eliminated
+- ✅ All bugs fixed (6 bugs during migration)
 - ✅ Adding question type: 8h → 1h (87.5% reduction)
 - ✅ Field name consistency across stack
 - ✅ Preview, editor, and gameplay all working
+- ✅ question-utils.js: 58% smaller (620 → 260 lines)
 
 **Status: PHASE 1 COMPLETE AND PRODUCTION READY**
