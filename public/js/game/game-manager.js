@@ -17,7 +17,7 @@ import { APIHelper } from '../utils/api-helper.js';
 import { PlayerInteractionManager } from './modules/player-interaction-manager.js';
 import { TimerManager } from './modules/timer-manager.js';
 import { QuestionRenderer } from './modules/question-renderer.js';
-import { NavigationService } from '../services/navigation-service.js';
+import QuestionTypeRegistry from '../utils/question-type-registry.js';
 
 export class GameManager {
     constructor(socket, uiManager, soundManager, socketManager = null) {
@@ -31,8 +31,7 @@ export class GameManager {
         this.timerManager = new TimerManager();
         this.interactionManager = new PlayerInteractionManager(this.stateManager, this.displayManager, soundManager, socketManager);
         this.questionRenderer = new QuestionRenderer(this.displayManager, this.stateManager, uiManager, this);
-        this.navigationService = new NavigationService(uiManager);
-        
+
         // Initialize DOM Manager with common game elements
         dom.initializeGameElements();
         
@@ -169,49 +168,27 @@ export class GameManager {
      */
     setupPlayerContainers(data) {
         logger.debug('Player mode - setting up containers');
-        
+
         // Hide all answer type containers
         dom.queryAll('.player-answer-type').forEach(type => type.style.display = 'none');
-        
-        const containerMap = {
-            'multiple-choice': {
-                containerId: 'player-multiple-choice',
-                optionsSelector: '.player-options'
-            },
-            'multiple-correct': {
-                containerId: 'player-multiple-correct',
-                optionsSelector: '.player-checkbox-options'
-            },
-            'true-false': {
-                containerId: 'player-true-false',
-                optionsSelector: '.true-false-options'
-            },
-            'numeric': {
-                containerId: 'player-numeric',
-                optionsSelector: '.numeric-input-container'
-            },
-            'ordering': {
-                containerId: 'player-ordering',
-                optionsSelector: '.ordering-container'
-            }
-        };
-        
-        const config = containerMap[data.type];
+
+        // Get container configuration from registry
+        const config = QuestionTypeRegistry.getPlayerContainerConfig(data.type);
         if (!config) {
             logger.warn('Unknown question type:', data.type);
             return null;
         }
-        
+
         const container = dom.get(config.containerId);
         logger.debug(`${config.containerId} found:`, !!container);
-        
+
         if (container) {
             container.style.display = 'block';
             const optionsContainer = container.querySelector(config.optionsSelector);
             logger.debug('Player optionsContainer set to:', optionsContainer);
             return optionsContainer;
         }
-        
+
         return null;
     }
 
@@ -1000,10 +977,10 @@ export class GameManager {
     showLeaderboard(leaderboard) {
         // Use the updateLeaderboardDisplay method for consistency
         this.updateLeaderboardDisplay(leaderboard);
-        
+
         // Show leaderboard screen
         const gameState = this.stateManager.getGameState();
-        this.navigationService.navigateBasedOnState(gameState, 'leaderboard');
+        this.uiManager.showScreen(gameState.isHost ? 'leaderboard-screen' : 'player-game-screen');
     }
 
     /**
@@ -1044,7 +1021,7 @@ export class GameManager {
             
             // Switch to leaderboard screen first to ensure proper display context
             logger.debug('🎉 HOST: Switching to leaderboard-screen');
-            this.navigationService.navigateTo('leaderboard-screen');
+            this.uiManager.showScreen('leaderboard-screen');
             
             // Show confetti celebration after screen switch with minimal delay
             setTimeout(() => {
@@ -1143,9 +1120,9 @@ export class GameManager {
         
         // Add confetti celebration for all players
         this.showGameCompleteConfetti();
-        
+
         logger.debug('Switching to player-final-screen');
-        this.navigationService.navigateTo('player-final-screen');
+        this.uiManager.showScreen('player-final-screen');
     }
 
     /**

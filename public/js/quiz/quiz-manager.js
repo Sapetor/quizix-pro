@@ -11,6 +11,7 @@ import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-han
 import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
+import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 
 export class QuizManager {
     constructor(uiManager) {
@@ -47,84 +48,26 @@ export class QuizManager {
 
     /**
      * Extract question data from DOM element
+     * Uses QuestionTypeRegistry for centralized extraction logic
      */
     extractQuestionData(questionElement) {
         const questionText = questionElement.querySelector('.question-text')?.value?.trim();
         const questionType = questionElement.querySelector('.question-type')?.value;
         const questionTime = parseInt(questionElement.querySelector('.question-time-limit')?.value) || 30;
         const questionDifficulty = questionElement.querySelector('.question-difficulty')?.value || 'medium';
-        
+
         if (!questionText || !questionType) return null;
-        
+
         const questionData = {
             question: questionText,
             type: questionType,
             time: questionTime,
             difficulty: questionDifficulty
         };
-        
-        // Handle different question types using the correct CSS selectors from question-utils.js
-        if (questionType === 'multiple-choice') {
-            const options = [];
-            // Use the correct selector - .option not .option-input
-            const optionInputs = questionElement.querySelectorAll('.multiple-choice-options .option');
-            optionInputs.forEach(input => {
-                if (input.value.trim()) {
-                    options.push(input.value.trim());
-                }
-            });
-            
-            const correctAnswerElement = questionElement.querySelector('.multiple-choice-options .correct-answer');
-            const correctAnswer = correctAnswerElement ? parseInt(correctAnswerElement.value) : 0;
-            
-            
-            questionData.options = options;
-            questionData.correctAnswer = isNaN(correctAnswer) ? 0 : correctAnswer;
-            
-        } else if (questionType === 'multiple-correct') {
-            const options = [];
-            // Use the correct selector
-            const optionInputs = questionElement.querySelectorAll('.multiple-correct-options .option');
-            optionInputs.forEach(input => {
-                if (input.value.trim()) {
-                    options.push(input.value.trim());
-                }
-            });
-            
-            const correctAnswers = [];
-            // Use the correct selector - .correct-option not .correct-checkbox
-            const correctCheckboxes = questionElement.querySelectorAll('.multiple-correct-options .correct-option:checked');
-            correctCheckboxes.forEach(checkbox => {
-                correctAnswers.push(parseInt(checkbox.dataset.option));
-            });
-            
-            questionData.options = options;
-            questionData.correctAnswers = correctAnswers;
-            
-        } else if (questionType === 'true-false') {
-            const correctAnswer = questionElement.querySelector('.true-false-options .correct-answer')?.value === 'true';
-            questionData.correctAnswer = correctAnswer;
-            
-        } else if (questionType === 'numeric') {
-            const correctAnswer = parseFloat(questionElement.querySelector('.numeric-answer')?.value);
-            const tolerance = parseFloat(questionElement.querySelector('.numeric-tolerance')?.value) || 0;
-            questionData.correctAnswer = correctAnswer;
-            questionData.tolerance = tolerance;
-        } else if (questionType === 'ordering') {
-            const options = [];
-            const optionInputs = questionElement.querySelectorAll('.ordering-options .ordering-option');
-            optionInputs.forEach(input => {
-                if (input.value.trim()) {
-                    options.push(input.value.trim());
-                }
-            });
 
-            // The correct order is the order they entered items (0, 1, 2, 3...)
-            const correctOrder = options.map((_, index) => index);
-
-            questionData.options = options;
-            questionData.correctOrder = correctOrder;
-        }
+        // Use QuestionTypeRegistry for type-specific data extraction
+        const typeSpecificData = QuestionTypeRegistry.extractData(questionType, questionElement);
+        Object.assign(questionData, typeSpecificData);
 
         // Extract image data - check both src and dataset.url
         const imageElement = questionElement.querySelector('.question-image');
@@ -195,15 +138,21 @@ export class QuizManager {
                 if (!question.options || question.options.length < 2) {
                     errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('question_needs_two_options')}`);
                 }
-                
-                if (question.type === 'multiple-choice' && 
-                    (question.correctAnswer < 0 || question.correctAnswer >= question.options.length)) {
-                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_correct_answer')}`);
+
+                if (question.type === 'multiple-choice') {
+                    // Registry uses "correctIndex" not "correctAnswer"
+                    const correctIndex = question.correctIndex !== undefined ? question.correctIndex : question.correctAnswer;
+                    if (correctIndex === undefined || correctIndex < 0 || correctIndex >= question.options.length) {
+                        errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_correct_answer')}`);
+                    }
                 }
-                
-                if (question.type === 'multiple-correct' && 
-                    (!question.correctAnswers || question.correctAnswers.length === 0)) {
-                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('select_at_least_one_correct')}`);
+
+                if (question.type === 'multiple-correct') {
+                    // Registry uses "correctIndices" not "correctAnswers"
+                    const correctIndices = question.correctIndices || question.correctAnswers;
+                    if (!correctIndices || correctIndices.length === 0) {
+                        errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('select_at_least_one_correct')}`);
+                    }
                 }
             }
             
@@ -1187,93 +1136,13 @@ export class QuizManager {
 
     /**
      * Populate type-specific question data with proper timing
+     * Uses QuestionTypeRegistry for centralized population logic
      */
     populateTypeSpecificData(questionElement, questionData) {
         setTimeout(() => {
-            if (questionData.type === 'multiple-choice') {
-                this.populateMultipleChoiceData(questionElement, questionData);
-            } else if (questionData.type === 'multiple-correct') {
-                this.populateMultipleCorrectData(questionElement, questionData);
-            } else if (questionData.type === 'true-false') {
-                this.populateTrueFalseData(questionElement, questionData);
-            } else if (questionData.type === 'numeric') {
-                this.populateNumericData(questionElement, questionData);
-            }
+            logger.debug('Populating type-specific data for:', questionData.type);
+            QuestionTypeRegistry.populateQuestion(questionData.type, questionElement, questionData);
         }, 100);
-    }
-
-    /**
-     * Populate multiple choice question data
-     */
-    populateMultipleChoiceData(questionElement, questionData) {
-        logger.debug('Populating multiple choice data:', questionData.options);
-        
-        // Use correct selectors from question-utils.js
-        const optionInputs = questionElement.querySelectorAll('.multiple-choice-options .option');
-        logger.debug('Found option inputs:', optionInputs.length);
-        
-        if (questionData.options) {
-            questionData.options.forEach((option, index) => {
-                if (optionInputs[index]) {
-                    logger.debug(`Setting option ${index}:`, option);
-                    optionInputs[index].value = option;
-                }
-            });
-        }
-        
-        const correctAnswer = questionElement.querySelector('.multiple-choice-options .correct-answer');
-        if (correctAnswer && questionData.correctAnswer !== undefined) {
-            correctAnswer.value = questionData.correctAnswer;
-        }
-    }
-
-    /**
-     * Populate multiple correct question data
-     */
-    populateMultipleCorrectData(questionElement, questionData) {
-        // Use correct selectors from question-utils.js
-        const optionInputs = questionElement.querySelectorAll('.multiple-correct-options .option');
-        if (questionData.options) {
-            questionData.options.forEach((option, index) => {
-                if (optionInputs[index]) {
-                    optionInputs[index].value = option;
-                }
-            });
-        }
-        
-        const correctCheckboxes = questionElement.querySelectorAll('.multiple-correct-options .correct-option');
-        if (questionData.correctAnswers) {
-            questionData.correctAnswers.forEach(answerIndex => {
-                if (correctCheckboxes[answerIndex]) {
-                    correctCheckboxes[answerIndex].checked = true;
-                }
-            });
-        }
-    }
-
-    /**
-     * Populate true/false question data
-     */
-    populateTrueFalseData(questionElement, questionData) {
-        const correctAnswer = questionElement.querySelector('.true-false-options .correct-answer');
-        if (correctAnswer && questionData.correctAnswer !== undefined) {
-            correctAnswer.value = questionData.correctAnswer ? 'true' : 'false';
-        }
-    }
-
-    /**
-     * Populate numeric question data
-     */
-    populateNumericData(questionElement, questionData) {
-        const correctAnswer = questionElement.querySelector('.numeric-answer');
-        if (correctAnswer && questionData.correctAnswer !== undefined) {
-            correctAnswer.value = questionData.correctAnswer;
-        }
-        
-        const tolerance = questionElement.querySelector('.numeric-tolerance');
-        if (tolerance && questionData.tolerance !== undefined) {
-            tolerance.value = questionData.tolerance;
-        }
     }
 
     /**

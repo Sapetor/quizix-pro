@@ -13,6 +13,10 @@ const QRCode = require('qrcode');
 const os = require('os');
 const compression = require('compression');
 const { CORSValidationService } = require('./services/cors-validation-service');
+const { QuestionTypeService } = require('./services/question-type-service');
+const { QuizService } = require('./services/quiz-service');
+const { ResultsService } = require('./services/results-service');
+const { QRService } = require('./services/qr-service');
 
 // Detect production environment (Railway sets NODE_ENV automatically)
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
@@ -111,6 +115,12 @@ const server = http.createServer(app);
 // Initialize CORS validation service
 const corsValidator = new CORSValidationService();
 corsValidator.logConfiguration();
+
+// Initialize business services
+const quizService = new QuizService(logger, WSLMonitor, 'quizzes');
+const resultsService = new ResultsService(logger, 'results');
+const qrService = new QRService(logger, BASE_PATH);
+
 const io = socketIo(server, {
   cors: corsValidator.getSocketIOCorsConfig(),
   pingTimeout: CONFIG.NETWORK.PING_TIMEOUT,
@@ -481,66 +491,18 @@ app.post('/upload', upload.single('image'), (req, res) => {
 app.post('/api/save-quiz', async (req, res) => {
   try {
     const { title, questions } = req.body;
-    if (!title || !questions || !Array.isArray(questions)) {
-      return res.status(400).json({ error: 'Invalid quiz data' });
-    }
-    
-    // Sanitize filename more thoroughly to prevent path traversal
-    const safeTitle = title.replace(/[^a-z0-9\-_]/gi, '_').toLowerCase().substring(0, 50);
-    const filename = `${safeTitle}_${Date.now()}.json`;
-    const quizData = {
-      title,
-      questions,
-      created: new Date().toISOString(),
-      id: uuidv4()
-    };
-    
-    // Async file write with WSL performance monitoring
-    await WSLMonitor.trackFileOperation(
-      () => fs.promises.writeFile(
-        path.join('quizzes', filename), 
-        JSON.stringify(quizData, null, 2),
-        'utf8'
-      ),
-      `Quiz save: ${filename}`
-    );
-    
-    logger.debug(`Quiz saved successfully: ${filename}`);
-    res.json({ success: true, filename, id: quizData.id });
+    const result = await quizService.saveQuiz(title, questions);
+    res.json(result);
   } catch (error) {
     logger.error('Save quiz error:', error);
-    res.status(500).json({ error: 'Failed to save quiz' });
+    res.status(400).json({ error: error.message || 'Failed to save quiz' });
   }
 });
 
 // Load quiz endpoint
 app.get('/api/quizzes', async (req, res) => {
   try {
-    // Async directory read with WSL performance monitoring
-    const files = (await WSLMonitor.trackFileOperation(
-      () => fs.promises.readdir('quizzes'),
-      'Quiz directory listing'
-    )).filter(f => f.endsWith('.json'));
-    
-    // Process files in parallel for better performance
-    const quizPromises = files.map(async (file) => {
-      try {
-        const data = JSON.parse(await fs.promises.readFile(path.join('quizzes', file), 'utf8'));
-        return {
-          filename: file,
-          title: data.title,
-          questionCount: data.questions.length,
-          created: data.created,
-          id: data.id
-        };
-      } catch (err) {
-        logger.error('Error reading quiz file:', file, err);
-        return null;
-      }
-    });
-    
-    const quizzes = (await Promise.all(quizPromises)).filter(Boolean);
-    logger.debug(`Loaded ${quizzes.length} quizzes from ${files.length} files`);
+    const quizzes = await quizService.listQuizzes();
     res.json(quizzes);
   } catch (error) {
     logger.error('Load quizzes error:', error);
@@ -549,29 +511,15 @@ app.get('/api/quizzes', async (req, res) => {
 });
 
 // Load specific quiz endpoint
-app.get('/api/quiz/:filename', (req, res) => {
+app.get('/api/quiz/:filename', async (req, res) => {
   try {
     const { filename } = req.params;
-    
-    // Security: Validate filename to prevent path traversal
-    if (!validateFilename(filename)) {
-      return res.status(400).json({ error: 'Invalid filename' });
-    }
-    
-    if (!filename.endsWith('.json')) {
-      return res.status(400).json({ error: 'Invalid filename' });
-    }
-    
-    const filePath = path.join('quizzes', filename);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Quiz not found' });
-    }
-    
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const data = await quizService.loadQuiz(filename);
     res.json(data);
   } catch (error) {
     logger.error('Load quiz error:', error);
-    res.status(500).json({ error: 'Failed to load quiz' });
+    const statusCode = error.message === 'Quiz not found' ? 404 : 400;
+    res.status(statusCode).json({ error: error.message || 'Failed to load quiz' });
   }
 });
 
@@ -579,78 +527,19 @@ app.get('/api/quiz/:filename', (req, res) => {
 app.post('/api/save-results', async (req, res) => {
   try {
     const { quizTitle, gamePin, results, startTime, endTime, questions } = req.body;
-    if (!quizTitle || !gamePin || !results) {
-      return res.status(400).json({ error: 'Invalid results data' });
-    }
-    
-    const filename = `results_${gamePin}_${Date.now()}.json`;
-    const resultsData = {
-      quizTitle,
-      gamePin,
-      results,
-      startTime,
-      endTime,
-      saved: new Date().toISOString()
-    };
-    
-    // Include questions data if provided for enhanced analytics
-    if (questions && Array.isArray(questions) && questions.length > 0) {
-      resultsData.questions = questions;
-    }
-    
-    // Async file write to prevent UI blocking on WSL filesystem delays
-    await fs.promises.writeFile(
-      path.join('results', filename), 
-      JSON.stringify(resultsData, null, 2),
-      'utf8'
-    );
-    
-    logger.debug(`Results saved successfully: ${filename}`);
-    res.json({ success: true, filename });
+    const result = await resultsService.saveResults(quizTitle, gamePin, results, startTime, endTime, questions);
+    res.json(result);
   } catch (error) {
     logger.error('Save results error:', error);
-    res.status(500).json({ error: 'Failed to save results' });
+    res.status(400).json({ error: error.message || 'Failed to save results' });
   }
 });
 
 // Get list of saved quiz results endpoint
-app.get('/api/results', (req, res) => {
-  logger.info('API: /api/results endpoint called');
+app.get('/api/results', async (req, res) => {
   try {
-    if (!fs.existsSync('results')) {
-      logger.info('API: results directory does not exist');
-      return res.json([]);
-    }
-    
-    const files = fs.readdirSync('results')
-      .filter(file => file.startsWith('results_') && file.endsWith('.json'))
-      .map(filename => {
-        try {
-          const filePath = path.join('results', filename);
-          const stats = fs.statSync(filePath);
-          const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-          
-          return {
-            filename,
-            quizTitle: data.quizTitle || 'Untitled Quiz',
-            gamePin: data.gamePin,
-            participantCount: data.results?.length || 0,
-            startTime: data.startTime,
-            endTime: data.endTime,
-            saved: data.saved || stats.mtime.toISOString(),
-            fileSize: stats.size,
-            results: data.results || [] // Include full results data for the viewer
-          };
-        } catch (error) {
-          logger.error(`Error reading result file ${filename}:`, error);
-          return null;
-        }
-      })
-      .filter(result => result !== null)
-      .sort((a, b) => new Date(b.saved) - new Date(a.saved)); // Sort by most recent first
-    
-    logger.info(`API: Found ${files.length} result files`);
-    res.json(files);
+    const results = await resultsService.listResults();
+    res.json(results);
   } catch (error) {
     logger.error('Error listing results:', error);
     res.status(500).json({ error: 'Failed to list results' });
@@ -658,328 +547,56 @@ app.get('/api/results', (req, res) => {
 });
 
 // Delete quiz result endpoint (must be before GET route to avoid conflicts)
-app.delete('/api/results/:filename', (req, res) => {
+app.delete('/api/results/:filename', async (req, res) => {
   try {
     const filename = req.params.filename;
-    logger.info(`DELETE request for file: ${filename}`);
-    
-    // Validate filename to prevent directory traversal
-    if (!filename.match(/^results_\d+_\d+\.json$/)) {
-      logger.error(`Invalid filename format: ${filename}`);
-      return res.status(400).json({ error: 'Invalid filename format' });
-    }
-    
-    const filePath = path.join('results', filename);
-    logger.info(`Checking file path: ${filePath}`);
-    logger.info(`File exists: ${fs.existsSync(filePath)}`);
-    
-    if (!fs.existsSync(filePath)) {
-      logger.error(`File not found: ${filePath}`);
-      return res.status(404).json({ error: 'Result file not found' });
-    }
-    
-    // Delete the file
-    fs.unlinkSync(filePath);
-    
-    logger.info(`Result file deleted successfully: ${filename}`);
-    res.json({ success: true, message: 'Result deleted successfully' });
-    
+    const result = await resultsService.deleteResult(filename);
+    res.json(result);
   } catch (error) {
     logger.error('Error deleting result file:', error);
-    res.status(500).json({ error: 'Failed to delete result file' });
+    const statusCode = error.message === 'Result file not found' ? 404 : 400;
+    res.status(statusCode).json({ error: error.message || 'Failed to delete result file' });
   }
 });
 
 // Get specific quiz result file endpoint
-app.get('/api/results/:filename', (req, res) => {
+app.get('/api/results/:filename', async (req, res) => {
   try {
     const filename = req.params.filename;
-    
-    // Validate filename to prevent directory traversal
-    if (!filename.match(/^results_\d+_\d+\.json$/)) {
-      return res.status(400).json({ error: 'Invalid filename format' });
-    }
-    
-    const filePath = path.join('results', filename);
-    
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Result file not found' });
-    }
-    
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const data = await resultsService.getResult(filename);
     res.json(data);
   } catch (error) {
     logger.error('Error retrieving result file:', error);
-    res.status(500).json({ error: 'Failed to retrieve result file' });
+    const statusCode = error.message === 'Result file not found' ? 404 : 400;
+    res.status(statusCode).json({ error: error.message || 'Failed to retrieve result file' });
   }
 });
 
 // Export quiz results in different formats endpoint
-app.get('/api/results/:filename/export/:format', (req, res) => {
+app.get('/api/results/:filename/export/:format', async (req, res) => {
   try {
     const { filename, format } = req.params;
-    const exportType = req.query.type || 'analytics'; // 'analytics' or 'simple'
+    const exportType = req.query.type || 'analytics';
     
-    // Validate filename
-    if (!filename.match(/^results_\d+_\d+\.json$/)) {
-      return res.status(400).json({ error: 'Invalid filename format' });
-    }
+    const exportData = await resultsService.exportResults(filename, format, exportType);
     
-    // Validate format
-    if (!['csv', 'json'].includes(format.toLowerCase())) {
-      return res.status(400).json({ error: 'Unsupported export format. Use csv or json.' });
-    }
+    // Set response headers
+    res.setHeader('Content-Type', exportData.type);
+    res.setHeader('Content-Disposition', `attachment; filename="${exportData.filename}"`);
     
-    // Validate export type
-    if (!['analytics', 'simple'].includes(exportType)) {
-      return res.status(400).json({ error: 'Invalid export type. Use analytics or simple.' });
-    }
-    
-    const filePath = path.join('results', filename);
-    
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Result file not found' });
-    }
-    
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    
-    if (format.toLowerCase() === 'csv') {
-      let csv = '';
-      
-      if (exportType === 'simple') {
-        // Simple player-centric format matching example_new_format.csv
-        csv = 'Player Name,Question #,Question Text,Player Answer,Correct Answer,Is Correct,Time (seconds),Points\n';
-        
-        const players = data.results || [];
-        const questions = data.questions || [];
-        
-        players.forEach(player => {
-          if (player.answers && Array.isArray(player.answers)) {
-            player.answers.forEach((answer, qIndex) => {
-              if (answer) {
-                const question = questions[qIndex];
-                const questionText = question ? (question.text || question.question || `Question ${qIndex + 1}`) : `Question ${qIndex + 1}`;
-                let correctAnswer = question ? question.correctAnswer : 'Unknown';
-                let playerAnswer = answer.answer;
-                
-                // Handle array answers
-                if (Array.isArray(correctAnswer)) {
-                  correctAnswer = correctAnswer.join(', ');
-                }
-                if (Array.isArray(playerAnswer)) {
-                  playerAnswer = playerAnswer.join(', ');
-                }
-                
-                const isCorrectText = answer.isCorrect ? 'Yes' : 'No';
-                const timeSeconds = Math.round(answer.timeMs / 1000);
-                const points = answer.points || 0;
-                
-                const row = [
-                  `"${player.name || 'Anonymous'}"`,
-                  qIndex + 1,
-                  `"${questionText.replace(/"/g, '""')}"`,
-                  `"${playerAnswer || 'No Answer'}"`,
-                  `"${correctAnswer}"`,
-                  `"${isCorrectText}"`,
-                  timeSeconds,
-                  points
-                ].join(',');
-                
-                csv += row + '\n';
-              }
-            });
-          }
-        });
-        
-      } else {
-        // Enhanced question-centric format for better analytics
-        if (data.questions && data.questions.length > 0) {
-        // Build header row with player columns
-        const players = data.results || [];
-        let header = ['Question', 'Correct Answer', 'Difficulty'];
-        
-        // Add columns for each player (Answer, Time, Points, Correct)
-        players.forEach(player => {
-          header.push(`${player.name} Answer`);
-          header.push(`${player.name} Time (s)`);
-          header.push(`${player.name} Points`);
-          header.push(`${player.name} Correct`);
-        });
-        
-        // Add analytics columns
-        header.push('Success Rate %');
-        header.push('Avg Time (s)');
-        header.push('Total Points Possible');
-        header.push('Total Points Earned');
-        header.push('Hardest For');
-        header.push('Common Wrong Answer');
-        
-        csv = header.map(h => `"${h}"`).join(',') + '\n';
-        
-        // Generate question rows
-        data.questions.forEach((question, qIndex) => {
-          const questionText = (question.text || '').replace(/"/g, '""');
-          let correctAnswer = question.correctAnswer;
-          if (Array.isArray(correctAnswer)) {
-            correctAnswer = correctAnswer.join(', ');
-          }
-          
-          let row = [
-            `"${questionText}"`,
-            `"${correctAnswer}"`,
-            `"${question.difficulty || 'medium'}"`
-          ];
-          
-          // Collect analytics data
-          let correctCount = 0;
-          let totalTime = 0;
-          let responseCount = 0;
-          let totalPointsPossible = 0;
-          let totalPointsEarned = 0;
-          let playerPerformances = [];
-          let wrongAnswers = {};
-          
-          // Add player data columns
-          players.forEach(player => {
-            const playerAnswer = player.answers && player.answers[qIndex];
-            
-            if (playerAnswer) {
-              // Format player's answer
-              let displayAnswer = playerAnswer.answer;
-              if (Array.isArray(displayAnswer)) {
-                displayAnswer = displayAnswer.join(', ');
-              }
-              
-              row.push(`"${displayAnswer}"`);
-              row.push(Math.round(playerAnswer.timeMs / 1000));
-              row.push(playerAnswer.points);
-              row.push(playerAnswer.isCorrect ? '✓' : '✗');
-              
-              // Collect analytics
-              if (playerAnswer.isCorrect) {
-                correctCount++;
-              } else {
-                // Track wrong answers
-                const wrongKey = String(displayAnswer);
-                wrongAnswers[wrongKey] = (wrongAnswers[wrongKey] || 0) + 1;
-              }
-              
-              totalTime += playerAnswer.timeMs / 1000;
-              totalPointsEarned += playerAnswer.points;
-              responseCount++;
-              
-              // Estimate max points (use highest points earned as estimate)
-              totalPointsPossible = Math.max(totalPointsPossible, playerAnswer.points || 100);
-              
-              playerPerformances.push({
-                name: player.name,
-                time: playerAnswer.timeMs / 1000,
-                correct: playerAnswer.isCorrect,
-                points: playerAnswer.points
-              });
-            } else {
-              row.push('"No Answer"');
-              row.push('0');
-              row.push('0');
-              row.push('✗');
-              
-              playerPerformances.push({
-                name: player.name,
-                time: 0,
-                correct: false,
-                points: 0
-              });
-            }
-          });
-          
-          // Calculate analytics
-          const successRate = responseCount > 0 ? (correctCount / responseCount * 100).toFixed(1) : '0';
-          const avgTime = responseCount > 0 ? (totalTime / responseCount).toFixed(1) : '0';
-          
-          // Adjust total possible points for all players
-          totalPointsPossible *= players.length;
-          
-          // Find who struggled most (lowest points or slowest if tied)
-          const strugglers = playerPerformances
-            .filter(p => !p.correct)
-            .sort((a, b) => a.points - b.points || b.time - a.time);
-          const hardestFor = strugglers.length > 0 ? strugglers[0].name : 'None';
-          
-          // Find most common wrong answer
-          const wrongEntries = Object.entries(wrongAnswers);
-          const mostCommonWrong = wrongEntries.length > 0 
-            ? wrongEntries.reduce((a, b) => a[1] > b[1] ? a : b)
-            : null;
-          const commonWrongText = mostCommonWrong 
-            ? `"${mostCommonWrong[0]}" (${mostCommonWrong[1]} players)`
-            : 'N/A';
-          
-          // Add analytics columns
-          row.push(`${successRate}%`);
-          row.push(avgTime);
-          row.push(totalPointsPossible);
-          row.push(totalPointsEarned);
-          row.push(`"${hardestFor}"`);
-          row.push(`"${commonWrongText}"`);
-          
-          csv += row.join(',') + '\n';
-        });
-        
-        // Add summary row
-        const totalPlayers = players.length;
-        const totalQuestions = data.questions.length;
-        const gameScore = players.reduce((sum, p) => sum + p.score, 0);
-        const maxPossibleScore = totalPlayers * totalQuestions * 100; // Estimate
-        const overallSuccess = maxPossibleScore > 0 ? (gameScore / maxPossibleScore * 100).toFixed(1) : '0';
-        
-        // Calculate number of empty columns needed (total columns - 2 for label and value)
-        const totalColumns = header.length;
-        const emptyCols = '"' + '","'.repeat(Math.max(0, totalColumns - 2)) + '"';
-        
-        csv += '\n'; // Empty row separator
-        csv += `"=== GAME SUMMARY ===",${emptyCols}\n`;
-        csv += `"Quiz Title","${data.quizTitle || 'Untitled Quiz'}",${emptyCols}\n`;
-        csv += `"Game PIN","${data.gamePin}",${emptyCols}\n`;
-        csv += `"Total Players","${totalPlayers}",${emptyCols}\n`;
-        csv += `"Total Questions","${totalQuestions}",${emptyCols}\n`;
-        csv += `"Overall Success Rate","${overallSuccess}%",${emptyCols}\n`;
-        csv += `"Game Duration","${data.startTime} to ${data.endTime}",${emptyCols}\n`;
-        
-      } else {
-        // Fallback to summary format if no question data
-        csv = 'Quiz Title,Game PIN,Player Name,Score,Start Time,End Time\n';
-        
-        data.results.forEach(player => {
-          const row = [
-            `"${data.quizTitle || 'Untitled Quiz'}"`,
-            data.gamePin,
-            `"${player.name}"`,
-            player.score,
-            data.startTime,
-            data.endTime
-          ].join(',');
-          csv += row + '\n';
-        });
-      }
-      
-      res.setHeader('Content-Type', 'text/csv');
-      const csvFilename = exportType === 'simple' 
-        ? `quiz_results_simple_${data.gamePin}.csv`
-        : `quiz_results_analytics_${data.gamePin}.csv`;
-      res.setHeader('Content-Disposition', `attachment; filename="${csvFilename}"`);
-      res.send(csv);
-      } // End CSV processing
+    // Send content (string for CSV, use send(); JSON use json())
+    if (exportData.type === 'text/csv') {
+      res.send(exportData.content);
     } else {
-      // Return JSON format with proper headers for download
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename="quiz_results_${data.gamePin}.json"`);
-      res.json(data);
+      res.send(exportData.content);
     }
   } catch (error) {
     logger.error('Error exporting result file:', error);
-    res.status(500).json({ error: 'Failed to export result file' });
+    const statusCode = error.message === 'Result file not found' ? 404 : 400;
+    res.status(statusCode).json({ error: error.message || 'Failed to export result file' });
   }
 });
+
 
 // Get list of active games endpoint
 app.get('/api/active-games', (req, res) => {
@@ -1011,90 +628,8 @@ app.get('/api/active-games', (req, res) => {
   }
 });
 
-
-function getCachedLocalIP() {
-  const now = Date.now();
-  
-  // Return cached IP if still valid
-  if (cachedLocalIP && ipCacheTimestamp && (now - ipCacheTimestamp < IP_CACHE_DURATION)) {
-    return cachedLocalIP;
-  }
-  
-  // Detect and cache new IP
-  let localIP = 'localhost';
-  const NETWORK_IP = process.env.NETWORK_IP;
-  
-  if (NETWORK_IP) {
-    localIP = NETWORK_IP;
-    logger.debug('Using manual IP from environment:', localIP);
-  } else {
-    const networkInterfaces = os.networkInterfaces();
-    const interfaces = Object.values(networkInterfaces).flat();
-    
-    // Prefer 192.168.x.x (typical home network) over 172.x.x.x (WSL internal)
-    localIP = interfaces.find(iface => 
-      iface.family === 'IPv4' && 
-      !iface.internal && 
-      iface.address.startsWith('192.168.')
-    )?.address ||
-    interfaces.find(iface => 
-      iface.family === 'IPv4' && 
-      !iface.internal && 
-      iface.address.startsWith('10.')
-    )?.address ||
-    interfaces.find(iface => 
-      iface.family === 'IPv4' && 
-      !iface.internal
-    )?.address || 'localhost';
-    
-    logger.debug('Detected network IP:', localIP);
-  }
-  
-  // Update cache
-  cachedLocalIP = localIP;
-  ipCacheTimestamp = now;
-  
-  return localIP;
-}
-
-// Environment-aware game URL generation for QR codes
-function getGameUrl(pin, req) {
-  // Check if we're in a cloud deployment environment
-  const isCloudDeployment = process.env.RAILWAY_ENVIRONMENT === 'production' ||
-                            process.env.NODE_ENV === 'production' ||
-                            process.env.VERCEL_ENV ||
-                            process.env.HEROKU_APP_NAME;
-
-  // Normalize BASE_PATH - remove trailing slash for consistent URL construction
-  const basePath = BASE_PATH === '/' ? '' : BASE_PATH.replace(/\/$/, '');
-
-  if (isCloudDeployment) {
-    // Use the request's host header for cloud deployments
-    const host = req.get('host');
-    const protocol = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
-    const gameUrl = `${protocol}://${host}${basePath}/?pin=${pin}`;
-
-    logger.info(`QR Code: Cloud deployment URL: ${gameUrl}`);
-    return gameUrl;
-  } else {
-    // Use local IP detection for local deployments (including Kubernetes clusters)
-    const localIP = getCachedLocalIP();
-    const port = process.env.PORT || 3000;
-
-    // For Kubernetes with path-based routing, omit port and include BASE_PATH
-    // For local development, include port and BASE_PATH (usually /)
-    const portSuffix = basePath ? '' : `:${port}`;
-    const gameUrl = `http://${localIP}${portSuffix}${basePath}/?pin=${pin}`;
-
-    logger.debug(`QR Code: Local network URL: ${gameUrl} (BASE_PATH: ${BASE_PATH})`);
-    return gameUrl;
-  }
-}
-
 // Generate QR code endpoint with caching optimization
 app.get('/api/qr/:pin', async (req, res) => {
-  const startTime = Date.now();
-  
   try {
     const { pin } = req.params;
     const game = games.get(pin);
@@ -1103,106 +638,23 @@ app.get('/api/qr/:pin', async (req, res) => {
       return res.status(404).json({ error: 'Game not found' });
     }
     
-    // Track performance stats
-    qrPerformanceStats.totalRequests++;
+    // Generate QR code with caching
+    const responseData = await qrService.generateQRCode(pin, game, req);
     
-    // Check QR code cache first - include environment to prevent conflicts
-    const isCloudDeployment = process.env.RAILWAY_ENVIRONMENT === 'production' || 
-                              process.env.NODE_ENV === 'production' ||
-                              process.env.VERCEL_ENV || 
-                              process.env.HEROKU_APP_NAME;
-    const envType = isCloudDeployment ? 'cloud' : 'local';
-    const cacheKey = `qr_${pin}_${envType}`;
-    const cachedQR = qrCodeCache.get(cacheKey);
-    const now = Date.now();
-    
-    if (cachedQR && (now - cachedQR.timestamp < QR_CACHE_DURATION)) {
-      const responseTime = Date.now() - startTime;
-      qrPerformanceStats.cacheHits++;
-      
-      // Update average response time
-      qrPerformanceStats.responseTimeHistory.push(responseTime);
-      if (qrPerformanceStats.responseTimeHistory.length > 100) {
-        qrPerformanceStats.responseTimeHistory.shift();
-      }
-      qrPerformanceStats.avgResponseTime = Math.round(
-        qrPerformanceStats.responseTimeHistory.reduce((a, b) => a + b, 0) / 
-        qrPerformanceStats.responseTimeHistory.length
-      );
-      
-      logger.debug(`QR code served from cache for PIN ${pin} in ${responseTime}ms`);
-      
-      // Add cache headers for mobile optimization
-      res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
-      res.setHeader('ETag', `"qr-${pin}-${cachedQR.timestamp}"`);
-      
-      return res.json(cachedQR.data);
-    }
-    
-    // Generate new QR code with environment-aware URL
-    const gameUrl = getGameUrl(pin, req);
-    
-    const qrCodeDataUrl = await QRCode.toDataURL(gameUrl, {
-      width: 300,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      },
-      // Optimize for mobile loading
-      quality: 0.92,
-      type: 'image/png'
+    // Apply cache headers
+    const headers = qrService.getCacheHeaders(pin);
+    Object.entries(headers).forEach(([key, value]) => {
+      res.setHeader(key, value);
     });
-    
-    const responseData = { 
-      qrCode: qrCodeDataUrl,
-      gameUrl: gameUrl,
-      pin: pin
-    };
-    
-    // Cache the result
-    qrCodeCache.set(cacheKey, {
-      data: responseData,
-      timestamp: now
-    });
-    
-    // Clean old cache entries periodically
-    if (qrCodeCache.size > 50) {
-      const cutoffTime = now - QR_CACHE_DURATION;
-      for (const [key, value] of qrCodeCache.entries()) {
-        if (value.timestamp < cutoffTime) {
-          qrCodeCache.delete(key);
-        }
-      }
-    }
-    
-    const responseTime = Date.now() - startTime;
-    
-    // Update average response time
-    qrPerformanceStats.responseTimeHistory.push(responseTime);
-    if (qrPerformanceStats.responseTimeHistory.length > 100) {
-      qrPerformanceStats.responseTimeHistory.shift();
-    }
-    qrPerformanceStats.avgResponseTime = Math.round(
-      qrPerformanceStats.responseTimeHistory.reduce((a, b) => a + b, 0) / 
-      qrPerformanceStats.responseTimeHistory.length
-    );
-    
-    logger.debug(`QR code generated for PIN ${pin} in ${responseTime}ms`);
-    
-    // Add mobile-optimized cache headers
-    res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
-    res.setHeader('ETag', `"qr-${pin}-${now}"`);
-    res.setHeader('Vary', 'User-Agent'); // Vary by user agent for mobile optimization
     
     res.json(responseData);
-    
   } catch (error) {
-    const responseTime = Date.now() - startTime;
-    logger.error(`QR code generation error for PIN ${req.params.pin} after ${responseTime}ms:`, error);
-    res.status(500).json({ error: 'Failed to generate QR code' });
+    logger.error(`QR code generation error for PIN ${req.params.pin}:`, error);
+    res.status(500).json({ error: error.message || 'Failed to generate QR code' });
   }
 });
+
+
 
 // Fetch available Ollama models endpoint
 app.get('/api/ollama/models', async (req, res) => {
@@ -1372,49 +824,20 @@ app.get('/api/debug/directory', (req, res) => {
   });
 });
 
-// Simple ping endpoint for connection status monitoring with performance info
+// Simple ping endpoint for connection status monitoring
 app.get('/api/ping', (req, res) => {
   const userAgent = req.headers['user-agent'] || '';
   const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  
-  res.json({ 
-    status: 'ok', 
+
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     server: 'Quizix Pro',
-    clientType: isMobile ? 'mobile' : 'desktop',
-    performance: {
-      qrGeneration: {
-        totalRequests: qrPerformanceStats.totalRequests,
-        cacheHitRate: qrPerformanceStats.totalRequests > 0 
-          ? Math.round((qrPerformanceStats.cacheHits / qrPerformanceStats.totalRequests) * 100) 
-          : 0,
-        avgResponseTime: qrPerformanceStats.avgResponseTime
-      },
-      networkIP: {
-        cached: cachedLocalIP !== null,
-        lastUpdated: ipCacheTimestamp ? new Date(ipCacheTimestamp).toISOString() : null
-      }
-    }
+    clientType: isMobile ? 'mobile' : 'desktop'
   });
 });
 
-// Performance monitoring for QR code generation (moved to top for availability)
-const qrPerformanceStats = {
-  totalRequests: 0,
-  cacheHits: 0,
-  avgResponseTime: 0,
-  responseTimeHistory: []
-};
-
-// Cache for network IP detection (moved to top for availability)
-let cachedLocalIP = null;
-let ipCacheTimestamp = null;
-const IP_CACHE_DURATION = 300000; // 5 minutes
-
-// Cache for QR codes to avoid regeneration (moved to top for availability)
-const qrCodeCache = new Map();
-const QR_CACHE_DURATION = 600000; // 10 minutes
-
+// Game state management
 const games = new Map();
 const players = new Map();
 
@@ -1555,48 +978,18 @@ class Game {
     if (!player) return false;
 
     const question = this.quiz.questions[this.currentQuestion];
-    let isCorrect = false;
+    const questionType = question.type || 'multiple-choice';
 
-    switch (question.type || 'multiple-choice') {
-      case 'multiple-choice':
-        isCorrect = answer === question.correctAnswer;
-        break;
-        
-      case 'multiple-correct':
-        if (Array.isArray(answer) && Array.isArray(question.correctAnswers)) {
-          const sortedAnswer = [...answer].sort();
-          const sortedCorrect = [...question.correctAnswers].sort();
-          isCorrect = JSON.stringify(sortedAnswer) === JSON.stringify(sortedCorrect);
-        }
-        break;
-        
-      case 'true-false':
-        isCorrect = answer.toString().toLowerCase() === question.correctAnswer.toString().toLowerCase();
-        break;
-        
-      case 'numeric':
-        if (typeof answer === 'number' && typeof question.correctAnswer === 'number') {
-          const tolerance = question.tolerance || 0.1;
-          isCorrect = Math.abs(answer - question.correctAnswer) <= tolerance;
-        }
-        break;
+    // Use QuestionTypeService for centralized scoring logic
+    const correctAnswerKey = this.getCorrectAnswerKey(question);
+    const options = questionType === 'numeric' ? { tolerance: question.tolerance || 0.1 } : {};
 
-      case 'ordering':
-        if (Array.isArray(answer) && Array.isArray(question.correctOrder)) {
-          // Calculate partial credit based on correct positions
-          let correctPositions = 0;
-          for (let i = 0; i < answer.length; i++) {
-            if (answer[i] === question.correctOrder[i]) {
-              correctPositions++;
-            }
-          }
-
-          // Award partial credit based on percentage of correct positions
-          const percentCorrect = correctPositions / question.correctOrder.length;
-          isCorrect = percentCorrect; // Store as a decimal for partial credit
-        }
-        break;
-    }
+    let isCorrect = QuestionTypeService.scoreAnswer(
+      questionType,
+      answer,
+      correctAnswerKey,
+      options
+    );
 
     const timeTaken = Date.now() - this.questionStartTime;
     const maxBonusTime = 10000;
@@ -1631,6 +1024,34 @@ class Game {
     player.score += points;
 
     return { isCorrect, points };
+  }
+
+  /**
+   * Get the correct answer key for a question based on its type
+   * Helper method to normalize different answer key formats
+   */
+  getCorrectAnswerKey(question) {
+    const type = question.type || 'multiple-choice';
+
+    switch (type) {
+      case 'multiple-choice':
+        // Registry uses "correctIndex" not "correctAnswer"
+        return question.correctIndex !== undefined ? question.correctIndex : question.correctAnswer;
+
+      case 'multiple-correct':
+        // Registry uses "correctIndices" not "correctAnswers"
+        return question.correctIndices || question.correctAnswers || [];
+
+      case 'true-false':
+      case 'numeric':
+        return question.correctAnswer;
+
+      case 'ordering':
+        return question.correctOrder || [];
+
+      default:
+        return question.correctAnswer;
+    }
   }
 
   updateLeaderboard() {
