@@ -51,17 +51,21 @@ const QUESTION_TYPES = {
     extractData: (questionElement) => {
       const optionsContainer = questionElement.querySelector('.multiple-choice-options');
       if (!optionsContainer) {
-        return { options: [], correctIndex: -1 };
+        return { options: [], correctIndex: 0 };
       }
 
       const options = Array.from(optionsContainer.querySelectorAll('.option'))
         .map(opt => opt.value.trim())
         .filter(opt => opt);
 
-      const correctIndex = Array.from(optionsContainer.querySelectorAll('.option'))
-        .findIndex(opt => opt.classList.contains('correct'));
+      // Get correct answer from <select class="correct-answer">
+      const correctAnswerElement = optionsContainer.querySelector('.correct-answer');
+      const correctIndex = correctAnswerElement ? parseInt(correctAnswerElement.value) : 0;
 
-      return { options, correctIndex };
+      return {
+        options,
+        correctIndex: isNaN(correctIndex) ? 0 : correctIndex
+      };
     },
 
     /**
@@ -144,9 +148,12 @@ const QUESTION_TYPES = {
         .map(opt => opt.value.trim())
         .filter(opt => opt);
 
-      const correctIndices = Array.from(optionsContainer.querySelectorAll('.option'))
-        .map((opt, index) => opt.classList.contains('correct') ? index : -1)
-        .filter(index => index !== -1);
+      // Get correct answers from checked checkboxes
+      const correctIndices = [];
+      const correctCheckboxes = optionsContainer.querySelectorAll('.correct-option:checked');
+      correctCheckboxes.forEach(checkbox => {
+        correctIndices.push(parseInt(checkbox.dataset.option));
+      });
 
       return { options, correctIndices };
     },
@@ -230,32 +237,18 @@ const QUESTION_TYPES = {
     },
 
     extractData: (questionElement) => {
-      const trueBtn = questionElement.querySelector('.tf-option[data-value="true"]');
-      const falseBtn = questionElement.querySelector('.tf-option[data-value="false"]');
-
-      let correctAnswer = null;
-      if (trueBtn && trueBtn.classList.contains('correct')) {
-        correctAnswer = true;
-      } else if (falseBtn && falseBtn.classList.contains('correct')) {
-        correctAnswer = false;
-      }
+      // Get correct answer from <select class="correct-answer">
+      const correctAnswerElement = questionElement.querySelector('.true-false-options .correct-answer');
+      const correctAnswer = correctAnswerElement ? correctAnswerElement.value === 'true' : false;
 
       return { correctAnswer };
     },
 
     populateQuestion: (questionElement, data) => {
-      const trueBtn = questionElement.querySelector('.tf-option[data-value="true"]');
-      const falseBtn = questionElement.querySelector('.tf-option[data-value="false"]');
-
-      if (trueBtn && falseBtn) {
-        trueBtn.classList.remove('correct');
-        falseBtn.classList.remove('correct');
-
-        if (data.correctAnswer === true) {
-          trueBtn.classList.add('correct');
-        } else if (data.correctAnswer === false) {
-          falseBtn.classList.add('correct');
-        }
+      // Set value in <select class="correct-answer">
+      const correctAnswerElement = questionElement.querySelector('.true-false-options .correct-answer');
+      if (correctAnswerElement && data.correctAnswer !== undefined) {
+        correctAnswerElement.value = data.correctAnswer ? 'true' : 'false';
       }
     },
 
@@ -293,18 +286,23 @@ const QUESTION_TYPES = {
     },
 
     extractData: (questionElement) => {
-      const answerInput = questionElement.querySelector('.numeric-answer-input');
-      const toleranceInput = questionElement.querySelector('.numeric-tolerance-input');
+      // Use correct selectors matching HTML structure
+      const answerInput = questionElement.querySelector('.numeric-answer');
+      const toleranceInput = questionElement.querySelector('.numeric-tolerance');
 
-      const correctAnswer = answerInput ? parseFloat(answerInput.value) : null;
+      const correctAnswer = answerInput ? parseFloat(answerInput.value) : 0;
       const tolerance = toleranceInput ? parseFloat(toleranceInput.value) : 0.1;
 
-      return { correctAnswer, tolerance };
+      return {
+        correctAnswer: isNaN(correctAnswer) ? 0 : correctAnswer,
+        tolerance: isNaN(tolerance) ? 0.1 : tolerance
+      };
     },
 
     populateQuestion: (questionElement, data) => {
-      const answerInput = questionElement.querySelector('.numeric-answer-input');
-      const toleranceInput = questionElement.querySelector('.numeric-tolerance-input');
+      // Use correct selectors matching HTML structure
+      const answerInput = questionElement.querySelector('.numeric-answer');
+      const toleranceInput = questionElement.querySelector('.numeric-tolerance');
 
       if (answerInput && data.correctAnswer !== undefined && data.correctAnswer !== null) {
         answerInput.value = data.correctAnswer;
