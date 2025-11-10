@@ -371,12 +371,12 @@ export class PreviewRenderer {
         switch (data.type) {
             case 'multiple-choice':
                 document.getElementById('preview-multiple-choice-split').style.display = 'block';
-                this.renderSplitMultipleChoicePreview(data.options, data.correctAnswer);
+                this.renderSplitMultipleChoicePreview(data.options, data.correctIndex);
                 break;
-                
+
             case 'multiple-correct':
                 document.getElementById('preview-multiple-correct-split').style.display = 'block';
-                this.renderSplitMultipleCorrectPreview(data.options, data.correctAnswers);
+                this.renderSplitMultipleCorrectPreview(data.options, data.correctIndices);
                 break;
                 
             case 'true-false':
@@ -827,10 +827,10 @@ export class PreviewRenderer {
     renderMobileAnswerType(data) {
         switch (data.type) {
             case 'multiple-choice':
-                this.renderMobileMultipleChoicePreview(data.options, data.correctAnswer);
+                this.renderMobileMultipleChoicePreview(data.options, data.correctIndex);
                 break;
             case 'multiple-correct':
-                this.renderMobileMultipleCorrectPreview(data.options, data.correctAnswers);
+                this.renderMobileMultipleCorrectPreview(data.options, data.correctIndices);
                 break;
             case 'true-false':
                 this.renderMobileTrueFalsePreview(data.correctAnswer);
