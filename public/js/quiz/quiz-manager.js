@@ -138,15 +138,21 @@ export class QuizManager {
                 if (!question.options || question.options.length < 2) {
                     errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('question_needs_two_options')}`);
                 }
-                
-                if (question.type === 'multiple-choice' && 
-                    (question.correctAnswer < 0 || question.correctAnswer >= question.options.length)) {
-                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_correct_answer')}`);
+
+                if (question.type === 'multiple-choice') {
+                    // Registry uses "correctIndex" not "correctAnswer"
+                    const correctIndex = question.correctIndex !== undefined ? question.correctIndex : question.correctAnswer;
+                    if (correctIndex === undefined || correctIndex < 0 || correctIndex >= question.options.length) {
+                        errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_correct_answer')}`);
+                    }
                 }
-                
-                if (question.type === 'multiple-correct' && 
-                    (!question.correctAnswers || question.correctAnswers.length === 0)) {
-                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('select_at_least_one_correct')}`);
+
+                if (question.type === 'multiple-correct') {
+                    // Registry uses "correctIndices" not "correctAnswers"
+                    const correctIndices = question.correctIndices || question.correctAnswers;
+                    if (!correctIndices || correctIndices.length === 0) {
+                        errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('select_at_least_one_correct')}`);
+                    }
                 }
             }
             

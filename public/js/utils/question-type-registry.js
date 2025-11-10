@@ -163,19 +163,25 @@ const QUESTION_TYPES = {
       if (!optionsContainer) return;
 
       const optionInputs = optionsContainer.querySelectorAll('.option');
+      const correctCheckboxes = optionsContainer.querySelectorAll('.correct-option');
 
       data.options.forEach((optionText, index) => {
         if (optionInputs[index]) {
           optionInputs[index].value = optionText;
-
-          // Mark correct answers
-          if (data.correctIndices && data.correctIndices.includes(index)) {
-            optionInputs[index].classList.add('correct');
-          } else {
-            optionInputs[index].classList.remove('correct');
-          }
         }
       });
+
+      // Uncheck all checkboxes first
+      correctCheckboxes.forEach(cb => cb.checked = false);
+
+      // Check the correct ones
+      if (data.correctIndices && Array.isArray(data.correctIndices)) {
+        data.correctIndices.forEach(correctIndex => {
+          if (correctCheckboxes[correctIndex]) {
+            correctCheckboxes[correctIndex].checked = true;
+          }
+        });
+      }
     },
 
     validate: (data) => {
