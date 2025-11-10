@@ -2,47 +2,36 @@
 
 **Purpose**: Future refactoring opportunities prioritized by impact vs effort.
 
-**Status**: Weeks 1-2 complete. Below are optional future improvements.
+**Status**: Weeks 1-3 complete. Below are optional future improvements.
 
 ---
 
-## Week 3: Socket.IO Handler Extraction (Optional)
+## ~~Week 3: Socket.IO Handler Extraction~~ ✅ **COMPLETED**
 
-**Priority**: Medium | **Effort**: 4-6 hours | **Impact**: Medium
+**Priority**: Medium | **Effort**: 4-6 hours | **Impact**: Medium | **Status**: ✅ Complete
 
-### Current State
-- server.js contains ~100+ Socket.IO event handlers
-- ~400-500 lines of game session management mixed in
-- Handler logic spans create-game, join-game, start-game, submit-answer, next-question, game-ended
+### Completed Services
 
-### Proposed Services
-
-**1. GameSessionService**
+**1. GameSessionService** ✅ (635 lines)
 - Game lifecycle management (create, start, end)
-- Game state tracking
-- PIN generation and validation
+- Game state tracking and PIN generation
+- Question timing and advancement logic (manual & automatic)
 
-**2. PlayerManagementService**
+**2. PlayerManagementService** ✅ (157 lines)
 - Player join/leave handling
-- Player state tracking
-- Disconnection/reconnection logic
+- Player state tracking (global registry)
+- Host/player disconnection handling
 
-**3. QuestionFlowService**
-- Question delivery to players
-- Answer submission handling
+**3. QuestionFlowService** ✅ (156 lines)
+- Answer submission and validation
 - Statistics calculation
-- Automatic advancement logic
+- Early question ending logic
 
-### Benefits
-- server.js: ~1,845 lines → ~1,000-1,200 lines (~35% additional reduction)
-- Socket.IO logic testable in isolation
-- Easier to add multiplayer features
-- Better separation of real-time vs HTTP concerns
-
-### Risks
-- Socket.IO events are tightly coupled to game state
-- Requires careful testing with multiple concurrent games
-- May need to refactor game state management
+### Actual Results
+- server.js: 1,845 lines → 1,177 lines (668 lines removed, 36% reduction)
+- Socket.IO logic now testable in isolation ✅
+- Cleaner separation of concerns ✅
+- All functionality tested and working ✅
 
 ---
 
