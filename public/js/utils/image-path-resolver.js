@@ -152,6 +152,11 @@ export class ImagePathResolver {
     toAbsoluteUrl(storagePath) {
         const displayPath = this.toDisplayPath(storagePath);
 
+        // Return empty string if no path (prevents base URL being returned)
+        if (!displayPath || displayPath.trim() === '') {
+            return '';
+        }
+
         // Already absolute URL or data URI
         if (displayPath.startsWith('http://') ||
             displayPath.startsWith('https://') ||

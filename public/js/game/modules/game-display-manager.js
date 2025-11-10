@@ -105,18 +105,24 @@ export class GameDisplayManager {
         
         // Set image source using centralized path resolver
         const imageSrc = imagePathResolver.toAbsoluteUrl(data.image);
-        
+
+        // If no valid image URL, hide container
+        if (!imageSrc || imageSrc.trim() === '') {
+            imageContainer.style.display = 'none';
+            return;
+        }
+
         img.alt = 'Question Image';
-        
+
         // Silent error handling - hide container on load failure
         img.onerror = () => {
             imageContainer.style.display = 'none';
         };
-        
+
         img.onload = () => {
             imageContainer.style.display = 'block';
         };
-        
+
         // Set src last to trigger load/error events
         img.src = imageSrc;
     }
