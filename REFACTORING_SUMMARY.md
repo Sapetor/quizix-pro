@@ -2,7 +2,7 @@
 
 **Objective**: Simplify overengineered codebase to improve maintainability and reduce complexity.
 
-**Status**: ✅ Week 1 & 2 Complete | Total: ~1,433 lines eliminated/refactored
+**Status**: ✅ Week 1, 2 & 3 Complete | Total: ~2,101 lines eliminated/refactored
 
 ---
 
@@ -75,6 +75,62 @@
 
 ---
 
+## Week 3: Socket.IO Service Extraction
+
+**Goal**: Extract Socket.IO handlers into dedicated, testable services.
+
+### Services Created
+
+**1. GameSessionService** (`services/game-session-service.js` - 635 lines)
+- Game lifecycle management (create, start, end)
+- PIN generation and game state tracking
+- Question timing and advancement logic (manual & automatic)
+- Game class definition with full game logic
+- Resource cleanup and memory management
+
+**2. PlayerManagementService** (`services/player-management-service.js` - 157 lines)
+- Player join/leave operations
+- Player state tracking (global registry)
+- Host and player disconnection handling
+- Player reference cleanup
+
+**3. QuestionFlowService** (`services/question-flow-service.js` - 156 lines)
+- Answer submission and validation
+- Early question ending (when all players answer)
+- Answer statistics calculation
+- Player result distribution
+
+### Refactoring Details
+
+**Socket.IO Event Handlers Migrated:**
+- `host-join` → GameSessionService.createGame()
+- `player-join` → PlayerManagementService.handlePlayerJoin()
+- `start-game` → GameSessionService.startGame()
+- `submit-answer` → QuestionFlowService.handleAnswerSubmission()
+- `next-question` → GameSessionService.manualAdvanceToNextQuestion()
+- `disconnect` → PlayerManagementService (player/host disconnect)
+
+**Code Removed from server.js:**
+- Game class definition (~288 lines)
+- Helper functions: advanceToNextQuestion, endGame, startQuestion, autoAdvanceGame (~187 lines)
+- Global maps (games, players) moved to services
+- generateGamePin() moved to GameSessionService
+
+**server.js Cleanup:**
+- Replaced ~100+ Socket.IO event handler implementations with service calls
+- Removed duplicate game state management code
+- Simplified graceful shutdown logic
+
+### Impact
+- **server.js**: 1,845 lines → 1,177 lines (668 lines removed, 36% reduction)
+- **New services**: 3 services (948 lines total)
+- Cleaner separation of concerns
+- Socket.IO logic now testable in isolation
+- Easier to add multiplayer features (tournaments, spectators, etc.)
+- Better code organization and maintainability
+
+---
+
 ## Testing
 
 **All functionality verified:**
@@ -111,21 +167,27 @@
 
 ## Metrics
 
-| Metric | Before | After | Change |
-|--------|--------|-------|--------|
-| server.js | 2,423 lines | 1,845 lines | -578 (-24%) |
-| Frontend utils | ~800 lines | ~424 lines | -376 (-47%) |
-| Services | 0 | 3 (791 lines) | +3 services |
-| Files deleted | 0 | 2 | NavigationService, StorageManager |
-| Total refactored | - | - | ~1,433 lines |
+| Metric | Before (Week 1) | After Week 2 | After Week 3 | Total Change |
+|--------|-----------------|--------------|--------------|--------------|
+| server.js | 2,423 lines | 1,845 lines | 1,177 lines | -1,246 (-51%) |
+| Frontend utils | ~800 lines | ~424 lines | ~424 lines | -376 (-47%) |
+| Backend services | 0 | 3 (791 lines) | 6 (1,739 lines) | +6 services |
+| Files deleted | 0 | 2 | 2 | NavigationService, StorageManager |
+| Total refactored | - | ~1,433 lines | ~2,101 lines | ~2,101 lines |
 
-**Benefits:**
-- 24% smaller server.js
+**Week-by-Week Breakdown:**
+- **Week 1**: Frontend cleanup (~855 lines removed)
+- **Week 2**: Backend services extraction (~578 lines removed from server.js)
+- **Week 3**: Socket.IO services extraction (~668 lines removed from server.js)
+
+**Overall Benefits:**
+- 51% smaller server.js (2,423 → 1,177 lines)
 - 47% smaller question-utils.js
-- 3 new testable services
-- Cleaner architecture
+- 6 new testable backend services
+- Service-oriented architecture throughout
+- Cleaner code organization
 - No breaking changes
-- All tests passing
+- All functionality working
 
 ---
 
@@ -141,5 +203,15 @@
 
 ---
 
-**Completion Date**: 2025-11-10
+**Completion Date**: 2025-11-10 (Weeks 1-3)
 **Status**: Ready for merge
+
+---
+
+## Next Steps (Optional)
+
+See `REFACTORING_ROADMAP.md` for additional refactoring opportunities:
+- ~~Week 3: Socket.IO Service Extraction~~ ✅ **COMPLETED**
+- Week 4: AI Integration Service (low priority)
+- Week 5: Frontend State Management (low priority, may be over-engineering)
+- Week 6: Question Type Plugin System (very low priority)
