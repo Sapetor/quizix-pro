@@ -18,6 +18,7 @@ import { PlayerInteractionManager } from './modules/player-interaction-manager.j
 import { TimerManager } from './modules/timer-manager.js';
 import { QuestionRenderer } from './modules/question-renderer.js';
 import { NavigationService } from '../services/navigation-service.js';
+import QuestionTypeRegistry from '../utils/question-type-registry.js';
 
 export class GameManager {
     constructor(socket, uiManager, soundManager, socketManager = null) {
@@ -169,49 +170,27 @@ export class GameManager {
      */
     setupPlayerContainers(data) {
         logger.debug('Player mode - setting up containers');
-        
+
         // Hide all answer type containers
         dom.queryAll('.player-answer-type').forEach(type => type.style.display = 'none');
-        
-        const containerMap = {
-            'multiple-choice': {
-                containerId: 'player-multiple-choice',
-                optionsSelector: '.player-options'
-            },
-            'multiple-correct': {
-                containerId: 'player-multiple-correct',
-                optionsSelector: '.player-checkbox-options'
-            },
-            'true-false': {
-                containerId: 'player-true-false',
-                optionsSelector: '.true-false-options'
-            },
-            'numeric': {
-                containerId: 'player-numeric',
-                optionsSelector: '.numeric-input-container'
-            },
-            'ordering': {
-                containerId: 'player-ordering',
-                optionsSelector: '.ordering-container'
-            }
-        };
-        
-        const config = containerMap[data.type];
+
+        // Get container configuration from registry
+        const config = QuestionTypeRegistry.getPlayerContainerConfig(data.type);
         if (!config) {
             logger.warn('Unknown question type:', data.type);
             return null;
         }
-        
+
         const container = dom.get(config.containerId);
         logger.debug(`${config.containerId} found:`, !!container);
-        
+
         if (container) {
             container.style.display = 'block';
             const optionsContainer = container.querySelector(config.optionsSelector);
             logger.debug('Player optionsContainer set to:', optionsContainer);
             return optionsContainer;
         }
-        
+
         return null;
     }
 

@@ -36,12 +36,17 @@ const QUESTION_TYPES = {
       preview: 'preview-multiple-choice'
     },
 
-    // DOM selectors for this question type
+    // DOM selectors for quiz editor context
     selectors: {
       optionsContainer: '.multiple-choice-options',
       options: '.multiple-choice-options .option',
       correctMarker: '.correct',
       answerRadio: 'input[name="answer"]'
+    },
+
+    // DOM selectors for player gameplay context
+    playerSelectors: {
+      optionsContainer: '.player-options'
     },
 
     /**
@@ -136,6 +141,10 @@ const QUESTION_TYPES = {
       options: '.multiple-correct-options .option',
       correctMarker: '.correct',
       answerCheckbox: 'input[type="checkbox"]'
+    },
+
+    playerSelectors: {
+      optionsContainer: '.player-checkbox-options'
     },
 
     extractData: (questionElement) => {
@@ -242,6 +251,10 @@ const QUESTION_TYPES = {
       correctMarker: '.correct'
     },
 
+    playerSelectors: {
+      optionsContainer: '.true-false-options'
+    },
+
     extractData: (questionElement) => {
       // Get correct answer from <select class="correct-answer">
       const correctAnswerElement = questionElement.querySelector('.true-false-options .correct-answer');
@@ -289,6 +302,10 @@ const QUESTION_TYPES = {
       answerInput: '.numeric-answer-input',
       toleranceInput: '.numeric-tolerance-input',
       numericContainer: '.numeric-question-container'
+    },
+
+    playerSelectors: {
+      optionsContainer: '.numeric-input-container'
     },
 
     extractData: (questionElement) => {
@@ -362,6 +379,10 @@ const QUESTION_TYPES = {
       optionsContainer: '.ordering-options',
       options: '.ordering-options .ordering-option',
       orderingContainer: '.ordering-container'
+    },
+
+    playerSelectors: {
+      optionsContainer: '.ordering-container'
     },
 
     extractData: (questionElement) => {
@@ -558,6 +579,25 @@ export class QuestionTypeRegistry {
    */
   static getLabel(typeId) {
     return this.getType(typeId).label;
+  }
+
+  /**
+   * Get player container configuration for gameplay
+   * Returns { containerId, optionsSelector } for setting up player UI
+   * @param {string} typeId - Question type ID
+   * @returns {Object} Container configuration
+   */
+  static getPlayerContainerConfig(typeId) {
+    try {
+      const type = this.getType(typeId);
+      return {
+        containerId: type.containerIds.player,
+        optionsSelector: type.playerSelectors.optionsContainer
+      };
+    } catch (error) {
+      logger.error(`Error getting player container config for type ${typeId}:`, error);
+      return null;
+    }
   }
 }
 
