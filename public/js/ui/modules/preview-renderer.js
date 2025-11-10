@@ -252,9 +252,10 @@ export class PreviewRenderer {
         // Hide all answer containers
         const containerIds = [
             'preview-multiple-choice-split',
-            'preview-multiple-correct-split', 
+            'preview-multiple-correct-split',
             'preview-true-false-split',
-            'preview-numeric-split'
+            'preview-numeric-split',
+            'preview-ordering-split'
         ];
         
         this.hideSplitAnswerContainers(containerIds);
