@@ -13,6 +13,7 @@ const QRCode = require('qrcode');
 const os = require('os');
 const compression = require('compression');
 const { CORSValidationService } = require('./services/cors-validation-service');
+const { QuestionTypeService } = require('./services/question-type-service');
 
 // Detect production environment (Railway sets NODE_ENV automatically)
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
@@ -1555,48 +1556,18 @@ class Game {
     if (!player) return false;
 
     const question = this.quiz.questions[this.currentQuestion];
-    let isCorrect = false;
+    const questionType = question.type || 'multiple-choice';
 
-    switch (question.type || 'multiple-choice') {
-      case 'multiple-choice':
-        isCorrect = answer === question.correctAnswer;
-        break;
-        
-      case 'multiple-correct':
-        if (Array.isArray(answer) && Array.isArray(question.correctAnswers)) {
-          const sortedAnswer = [...answer].sort();
-          const sortedCorrect = [...question.correctAnswers].sort();
-          isCorrect = JSON.stringify(sortedAnswer) === JSON.stringify(sortedCorrect);
-        }
-        break;
-        
-      case 'true-false':
-        isCorrect = answer.toString().toLowerCase() === question.correctAnswer.toString().toLowerCase();
-        break;
-        
-      case 'numeric':
-        if (typeof answer === 'number' && typeof question.correctAnswer === 'number') {
-          const tolerance = question.tolerance || 0.1;
-          isCorrect = Math.abs(answer - question.correctAnswer) <= tolerance;
-        }
-        break;
+    // Use QuestionTypeService for centralized scoring logic
+    const correctAnswerKey = this.getCorrectAnswerKey(question);
+    const options = questionType === 'numeric' ? { tolerance: question.tolerance || 0.1 } : {};
 
-      case 'ordering':
-        if (Array.isArray(answer) && Array.isArray(question.correctOrder)) {
-          // Calculate partial credit based on correct positions
-          let correctPositions = 0;
-          for (let i = 0; i < answer.length; i++) {
-            if (answer[i] === question.correctOrder[i]) {
-              correctPositions++;
-            }
-          }
-
-          // Award partial credit based on percentage of correct positions
-          const percentCorrect = correctPositions / question.correctOrder.length;
-          isCorrect = percentCorrect; // Store as a decimal for partial credit
-        }
-        break;
-    }
+    let isCorrect = QuestionTypeService.scoreAnswer(
+      questionType,
+      answer,
+      correctAnswerKey,
+      options
+    );
 
     const timeTaken = Date.now() - this.questionStartTime;
     const maxBonusTime = 10000;
@@ -1631,6 +1602,30 @@ class Game {
     player.score += points;
 
     return { isCorrect, points };
+  }
+
+  /**
+   * Get the correct answer key for a question based on its type
+   * Helper method to normalize different answer key formats
+   */
+  getCorrectAnswerKey(question) {
+    const type = question.type || 'multiple-choice';
+
+    switch (type) {
+      case 'multiple-choice':
+      case 'true-false':
+      case 'numeric':
+        return question.correctAnswer;
+
+      case 'multiple-correct':
+        return question.correctAnswers || [];
+
+      case 'ordering':
+        return question.correctOrder || [];
+
+      default:
+        return question.correctAnswer;
+    }
   }
 
   updateLeaderboard() {
