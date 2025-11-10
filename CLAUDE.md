@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 **Status**: Production-ready with comprehensive mobile optimizations, unified theme management, enhanced carousel functionality, multi-language support, and Railway cloud deployment.
 
-**Recent Refactoring**: Week 1-2 complete (~1,433 lines eliminated/refactored). See `REFACTORING_SUMMARY.md` for details.
+**Recent Refactoring**: Weeks 1-3 complete (~2,101 lines eliminated/refactored). See `REFACTORING_SUMMARY.md` for details.
 
 ## Commands
 
@@ -36,9 +36,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **Encrypted security** layer for sensitive data
 
 **Backend (Node.js/Express - server.js):**
-- **1,845 lines** of production-grade server code (reduced 24% in Week 2 refactoring)
-- Service-oriented architecture with dedicated backend services
-- Socket.IO real-time multiplayer communication (100+ event handlers)
+- **1,177 lines** of production-grade server code (reduced 51% through Weeks 1-3 refactoring)
+- Service-oriented architecture with 6 dedicated backend services
+- Socket.IO real-time multiplayer communication (100+ event handlers extracted to services)
 - RESTful API with 15+ endpoints for quiz/results management
 - QR code generation with caching
 - Multer file upload with security validation (5MB limit)
@@ -102,6 +102,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `services/qr-service.js` - QR code generation with caching
 - `services/cors-validation-service.js` - CORS configuration for local/cloud
 - `services/question-type-service.js` - Question type validation
+- `services/game-session-service.js` - **Week 3**: Game lifecycle, PIN management, question timing
+- `services/player-management-service.js` - **Week 3**: Player join/leave, disconnection handling
+- `services/question-flow-service.js` - **Week 3**: Answer submission, statistics, early question ending
 
 **Frontend Services:**
 - `public/js/services/results-manager-service.js` - Results data management

@@ -17,6 +17,9 @@ const { QuestionTypeService } = require('./services/question-type-service');
 const { QuizService } = require('./services/quiz-service');
 const { ResultsService } = require('./services/results-service');
 const { QRService } = require('./services/qr-service');
+const { GameSessionService } = require('./services/game-session-service');
+const { PlayerManagementService } = require('./services/player-management-service');
+const { QuestionFlowService } = require('./services/question-flow-service');
 
 // Detect production environment (Railway sets NODE_ENV automatically)
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
@@ -120,6 +123,11 @@ corsValidator.logConfiguration();
 const quizService = new QuizService(logger, WSLMonitor, 'quizzes');
 const resultsService = new ResultsService(logger, 'results');
 const qrService = new QRService(logger, BASE_PATH);
+
+// Initialize Socket.IO game services
+const gameSessionService = new GameSessionService(logger, CONFIG);
+const playerManagementService = new PlayerManagementService(logger, CONFIG);
+const questionFlowService = new QuestionFlowService(logger, gameSessionService);
 
 const io = socketIo(server, {
   cors: corsValidator.getSocketIOCorsConfig(),
@@ -601,7 +609,7 @@ app.get('/api/results/:filename/export/:format', async (req, res) => {
 // Get list of active games endpoint
 app.get('/api/active-games', (req, res) => {
   try {
-    const allGames = Array.from(games.values()).map(game => ({
+    const allGames = Array.from(gameSessionService.getAllGames().values()).map(game => ({
       pin: game.pin,
       title: game.quiz.title || 'Untitled Quiz',
       playerCount: game.players.size,
@@ -609,13 +617,10 @@ app.get('/api/active-games', (req, res) => {
       gameState: game.gameState,
       created: new Date().toISOString()
     }));
-    
+
     const activeGames = allGames.filter(game => game.gameState === 'lobby');
-    
-    allGames.forEach(game => {
-    });
-    
-    res.json({ 
+
+    res.json({
       games: activeGames,
       debug: {
         totalGames: allGames.length,
@@ -632,21 +637,21 @@ app.get('/api/active-games', (req, res) => {
 app.get('/api/qr/:pin', async (req, res) => {
   try {
     const { pin } = req.params;
-    const game = games.get(pin);
-    
+    const game = gameSessionService.getGame(pin);
+
     if (!game) {
       return res.status(404).json({ error: 'Game not found' });
     }
-    
+
     // Generate QR code with caching
     const responseData = await qrService.generateQRCode(pin, game, req);
-    
+
     // Apply cache headers
     const headers = qrService.getCacheHeaders(pin);
     Object.entries(headers).forEach(([key, value]) => {
       res.setHeader(key, value);
     });
-    
+
     res.json(responseData);
   } catch (error) {
     logger.error(`QR code generation error for PIN ${req.params.pin}:`, error);
@@ -837,574 +842,74 @@ app.get('/api/ping', (req, res) => {
   });
 });
 
-// Game state management
-const games = new Map();
-const players = new Map();
-
-function generateGamePin() {
-  let pin;
-  do {
-    pin = Math.floor(100000 + Math.random() * 900000).toString();
-  } while (games.has(pin));
-  return pin;
-}
+// Game state management is now handled by GameSessionService and PlayerManagementService
 
 // Security: Validate filenames to prevent path traversal attacks
 function validateFilename(filename) {
   if (!filename || typeof filename !== 'string') {
     return false;
   }
-  
+
   // Check for path traversal attempts
   if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
     return false;
   }
-  
+
   // Check for absolute paths
   if (path.isAbsolute(filename)) {
     return false;
   }
-  
+
   // Allow only alphanumeric characters, dots, hyphens, and underscores
   if (!/^[a-zA-Z0-9._-]+$/.test(filename)) {
     return false;
   }
-  
+
   return true;
 }
 
-class Game {
-  constructor(hostId, quiz) {
-    this.id = uuidv4();
-    this.pin = generateGamePin();
-    this.hostId = hostId;
-    this.quiz = quiz;
-    this.players = new Map();
-    this.currentQuestion = -1;
-    this.gameState = 'lobby';
-    this.questionStartTime = null;
-    this.leaderboard = [];
-    this.questionTimer = null;
-    this.advanceTimer = null;
-    this.isAdvancing = false;
-    this.startTime = null;
-    this.endTime = null;
-    this.manualAdvancement = quiz.manualAdvancement || false;
-  }
-
-  addPlayer(playerId, playerName) {
-    this.players.set(playerId, {
-      id: playerId,
-      name: playerName,
-      score: 0,
-      answers: []
-    });
-  }
-
-  removePlayer(playerId) {
-    this.players.delete(playerId);
-  }
-
-  nextQuestion() {
-    // Check if we can advance before incrementing
-    const nextQuestionIndex = this.currentQuestion + 1;
-    const hasMore = nextQuestionIndex < this.quiz.questions.length;
-    
-    logger.debug('nextQuestion() DEBUG:', {
-      currentQuestion: this.currentQuestion,
-      nextQuestionIndex: nextQuestionIndex,
-      totalQuestions: this.quiz.questions.length,
-      hasMore: hasMore,
-      gamePin: this.pin
-    });
-    
-    if (hasMore) {
-      this.currentQuestion = nextQuestionIndex;
-      this.gameState = 'question';
-      this.questionTimer = null;
-      this.advanceTimer = null;
-      logger.debug('Advanced to question', this.currentQuestion + 1);
-    } else {
-      logger.debug('NO MORE QUESTIONS - should end game');
-    }
-    
-    return hasMore;
-  }
-  
-  saveResults() {
-    try {
-      const results = {
-        quizTitle: this.quiz.title || 'Untitled Quiz',
-        gamePin: this.pin,
-        results: Array.from(this.players.values()).map(player => ({
-          name: player.name,
-          score: player.score,
-          answers: player.answers
-        })),
-        startTime: this.startTime,
-        endTime: this.endTime,
-        // Simple addition: question info for formative assessment
-        questions: this.quiz.questions.map((q, index) => ({
-          questionNumber: index + 1,
-          text: q.question || q.text,
-          type: q.type || 'multiple-choice',
-          correctAnswer: q.correctAnswer || q.correctAnswers,
-          difficulty: q.difficulty || 'medium'
-        }))
-      };
-      
-      // Save to file via internal API call
-      const filename = `results_${this.pin}_${Date.now()}.json`;
-      fs.writeFileSync(path.join('results', filename), JSON.stringify(results, null, 2));
-    } catch (error) {
-      logger.error('Error saving game results:', error);
-    }
-  }
-
-  endQuestion() {
-    this.gameState = 'revealing';
-    if (this.questionTimer) {
-      clearTimeout(this.questionTimer);
-      this.questionTimer = null;
-    }
-    if (this.advanceTimer) {
-      clearTimeout(this.advanceTimer);
-      this.advanceTimer = null;
-    }
-  }
-
-  submitAnswer(playerId, answer, answerType) {
-    const player = this.players.get(playerId);
-    if (!player) return false;
-
-    const question = this.quiz.questions[this.currentQuestion];
-    const questionType = question.type || 'multiple-choice';
-
-    // Use QuestionTypeService for centralized scoring logic
-    const correctAnswerKey = this.getCorrectAnswerKey(question);
-    const options = questionType === 'numeric' ? { tolerance: question.tolerance || 0.1 } : {};
-
-    let isCorrect = QuestionTypeService.scoreAnswer(
-      questionType,
-      answer,
-      correctAnswerKey,
-      options
-    );
-
-    const timeTaken = Date.now() - this.questionStartTime;
-    const maxBonusTime = 10000;
-    const timeBonus = Math.max(0, maxBonusTime - timeTaken);
-    const difficultyMultiplier = {
-      'easy': 1,
-      'medium': 2,
-      'hard': 3
-    }[question.difficulty] || 2;
-
-    const basePoints = 100 * difficultyMultiplier;
-    const scaledTimeBonus = Math.floor(timeBonus * difficultyMultiplier / 10);
-
-    // Handle partial credit for ordering questions
-    let points = 0;
-    if (question.type === 'ordering' && typeof isCorrect === 'number') {
-      // isCorrect is a decimal (0-1) representing percentage correct
-      points = Math.floor((basePoints + scaledTimeBonus) * isCorrect);
-      // Convert to boolean for storage (consider >0.5 as correct for statistics)
-      const wasCorrect = isCorrect >= 0.5;
-      isCorrect = wasCorrect;
-    } else {
-      points = isCorrect ? basePoints + scaledTimeBonus : 0;
-    }
-
-    player.answers[this.currentQuestion] = {
-      answer,
-      isCorrect,
-      points,
-      timeMs: Date.now() - this.questionStartTime
-    };
-    player.score += points;
-
-    return { isCorrect, points };
-  }
-
-  /**
-   * Get the correct answer key for a question based on its type
-   * Helper method to normalize different answer key formats
-   */
-  getCorrectAnswerKey(question) {
-    const type = question.type || 'multiple-choice';
-
-    switch (type) {
-      case 'multiple-choice':
-        // Registry uses "correctIndex" not "correctAnswer"
-        return question.correctIndex !== undefined ? question.correctIndex : question.correctAnswer;
-
-      case 'multiple-correct':
-        // Registry uses "correctIndices" not "correctAnswers"
-        return question.correctIndices || question.correctAnswers || [];
-
-      case 'true-false':
-      case 'numeric':
-        return question.correctAnswer;
-
-      case 'ordering':
-        return question.correctOrder || [];
-
-      default:
-        return question.correctAnswer;
-    }
-  }
-
-  updateLeaderboard() {
-    this.leaderboard = Array.from(this.players.values())
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
-  }
-
-  getAnswerStatistics() {
-    const question = this.quiz.questions[this.currentQuestion];
-    
-    if (!question) {
-      return {
-        totalPlayers: this.players.size,
-        answeredPlayers: 0,
-        answerCounts: {},
-        questionType: 'multiple-choice'
-      };
-    }
-    
-    const stats = {
-      totalPlayers: this.players.size,
-      answeredPlayers: 0,
-      answerCounts: {},
-      questionType: question.type || 'multiple-choice'
-    };
-
-    if (question.type === 'multiple-choice' || question.type === 'multiple-correct') {
-      question.options.forEach((_, index) => {
-        stats.answerCounts[index] = 0;
-      });
-    } else if (question.type === 'true-false') {
-      stats.answerCounts['true'] = 0;
-      stats.answerCounts['false'] = 0;
-    } else if (question.type === 'numeric') {
-      stats.answerCounts = {};
-    }
-
-    Array.from(this.players.values()).forEach(player => {
-      const playerAnswer = player.answers[this.currentQuestion];
-      if (playerAnswer) {
-        stats.answeredPlayers++;
-        const answer = playerAnswer.answer;
-        
-        if (question.type === 'multiple-choice') {
-          if (stats.answerCounts[answer] !== undefined) {
-            stats.answerCounts[answer]++;
-          }
-        } else if (question.type === 'multiple-correct') {
-          if (Array.isArray(answer)) {
-            answer.forEach(a => {
-              if (stats.answerCounts[a] !== undefined) {
-                stats.answerCounts[a]++;
-              }
-            });
-          }
-        } else if (question.type === 'true-false') {
-          const normalizedAnswer = answer.toString().toLowerCase();
-          if (stats.answerCounts[normalizedAnswer] !== undefined) {
-            stats.answerCounts[normalizedAnswer]++;
-          }
-        } else if (question.type === 'numeric') {
-          stats.answerCounts[answer.toString()] = (stats.answerCounts[answer.toString()] || 0) + 1;
-        }
-      }
-    });
-
-    return stats;
-  }
-
-  /**
-   * Clean up game resources and remove stale player references
-   * Called when a game is being deleted to prevent memory leaks
-   */
-  cleanup() {
-    logger.debug(`🧹 Cleaning up game ${this.pin} with ${this.players.size} players`);
-    
-    // Clear all timers to prevent memory leaks
-    if (this.questionTimer) {
-      clearTimeout(this.questionTimer);
-      this.questionTimer = null;
-    }
-    if (this.advanceTimer) {
-      clearTimeout(this.advanceTimer);
-      this.advanceTimer = null;
-    }
-    
-    // Remove all player references from global players map
-    // This fixes the "play again" bug where stale players appear in new lobbies
-    const playersToRemove = [];
-    this.players.forEach((player, playerId) => {
-      playersToRemove.push(playerId);
-    });
-    
-    // Remove from global players map
-    playersToRemove.forEach(playerId => {
-      players.delete(playerId);
-      logger.debug(`🧹 Removed stale player ${playerId} from global players map`);
-    });
-    
-    // Clear internal player references
-    this.players.clear();
-    
-    // Clear other game state
-    this.leaderboard = [];
-    this.gameState = 'ended';
-    
-    logger.debug(`🧹 Game ${this.pin} cleanup completed - removed ${playersToRemove.length} player references`);
-  }
-}
-
-function advanceToNextQuestion(game, io) {
-  
-  if (game.gameState === 'finished' || game.isAdvancing) {
-    return;
-  }
-  
-  game.isAdvancing = true;
-  
-  if (game.advanceTimer) {
-    clearTimeout(game.advanceTimer);
-    game.advanceTimer = null;
-  }
-  
-  game.advanceTimer = setTimeout(() => {
-    if (game.gameState === 'finished') {
-      game.isAdvancing = false;
-      return;
-    }
-    
-    game.updateLeaderboard();
-    
-    io.to(`game-${game.pin}`).emit('question-end', {
-      showStatistics: true
-    });
-    
-    const hasMoreQuestions = (game.currentQuestion + 1) < game.quiz.questions.length;
-    
-    if (game.manualAdvancement) {
-      io.to(game.hostId).emit('show-next-button', {
-        isLastQuestion: !hasMoreQuestions
-      });
-      game.isAdvancing = false;
-    } else {
-      io.to(`game-${game.pin}`).emit('show-leaderboard', {
-        leaderboard: game.leaderboard.slice(0, 5)
-      });
-      
-      game.advanceTimer = setTimeout(() => {
-        if (game.gameState === 'finished') {
-          game.isAdvancing = false;
-          return;
-        }
-        
-        if (game.nextQuestion()) {
-          startQuestion(game, io);
-        } else {
-          endGame(game, io);
-        }
-        game.isAdvancing = false;
-      }, 3000);
-    }
-  }, CONFIG.TIMING.LEADERBOARD_DISPLAY_TIME);
-}
-
-function endGame(game, io) {
-  logger.debug('endGame() called for game:', game.pin);
-  
-  if (game.gameState === 'finished') {
-    logger.debug('Game already finished, skipping endGame');
-    return;
-  }
-  
-  logger.debug('Setting game state to finished');
-  game.gameState = 'finished';
-  game.endTime = new Date().toISOString();
-  
-  game.isAdvancing = false;
-  
-  if (game.questionTimer) {
-    clearTimeout(game.questionTimer);
-    game.questionTimer = null;
-  }
-  if (game.advanceTimer) {
-    clearTimeout(game.advanceTimer);
-    game.advanceTimer = null;
-  }
-  
-  io.to(game.hostId).emit('hide-next-button');
-  logger.debug('Hid next button for host');
-  
-  logger.debug('Updating leaderboard and saving results...');
-  game.updateLeaderboard();
-  game.saveResults();
-  
-  logger.debug('Final leaderboard:', game.leaderboard);
-  
-  setTimeout(() => {
-    logger.debug('1 second passed, about to emit game-end event');
-    if (game.gameState === 'finished') {
-      logger.debug('EMITTING game-end event to all players in game-' + game.pin);
-      io.to(`game-${game.pin}`).emit('game-end', {
-        finalLeaderboard: game.leaderboard
-      });
-      logger.debug('game-end event emitted successfully!');
-      logger.debug('Players in room game-' + game.pin + ':', io.sockets.adapter.rooms.get(`game-${game.pin}`)?.size || 0);
-    } else {
-      logger.debug('Game state changed, not emitting game-end event');
-    }
-  }, 1000);
-}
-
-function startQuestion(game, io) {
-  if (game.currentQuestion >= game.quiz.questions.length) {
-    endGame(game, io);
-    return;
-  }
-
-  const question = game.quiz.questions[game.currentQuestion];
-  const timeLimit = question.timeLimit || 20;
-  
-  game.gameState = 'question';
-  game.questionStartTime = Date.now();
-  
-  const questionData = {
-    questionNumber: game.currentQuestion + 1,
-    totalQuestions: game.quiz.questions.length,
-    question: question.question,
-    options: question.options,
-    type: question.type || 'multiple-choice',
-    image: question.image || '',
-    timeLimit: timeLimit
-  };
-  io.to(`game-${game.pin}`).emit('question-start', questionData);
-
-  game.questionTimer = setTimeout(() => {
-    game.endQuestion();
-    const correctAnswer = question.correctAnswer;
-    let correctOption = '';
-    
-    switch (question.type || 'multiple-choice') {
-      case 'multiple-choice':
-        correctOption = question.options && question.options[correctAnswer] ? question.options[correctAnswer] : '';
-        break;
-      case 'multiple-correct':
-        const correctAnswers = question.correctAnswers || [];
-        correctOption = correctAnswers.map(idx => question.options[idx]).join(', ');
-        break;
-      case 'true-false':
-        correctOption = correctAnswer;
-        break;
-      case 'numeric':
-        correctOption = correctAnswer.toString();
-        break;
-    }
-    
-    const timeoutData = {
-      correctAnswer: correctAnswer,
-      correctOption: correctOption,
-      questionType: question.type || 'multiple-choice',
-      tolerance: question.tolerance || null
-    };
-    
-    // For multiple-correct questions, also send the correctAnswers array
-    if (question.type === 'multiple-correct') {
-      timeoutData.correctAnswers = question.correctAnswers || [];
-    }
-    
-    io.to(`game-${game.pin}`).emit('question-timeout', timeoutData);
-
-    const answerStats = game.getAnswerStatistics();
-    io.to(game.hostId).emit('answer-statistics', answerStats);
-
-    game.players.forEach((player, playerId) => {
-      const playerAnswer = player.answers[game.currentQuestion];
-      if (playerAnswer) {
-        io.to(playerId).emit('player-result', {
-          isCorrect: playerAnswer.isCorrect,
-          points: playerAnswer.points,
-          totalScore: player.score
-        });
-      } else {
-        io.to(playerId).emit('player-result', {
-          isCorrect: false,
-          points: 0,
-          totalScore: player.score
-        });
-      }
-    });
-
-    advanceToNextQuestion(game, io);
-    
-  }, timeLimit * 1000);
-}
-
-function autoAdvanceGame(game, io) {
-  setTimeout(() => {
-    if (game.gameState === 'finished') {
-      return;
-    }
-    
-    if (game.nextQuestion()) {
-      startQuestion(game, io);
-    } else {
-      endGame(game, io);
-    }
-  }, CONFIG.TIMING.GAME_START_DELAY);
-}
-
+// Socket.IO event handlers
 io.on('connection', (socket) => {
 
   socket.on('host-join', (data) => {
     const clientIP = socket.handshake.address;
-    
-    console.log('🔧 [SERVER] DEBUG: host-join event received!');
-    console.log('🔧 [SERVER] DEBUG: host-join received data:', JSON.stringify(data, null, 2));
-    console.log('🔧 [SERVER] DEBUG: quiz title from data:', data?.quiz?.title);
-    
+
+    logger.debug('host-join event received');
+    logger.debug('host-join received data:', JSON.stringify(data, null, 2));
+    logger.debug('quiz title from data:', data?.quiz?.title);
+
     if (!data || !data.quiz || !Array.isArray(data.quiz.questions)) {
       socket.emit('error', { message: 'Invalid quiz data' });
       return;
     }
-    
+
     const { quiz } = data;
-    console.log('🔧 [SERVER] DEBUG: extracted quiz title:', quiz.title);
-    
+    logger.debug('extracted quiz title:', quiz.title);
+
     if (quiz.questions.length === 0) {
       socket.emit('error', { message: 'Quiz must have at least one question' });
       return;
     }
-    
-    const existingGame = Array.from(games.values()).find(g => g.hostId === socket.id);
+
+    // Check if host already has an existing game
+    const existingGame = gameSessionService.findGameByHost(socket.id);
     if (existingGame) {
       existingGame.endQuestion();
       io.to(`game-${existingGame.pin}`).emit('game-ended', { reason: 'Host started new game' });
-      
-      // 🔧 FIX: Use proper cleanup to remove stale player references
-      // This prevents the "play again" bug where players from previous game appear in new lobby
-      existingGame.cleanup();
-      games.delete(existingGame.pin);
+      gameSessionService.deleteGame(existingGame.pin);
     }
-    
-    const game = new Game(socket.id, quiz);
-    games.set(game.pin, game);
-    
+
+    // Create new game
+    const game = gameSessionService.createGame(socket.id, quiz);
+
     socket.join(`game-${game.pin}`);
-    console.log('🔧 [SERVER] DEBUG: Sending game-created with title:', quiz.title);
+    logger.debug('Sending game-created with title:', quiz.title);
     socket.emit('game-created', {
       pin: game.pin,
       gameId: game.id,
       title: quiz.title
     });
-    
+
     socket.broadcast.emit('game-available', {
       pin: game.pin,
       title: quiz.title,
@@ -1418,228 +923,73 @@ io.on('connection', (socket) => {
       socket.emit('error', { message: 'Invalid request data' });
       return;
     }
-    
-    const { pin, name } = data;
-    
-    if (!pin || !name || typeof pin !== 'string' || typeof name !== 'string') {
-      socket.emit('error', { message: 'PIN and name are required' });
-      return;
-    }
-    
-    if (name.length > CONFIG.LIMITS.MAX_PLAYER_NAME_LENGTH || name.trim().length === 0) {
-      socket.emit('error', { message: `Name must be 1-${CONFIG.LIMITS.MAX_PLAYER_NAME_LENGTH} characters` });
-      return;
-    }
-    
-    const game = games.get(pin);
-    
-    if (!game) {
-      socket.emit('error', { message: 'Game not found' });
-      return;
-    }
-    
-    if (game.gameState !== 'lobby') {
-      socket.emit('error', { message: 'Game already started' });
-      return;
-    }
 
-    game.addPlayer(socket.id, name);
-    players.set(socket.id, { gamePin: pin, name });
-    
-    socket.join(`game-${pin}`);
-    
-    const currentPlayers = Array.from(game.players.values()).map(p => ({ id: p.id, name: p.name }));
-    
-    socket.emit('player-joined', { 
-      gamePin: pin, 
-      playerName: name,
-      players: currentPlayers
-    });
-    
-    io.to(`game-${pin}`).emit('player-list-update', {
-      players: currentPlayers
-    });
-    
+    const { pin, name } = data;
+    const game = gameSessionService.getGame(pin);
+
+    const result = playerManagementService.handlePlayerJoin(
+      socket.id,
+      pin,
+      name,
+      game,
+      socket,
+      io
+    );
+
+    if (!result.success) {
+      socket.emit('error', { message: result.error });
+    }
   });
 
   socket.on('start-game', () => {
-    const game = Array.from(games.values()).find(g => g.hostId === socket.id);
+    const game = gameSessionService.findGameByHost(socket.id);
     if (!game) {
       return;
     }
-    
-    game.gameState = 'starting';
-    game.startTime = new Date().toISOString();
-    
-    io.to(`game-${game.pin}`).emit('game-started', {
-      gamePin: game.pin,
-      questionCount: game.quiz.questions.length,
-      manualAdvancement: game.manualAdvancement
-    });
-    
-    autoAdvanceGame(game, io);
+
+    gameSessionService.startGame(game, io);
   });
 
   socket.on('submit-answer', (data) => {
     if (!data || data.answer === undefined) {
       return;
     }
-    
+
     const { answer, type } = data;
-    const playerData = players.get(socket.id);
+    const playerData = playerManagementService.getPlayer(socket.id);
     if (!playerData) return;
 
-    const game = games.get(playerData.gamePin);
-    if (!game || game.gameState !== 'question') return;
+    const game = gameSessionService.getGame(playerData.gamePin);
 
-    game.submitAnswer(socket.id, answer, type);
-    socket.emit('answer-submitted', { answer: answer });
-    
-    const totalPlayers = game.players.size;
-    const answeredPlayers = Array.from(game.players.values())
-      .filter(player => player.answers[game.currentQuestion]).length;
-    
-    if (answeredPlayers >= totalPlayers && totalPlayers > 0 && game.gameState === 'question') {
-      if (game.questionTimer) {
-        clearTimeout(game.questionTimer);
-        game.questionTimer = null;
-        
-        if (game.advanceTimer) {
-          clearTimeout(game.advanceTimer);
-          game.advanceTimer = null;
-        }
-        
-        setTimeout(() => {
-          if (game.gameState !== 'question') return;
-          
-          game.endQuestion();
-          const question = game.quiz.questions[game.currentQuestion];
-          const correctAnswer = question.correctAnswer;
-          let correctOption = '';
-          
-          switch (question.type || 'multiple-choice') {
-            case 'multiple-choice':
-              correctOption = question.options && question.options[correctAnswer] ? question.options[correctAnswer] : '';
-              break;
-            case 'multiple-correct':
-              const correctAnswers = question.correctAnswers || [];
-              correctOption = correctAnswers.map(idx => question.options[idx]).join(', ');
-              break;
-            case 'true-false':
-              correctOption = correctAnswer;
-              break;
-            case 'numeric':
-              correctOption = correctAnswer.toString();
-              break;
-            case 'ordering':
-              const correctOrder = question.correctOrder || [];
-              correctOption = correctOrder.map(idx => question.options[idx]).join(' → ');
-              break;
-          }
-          
-          const timeoutData = {
-            correctAnswer: correctAnswer,
-            correctOption: correctOption,
-            questionType: question.type || 'multiple-choice',
-            tolerance: question.tolerance || null,
-            earlyEnd: true
-          };
-          
-          // For multiple-correct questions, also send the correctAnswers array
-          if (question.type === 'multiple-correct') {
-            timeoutData.correctAnswers = question.correctAnswers || [];
-          }
-          
-          io.to(`game-${game.pin}`).emit('question-timeout', timeoutData);
-
-          const answerStats = game.getAnswerStatistics();
-          io.to(game.hostId).emit('answer-statistics', answerStats);
-
-          game.players.forEach((player, playerId) => {
-            const playerAnswer = player.answers[game.currentQuestion];
-            if (playerAnswer) {
-              io.to(playerId).emit('player-result', {
-                isCorrect: playerAnswer.isCorrect,
-                points: playerAnswer.points,
-                totalScore: player.score
-              });
-            } else {
-              io.to(playerId).emit('player-result', {
-                isCorrect: false,
-                points: 0,
-                totalScore: player.score
-              });
-            }
-          });
-
-          advanceToNextQuestion(game, io);
-        }, 1000);
-      }
-    }
+    questionFlowService.handleAnswerSubmission(
+      socket.id,
+      answer,
+      type,
+      playerData,
+      game,
+      socket,
+      io
+    );
   });
 
   socket.on('next-question', () => {
     try {
-      logger.debug('SERVER: NEXT-QUESTION EVENT RECEIVED');
-      logger.debug('NEXT-QUESTION event received from host');
-      const game = Array.from(games.values()).find(g => g.hostId === socket.id);
-    
-    if (!game) {
-      logger.debug('No game found for host');
-      return;
-    }
-    
-    if (game.isAdvancing) {
-      logger.debug('Game already advancing, ignoring');
-      return;
-    }
-    
-    logger.debug('Game state before next-question:', {
-      gameState: game.gameState,
-      currentQuestion: game.currentQuestion,
-      totalQuestions: game.quiz.questions.length,
-      gamePin: game.pin
-    });
-    
-    if (game.gameState === 'finished') {
-      logger.debug('Game already finished, hiding next button');
-      io.to(game.hostId).emit('hide-next-button');
-      return;
-    }
+      logger.debug('NEXT-QUESTION EVENT RECEIVED');
+      const game = gameSessionService.findGameByHost(socket.id);
 
-    game.isAdvancing = true;
-    logger.debug('Set advancing flag to true');
-
-    if (game.advanceTimer) {
-      clearTimeout(game.advanceTimer);
-      game.advanceTimer = null;
-    }
-    
-    io.to(game.hostId).emit('hide-next-button');
-    logger.debug('Hid next question button');
-    
-    io.to(`game-${game.pin}`).emit('show-leaderboard', {
-      leaderboard: game.leaderboard.slice(0, 5)
-    });
-    logger.debug('Showed leaderboard, waiting 3 seconds...');
-    
-    setTimeout(() => {
-      logger.debug('3 seconds passed, calling game.nextQuestion()...');
-      const hasMoreQuestions = game.nextQuestion();
-      logger.debug('game.nextQuestion() returned:', hasMoreQuestions);
-      
-      if (hasMoreQuestions) {
-        logger.debug('Starting next question...');
-        startQuestion(game, io);
-      } else {
-        logger.debug('NO MORE QUESTIONS - calling endGame()...');
-        endGame(game, io);
+      if (!game) {
+        logger.debug('No game found for host');
+        return;
       }
-      
-      game.isAdvancing = false;
-      logger.debug('Reset advancing flag to false');
-    }, 3000);
-    
+
+      logger.debug('Game state before next-question:', {
+        gameState: game.gameState,
+        currentQuestion: game.currentQuestion,
+        totalQuestions: game.quiz.questions.length,
+        gamePin: game.pin
+      });
+
+      gameSessionService.manualAdvanceToNextQuestion(game, io);
     } catch (error) {
       logger.error('SERVER ERROR in next-question handler:', error);
       logger.error('Error stack:', error.stack);
@@ -1647,114 +997,51 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    const playerData = players.get(socket.id);
+    // Handle player disconnect
+    const playerData = playerManagementService.getPlayer(socket.id);
     if (playerData) {
-      const game = games.get(playerData.gamePin);
-      if (game) {
-        game.removePlayer(socket.id);
-        io.to(`game-${playerData.gamePin}`).emit('player-list-update', {
-          players: Array.from(game.players.values()).map(p => ({ id: p.id, name: p.name }))
-        });
-      }
-      players.delete(socket.id);
+      const game = gameSessionService.getGame(playerData.gamePin);
+      playerManagementService.handlePlayerDisconnect(socket.id, game, io);
     }
 
-    const hostedGame = Array.from(games.values()).find(g => g.hostId === socket.id);
+    // Handle host disconnect
+    const hostedGame = gameSessionService.findGameByHost(socket.id);
     if (hostedGame) {
-      hostedGame.endQuestion();
-      if (hostedGame.gameState === 'question' || hostedGame.gameState === 'finished') {
-        hostedGame.endTime = new Date().toISOString();
-        hostedGame.saveResults();
-      }
-      io.to(`game-${hostedGame.pin}`).emit('game-ended', { reason: 'Host disconnected' });
-      
-      // Use proper cleanup to remove stale player references  
-      hostedGame.cleanup();
-      games.delete(hostedGame.pin);
+      playerManagementService.handleHostDisconnect(hostedGame, io);
+      gameSessionService.deleteGame(hostedGame.pin);
     }
-    
-    games.forEach((game, pin) => {
-      if (game.players.size === 0 && game.gameState === 'lobby') {
-        const hostSocket = io.sockets.sockets.get(game.hostId);
-        if (!hostSocket) {
-          // Use proper cleanup for orphaned games
-          game.cleanup();
-          games.delete(pin);
-        }
-      }
-    });
+
+    // Clean up orphaned games
+    gameSessionService.cleanupOrphanedGames(io);
   });
 });
 
-const PORT = process.env.PORT || 3000;
-const NETWORK_IP = process.env.NETWORK_IP;
-
-server.listen(PORT, '0.0.0.0', () => {
-  let localIP = 'localhost';
-  
-  if (NETWORK_IP) {
-    localIP = NETWORK_IP;
-    logger.info(`Using manual IP: ${localIP}`);
-  } else {
-    const networkInterfaces = os.networkInterfaces();
-    const interfaces = Object.values(networkInterfaces).flat();
-    
-    localIP = interfaces.find(iface => 
-      iface.family === 'IPv4' && 
-      !iface.internal && 
-      iface.address.startsWith('192.168.')
-    )?.address ||
-    interfaces.find(iface => 
-      iface.family === 'IPv4' && 
-      !iface.internal && 
-      iface.address.startsWith('10.')
-    )?.address ||
-    interfaces.find(iface => 
-      iface.family === 'IPv4' && 
-      !iface.internal
-    )?.address || 'localhost';
-  }
-  
-  logger.info(`Network access: http://${localIP}:${PORT}`);
-  logger.info(`Local access: http://localhost:${PORT}`);
-  logger.info(`Server running on port ${PORT}`);
-  
-  if (localIP.startsWith('172.')) {
-    logger.info('');
-    logger.info('WSL DETECTED: If you can\'t connect from your phone:');
-    logger.info('1. Find your Windows IP: run "ipconfig" in Windows Command Prompt');
-    logger.info('2. Look for "Wireless LAN adapter Wi-Fi" or "Ethernet adapter"');
-    logger.info('3. Use that IP address instead of the one shown above');
-    logger.info('4. Or restart with: NETWORK_IP=your.windows.ip npm start');
-    logger.info('');
-  }
-});
-
+// Graceful shutdown handler
 const gracefulShutdown = (signal) => {
-  logger.info(`
-Received ${signal}. Shutting down gracefully...`);
-  
+  logger.info(`Received ${signal}. Shutting down gracefully...`);
+
   server.close(() => {
     logger.info('HTTP server closed');
-    
+
     io.close(() => {
       logger.info('Socket.IO server closed');
-      
-      games.forEach(game => {
-        if (game.timer) {
-          clearTimeout(game.timer);
+
+      // Clean up all game timers
+      gameSessionService.getAllGames().forEach(game => {
+        if (game.questionTimer) {
+          clearTimeout(game.questionTimer);
         }
-        if (game.leaderboardTimer) {
-          clearTimeout(game.leaderboardTimer);
+        if (game.advanceTimer) {
+          clearTimeout(game.advanceTimer);
         }
       });
-      
+
       logger.info('All timers cleared');
       logger.info('Server shutdown complete');
       process.exit(0);
     });
   });
-  
+
   setTimeout(() => {
     logger.warn('Forcing server shutdown after 10 seconds...');
     process.exit(1);
@@ -1782,11 +1069,12 @@ if (process.platform === 'win32') {
     input: process.stdin,
     output: process.stdout
   });
-  
+
   rl.on('SIGINT', () => {
     gracefulShutdown('SIGINT');
   });
 }
+
 // Health check endpoints for Kubernetes
 // Liveness probe - simple check if server is running
 app.get('/health', (req, res) => {
@@ -1841,5 +1129,49 @@ app.get('/ready', (req, res) => {
       error: error.message,
       timestamp: new Date().toISOString()
     });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+const NETWORK_IP = process.env.NETWORK_IP;
+
+server.listen(PORT, '0.0.0.0', () => {
+  let localIP = 'localhost';
+
+  if (NETWORK_IP) {
+    localIP = NETWORK_IP;
+    logger.info(`Using manual IP: ${localIP}`);
+  } else {
+    const networkInterfaces = os.networkInterfaces();
+    const interfaces = Object.values(networkInterfaces).flat();
+
+    localIP = interfaces.find(iface =>
+      iface.family === 'IPv4' &&
+      !iface.internal &&
+      iface.address.startsWith('192.168.')
+    )?.address ||
+    interfaces.find(iface =>
+      iface.family === 'IPv4' &&
+      !iface.internal &&
+      iface.address.startsWith('10.')
+    )?.address ||
+    interfaces.find(iface =>
+      iface.family === 'IPv4' &&
+      !iface.internal
+    )?.address || 'localhost';
+  }
+
+  logger.info(`Network access: http://${localIP}:${PORT}`);
+  logger.info(`Local access: http://localhost:${PORT}`);
+  logger.info(`Server running on port ${PORT}`);
+
+  if (localIP.startsWith('172.')) {
+    logger.info('');
+    logger.info('WSL DETECTED: If you can\'t connect from your phone:');
+    logger.info('1. Find your Windows IP: run "ipconfig" in Windows Command Prompt');
+    logger.info('2. Look for "Wireless LAN adapter Wi-Fi" or "Ethernet adapter"');
+    logger.info('3. Use that IP address instead of the one shown above');
+    logger.info('4. Or restart with: NETWORK_IP=your.windows.ip npm start');
+    logger.info('');
   }
 });
