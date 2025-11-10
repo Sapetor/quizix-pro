@@ -11,6 +11,7 @@ import { contentDensityManager } from '../utils/content-density-manager.js';
 import { SplitLayoutManager } from './modules/split-layout-manager.js';
 import { PreviewRenderer } from './modules/preview-renderer.js';
 import { logger, TIMING, UI } from '../core/config.js';
+import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 
 export class PreviewManager {
     constructor(mathRenderer) {
