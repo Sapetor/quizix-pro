@@ -91,11 +91,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `public/js/utils/connection-status.js` - Network status indicator (32px circular)
 - `public/js/utils/question-utils.js` - Question manipulation helpers
 - `public/js/utils/dom.js` - Safe DOM manipulation wrapper
-- `public/js/utils/storage.js` - LocalStorage management
 
-**Services:**
+**Backend Services (Node.js):**
+- `services/quiz-service.js` - Quiz CRUD operations (save, list, load)
+- `services/results-service.js` - Results management with CSV/JSON export
+- `services/qr-service.js` - QR code generation with caching
 - `services/cors-validation-service.js` - CORS configuration for local/cloud
-- `public/js/services/navigation-service.js` - Screen navigation logic
+- `services/question-type-service.js` - Question type validation
+
+**Frontend Services:**
 - `public/js/services/results-manager-service.js` - Results data management
 - `public/js/services/secure-storage-service.js` - AES-GCM encrypted storage
 
