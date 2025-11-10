@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 **Status**: Production-ready with comprehensive mobile optimizations, unified theme management, enhanced carousel functionality, multi-language support, and Railway cloud deployment.
 
+**Recent Refactoring**: Week 1-2 complete (~1,433 lines eliminated/refactored). See `REFACTORING_SUMMARY.md` for details.
+
 ## Commands
 
 **Development:**
@@ -34,10 +36,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **Encrypted security** layer for sensitive data
 
 **Backend (Node.js/Express - server.js):**
-- **2213 lines** of production-grade server code
+- **1,845 lines** of production-grade server code (reduced 24% in Week 2 refactoring)
+- Service-oriented architecture with dedicated backend services
 - Socket.IO real-time multiplayer communication (100+ event handlers)
 - RESTful API with 15+ endpoints for quiz/results management
-- QR code generation with performance caching
+- QR code generation with caching
 - Multer file upload with security validation (5MB limit)
 - Compression middleware for mobile optimization
 - Advanced logging with performance monitoring
@@ -75,10 +78,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `public/js/ui/modules/preview-renderer.js` - Preview content generation
 
 **Utility Modules:**
+- `public/js/utils/question-type-registry.js` - **Centralized question type definitions** (validation, extraction, population, scoring)
 - `public/js/utils/unified-error-handler.js` - Error boundary system
 - `public/js/utils/translation-manager.js` - i18n with 9 languages
 - `public/js/utils/math-renderer.js` - LaTeX/MathJax rendering
-- `public/js/utils/image-path-resolver.js` - **Centralized image path handling for Kubernetes deployments** (single source of truth)
+- `public/js/utils/image-path-resolver.js` - **Centralized image path handling for Kubernetes deployments**
 - `public/js/utils/results-viewer.js` - Results viewing interface
 - `public/js/utils/simple-results-downloader.js` - CSV/JSON export
 - `public/js/utils/mobile-carousel.js` - Mobile quickstart carousel (6s intervals)
@@ -89,7 +93,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `public/js/utils/ui-state-manager.js` - Game state UI tracking
 - `public/js/utils/keyboard-shortcuts.js` - Keyboard command handling
 - `public/js/utils/connection-status.js` - Network status indicator (32px circular)
-- `public/js/utils/question-utils.js` - Question manipulation helpers
+- `public/js/utils/question-utils.js` - Question HTML generation and answer randomization
 - `public/js/utils/dom.js` - Safe DOM manipulation wrapper
 
 **Backend Services (Node.js):**
@@ -141,7 +145,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - Preserve DOM structure in manipulations
 - Document complex algorithms
 - Use unified SettingsManager for all theme/settings operations
-- **Use ImagePathResolver for all image operations** - centralized path handling for Kubernetes compatibility
+- Use ImagePathResolver for all image operations (centralized path handling for Kubernetes)
+- Use QuestionTypeRegistry for all question type operations (Week 1 refactoring)
 - Implement auto-play carousels with intelligent pause/resume
 - Handle mobile viewport differences with responsive CSS
 - Clean up event listeners and timers to prevent memory leaks
@@ -168,7 +173,9 @@ imageElement.src = absoluteUrl; // Display: http://host/quizmaster/uploads/file.
 
 **📖 See: `/docs/ADD-QUESTION-TYPE.md` for comprehensive guide**
 
-Adding a new question type requires changes across **40+ code locations in 13+ files**. Key areas:
+**Note**: Week 1 refactoring introduced `QuestionTypeRegistry` which centralizes validation, extraction, population, and scoring logic, reducing code duplication significantly.
+
+Adding a new question type still requires changes across **40+ code locations in 13+ files**. Key areas:
 
 **Critical Steps:**
 1. **CSS Bundle** - ALWAYS run `npm run build` after editing `components.css`
@@ -205,16 +212,10 @@ Adding a new question type requires changes across **40+ code locations in 13+ f
 - Missing from default question (not visible on first load)
 - containerMap entry missing ("unknown question type" error)
 
-**Lessons Learned from Ordering Implementation:**
-- Time: ~8 hours (mostly debugging missing pieces)
-- With checklist: 2-3 hours estimated
-- Main issues: Scattered definitions, no single source of truth
-- Improvements needed: Central config, standardize patterns, automate CSS build
-
 ## Project Structure
 
 ```
-/mnt/c/Users/APR2025/quizmaster-pro/
+quizix-pro/
 ├── public/                 # Frontend assets
 │   ├── css/               # Modular CSS with PostCSS build
 │   ├── js/                # ES6 modular JavaScript
@@ -230,15 +231,15 @@ Adding a new question type requires changes across **40+ code locations in 13+ f
 │   ├── images/            # Media assets
 │   ├── uploads/           # User-uploaded quiz images
 │   └── index.html         # SPA entry point
-├── services/              # Backend Node.js services
+├── services/              # Backend Node.js services (QuizService, ResultsService, QRService)
 ├── tests/                 # Playwright test suite
-├── test-results/          # Test execution artifacts
-├── playwright-report/     # Test reports with screenshots
 ├── quizzes/              # Saved quiz files (JSON)
 ├── results/              # Quiz game results archives
 ├── docs/                 # Documentation
 ├── debug/                # Debug UI tools
-├── server.js             # Express backend (2213 lines)
+├── server.js             # Express backend (1,845 lines)
+├── REFACTORING_SUMMARY.md  # Week 1-2 refactoring summary
+├── REFACTORING_ROADMAP.md  # Future refactoring opportunities
 └── package.json          # Dependencies and scripts
 ```
 
@@ -312,53 +313,35 @@ Adding a new question type requires changes across **40+ code locations in 13+ f
 - Verify no console.log statements remain
 - Test MathJax rendering on target browsers
 
-## Railway Cloud Deployment
+## Cloud Deployment
 
-**Auto-Deployment Active:**
-- **Trigger**: Any push to `modular-architecture` branch
-- **URL**: `https://quizix-pro-production.up.railway.app`
-- **Deployment time**: ~2-3 minutes
-- **Branch safety**: Only `modular-architecture` triggers deploy
+**Railway Deployment:**
+- Platform: Railway.app
+- Deployment time: ~2-3 minutes
+- Auto-deploys on push to configured branch
 
-**Deploy Changes:**
-```bash
-git add .
-git commit -m "Your changes"
-git push origin modular-architecture  # Triggers Railway deploy
-```
+**Kubernetes Deployment:**
+- Supports path-based routing (e.g., `/quizmaster/`)
+- ImagePathResolver handles environment-aware paths
+- QR codes generate correct URLs for cluster access
 
 ## Mobile Optimizations
 
-**Recent Improvements:**
-- **Quiz Alternatives Fix**: Fixed mobile quiz alternatives not appearing for calculated questions
-- **Mobile Editor**: Resolved duplicate question creation without alternatives during quiz loading
-- **Mobile Lobby**: Optimized QR code sizing and player list with proper scrolling
-- **Responsive Design**: Fixed button overflow at 150%+ zoom levels
-- **Connection Status**: Compact 32px circular design with optimized space usage
-
-**Mobile Carousels:**
-- **Quickstart Carousel**: Auto-advancing with 6-second intervals and intelligent pause/resume
-- **Preview Carousel**: Enhanced auto-play with 5-second intervals and comprehensive interaction handling
-- **Question Carousel**: Proper timing delays to prevent race conditions during DOM population
-
-**Touch & Gesture Support:**
-- Comprehensive swipe gesture handling for all mobile carousels
-- Enhanced touch event management with passive listeners
-- Desktop mouse events for testing and development
+**Key Features:**
+- Responsive design with 768px breakpoint
+- Auto-playing carousels (quickstart: 6s, preview: 5s intervals) with intelligent pause/resume
+- Touch-friendly button sizing (44x44px minimum)
+- Comprehensive swipe gesture handling for all carousels
+- Mobile-specific FAB for quiz editing tools
+- Compact connection status indicator (32px circular)
+- Zoom compatibility at 150%+ levels
 
 ## Theme Management
 
-**Unified System:**
 - **SettingsManager**: Centralized theme management across desktop and mobile
 - **Consistent Emojis**: ☀️ for light mode, 🌙 for dark mode (showing current state)
 - **Multi-Button Support**: Synchronized theme toggles in header, mobile, and settings
 - **Persistent Storage**: Uses `quizSettings` localStorage format
-
-**Fixed Issues:**
-- Resolved emoji inconsistency (random moon/sun variations)
-- Fixed mobile theme toggle using fallback instead of SettingsManager
-- Eliminated conflicting event listeners between app.js and SettingsManager
-- Standardized button sizes (44x44px) with flex-shrink protection
 
 ## Internationalization
 
@@ -370,16 +353,11 @@ git push origin modular-architecture  # Triggers Railway deploy
 - **Dynamic Updates**: Real-time language switching with UI updates
 - **Placeholder Support**: Dynamic content formatting with translation placeholders
 
-**Translation Architecture:**
+**Architecture:**
 - Centralized TranslationManager for language switching
 - LocalStorage persistence of language preference
 - Lazy loading of translation files
 - Fallback to English for missing keys
-
-**Fixed Translation Issues:**
-- Removed duplicate "tools" entries causing Polish parsing conflicts
-- Added missing mobile menu keys across all languages
-- Fixed shift key triggering from translation conflicts
 
 ## Debug Tools
 
@@ -393,47 +371,6 @@ git push origin modular-architecture  # Triggers Railway deploy
 - Theme switching validation
 - Header visibility verification
 - Carousel auto-play testing
-
-## Server Notes
-
-- Server runs on port 3000 by default
-- No hot reload - refresh browser after JS changes
-- **Important**: Server is currently running - no need to restart
-
-## Recent Fixes & Improvements
-
-**Quiz System:**
-- Fixed mobile quiz alternatives not rendering for calculated questions (`calculate(5,3)`)
-- Resolved mobile editor creating duplicate questions without alternatives
-- Enhanced question renderer with dynamic `.player-option` element creation
-
-**User Interface:**
-- Unified theme toggle system with consistent ☀️/🌙 emoji behavior
-- Fixed Create Lobby button width consistency across zoom levels (150%+)
-- Optimized connection status indicator from 110px to 32px circular design
-- Standardized all control buttons to 44x44px with overflow protection
-
-**Mobile Experience:**
-- Enhanced mobile lobby with proper QR code sizing and scrollable player list
-- Implemented auto-advancing carousels with intelligent pause/resume functionality
-- Fixed translation system conflicts causing unintended keyboard events
-- Added comprehensive touch gesture support for all interactive elements
-
-**Translation System:**
-- Complete 9-language support (EN, ES, FR, DE, IT, PT, PL, JA, ZH) with missing key additions
-- Fixed Polish language parsing conflicts from duplicate entries
-- Enhanced mobile menu translations for all supported languages
-- 200+ translation keys with comprehensive UI coverage
-
-**Image Path Handling (Kubernetes Fix):**
-- **MAJOR REFACTOR**: Created centralized `ImagePathResolver` utility for all image path operations
-- Fixed image display in Kubernetes deployment with path-based routing (`/quizmaster/` base path)
-- Eliminated ~120 lines of duplicated path logic across 4 files (95% code reduction)
-- Proper separation of storage paths (portable) vs display paths (environment-specific)
-- Backward compatible with old quizzes that have base paths stored in JSON
-- Clean API: `toStoragePath()`, `toDisplayPath()`, `toAbsoluteUrl()`, `isValidImagePath()`
-- Images now display correctly in editor, live preview, and gameplay (host + player)
-- Single source of truth for path resolution - easier to maintain and debug
 
 ## Security
 
@@ -456,10 +393,11 @@ git push origin modular-architecture  # Triggers Railway deploy
   - Railway cloud deployment with secure environment
   - Environment-aware CORS policies
 
-**Server Notes:**
+## Server Operations
+
 - Server runs on port 3000 by default
 - No hot reload - refresh browser after JS changes
-- I usually have the server running. Let me know that you want to restart it and I will do it, otherwise just let me check, unless I tell you to do it yourself.
+- User typically manages server restarts manually
 
 ## Performance & Memory Management
 
