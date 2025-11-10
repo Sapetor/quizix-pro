@@ -14,6 +14,9 @@ const os = require('os');
 const compression = require('compression');
 const { CORSValidationService } = require('./services/cors-validation-service');
 const { QuestionTypeService } = require('./services/question-type-service');
+const { QuizService } = require('./services/quiz-service');
+const { ResultsService } = require('./services/results-service');
+const { QRService } = require('./services/qr-service');
 
 // Detect production environment (Railway sets NODE_ENV automatically)
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
@@ -112,6 +115,12 @@ const server = http.createServer(app);
 // Initialize CORS validation service
 const corsValidator = new CORSValidationService();
 corsValidator.logConfiguration();
+
+// Initialize business services
+const quizService = new QuizService(logger, WSLMonitor, 'quizzes');
+const resultsService = new ResultsService(logger, 'results');
+const qrService = new QRService(logger, BASE_PATH);
+
 const io = socketIo(server, {
   cors: corsValidator.getSocketIOCorsConfig(),
   pingTimeout: CONFIG.NETWORK.PING_TIMEOUT,
@@ -482,66 +491,18 @@ app.post('/upload', upload.single('image'), (req, res) => {
 app.post('/api/save-quiz', async (req, res) => {
   try {
     const { title, questions } = req.body;
-    if (!title || !questions || !Array.isArray(questions)) {
-      return res.status(400).json({ error: 'Invalid quiz data' });
-    }
-    
-    // Sanitize filename more thoroughly to prevent path traversal
-    const safeTitle = title.replace(/[^a-z0-9\-_]/gi, '_').toLowerCase().substring(0, 50);
-    const filename = `${safeTitle}_${Date.now()}.json`;
-    const quizData = {
-      title,
-      questions,
-      created: new Date().toISOString(),
-      id: uuidv4()
-    };
-    
-    // Async file write with WSL performance monitoring
-    await WSLMonitor.trackFileOperation(
-      () => fs.promises.writeFile(
-        path.join('quizzes', filename), 
-        JSON.stringify(quizData, null, 2),
-        'utf8'
-      ),
-      `Quiz save: ${filename}`
-    );
-    
-    logger.debug(`Quiz saved successfully: ${filename}`);
-    res.json({ success: true, filename, id: quizData.id });
+    const result = await quizService.saveQuiz(title, questions);
+    res.json(result);
   } catch (error) {
     logger.error('Save quiz error:', error);
-    res.status(500).json({ error: 'Failed to save quiz' });
+    res.status(400).json({ error: error.message || 'Failed to save quiz' });
   }
 });
 
 // Load quiz endpoint
 app.get('/api/quizzes', async (req, res) => {
   try {
-    // Async directory read with WSL performance monitoring
-    const files = (await WSLMonitor.trackFileOperation(
-      () => fs.promises.readdir('quizzes'),
-      'Quiz directory listing'
-    )).filter(f => f.endsWith('.json'));
-    
-    // Process files in parallel for better performance
-    const quizPromises = files.map(async (file) => {
-      try {
-        const data = JSON.parse(await fs.promises.readFile(path.join('quizzes', file), 'utf8'));
-        return {
-          filename: file,
-          title: data.title,
-          questionCount: data.questions.length,
-          created: data.created,
-          id: data.id
-        };
-      } catch (err) {
-        logger.error('Error reading quiz file:', file, err);
-        return null;
-      }
-    });
-    
-    const quizzes = (await Promise.all(quizPromises)).filter(Boolean);
-    logger.debug(`Loaded ${quizzes.length} quizzes from ${files.length} files`);
+    const quizzes = await quizService.listQuizzes();
     res.json(quizzes);
   } catch (error) {
     logger.error('Load quizzes error:', error);
@@ -550,29 +511,15 @@ app.get('/api/quizzes', async (req, res) => {
 });
 
 // Load specific quiz endpoint
-app.get('/api/quiz/:filename', (req, res) => {
+app.get('/api/quiz/:filename', async (req, res) => {
   try {
     const { filename } = req.params;
-    
-    // Security: Validate filename to prevent path traversal
-    if (!validateFilename(filename)) {
-      return res.status(400).json({ error: 'Invalid filename' });
-    }
-    
-    if (!filename.endsWith('.json')) {
-      return res.status(400).json({ error: 'Invalid filename' });
-    }
-    
-    const filePath = path.join('quizzes', filename);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Quiz not found' });
-    }
-    
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const data = await quizService.loadQuiz(filename);
     res.json(data);
   } catch (error) {
     logger.error('Load quiz error:', error);
-    res.status(500).json({ error: 'Failed to load quiz' });
+    const statusCode = error.message === 'Quiz not found' ? 404 : 400;
+    res.status(statusCode).json({ error: error.message || 'Failed to load quiz' });
   }
 });
 
@@ -580,78 +527,19 @@ app.get('/api/quiz/:filename', (req, res) => {
 app.post('/api/save-results', async (req, res) => {
   try {
     const { quizTitle, gamePin, results, startTime, endTime, questions } = req.body;
-    if (!quizTitle || !gamePin || !results) {
-      return res.status(400).json({ error: 'Invalid results data' });
-    }
-    
-    const filename = `results_${gamePin}_${Date.now()}.json`;
-    const resultsData = {
-      quizTitle,
-      gamePin,
-      results,
-      startTime,
-      endTime,
-      saved: new Date().toISOString()
-    };
-    
-    // Include questions data if provided for enhanced analytics
-    if (questions && Array.isArray(questions) && questions.length > 0) {
-      resultsData.questions = questions;
-    }
-    
-    // Async file write to prevent UI blocking on WSL filesystem delays
-    await fs.promises.writeFile(
-      path.join('results', filename), 
-      JSON.stringify(resultsData, null, 2),
-      'utf8'
-    );
-    
-    logger.debug(`Results saved successfully: ${filename}`);
-    res.json({ success: true, filename });
+    const result = await resultsService.saveResults(quizTitle, gamePin, results, startTime, endTime, questions);
+    res.json(result);
   } catch (error) {
     logger.error('Save results error:', error);
-    res.status(500).json({ error: 'Failed to save results' });
+    res.status(400).json({ error: error.message || 'Failed to save results' });
   }
 });
 
 // Get list of saved quiz results endpoint
-app.get('/api/results', (req, res) => {
-  logger.info('API: /api/results endpoint called');
+app.get('/api/results', async (req, res) => {
   try {
-    if (!fs.existsSync('results')) {
-      logger.info('API: results directory does not exist');
-      return res.json([]);
-    }
-    
-    const files = fs.readdirSync('results')
-      .filter(file => file.startsWith('results_') && file.endsWith('.json'))
-      .map(filename => {
-        try {
-          const filePath = path.join('results', filename);
-          const stats = fs.statSync(filePath);
-          const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-          
-          return {
-            filename,
-            quizTitle: data.quizTitle || 'Untitled Quiz',
-            gamePin: data.gamePin,
-            participantCount: data.results?.length || 0,
-            startTime: data.startTime,
-            endTime: data.endTime,
-            saved: data.saved || stats.mtime.toISOString(),
-            fileSize: stats.size,
-            results: data.results || [] // Include full results data for the viewer
-          };
-        } catch (error) {
-          logger.error(`Error reading result file ${filename}:`, error);
-          return null;
-        }
-      })
-      .filter(result => result !== null)
-      .sort((a, b) => new Date(b.saved) - new Date(a.saved)); // Sort by most recent first
-    
-    logger.info(`API: Found ${files.length} result files`);
-    res.json(files);
+    const results = await resultsService.listResults();
+    res.json(results);
   } catch (error) {
     logger.error('Error listing results:', error);
     res.status(500).json({ error: 'Failed to list results' });
@@ -659,64 +547,33 @@ app.get('/api/results', (req, res) => {
 });
 
 // Delete quiz result endpoint (must be before GET route to avoid conflicts)
-app.delete('/api/results/:filename', (req, res) => {
+app.delete('/api/results/:filename', async (req, res) => {
   try {
     const filename = req.params.filename;
-    logger.info(`DELETE request for file: ${filename}`);
-    
-    // Validate filename to prevent directory traversal
-    if (!filename.match(/^results_\d+_\d+\.json$/)) {
-      logger.error(`Invalid filename format: ${filename}`);
-      return res.status(400).json({ error: 'Invalid filename format' });
-    }
-    
-    const filePath = path.join('results', filename);
-    logger.info(`Checking file path: ${filePath}`);
-    logger.info(`File exists: ${fs.existsSync(filePath)}`);
-    
-    if (!fs.existsSync(filePath)) {
-      logger.error(`File not found: ${filePath}`);
-      return res.status(404).json({ error: 'Result file not found' });
-    }
-    
-    // Delete the file
-    fs.unlinkSync(filePath);
-    
-    logger.info(`Result file deleted successfully: ${filename}`);
-    res.json({ success: true, message: 'Result deleted successfully' });
-    
+    const result = await resultsService.deleteResult(filename);
+    res.json(result);
   } catch (error) {
     logger.error('Error deleting result file:', error);
-    res.status(500).json({ error: 'Failed to delete result file' });
+    const statusCode = error.message === 'Result file not found' ? 404 : 400;
+    res.status(statusCode).json({ error: error.message || 'Failed to delete result file' });
   }
 });
 
 // Get specific quiz result file endpoint
-app.get('/api/results/:filename', (req, res) => {
+app.get('/api/results/:filename', async (req, res) => {
   try {
     const filename = req.params.filename;
-    
-    // Validate filename to prevent directory traversal
-    if (!filename.match(/^results_\d+_\d+\.json$/)) {
-      return res.status(400).json({ error: 'Invalid filename format' });
-    }
-    
-    const filePath = path.join('results', filename);
-    
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Result file not found' });
-    }
-    
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const data = await resultsService.getResult(filename);
     res.json(data);
   } catch (error) {
     logger.error('Error retrieving result file:', error);
-    res.status(500).json({ error: 'Failed to retrieve result file' });
+    const statusCode = error.message === 'Result file not found' ? 404 : 400;
+    res.status(statusCode).json({ error: error.message || 'Failed to retrieve result file' });
   }
 });
 
 // Export quiz results in different formats endpoint
-app.get('/api/results/:filename/export/:format', (req, res) => {
+app.get('/api/results/:filename/export/:format', async (req, res) => {
   try {
     const { filename, format } = req.params;
     const exportType = req.query.type || 'analytics'; // 'analytics' or 'simple'
