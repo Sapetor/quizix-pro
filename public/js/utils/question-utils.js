@@ -176,9 +176,11 @@ export class QuestionUtils {
                 
                 return newQuestion;
             }
-            
+
             // Return unchanged for true-false and numeric questions
             return question;
+        });
+    }
 }
 
 // Create global instance for backward compatibility
