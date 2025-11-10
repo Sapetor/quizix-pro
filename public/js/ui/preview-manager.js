@@ -510,94 +510,31 @@ export class PreviewManager {
 
     /**
      * Extract question data for preview from DOM element
+     * Uses QuestionTypeRegistry for consistent extraction
      */
     extractQuestionDataForPreview(questionItem) {
         logger.debug('Extracting data from question item:', questionItem);
-        
+
         const questionText = questionItem.querySelector('.question-text')?.value?.trim() || translationManager.getTranslationSync('enter_question_preview') || 'Enter question text...';
         const questionType = questionItem.querySelector('.question-type')?.value || 'multiple-choice';
         const imageElement = questionItem.querySelector('.question-image');
         const imageUrl = imageElement ? imageElement.dataset.url || '' : '';
-        
+
         logger.debug('Question text:', questionText);
         logger.debug('Question type:', questionType);
         logger.debug('Image URL:', imageUrl);
-        
-        let options = [];
-        let correctAnswer = null;
-        let correctAnswers = [];
-        
-        switch (questionType) {
-            case 'multiple-choice':
-                // Use more specific selector to avoid conflicts with image uploads
-                const mcOptions = questionItem.querySelectorAll('.multiple-choice-options .options .option');
-                options = Array.from(mcOptions)
-                    .map(opt => opt.value?.trim())
-                    .filter(opt => opt && opt !== '' && opt !== 'Option text')  // Filter out empty/placeholder options
-                    .slice(0, 6); // Limit to max 6 options
-                
-                const correctRadio = questionItem.querySelector('input[type="radio"][name^="correct-"]:checked');
-                if (correctRadio) {
-                    correctAnswer = parseInt(correctRadio.value);
-                }
-                logger.debug('MC options found:', options.length, options);
-                logger.debug('MC correct answer:', correctAnswer);
-                break;
-                
-            case 'multiple-correct':
-                // Use more specific selector for multiple correct options
-                const mcorrOptions = questionItem.querySelectorAll('.multiple-correct-options .options-checkboxes .option');
-                logger.debug('Found multiple correct option elements:', mcorrOptions.length);
-                mcorrOptions.forEach((opt, idx) => {
-                    logger.debug(`Option ${idx}: element type=${opt.tagName}, value="${opt.value}", textContent="${opt.textContent}"`);
-                });
-                
-                options = Array.from(mcorrOptions)
-                    .map(opt => opt.value?.trim())
-                    .filter(opt => opt && opt !== '' && opt !== 'Option text')  // Filter out empty/placeholder options
-                    .slice(0, 6); // Limit to max 6 options
-                
-                const correctCheckboxes = questionItem.querySelectorAll('.multiple-correct-options .correct-option:checked');
-                correctAnswers = Array.from(correctCheckboxes).map(cb => parseInt(cb.dataset.option));
-                logger.debug('Multiple correct options:', options);
-                logger.debug('Multiple correct answers:', correctAnswers);
-                break;
-                
-            case 'true-false':
-                const tfCorrectRadio = questionItem.querySelector('input[type="radio"][name^="tf-"]:checked');
-                if (tfCorrectRadio) {
-                    correctAnswer = tfCorrectRadio.value === 'true';
-                }
-                logger.debug('True/false correct answer:', correctAnswer);
-                break;
-                
-            case 'numeric':
-                const numericAnswer = questionItem.querySelector('.numeric-answer')?.value;
-                if (numericAnswer) {
-                    correctAnswer = parseFloat(numericAnswer);
-                }
-                logger.debug('Numeric correct answer:', correctAnswer);
-                break;
 
-            case 'ordering':
-                const orderingOptions = questionItem.querySelectorAll('.ordering-options .ordering-option');
-                options = Array.from(orderingOptions)
-                    .map(opt => opt.value?.trim())
-                    .filter(opt => opt && opt !== '');
-                logger.debug('Ordering options:', options);
-                break;
-        }
+        // Use QuestionTypeRegistry for consistent extraction
+        const typeSpecificData = QuestionTypeRegistry.extractData(questionType, questionItem);
 
+        // Build extracted data with consistent field names
         const extractedData = {
             question: questionText,
             type: questionType,
             image: imageUrl,
-            options: options,
-            correctAnswer: correctAnswer,
-            correctAnswers: correctAnswers,
-            correctOrder: options.length > 0 ? options.map((_, i) => i) : []
+            ...typeSpecificData
         };
-        
+
         logger.debug('Extracted question data:', extractedData);
         return extractedData;
     }
