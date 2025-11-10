@@ -1613,12 +1613,16 @@ class Game {
 
     switch (type) {
       case 'multiple-choice':
+        // Registry uses "correctIndex" not "correctAnswer"
+        return question.correctIndex !== undefined ? question.correctIndex : question.correctAnswer;
+
+      case 'multiple-correct':
+        // Registry uses "correctIndices" not "correctAnswers"
+        return question.correctIndices || question.correctAnswers || [];
+
       case 'true-false':
       case 'numeric':
         return question.correctAnswer;
-
-      case 'multiple-correct':
-        return question.correctAnswers || [];
 
       case 'ordering':
         return question.correctOrder || [];
