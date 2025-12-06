@@ -594,57 +594,121 @@ export class AIQuestionGenerator {
             logger.warn('buildPrompt called with invalid selectedTypes:', selectedTypes);
             selectedTypes = ['multiple-choice']; // Default fallback
         }
-        
+
         // Check if this is Excel-converted content
         if (content.includes('# Quiz Questions from Excel File:') && content.includes('INSTRUCTIONS FOR AI:')) {
             return this.buildExcelConversionPrompt(content, selectedTypes);
         }
-        
-        // Original prompt logic for generating questions from general content
-        const contentType = this.detectContentType(content);
-        // Use translation manager to get current app language (more reliable than localStorage)
+
+        // Detect content type for smart formatting
+        const contentInfo = this.detectContentType(content);
+        const contentType = contentInfo.type || 'general';
+
+        // Check if content has existing questions to format vs content to generate from
+        const isFormattingExistingQuestions = contentInfo.hasExistingQuestions;
+
+        // Use translation manager to get current app language
         const language = translationManager.getCurrentLanguage() || 'en';
-        
-        // Language name mapping for LLM instruction
+
         const languageNames = {
             'en': 'English',
-            'es': 'Spanish', 
+            'es': 'Spanish',
             'fr': 'French',
             'de': 'German',
             'it': 'Italian',
-            'pt': 'Portuguese', 
+            'pt': 'Portuguese',
             'pl': 'Polish',
             'ja': 'Japanese',
             'zh': 'Chinese'
         };
-        
+
         const targetLanguage = languageNames[language] || 'English';
-        
-        // Build question type description (using English prompts - LLM will handle translation)
-        let typeDescription = `Create EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} about the following content. Difficulty: ${difficulty}.`;
+
+        // Build question type description
+        let typeDescription = isFormattingExistingQuestions
+            ? `Format and convert the following ${questionCount} existing question${questionCount === 1 ? '' : 's'} into proper quiz format.`
+            : `Create EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} about the following content. Difficulty: ${difficulty}. Content type detected: ${contentType}.`;
+
         let structureExamples = [];
-        
+
+        // Build examples with LaTeX/code formatting based on content type
         if (selectedTypes.includes('multiple-choice')) {
             typeDescription += '\n- Some questions should be multiple choice (4 options, one correct)';
-            structureExamples.push('{"question": "Question text here?", "type": "multiple-choice", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": 0, "timeLimit": 30}');
+            if (contentInfo.needsLatex) {
+                structureExamples.push('{"question": "What is the derivative of $f(x) = x^2 + 3x$?", "type": "multiple-choice", "options": ["$2x + 3$", "$x^2 + 3$", "$2x$", "$3x + 2$"], "correctAnswer": 0, "timeLimit": 30, "explanation": "Using power rule: derivative of $x^2$ is $2x$, derivative of $3x$ is $3$", "difficulty": "medium"}');
+            } else if (contentInfo.needsCodeBlocks) {
+                const lang = contentInfo.language || 'python';
+                structureExamples.push(`{"question": "What will this code output?\\n\`\`\`${lang}\\nprint(2 + 3 * 4)\\n\`\`\`", "type": "multiple-choice", "options": ["14", "20", "24", "Error"], "correctAnswer": 0, "timeLimit": 30, "explanation": "Multiplication has higher precedence than addition: 3*4=12, then 2+12=14", "difficulty": "easy"}`);
+            } else {
+                structureExamples.push('{"question": "Question text here?", "type": "multiple-choice", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": 0, "timeLimit": 30, "explanation": "Brief explanation of why this answer is correct", "difficulty": "medium"}');
+            }
         }
         if (selectedTypes.includes('true-false')) {
-            typeDescription += '\n- Some questions should be true/false (single factual statements about the content, not choices between opposites)';
-            structureExamples.push('{"question": "Python is an interpreted programming language.", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20}');
+            typeDescription += '\n- Some questions should be true/false (single factual statements)';
+            if (contentInfo.needsLatex) {
+                structureExamples.push('{"question": "The integral $\\\\int x^2 dx = \\\\frac{x^3}{3} + C$", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20, "explanation": "This is the correct antiderivative of $x^2$", "difficulty": "medium"}');
+            } else {
+                structureExamples.push('{"question": "Statement about the content.", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20, "explanation": "Explanation of the correct answer", "difficulty": "easy"}');
+            }
         }
         if (selectedTypes.includes('multiple-correct')) {
-            typeDescription += '\n- Some questions should allow multiple correct answers (use "correctAnswers" array with indices)';
-            structureExamples.push('{"question": "Which of the following statements are TRUE? (Select all that apply)", "type": "multiple-correct", "options": ["Statement A is correct", "Statement B is wrong", "Statement C is correct", "Statement D is also correct"], "correctAnswers": [0, 2, 3], "timeLimit": 35}');
+            typeDescription += '\n- Some questions should allow multiple correct answers (use "correctAnswers" array)';
+            structureExamples.push('{"question": "Which of the following are TRUE? (Select all)", "type": "multiple-correct", "options": ["Correct A", "Wrong B", "Correct C", "Correct D"], "correctAnswers": [0, 2, 3], "timeLimit": 35, "explanation": "Options A, C, and D are correct because...", "difficulty": "hard"}');
         }
         if (selectedTypes.includes('numeric')) {
-            typeDescription += '\n- Some questions should have numeric answers derived from the content (counts, dates, measurements, etc., NO generic math problems)';
-            structureExamples.push('{"question": "In what year was Python first released?", "type": "numeric", "correctAnswer": 1991, "tolerance": 0, "timeLimit": 25}');
+            typeDescription += '\n- Some questions should have numeric answers';
+            if (contentInfo.needsLatex) {
+                structureExamples.push('{"question": "Solve for $x$: $2x + 6 = 14$", "type": "numeric", "correctAnswer": 4, "tolerance": 0, "timeLimit": 25, "explanation": "$2x = 8$, so $x = 4$", "difficulty": "easy"}');
+            } else {
+                structureExamples.push('{"question": "Numeric question from content?", "type": "numeric", "correctAnswer": 1991, "tolerance": 0, "timeLimit": 25, "explanation": "Explanation of the answer", "difficulty": "medium"}');
+            }
         }
-        
-        // Build structure example showing all selected types
-        const structureExample = `Return ONLY a valid JSON array with structures EXACTLY like these:\n[${structureExamples.join(',\n')}]`;
 
-        return `${typeDescription}\n\nCONTENT TO CREATE QUESTIONS FROM:\n${content}\n\n${structureExample}\n\nCRITICAL REQUIREMENTS: \n- Generate ALL questions in ${targetLanguage} language\n- Generate EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} - no more, no less\n- EVERY SINGLE QUESTION MUST be directly based on the content provided above - read it carefully and create questions that test understanding of THAT specific content\n- If the content is about topic X, ALL questions must be about topic X - no generic questions about other topics\n- Questions must reference specific facts, concepts, names, dates, or details mentioned in the provided content\n- Do NOT create questions about general knowledge unless that knowledge is specifically mentioned in the content\n- Mix different question types from the selected types: ${selectedTypes.join(', ')}\n- For true/false questions: Create single factual statements about the content, NOT binary choices between opposites (e.g., "Tom is a cat" not "Choose happy or sad")\n- For numeric questions: Numbers must come from the content (dates, counts, measurements), NOT random math problems\n- Return ONLY the JSON array, no other text\n- Use EXACTLY these JSON structures:\n  * Multiple-choice: correctAnswer as integer index (0, 1, 2, or 3), options array with 4 items\n  * True-false: Single factual statement about content, options must be ["True", "False"], correctAnswer as string ("true" or "false")  \n  * Multiple-correct: correctAnswers as array of indices [0, 1, 2, 3], options array\n  * Numeric: Answer derived from content, NO options array, correctAnswer as number, tolerance as number\n- All questions must have "timeLimit" field (15-40 seconds based on difficulty)\n- Make sure all JSON is properly formatted and valid\n- Do not include any explanations or additional text\n- If you generate more than ${questionCount} question${questionCount === 1 ? '' : 's'}, you have failed the task\n- REMEMBER: Every question must test something specific from the content above - reread the content if needed\n\nIMAGE/DIAGRAM GENERATION (OPTIONAL):\n- If a question would benefit from a visual aid, you can GENERATE the image code directly in the response\n- Add these OPTIONAL fields:\n  * "imageData": The actual SVG code OR Mermaid diagram syntax (not a description - the actual code!)\n  * "imageType": Either "svg" or "mermaid"\n- When to include images:\n  * Processes, workflows, sequences → Generate Mermaid flowchart syntax in imageData\n  * Simple shapes, diagrams, illustrations → Generate SVG XML code in imageData\n  * ONLY add images when they genuinely enhance understanding - not every question needs one\n\nMERMAID SYNTAX (for processes/flowcharts):\n- Write valid Mermaid code: graph TD; A[Start] --> B[Step]; B --> C[End];\n- Example: graph LR; A[Evaporation] --> B[Condensation]; B --> C[Precipitation]; C --> A;\n- Keep simple (3-6 nodes max)\n\nSVG CODE (for shapes/diagrams):\n- Write valid SVG XML with viewBox="0 0 400 300"\n- Example: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><circle cx="200" cy="150" r="80" fill="#4CAF50"/><text x="200" y="160" text-anchor="middle" fill="white">Cell</text></svg>\n\nEXAMPLES:\nMermaid: {"question": "First step in water cycle?", "type": "multiple-choice", "options": ["Evaporation", "Condensation", "Precipitation", "Collection"], "correctAnswer": 0, "timeLimit": 25, "imageData": "graph LR; A[Evaporation] --> B[Condensation]; B --> C[Precipitation]; C --> D[Collection]; D --> A;", "imageType": "mermaid"}\nSVG: {"question": "Which shape has 3 sides?", "type": "multiple-choice", "options": ["Triangle", "Square", "Pentagon", "Hexagon"], "correctAnswer": 0, "timeLimit": 20, "imageData": "<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 200 200\\"><polygon points=\\"100,20 20,180 180,180\\" fill=\\"#2196F3\\"/></svg>", "imageType": "svg"}\n\nCRITICAL: Put the COMPLETE code in imageData - don't truncate!`;
+        const structureExample = `Return ONLY a valid JSON array with structures like these:\n[${structureExamples.join(',\n')}]`;
+
+        // Build formatting instructions based on content type
+        const formattingInstructions = this.buildFormattingInstructions(contentInfo);
+
+        // Build the main prompt
+        let prompt = `${typeDescription}
+
+CONTENT ${isFormattingExistingQuestions ? 'CONTAINING QUESTIONS TO FORMAT' : 'TO CREATE QUESTIONS FROM'}:
+${content}
+
+${structureExample}
+${formattingInstructions}
+CRITICAL REQUIREMENTS:
+- Generate ALL questions in ${targetLanguage} language
+- Generate EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} - no more, no less
+${isFormattingExistingQuestions ? '- PRESERVE the original question text and answers as much as possible' : '- EVERY question MUST be directly based on the content provided'}
+- Questions must reference specific facts, concepts, or details from the content
+- Mix different question types: ${selectedTypes.join(', ')}
+- For true/false: Create factual statements, NOT binary choices
+- For numeric: Numbers must come from content or be solvable from it
+- Return ONLY the JSON array, no other text
+- Use EXACTLY these JSON structures:
+  * Multiple-choice: correctAnswer as integer (0-3), options array with 4 items
+  * True-false: options ["True", "False"], correctAnswer as string ("true"/"false")
+  * Multiple-correct: correctAnswers as array of indices, options array
+  * Numeric: correctAnswer as number, tolerance as number, NO options array
+- Include "timeLimit" (15-40 seconds), "explanation", and "difficulty" fields
+- Ensure all JSON is properly formatted and valid
+
+IMAGE/DIAGRAM GENERATION (OPTIONAL):
+- Add "imageData" and "imageType" fields when visuals would help
+- imageType: "svg" or "mermaid"
+
+MERMAID (for processes/flowcharts):
+- Valid Mermaid syntax: graph TD; A[Start] --> B[Step]; B --> C[End];
+- Example: graph LR; A[Input] --> B{Decision}; B -->|Yes| C[Action]; B -->|No| D[End];
+
+SVG (for shapes/diagrams):
+- Valid SVG with viewBox="0 0 400 300"
+- Example: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><circle cx="200" cy="150" r="80" fill="#4CAF50"/></svg>
+
+Put COMPLETE code in imageData - don't truncate!`;
+
+        return prompt;
     }
 
     buildExcelConversionPrompt(content, selectedTypes) {
@@ -1178,35 +1242,137 @@ Please respond with only valid JSON. Do not include explanations or additional t
         throw new Error('Could not extract questions from response');
     }
 
+    /**
+     * Detect content type and programming language for smart formatting
+     * @returns {Object} { type: string, language: string|null, hasExistingQuestions: boolean }
+     */
     detectContentType(content) {
-        if (!content) return 'general';
-        
+        if (!content) return { type: 'general', language: null, hasExistingQuestions: false };
+
         try {
-            // Mathematics indicators
-            if (AI.MATH_INDICATORS && AI.MATH_INDICATORS.test(content)) {
-                return 'mathematics';
+            const result = {
+                type: 'general',
+                language: null,
+                hasExistingQuestions: false,
+                needsLatex: false,
+                needsCodeBlocks: false
+            };
+
+            // Check if content contains existing questions (from file upload)
+            if (AI.EXISTING_QUESTIONS_INDICATORS?.test(content)) {
+                result.hasExistingQuestions = true;
             }
-            
-            // Programming indicators  
-            if (AI.PROGRAMMING_INDICATORS && AI.PROGRAMMING_INDICATORS.test(content)) {
-                return 'programming';
+
+            // Mathematics - needs LaTeX formatting
+            if (AI.MATH_INDICATORS?.test(content)) {
+                result.type = 'mathematics';
+                result.needsLatex = true;
+                return result;
             }
-            
-            // Physics indicators
-            if (AI.PHYSICS_INDICATORS && AI.PHYSICS_INDICATORS.test(content)) {
-                return 'physics';
+
+            // Programming - detect specific language for syntax highlighting
+            if (AI.PROGRAMMING_INDICATORS?.test(content)) {
+                result.type = 'programming';
+                result.needsCodeBlocks = true;
+                // Detect specific programming language
+                if (AI.CODE_LANGUAGE_HINTS) {
+                    for (const [lang, pattern] of Object.entries(AI.CODE_LANGUAGE_HINTS)) {
+                        if (pattern.test(content)) {
+                            result.language = lang;
+                            break;
+                        }
+                    }
+                }
+                return result;
             }
-            
-            // Chemistry indicators
-            if (AI.CHEMISTRY_INDICATORS && AI.CHEMISTRY_INDICATORS.test(content)) {
-                return 'chemistry';
+
+            // Physics - needs LaTeX for formulas
+            if (AI.PHYSICS_INDICATORS?.test(content)) {
+                result.type = 'physics';
+                result.needsLatex = true;
+                return result;
             }
-            
-            return 'general';
+
+            // Chemistry - needs LaTeX for formulas and equations
+            if (AI.CHEMISTRY_INDICATORS?.test(content)) {
+                result.type = 'chemistry';
+                result.needsLatex = true;
+                return result;
+            }
+
+            // Biology
+            if (AI.BIOLOGY_INDICATORS?.test(content)) {
+                result.type = 'biology';
+                return result;
+            }
+
+            // History
+            if (AI.HISTORY_INDICATORS?.test(content)) {
+                result.type = 'history';
+                return result;
+            }
+
+            // Economics
+            if (AI.ECONOMICS_INDICATORS?.test(content)) {
+                result.type = 'economics';
+                return result;
+            }
+
+            return result;
         } catch (error) {
             logger.warn('Content type detection failed:', error.message);
-            return 'general';
+            return { type: 'general', language: null, hasExistingQuestions: false };
         }
+    }
+
+    /**
+     * Build formatting instructions based on content type
+     */
+    buildFormattingInstructions(contentInfo) {
+        let instructions = '';
+
+        if (contentInfo.needsLatex) {
+            instructions += `
+LATEX FORMATTING (IMPORTANT):
+- Use LaTeX syntax for ALL mathematical expressions, formulas, and equations
+- Inline math: Use $...$ (e.g., "The formula $E = mc^2$ shows..." or "Calculate $\\frac{x+1}{2}$")
+- Display math: Use $$...$$ for standalone equations (e.g., "$$\\int_0^\\infty e^{-x} dx = 1$$")
+- Common symbols: $\\alpha$, $\\beta$, $\\gamma$, $\\theta$, $\\pi$, $\\sigma$, $\\Delta$, $\\infty$
+- Fractions: $\\frac{numerator}{denominator}$
+- Square roots: $\\sqrt{x}$ or $\\sqrt[n]{x}$
+- Subscripts/superscripts: $x_1$, $x^2$, $x_1^2$
+- Summation: $\\sum_{i=1}^{n} x_i$
+- Integrals: $\\int_a^b f(x) dx$
+- Chemical formulas: $H_2O$, $CO_2$, $C_6H_{12}O_6$
+- Use LaTeX in BOTH questions AND answer options where appropriate
+`;
+        }
+
+        if (contentInfo.needsCodeBlocks) {
+            const langHint = contentInfo.language ? `Use \`\`\`${contentInfo.language}\` for code blocks.` : '';
+            instructions += `
+CODE FORMATTING (IMPORTANT):
+- Wrap ALL code snippets in markdown code blocks with language specification
+- Format: \`\`\`language
+code here
+\`\`\`
+${langHint}
+- Use inline code \`like this\` for short references (variable names, function names, keywords)
+- Ensure code is properly indented and formatted
+- Include necessary context (imports, function signatures) when relevant
+- For code output questions, show both code and expected output
+`;
+        }
+
+        // Add explanation field instruction
+        instructions += `
+QUESTION QUALITY:
+- Add an "explanation" field with a brief explanation of why the correct answer is right
+- Add a "difficulty" field with value "easy", "medium", or "hard" based on content complexity
+- Ensure questions test understanding, not just memorization
+`;
+
+        return instructions;
     }
 
     async handleProviderChange(provider) {

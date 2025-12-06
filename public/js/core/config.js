@@ -124,12 +124,35 @@ export const AI = {
     OPENAI_MODEL: 'gpt-4o-mini',
     GEMINI_MODEL: 'gemini-2.0-flash-001',
     GEMINI_MAX_TOKENS: 2048,
-    
-    // Content detection patterns
-    MATH_INDICATORS: /\$.*\$|\\\\w+{.*}|\\begin{|\\end{|\\frac|\\sqrt|\\sum|\\int|equation|formula|algebra|calculus|geometry/i,
-    PROGRAMMING_INDICATORS: /def\s+\w+\(|function\s+\w+|class\s+\w+|import\s+|from\s+\w+|console\.log|print\(|var\s+|let\s+|const\s+/i,
-    PHYSICS_INDICATORS: /velocity|acceleration|force|energy|momentum|gravity|mass|physics|newton|joule|meter|kilogram/i,
-    CHEMISTRY_INDICATORS: /molecule|atom|element|compound|reaction|chemistry|periodic|electron|proton|neutron|bond|chemical/i,
+
+    // Content detection patterns - enhanced for smart formatting
+    MATH_INDICATORS: /\$[^$]+\$|\\\(.*?\\\)|\\\[.*?\\\]|\\frac\{|\\sqrt\{|\\sum|\\int|\\lim|\\infty|\\alpha|\\beta|\\gamma|\\theta|\\pi|\\sigma|\\Delta|equation|formula|algebra|calculus|geometry|derivative|integral|matrix|vector|polynomial|logarithm|exponential|trigonometry|quadratic|linear equation|probability|statistics|mean|median|variance|standard deviation/i,
+
+    PROGRAMMING_INDICATORS: /\b(def|function|class|import|from|export|const|let|var|return|if|else|for|while|switch|case|try|catch|async|await|yield)\s+\w+|console\.(log|error|warn)|print\(|System\.out|public\s+static|private\s+|protected\s+|\#include|using\s+namespace|SELECT\s+.*FROM|CREATE\s+TABLE|INSERT\s+INTO|UPDATE\s+.*SET|\.map\(|\.filter\(|\.reduce\(|=>|->|\$\{.*\}|f".*\{|`.*\$\{/i,
+
+    PHYSICS_INDICATORS: /velocity|acceleration|force|energy|momentum|gravity|mass|physics|newton|joule|watt|ampere|volt|ohm|frequency|wavelength|photon|quantum|relativity|thermodynamics|entropy|kinetic|potential|electric|magnetic|electromagnetic|optics|nuclear|particle|wave|oscillation|pendulum|friction|torque|angular|pressure|density|buoyancy|refraction/i,
+
+    CHEMISTRY_INDICATORS: /molecule|atom|element|compound|reaction|chemistry|periodic|electron|proton|neutron|ion|covalent|ionic|bond|mole|molarity|pH|acid|base|oxidation|reduction|catalyst|equilibrium|organic|inorganic|polymer|isotope|valence|orbital|electronegativity|stoichiometry|titration|precipitate|solution|concentration|enthalpy/i,
+
+    BIOLOGY_INDICATORS: /cell|DNA|RNA|protein|enzyme|organism|species|evolution|genetics|chromosome|gene|mutation|mitosis|meiosis|photosynthesis|respiration|metabolism|bacteria|virus|ecosystem|biodiversity|anatomy|physiology|neuron|synapse|hormone|immune|antibody|vaccine|pathogen|tissue|organ/i,
+
+    HISTORY_INDICATORS: /century|ancient|medieval|renaissance|revolution|war|empire|dynasty|civilization|king|queen|emperor|president|treaty|battle|independence|colonial|industrial|world\s+war|cold\s+war|democracy|monarchy|republic|constitution|amendment|civil\s+rights|historical/i,
+
+    ECONOMICS_INDICATORS: /economy|GDP|inflation|deflation|supply|demand|market|trade|investment|stock|bond|currency|fiscal|monetary|budget|tax|tariff|subsidy|unemployment|recession|growth|capitalism|socialism|microeconomics|macroeconomics|equilibrium|elasticity|monopoly|oligopoly/i,
+
+    // File content detection patterns
+    EXISTING_QUESTIONS_INDICATORS: /\bquestion\s*\d*\s*[:\.]\s*|\bQ\s*\d+\s*[:\.]\s*|\b(correct\s*answer|right\s*answer|answer\s*key)\s*[:\.]\s*|\boption\s*[A-D]\s*[:\.]\s*|\bchoice\s*\d\s*[:\.]/i,
+
+    // Language-specific code patterns for syntax highlighting hints
+    CODE_LANGUAGE_HINTS: {
+        python: /\bdef\s+\w+\(|\bimport\s+\w+|\bfrom\s+\w+\s+import|\bclass\s+\w+:|\bif\s+__name__\s*==|\bself\.\w+|\bprint\s*\(/i,
+        javascript: /\bconst\s+\w+\s*=|\blet\s+\w+\s*=|\bfunction\s+\w+\s*\(|=>\s*\{|\bconsole\.(log|error|warn)|\basync\s+function|\bawait\s+/i,
+        java: /\bpublic\s+(static\s+)?(void|class|int|String)|\bprivate\s+|\bprotected\s+|\bSystem\.out\.print/i,
+        sql: /\bSELECT\s+.*\bFROM\b|\bCREATE\s+TABLE\b|\bINSERT\s+INTO\b|\bUPDATE\s+.*\bSET\b|\bDELETE\s+FROM\b|\bJOIN\b.*\bON\b/i,
+        cpp: /\#include\s*<|\busing\s+namespace\s+std|\bstd::|\bcout\s*<<|\bcin\s*>>|\bint\s+main\s*\(/i,
+        html: /<(!DOCTYPE|html|head|body|div|span|p|a|img|table|form|input|button)\b/i,
+        css: /\{[^}]*:\s*[^;]+;[^}]*\}|@media\s+|@keyframes\s+|\.[\w-]+\s*\{|#[\w-]+\s*\{/i,
+    }
 };
 
 // Animation settings (simplified)
