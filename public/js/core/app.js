@@ -79,7 +79,6 @@ export class QuizGame {
         
         // Initialize core functionality
         this.initializeEventListeners();
-        this.initializePreviewSystem();
         this.initializeToolbar();
         
         // Make preview manager globally accessible for onclick handlers
@@ -714,14 +713,6 @@ export class QuizGame {
         if (modal) {
             modal.style.display = 'none';
         }
-    }
-
-    /**
-     * Initialize preview system
-     */
-    initializePreviewSystem() {
-        // Implementation would depend on existing preview system
-        // This is a placeholder for the live preview functionality
     }
 
     /**

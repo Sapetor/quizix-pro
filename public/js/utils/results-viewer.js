@@ -197,40 +197,6 @@ export class ResultsViewer {
     }
 
     /**
-     * Fetch results with retry logic
-     */
-    async fetchWithRetry(url, maxRetries = 3, delay = 1000) {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                logger.debug(`📊 Fetch attempt ${attempt}/${maxRetries} for ${url}`);
-                const response = await fetch(url);
-                
-                if (response.ok) {
-                    logger.debug(`📊 Fetch successful on attempt ${attempt}`);
-                    return response;
-                }
-                
-                if (response.status === 404 && attempt < maxRetries) {
-                    logger.warn(`📊 404 error on attempt ${attempt}, retrying in ${delay}ms...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    continue;
-                }
-                
-                return response;
-                
-            } catch (error) {
-                logger.error(`📊 Fetch attempt ${attempt} failed:`, error);
-                
-                if (attempt === maxRetries) {
-                    throw error;
-                }
-                
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
-    }
-
-    /**
      * Load and display results using the service
      */
     async loadResults() {

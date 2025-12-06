@@ -7,7 +7,8 @@ import { translationManager, showErrorAlert, showSuccessAlert } from '../utils/t
 import { createQuestionElement } from '../utils/question-utils.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
-import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
+// errorBoundary is an alias for errorHandler for semantic clarity
+const errorBoundary = errorHandler;
 import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';

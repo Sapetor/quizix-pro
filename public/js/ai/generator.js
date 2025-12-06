@@ -28,12 +28,6 @@ export class AIQuestionGenerator {
                 endpoint: AI.OLLAMA_ENDPOINT,
                 models: ["llama3.2:latest", "codellama:13b-instruct", "codellama:7b-instruct", "codellama:7b-code"]
             },
-            huggingface: {
-                name: "Hugging Face",
-                apiKey: true,
-                endpoint: "https://api-inference.huggingface.co/models/google/flan-t5-large",
-                models: ["google/flan-t5-large"]
-            },
             openai: {
                 name: "OpenAI",
                 apiKey: true,
@@ -265,8 +259,8 @@ export class AIQuestionGenerator {
     }
 
     async generateQuestions() {
-        console.log('🔥 DEBUG: generateQuestions called');
-        
+        logger.debug('generateQuestions called');
+
         // Prevent multiple simultaneous generations
         if (this.isGenerating) {
             logger.debug('Generation already in progress, ignoring request');
@@ -284,8 +278,8 @@ export class AIQuestionGenerator {
             questionCount = parseInt(document.getElementById('question-count')?.value) || 1;
             difficulty = document.getElementById('difficulty-level')?.value || 'medium';
             
-            console.log('🔥 DEBUG: Form values:', { provider, content: content?.length, questionCount, difficulty });
-            
+            logger.debug('Form values:', { provider, content: content?.length, questionCount, difficulty });
+
             // Get selected question types
             selectedTypes = [];
             if (document.getElementById('type-multiple-choice')?.checked) {
@@ -305,28 +299,27 @@ export class AIQuestionGenerator {
             
             // Validate required fields with custom red popups
             if (!provider) {
-                console.log('🔥 DEBUG: No provider selected');
+                logger.debug('No provider selected');
                 this.showSimpleErrorPopup('No AI Provider Selected', '❌ Please select an AI provider to generate questions.\n\nAvailable options:\n• OpenAI (paid)\n• Claude (paid)\n• Gemini (paid)\n• Ollama (free, local)', '🤖');
                 this.isGenerating = false;
                 return;
             }
             
             if (!content) {
-                console.log('🔥 DEBUG: No content provided');
+                logger.debug('No content provided');
                 this.showSimpleErrorPopup('No Content Provided', '❌ Please enter source content for question generation.\n\n💡 You can provide:\n• Text passages to create questions about\n• Topics you want questions on\n• Educational content to quiz students about\n• Any material you want to turn into quiz questions', '📝');
                 this.isGenerating = false;
                 return;
             }
             
             if (selectedTypes.length === 0) {
-                console.log('🔥 DEBUG: No question types selected');
+                logger.debug('No question types selected');
                 this.showSimpleErrorPopup('No Question Types Selected', '❌ Please select at least one question type to generate.\n\n✅ Available types:\n• Multiple Choice (4 options, 1 correct)\n• True/False (factual statements)\n• Multiple Correct (select all that apply)\n• Numeric (number-based answers)');
                 this.isGenerating = false;
                 return;
             }
             
         } catch (error) {
-            console.log('🔥 DEBUG: Validation error:', error);
             logger.error('Validation error:', error);
             this.showSimpleErrorPopup('Validation Error', `❌ Form validation failed: ${error.message}\n\nPlease check your inputs and try again.`);
             this.isGenerating = false;
@@ -338,7 +331,7 @@ export class AIQuestionGenerator {
 
         // Check for API key if required
         const needsApiKey = this.providers[provider]?.apiKey;
-        console.log('🔥 DEBUG: Provider needs API key:', { provider, needsApiKey });
+        logger.debug('Provider needs API key:', { provider, needsApiKey });
         
         if (needsApiKey) {
             const apiKey = await secureStorage.getSecureItem(`api_key_${provider}`);
@@ -349,7 +342,6 @@ export class AIQuestionGenerator {
             });
             
             if (!apiKey || apiKey.trim().length === 0) {
-                console.log('🔥 DEBUG: Missing API key, showing popup');
                 logger.warn(`Missing or empty API key for provider: ${provider}`);
                 this.showApiKeyErrorPopup(provider, 'missing');
                 this.isGenerating = false;
@@ -365,8 +357,8 @@ export class AIQuestionGenerator {
         if (statusDiv) statusDiv.style.display = 'block';
 
         try {
-            console.log('🔥 DEBUG: Starting question generation with provider:', provider);
-            
+            logger.debug('Starting question generation with provider:', provider);
+
             // Check if this is batched Excel processing
             if (this.batchInfo) {
                 logger.debug('🔄 Starting batched Excel processing');
@@ -383,9 +375,6 @@ export class AIQuestionGenerator {
                     case 'ollama':
                         questions = await this.generateWithOllama(prompt);
                         break;
-                    case 'huggingface':
-                        questions = await this.generateWithHuggingFace();
-                        break;
                     case 'openai':
                         questions = await this.generateWithOpenAI(prompt);
                         break;
@@ -397,34 +386,29 @@ export class AIQuestionGenerator {
                         break;
                 }
             } catch (providerError) {
-                console.log('🔥 DEBUG: Provider error caught:', providerError.message);
-                
+                logger.debug('Provider error caught:', providerError.message);
+
                 // Handle API key related errors with custom popup
                 if (providerError.message.includes('Invalid') && providerError.message.includes('API key')) {
-                    console.log('🔥 DEBUG: Invalid API key error detected');
                     this.showApiKeyErrorPopup(provider, 'invalid', providerError.message);
                     return;
                 } else if (providerError.message.includes('401') || providerError.message.includes('Unauthorized')) {
-                    console.log('🔥 DEBUG: 401 Unauthorized error detected');
                     this.showApiKeyErrorPopup(provider, 'invalid', 'Unauthorized - please check your API key');
                     return;
                 } else if (providerError.message.includes('429') || providerError.message.includes('rate limit')) {
-                    console.log('🔥 DEBUG: Rate limit error detected');
                     this.showApiKeyErrorPopup(provider, 'network', 'Rate limit exceeded - please try again in a few minutes');
                     return;
                 } else if (providerError.message.includes('quota') || providerError.message.includes('billing')) {
-                    console.log('🔥 DEBUG: Quota/billing error detected');
                     this.showApiKeyErrorPopup(provider, 'invalid', 'Account quota exceeded or billing issue - please check your account');
                     return;
                 } else {
-                    console.log('🔥 DEBUG: Other provider error, showing custom alert');
                     // For other errors, show a custom red alert instead of green showAlert
                     this.showSimpleErrorPopup('Generation Failed', `❌ ${providerError.message}\n\n🔧 Possible solutions:\n• Check your API key is correct\n• Verify your account has credits\n• Try with different content\n• Wait a moment and try again`);
                     return;
                 }
             }
 
-            console.log('🔥 DEBUG: Generation completed, questions:', questions?.length);
+            logger.debug('Generation completed, questions:', questions?.length);
 
             if (questions && questions.length > 0) {
                 // Double-check the count one more time before processing
@@ -443,7 +427,7 @@ export class AIQuestionGenerator {
                     this.isGenerating = false;
                 }, TIMING.ANIMATION_DURATION);
             } else {
-                console.log('🔥 DEBUG: No questions generated');
+                logger.debug('No questions generated');
                 this.showSimpleErrorPopup('No Questions Generated', '❌ The AI provider returned no questions.\n\n🔧 Try:\n• Providing more detailed content\n• Using different question types\n• Rephrasing your content\n• Checking if your content is suitable for quiz questions');
             }
 
@@ -809,17 +793,12 @@ Please respond with only valid JSON. Do not include explanations or additional t
         });
     }
 
-    async generateWithHuggingFace() {
-        // Placeholder for Hugging Face implementation
-        throw new Error(translationManager.getTranslationSync('huggingface_integration_coming'));
-    }
-
     async generateWithClaude(prompt) {
-        console.log('🔥 DEBUG: generateWithClaude called');
-        
+        logger.debug('generateWithClaude called');
+
         try {
             const apiKey = await secureStorage.getSecureItem('api_key_claude');
-            console.log('🔥 DEBUG: Claude API key retrieved:', !!apiKey);
+            logger.debug('Claude API key retrieved:', !!apiKey);
             
             const response = await fetch(APIHelper.getApiUrl('api/claude/generate'), {
                 method: 'POST',
@@ -832,7 +811,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 })
             });
 
-            console.log('🔥 DEBUG: Claude API response status:', response.status);
+            logger.debug('Claude API response status:', response.status);
 
             if (!response.ok) {
                 let errorMessage = `Claude API error (${response.status})`;
@@ -853,13 +832,13 @@ Please respond with only valid JSON. Do not include explanations or additional t
                         errorMessage = `Claude API error (${response.status})`;
                     }
                 }
-                
-                console.log('🔥 DEBUG: Claude API error message:', errorMessage);
+
+                logger.debug('Claude API error message:', errorMessage);
                 throw new Error(errorMessage);
             }
 
             const data = await response.json();
-            console.log('🔥 DEBUG: Claude API success, parsing response');
+            logger.debug('Claude API success, parsing response');
             
             // Claude API returns content in data.content[0].text format
             let content = '';
@@ -874,8 +853,8 @@ Please respond with only valid JSON. Do not include explanations or additional t
             return this.parseAIResponse(content);
             
         } catch (error) {
-            console.log('🔥 DEBUG: Claude generation error caught:', error.message);
-            
+            logger.debug('Claude generation error caught:', error.message);
+
             // Show error popup directly
             this.showSimpleErrorPopup('Claude Error', error.message, '❌');
             
@@ -2141,8 +2120,8 @@ Please respond with only valid JSON. Do not include explanations or additional t
      * @param {string} specificMessage - Specific error message from the API
      */
     showApiKeyErrorPopup(provider, errorType = 'missing', specificMessage = '') {
-        console.log('🔥 DEBUG: showApiKeyErrorPopup called', { provider, errorType, specificMessage });
-        
+        logger.debug('showApiKeyErrorPopup called', { provider, errorType, specificMessage });
+
         const providerName = this.providers[provider]?.name || provider;
         let title, message, icon;
 
@@ -2169,8 +2148,8 @@ Please respond with only valid JSON. Do not include explanations or additional t
      * Create and display a custom API key error modal
      */
     showSimpleErrorPopup(title, message, icon) {
-        console.log('🔥 DEBUG: showSimpleErrorPopup called', { title, message, icon });
-        
+        logger.debug('showSimpleErrorPopup called', { title, message, icon });
+
         // Remove any existing error modal
         const existingModal = document.getElementById('simple-error-modal');
         if (existingModal) {
@@ -2240,7 +2219,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
         });
 
         document.body.style.overflow = 'hidden';
-        console.log('🔥 DEBUG: Simple error popup displayed');
+        logger.debug('Simple error popup displayed');
     }
 }
 

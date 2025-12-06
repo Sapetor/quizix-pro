@@ -3,7 +3,7 @@
  * Handles game flow, question display, player results, and game state management
  */
 
-import { translationManager, getTranslation, createQuestionCounter, getTrueFalseText } from '../utils/translation-manager.js';
+import { translationManager, getTranslation, getTrueFalseText } from '../utils/translation-manager.js';
 import { TIMING, logger, UI, ANIMATION } from '../core/config.js';
 // MathRenderer and mathJaxService now handled by GameDisplayManager
 import { dom } from '../utils/dom.js';

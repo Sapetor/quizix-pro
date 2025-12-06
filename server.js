@@ -662,10 +662,13 @@ app.get('/api/qr/:pin', async (req, res) => {
 
 
 // Fetch available Ollama models endpoint
+// Ollama endpoint is configurable via OLLAMA_URL env var for K8s deployments
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
+
 app.get('/api/ollama/models', async (req, res) => {
   try {
     const { default: fetch } = await import('node-fetch');
-    const response = await fetch('http://localhost:11434/api/tags');
+    const response = await fetch(`${OLLAMA_URL}/api/tags`);
     
     if (!response.ok) {
       return res.status(500).json({ error: 'Failed to fetch Ollama models' });
@@ -709,7 +712,7 @@ app.post('/api/claude/generate', async (req, res) => {
     const { default: fetchFunction } = await import('node-fetch');
     
     const requestBody = {
-      model: 'claude-3-haiku-20240307',
+      model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       messages: [
         {
@@ -718,7 +721,7 @@ app.post('/api/claude/generate', async (req, res) => {
         }
       ]
     };
-    
+
     const response = await fetchFunction('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
