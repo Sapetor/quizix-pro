@@ -275,6 +275,22 @@ export default {
         supported_formats: "Formatos Suportados",
         or_upload_file: "Ou enviar arquivo",
         content_type_detected: "Tipo de conteúdo detectado",
+
+        // AI Content Analysis
+        content_analysis: "Análise de Conteúdo",
+        detected_type: "Tipo:",
+        formatting: "Formatação:",
+        content_mode: "Modo:",
+        cognitive_level: "Nível Cognitivo (Bloom):",
+        estimated_cost: "Estimado:",
+        blooms_mixed: "Níveis Mistos",
+        blooms_remember: "Lembrar (Recordar fatos)",
+        blooms_understand: "Compreender (Explicar conceitos)",
+        blooms_apply: "Aplicar (Usar em novas situações)",
+        blooms_analyze: "Analisar (Decompor, comparar)",
+        blooms_evaluate: "Avaliar (Julgar, criticar)",
+        blooms_create: "Criar (Projetar, construir)",
+
         load_saved_quiz: "Carregar Quiz Salvo",
         total: "Total",
         created: "Criado",

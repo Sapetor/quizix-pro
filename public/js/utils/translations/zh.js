@@ -269,6 +269,22 @@ export default {
         supported_formats: "支持的格式",
         or_upload_file: "或上传文件",
         content_type_detected: "检测到内容类型",
+
+        // AI Content Analysis
+        content_analysis: "内容分析",
+        detected_type: "类型:",
+        formatting: "格式:",
+        content_mode: "模式:",
+        cognitive_level: "认知水平 (布鲁姆):",
+        estimated_cost: "预估:",
+        blooms_mixed: "混合层次",
+        blooms_remember: "记忆 (回忆事实)",
+        blooms_understand: "理解 (解释概念)",
+        blooms_apply: "应用 (在新情境中使用)",
+        blooms_analyze: "分析 (分解、比较)",
+        blooms_evaluate: "评价 (判断、批评)",
+        blooms_create: "创造 (设计、构建)",
+
         load_saved_quiz: "加载已保存的问答",
         total: "总计",
         created: "创建时间",

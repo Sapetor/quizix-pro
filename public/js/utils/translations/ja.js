@@ -274,6 +274,22 @@ export default {
         supported_formats: "サポート形式",
         or_upload_file: "またはファイルをアップロード",
         content_type_detected: "コンテンツタイプが検出されました",
+
+        // AI Content Analysis
+        content_analysis: "コンテンツ分析",
+        detected_type: "タイプ:",
+        formatting: "フォーマット:",
+        content_mode: "モード:",
+        cognitive_level: "認知レベル (ブルーム):",
+        estimated_cost: "推定:",
+        blooms_mixed: "混合レベル",
+        blooms_remember: "記憶 (事実を思い出す)",
+        blooms_understand: "理解 (概念を説明する)",
+        blooms_apply: "応用 (新しい状況で使用する)",
+        blooms_analyze: "分析 (分解、比較する)",
+        blooms_evaluate: "評価 (判断、批評する)",
+        blooms_create: "創造 (設計、構築する)",
+
         load_saved_quiz: "保存されたクイズを読み込み",
         total: "合計",
         created: "作成日",
