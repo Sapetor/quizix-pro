@@ -322,6 +322,12 @@ export default {
         // Language indicator
         questions_generated_in: "質問は次の言語で生成されます:",
 
+        // PDF extraction
+        extracting_pdf: "PDFからテキストを抽出中...",
+        pdf_extracted: "PDF抽出完了: {pages}ページ",
+        pdf_no_text: "PDFにテキストコンテンツが見つかりません",
+        pdf_extraction_failed: "PDF抽出に失敗しました",
+
         load_saved_quiz: "保存されたクイズを読み込み",
         total: "合計",
         created: "作成日",

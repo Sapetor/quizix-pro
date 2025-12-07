@@ -495,6 +495,52 @@ app.post('/upload', upload.single('image'), (req, res) => {
   }
 });
 
+// PDF text extraction endpoint
+const pdfUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for PDFs
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'), false);
+    }
+  }
+});
+
+app.post('/api/extract-pdf', pdfUpload.single('pdf'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No PDF file uploaded' });
+    }
+
+    // Dynamic import of pdf-parse (optional dependency)
+    let pdfParse;
+    try {
+      pdfParse = require('pdf-parse');
+    } catch (err) {
+      logger.warn('pdf-parse not installed. Run: npm install pdf-parse');
+      return res.status(501).json({
+        error: 'PDF extraction not available',
+        message: 'Server does not have PDF parsing capability. Please copy and paste the text content manually.'
+      });
+    }
+
+    const pdfData = await pdfParse(req.file.buffer);
+
+    logger.info(`PDF extracted: ${req.file.originalname}, ${pdfData.numpages} pages, ${pdfData.text.length} chars`);
+
+    res.json({
+      text: pdfData.text,
+      pages: pdfData.numpages,
+      info: pdfData.info
+    });
+  } catch (error) {
+    logger.error('PDF extraction error:', error);
+    res.status(500).json({ error: 'Failed to extract text from PDF: ' + error.message });
+  }
+});
+
 // Save quiz endpoint
 app.post('/api/save-quiz', async (req, res) => {
   try {

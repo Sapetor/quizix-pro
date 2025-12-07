@@ -310,6 +310,12 @@ export default {
         // Language indicator
         questions_generated_in: "Pytania zostaną wygenerowane w:",
 
+        // PDF extraction
+        extracting_pdf: "Wyodrębnianie tekstu z PDF...",
+        pdf_extracted: "PDF wyodrębniony: {pages} stron",
+        pdf_no_text: "Nie znaleziono treści tekstowej w PDF",
+        pdf_extraction_failed: "Wyodrębnianie PDF nie powiodło się",
+
         load_saved_quiz: "Wczytaj Zapisany Quiz",
         total: "Razem", 
         created: "Utworzono",

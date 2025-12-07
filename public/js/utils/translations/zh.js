@@ -317,6 +317,12 @@ export default {
         // Language indicator
         questions_generated_in: "问题将以以下语言生成:",
 
+        // PDF extraction
+        extracting_pdf: "正在从PDF提取文本...",
+        pdf_extracted: "PDF提取完成: {pages}页",
+        pdf_no_text: "PDF中未找到文本内容",
+        pdf_extraction_failed: "PDF提取失败",
+
         load_saved_quiz: "加载已保存的问答",
         total: "总计",
         created: "创建时间",

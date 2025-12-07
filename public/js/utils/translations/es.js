@@ -322,6 +322,12 @@ export default {
         // Language indicator
         questions_generated_in: "Las preguntas se generarán en:",
 
+        // PDF extraction
+        extracting_pdf: "Extrayendo texto del PDF...",
+        pdf_extracted: "PDF extraído: {pages} páginas",
+        pdf_no_text: "No se encontró contenido de texto en el PDF",
+        pdf_extraction_failed: "Error al extraer el PDF",
+
         load_saved_quiz: "Cargar Quiz Guardado", 
         total: "Total",
         created: "Creado",

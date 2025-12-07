@@ -1824,14 +1824,21 @@ QUESTION QUALITY & FEEDBACK:
 
     handleFileUpload(file) {
         if (!file) return;
-        
-        // Check if file is Excel format
+
         const fileExtension = file.name.toLowerCase().split('.').pop();
+
+        // Check if file is Excel format
         if (fileExtension === 'xlsx' || fileExtension === 'xls') {
             this.handleExcelUpload(file);
             return;
         }
-        
+
+        // Check if file is PDF format
+        if (fileExtension === 'pdf') {
+            this.handlePdfUpload(file);
+            return;
+        }
+
         // Handle text-based files as before
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -1843,6 +1850,60 @@ QUESTION QUALITY & FEEDBACK:
             }
         };
         reader.readAsText(file);
+    }
+
+    async handlePdfUpload(file) {
+        const contentTextarea = document.getElementById('source-content');
+        if (!contentTextarea) return;
+
+        // Show loading state
+        contentTextarea.value = translationManager.getTranslationSync('extracting_pdf') || 'Extracting text from PDF...';
+        contentTextarea.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('pdf', file);
+
+            const response = await fetch('/api/extract-pdf', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || data.error || 'PDF extraction failed');
+            }
+
+            if (!data.text || data.text.trim().length === 0) {
+                throw new Error(translationManager.getTranslationSync('pdf_no_text') || 'No text content found in PDF');
+            }
+
+            contentTextarea.value = data.text;
+            this.detectContentType(data.text);
+
+            logger.debug(`📄 PDF extracted: ${data.pages} pages, ${data.text.length} characters`);
+
+            // Show success notification
+            if (typeof showToast === 'function') {
+                const message = (translationManager.getTranslationSync('pdf_extracted') || 'PDF extracted: {pages} pages')
+                    .replace('{pages}', data.pages);
+                showToast(message, 'success');
+            }
+
+        } catch (error) {
+            logger.error('📄 PDF extraction failed:', error);
+            contentTextarea.value = '';
+
+            // Show error to user
+            if (typeof showToast === 'function') {
+                showToast(error.message, 'error');
+            } else if (typeof showAlert === 'function') {
+                showAlert(error.message, 'error');
+            }
+        } finally {
+            contentTextarea.disabled = false;
+        }
     }
 
     handleExcelUpload(file) {
