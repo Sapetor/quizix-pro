@@ -291,6 +291,34 @@ export default {
         blooms_evaluate: "評価 (判断、批評する)",
         blooms_create: "創造 (設計、構築する)",
 
+        // AI Content Types
+        content_type_mathematics: "数学",
+        content_type_programming: "プログラミング",
+        content_type_physics: "物理学",
+        content_type_chemistry: "化学",
+        content_type_biology: "生物学",
+        content_type_history: "歴史",
+        content_type_economics: "経済学",
+        content_type_general: "一般",
+
+        // AI Formatting Types
+        format_latex: "LaTeX数式",
+        format_code: "コードブロック",
+        format_standard: "標準",
+
+        // AI Generation Mode
+        mode_format_existing: "既存をフォーマット",
+        mode_generate_new: "新規生成",
+
+        // AI Recommendations
+        recommendation_existing_questions: "既存の質問が検出されました。AIがフォーマットと構造化を行います。",
+        recommendation_math_content: "数学コンテンツが検出されました。質問にはLaTeX形式が含まれます。",
+        recommendation_code_content: "コードが検出されました。質問には構文ハイライト付きのコードブロックが含まれます。",
+        recommendation_rich_content: "リッチなコンテンツが検出されました。複数の質問の生成を検討してください。",
+
+        // Cost display
+        cost_free: "無料",
+
         load_saved_quiz: "保存されたクイズを読み込み",
         total: "合計",
         created: "作成日",

@@ -315,6 +315,34 @@ export default {
         blooms_evaluate: "Evaluate (Judge, critique)",
         blooms_create: "Create (Design, construct)",
 
+        // AI Content Types
+        content_type_mathematics: "Mathematics",
+        content_type_programming: "Programming",
+        content_type_physics: "Physics",
+        content_type_chemistry: "Chemistry",
+        content_type_biology: "Biology",
+        content_type_history: "History",
+        content_type_economics: "Economics",
+        content_type_general: "General",
+
+        // AI Formatting Types
+        format_latex: "LaTeX math",
+        format_code: "Code blocks",
+        format_standard: "Standard",
+
+        // AI Generation Mode
+        mode_format_existing: "Format existing",
+        mode_generate_new: "Generate new",
+
+        // AI Recommendations
+        recommendation_existing_questions: "Existing questions detected. The AI will format and structure them.",
+        recommendation_math_content: "Math content detected. Questions will include LaTeX formatting.",
+        recommendation_code_content: "Code detected. Questions will include syntax-highlighted code blocks.",
+        recommendation_rich_content: "Rich content detected. Consider generating multiple questions.",
+
+        // Cost display
+        cost_free: "Free",
+
         load_saved_quiz: "Load Saved Quiz",
         total: "Total",
         created: "Created",

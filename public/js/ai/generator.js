@@ -1431,7 +1431,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
 
         panel.style.display = 'block';
 
-        // Update type with emoji
+        // Update type with emoji and translated name
         const typeEmojis = {
             'mathematics': '📐',
             'programming': '💻',
@@ -1442,28 +1442,30 @@ Please respond with only valid JSON. Do not include explanations or additional t
             'economics': '📊',
             'general': '📝'
         };
-        const typeNames = {
-            'mathematics': 'Mathematics',
-            'programming': 'Programming',
-            'physics': 'Physics',
-            'chemistry': 'Chemistry',
-            'biology': 'Biology',
-            'history': 'History',
-            'economics': 'Economics',
-            'general': 'General'
+        const typeTranslationKeys = {
+            'mathematics': 'content_type_mathematics',
+            'programming': 'content_type_programming',
+            'physics': 'content_type_physics',
+            'chemistry': 'content_type_chemistry',
+            'biology': 'content_type_biology',
+            'history': 'content_type_history',
+            'economics': 'content_type_economics',
+            'general': 'content_type_general'
         };
         if (typeEl) {
-            typeEl.textContent = `${typeEmojis[result.type] || '📝'} ${typeNames[result.type] || 'General'}`;
+            const typeKey = typeTranslationKeys[result.type] || 'content_type_general';
+            const typeName = translationManager.getTranslationSync(typeKey) || 'General';
+            typeEl.textContent = `${typeEmojis[result.type] || '📝'} ${typeName}`;
         }
 
-        // Update formatting
+        // Update formatting with translations
         if (formattingEl) {
             if (result.needsLatex) {
-                formattingEl.textContent = '✨ LaTeX math';
+                formattingEl.textContent = '✨ ' + (translationManager.getTranslationSync('format_latex') || 'LaTeX math');
             } else if (result.needsCodeBlocks) {
-                formattingEl.textContent = '⌨️ Code blocks';
+                formattingEl.textContent = '⌨️ ' + (translationManager.getTranslationSync('format_code') || 'Code blocks');
             } else {
-                formattingEl.textContent = '📄 Standard';
+                formattingEl.textContent = '📄 ' + (translationManager.getTranslationSync('format_standard') || 'Standard');
             }
         }
 
@@ -1477,22 +1479,28 @@ Please respond with only valid JSON. Do not include explanations or additional t
             }
         }
 
-        // Update mode
+        // Update mode with translations
         if (modeEl) {
-            modeEl.textContent = result.hasExistingQuestions ? '🔄 Format existing' : '✨ Generate new';
+            const modeKey = result.hasExistingQuestions ? 'mode_format_existing' : 'mode_generate_new';
+            const modeText = translationManager.getTranslationSync(modeKey) || (result.hasExistingQuestions ? 'Format existing' : 'Generate new');
+            modeEl.textContent = result.hasExistingQuestions ? '🔄 ' + modeText : '✨ ' + modeText;
         }
 
-        // Update recommendation
+        // Update recommendation with translations
         if (recommendationEl) {
             let recommendation = '';
             if (result.hasExistingQuestions) {
-                recommendation = '💡 Existing questions detected. The AI will format and structure them.';
+                recommendation = '💡 ' + (translationManager.getTranslationSync('recommendation_existing_questions') || 'Existing questions detected. The AI will format and structure them.');
             } else if (result.needsLatex) {
-                recommendation = '💡 Math content detected. Questions will include LaTeX formatting.';
+                recommendation = '💡 ' + (translationManager.getTranslationSync('recommendation_math_content') || 'Math content detected. Questions will include LaTeX formatting.');
             } else if (result.needsCodeBlocks) {
-                recommendation = `💡 Code detected${result.language ? ` (${result.language})` : ''}. Questions will include syntax-highlighted code blocks.`;
+                let codeRec = translationManager.getTranslationSync('recommendation_code_content') || 'Code detected. Questions will include syntax-highlighted code blocks.';
+                if (result.language) {
+                    codeRec = codeRec.replace('Code detected', `Code detected (${result.language})`);
+                }
+                recommendation = '💡 ' + codeRec;
             } else if (result.wordCount && result.wordCount > 500) {
-                recommendation = '💡 Rich content detected. Consider generating multiple questions.';
+                recommendation = '💡 ' + (translationManager.getTranslationSync('recommendation_rich_content') || 'Rich content detected. Consider generating multiple questions.');
             }
             recommendationEl.textContent = recommendation;
             recommendationEl.style.display = recommendation ? 'block' : 'none';
@@ -1533,7 +1541,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
 
         // Show for non-free providers or always show for transparency
         if (provider === 'ollama') {
-            costValue.textContent = 'Free';
+            costValue.textContent = translationManager.getTranslationSync('cost_free') || 'Free';
             tokensValue.textContent = `(~${this.formatTokenCount(totalTokens)} tokens)`;
             costPanel.style.display = 'flex';
         } else {

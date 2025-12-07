@@ -295,6 +295,34 @@ export default {
         blooms_evaluate: "Bewerten (Beurteilen, kritisieren)",
         blooms_create: "Erstellen (Entwerfen, konstruieren)",
 
+        // AI Content Types
+        content_type_mathematics: "Mathematik",
+        content_type_programming: "Programmierung",
+        content_type_physics: "Physik",
+        content_type_chemistry: "Chemie",
+        content_type_biology: "Biologie",
+        content_type_history: "Geschichte",
+        content_type_economics: "Wirtschaft",
+        content_type_general: "Allgemein",
+
+        // AI Formatting Types
+        format_latex: "LaTeX-Mathematik",
+        format_code: "Codeblöcke",
+        format_standard: "Standard",
+
+        // AI Generation Mode
+        mode_format_existing: "Vorhandene formatieren",
+        mode_generate_new: "Neue generieren",
+
+        // AI Recommendations
+        recommendation_existing_questions: "Vorhandene Fragen erkannt. Die KI wird sie formatieren und strukturieren.",
+        recommendation_math_content: "Mathematischer Inhalt erkannt. Fragen werden LaTeX-Formatierung enthalten.",
+        recommendation_code_content: "Code erkannt. Fragen werden syntaxhervorgehobene Codeblöcke enthalten.",
+        recommendation_rich_content: "Reichhaltiger Inhalt erkannt. Erwägen Sie, mehrere Fragen zu generieren.",
+
+        // Cost display
+        cost_free: "Kostenlos",
+
         load_saved_quiz: "Gespeichertes Quiz laden",
         total: "Gesamt",
         created: "Erstellt",

@@ -286,6 +286,34 @@ export default {
         blooms_evaluate: "评价 (判断、批评)",
         blooms_create: "创造 (设计、构建)",
 
+        // AI Content Types
+        content_type_mathematics: "数学",
+        content_type_programming: "编程",
+        content_type_physics: "物理",
+        content_type_chemistry: "化学",
+        content_type_biology: "生物",
+        content_type_history: "历史",
+        content_type_economics: "经济学",
+        content_type_general: "通用",
+
+        // AI Formatting Types
+        format_latex: "LaTeX数学",
+        format_code: "代码块",
+        format_standard: "标准",
+
+        // AI Generation Mode
+        mode_format_existing: "格式化现有",
+        mode_generate_new: "生成新的",
+
+        // AI Recommendations
+        recommendation_existing_questions: "检测到现有问题。AI将格式化并结构化它们。",
+        recommendation_math_content: "检测到数学内容。问题将包含LaTeX格式。",
+        recommendation_code_content: "检测到代码。问题将包含语法高亮的代码块。",
+        recommendation_rich_content: "检测到丰富内容。考虑生成多个问题。",
+
+        // Cost display
+        cost_free: "免费",
+
         load_saved_quiz: "加载已保存的问答",
         total: "总计",
         created: "创建时间",

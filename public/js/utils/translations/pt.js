@@ -292,6 +292,34 @@ export default {
         blooms_evaluate: "Avaliar (Julgar, criticar)",
         blooms_create: "Criar (Projetar, construir)",
 
+        // AI Content Types
+        content_type_mathematics: "Matemática",
+        content_type_programming: "Programação",
+        content_type_physics: "Física",
+        content_type_chemistry: "Química",
+        content_type_biology: "Biologia",
+        content_type_history: "História",
+        content_type_economics: "Economia",
+        content_type_general: "Geral",
+
+        // AI Formatting Types
+        format_latex: "LaTeX matemático",
+        format_code: "Blocos de código",
+        format_standard: "Padrão",
+
+        // AI Generation Mode
+        mode_format_existing: "Formatar existentes",
+        mode_generate_new: "Gerar novas",
+
+        // AI Recommendations
+        recommendation_existing_questions: "Perguntas existentes detectadas. A IA irá formatá-las e estruturá-las.",
+        recommendation_math_content: "Conteúdo matemático detectado. As perguntas incluirão formatação LaTeX.",
+        recommendation_code_content: "Código detectado. As perguntas incluirão blocos de código com destaque de sintaxe.",
+        recommendation_rich_content: "Conteúdo rico detectado. Considere gerar múltiplas perguntas.",
+
+        // Cost display
+        cost_free: "Grátis",
+
         load_saved_quiz: "Carregar Quiz Salvo",
         total: "Total",
         created: "Criado",
