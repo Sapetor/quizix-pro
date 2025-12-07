@@ -254,8 +254,275 @@ export class AIQuestionGenerator {
 
         // Clear handler references
         this.eventHandlers = {};
-        
+
         logger.debug('AI Generator event listeners cleaned up');
+    }
+
+    /**
+     * Initialize preview modal event listeners
+     */
+    initializePreviewModalListeners() {
+        const previewModal = document.getElementById('question-preview-modal');
+        const closeBtn = document.getElementById('close-question-preview');
+        const cancelBtn = document.getElementById('cancel-question-preview');
+        const confirmBtn = document.getElementById('confirm-add-questions');
+        const selectAllBtn = document.getElementById('select-all-questions');
+        const deselectAllBtn = document.getElementById('deselect-all-questions');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.closePreviewModal());
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => this.closePreviewModal());
+        }
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => this.confirmAddSelectedQuestions());
+        }
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => this.selectAllQuestions(true));
+        }
+        if (deselectAllBtn) {
+            deselectAllBtn.addEventListener('click', () => this.selectAllQuestions(false));
+        }
+        if (previewModal) {
+            previewModal.addEventListener('click', (e) => {
+                if (e.target === previewModal) {
+                    this.closePreviewModal();
+                }
+            });
+        }
+    }
+
+    /**
+     * Show the question preview modal with generated questions
+     * @param {Array} questions - Array of generated question objects
+     */
+    showQuestionPreview(questions) {
+        this.previewQuestions = questions.map((q, index) => ({
+            ...q,
+            selected: true,  // All selected by default
+            index: index
+        }));
+
+        const previewModal = document.getElementById('question-preview-modal');
+        const previewList = document.getElementById('question-preview-list');
+
+        if (!previewModal || !previewList) {
+            logger.warn('Preview modal elements not found, falling back to direct processing');
+            this.processGeneratedQuestions(questions, false);
+            return;
+        }
+
+        // Clear and render questions
+        previewList.innerHTML = '';
+        this.previewQuestions.forEach((question, index) => {
+            const questionEl = this.renderPreviewQuestion(question, index);
+            previewList.appendChild(questionEl);
+        });
+
+        // Update summary
+        this.updatePreviewSummary();
+
+        // Show the modal
+        previewModal.style.display = 'flex';
+
+        // Initialize listeners if not already done
+        if (!this.previewListenersInitialized) {
+            this.initializePreviewModalListeners();
+            this.previewListenersInitialized = true;
+        }
+    }
+
+    /**
+     * Render a single question for preview
+     * @param {Object} question - Question data
+     * @param {number} index - Question index
+     * @returns {HTMLElement} - The question preview element
+     */
+    renderPreviewQuestion(question, index) {
+        const div = document.createElement('div');
+        div.className = `preview-question-item ${question.selected ? 'selected' : 'rejected'}`;
+        div.dataset.index = index;
+
+        // Get translated question type
+        const typeKey = `question_type_${question.type?.replace('-', '_')}`;
+        const typeLabel = translationManager.getTranslationSync(typeKey) || question.type || 'Unknown';
+
+        // Build options HTML based on question type
+        let optionsHtml = '';
+        if (question.type === 'multiple-choice' || question.type === 'true-false') {
+            const options = question.options || [];
+            const correctIndex = question.correctAnswer || 0;
+            optionsHtml = options.map((opt, i) => `
+                <div class="preview-option ${i === correctIndex ? 'correct' : ''}">
+                    <span class="preview-option-marker">${String.fromCharCode(65 + i)}.</span>
+                    <span>${this.escapeHtml(opt)}</span>
+                </div>
+            `).join('');
+        } else if (question.type === 'multiple-correct') {
+            const options = question.options || [];
+            const correctAnswers = question.correctAnswers || [];
+            optionsHtml = options.map((opt, i) => `
+                <div class="preview-option ${correctAnswers.includes(i) ? 'correct' : ''}">
+                    <span class="preview-option-marker">${String.fromCharCode(65 + i)}.</span>
+                    <span>${this.escapeHtml(opt)}</span>
+                </div>
+            `).join('');
+        } else if (question.type === 'numeric') {
+            const answerLabel = translationManager.getTranslationSync('correct_answer') || 'Correct Answer';
+            optionsHtml = `<div class="preview-option correct">
+                <span class="preview-option-marker">${answerLabel}:</span>
+                <span>${question.correctAnswer}</span>
+            </div>`;
+        }
+
+        // Explanation section if available
+        const explanationHtml = question.explanation
+            ? `<div class="preview-explanation">💡 ${this.escapeHtml(question.explanation)}</div>`
+            : '';
+
+        // Difficulty badge
+        const difficultyLabel = translationManager.getTranslationSync(question.difficulty) || question.difficulty || 'medium';
+
+        div.innerHTML = `
+            <div class="preview-question-header">
+                <span class="preview-question-type">${typeLabel}</span>
+                <div class="preview-question-actions">
+                    <button class="preview-action-btn accept" title="${translationManager.getTranslationSync('select') || 'Select'}" data-action="accept">✓</button>
+                    <button class="preview-action-btn reject" title="${translationManager.getTranslationSync('deselect') || 'Deselect'}" data-action="reject">✕</button>
+                </div>
+            </div>
+            <div class="preview-question-text">${this.escapeHtml(question.question)}</div>
+            <div class="preview-options-list">${optionsHtml}</div>
+            ${explanationHtml}
+            <div class="preview-question-meta">
+                <div class="preview-meta-item">
+                    <span>📊</span>
+                    <span>${difficultyLabel}</span>
+                </div>
+            </div>
+        `;
+
+        // Add click handlers for accept/reject buttons
+        div.querySelector('.preview-action-btn.accept')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleQuestionSelection(index, true);
+        });
+        div.querySelector('.preview-action-btn.reject')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleQuestionSelection(index, false);
+        });
+
+        // Toggle selection on card click
+        div.addEventListener('click', () => {
+            this.toggleQuestionSelection(index, !this.previewQuestions[index].selected);
+        });
+
+        return div;
+    }
+
+    /**
+     * Toggle selection state of a question
+     * @param {number} index - Question index
+     * @param {boolean} selected - New selection state
+     */
+    toggleQuestionSelection(index, selected) {
+        if (!this.previewQuestions[index]) return;
+
+        this.previewQuestions[index].selected = selected;
+
+        // Update visual state
+        const item = document.querySelector(`.preview-question-item[data-index="${index}"]`);
+        if (item) {
+            item.classList.toggle('selected', selected);
+            item.classList.toggle('rejected', !selected);
+        }
+
+        this.updatePreviewSummary();
+    }
+
+    /**
+     * Select or deselect all questions
+     * @param {boolean} select - True to select all, false to deselect all
+     */
+    selectAllQuestions(select) {
+        this.previewQuestions.forEach((q, index) => {
+            q.selected = select;
+            const item = document.querySelector(`.preview-question-item[data-index="${index}"]`);
+            if (item) {
+                item.classList.toggle('selected', select);
+                item.classList.toggle('rejected', !select);
+            }
+        });
+        this.updatePreviewSummary();
+    }
+
+    /**
+     * Update the preview summary with selected count
+     */
+    updatePreviewSummary() {
+        const selectedCount = this.previewQuestions.filter(q => q.selected).length;
+        const totalCount = this.previewQuestions.length;
+
+        const selectedCountEl = document.getElementById('selected-count');
+        const totalCountEl = document.getElementById('total-generated-count');
+        const confirmBtn = document.getElementById('confirm-add-questions');
+
+        if (selectedCountEl) selectedCountEl.textContent = selectedCount;
+        if (totalCountEl) totalCountEl.textContent = totalCount;
+        if (confirmBtn) confirmBtn.disabled = selectedCount === 0;
+    }
+
+    /**
+     * Close the preview modal
+     */
+    closePreviewModal() {
+        const previewModal = document.getElementById('question-preview-modal');
+        if (previewModal) {
+            previewModal.style.display = 'none';
+        }
+        this.previewQuestions = [];
+    }
+
+    /**
+     * Confirm and add selected questions to the quiz
+     */
+    async confirmAddSelectedQuestions() {
+        const selectedQuestions = this.previewQuestions
+            .filter(q => q.selected)
+            .map(({ selected, index, ...q }) => q); // Remove selection metadata
+
+        if (selectedQuestions.length === 0) {
+            showToast(translationManager.getTranslationSync('no_questions_selected') || 'No questions selected', 'warning');
+            return;
+        }
+
+        // Close preview modal
+        this.closePreviewModal();
+
+        // Close AI generator modal
+        this.closeModal();
+
+        // Process the selected questions
+        await this.processGeneratedQuestions(selectedQuestions, false);
+        this.playCompletionChime();
+
+        // Show success message
+        setTimeout(() => {
+            showAlert('successfully_generated_questions', [selectedQuestions.length]);
+        }, 100);
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     * @param {string} text - Text to escape
+     * @returns {string} - Escaped text
+     */
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     async generateQuestions() {
@@ -415,17 +682,10 @@ export class AIQuestionGenerator {
                 if (questions.length > this.requestedQuestionCount) {
                     questions = questions.slice(0, this.requestedQuestionCount);
                 }
-                
-                // Process questions without showing alerts from within
-                await this.processGeneratedQuestions(questions, false);
-                this.playCompletionChime();
-                this.closeModal();
-                
-                // Show single success message after processing is complete
-                setTimeout(() => {
-                    showAlert('successfully_generated_questions', [questions.length]);
-                    this.isGenerating = false;
-                }, TIMING.ANIMATION_DURATION);
+
+                // Show preview modal for user to select which questions to add
+                this.showQuestionPreview(questions);
+                this.isGenerating = false;
             } else {
                 logger.debug('No questions generated');
                 this.showSimpleErrorPopup('No Questions Generated', '❌ The AI provider returned no questions.\n\n🔧 Try:\n• Providing more detailed content\n• Using different question types\n• Rephrasing your content\n• Checking if your content is suitable for quiz questions');

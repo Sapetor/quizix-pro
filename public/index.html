@@ -1548,6 +1548,44 @@
         </div>
     </div>
 
+    <!-- Question Preview Modal -->
+    <div id="question-preview-modal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>📝 <span data-translate="preview_generated_questions">Preview Generated Questions</span></h3>
+                <button id="close-question-preview" class="close-btn">&times;</button>
+            </div>
+
+            <div class="preview-instructions">
+                <p data-translate="preview_instructions">Review the generated questions below. Click to select which ones to add to your quiz.</p>
+            </div>
+
+            <div class="preview-actions-bar">
+                <button id="select-all-questions" class="btn secondary small" data-translate="select_all">Select All</button>
+                <button id="deselect-all-questions" class="btn secondary small" data-translate="deselect_all">Deselect All</button>
+            </div>
+
+            <div class="question-preview-list" id="question-preview-list">
+                <!-- Generated questions will be rendered here -->
+            </div>
+
+            <div class="preview-summary" id="preview-summary">
+                <span class="preview-summary-text">
+                    <span data-translate="selected_questions">Selected:</span>
+                    <span class="preview-summary-count" id="selected-count">0</span>
+                    <span data-translate="of">of</span>
+                    <span id="total-generated-count">0</span>
+                    <span data-translate="questions_label">questions</span>
+                </span>
+            </div>
+
+            <div class="modal-actions">
+                <button id="cancel-question-preview" class="btn secondary" data-translate="cancel">Cancel</button>
+                <button id="confirm-add-questions" class="btn primary" data-translate="add_selected_questions">Add Selected Questions</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Results Viewing Modal -->
     <div id="results-viewing-modal" class="modal" style="display: none;">
         <div class="modal-content large">
