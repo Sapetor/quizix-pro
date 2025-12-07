@@ -280,6 +280,7 @@ export default {
         detected_type: "タイプ:",
         formatting: "フォーマット:",
         content_mode: "モード:",
+        detected_language: "言語:",
         cognitive_level: "認知レベル (ブルーム):",
         estimated_cost: "推定:",
         blooms_mixed: "混合レベル",

@@ -268,6 +268,7 @@ export default {
         detected_type: "Typ:",
         formatting: "Formatowanie:",
         content_mode: "Tryb:",
+        detected_language: "Język:",
         cognitive_level: "Poziom Poznawczy (Bloom):",
         estimated_cost: "Szacowany:",
         blooms_mixed: "Poziomy Mieszane",

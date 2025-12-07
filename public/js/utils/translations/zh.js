@@ -275,6 +275,7 @@ export default {
         detected_type: "类型:",
         formatting: "格式:",
         content_mode: "模式:",
+        detected_language: "语言:",
         cognitive_level: "认知水平 (布鲁姆):",
         estimated_cost: "预估:",
         blooms_mixed: "混合层次",

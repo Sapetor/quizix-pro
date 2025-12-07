@@ -280,6 +280,7 @@ export default {
         detected_type: "Tipo:",
         formatting: "Formato:",
         content_mode: "Modo:",
+        detected_language: "Lenguaje:",
         cognitive_level: "Nivel Cognitivo (Bloom):",
         estimated_cost: "Estimado:",
         blooms_mixed: "Niveles Mixtos",

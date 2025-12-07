@@ -296,6 +296,7 @@ export default {
         detected_type: "Type:",
         formatting: "Formatage:",
         content_mode: "Mode:",
+        detected_language: "Langage:",
         cognitive_level: "Niveau Cognitif (Bloom):",
         estimated_cost: "Estimé:",
         blooms_mixed: "Niveaux Mixtes",
