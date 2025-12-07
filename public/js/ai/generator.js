@@ -607,6 +607,9 @@ export class AIQuestionGenerator {
         // Check if content has existing questions to format vs content to generate from
         const isFormattingExistingQuestions = contentInfo.hasExistingQuestions;
 
+        // Get Bloom's taxonomy cognitive level
+        const cognitiveLevel = document.getElementById('cognitive-level')?.value || 'mixed';
+
         // Use translation manager to get current app language
         const language = translationManager.getCurrentLanguage() || 'en';
 
@@ -623,6 +626,9 @@ export class AIQuestionGenerator {
         };
 
         const targetLanguage = languageNames[language] || 'English';
+
+        // Build Bloom's taxonomy instructions
+        const bloomInstructions = this.buildBloomInstructions(cognitiveLevel);
 
         // Build question type description
         let typeDescription = isFormattingExistingQuestions
@@ -671,7 +677,7 @@ export class AIQuestionGenerator {
 
         // Build the main prompt
         let prompt = `${typeDescription}
-
+${bloomInstructions}
 CONTENT ${isFormattingExistingQuestions ? 'CONTAINING QUESTIONS TO FORMAT' : 'TO CREATE QUESTIONS FROM'}:
 ${content}
 
@@ -709,6 +715,65 @@ SVG (for shapes/diagrams):
 Put COMPLETE code in imageData - don't truncate!`;
 
         return prompt;
+    }
+
+    /**
+     * Build Bloom's taxonomy instructions based on selected cognitive level
+     */
+    buildBloomInstructions(cognitiveLevel) {
+        if (cognitiveLevel === 'mixed') {
+            return `
+COGNITIVE LEVELS (Bloom's Taxonomy):
+- Mix questions across different cognitive levels for variety
+- Include some recall questions (Remember)
+- Include some understanding questions (Understand)
+- Include some application questions (Apply)
+`;
+        }
+
+        const bloomDescriptions = {
+            'remember': {
+                verbs: ['define', 'list', 'name', 'recall', 'identify', 'recognize', 'state'],
+                description: 'Focus on RECALL and RECOGNITION of facts',
+                example: 'What is the capital of France?'
+            },
+            'understand': {
+                verbs: ['explain', 'describe', 'summarize', 'interpret', 'classify', 'compare'],
+                description: 'Focus on EXPLAINING and INTERPRETING concepts',
+                example: 'Why does water boil at 100°C at sea level?'
+            },
+            'apply': {
+                verbs: ['apply', 'demonstrate', 'solve', 'use', 'implement', 'execute'],
+                description: 'Focus on USING knowledge in new situations',
+                example: 'Calculate the area of a triangle with base 5 and height 8.'
+            },
+            'analyze': {
+                verbs: ['analyze', 'compare', 'contrast', 'differentiate', 'examine', 'investigate'],
+                description: 'Focus on BREAKING DOWN information and finding relationships',
+                example: 'Compare and contrast mitosis and meiosis.'
+            },
+            'evaluate': {
+                verbs: ['evaluate', 'judge', 'critique', 'justify', 'argue', 'defend'],
+                description: 'Focus on MAKING JUDGMENTS based on criteria',
+                example: 'Which solution is most effective for reducing carbon emissions and why?'
+            },
+            'create': {
+                verbs: ['create', 'design', 'construct', 'develop', 'formulate', 'propose'],
+                description: 'Focus on CREATING new ideas or products',
+                example: 'Design an experiment to test plant growth under different light conditions.'
+            }
+        };
+
+        const level = bloomDescriptions[cognitiveLevel];
+        if (!level) return '';
+
+        return `
+COGNITIVE LEVEL (Bloom's Taxonomy - ${cognitiveLevel.toUpperCase()}):
+- ${level.description}
+- Use action verbs like: ${level.verbs.join(', ')}
+- Example question style: "${level.example}"
+- All questions should target THIS cognitive level
+`;
     }
 
     buildExcelConversionPrompt(content, selectedTypes) {
@@ -1247,7 +1312,10 @@ Please respond with only valid JSON. Do not include explanations or additional t
      * @returns {Object} { type: string, language: string|null, hasExistingQuestions: boolean }
      */
     detectContentType(content) {
-        if (!content) return { type: 'general', language: null, hasExistingQuestions: false };
+        if (!content) {
+            this.updateContentAnalysisUI(null);
+            return { type: 'general', language: null, hasExistingQuestions: false };
+        }
 
         try {
             const result = {
@@ -1255,7 +1323,8 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 language: null,
                 hasExistingQuestions: false,
                 needsLatex: false,
-                needsCodeBlocks: false
+                needsCodeBlocks: false,
+                wordCount: content.split(/\s+/).filter(w => w.length > 0).length
             };
 
             // Check if content contains existing questions (from file upload)
@@ -1267,6 +1336,8 @@ Please respond with only valid JSON. Do not include explanations or additional t
             if (AI.MATH_INDICATORS?.test(content)) {
                 result.type = 'mathematics';
                 result.needsLatex = true;
+                this.updateContentAnalysisUI(result);
+                this.updateCostEstimation(content);
                 return result;
             }
 
@@ -1283,6 +1354,8 @@ Please respond with only valid JSON. Do not include explanations or additional t
                         }
                     }
                 }
+                this.updateContentAnalysisUI(result);
+                this.updateCostEstimation(content);
                 return result;
             }
 
@@ -1290,6 +1363,8 @@ Please respond with only valid JSON. Do not include explanations or additional t
             if (AI.PHYSICS_INDICATORS?.test(content)) {
                 result.type = 'physics';
                 result.needsLatex = true;
+                this.updateContentAnalysisUI(result);
+                this.updateCostEstimation(content);
                 return result;
             }
 
@@ -1297,32 +1372,188 @@ Please respond with only valid JSON. Do not include explanations or additional t
             if (AI.CHEMISTRY_INDICATORS?.test(content)) {
                 result.type = 'chemistry';
                 result.needsLatex = true;
+                this.updateContentAnalysisUI(result);
+                this.updateCostEstimation(content);
                 return result;
             }
 
             // Biology
             if (AI.BIOLOGY_INDICATORS?.test(content)) {
                 result.type = 'biology';
+                this.updateContentAnalysisUI(result);
+                this.updateCostEstimation(content);
                 return result;
             }
 
             // History
             if (AI.HISTORY_INDICATORS?.test(content)) {
                 result.type = 'history';
+                this.updateContentAnalysisUI(result);
+                this.updateCostEstimation(content);
                 return result;
             }
 
             // Economics
             if (AI.ECONOMICS_INDICATORS?.test(content)) {
                 result.type = 'economics';
+                this.updateContentAnalysisUI(result);
+                this.updateCostEstimation(content);
                 return result;
             }
 
+            this.updateContentAnalysisUI(result);
+            this.updateCostEstimation(content);
             return result;
         } catch (error) {
             logger.warn('Content type detection failed:', error.message);
             return { type: 'general', language: null, hasExistingQuestions: false };
         }
+    }
+
+    /**
+     * Update the content analysis panel UI with detected information
+     */
+    updateContentAnalysisUI(result) {
+        const panel = document.getElementById('content-analysis-panel');
+        const typeEl = document.getElementById('detected-content-type');
+        const formattingEl = document.getElementById('detected-formatting');
+        const languageItem = document.getElementById('detected-language-item');
+        const languageEl = document.getElementById('detected-language');
+        const modeEl = document.getElementById('detected-mode');
+        const recommendationEl = document.getElementById('analysis-recommendation');
+
+        if (!panel) return;
+
+        if (!result) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        panel.style.display = 'block';
+
+        // Update type with emoji
+        const typeEmojis = {
+            'mathematics': '📐',
+            'programming': '💻',
+            'physics': '⚡',
+            'chemistry': '🧪',
+            'biology': '🧬',
+            'history': '📜',
+            'economics': '📊',
+            'general': '📝'
+        };
+        const typeNames = {
+            'mathematics': 'Mathematics',
+            'programming': 'Programming',
+            'physics': 'Physics',
+            'chemistry': 'Chemistry',
+            'biology': 'Biology',
+            'history': 'History',
+            'economics': 'Economics',
+            'general': 'General'
+        };
+        if (typeEl) {
+            typeEl.textContent = `${typeEmojis[result.type] || '📝'} ${typeNames[result.type] || 'General'}`;
+        }
+
+        // Update formatting
+        if (formattingEl) {
+            if (result.needsLatex) {
+                formattingEl.textContent = '✨ LaTeX math';
+            } else if (result.needsCodeBlocks) {
+                formattingEl.textContent = '⌨️ Code blocks';
+            } else {
+                formattingEl.textContent = '📄 Standard';
+            }
+        }
+
+        // Update language (for programming)
+        if (languageItem && languageEl) {
+            if (result.language) {
+                languageItem.style.display = 'flex';
+                languageEl.textContent = result.language.charAt(0).toUpperCase() + result.language.slice(1);
+            } else {
+                languageItem.style.display = 'none';
+            }
+        }
+
+        // Update mode
+        if (modeEl) {
+            modeEl.textContent = result.hasExistingQuestions ? '🔄 Format existing' : '✨ Generate new';
+        }
+
+        // Update recommendation
+        if (recommendationEl) {
+            let recommendation = '';
+            if (result.hasExistingQuestions) {
+                recommendation = '💡 Existing questions detected. The AI will format and structure them.';
+            } else if (result.needsLatex) {
+                recommendation = '💡 Math content detected. Questions will include LaTeX formatting.';
+            } else if (result.needsCodeBlocks) {
+                recommendation = `💡 Code detected${result.language ? ` (${result.language})` : ''}. Questions will include syntax-highlighted code blocks.`;
+            } else if (result.wordCount && result.wordCount > 500) {
+                recommendation = '💡 Rich content detected. Consider generating multiple questions.';
+            }
+            recommendationEl.textContent = recommendation;
+            recommendationEl.style.display = recommendation ? 'block' : 'none';
+        }
+    }
+
+    /**
+     * Update cost estimation based on content and provider
+     */
+    updateCostEstimation(content) {
+        const costPanel = document.getElementById('cost-estimation');
+        const costValue = document.getElementById('estimated-cost');
+        const tokensValue = document.getElementById('estimated-tokens');
+        const provider = document.getElementById('ai-provider')?.value;
+        const questionCount = parseInt(document.getElementById('question-count')?.value) || 1;
+
+        if (!costPanel || !costValue || !tokensValue || !provider) return;
+
+        // Token estimation: ~4 chars per token for English
+        const inputTokens = Math.ceil((content?.length || 0) / 4);
+        // Output estimation: ~500 tokens per question
+        const outputTokens = questionCount * 500;
+        const totalTokens = inputTokens + outputTokens;
+
+        // Cost per 1M tokens (approximate, as of late 2024)
+        const costs = {
+            'ollama': { input: 0, output: 0, label: 'Free (local)' },
+            'openai': { input: 0.15, output: 0.60, label: 'GPT-4o-mini' }, // $0.15/1M input, $0.60/1M output
+            'claude': { input: 3.00, output: 15.00, label: 'Claude Sonnet' }, // $3/1M input, $15/1M output
+            'gemini': { input: 0.075, output: 0.30, label: 'Gemini Flash' } // $0.075/1M input, $0.30/1M output
+        };
+
+        const providerCost = costs[provider];
+        if (!providerCost) {
+            costPanel.style.display = 'none';
+            return;
+        }
+
+        // Show for non-free providers or always show for transparency
+        if (provider === 'ollama') {
+            costValue.textContent = 'Free';
+            tokensValue.textContent = `(~${this.formatTokenCount(totalTokens)} tokens)`;
+            costPanel.style.display = 'flex';
+        } else {
+            const estimatedCost = (inputTokens * providerCost.input / 1000000) + (outputTokens * providerCost.output / 1000000);
+            costValue.textContent = estimatedCost < 0.01 ? '<$0.01' : `~$${estimatedCost.toFixed(3)}`;
+            tokensValue.textContent = `(~${this.formatTokenCount(totalTokens)} tokens)`;
+            costPanel.style.display = 'flex';
+        }
+    }
+
+    /**
+     * Format token count for display (e.g., 1500 -> "1.5K")
+     */
+    formatTokenCount(count) {
+        if (count >= 1000000) {
+            return (count / 1000000).toFixed(1) + 'M';
+        } else if (count >= 1000) {
+            return (count / 1000).toFixed(1) + 'K';
+        }
+        return count.toString();
     }
 
     /**
@@ -1364,12 +1595,16 @@ ${langHint}
 `;
         }
 
-        // Add explanation field instruction
+        // Add explanation and wrong answer feedback instructions
         instructions += `
-QUESTION QUALITY:
+QUESTION QUALITY & FEEDBACK:
 - Add an "explanation" field with a brief explanation of why the correct answer is right
 - Add a "difficulty" field with value "easy", "medium", or "hard" based on content complexity
+- Add an "optionFeedback" array with feedback for EACH wrong answer option explaining WHY it's incorrect
+- For multiple-choice: optionFeedback should have feedback for indices that are NOT the correct answer
+- Example: "optionFeedback": [{"index": 1, "feedback": "This is wrong because..."}, {"index": 2, "feedback": "Common misconception: ..."}]
 - Ensure questions test understanding, not just memorization
+- Wrong answer feedback helps students learn from mistakes
 `;
 
         return instructions;

@@ -1413,7 +1413,6 @@
                         <label for="ai-provider" data-translate="choose_ai_provider">Choose AI Provider:</label>
                         <select id="ai-provider" class="input-field">
                             <option value="ollama" data-translate="ollama_free_local">Ollama (Free, Local)</option>
-                            <option value="huggingface" data-translate="huggingface_free">Hugging Face (Free tier)</option>
                             <option value="openai" data-translate="openai_paid">OpenAI (Paid)</option>
                             <option value="claude" data-translate="claude_paid">Anthropic Claude (Paid)</option>
                             <option value="gemini" data-translate="gemini_paid">Google Gemini (Paid)</option>
@@ -1438,10 +1437,31 @@
                     <label for="source-content" data-translate="source_material">Source Material:</label>
                     <textarea id="source-content" class="input-field" rows="8" placeholder="Paste your text content here, or upload a file below..." data-translate-placeholder="paste_content_here"></textarea>
                     
-                    <div class="content-type-indicator" id="content-type-indicator" style="display: none;">
-                        <span class="content-type-label" data-translate="content_type_detected">Content type detected:</span>
-                        <span class="content-type-value" id="content-type-value">general</span>
-                        <span class="content-type-description" id="content-type-description">Questions will use standard formatting</span>
+                    <!-- Content Analysis Summary -->
+                    <div class="content-analysis-panel" id="content-analysis-panel" style="display: none;">
+                        <div class="analysis-header">
+                            <span class="analysis-icon">📊</span>
+                            <span data-translate="content_analysis">Content Analysis</span>
+                        </div>
+                        <div class="analysis-grid">
+                            <div class="analysis-item">
+                                <span class="analysis-label" data-translate="detected_type">Type:</span>
+                                <span class="analysis-value" id="detected-content-type">General</span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label" data-translate="formatting">Formatting:</span>
+                                <span class="analysis-value" id="detected-formatting">Standard</span>
+                            </div>
+                            <div class="analysis-item" id="detected-language-item" style="display: none;">
+                                <span class="analysis-label" data-translate="language">Language:</span>
+                                <span class="analysis-value" id="detected-language">-</span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label" data-translate="content_mode">Mode:</span>
+                                <span class="analysis-value" id="detected-mode">Generate new</span>
+                            </div>
+                        </div>
+                        <div class="analysis-recommendation" id="analysis-recommendation"></div>
                     </div>
                     
                     <div class="file-upload-section">
@@ -1466,6 +1486,19 @@
                             <option value="hard" data-translate="hard">Hard</option>
                         </select>
                     </div>
+
+                    <div class="option-group">
+                        <label for="cognitive-level" data-translate="cognitive_level">Cognitive Level (Bloom's):</label>
+                        <select id="cognitive-level" class="input-field">
+                            <option value="mixed" data-translate="mixed">Mixed Levels</option>
+                            <option value="remember">Remember (Recall facts)</option>
+                            <option value="understand">Understand (Explain concepts)</option>
+                            <option value="apply">Apply (Use in new situations)</option>
+                            <option value="analyze">Analyze (Break down, compare)</option>
+                            <option value="evaluate">Evaluate (Judge, critique)</option>
+                            <option value="create">Create (Design, construct)</option>
+                        </select>
+                    </div>
                     
                     <div class="option-group">
                         <label data-translate="question_types">Question Types:</label>
@@ -1486,11 +1519,21 @@
                     </div>
                 </div>
                 
+                <!-- Cost Estimation -->
+                <div class="cost-estimation" id="cost-estimation" style="display: none;">
+                    <div class="cost-info">
+                        <span class="cost-icon">💰</span>
+                        <span class="cost-label" data-translate="estimated_cost">Estimated:</span>
+                        <span class="cost-value" id="estimated-cost">~$0.00</span>
+                        <span class="cost-tokens" id="estimated-tokens">(~0 tokens)</span>
+                    </div>
+                </div>
+
                 <div class="generation-status" id="generation-status" style="display: none;">
                     <div class="loading-spinner"></div>
                     <span data-translate="generating_questions">Generating questions...</span>
                 </div>
-                
+
                 <div class="modal-actions">
                     <button id="cancel-ai-generator" class="btn secondary" data-translate="cancel">Cancel</button>
                     <button id="generate-questions" class="btn primary" data-translate="generate_questions_btn">Generate Questions</button>
