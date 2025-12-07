@@ -1508,6 +1508,29 @@ Please respond with only valid JSON. Do not include explanations or additional t
     }
 
     /**
+     * Update the output language indicator to show current app language
+     */
+    updateOutputLanguageIndicator() {
+        const languageNameEl = document.getElementById('output-language-name');
+        if (!languageNameEl) return;
+
+        const language = translationManager.getCurrentLanguage() || 'en';
+        const languageNames = {
+            'en': 'English',
+            'es': 'Español',
+            'fr': 'Français',
+            'de': 'Deutsch',
+            'it': 'Italiano',
+            'pt': 'Português',
+            'pl': 'Polski',
+            'ja': '日本語',
+            'zh': '中文'
+        };
+
+        languageNameEl.textContent = languageNames[language] || 'English';
+    }
+
+    /**
      * Update cost estimation based on content and provider
      */
     updateCostEstimation(content) {
@@ -2491,6 +2514,9 @@ QUESTION QUALITY & FEEDBACK:
             if (questionCount) {
                 questionCount.value = AI.DEFAULT_QUESTION_COUNT;
             }
+
+            // Update output language indicator
+            this.updateOutputLanguageIndicator();
 
             logger.debug('🚀 OpenModal - About to set timeout for delayed loading');
             

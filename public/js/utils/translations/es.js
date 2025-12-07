@@ -319,6 +319,9 @@ export default {
         // Cost display
         cost_free: "Gratis",
 
+        // Language indicator
+        questions_generated_in: "Las preguntas se generarán en:",
+
         load_saved_quiz: "Cargar Quiz Guardado", 
         total: "Total",
         created: "Creado",

@@ -314,6 +314,9 @@ export default {
         // Cost display
         cost_free: "免费",
 
+        // Language indicator
+        questions_generated_in: "问题将以以下语言生成:",
+
         load_saved_quiz: "加载已保存的问答",
         total: "总计",
         created: "创建时间",

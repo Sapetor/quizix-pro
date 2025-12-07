@@ -3973,6 +3973,32 @@ html {
     background: rgba(34, 197, 94, 0.15);
 }
 
+/* Language Indicator */
+.language-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.language-indicator .indicator-icon {
+    font-size: 1.1rem;
+}
+
+.language-indicator strong {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+[data-theme="dark"] .language-indicator {
+    background: rgba(99, 102, 241, 0.15);
+}
+
 /* Question Preview Modal */
 .question-preview-list {
     max-height: 400px;

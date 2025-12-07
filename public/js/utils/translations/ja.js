@@ -319,6 +319,9 @@ export default {
         // Cost display
         cost_free: "無料",
 
+        // Language indicator
+        questions_generated_in: "質問は次の言語で生成されます:",
+
         load_saved_quiz: "保存されたクイズを読み込み",
         total: "合計",
         created: "作成日",

@@ -307,6 +307,9 @@ export default {
         // Cost display
         cost_free: "Bezpłatnie",
 
+        // Language indicator
+        questions_generated_in: "Pytania zostaną wygenerowane w:",
+
         load_saved_quiz: "Wczytaj Zapisany Quiz",
         total: "Razem", 
         created: "Utworzono",
