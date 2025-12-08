@@ -406,21 +406,6 @@ export class KeyboardShortcuts {
 
         return html;
     }
-
-    /**
-     * Enable/disable shortcuts
-     */
-    setEnabled(enabled) {
-        this.isEnabled = enabled;
-        logger.debug(`Keyboard shortcuts ${enabled ? 'enabled' : 'disabled'}`);
-    }
-
-    /**
-     * Get all registered shortcuts
-     */
-    getShortcuts() {
-        return Array.from(this.shortcuts.values());
-    }
 }
 
 // Create singleton instance

@@ -83,11 +83,10 @@ export class QuizGame {
         
         // Make preview manager globally accessible for onclick handlers
         window.game = this;
-        
-        // Setup auto-save and load any existing data (temporarily disabled for debugging)
+
+        // Setup auto-save
         this.quizManager.setupAutoSave();
-        // DISABLED: this.quizManager.loadAutoSave(); // Disabled to prevent data corruption during debugging
-        
+
         // Load theme and settings
         this.settingsManager.initializeEventListeners();
         

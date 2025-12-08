@@ -308,35 +308,6 @@ export class ContentDensityManager {
             container.style.setProperty('gap', 'var(--option-gap-compact)', 'important');
         }
     }
-
-    /**
-     * Force re-analysis of all content (useful after major DOM changes)
-     */
-    refresh() {
-        this.contentAnalysis.clear();
-        this.analyzeExistingContent();
-        logger.debug('Content Density Manager: Refreshed all content analysis');
-    }
-
-    /**
-     * Get analysis for a specific element
-     * @param {Element} element - Element to get analysis for
-     * @returns {Object|null} Analysis or null if not found
-     */
-    getAnalysis(element) {
-        return this.contentAnalysis.get(element) || null;
-    }
-
-    /**
-     * Cleanup observers
-     */
-    destroy() {
-        this.observers.forEach(observer => observer.disconnect());
-        this.observers.clear();
-        this.contentAnalysis.clear();
-        this.initialized = false;
-        logger.debug('Content Density Manager: Destroyed');
-    }
 }
 
 // Create and export singleton instance

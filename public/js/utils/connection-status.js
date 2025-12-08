@@ -231,28 +231,34 @@ export class ConnectionStatus {
         if (pingValue) {
             pingValue.textContent = this.lastPingTime ? `${this.lastPingTime}ms` : '-';
         }
-        
+
+        const qualityText = this.getQualityText();
+
         if (qualityValue) {
-            const qualityText = this.connectionQuality === 'excellent' ? translationManager.getTranslationSync('connection_excellent') :
-                              this.connectionQuality === 'good' ? translationManager.getTranslationSync('connection_good') :
-                              this.connectionQuality === 'fair' ? translationManager.getTranslationSync('connection_fair') :
-                              this.connectionQuality === 'poor' ? translationManager.getTranslationSync('connection_poor') : 
-                              this.connectionQuality === 'offline' ? translationManager.getTranslationSync('offline') : '-';
-            qualityValue.textContent = qualityText;
+            qualityValue.textContent = qualityText || '-';
         }
 
         // Update tooltip
         const indicator = statusElement.querySelector('.connection-indicator');
         if (indicator) {
-            const qualityText = this.connectionQuality === 'excellent' ? translationManager.getTranslationSync('connection_excellent') :
-                              this.connectionQuality === 'good' ? translationManager.getTranslationSync('connection_good') :
-                              this.connectionQuality === 'fair' ? translationManager.getTranslationSync('connection_fair') :
-                              this.connectionQuality === 'poor' ? translationManager.getTranslationSync('connection_poor') : 
-                              translationManager.getTranslationSync('offline');
-            
             const connectionLabel = translationManager.getTranslationSync('connection');
             indicator.title = `${connectionLabel}: ${qualityText}${this.lastPingTime ? ` (${this.lastPingTime}ms)` : ''}`;
         }
+    }
+
+    /**
+     * Get translated quality text for current connection quality
+     */
+    getQualityText() {
+        const qualityMap = {
+            'excellent': 'connection_excellent',
+            'good': 'connection_good',
+            'fair': 'connection_fair',
+            'poor': 'connection_poor',
+            'offline': 'offline'
+        };
+        const key = qualityMap[this.connectionQuality];
+        return key ? translationManager.getTranslationSync(key) : translationManager.getTranslationSync('offline');
     }
 
     /**

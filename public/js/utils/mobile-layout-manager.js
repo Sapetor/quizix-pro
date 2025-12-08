@@ -129,11 +129,6 @@ export class MobileLayoutManager {
 
         // Update current type
         this.currentContentType = analysis.primaryType;
-
-        // Dispatch event for other components
-        document.dispatchEvent(new CustomEvent('mobile-layout-adapted', {
-            detail: { analysis, layoutType: analysis.primaryType }
-        }));
     }
 
     /**

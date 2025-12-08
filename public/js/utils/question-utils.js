@@ -238,16 +238,6 @@ export function createQuestionElement(questionData) {
 }
 
 /**
- * Validate LaTeX in questions - simple implementation
- */
-export function validateLatexInQuestions(questions) {
-    logger.debug('validateLatexInQuestions called with', questions.length, 'questions');
-    // For now, just return empty array to skip LaTeX validation
-    // This prevents the blocking error
-    return [];
-}
-
-/**
  * Shuffle array
  */
 export function shuffleArray(array) {
