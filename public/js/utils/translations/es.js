@@ -92,7 +92,11 @@ export default {
         share_with_qr_code: "Compartir con Código QR",
         scan_to_join: "Escanea para unirte",
         copy_game_url: "Copiar URL del Juego",
-        
+        generating_questions: "Generando preguntas...",
+        questions_generated: "Preguntas generadas con éxito",
+        successfully_generated_questions: "Se añadieron {0} pregunta(s) a tu cuestionario",
+        error_generating: "Error al generar preguntas",
+
         // Question type dropdown keys (used in editor)
         multiple_choice: "Opción Múltiple",
         true_false: "Verdadero/Falso",

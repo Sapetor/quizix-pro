@@ -86,6 +86,7 @@ export default {
         copy_game_url: "ゲームURLをコピー",
         generating_questions: "質問を生成中...",
         questions_generated: "質問の生成が完了",
+        successfully_generated_questions: "{0}件の質問をクイズに追加しました",
         error_generating: "質問生成エラー",
         select_question_preview: "プレビューする質問を選択",
         generating_qr: "QRコードを生成中...",

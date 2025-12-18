@@ -81,6 +81,7 @@ export default {
         copy_game_url: "复制游戏URL",
         generating_questions: "生成问题中...",
         questions_generated: "问题生成成功",
+        successfully_generated_questions: "已添加{0}个问题到您的问答",
         error_generating: "生成问题时出错",
         select_question_preview: "选择要预览的问题",
         generating_qr: "生成二维码中...",

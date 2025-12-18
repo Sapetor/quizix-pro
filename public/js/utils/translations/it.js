@@ -81,6 +81,7 @@ export default {
         copy_game_url: "Copia URL Gioco",
         generating_questions: "Generazione domande...",
         questions_generated: "Domande generate con successo",
+        successfully_generated_questions: "{0} domanda/e aggiunta/e al tuo quiz",
         error_generating: "Errore nella generazione delle domande",
         select_question_preview: "Seleziona una domanda da visualizzare",
         generating_qr: "Generazione Codice QR...",

@@ -85,6 +85,7 @@ export default {
         copy_game_url: "Skopiuj URL Gry",
         generating_questions: "Generowanie pytań...",
         questions_generated: "Pytania wygenerowane pomyślnie",
+        successfully_generated_questions: "Dodano {0} pytanie/pytań do quizu",
         multiple_choice: "Wybór Wielokrotny",
         multiple_correct: "Wiele Poprawnych Odpowiedzi",
         multiple_correct_instruction: "Wybierz wszystkie poprawne odpowiedzi - więcej niż jedna opcja może być poprawna!",
