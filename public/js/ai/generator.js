@@ -318,6 +318,24 @@ export class AIQuestionGenerator {
                     delete q.correctAnswer;
                 }
 
+                // Auto-fix: correctAnswers might be letters ["A", "C"] instead of indices [0, 2]
+                if (q.type === 'multiple-correct' && Array.isArray(q.correctAnswers) && q.correctAnswers.length > 0) {
+                    const firstAnswer = q.correctAnswers[0];
+                    if (typeof firstAnswer === 'string' && /^[A-Fa-f]$/.test(firstAnswer)) {
+                        logger.debug(`🔧 Auto-fixing question ${i + 1}: converting letter answers to indices`);
+                        q.correctAnswers = q.correctAnswers.map(letter =>
+                            letter.toUpperCase().charCodeAt(0) - 65
+                        );
+                    }
+                }
+
+                // Auto-fix: multiple-choice correctAnswer might be letter "A" instead of index 0
+                if ((q.type === 'multiple-choice' || q.type === 'true-false') &&
+                    typeof q.correctAnswer === 'string' && /^[A-Fa-f]$/.test(q.correctAnswer)) {
+                    logger.debug(`🔧 Auto-fixing question ${i + 1}: converting letter answer "${q.correctAnswer}" to index`);
+                    q.correctAnswer = q.correctAnswer.toUpperCase().charCodeAt(0) - 65;
+                }
+
                 // Validate correct answer based on question type
                 if (q.type === 'multiple-choice') {
                     if (q.correctAnswer === undefined) {
