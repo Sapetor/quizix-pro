@@ -2139,7 +2139,7 @@ QUESTION QUALITY & FEEDBACK:
             const formData = new FormData();
             formData.append('pdf', file);
 
-            const response = await fetch('/api/extract-pdf', {
+            const response = await fetch(APIHelper.getApiUrl('api/extract-pdf'), {
                 method: 'POST',
                 body: formData
             });
