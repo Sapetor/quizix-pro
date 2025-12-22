@@ -461,3 +461,19 @@ quizix-pro/
 - Verify LaTeX/MathJax rendering across different browsers
 - Test mobile gestures (swipe, tap) on actual mobile devices
 - Validate file uploads with different image types and sizes
+
+## Future Enhancements
+
+**AI Image Generation for Questions:**
+- The AI generator previously supported image generation via Claude (SVG)
+- Potential enhancements:
+  - **SVG generation**: Claude can generate SVG diagrams for geometry, graphs, etc.
+  - **TikZ/CircuiTikZ**: Server-side LaTeX rendering for precise technical diagrams
+  - **Circuit diagrams**: CircuiTikZ for electronics questions
+  - **Geometric figures**: TikZ for triangles, circles, coordinate planes
+  - **Graphs and charts**: Data visualization for statistics questions
+- Implementation considerations:
+  - Server-side LaTeX to PNG/SVG conversion (requires texlive)
+  - Claude prompt engineering for consistent SVG output
+  - Automatic image upload to `/uploads/` directory
+  - Preview rendering in AI generator modal
