@@ -310,6 +310,33 @@ export class AIQuestionGenerator {
                 if (!q.type) issues.push('missing "type"');
                 if (!Array.isArray(q.options)) issues.push('missing or invalid "options" array');
                 else if (q.options.length === 0) issues.push('"options" array is empty');
+
+                // Auto-fix: multiple-correct with correctAnswer instead of correctAnswers
+                if (q.type === 'multiple-correct' && q.correctAnswer !== undefined && !q.correctAnswers) {
+                    logger.debug(`🔧 Auto-fixing question ${i + 1}: converting correctAnswer to correctAnswers array`);
+                    q.correctAnswers = Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswer];
+                    delete q.correctAnswer;
+                }
+
+                // Validate correct answer based on question type
+                if (q.type === 'multiple-choice') {
+                    if (q.correctAnswer === undefined) {
+                        issues.push('missing "correctAnswer" for multiple-choice');
+                    }
+                } else if (q.type === 'true-false') {
+                    // true-false can have correctAnswer as number (0/1) or string ("true"/"false")
+                    if (q.correctAnswer === undefined) {
+                        issues.push('missing "correctAnswer" for true-false');
+                    }
+                } else if (q.type === 'multiple-correct') {
+                    if (!Array.isArray(q.correctAnswers) || q.correctAnswers.length === 0) {
+                        issues.push('missing or empty "correctAnswers" array for multiple-correct');
+                    }
+                } else if (q.type === 'numeric') {
+                    if (q.correctAnswer === undefined) {
+                        issues.push('missing "correctAnswer" for numeric');
+                    }
+                }
             }
 
             if (issues.length === 0) {
