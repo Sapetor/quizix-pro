@@ -298,18 +298,38 @@ export class AIQuestionGenerator {
      * @param {Array} questions - Array of generated question objects
      */
     showQuestionPreview(questions) {
-        // Filter out malformed questions (missing required fields)
-        const validQuestions = questions.filter(q =>
-            q && q.question && q.type && Array.isArray(q.options) && q.options.length > 0
-        );
+        // Filter out malformed questions (missing required fields) with detailed logging
+        const validQuestions = [];
+        const malformedQuestions = [];
+
+        questions.forEach((q, i) => {
+            const issues = [];
+            if (!q) issues.push('question is null/undefined');
+            else {
+                if (!q.question) issues.push('missing "question" text');
+                if (!q.type) issues.push('missing "type"');
+                if (!Array.isArray(q.options)) issues.push('missing or invalid "options" array');
+                else if (q.options.length === 0) issues.push('"options" array is empty');
+            }
+
+            if (issues.length === 0) {
+                validQuestions.push(q);
+            } else {
+                malformedQuestions.push({ index: i, issues, data: q });
+            }
+        });
 
         if (validQuestions.length === 0) {
             showToast(translationManager.getTranslationSync('error_generating') || 'Error generating questions', 'error');
             return;
         }
 
-        if (validQuestions.length < questions.length) {
-            logger.warn(`Filtered out ${questions.length - validQuestions.length} malformed questions`);
+        if (malformedQuestions.length > 0) {
+            logger.warn(`Filtered out ${malformedQuestions.length} malformed questions:`);
+            malformedQuestions.forEach(({ index, issues, data }) => {
+                logger.warn(`  Question ${index + 1}: ${issues.join(', ')}`);
+                logger.debug(`  Raw data:`, data);
+            });
         }
 
         this.previewQuestions = validQuestions.map((q, index) => ({
