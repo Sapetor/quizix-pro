@@ -1904,13 +1904,13 @@ ${langHint}
         // Add explanation and wrong answer feedback instructions
         instructions += `
 QUESTION QUALITY & FEEDBACK:
-- Add an "explanation" field with a brief explanation of why the correct answer is right
+- Add an "explanation" field with a BRIEF explanation (1-2 sentences max) of why the correct answer is right
 - Add a "difficulty" field with value "easy", "medium", or "hard" based on content complexity
-- Add an "optionFeedback" array with feedback for EACH wrong answer option explaining WHY it's incorrect
+- Add an "optionFeedback" array with SHORT feedback (max 15 words each) for wrong answers explaining WHY incorrect
 - For multiple-choice: optionFeedback should have feedback for indices that are NOT the correct answer
-- Example: "optionFeedback": [{"index": 1, "feedback": "This is wrong because..."}, {"index": 2, "feedback": "Common misconception: ..."}]
+- Example: "optionFeedback": [{"index": 1, "feedback": "Incorrect - this describes X not Y"}, {"index": 2, "feedback": "Common misconception"}]
+- Keep ALL text concise to ensure complete JSON output
 - Ensure questions test understanding, not just memorization
-- Wrong answer feedback helps students learn from mistakes
 `;
 
         return instructions;

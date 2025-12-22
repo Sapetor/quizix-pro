@@ -758,9 +758,9 @@ app.post('/api/claude/generate', async (req, res) => {
     const { default: fetchFunction } = await import('node-fetch');
 
     // Calculate max_tokens based on number of questions
-    // ~2500 tokens per question (accounts for non-English text, explanations, and option feedback)
+    // ~1500 tokens per question (prompt asks for concise feedback)
     const questionCount = Math.max(1, Math.min(numQuestions || 5, 20));
-    const calculatedMaxTokens = Math.max(6000, questionCount * 2500);
+    const calculatedMaxTokens = Math.max(4096, questionCount * 1500);
 
     const requestBody = {
       model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
