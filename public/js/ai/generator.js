@@ -298,7 +298,21 @@ export class AIQuestionGenerator {
      * @param {Array} questions - Array of generated question objects
      */
     showQuestionPreview(questions) {
-        this.previewQuestions = questions.map((q, index) => ({
+        // Filter out malformed questions (missing required fields)
+        const validQuestions = questions.filter(q =>
+            q && q.question && q.type && Array.isArray(q.options) && q.options.length > 0
+        );
+
+        if (validQuestions.length === 0) {
+            showToast(translationManager.getTranslationSync('error_generating') || 'Error generating questions', 'error');
+            return;
+        }
+
+        if (validQuestions.length < questions.length) {
+            logger.warn(`Filtered out ${questions.length - validQuestions.length} malformed questions`);
+        }
+
+        this.previewQuestions = validQuestions.map((q, index) => ({
             ...q,
             selected: true,  // All selected by default
             index: index

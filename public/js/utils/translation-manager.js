@@ -52,6 +52,11 @@ class TranslationManager {
      * Note: This will return the key if translation not loaded yet
      */
     getTranslationSync(key, params = []) {
+        // Guard against undefined/null keys
+        if (!key) {
+            return '';
+        }
+
         const translations = this.loadedTranslations.get(this.currentLanguage);
         let translation = translations?.[key];
         
