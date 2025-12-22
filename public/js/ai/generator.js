@@ -362,74 +362,116 @@ export class AIQuestionGenerator {
         const typeKey = `question_type_${question.type?.replace('-', '_')}`;
         const typeLabel = translationManager.getTranslationSync(typeKey) || question.type || 'Unknown';
 
+        // Colorful option colors (matching app preview)
+        const optionColors = [
+            { bg: 'rgba(59, 130, 246, 0.15)', border: '#3b82f6', text: '#3b82f6' },   // Blue
+            { bg: 'rgba(16, 185, 129, 0.15)', border: '#10b981', text: '#10b981' },   // Green
+            { bg: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b', text: '#f59e0b' },   // Orange
+            { bg: 'rgba(239, 68, 68, 0.15)', border: '#ef4444', text: '#ef4444' },    // Red
+            { bg: 'rgba(139, 92, 246, 0.15)', border: '#8b5cf6', text: '#8b5cf6' },   // Purple
+            { bg: 'rgba(6, 182, 212, 0.15)', border: '#06b6d4', text: '#06b6d4' }     // Cyan
+        ];
+
         // Build options HTML based on question type
         let optionsHtml = '';
         if (question.type === 'multiple-choice' || question.type === 'true-false') {
             const options = question.options || [];
-            const correctIndex = question.correctAnswer || 0;
-            optionsHtml = options.map((opt, i) => `
-                <div class="preview-option ${i === correctIndex ? 'correct' : ''}">
-                    <span class="preview-option-marker">${String.fromCharCode(65 + i)}.</span>
-                    <span>${this.escapeHtml(opt)}</span>
-                </div>
-            `).join('');
+            const correctIndex = question.correctAnswer ?? 0;
+            optionsHtml = options.map((opt, i) => {
+                const color = optionColors[i % optionColors.length];
+                const isCorrect = i === correctIndex;
+                return `
+                <div class="ai-preview-option ${isCorrect ? 'correct' : ''}"
+                     style="background: ${color.bg}; border-left: 4px solid ${color.border};">
+                    <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${String.fromCharCode(65 + i)}</span>
+                    <span class="ai-option-text">${this.escapeHtml(opt)}</span>
+                    ${isCorrect ? '<span class="ai-correct-badge">✓</span>' : ''}
+                </div>`;
+            }).join('');
         } else if (question.type === 'multiple-correct') {
             const options = question.options || [];
             const correctAnswers = question.correctAnswers || [];
-            optionsHtml = options.map((opt, i) => `
-                <div class="preview-option ${correctAnswers.includes(i) ? 'correct' : ''}">
-                    <span class="preview-option-marker">${String.fromCharCode(65 + i)}.</span>
-                    <span>${this.escapeHtml(opt)}</span>
-                </div>
-            `).join('');
+            optionsHtml = options.map((opt, i) => {
+                const color = optionColors[i % optionColors.length];
+                const isCorrect = correctAnswers.includes(i);
+                return `
+                <div class="ai-preview-option ${isCorrect ? 'correct' : ''}"
+                     style="background: ${color.bg}; border-left: 4px solid ${color.border};">
+                    <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${String.fromCharCode(65 + i)}</span>
+                    <span class="ai-option-text">${this.escapeHtml(opt)}</span>
+                    ${isCorrect ? '<span class="ai-correct-badge">✓</span>' : ''}
+                </div>`;
+            }).join('');
         } else if (question.type === 'numeric') {
             const answerLabel = translationManager.getTranslationSync('correct_answer') || 'Correct Answer';
-            optionsHtml = `<div class="preview-option correct">
-                <span class="preview-option-marker">${answerLabel}:</span>
-                <span>${question.correctAnswer}</span>
-            </div>`;
+            const color = optionColors[0];
+            optionsHtml = `
+                <div class="ai-preview-option correct" style="background: ${color.bg}; border-left: 4px solid ${color.border};">
+                    <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${answerLabel}:</span>
+                    <span class="ai-option-text">${question.correctAnswer}</span>
+                    <span class="ai-correct-badge">✓</span>
+                </div>`;
+        } else if (question.type === 'ordering') {
+            const items = question.options || question.items || [];
+            optionsHtml = items.map((item, i) => {
+                const color = optionColors[i % optionColors.length];
+                return `
+                <div class="ai-preview-option" style="background: ${color.bg}; border-left: 4px solid ${color.border};">
+                    <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${i + 1}</span>
+                    <span class="ai-option-text">${this.escapeHtml(item)}</span>
+                </div>`;
+            }).join('');
         }
 
         // Explanation section if available
         const explanationHtml = question.explanation
-            ? `<div class="preview-explanation">💡 ${this.escapeHtml(question.explanation)}</div>`
+            ? `<div class="ai-preview-explanation"><span class="explanation-icon">💡</span> ${this.escapeHtml(question.explanation)}</div>`
             : '';
 
-        // Difficulty badge
-        const difficultyLabel = translationManager.getTranslationSync(question.difficulty) || question.difficulty || 'medium';
+        // Difficulty badge with color
+        const difficulty = question.difficulty || 'medium';
+        const difficultyColors = {
+            easy: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
+            medium: { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b' },
+            hard: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' }
+        };
+        const diffColor = difficultyColors[difficulty] || difficultyColors.medium;
+        const difficultyLabel = translationManager.getTranslationSync(difficulty) || difficulty;
+
+        // Time limit display
+        const timeLimit = question.timeLimit || 30;
 
         div.innerHTML = `
-            <div class="preview-question-header">
-                <span class="preview-question-type">${typeLabel}</span>
-                <div class="preview-question-actions">
-                    <button class="preview-action-btn accept" title="${translationManager.getTranslationSync('select') || 'Select'}" data-action="accept">✓</button>
-                    <button class="preview-action-btn reject" title="${translationManager.getTranslationSync('deselect') || 'Deselect'}" data-action="reject">✕</button>
+            <div class="ai-preview-header">
+                <label class="ai-preview-checkbox">
+                    <input type="checkbox" ${question.selected ? 'checked' : ''} />
+                    <span class="checkmark"></span>
+                </label>
+                <div class="ai-preview-badges">
+                    <span class="ai-type-badge">${typeLabel}</span>
+                    <span class="ai-difficulty-badge" style="background: ${diffColor.bg}; color: ${diffColor.text};">${difficultyLabel}</span>
+                    <span class="ai-time-badge">⏱️ ${timeLimit}s</span>
                 </div>
             </div>
-            <div class="preview-question-text">${this.escapeHtml(question.question)}</div>
-            <div class="preview-options-list">${optionsHtml}</div>
+            <div class="ai-preview-question-text">${this.escapeHtml(question.question)}</div>
+            <div class="ai-preview-options">${optionsHtml}</div>
             ${explanationHtml}
-            <div class="preview-question-meta">
-                <div class="preview-meta-item">
-                    <span>📊</span>
-                    <span>${difficultyLabel}</span>
-                </div>
-            </div>
         `;
 
-        // Add click handlers for accept/reject buttons
-        div.querySelector('.preview-action-btn.accept')?.addEventListener('click', (e) => {
+        // Add click handler for checkbox
+        const checkbox = div.querySelector('input[type="checkbox"]');
+        checkbox?.addEventListener('change', (e) => {
             e.stopPropagation();
-            this.toggleQuestionSelection(index, true);
-        });
-        div.querySelector('.preview-action-btn.reject')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.toggleQuestionSelection(index, false);
+            this.toggleQuestionSelection(index, e.target.checked);
         });
 
-        // Toggle selection on card click
-        div.addEventListener('click', () => {
-            this.toggleQuestionSelection(index, !this.previewQuestions[index].selected);
+        // Toggle selection on card click (but not on checkbox)
+        div.addEventListener('click', (e) => {
+            if (e.target.type !== 'checkbox') {
+                const newState = !this.previewQuestions[index].selected;
+                this.toggleQuestionSelection(index, newState);
+                if (checkbox) checkbox.checked = newState;
+            }
         });
 
         return div;
