@@ -2001,8 +2001,15 @@ QUESTION QUALITY & FEEDBACK:
             
             try {
                 logger.debug('LoadOllamaModels - Fetching from:', AI.OLLAMA_TAGS_ENDPOINT);
-                
-                const response = await fetch(AI.OLLAMA_TAGS_ENDPOINT);
+
+                // Use AbortController with short timeout - Ollama should respond quickly if running
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+                const response = await fetch(AI.OLLAMA_TAGS_ENDPOINT, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
                 
                 logger.debug('LoadOllamaModels - Fetch response status:', response.status);
                 
@@ -2069,6 +2076,7 @@ QUESTION QUALITY & FEEDBACK:
             errorType: errorHandler.errorTypes.NETWORK,
             context: 'ollama-model-loading',
             userMessage: null, // Don't show alert for model loading failures
+            silent: true, // Don't log to console - Ollama may not be available
             retryable: false,
             fallback: () => {
                 // Load fallback models on failure

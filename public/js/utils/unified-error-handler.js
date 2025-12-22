@@ -88,7 +88,8 @@ export class UnifiedErrorHandler {
             maxRetries = this.maxRetries,
             errorType = this.errorTypes.SYSTEM,
             fallback = null,
-            context = {}
+            context = {},
+            silent = false
         } = options;
 
         let lastError = null;
@@ -100,13 +101,16 @@ export class UnifiedErrorHandler {
             } catch (error) {
                 lastError = error;
                 attempts++;
-                
-                this.log(error, { 
-                    ...context, 
-                    attempt: attempts, 
-                    errorType,
-                    retryable 
-                }, 'error');
+
+                // Only log if not silent
+                if (!silent) {
+                    this.log(error, {
+                        ...context,
+                        attempt: attempts,
+                        errorType,
+                        retryable
+                    }, 'error');
+                }
 
                 if (retryable && attempts <= maxRetries) {
                     await this.delay(this.retryDelay * attempts);
