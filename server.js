@@ -739,27 +739,31 @@ app.get('/api/ollama/models', async (req, res) => {
 // Claude API proxy endpoint
 app.post('/api/claude/generate', async (req, res) => {
   try {
-    const { prompt, apiKey } = req.body;
-    
+    const { prompt, apiKey, numQuestions } = req.body;
+
     // More detailed validation
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
-    
+
     if (!apiKey) {
       return res.status(400).json({ error: 'API key is required' });
     }
-    
+
     if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
       return res.status(400).json({ error: 'Valid API key is required' });
     }
-    
+
     // Import node-fetch for HTTP requests
     const { default: fetchFunction } = await import('node-fetch');
-    
+
+    // Calculate max_tokens based on number of questions (~1500 tokens per question)
+    const questionCount = Math.max(1, Math.min(numQuestions || 5, 20));
+    const calculatedMaxTokens = Math.max(4096, questionCount * 1500);
+
     const requestBody = {
       model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
+      max_tokens: calculatedMaxTokens,
       messages: [
         {
           role: 'user',

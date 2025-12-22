@@ -1210,7 +1210,8 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 },
                 body: JSON.stringify({
                     prompt: prompt,
-                    apiKey: apiKey
+                    apiKey: apiKey,
+                    numQuestions: this.requestedQuestionCount || 5
                 })
             });
 
