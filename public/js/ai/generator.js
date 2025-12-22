@@ -355,7 +355,7 @@ export class AIQuestionGenerator {
             logger.warn(`Filtered out ${malformedQuestions.length} malformed questions:`);
             malformedQuestions.forEach(({ index, issues, data }) => {
                 logger.warn(`  Question ${index + 1}: ${issues.join(', ')}`);
-                logger.debug(`  Raw data:`, data);
+                logger.warn(`  Raw data:`, JSON.stringify(data, null, 2));
             });
         }
 
