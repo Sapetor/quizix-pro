@@ -129,6 +129,8 @@ export default {
         time_seconds: "时间(s)",
         correct_answer: "正确答案",
         tolerance: "容差（+/-）",
+        explanation_optional: "解释（可选）",
+        explanation_placeholder: "解释为什么正确答案是正确的...",
         enter_question_with_latex: "输入您的问题（支持LaTeX）",
         option_a: "选项 A",
         option_b: "选项 B",
@@ -252,6 +254,7 @@ export default {
         true_false_type: "对错题类型",
         multiple_correct_type: "多个正确答案类型",
         numeric_answer_type: "数字答案类型",
+        ordering_type: "排序题",
         difficulty_level: "难度级别",
         number_of_questions: "问题数量",
         source_material: "源材料",
@@ -263,6 +266,8 @@ export default {
         huggingface_free: "HuggingFace（免费）",
         choose_model: "选择模型",
         select_ollama_model: "选择Ollama模型",
+        choose_claude_model: "选择Claude模型",
+        select_claude_model: "选择用于生成的Claude模型",
         loading_models_placeholder: "加载模型中...",
         api_key: "API密钥",
         api_key_stored_locally: "API密钥已本地存储",
@@ -341,6 +346,7 @@ export default {
         question_type_true_false: "判断题",
         question_type_multiple_correct: "多选题",
         question_type_numeric: "数字题",
+        question_type_ordering: "排序题",
 
         load_saved_quiz: "加载已保存的问答",
         total: "总计",
@@ -429,4 +435,11 @@ export default {
         save_progress: "保存进度",
         test_questions: "测试问题",
         more_options: "更多选项"
+
+        // Sound settings
+        toggle_sound_tooltip: "切换声音",
+        sound: "声音",
+        mute_sound: "静音",
+        unmute_sound: "取消静音"
+
 };

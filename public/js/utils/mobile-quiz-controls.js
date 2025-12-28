@@ -3,6 +3,8 @@
  * Provides mobile-friendly interface for quiz management actions
  */
 
+import { logger } from '../core/config.js';
+
 // Mobile quiz sheet state management
 let mobileQuizSheetVisible = false;
 let isShowingSheet = false; // Prevent double-clicks
@@ -13,7 +15,7 @@ let isShowingSheet = false; // Prevent double-clicks
 function showMobileQuizSheet() {
     // Prevent rapid successive clicks
     if (isShowingSheet) {
-        console.debug('Sheet already opening, ignoring click');
+        logger.debug('Sheet already opening, ignoring click');
         return;
     }
     
@@ -22,7 +24,7 @@ function showMobileQuizSheet() {
     const fab = document.getElementById('mobile-quiz-fab');
     
     if (!overlay || !sheet) {
-        console.warn('Mobile quiz sheet elements not found');
+        logger.warn('Mobile quiz sheet elements not found');
         return;
     }
     
@@ -136,7 +138,7 @@ function handleMobileLoadQuiz() {
             // Trigger the existing load button click
             document.getElementById('toolbar-load').click();
         } else {
-            console.warn('Load quiz functionality not available');
+            logger.warn('Load quiz functionality not available');
         }
     }, 100);
 }
@@ -155,7 +157,7 @@ function handleMobileSaveQuiz() {
         // Trigger the existing save button click
         document.getElementById('toolbar-save').click();
     } else {
-        console.warn('Save quiz functionality not available');
+        logger.warn('Save quiz functionality not available');
     }
 }
 
@@ -193,7 +195,7 @@ function handleMobileStartGame() {
         if (startButton) {
             startButton.click();
         } else {
-            console.warn('Start game functionality not available');
+            logger.warn('Start game functionality not available');
         }
     }
 }
@@ -211,7 +213,7 @@ function handleMobilePreview() {
     } else if (document.getElementById('toolbar-preview')) {
         document.getElementById('toolbar-preview').click();
     } else {
-        console.warn('Preview functionality not available');
+        logger.warn('Preview functionality not available');
     }
 }
 
@@ -226,7 +228,7 @@ function handleMobileAI() {
     if (document.getElementById('toolbar-ai-gen')) {
         document.getElementById('toolbar-ai-gen').click();
     } else {
-        console.warn('AI generator not available');
+        logger.warn('AI generator not available');
     }
 }
 
@@ -243,7 +245,7 @@ function handleMobileImport() {
     } else if (document.getElementById('import-file-input')) {
         document.getElementById('import-file-input').click();
     } else {
-        console.warn('Import functionality not available');
+        logger.warn('Import functionality not available');
     }
 }
 
@@ -258,7 +260,7 @@ function handleMobileExport() {
     if (document.getElementById('toolbar-export')) {
         document.getElementById('toolbar-export').click();
     } else {
-        console.warn('Export functionality not available');
+        logger.warn('Export functionality not available');
     }
 }
 
@@ -273,7 +275,7 @@ function handleMobileResults() {
     if (document.getElementById('toolbar-results')) {
         document.getElementById('toolbar-results').click();
     } else {
-        console.warn('Results functionality not available');
+        logger.warn('Results functionality not available');
     }
 }
 

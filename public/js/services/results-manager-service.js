@@ -100,8 +100,15 @@ export class ResultsManagerService {
 
         if (this.isLoading) {
             logger.debug('📊 Already loading results, waiting...');
-            // Wait for current load to complete
+            // Wait for current load to complete with timeout to prevent infinite loop
+            const maxWaitTime = 30000; // 30 seconds max
+            const startTime = Date.now();
             while (this.isLoading) {
+                if (Date.now() - startTime > maxWaitTime) {
+                    logger.warn('📊 Timeout waiting for results load, resetting state');
+                    this.isLoading = false;
+                    break;
+                }
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
             return Array.from(this.resultsCache.values());

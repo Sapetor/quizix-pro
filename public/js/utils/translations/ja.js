@@ -134,6 +134,8 @@ export default {
         time_seconds: "時間(s)",
         correct_answer: "正解",
         tolerance: "許容範囲（+/-）",
+        explanation_optional: "解説（任意）",
+        explanation_placeholder: "正解の理由を説明してください...",
         enter_question_with_latex: "質問を入力（LaTeX対応）",
         option_a: "選択肢 A",
         option_b: "選択肢 B",
@@ -257,6 +259,7 @@ export default {
         true_false_type: "正誤問題タイプ",
         multiple_correct_type: "複数正解タイプ",
         numeric_answer_type: "数値回答タイプ",
+        ordering_type: "順序並べ替え",
         difficulty_level: "難易度レベル",
         number_of_questions: "質問数",
         source_material: "ソース素材",
@@ -268,6 +271,8 @@ export default {
         huggingface_free: "HuggingFace（無料）",
         choose_model: "モデルを選択",
         select_ollama_model: "Ollamaモデルを選択",
+        choose_claude_model: "Claudeモデルを選択",
+        select_claude_model: "生成に使用するClaudeモデルを選択してください",
         loading_models_placeholder: "モデルを読み込み中...",
         api_key: "APIキー",
         api_key_stored_locally: "APIキーがローカルに保存されました",
@@ -346,6 +351,7 @@ export default {
         question_type_true_false: "正誤",
         question_type_multiple_correct: "複数選択",
         question_type_numeric: "数値",
+        question_type_ordering: "順序並べ替え",
 
         load_saved_quiz: "保存されたクイズを読み込み",
         total: "合計",
@@ -430,4 +436,11 @@ export default {
         save_progress: "進捗を保存",
         test_questions: "問題をテスト",
         more_options: "その他のオプション"
+
+        // Sound settings
+        toggle_sound_tooltip: "音声を切り替える",
+        sound: "音声",
+        mute_sound: "音声をミュート",
+        unmute_sound: "音声をミュート解除"
+
 };

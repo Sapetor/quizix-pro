@@ -88,9 +88,4 @@ window.addEventListener('beforeunload', () => {
     browserOptimizer.cleanup();
 });
 
-// Make available globally for debugging
-if (typeof window !== 'undefined') {
-    window.browserOptimizer = browserOptimizer;
-}
-
 export default browserOptimizer;

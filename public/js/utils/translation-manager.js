@@ -179,8 +179,12 @@ class TranslationManager {
         const previousLanguage = this.currentLanguage;
         this.currentLanguage = languageCode;
         
-        // Save to localStorage
-        localStorage.setItem('language', languageCode);
+        // Save to localStorage (with error handling for private browsing/quota)
+        try {
+            localStorage.setItem('language', languageCode);
+        } catch (e) {
+            logger.warn('Failed to save language preference:', e.message);
+        }
         
         // Unload previous language to save memory (except default)
         if (previousLanguage !== this.defaultLanguage && previousLanguage !== languageCode) {
@@ -606,22 +610,22 @@ export function getThemeToggleTitles() {
  */
 export function showAlert(key, params = []) {
     const message = translationManager.getTranslationSync(key, params);
-    
-    console.log('🔥 DEBUG: showAlert called with:', { key, message, params });
-    
+
+    logger.debug('showAlert called with:', { key, message, params });
+
     // Use toast for known success/error message keys
     if (key.includes('success') || key.includes('loaded') || key.includes('saved') || key.includes('exported') || key.includes('generated')) {
-        console.log('🔥 DEBUG: Showing success toast');
+        logger.debug('Showing success toast');
         toastNotifications.success(message);
-    } else if (key.includes('error') || key.includes('failed') || key.includes('invalid') || 
+    } else if (key.includes('error') || key.includes('failed') || key.includes('invalid') ||
                key.includes('wrong') || key.includes('missing') || key.includes('empty') ||
                message.toLowerCase().includes('failed') || message.toLowerCase().includes('error') ||
                message.toLowerCase().includes('invalid') || message.toLowerCase().includes('wrong') ||
                message.toLowerCase().includes('check your') || message.toLowerCase().includes('try again')) {
-        console.log('🔥 DEBUG: Showing error toast');
+        logger.debug('Showing error toast');
         toastNotifications.error(message);
     } else {
-        console.log('🔥 DEBUG: Showing fallback alert');
+        logger.debug('Showing fallback alert');
         // Fallback to regular alert for other message types
         alert(message);
     }

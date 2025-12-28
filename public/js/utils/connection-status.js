@@ -15,13 +15,30 @@ export class ConnectionStatus {
         this.pingInterval = null;
         this.socket = null;
         this.callbacks = new Set();
-        
+
         // Initialize UI elements
         this.initializeUI();
         this.bindEvents();
         this.startMonitoring();
-        
+
         logger.debug('Connection status manager initialized');
+    }
+
+    /**
+     * Create an abort signal with timeout (fallback for older browsers)
+     * @param {number} ms - Timeout in milliseconds
+     * @returns {AbortSignal} - Abort signal that triggers after timeout
+     */
+    createTimeoutSignal(ms) {
+        // Use native AbortSignal.timeout if available
+        if (typeof AbortSignal.timeout === 'function') {
+            return AbortSignal.timeout(ms);
+        }
+
+        // Fallback for older browsers
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), ms);
+        return controller.signal;
     }
 
     /**
@@ -149,7 +166,7 @@ export class ConnectionStatus {
             const response = await fetch(APIHelper.getApiUrl('api/ping'), {
                 method: 'GET',
                 cache: 'no-cache',
-                signal: AbortSignal.timeout(5000) // 5 second timeout
+                signal: this.createTimeoutSignal(5000) // 5 second timeout
             });
 
             const pingTime = Date.now() - startTime;

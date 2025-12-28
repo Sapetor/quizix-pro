@@ -48,6 +48,13 @@ class QuestionFlowService {
 
     this.logger.debug(`Answer submitted: ${answeredPlayers}/${totalPlayers} players answered`);
 
+    // Emit live answer count update to host
+    const liveStats = {
+      answeredPlayers: answeredPlayers,
+      totalPlayers: totalPlayers
+    };
+    io.to(game.hostId).emit('answer-count-update', liveStats);
+
     // If all players answered, end question early
     if (answeredPlayers >= totalPlayers && totalPlayers > 0 && game.gameState === 'question') {
       this.endQuestionEarly(game, io);
@@ -150,7 +157,8 @@ class QuestionFlowService {
       correctAnswer: correctAnswer,
       correctOption: correctOption,
       questionType: question.type || 'multiple-choice',
-      tolerance: question.tolerance || null
+      tolerance: question.tolerance || null,
+      explanation: question.explanation || null
     };
 
     // For multiple-correct questions, also send the correctAnswers array
@@ -167,6 +175,10 @@ class QuestionFlowService {
    * @param {Object} io - Socket.IO instance
    */
   emitPlayerResults(game, io) {
+    // Get explanation from current question if available
+    const currentQuestion = game.quiz.questions[game.currentQuestion];
+    const explanation = currentQuestion?.explanation || null;
+
     game.players.forEach((player, playerId) => {
       const playerAnswer = player.answers[game.currentQuestion];
 
@@ -174,13 +186,15 @@ class QuestionFlowService {
         io.to(playerId).emit('player-result', {
           isCorrect: playerAnswer.isCorrect,
           points: playerAnswer.points,
-          totalScore: player.score
+          totalScore: player.score,
+          explanation: explanation
         });
       } else {
         io.to(playerId).emit('player-result', {
           isCorrect: false,
           points: 0,
-          totalScore: player.score
+          totalScore: player.score,
+          explanation: explanation
         });
       }
     });

@@ -132,7 +132,9 @@ export const AI = {
 
     PHYSICS_INDICATORS: /velocity|acceleration|force|energy|momentum|gravity|mass|physics|newton|joule|watt|ampere|volt|ohm|frequency|wavelength|photon|quantum|relativity|thermodynamics|entropy|kinetic|potential|electric|magnetic|electromagnetic|optics|nuclear|particle|wave|oscillation|pendulum|friction|torque|angular|pressure|density|buoyancy|refraction/i,
 
-    CHEMISTRY_INDICATORS: /molecule|atom|element|compound|reaction|chemistry|periodic|electron|proton|neutron|ion|covalent|ionic|bond|mole|molarity|pH|acid|base|oxidation|reduction|catalyst|equilibrium|organic|inorganic|polymer|isotope|valence|orbital|electronegativity|stoichiometry|titration|precipitate|solution|concentration|enthalpy/i,
+    // Chemistry - removed ambiguous terms like "solution", "base", "bond", "equilibrium", "concentration"
+    // that appear in math/economics/general contexts
+    CHEMISTRY_INDICATORS: /molecule|atom|chemical|compound|chemical reaction|chemistry|periodic table|electron shell|proton|neutron|ion|covalent|ionic bond|mole\b|molarity|pH level|\bacid\b|\bbase\b.*\bacid|oxidation|reduction|catalyst|organic chemistry|inorganic|polymer|isotope|valence|orbital|electronegativity|stoichiometry|titration|precipitate|enthalpy|H2O|NaCl|CO2|O2|chemical formula|chemical equation/i,
 
     BIOLOGY_INDICATORS: /cell|DNA|RNA|protein|enzyme|organism|species|evolution|genetics|chromosome|gene|mutation|mitosis|meiosis|photosynthesis|respiration|metabolism|bacteria|virus|ecosystem|biodiversity|anatomy|physiology|neuron|synapse|hormone|immune|antibody|vaccine|pathogen|tissue|organ/i,
 

@@ -1187,12 +1187,20 @@ export class ResultsViewer {
     }
 
     /**
-     * Export analytics report (placeholder for future implementation)
+     * Export analytics report as CSV
      */
-    exportAnalyticsReport(filename) {
-        logger.info('Analytics export requested for:', filename);
-        // Future: Generate and download comprehensive analytics report
-        translationManager.showAlert('analytics_export_coming_soon');
+    async exportAnalyticsReport(filename) {
+        try {
+            logger.info('Analytics export requested for:', filename);
+
+            // Download analytics CSV format
+            await resultsManagerService.downloadResult(filename, 'analytics', 'csv');
+
+            logger.debug('Analytics report downloaded successfully');
+        } catch (error) {
+            logger.error('Failed to export analytics report:', error);
+            translationManager.showAlert('error', 'Failed to export analytics report');
+        }
     }
 
     /**

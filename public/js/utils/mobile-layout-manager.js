@@ -248,9 +248,4 @@ export class MobileLayoutManager {
 // Create singleton instance
 export const mobileLayoutManager = new MobileLayoutManager();
 
-// Make available globally for debugging
-if (typeof window !== 'undefined') {
-    window.mobileLayoutManager = mobileLayoutManager;
-}
-
 export default mobileLayoutManager;

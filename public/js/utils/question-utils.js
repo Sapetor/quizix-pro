@@ -119,6 +119,13 @@ export class QuestionUtils {
                 </div>
             </div>
 
+            <div class="explanation-section">
+                <details>
+                    <summary data-translate="explanation_optional">Explanation (optional)</summary>
+                    <textarea class="question-explanation" placeholder="Explain why the correct answer is correct..." data-translate-placeholder="explanation_placeholder"></textarea>
+                </details>
+            </div>
+
             <button class="btn secondary remove-question" onclick="removeQuestion(this)" data-translate="remove">Remove</button>
         `;
     }

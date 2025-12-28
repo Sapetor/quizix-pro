@@ -4,7 +4,7 @@
  * 
  * EXTRACTION NOTES:
  * - Extracted from script.js lines 4804-5572
- * - Includes all AI provider integrations: Ollama, OpenAI, Claude, HuggingFace
+ * - Includes all AI provider integrations: Ollama, OpenAI, Claude, Gemini
  * - Handles file uploads and content parsing
  * - Manages API keys and model selection
  * - Dependencies: translation-manager.js for translationManager.getTranslationSync()
@@ -15,6 +15,7 @@ import { translationManager, showAlert } from '../utils/translation-manager.js';
 import { secureStorage } from '../services/secure-storage-service.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
+import { toastNotifications } from '../utils/toast-notifications.js';
 
 // Import XLSX library for Excel processing
 const XLSX = window.XLSX;
@@ -35,10 +36,15 @@ export class AIQuestionGenerator {
                 models: [AI.OPENAI_MODEL, "gpt-4"]
             },
             claude: {
-                name: "Anthropic Claude", 
+                name: "Anthropic Claude",
                 apiKey: true,
                 endpoint: "https://api.anthropic.com/v1/messages",
-                models: ["claude-3-haiku", "claude-3-sonnet"]
+                models: [
+                    { id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5 (Recommended)" },
+                    { id: "claude-haiku-4-5", name: "Claude Haiku 4.5 (Fast & Cheap)" },
+                    { id: "claude-opus-4-5", name: "Claude Opus 4.5 (Most Capable)" },
+                    { id: "claude-sonnet-4-0", name: "Claude Sonnet 4 (Legacy)" }
+                ]
             },
             gemini: {
                 name: "Google Gemini",
@@ -308,8 +314,13 @@ export class AIQuestionGenerator {
             else {
                 if (!q.question) issues.push('missing "question" text');
                 if (!q.type) issues.push('missing "type"');
-                if (!Array.isArray(q.options)) issues.push('missing or invalid "options" array');
-                else if (q.options.length === 0) issues.push('"options" array is empty');
+
+                // Only check for options on question types that require them
+                const typesRequiringOptions = ['multiple-choice', 'multiple-correct', 'true-false', 'ordering'];
+                if (typesRequiringOptions.includes(q.type)) {
+                    if (!Array.isArray(q.options)) issues.push('missing or invalid "options" array');
+                    else if (q.options.length === 0) issues.push('"options" array is empty');
+                }
 
                 // Auto-fix: multiple-correct with correctAnswer instead of correctAnswers
                 if (q.type === 'multiple-correct' && q.correctAnswer !== undefined && !q.correctAnswers) {
@@ -365,7 +376,7 @@ export class AIQuestionGenerator {
         });
 
         if (validQuestions.length === 0) {
-            showToast(translationManager.getTranslationSync('error_generating') || 'Error generating questions', 'error');
+            toastNotifications.error(translationManager.getTranslationSync('error_generating') || 'Error generating questions');
             return;
         }
 
@@ -473,7 +484,7 @@ export class AIQuestionGenerator {
             optionsHtml = `
                 <div class="ai-preview-option correct" style="background: ${color.bg}; border-left: 4px solid ${color.border};">
                     <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${answerLabel}:</span>
-                    <span class="ai-option-text">${question.correctAnswer}</span>
+                    <span class="ai-option-text">${this.escapeHtml(String(question.correctAnswer))}</span>
                     <span class="ai-correct-badge">✓</span>
                 </div>`;
         } else if (question.type === 'ordering') {
@@ -517,9 +528,13 @@ export class AIQuestionGenerator {
                     <span class="ai-difficulty-badge" style="background: ${diffColor.bg}; color: ${diffColor.text};">${difficultyLabel}</span>
                     <span class="ai-time-badge">⏱️ ${timeLimit}s</span>
                 </div>
+                <div class="ai-preview-actions">
+                    <button class="ai-edit-btn" title="Edit question" data-index="${index}">✏️</button>
+                    <button class="ai-regenerate-btn" title="Regenerate this question" data-index="${index}">🔄</button>
+                </div>
             </div>
-            <div class="ai-preview-question-text">${this.escapeHtml(question.question)}</div>
-            <div class="ai-preview-options">${optionsHtml}</div>
+            <div class="ai-preview-question-text" data-field="question">${this.escapeHtml(question.question)}</div>
+            <div class="ai-preview-options" data-field="options">${optionsHtml}</div>
             ${explanationHtml}
         `;
 
@@ -530,13 +545,32 @@ export class AIQuestionGenerator {
             this.toggleQuestionSelection(index, e.target.checked);
         });
 
-        // Toggle selection on card click (but not on checkbox)
+        // Toggle selection on card click (but not on checkbox or buttons)
         div.addEventListener('click', (e) => {
-            if (e.target.type !== 'checkbox') {
+            if (e.target.type !== 'checkbox' &&
+                !e.target.classList.contains('ai-edit-btn') &&
+                !e.target.classList.contains('ai-regenerate-btn') &&
+                !e.target.classList.contains('ai-save-btn') &&
+                !e.target.classList.contains('ai-cancel-btn') &&
+                !e.target.closest('.ai-edit-field')) {
                 const newState = !this.previewQuestions[index].selected;
                 this.toggleQuestionSelection(index, newState);
                 if (checkbox) checkbox.checked = newState;
             }
+        });
+
+        // Add edit button handler
+        const editBtn = div.querySelector('.ai-edit-btn');
+        editBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.enterEditMode(index);
+        });
+
+        // Add regenerate button handler
+        const regenerateBtn = div.querySelector('.ai-regenerate-btn');
+        regenerateBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.regenerateSingleQuestion(index);
         });
 
         return div;
@@ -606,6 +640,352 @@ export class AIQuestionGenerator {
     }
 
     /**
+     * Enter edit mode for a specific question
+     * @param {number} index - Question index
+     */
+    enterEditMode(index) {
+        const question = this.previewQuestions[index];
+        if (!question) return;
+
+        const item = document.querySelector(`.preview-question-item[data-index="${index}"]`);
+        if (!item) return;
+
+        item.classList.add('editing');
+
+        // Replace question text with editable field
+        const questionTextEl = item.querySelector('.ai-preview-question-text');
+        if (questionTextEl) {
+            questionTextEl.innerHTML = `
+                <textarea class="ai-edit-field ai-edit-question" rows="3">${this.escapeHtml(question.question)}</textarea>
+            `;
+        }
+
+        // Replace options with editable fields (for types that have options)
+        const optionsEl = item.querySelector('.ai-preview-options');
+        if (optionsEl && question.options) {
+            if (question.type === 'ordering') {
+                // Ordering uses number inputs for position
+                const optionInputs = question.options.map((opt, i) => {
+                    // Find position of this item in correctOrder (1-based for display)
+                    const position = question.correctOrder ? question.correctOrder.indexOf(i) + 1 : i + 1;
+                    return `
+                        <div class="ai-edit-option-row">
+                            <input type="number" class="ai-edit-order" value="${position}" min="1" max="${question.options.length}" data-index="${i}" style="width: 50px;">
+                            <input type="text" class="ai-edit-field ai-edit-option" value="${this.escapeHtml(opt)}" data-index="${i}">
+                        </div>
+                    `;
+                }).join('');
+                optionsEl.innerHTML = optionInputs;
+            } else {
+                const optionInputs = question.options.map((opt, i) => {
+                    let isCorrect = false;
+                    if (question.type === 'true-false') {
+                        // True-false uses "true"/"false" string, map to index
+                        isCorrect = (question.correctAnswer === 'true' && i === 0) ||
+                                   (question.correctAnswer === 'false' && i === 1);
+                    } else if (question.type === 'multiple-choice') {
+                        isCorrect = i === question.correctAnswer;
+                    } else if (question.type === 'multiple-correct') {
+                        isCorrect = question.correctAnswers?.includes(i);
+                    }
+                    return `
+                        <div class="ai-edit-option-row">
+                            <input type="${question.type === 'multiple-correct' ? 'checkbox' : 'radio'}"
+                                   name="correct-${index}" value="${i}"
+                                   ${isCorrect ? 'checked' : ''}
+                                   class="ai-edit-correct">
+                            <input type="text" class="ai-edit-field ai-edit-option" value="${this.escapeHtml(opt)}" data-index="${i}">
+                        </div>
+                    `;
+                }).join('');
+                optionsEl.innerHTML = optionInputs;
+            }
+        } else if (optionsEl && question.type === 'numeric') {
+            optionsEl.innerHTML = `
+                <div class="ai-edit-option-row">
+                    <label>Answer:</label>
+                    <input type="number" class="ai-edit-field ai-edit-numeric" value="${this.escapeHtml(String(question.correctAnswer))}" step="any">
+                    <label>Tolerance:</label>
+                    <input type="number" class="ai-edit-field ai-edit-tolerance" value="${this.escapeHtml(String(question.tolerance || 0))}" step="any">
+                </div>
+            `;
+        }
+
+        // Replace action buttons with save/cancel
+        const actionsEl = item.querySelector('.ai-preview-actions');
+        if (actionsEl) {
+            actionsEl.innerHTML = `
+                <button class="ai-save-btn" title="Save changes" data-index="${index}">💾</button>
+                <button class="ai-cancel-btn" title="Cancel editing" data-index="${index}">❌</button>
+            `;
+
+            // Add handlers
+            actionsEl.querySelector('.ai-save-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.saveQuestionEdits(index);
+            });
+            actionsEl.querySelector('.ai-cancel-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.cancelEditMode(index);
+            });
+        }
+    }
+
+    /**
+     * Save edits to a question
+     * @param {number} index - Question index
+     */
+    saveQuestionEdits(index) {
+        const question = this.previewQuestions[index];
+        if (!question) return;
+
+        const item = document.querySelector(`.preview-question-item[data-index="${index}"]`);
+        if (!item) return;
+
+        // Get edited question text
+        const questionInput = item.querySelector('.ai-edit-question');
+        if (questionInput) {
+            question.question = questionInput.value.trim();
+        }
+
+        // Get edited options
+        const optionInputs = item.querySelectorAll('.ai-edit-option');
+        if (optionInputs.length > 0) {
+            question.options = Array.from(optionInputs).map(input => input.value.trim());
+
+            // Get correct answer(s)
+            if (question.type === 'multiple-correct') {
+                const checkedInputs = item.querySelectorAll('.ai-edit-correct:checked');
+                question.correctAnswers = Array.from(checkedInputs).map(input => parseInt(input.value));
+            } else if (question.type === 'true-false') {
+                // True-false needs "true"/"false" string, not index
+                const checkedInput = item.querySelector('.ai-edit-correct:checked');
+                if (checkedInput) {
+                    question.correctAnswer = parseInt(checkedInput.value) === 0 ? 'true' : 'false';
+                }
+            } else if (question.type === 'ordering') {
+                // Ordering uses number inputs for position - build correctOrder array
+                const orderInputs = item.querySelectorAll('.ai-edit-order');
+                const positions = Array.from(orderInputs).map(input => ({
+                    itemIndex: parseInt(input.dataset.index),
+                    position: parseInt(input.value)
+                }));
+                // Sort by position and extract item indices to get correctOrder
+                positions.sort((a, b) => a.position - b.position);
+                question.correctOrder = positions.map(p => p.itemIndex);
+            } else {
+                const checkedInput = item.querySelector('.ai-edit-correct:checked');
+                if (checkedInput) {
+                    question.correctAnswer = parseInt(checkedInput.value);
+                }
+            }
+        }
+
+        // Get numeric answer
+        const numericInput = item.querySelector('.ai-edit-numeric');
+        if (numericInput) {
+            question.correctAnswer = parseFloat(numericInput.value);
+        }
+        const toleranceInput = item.querySelector('.ai-edit-tolerance');
+        if (toleranceInput) {
+            question.tolerance = parseFloat(toleranceInput.value) || 0;
+        }
+
+        // Re-render the question
+        this.cancelEditMode(index);
+        toastNotifications.success('Question updated');
+    }
+
+    /**
+     * Cancel edit mode and restore original view
+     * @param {number} index - Question index
+     */
+    cancelEditMode(index) {
+        const item = document.querySelector(`.preview-question-item[data-index="${index}"]`);
+        if (!item) return;
+
+        // Re-render the question item
+        const newItem = this.renderPreviewQuestion(this.previewQuestions[index], index);
+        item.replaceWith(newItem);
+    }
+
+    /**
+     * Regenerate a single question
+     * @param {number} index - Question index
+     */
+    async regenerateSingleQuestion(index) {
+        const question = this.previewQuestions[index];
+        if (!question) return;
+
+        const item = document.querySelector(`.preview-question-item[data-index="${index}"]`);
+        if (!item) return;
+
+        // Show loading state
+        const regenerateBtn = item.querySelector('.ai-regenerate-btn');
+        if (regenerateBtn) {
+            regenerateBtn.disabled = true;
+            regenerateBtn.textContent = '⏳';
+        }
+
+        try {
+            // Get current settings
+            const provider = document.getElementById('ai-provider')?.value || 'ollama';
+            const content = document.getElementById('source-content')?.value?.trim() || '';
+            const difficulty = document.getElementById('difficulty-level')?.value || 'medium';
+
+            // Build a prompt for a single question of the same type
+            const singlePrompt = this.buildSingleQuestionPrompt(question.type, content, difficulty);
+
+            // Generate one question
+            let newQuestion;
+            switch (provider) {
+                case 'claude':
+                    newQuestion = await this.regenerateWithClaude(singlePrompt, question.type);
+                    break;
+                case 'openai':
+                    newQuestion = await this.regenerateWithProvider('openai', singlePrompt, question.type);
+                    break;
+                case 'gemini':
+                    newQuestion = await this.regenerateWithProvider('gemini', singlePrompt, question.type);
+                    break;
+                default:
+                    newQuestion = await this.regenerateWithProvider('ollama', singlePrompt, question.type);
+            }
+
+            if (newQuestion) {
+                // Preserve selection state
+                newQuestion.selected = question.selected;
+                this.previewQuestions[index] = newQuestion;
+
+                // Re-render
+                const newItem = this.renderPreviewQuestion(newQuestion, index);
+                item.replaceWith(newItem);
+
+                toastNotifications.success('Question regenerated');
+            } else {
+                throw new Error('Failed to generate replacement question');
+            }
+        } catch (error) {
+            logger.error('Regenerate single question failed:', error);
+            toastNotifications.error('Failed to regenerate: ' + error.message);
+
+            // Restore button
+            if (regenerateBtn) {
+                regenerateBtn.disabled = false;
+                regenerateBtn.textContent = '🔄';
+            }
+        }
+    }
+
+    /**
+     * Build a prompt for regenerating a single question
+     * @param {string} type - Question type
+     * @param {string} content - Source content
+     * @param {string} difficulty - Difficulty level
+     * @returns {string} Prompt for single question
+     */
+    buildSingleQuestionPrompt(type, content, difficulty) {
+        const typeExamples = {
+            'multiple-choice': '{"question": "Question text?", "type": "multiple-choice", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "timeLimit": 30, "explanation": "Why A is correct", "difficulty": "medium"}',
+            'true-false': '{"question": "Statement to verify.", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20, "explanation": "Why true", "difficulty": "easy"}',
+            'multiple-correct': '{"question": "Select all that apply:", "type": "multiple-correct", "options": ["A", "B", "C", "D"], "correctAnswers": [0, 2], "timeLimit": 35, "explanation": "A and C are correct", "difficulty": "medium"}',
+            'numeric': '{"question": "Calculate the value:", "type": "numeric", "correctAnswer": 42, "tolerance": 0, "timeLimit": 25, "explanation": "The answer is 42", "difficulty": "medium"}',
+            'ordering': '{"question": "Arrange in order:", "type": "ordering", "options": ["First", "Second", "Third"], "correctOrder": [0, 1, 2], "timeLimit": 40, "explanation": "Correct sequence", "difficulty": "medium"}'
+        };
+
+        return `Generate exactly ONE ${type} question about this content. Difficulty: ${difficulty}.
+
+CONTENT:
+${content.substring(0, 2000)}
+
+OUTPUT FORMAT - Return ONLY valid JSON (no markdown, no explanation):
+${typeExamples[type] || typeExamples['multiple-choice']}
+
+RULES:
+1. Output ONLY the JSON object - start with { and end with }
+2. Base the question on the content provided
+3. Include all required fields: question, type, options (if applicable), correctAnswer/correctAnswers, timeLimit, explanation, difficulty`;
+    }
+
+    /**
+     * Regenerate with Claude specifically (uses prefill)
+     * @param {string} prompt - The prompt
+     * @param {string} type - Question type
+     * @returns {Object} Generated question
+     */
+    async regenerateWithClaude(prompt, type) {
+        const apiKey = await secureStorage.getSecureItem('api_key_claude');
+        const modelSelect = document.getElementById('claude-model');
+        const selectedModel = modelSelect?.value || 'claude-sonnet-4-5';
+
+        const response = await fetch(APIHelper.getApiUrl('api/claude/generate'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt: prompt,
+                apiKey: apiKey,
+                numQuestions: 1,
+                model: selectedModel
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Claude API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        let content = data.content?.[0]?.text || data.content || '';
+
+        // Prepend { for single question (prefill uses {)
+        if (!content.trim().startsWith('{') && !content.trim().startsWith('[')) {
+            content = '{' + content;
+        }
+
+        // Extract JSON object
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            return parsed;
+        }
+
+        throw new Error('Could not parse response');
+    }
+
+    /**
+     * Regenerate with other providers
+     * @param {string} provider - Provider name
+     * @param {string} prompt - The prompt
+     * @param {string} type - Question type
+     * @returns {Object} Generated question
+     */
+    async regenerateWithProvider(provider, prompt, type) {
+        // Store original count and set to 1
+        const originalCount = this.requestedQuestionCount;
+        this.requestedQuestionCount = 1;
+
+        try {
+            let questions;
+            switch (provider) {
+                case 'openai':
+                    questions = await this.generateWithOpenAI(prompt);
+                    break;
+                case 'gemini':
+                    questions = await this.generateWithGemini(prompt);
+                    break;
+                default:
+                    questions = await this.generateWithOllama(prompt);
+            }
+
+            if (questions && questions.length > 0) {
+                return questions[0];
+            }
+            throw new Error('No question generated');
+        } finally {
+            this.requestedQuestionCount = originalCount;
+        }
+    }
+
+    /**
      * Confirm and add selected questions to the quiz
      */
     async confirmAddSelectedQuestions() {
@@ -614,7 +994,7 @@ export class AIQuestionGenerator {
             .map(({ selected, index, ...q }) => q); // Remove selection metadata
 
         if (selectedQuestions.length === 0) {
-            showToast(translationManager.getTranslationSync('no_questions_selected') || 'No questions selected', 'warning');
+            toastNotifications.warning(translationManager.getTranslationSync('no_questions_selected') || 'No questions selected');
             return;
         }
 
@@ -644,6 +1024,30 @@ export class AIQuestionGenerator {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    /**
+     * Truncate text at a word boundary to avoid cutting words mid-way
+     * @param {string} text - Text to truncate
+     * @param {number} maxLength - Maximum length
+     * @returns {string} - Truncated text ending at word boundary
+     */
+    truncateAtWordBoundary(text, maxLength) {
+        if (!text || text.length <= maxLength) return text;
+
+        // Find last space before maxLength
+        const truncated = text.substring(0, maxLength);
+        const lastSpace = truncated.lastIndexOf(' ');
+        const lastNewline = truncated.lastIndexOf('\n');
+        const lastBreak = Math.max(lastSpace, lastNewline);
+
+        // If we found a break point within the last 200 chars, use it
+        if (lastBreak > maxLength - 200) {
+            return text.substring(0, lastBreak) + '...';
+        }
+
+        // Otherwise just truncate at maxLength
+        return truncated + '...';
     }
 
     async generateQuestions() {
@@ -682,7 +1086,10 @@ export class AIQuestionGenerator {
             if (document.getElementById('type-numeric')?.checked) {
                 selectedTypes.push('numeric');
             }
-            
+            if (document.getElementById('type-ordering')?.checked) {
+                selectedTypes.push('ordering');
+            }
+
             logger.debug('Selected question types:', selectedTypes);
             
             // Validate required fields with custom red popups
@@ -702,7 +1109,7 @@ export class AIQuestionGenerator {
             
             if (selectedTypes.length === 0) {
                 logger.debug('No question types selected');
-                this.showSimpleErrorPopup('No Question Types Selected', '❌ Please select at least one question type to generate.\n\n✅ Available types:\n• Multiple Choice (4 options, 1 correct)\n• True/False (factual statements)\n• Multiple Correct (select all that apply)\n• Numeric (number-based answers)');
+                this.showSimpleErrorPopup('No Question Types Selected', '❌ Please select at least one question type to generate.\n\n✅ Available types:\n• Multiple Choice (4 options, 1 correct)\n• True/False (factual statements)\n• Multiple Correct (select all that apply)\n• Numeric (number-based answers)\n• Ordering (arrange items in sequence)');
                 this.isGenerating = false;
                 return;
             }
@@ -756,43 +1163,83 @@ export class AIQuestionGenerator {
             
             // Build prompt based on content type and settings, including selected question types
             const prompt = this.buildPrompt(content, questionCount, difficulty, selectedTypes);
-            
-            let questions = [];
-            try {
-                switch (provider) {
-                    case 'ollama':
-                        questions = await this.generateWithOllama(prompt);
-                        break;
-                    case 'openai':
-                        questions = await this.generateWithOpenAI(prompt);
-                        break;
-                    case 'claude':
-                        questions = await this.generateWithClaude(prompt);
-                        break;
-                    case 'gemini':
-                        questions = await this.generateWithGemini(prompt);
-                        break;
-                }
-            } catch (providerError) {
-                logger.debug('Provider error caught:', providerError.message);
 
-                // Handle API key related errors with custom popup
-                if (providerError.message.includes('Invalid') && providerError.message.includes('API key')) {
-                    this.showApiKeyErrorPopup(provider, 'invalid', providerError.message);
-                    return;
-                } else if (providerError.message.includes('401') || providerError.message.includes('Unauthorized')) {
-                    this.showApiKeyErrorPopup(provider, 'invalid', 'Unauthorized - please check your API key');
-                    return;
-                } else if (providerError.message.includes('429') || providerError.message.includes('rate limit')) {
-                    this.showApiKeyErrorPopup(provider, 'network', 'Rate limit exceeded - please try again in a few minutes');
-                    return;
-                } else if (providerError.message.includes('quota') || providerError.message.includes('billing')) {
-                    this.showApiKeyErrorPopup(provider, 'invalid', 'Account quota exceeded or billing issue - please check your account');
-                    return;
-                } else {
-                    // For other errors, show a custom red alert instead of green showAlert
-                    this.showSimpleErrorPopup('Generation Failed', `❌ ${providerError.message}\n\n🔧 Possible solutions:\n• Check your API key is correct\n• Verify your account has credits\n• Try with different content\n• Wait a moment and try again`);
-                    return;
+            // Automatic retry logic for JSON parsing failures
+            const maxRetries = 3;
+            let questions = [];
+
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    // Update status to show retry attempt
+                    if (attempt > 1) {
+                        const statusText = statusDiv?.querySelector('span');
+                        if (statusText) {
+                            statusText.textContent = `Retry attempt ${attempt}/${maxRetries}...`;
+                        }
+                        logger.debug(`🔄 Retry attempt ${attempt}/${maxRetries}`);
+                    }
+
+                    // Use simplified prompt on retries
+                    const currentPrompt = attempt === 1 ? prompt : this.buildRetryPrompt(content, questionCount, difficulty, selectedTypes, attempt);
+
+                    switch (provider) {
+                        case 'ollama':
+                            questions = await this.generateWithOllama(currentPrompt);
+                            break;
+                        case 'openai':
+                            questions = await this.generateWithOpenAI(currentPrompt);
+                            break;
+                        case 'claude':
+                            questions = await this.generateWithClaude(currentPrompt);
+                            break;
+                        case 'gemini':
+                            questions = await this.generateWithGemini(currentPrompt);
+                            break;
+                    }
+
+                    // If we got questions, break out of retry loop
+                    if (questions && questions.length > 0) {
+                        if (attempt > 1) {
+                            logger.debug(`✅ Retry successful on attempt ${attempt}`);
+                        }
+                        break;
+                    }
+
+                } catch (providerError) {
+                    logger.debug(`Provider error on attempt ${attempt}:`, providerError.message);
+
+                    // Don't retry on non-recoverable errors
+                    if (providerError.message.includes('Invalid') && providerError.message.includes('API key')) {
+                        this.showApiKeyErrorPopup(provider, 'invalid', providerError.message);
+                        return;
+                    } else if (providerError.message.includes('401') || providerError.message.includes('Unauthorized')) {
+                        this.showApiKeyErrorPopup(provider, 'invalid', 'Unauthorized - please check your API key');
+                        return;
+                    } else if (providerError.message.includes('429') || providerError.message.includes('rate limit')) {
+                        this.showApiKeyErrorPopup(provider, 'network', 'Rate limit exceeded - please try again in a few minutes');
+                        return;
+                    } else if (providerError.message.includes('quota') || providerError.message.includes('billing')) {
+                        this.showApiKeyErrorPopup(provider, 'invalid', 'Account quota exceeded or billing issue - please check your account');
+                        return;
+                    }
+
+                    // For JSON parsing errors or other recoverable errors, retry
+                    const isJsonError = providerError.message.includes('Invalid JSON') ||
+                                       providerError.message.includes('JSON parsing') ||
+                                       providerError.message.includes('Unexpected token');
+
+                    if (isJsonError && attempt < maxRetries) {
+                        logger.debug(`🔄 JSON parsing failed, will retry with simplified prompt`);
+                        // Small delay before retry
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        continue;
+                    }
+
+                    // If this is the last attempt or non-recoverable error, throw
+                    if (attempt === maxRetries) {
+                        this.showSimpleErrorPopup('Generation Failed', `❌ ${providerError.message}\n\n🔧 Possible solutions:\n• Check your API key is correct\n• Verify your account has credits\n• Try with different content\n• Wait a moment and try again\n\n(Tried ${maxRetries} times)`);
+                        return;
+                    }
                 }
             }
 
@@ -1050,52 +1497,104 @@ export class AIQuestionGenerator {
                 structureExamples.push('{"question": "Numeric question from content?", "type": "numeric", "correctAnswer": 1991, "tolerance": 0, "timeLimit": 25, "explanation": "Explanation of the answer", "difficulty": "medium"}');
             }
         }
+        if (selectedTypes.includes('ordering')) {
+            typeDescription += '\n- Some questions should ask to arrange items in correct order (use "correctOrder" array with indices)';
+            structureExamples.push('{"question": "Arrange the following steps in the correct order:", "type": "ordering", "options": ["Step B", "Step D", "Step A", "Step C"], "correctOrder": [2, 0, 3, 1], "timeLimit": 40, "explanation": "The correct sequence is Step A, Step B, Step C, Step D", "difficulty": "medium"}');
+        }
 
         const structureExample = `Return ONLY a valid JSON array with structures like these:\n[${structureExamples.join(',\n')}]`;
 
         // Build formatting instructions based on content type
         const formattingInstructions = this.buildFormattingInstructions(contentInfo);
 
-        // Build the main prompt
-        let prompt = `${typeDescription}
+        // Build the main prompt - simplified and focused on reliable JSON output
+        let prompt = `You are a quiz question generator. Output ONLY valid JSON - no markdown, no explanations, no extra text.
+
+${typeDescription}
 ${bloomInstructions}
-CONTENT ${isFormattingExistingQuestions ? 'CONTAINING QUESTIONS TO FORMAT' : 'TO CREATE QUESTIONS FROM'}:
+
+CONTENT TO USE:
 ${content}
 
+OUTPUT FORMAT - Return a JSON array with EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'}:
 ${structureExample}
+
 ${formattingInstructions}
-CRITICAL REQUIREMENTS:
-- Generate ALL questions in ${targetLanguage} language
-- Generate EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} - no more, no less
-${isFormattingExistingQuestions ? '- PRESERVE the original question text and answers as much as possible' : '- EVERY question MUST be directly based on the content provided'}
-- Questions must reference specific facts, concepts, or details from the content
-- Mix different question types: ${selectedTypes.join(', ')}
-- For true/false: Create factual statements, NOT binary choices
-- For numeric: Numbers must come from content or be solvable from it
-- Return ONLY the JSON array, no other text
-- Use EXACTLY these JSON structures:
-  * Multiple-choice: correctAnswer as integer (0-3), options array with 4 items
-  * True-false: options ["True", "False"], correctAnswer as string ("true"/"false")
-  * Multiple-correct: correctAnswers as array of indices, options array
-  * Numeric: correctAnswer as number, tolerance as number, NO options array
-- Include "timeLimit" (15-40 seconds), "explanation", and "difficulty" fields
-- Ensure all JSON is properly formatted and valid
 
-IMAGE/DIAGRAM GENERATION (OPTIONAL):
-- Add "imageData" and "imageType" fields when visuals would help
-- imageType: "svg" or "mermaid"
+STRICT RULES:
+1. Output ONLY the JSON array - start with [ and end with ]
+2. Generate ALL ${questionCount} questions - do not stop early
+3. All questions in ${targetLanguage} language
+4. Each question MUST have: question, type, options (except numeric), correctAnswer/correctAnswers, timeLimit, explanation, difficulty
+5. JSON structures by type:
+   - multiple-choice: "correctAnswer": 0-3 (integer index), "options": [4 items]
+   - true-false: "options": ["True", "False"], "correctAnswer": "true" or "false" (string)
+   - multiple-correct: "correctAnswers": [0, 2, 3] (array of indices), "options": [array]
+   - numeric: "correctAnswer": number, "tolerance": number, NO options field
+   - ordering: "options": [items], "correctOrder": [indices for correct sequence]
+6. Escape special characters in strings (quotes, backslashes, newlines)
+7. No trailing commas in JSON
+8. Complete EVERY question object before starting the next
 
-MERMAID (for processes/flowcharts):
-- Valid Mermaid syntax: graph TD; A[Start] --> B[Step]; B --> C[End];
-- Example: graph LR; A[Input] --> B{Decision}; B -->|Yes| C[Action]; B -->|No| D[End];
+${isFormattingExistingQuestions ? 'PRESERVE original question text and answers.' : 'Base questions on the provided content.'}
 
-SVG (for shapes/diagrams):
-- Valid SVG with viewBox="0 0 400 300"
-- Example: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><circle cx="200" cy="150" r="80" fill="#4CAF50"/></svg>
-
-Put COMPLETE code in imageData - don't truncate!`;
+IMPORTANT: You MUST output all ${questionCount} complete questions. Do not truncate or stop early.`;
 
         return prompt;
+    }
+
+    /**
+     * Build a simplified prompt for retry attempts after JSON parsing failures
+     */
+    buildRetryPrompt(content, questionCount, difficulty, selectedTypes, attemptNumber) {
+        const language = translationManager.getCurrentLanguage() || 'en';
+        const languageNames = {
+            'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German',
+            'it': 'Italian', 'pt': 'Portuguese', 'pl': 'Polish', 'ja': 'Japanese', 'zh': 'Chinese'
+        };
+        const targetLanguage = languageNames[language] || 'English';
+
+        // On second retry, reduce question count if more than 1
+        const adjustedCount = attemptNumber >= 3 && questionCount > 1 ? Math.ceil(questionCount / 2) : questionCount;
+
+        // Build minimal type examples
+        const typeExamples = [];
+        if (selectedTypes.includes('multiple-choice')) {
+            typeExamples.push('{"question":"Q?","type":"multiple-choice","options":["A","B","C","D"],"correctAnswer":0,"timeLimit":30,"difficulty":"medium"}');
+        }
+        if (selectedTypes.includes('true-false')) {
+            typeExamples.push('{"question":"Statement.","type":"true-false","options":["True","False"],"correctAnswer":"true","timeLimit":20,"difficulty":"easy"}');
+        }
+        if (selectedTypes.includes('multiple-correct')) {
+            typeExamples.push('{"question":"Select all.","type":"multiple-correct","options":["A","B","C","D"],"correctAnswers":[0,2],"timeLimit":35,"difficulty":"medium"}');
+        }
+        if (selectedTypes.includes('numeric')) {
+            typeExamples.push('{"question":"Calculate.","type":"numeric","correctAnswer":42,"tolerance":0,"timeLimit":25,"difficulty":"medium"}');
+        }
+        if (selectedTypes.includes('ordering')) {
+            typeExamples.push('{"question":"Order these.","type":"ordering","options":["B","A","C"],"correctOrder":[1,0,2],"timeLimit":40,"difficulty":"medium"}');
+        }
+
+        // Truncate content at word boundary for cleaner context
+        const truncatedContent = this.truncateAtWordBoundary(content, 2000);
+
+        // Very minimal, focused prompt for reliability
+        return `Generate ${adjustedCount} quiz question${adjustedCount === 1 ? '' : 's'} in ${targetLanguage} about:
+${truncatedContent}
+
+CRITICAL: Output ONLY a valid JSON array. No markdown, no explanation.
+
+Example format:
+[${typeExamples.join(',')}]
+
+Rules:
+- Start with [ end with ]
+- ${adjustedCount} questions exactly
+- Difficulty: ${difficulty}
+- Escape quotes with \\
+- No trailing commas
+
+JSON array only:`;
     }
 
     /**
@@ -1309,7 +1808,12 @@ Please respond with only valid JSON. Do not include explanations or additional t
         try {
             const apiKey = await secureStorage.getSecureItem('api_key_claude');
             logger.debug('Claude API key retrieved:', !!apiKey);
-            
+
+            // Get selected Claude model (using alias for auto-updates)
+            const modelSelect = document.getElementById('claude-model');
+            const selectedModel = modelSelect?.value || 'claude-sonnet-4-5';
+            logger.debug('Selected Claude model:', selectedModel);
+
             const response = await fetch(APIHelper.getApiUrl('api/claude/generate'), {
                 method: 'POST',
                 headers: {
@@ -1318,7 +1822,8 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 body: JSON.stringify({
                     prompt: prompt,
                     apiKey: apiKey,
-                    numQuestions: this.requestedQuestionCount || 5
+                    numQuestions: this.requestedQuestionCount || 5,
+                    model: selectedModel
                 })
             });
 
@@ -1360,7 +1865,14 @@ Please respond with only valid JSON. Do not include explanations or additional t
             } else {
                 throw new Error('Invalid Claude API response structure');
             }
-            
+
+            // Prepend '[' because we use prefill technique on the server
+            // The server starts Claude's response with '[' so the response continues from there
+            if (!content.trim().startsWith('[')) {
+                content = '[' + content;
+                logger.debug('Prepended [ to Claude response (prefill technique)');
+            }
+
             return this.parseAIResponse(content);
             
         } catch (error) {
@@ -2057,17 +2569,27 @@ QUESTION QUALITY & FEEDBACK:
                 }
                 
                 // Model selection visibility and loading
+                const claudeModelSelection = document.getElementById('claude-model-selection');
+
                 if (provider === 'ollama') {
                     logger.debug('HandleProviderChange - Showing model selection for Ollama');
                     // Make sure it's visible (remove hidden class if it exists)
                     modelSelection.classList.remove('hidden');
                     modelSelection.style.display = 'block';
-                    
+                    if (claudeModelSelection) claudeModelSelection.style.display = 'none';
+
                     // Load the models
                     await this.loadOllamaModels();
+                } else if (provider === 'claude') {
+                    logger.debug('HandleProviderChange - Showing model selection for Claude');
+                    modelSelection.classList.add('hidden');
+                    modelSelection.style.display = 'none';
+                    if (claudeModelSelection) claudeModelSelection.style.display = 'block';
                 } else {
                     logger.debug('HandleProviderChange - Hiding model selection for provider:', provider);
                     modelSelection.classList.add('hidden');
+                    modelSelection.style.display = 'none';
+                    if (claudeModelSelection) claudeModelSelection.style.display = 'none';
                 }
             } finally {
                 this.isChangingProvider = false;
@@ -2275,22 +2797,16 @@ QUESTION QUALITY & FEEDBACK:
             logger.debug(`📄 PDF extracted: ${data.pages} pages, ${data.text.length} characters`);
 
             // Show success notification
-            if (typeof showToast === 'function') {
-                const message = (translationManager.getTranslationSync('pdf_extracted') || 'PDF extracted: {pages} pages')
-                    .replace('{pages}', data.pages);
-                showToast(message, 'success');
-            }
+            const message = (translationManager.getTranslationSync('pdf_extracted') || 'PDF extracted: {pages} pages')
+                .replace('{pages}', data.pages);
+            toastNotifications.success(message);
 
         } catch (error) {
             logger.error('📄 PDF extraction failed:', error);
             contentTextarea.value = '';
 
             // Show error to user
-            if (typeof showToast === 'function') {
-                showToast(error.message, 'error');
-            } else if (typeof showAlert === 'function') {
-                showAlert(error.message, 'error');
-            }
+            toastNotifications.error(error.message);
         } finally {
             contentTextarea.disabled = false;
         }
@@ -2787,8 +3303,9 @@ QUESTION QUALITY & FEEDBACK:
             svgCode = svgCode.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
         }
 
-        // Convert to data URL
-        const encoded = btoa(unescape(encodeURIComponent(svgCode)));
+        // Convert to data URL using modern encoding (unescape is deprecated)
+        const encoded = btoa(encodeURIComponent(svgCode).replace(/%([0-9A-F]{2})/g,
+            (_, p1) => String.fromCharCode(parseInt(p1, 16))));
         return 'data:image/svg+xml;base64,' + encoded;
     }
 
@@ -2902,6 +3419,29 @@ QUESTION QUALITY & FEEDBACK:
                 logger.debug('❌ ValidateGeneratedQuestion - Numeric validation failed');
                 return false;
             }
+        } else if (question.type === 'ordering') {
+            // Validate ordering questions
+            if (!question.options || !Array.isArray(question.options) || question.options.length < 2) {
+                logger.debug('❌ ValidateGeneratedQuestion - Ordering validation failed: invalid options');
+                return false;
+            }
+            if (!question.correctOrder || !Array.isArray(question.correctOrder)) {
+                logger.debug('❌ ValidateGeneratedQuestion - Ordering validation failed: missing correctOrder');
+                return false;
+            }
+            // Ensure correctOrder has same length as options
+            if (question.correctOrder.length !== question.options.length) {
+                logger.debug('❌ ValidateGeneratedQuestion - Ordering validation failed: correctOrder length mismatch');
+                return false;
+            }
+            // Ensure correctOrder contains valid indices
+            const validIndices = question.correctOrder.every(idx =>
+                typeof idx === 'number' && idx >= 0 && idx < question.options.length
+            );
+            if (!validIndices) {
+                logger.debug('❌ ValidateGeneratedQuestion - Ordering validation failed: invalid indices in correctOrder');
+                return false;
+            }
         } else {
             logger.debug('❌ ValidateGeneratedQuestion - Unknown question type:', question.type);
             return false;
@@ -2933,7 +3473,7 @@ QUESTION QUALITY & FEEDBACK:
                 apiKeyInput.placeholder = 'Enter your API key';
             }
 
-            // Show the model selection div immediately
+            // Show the model selection div immediately (Ollama is default)
             const modelSelection = document.getElementById('model-selection');
             logger.debug('🚀 OpenModal - Model selection div found:', !!modelSelection);
             if (modelSelection) {
@@ -2941,6 +3481,12 @@ QUESTION QUALITY & FEEDBACK:
                 modelSelection.classList.remove('hidden');
                 modelSelection.style.display = 'block';
                 logger.debug('🚀 OpenModal - Model selection set to block, computed style now:', window.getComputedStyle(modelSelection).display);
+            }
+
+            // Hide Claude model selection (Ollama is default provider)
+            const claudeModelSelection = document.getElementById('claude-model-selection');
+            if (claudeModelSelection) {
+                claudeModelSelection.style.display = 'none';
             }
 
             // Show loading message immediately
@@ -3077,7 +3623,7 @@ QUESTION QUALITY & FEEDBACK:
         const okBtn = document.getElementById('simple-error-ok');
 
         if (!modal) {
-            console.error('Failed to create error modal');
+            logger.error('Failed to create error modal');
             alert(title + '\n\n' + message);
             return;
         }

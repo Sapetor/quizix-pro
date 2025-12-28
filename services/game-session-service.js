@@ -206,7 +206,8 @@ class GameSessionService {
       correctAnswer: correctAnswer,
       correctOption: correctOption,
       questionType: question.type || 'multiple-choice',
-      tolerance: question.tolerance || null
+      tolerance: question.tolerance || null,
+      explanation: question.explanation || null
     };
 
     // For multiple-correct questions, also send the correctAnswers array
@@ -220,20 +221,22 @@ class GameSessionService {
     const answerStats = game.getAnswerStatistics();
     io.to(game.hostId).emit('answer-statistics', answerStats);
 
-    // Send individual results to each player
+    // Send individual results to each player (include explanation from timeoutData)
     game.players.forEach((player, playerId) => {
       const playerAnswer = player.answers[game.currentQuestion];
       if (playerAnswer) {
         io.to(playerId).emit('player-result', {
           isCorrect: playerAnswer.isCorrect,
           points: playerAnswer.points,
-          totalScore: player.score
+          totalScore: player.score,
+          explanation: timeoutData.explanation
         });
       } else {
         io.to(playerId).emit('player-result', {
           isCorrect: false,
           points: 0,
-          totalScore: player.score
+          totalScore: player.score,
+          explanation: timeoutData.explanation
         });
       }
     });
@@ -608,6 +611,8 @@ class Game {
       stats.answerCounts['false'] = 0;
     } else if (question.type === 'numeric') {
       stats.answerCounts = {};
+    } else if (question.type === 'ordering') {
+      stats.answerCounts = {};
     }
 
     Array.from(this.players.values()).forEach(player => {
@@ -635,9 +640,15 @@ class Game {
           }
         } else if (question.type === 'numeric') {
           stats.answerCounts[answer.toString()] = (stats.answerCounts[answer.toString()] || 0) + 1;
+        } else if (question.type === 'ordering') {
+          const orderKey = JSON.stringify(answer);
+          stats.answerCounts[orderKey] = (stats.answerCounts[orderKey] || 0) + 1;
         }
       }
     });
+
+    // Add option count for dynamic display
+    stats.optionCount = question.options?.length || 4;
 
     return stats;
   }

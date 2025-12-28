@@ -23,6 +23,25 @@ export class BaseCarousel {
 
         // Container reference (set by subclass)
         this.container = null;
+
+        // Store bound event handlers for cleanup
+        this._boundHandlers = {
+            keydown: null,
+            touchstart: null,
+            touchmove: null,
+            touchend: null,
+            mousedown: null,
+            mousemove: null,
+            mouseup: null,
+            mouseleave: null,
+            mouseenter: null,
+            containerMouseleave: null,
+            focusin: null,
+            focusout: null,
+            windowBlur: null,
+            windowFocus: null,
+            dotClicks: []
+        };
     }
 
     /**
@@ -46,12 +65,15 @@ export class BaseCarousel {
      * Setup dot navigation click handlers
      */
     setupDotNavigation() {
+        this._boundHandlers.dotClicks = [];
         this.dots.forEach((dot, index) => {
-            dot.addEventListener('click', () => {
+            const handler = () => {
                 this.pauseAutoPlay();
                 this.goToSlide(index);
                 this.scheduleAutoPlayResume();
-            });
+            };
+            this._boundHandlers.dotClicks.push({ dot, handler });
+            dot.addEventListener('click', handler);
         });
     }
 
@@ -61,7 +83,7 @@ export class BaseCarousel {
     setupKeyboardEvents() {
         if (!this.container) return;
 
-        this.container.addEventListener('keydown', (e) => {
+        this._boundHandlers.keydown = (e) => {
             if (e.key === 'ArrowLeft') {
                 e.preventDefault();
                 this.previousSlide();
@@ -69,7 +91,8 @@ export class BaseCarousel {
                 e.preventDefault();
                 this.nextSlide();
             }
-        });
+        };
+        this.container.addEventListener('keydown', this._boundHandlers.keydown);
 
         // Make container focusable
         this.container.setAttribute('tabindex', '0');
@@ -81,16 +104,25 @@ export class BaseCarousel {
     setupTouchEvents() {
         if (!this.container) return;
 
+        // Bind handlers for cleanup
+        this._boundHandlers.touchstart = (e) => this.handleTouchStart(e);
+        this._boundHandlers.touchmove = (e) => this.handleTouchMove(e);
+        this._boundHandlers.touchend = (e) => this.handleTouchEnd(e);
+        this._boundHandlers.mousedown = (e) => this.handleMouseDown(e);
+        this._boundHandlers.mousemove = (e) => this.handleMouseMove(e);
+        this._boundHandlers.mouseup = (e) => this.handleMouseUp(e);
+        this._boundHandlers.mouseleave = (e) => this.handleMouseUp(e);
+
         // Touch events
-        this.container.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: true });
-        this.container.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
-        this.container.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: true });
+        this.container.addEventListener('touchstart', this._boundHandlers.touchstart, { passive: true });
+        this.container.addEventListener('touchmove', this._boundHandlers.touchmove, { passive: false });
+        this.container.addEventListener('touchend', this._boundHandlers.touchend, { passive: true });
 
         // Mouse events for desktop
-        this.container.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-        this.container.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        this.container.addEventListener('mouseup', (e) => this.handleMouseUp(e));
-        this.container.addEventListener('mouseleave', (e) => this.handleMouseUp(e));
+        this.container.addEventListener('mousedown', this._boundHandlers.mousedown);
+        this.container.addEventListener('mousemove', this._boundHandlers.mousemove);
+        this.container.addEventListener('mouseup', this._boundHandlers.mouseup);
+        this.container.addEventListener('mouseleave', this._boundHandlers.mouseleave);
     }
 
     /**
@@ -99,13 +131,21 @@ export class BaseCarousel {
     setupAutoPlayListeners() {
         if (!this.container) return;
 
-        this.container.addEventListener('mouseenter', () => this.pauseAutoPlay());
-        this.container.addEventListener('mouseleave', () => this.resumeAutoPlay());
-        this.container.addEventListener('focusin', () => this.pauseAutoPlay());
-        this.container.addEventListener('focusout', () => this.resumeAutoPlay());
+        // Bind handlers for cleanup
+        this._boundHandlers.mouseenter = () => this.pauseAutoPlay();
+        this._boundHandlers.containerMouseleave = () => this.resumeAutoPlay();
+        this._boundHandlers.focusin = () => this.pauseAutoPlay();
+        this._boundHandlers.focusout = () => this.resumeAutoPlay();
+        this._boundHandlers.windowBlur = () => this.pauseAutoPlay();
+        this._boundHandlers.windowFocus = () => this.resumeAutoPlay();
 
-        window.addEventListener('blur', () => this.pauseAutoPlay());
-        window.addEventListener('focus', () => this.resumeAutoPlay());
+        this.container.addEventListener('mouseenter', this._boundHandlers.mouseenter);
+        this.container.addEventListener('mouseleave', this._boundHandlers.containerMouseleave);
+        this.container.addEventListener('focusin', this._boundHandlers.focusin);
+        this.container.addEventListener('focusout', this._boundHandlers.focusout);
+
+        window.addEventListener('blur', this._boundHandlers.windowBlur);
+        window.addEventListener('focus', this._boundHandlers.windowFocus);
     }
 
     // Touch event handlers
@@ -252,6 +292,71 @@ export class BaseCarousel {
 
     destroy() {
         this.pauseAutoPlay();
+
+        // Remove container event listeners
+        if (this.container) {
+            if (this._boundHandlers.keydown) {
+                this.container.removeEventListener('keydown', this._boundHandlers.keydown);
+            }
+            if (this._boundHandlers.touchstart) {
+                this.container.removeEventListener('touchstart', this._boundHandlers.touchstart);
+            }
+            if (this._boundHandlers.touchmove) {
+                this.container.removeEventListener('touchmove', this._boundHandlers.touchmove);
+            }
+            if (this._boundHandlers.touchend) {
+                this.container.removeEventListener('touchend', this._boundHandlers.touchend);
+            }
+            if (this._boundHandlers.mousedown) {
+                this.container.removeEventListener('mousedown', this._boundHandlers.mousedown);
+            }
+            if (this._boundHandlers.mousemove) {
+                this.container.removeEventListener('mousemove', this._boundHandlers.mousemove);
+            }
+            if (this._boundHandlers.mouseup) {
+                this.container.removeEventListener('mouseup', this._boundHandlers.mouseup);
+            }
+            if (this._boundHandlers.mouseleave) {
+                this.container.removeEventListener('mouseleave', this._boundHandlers.mouseleave);
+            }
+            if (this._boundHandlers.mouseenter) {
+                this.container.removeEventListener('mouseenter', this._boundHandlers.mouseenter);
+            }
+            if (this._boundHandlers.containerMouseleave) {
+                this.container.removeEventListener('mouseleave', this._boundHandlers.containerMouseleave);
+            }
+            if (this._boundHandlers.focusin) {
+                this.container.removeEventListener('focusin', this._boundHandlers.focusin);
+            }
+            if (this._boundHandlers.focusout) {
+                this.container.removeEventListener('focusout', this._boundHandlers.focusout);
+            }
+        }
+
+        // Remove window event listeners
+        if (this._boundHandlers.windowBlur) {
+            window.removeEventListener('blur', this._boundHandlers.windowBlur);
+        }
+        if (this._boundHandlers.windowFocus) {
+            window.removeEventListener('focus', this._boundHandlers.windowFocus);
+        }
+
+        // Remove dot click listeners
+        if (this._boundHandlers.dotClicks) {
+            this._boundHandlers.dotClicks.forEach(({ dot, handler }) => {
+                dot.removeEventListener('click', handler);
+            });
+        }
+
+        // Clear references
+        this._boundHandlers = {
+            keydown: null, touchstart: null, touchmove: null, touchend: null,
+            mousedown: null, mousemove: null, mouseup: null, mouseleave: null,
+            mouseenter: null, containerMouseleave: null, focusin: null, focusout: null,
+            windowBlur: null, windowFocus: null, dotClicks: []
+        };
+
+        logger.debug('BaseCarousel destroyed and event listeners cleaned up');
     }
 }
 

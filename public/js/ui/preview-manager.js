@@ -909,9 +909,9 @@ export class PreviewManager {
             try {
                 // Translate the mobile preview container specifically
                 translationManager.translateContainer(container);
-                console.log('Mobile preview translations updated');
+                logger.debug('Mobile preview translations updated');
             } catch (error) {
-                console.warn('Error updating mobile preview translations:', error);
+                logger.warn('Error updating mobile preview translations:', error);
             }
         }, 100);
         

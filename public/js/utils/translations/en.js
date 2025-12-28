@@ -172,6 +172,8 @@ export default {
         time_seconds: "Time (s)",
         correct_answer: "Correct Answer",
         tolerance: "Tolerance (+/-)",
+        explanation_optional: "Explanation (optional)",
+        explanation_placeholder: "Explain why the correct answer is correct...",
         enter_question_with_latex: "Enter your question (supports LaTeX)",
         option_a: "Option A",
         option_b: "Option B", 
@@ -281,6 +283,7 @@ export default {
         true_false_type: "True/False Type", 
         multiple_correct_type: "Multiple Correct Type",
         numeric_answer_type: "Numeric Answer Type",
+        ordering_type: "Ordering",
         difficulty_level: "Difficulty Level",
         number_of_questions: "Number of Questions",
         source_material: "Source Material",
@@ -292,6 +295,8 @@ export default {
         huggingface_free: "HuggingFace (Free)",
         choose_model: "Choose Model",
         select_ollama_model: "Select Ollama Model",
+        choose_claude_model: "Choose Claude Model",
+        select_claude_model: "Select which Claude model to use for generation",
         loading_models_placeholder: "Loading models...",
         api_key: "API Key",
         api_key_stored_locally: "API key stored locally",
@@ -370,6 +375,7 @@ export default {
         question_type_true_false: "True/False",
         question_type_multiple_correct: "Multiple Correct",
         question_type_numeric: "Numeric",
+        question_type_ordering: "Ordering",
 
         load_saved_quiz: "Load Saved Quiz",
         total: "Total",
@@ -490,5 +496,11 @@ export default {
         loading: "Loading...",
         view_all_results: "View All Results",
         please_add_question_alert: "Please add at least one question before starting the game.",
-        confirm_start_without_title: "Your quiz doesn't have a title. Start anyway?"
+        confirm_start_without_title: "Your quiz doesn't have a title. Start anyway?",
+
+        // Sound settings
+        toggle_sound_tooltip: "Toggle sound",
+        sound: "Sound",
+        mute_sound: "Mute sound",
+        unmute_sound: "Unmute sound"
 };

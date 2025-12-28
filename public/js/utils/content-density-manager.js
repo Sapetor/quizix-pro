@@ -322,7 +322,3 @@ if (document.readyState === 'loading') {
     contentDensityManager.initialize();
 }
 
-// Make available globally for debugging
-if (typeof window !== 'undefined') {
-    window.contentDensityManager = contentDensityManager;
-}

@@ -28,11 +28,11 @@ const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWA
 // Auto-detect: production uses /quizmaster/, development uses /
 const BASE_PATH = process.env.BASE_PATH || (isProduction ? '/quizmaster/' : '/');
 
-// Server-side logging utility - temporarily verbose for debugging
+// Server-side logging utility
 const DEBUG = {
-    ENABLED: true, // Always enabled for debugging
+    ENABLED: !isProduction, // Disabled in production, enabled in development
     LEVELS: { ERROR: 1, WARN: 2, INFO: 3, DEBUG: 4 },
-    CURRENT_LEVEL: 4 // Show all logs for debugging Railway issues
+    CURRENT_LEVEL: isProduction ? 2 : 4 // WARN level in production, DEBUG in development
 };
 
 const logger = {
@@ -174,82 +174,6 @@ app.use((req, res, next) => {
         res.set('Pragma', 'no-cache');
     }
     next();
-});
-
-// Static file serving with mobile-optimized caching headers and proper MIME types
-// NOTE: index.html is disabled from static serving so it can be handled by custom route
-// Mount static files at BASE_PATH to support Kubernetes path-based routing
-const staticMiddleware = express.static('public', {
-  index: false,         // Disable automatic index.html serving
-  // Balanced caching for mobile and WSL performance
-  maxAge: isProduction ? '1y' : '4h', // Increased dev cache for mobile
-  etag: true,           // Enable ETags for efficient cache validation
-  lastModified: true,   // Include Last-Modified headers
-  cacheControl: true,   // Enable Cache-Control headers
-  
-  // Mobile-optimized headers with proper MIME types for ES6 modules
-  setHeaders: (res, path, stat) => {
-    const userAgent = res.req.headers['user-agent'] || '';
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-    
-    // Critical fix: Proper MIME types for JavaScript modules
-    if (path.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-      // Reduced cache time for development to see changes quickly
-      const maxAge = isProduction 
-        ? (isMobile ? 172800 : 86400) // Production: 48 hours mobile, 24 hours desktop
-        : (isMobile ? 300 : 300);     // Development: 5 minutes for quick updates
-      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
-      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
-    }
-    
-    // CSS files
-    if (path.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css; charset=utf-8');
-      const maxAge = isProduction 
-        ? (isMobile ? 172800 : 86400)
-        : (isMobile ? 300 : 300);
-      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
-      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
-    }
-    
-    // HTML files
-    if (path.endsWith('.html')) {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    }
-    
-    // JSON files
-    if (path.endsWith('.json')) {
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    }
-    
-    // Optimize image caching for mobile bandwidth
-    if (path.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-      const maxAge = isMobile ? 7200 : 3600; // 2 hours mobile, 1 hour desktop
-      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
-    }
-    
-    // Special handling for index.html - shorter cache but with validation
-    if (path.endsWith('index.html')) {
-      res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate'); // 5 minutes with validation
-      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
-    }
-    
-    // Enable compression for text-based files
-    if (path.match(/\.(js|css|html|json|svg|txt)$/i)) {
-      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
-    }
-    
-    // Mobile-specific optimizations
-    if (isMobile) {
-      // Add mobile-friendly headers
-      res.setHeader('X-Mobile-Optimized', 'true');
-      
-      // Enable keep-alive for mobile connections
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('Keep-Alive', 'timeout=30, max=100');
-    }
-  }
 });
 
 // Static file serving with mobile-optimized caching headers and proper MIME types
@@ -474,20 +398,47 @@ app.post('/upload', upload.single('image'), (req, res) => {
     if (fs.existsSync(req.file.path)) {
       const stats = fs.statSync(req.file.path);
       logger.debug(`File verification: ${stats.size} bytes on disk`);
-      
+
       if (stats.size === 0) {
         logger.error('WARNING: Uploaded file is empty (0 bytes)!');
+        fs.unlinkSync(req.file.path); // Clean up empty file
         return res.status(500).json({ error: 'File upload failed - empty file' });
       }
-      
+
       if (stats.size !== req.file.size) {
         logger.warn(`File size mismatch: expected ${req.file.size}, got ${stats.size}`);
+      }
+
+      // Verify actual file content matches claimed type (magic byte check)
+      const fd = fs.openSync(req.file.path, 'r');
+      const buffer = Buffer.alloc(12);
+      fs.readSync(fd, buffer, 0, 12, 0);
+      fs.closeSync(fd);
+
+      const isValidImage = (
+        // JPEG: FF D8 FF
+        (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) ||
+        // PNG: 89 50 4E 47
+        (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) ||
+        // GIF: 47 49 46 38
+        (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) ||
+        // WebP: 52 49 46 46 ... 57 45 42 50
+        (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+         buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) ||
+        // BMP: 42 4D
+        (buffer[0] === 0x42 && buffer[1] === 0x4D)
+      );
+
+      if (!isValidImage) {
+        logger.warn(`File content doesn't match image signature: ${req.file.filename}`);
+        fs.unlinkSync(req.file.path); // Delete suspicious file
+        return res.status(400).json({ error: 'Invalid image file content' });
       }
     } else {
       logger.error(`File not found after upload: ${req.file.path}`);
       return res.status(500).json({ error: 'File upload failed - file not saved' });
     }
-    
+
     res.json({ filename: req.file.filename, url: `/uploads/${req.file.filename}` });
   } catch (error) {
     logger.error('Upload error:', error);
@@ -739,7 +690,7 @@ app.get('/api/ollama/models', async (req, res) => {
 // Claude API proxy endpoint
 app.post('/api/claude/generate', async (req, res) => {
   try {
-    const { prompt, apiKey, numQuestions } = req.body;
+    const { prompt, apiKey, numQuestions, model } = req.body;
 
     // More detailed validation
     if (!prompt) {
@@ -758,17 +709,25 @@ app.post('/api/claude/generate', async (req, res) => {
     const { default: fetchFunction } = await import('node-fetch');
 
     // Calculate max_tokens based on number of questions
-    // ~1500 tokens per question (prompt asks for concise feedback)
+    // ~2000 tokens per question to allow for LaTeX, explanations, and safety margin
     const questionCount = Math.max(1, Math.min(numQuestions || 5, 20));
-    const calculatedMaxTokens = Math.max(4096, questionCount * 1500);
+    const calculatedMaxTokens = Math.max(8192, questionCount * 2000);
+
+    // Use model from request, fall back to env var, then default (using alias for auto-updates)
+    const selectedModel = model || process.env.CLAUDE_MODEL || 'claude-sonnet-4-5';
+    logger.info(`Using Claude model: ${selectedModel}`);
 
     const requestBody = {
-      model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+      model: selectedModel,
       max_tokens: calculatedMaxTokens,
       messages: [
         {
           role: 'user',
           content: prompt
+        },
+        {
+          role: 'assistant',
+          content: '['  // Prefill technique: force JSON array output
         }
       ]
     };
@@ -796,9 +755,9 @@ app.post('/api/claude/generate', async (req, res) => {
         errorMessage = 'Invalid request. Please check your input and try again.';
       }
       
-      return res.status(response.status).json({ 
+      return res.status(response.status).json({
         error: errorMessage,
-        details: errorText
+        details: isProduction ? undefined : errorText // Hide details in production
       });
     }
 
@@ -806,15 +765,16 @@ app.post('/api/claude/generate', async (req, res) => {
     res.json(data);
   } catch (error) {
     logger.error('Claude proxy error:', error.message);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to connect to Claude API',
-      details: error.message
+      details: isProduction ? undefined : error.message // Hide details in production
     });
   }
 });
 
 
-// Debug endpoint to check file existence
+// Debug endpoint to check file existence (disabled in production)
+if (!isProduction) {
 app.get('/api/debug/files', (req, res) => {
   const checkFiles = [
     'js/main.js',
@@ -882,6 +842,7 @@ app.get('/api/debug/directory', (req, res) => {
     contents: fs.existsSync(publicDir) ? listDirectory(publicDir) : null
   });
 });
+} // End of !isProduction debug endpoints block
 
 // Simple ping endpoint for connection status monitoring
 app.get('/api/ping', (req, res) => {
@@ -922,10 +883,43 @@ function validateFilename(filename) {
   return true;
 }
 
+// Socket.IO rate limiting helper
+const socketRateLimits = new Map();
+
+function checkRateLimit(socketId, eventName, maxPerSecond = 10) {
+  const key = `${socketId}:${eventName}`;
+  const now = Date.now();
+  const limit = socketRateLimits.get(key);
+
+  if (!limit || now > limit.resetTime) {
+    socketRateLimits.set(key, { count: 1, resetTime: now + 1000 });
+    return true;
+  }
+
+  if (limit.count >= maxPerSecond) {
+    logger.warn(`Rate limit exceeded for socket ${socketId} on event ${eventName}`);
+    return false;
+  }
+
+  limit.count++;
+  return true;
+}
+
+// Clean up old rate limit entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, limit] of socketRateLimits.entries()) {
+    if (now > limit.resetTime + 5000) {
+      socketRateLimits.delete(key);
+    }
+  }
+}, 10000);
+
 // Socket.IO event handlers
 io.on('connection', (socket) => {
 
   socket.on('host-join', (data) => {
+    if (!checkRateLimit(socket.id, 'host-join', 5)) return;
     const clientIP = socket.handshake.address;
 
     logger.debug('host-join event received');
@@ -973,6 +967,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('player-join', (data) => {
+    if (!checkRateLimit(socket.id, 'player-join', 5)) return;
     if (!data || typeof data !== 'object') {
       socket.emit('error', { message: 'Invalid request data' });
       return;
@@ -996,6 +991,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('start-game', () => {
+    if (!checkRateLimit(socket.id, 'start-game', 3)) return;
     const game = gameSessionService.findGameByHost(socket.id);
     if (!game) {
       return;
@@ -1005,6 +1001,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('submit-answer', (data) => {
+    if (!checkRateLimit(socket.id, 'submit-answer', 3)) return; // Strict limit: 3 per second
     if (!data || data.answer === undefined) {
       return;
     }
@@ -1027,6 +1024,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('next-question', () => {
+    if (!checkRateLimit(socket.id, 'next-question', 5)) return;
     try {
       logger.debug('NEXT-QUESTION EVENT RECEIVED');
       const game = gameSessionService.findGameByHost(socket.id);

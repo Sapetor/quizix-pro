@@ -570,8 +570,12 @@ export function setGlobalFontSize(scale) {
         fontIcon.textContent = icons[scale] || 'A';
     }
     
-    // Save preference to localStorage
-    localStorage.setItem('globalFontSize', scale);
+    // Save preference to localStorage (with error handling for private browsing/quota)
+    try {
+        localStorage.setItem('globalFontSize', scale);
+    } catch (e) {
+        logger.warn('Failed to save font size preference:', e.message);
+    }
     currentFontScale = scale;
     
     logger.debug('Global font size updated via CSS custom properties:', { scale, scaleValue });

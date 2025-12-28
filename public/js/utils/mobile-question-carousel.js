@@ -4,6 +4,7 @@
  */
 
 import { getTranslation } from './translation-manager.js';
+import { logger } from '../core/config.js';
 
 class MobileQuestionCarousel {
     constructor() {
@@ -37,7 +38,7 @@ class MobileQuestionCarousel {
             this.updateCarousel();
         }, 100);
         
-        console.debug('Mobile Question Carousel initialized and activated');
+        logger.debug('Mobile Question Carousel initialized and activated');
     }
 
     /**
@@ -136,7 +137,7 @@ class MobileQuestionCarousel {
         } else if (document.getElementById('toolbar-add-question')) {
             document.getElementById('toolbar-add-question').click();
         } else {
-            console.warn('Add question functionality not found');
+            logger.warn('Add question functionality not found');
         }
         
         // Update carousel after adding question
@@ -238,7 +239,7 @@ class MobileQuestionCarousel {
         // Get the current question from original container
         const currentQuestion = this.questions[this.currentIndex];
         if (!currentQuestion) {
-            console.warn(`Question at index ${this.currentIndex} not found`);
+            logger.warn(`Question at index ${this.currentIndex} not found`);
             return;
         }
 
@@ -254,7 +255,7 @@ class MobileQuestionCarousel {
 
         this.questionsWrapper.appendChild(clonedQuestion);
 
-        console.debug(`Showing question ${this.currentIndex + 1} of ${this.questions.length}`);
+        logger.debug(`Showing question ${this.currentIndex + 1} of ${this.questions.length}`);
     }
 
     /**
@@ -284,7 +285,7 @@ class MobileQuestionCarousel {
             }
         });
         
-        console.debug('Form values synced from original to clone, including question options');
+        logger.debug('Form values synced from original to clone, including question options');
     }
 
     /**
@@ -339,7 +340,7 @@ class MobileQuestionCarousel {
         // Update navigation
         this.updateNavigation();
 
-        console.debug(`Navigated to question ${index + 1} of ${this.questions.length}`);
+        logger.debug(`Navigated to question ${index + 1} of ${this.questions.length}`);
     }
 
     /**

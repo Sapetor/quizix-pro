@@ -8,7 +8,6 @@ import { translationManager } from './utils/translation-manager.js';
 import { unifiedErrorHandler as errorBoundary } from './utils/unified-error-handler.js';
 import { TIMING, logger } from './core/config.js';
 import './utils/globals.js'; // Import globals to make them available
-// Removed testing infrastructure and performance monitoring - keeping app lightweight
 import { browserOptimizer } from './utils/browser-optimizer.js'; // Browser-specific optimizations
 import { contentDensityManager } from './utils/content-density-manager.js'; // Smart content spacing and sizing
 import { mobileLayoutManager } from './utils/mobile-layout-manager.js'; // Smart mobile layout for different content types
@@ -209,10 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }, 'font-size-init');
         }, TIMING.MATHJAX_TIMEOUT);
-        
-        // Removed performance dashboard keyboard shortcut - keeping app lightweight
-        
-        
+
         // Initialize browser optimizations
         logger.debug('Browser optimization status:', browserOptimizer.getOptimizationStatus());
         
@@ -251,7 +247,6 @@ document.addEventListener('visibilitychange', () => {
                 // Clear main game timer to prevent unnecessary ticking when page is hidden
                 window.game.gameManager.clearTimerTracked(window.game.gameManager.timer);
                 window.game.gameManager.timer = null;
-                // logger.debug('Main game timer cleared while page hidden');
             }
         } catch (error) {
             logger.error('Error during partial cleanup:', error);

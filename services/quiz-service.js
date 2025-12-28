@@ -46,6 +46,33 @@ class QuizService {
             throw new Error('Invalid quiz data');
         }
 
+        // Input length validation
+        if (title.length > 200) {
+            throw new Error('Quiz title must be less than 200 characters');
+        }
+
+        if (questions.length > 100) {
+            throw new Error('Maximum 100 questions allowed per quiz');
+        }
+
+        // Validate individual question content lengths
+        for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            if (q.question && q.question.length > 5000) {
+                throw new Error(`Question ${i + 1} text exceeds 5000 characters`);
+            }
+            if (q.explanation && q.explanation.length > 2000) {
+                throw new Error(`Question ${i + 1} explanation exceeds 2000 characters`);
+            }
+            if (q.options && Array.isArray(q.options)) {
+                for (let j = 0; j < q.options.length; j++) {
+                    if (q.options[j] && q.options[j].length > 1000) {
+                        throw new Error(`Question ${i + 1}, option ${j + 1} exceeds 1000 characters`);
+                    }
+                }
+            }
+        }
+
         // Sanitize filename to prevent path traversal
         const safeTitle = title.replace(/[^a-z0-9\-_]/gi, '_').toLowerCase().substring(0, 50);
         const filename = `${safeTitle}_${Date.now()}.json`;

@@ -5,6 +5,7 @@
 
 import { logger, ANIMATION } from '../core/config.js';
 import { getTranslation } from './translation-manager.js';
+import { simpleMathJaxService } from './simple-mathjax-service.js';
 
 export class ModalFeedback {
     constructor() {
@@ -13,6 +14,7 @@ export class ModalFeedback {
         this.feedbackIcon = null;
         this.feedbackText = null;
         this.scoreDisplay = null;
+        this.explanationDisplay = null;
         this.currentTimer = null;
         
         this.initializeElements();
@@ -30,6 +32,7 @@ export class ModalFeedback {
         this.feedbackIcon = document.getElementById('feedback-icon');
         this.feedbackText = document.getElementById('modal-feedback-text');
         this.scoreDisplay = document.getElementById('modal-score-display');
+        this.explanationDisplay = document.getElementById('modal-explanation');
 
         if (!this.overlay || !this.modal) {
             logger.error('❌ Modal feedback elements not found in DOM');
@@ -73,8 +76,9 @@ export class ModalFeedback {
      * @param {string} message - Custom feedback message
      * @param {number} score - Score to display
      * @param {number} autoDismissTime - Time in milliseconds to auto-dismiss (default: 3000)
+     * @param {string} explanation - Explanation text (optional)
      */
-    show(isCorrect, message = null, score = null, autoDismissTime = 3000) {
+    show(isCorrect, message = null, score = null, autoDismissTime = 3000, explanation = null) {
         if (!this.overlay || !this.modal) {
             logger.error('❌ Cannot show modal feedback - elements not initialized');
             return;
@@ -90,8 +94,13 @@ export class ModalFeedback {
         this.modal.className = 'feedback-modal';
         this.modal.classList.add(isCorrect ? 'correct' : 'incorrect');
 
+        // Add class if explanation is present (for styling)
+        if (explanation) {
+            this.modal.classList.add('has-explanation');
+        }
+
         // Set feedback content
-        this.updateContent(isCorrect, message, score);
+        this.updateContent(isCorrect, message, score, explanation);
 
         // Show modal with animation
         this.overlay.classList.add('active');
@@ -114,8 +123,9 @@ export class ModalFeedback {
      * @param {boolean} isCorrect - Whether the answer was correct
      * @param {string} message - Custom feedback message
      * @param {number} score - Score to display
+     * @param {string} explanation - Explanation text (optional)
      */
-    updateContent(isCorrect, message, score) {
+    updateContent(isCorrect, message, score, explanation = null) {
         // Set feedback icon - no rotating emoji for correct answers
         if (this.feedbackIcon) {
             this.feedbackIcon.textContent = isCorrect ? '🎉' : '❌';
@@ -126,7 +136,7 @@ export class ModalFeedback {
 
         // Set feedback message
         if (this.feedbackText) {
-            const feedbackMessage = message || (isCorrect 
+            const feedbackMessage = message || (isCorrect
                 ? getTranslation('correct_answer') || 'Correct!'
                 : getTranslation('incorrect_answer') || 'Incorrect!');
             this.feedbackText.textContent = feedbackMessage;
@@ -139,6 +149,52 @@ export class ModalFeedback {
         } else if (this.scoreDisplay) {
             this.scoreDisplay.style.display = 'none';
         }
+
+        // Set explanation display
+        if (this.explanationDisplay) {
+            if (explanation && explanation.trim()) {
+                // Use escapeHtmlPreservingLatex to allow MathJax to render formulas
+                this.explanationDisplay.innerHTML = `<span class="explanation-label">💡</span><span class="explanation-text">${this.escapeHtmlPreservingLatex(explanation)}</span>`;
+                this.explanationDisplay.style.display = 'block';
+
+                // Render MathJax for the explanation text
+                const textSpan = this.explanationDisplay.querySelector('.explanation-text');
+                if (textSpan) {
+                    simpleMathJaxService.render([textSpan]).catch(err => {
+                        logger.debug('MathJax render in modal explanation (non-blocking):', err);
+                    });
+                }
+            } else {
+                this.explanationDisplay.style.display = 'none';
+                this.explanationDisplay.innerHTML = '';
+            }
+        }
+    }
+
+    /**
+     * Escape HTML but preserve LaTeX delimiters for MathJax
+     * @param {string} text - Text to escape
+     * @returns {string} Escaped text with LaTeX preserved
+     */
+    escapeHtmlPreservingLatex(text) {
+        if (!text) return '';
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    /**
+     * Escape HTML completely for safe display
+     * @param {string} text - Text to escape
+     * @returns {string} Escaped text
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     /**
@@ -167,10 +223,11 @@ export class ModalFeedback {
      * @param {string} message - Custom message (optional)
      * @param {number} score - Score to display (optional)
      * @param {number} autoDismissTime - Auto-dismiss time in ms (default: 3000)
+     * @param {string} explanation - Explanation text (optional)
      */
-    showCorrect(message = null, score = null, autoDismissTime = 3000) {
-        this.show(true, message, score, autoDismissTime);
-        
+    showCorrect(message = null, score = null, autoDismissTime = 3000, explanation = null) {
+        this.show(true, message, score, autoDismissTime, explanation);
+
         // Add confetti animation on top of the modal
         this.triggerModalConfetti();
     }
@@ -270,9 +327,10 @@ export class ModalFeedback {
      * @param {string} message - Custom message (optional)
      * @param {number} score - Score to display (optional)
      * @param {number} autoDismissTime - Auto-dismiss time in ms (default: 3000)
+     * @param {string} explanation - Explanation text (optional)
      */
-    showIncorrect(message = null, score = null, autoDismissTime = 3000) {
-        this.show(false, message, score, autoDismissTime);
+    showIncorrect(message = null, score = null, autoDismissTime = 3000, explanation = null) {
+        this.show(false, message, score, autoDismissTime, explanation);
     }
 
     /**

@@ -284,10 +284,60 @@ export class SettingsManager {
     }
 
     /**
+     * Sync sound state from SoundManager (used on initialization)
+     */
+    syncSoundStateFromManager() {
+        const soundManager = window.game?.soundManager;
+        if (soundManager) {
+            this.settings.soundEnabled = soundManager.isSoundsEnabled();
+        }
+    }
+
+    /**
      * Toggle sound
      */
     toggleSound() {
-        this.setSoundEnabled(!this.settings.soundEnabled);
+        const soundManager = window.game?.soundManager;
+        if (!soundManager) return;
+
+        if (soundManager.isSoundsEnabled()) {
+            soundManager.mute();
+            this.settings.soundEnabled = false;
+        } else {
+            soundManager.unmute();
+            this.settings.soundEnabled = true;
+        }
+        this.saveSettings();
+        this.updateSoundToggleButtons();
+    }
+
+    /**
+     * Update sound toggle button icons and state
+     */
+    updateSoundToggleButtons() {
+        const soundManager = window.game?.soundManager;
+        const isEnabled = soundManager?.isSoundsEnabled() ?? true;
+        const icon = isEnabled ? '🔊' : '🔇';
+        const tooltip = isEnabled ?
+            (translationManager.getTranslationSync('mute_sound') || 'Mute sound') :
+            (translationManager.getTranslationSync('unmute_sound') || 'Unmute sound');
+
+        // Desktop button
+        const desktopBtn = document.getElementById('sound-toggle');
+        if (desktopBtn) {
+            desktopBtn.textContent = icon;
+            desktopBtn.title = tooltip;
+        }
+
+        // Mobile button
+        const mobileBtn = document.getElementById('sound-toggle-mobile-header');
+        if (mobileBtn) {
+            const iconSpan = mobileBtn.querySelector('.control-icon');
+            if (iconSpan) {
+                iconSpan.textContent = icon;
+            }
+            mobileBtn.title = tooltip;
+        }
     }
 
     /**
@@ -389,14 +439,9 @@ export class SettingsManager {
             }
         });
         
-        // Update sound toggle
-        const soundToggle = document.getElementById('sound-toggle');
-        if (soundToggle) {
-            soundToggle.textContent = this.settings.soundEnabled ? '🔊' : '🔇';
-            soundToggle.title = this.settings.soundEnabled ? 
-                translationManager.getTranslationSync('disable_sound') : translationManager.getTranslationSync('enable_sound');
-        }
-        
+        // Update sound toggle (reads from SoundManager)
+        this.updateSoundToggleButtons();
+
         // Update fullscreen toggle
         this.updateFullscreenButton();
         
@@ -440,11 +485,21 @@ export class SettingsManager {
             }
         });
         
-        // Sound toggle
-        const soundToggle = document.getElementById('sound-toggle');
-        if (soundToggle) {
-            soundToggle.addEventListener('click', () => this.toggleSound());
-        }
+        // Sound toggle (desktop and mobile)
+        const soundToggleButtons = [
+            document.getElementById('sound-toggle'),
+            document.getElementById('sound-toggle-mobile-header')
+        ].filter(button => button !== null);
+
+        soundToggleButtons.forEach(soundToggle => {
+            if (soundToggle) {
+                soundToggle.addEventListener('click', () => this.toggleSound());
+            }
+        });
+
+        // Initial sound button state - sync from SoundManager
+        this.syncSoundStateFromManager();
+        this.updateSoundToggleButtons();
         
         // Fullscreen toggle
         const fullscreenToggle = document.getElementById('fullscreen-toggle');

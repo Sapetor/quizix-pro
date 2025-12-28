@@ -6,6 +6,7 @@
 import { translationManager, getTranslation, getTrueFalseText } from '../utils/translation-manager.js';
 import { TIMING, logger, UI, ANIMATION } from '../core/config.js';
 // MathRenderer and mathJaxService now handled by GameDisplayManager
+import { simpleMathJaxService } from '../utils/simple-mathjax-service.js';
 import { dom } from '../utils/dom.js';
 import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
 import { modalFeedback } from '../utils/modal-feedback.js';
@@ -82,7 +83,7 @@ export class GameManager {
         return errorBoundary.safeExecute(() => {
             // Prevent rapid successive calls that could interfere with MathJax rendering
             const now = Date.now();
-            if (this.lastDisplayQuestion && (now - this.lastDisplayQuestionTime) < 500) {
+            if (this.lastDisplayQuestionTime && (now - this.lastDisplayQuestionTime) < 500) {
                 logger.debug('🚫 Ignoring rapid displayQuestion call to prevent MathJax interference');
                 return;
             }
@@ -336,22 +337,26 @@ export class GameManager {
             
             const isCorrect = data.isCorrect !== undefined ? data.isCorrect : data.correct;
             const earnedPoints = data.points || 0;
-            
+            const explanation = data.explanation || null;
+
             // Prepare feedback message
-            let feedbackMessage = isCorrect 
+            let feedbackMessage = isCorrect
                 ? getTranslation('correct_answer_msg')
                 : getTranslation('incorrect_answer_msg');
-            
+
             // Add total score to message if available
             if (earnedPoints > 0 && data.totalScore !== undefined) {
                 feedbackMessage += ` (+${earnedPoints} ${getTranslation('points')})`;
             }
-            
+
+            // Extend display time if explanation is present
+            const displayDuration = explanation ? TIMING.RESULT_DISPLAY_DURATION + 2000 : TIMING.RESULT_DISPLAY_DURATION;
+
             // Show modal feedback instead of inline feedback
             if (isCorrect) {
-                modalFeedback.showCorrect(feedbackMessage, earnedPoints, TIMING.RESULT_DISPLAY_DURATION);
+                modalFeedback.showCorrect(feedbackMessage, earnedPoints, displayDuration, explanation);
             } else {
-                modalFeedback.showIncorrect(feedbackMessage, earnedPoints, TIMING.RESULT_DISPLAY_DURATION);
+                modalFeedback.showIncorrect(feedbackMessage, earnedPoints, displayDuration, explanation);
             }
             
             // Show correct answer if player was wrong (preserve existing functionality)
@@ -525,7 +530,19 @@ export class GameManager {
         
         // Clear any lingering question images from previous questions
         this.clearAllQuestionImages();
-        
+
+        // Clear any lingering explanation from previous question
+        const existingExplanation = document.querySelector('.question-explanation-display');
+        if (existingExplanation) {
+            existingExplanation.remove();
+        }
+
+        // Clear numeric correct answer display from previous question
+        const existingNumericAnswer = document.querySelector('.numeric-correct-answer-display');
+        if (existingNumericAnswer) {
+            existingNumericAnswer.remove();
+        }
+
         logger.debug('🧹 Cleaned game elements for fresh rendering');
     }
 
@@ -621,9 +638,9 @@ export class GameManager {
     showCorrectAnswer(data) {
         const gameState = this.stateManager.getGameState();
         if (!gameState.isHost) return;
-        
+
         const questionType = data.questionType || data.type;
-        
+
         if (questionType === 'numeric') {
             // Show numeric answer in options container (original style)
             this.showNumericCorrectAnswer(data.correctAnswer, data.tolerance);
@@ -631,6 +648,77 @@ export class GameManager {
             // Highlight correct answers in the grid
             this.highlightCorrectAnswers(data);
         }
+
+        // Show explanation if available
+        if (data.explanation) {
+            this.showExplanation(data.explanation);
+        }
+    }
+
+    /**
+     * Show explanation for the correct answer
+     */
+    showExplanation(explanation) {
+        // Remove any existing explanation
+        const existingExplanation = document.querySelector('.question-explanation-display');
+        if (existingExplanation) {
+            existingExplanation.remove();
+        }
+
+        // Show the explanation in the question display area
+        const questionDisplay = document.getElementById('host-question-display');
+        if (questionDisplay && explanation) {
+            const explanationDiv = document.createElement('div');
+            explanationDiv.className = 'question-explanation-display';
+
+            // Create structure with textContent for safety, then allow MathJax to process
+            const content = document.createElement('div');
+            content.className = 'explanation-content';
+
+            const icon = document.createElement('div');
+            icon.className = 'explanation-icon';
+            icon.textContent = '💡';
+
+            const textDiv = document.createElement('div');
+            textDiv.className = 'explanation-text';
+            // Use textContent first for XSS safety, then replace with innerHTML for LaTeX
+            // This is safe because the content comes from quiz data, not user input
+            textDiv.innerHTML = this.escapeHtmlPreservingLatex(explanation);
+
+            content.appendChild(icon);
+            content.appendChild(textDiv);
+            explanationDiv.appendChild(content);
+            questionDisplay.appendChild(explanationDiv);
+
+            // Render MathJax for the explanation text
+            simpleMathJaxService.render([textDiv]).catch(err => {
+                logger.warn('MathJax render error in explanation (non-blocking):', err);
+            });
+        }
+    }
+
+    /**
+     * Escape HTML but preserve LaTeX delimiters for MathJax
+     */
+    escapeHtmlPreservingLatex(text) {
+        if (!text) return '';
+        // Escape HTML entities but keep $ and \ for LaTeX
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    /**
+     * Escape HTML for safe display
+     */
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     /**
@@ -682,6 +770,26 @@ export class GameManager {
     }
 
     /**
+     * Update live answer count during question (real-time updates)
+     */
+    updateLiveAnswerCount(data) {
+        const gameState = this.stateManager.getGameState();
+        if (!gameState.isHost || !data) return;
+
+        logger.debug('Live answer count update:', data);
+
+        // Update response counts
+        dom.setContent('responses-count', data.answeredPlayers || 0);
+        dom.setContent('total-players', data.totalPlayers || 0);
+
+        // Show the statistics container
+        const container = document.getElementById('answer-statistics');
+        if (container) {
+            container.style.display = 'block';
+        }
+    }
+
+    /**
      * Update answer statistics for host display
      */
     updateAnswerStatistics(data) {
@@ -716,8 +824,9 @@ export class GameManager {
             logger.debug('Question type:', questionType, 'Answer counts:', data.answerCounts);
             
             if (questionType === 'multiple-choice' || questionType === 'multiple-correct') {
-                this.showMultipleChoiceStatistics(4);
-                for (let i = 0; i < 4; i++) {
+                const optionCount = data.optionCount || Object.keys(data.answerCounts).length || 4;
+                this.showMultipleChoiceStatistics(optionCount);
+                for (let i = 0; i < optionCount; i++) {
                     const count = data.answerCounts[i] || 0;
                     logger.debug(`Updating option ${i}: ${count} answers`);
                     this.updateStatItem(i, count, data.answeredPlayers || 0);
@@ -731,6 +840,8 @@ export class GameManager {
                 this.updateStatItem(1, falseCount, data.answeredPlayers || 0);
             } else if (questionType === 'numeric') {
                 this.showNumericStatistics(data.answerCounts);
+            } else if (questionType === 'ordering') {
+                this.showOrderingStatistics(data.answerCounts);
             }
         }
     }
@@ -755,6 +866,13 @@ export class GameManager {
      */
     showNumericStatistics(answerCounts) {
         this.showHostStatistics('numeric', { answerCounts });
+    }
+
+    /**
+     * Show statistics for ordering questions
+     */
+    showOrderingStatistics(answerCounts) {
+        this.showHostStatistics('ordering', { answerCounts });
     }
 
     /**
@@ -821,12 +939,16 @@ export class GameManager {
     }
 
     /**
-     * Clear numeric statistics display when switching to non-numeric questions
+     * Clear custom statistics displays (numeric and ordering) when switching question types
      */
     clearNumericStatisticsDisplay() {
         const numericStatsDiv = document.getElementById('numeric-stats-display');
         if (numericStatsDiv) {
             numericStatsDiv.remove();
+        }
+        const orderingStatsDiv = document.getElementById('ordering-stats-display');
+        if (orderingStatsDiv) {
+            orderingStatsDiv.remove();
         }
     }
 
@@ -854,6 +976,9 @@ export class GameManager {
             case 'numeric':
                 this.setupNumericStats(options.answerCounts);
                 break;
+            case 'ordering':
+                this.setupOrderingStats(options.answerCounts);
+                break;
             default:
                 logger.warn('Unknown statistics type:', type);
         }
@@ -863,10 +988,10 @@ export class GameManager {
      * Setup multiple choice statistics display
      */
     setupMultipleChoiceStats(optionCount) {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 6; i++) {
             const statItem = document.getElementById(`stat-item-${i}`);
             const optionLabel = statItem?.querySelector('.option-label');
-            
+
             if (statItem && optionLabel) {
                 if (i < optionCount) {
                     statItem.style.display = 'flex';
@@ -909,7 +1034,7 @@ export class GameManager {
      */
     setupNumericStats(answerCounts) {
         // Hide all regular stat items
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 6; i++) {
             const statItem = document.getElementById(`stat-item-${i}`);
             if (statItem) {
                 statItem.style.display = 'none';
@@ -920,6 +1045,66 @@ export class GameManager {
         const answers = Object.keys(answerCounts || {});
         const sortedAnswers = answers.sort((a, b) => parseFloat(a) - parseFloat(b));
         this.createNumericStatisticsDisplay(answerCounts, sortedAnswers);
+    }
+
+    /**
+     * Setup ordering statistics display (shows most common sequence orders)
+     */
+    setupOrderingStats(answerCounts) {
+        // Hide all regular stat items
+        for (let i = 0; i < 6; i++) {
+            const statItem = document.getElementById(`stat-item-${i}`);
+            if (statItem) {
+                statItem.style.display = 'none';
+            }
+        }
+
+        // Show most common ordering sequences
+        const statsGrid = document.getElementById('stats-grid');
+        if (!statsGrid) return;
+
+        let orderingDisplay = document.getElementById('ordering-stats-display');
+        if (!orderingDisplay) {
+            orderingDisplay = document.createElement('div');
+            orderingDisplay.id = 'ordering-stats-display';
+            orderingDisplay.className = 'numeric-stats-display';
+            statsGrid.appendChild(orderingDisplay);
+        }
+
+        orderingDisplay.innerHTML = '';
+
+        const orderKeys = Object.keys(answerCounts || {});
+        if (orderKeys.length === 0) {
+            orderingDisplay.innerHTML = `<div class="no-answers">${getTranslation('no_answers_yet')}</div>`;
+            return;
+        }
+
+        // Sort by count (most common first)
+        const sortedOrders = orderKeys.sort((a, b) => answerCounts[b] - answerCounts[a]);
+        const maxCount = answerCounts[sortedOrders[0]] || 1;
+
+        sortedOrders.slice(0, 6).forEach(orderKey => {
+            try {
+                const count = answerCounts[orderKey] || 0;
+                const percentage = Math.round((count / maxCount) * 100);
+                const orderIndices = JSON.parse(orderKey);
+                // Convert indices to letters (A, B, C, etc.) for display
+                const orderDisplay = orderIndices.map(idx => translationManager.getOptionLetter(idx)).join(' → ');
+
+                const orderItem = document.createElement('div');
+                orderItem.className = 'numeric-stat-item';
+                orderItem.innerHTML = `
+                    <div class="numeric-stat-label">${orderDisplay}</div>
+                    <div class="numeric-stat-bar">
+                        <div class="numeric-stat-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="numeric-stat-count">${count}</div>
+                `;
+                orderingDisplay.appendChild(orderItem);
+            } catch (e) {
+                logger.warn('Failed to parse ordering answer:', orderKey, e);
+            }
+        });
     }
 
     /**
@@ -1029,10 +1214,40 @@ export class GameManager {
                 this.showGameCompleteConfetti();
             }, 100); // Reduced from 200ms to 100ms for snappier response
             
-            // Play special game ending fanfare
-            logger.debug('🎉 HOST: Playing fanfare...');
-            this.playGameEndingFanfare();
-            
+            // Play staggered placement sounds for dramatic reveal
+            if (this.soundManager) {
+                // Third place at 300ms
+                if (leaderboard.length >= 3) {
+                    setTimeout(() => {
+                        if (this.soundManager?.isSoundsEnabled()) {
+                            this.soundManager.playLeaderboardPlacement(3);
+                        }
+                    }, 300);
+                }
+                // Second place at 800ms
+                if (leaderboard.length >= 2) {
+                    setTimeout(() => {
+                        if (this.soundManager?.isSoundsEnabled()) {
+                            this.soundManager.playLeaderboardPlacement(2);
+                        }
+                    }, 800);
+                }
+                // First place at 1400ms with grand fanfare
+                if (leaderboard.length >= 1) {
+                    setTimeout(() => {
+                        if (this.soundManager?.isSoundsEnabled()) {
+                            this.soundManager.playLeaderboardPlacement(1);
+                        }
+                    }, 1400);
+                }
+            }
+
+            // Play special game ending fanfare after placement reveal
+            setTimeout(() => {
+                logger.debug('🎉 HOST: Playing fanfare...');
+                this.playGameEndingFanfare();
+            }, 2000);
+
             // Save results to server for later download
             this.saveGameResults(leaderboard);
             
@@ -1285,10 +1500,36 @@ export class GameManager {
     }
 
     /**
-     * Start game timer
+     * Start game timer with countdown sounds
      */
     startTimer(duration, onTick = null, onComplete = null) {
-        return this.timerManager.startTimer(duration, onTick, onComplete);
+        // Wrap tick callback to include countdown sounds
+        const tickWithSound = (timeRemaining) => {
+            const seconds = Math.ceil(timeRemaining / 1000);
+
+            // Play countdown sounds for 5, 3, 2, 1 seconds (check mute state at playback time)
+            if (this.soundManager?.isSoundsEnabled()) {
+                this.soundManager.playCountdownTick(seconds);
+            }
+
+            // Call original tick callback if provided
+            if (onTick) {
+                onTick(timeRemaining);
+            }
+        };
+
+        // Wrap complete callback to play timer expired sound
+        const completeWithSound = () => {
+            if (this.soundManager?.isSoundsEnabled()) {
+                this.soundManager.playTimerExpired();
+            }
+
+            if (onComplete) {
+                onComplete();
+            }
+        };
+
+        return this.timerManager.startTimer(duration, tickWithSound, completeWithSound);
     }
 
     /**
@@ -1724,8 +1965,12 @@ export class GameManager {
                     questionNumber: index + 1,
                     text: q.question || q.text,
                     type: q.type || 'multiple-choice',
-                    correctAnswer: q.correctAnswer || q.correctAnswers,
-                    difficulty: q.difficulty || 'medium'
+                    correctAnswer: q.correctAnswer,
+                    correctAnswers: q.correctAnswers,
+                    correctOrder: q.correctOrder,
+                    options: q.options,
+                    difficulty: q.difficulty || 'medium',
+                    timeLimit: q.time
                 }));
             } else {
                 logger.debug('📊 No questions data available - CSV will use basic format');

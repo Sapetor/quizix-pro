@@ -3,6 +3,8 @@
  * Simplified to provide only essential touch feedback improvements
  */
 
+import { logger } from '../core/config.js';
+
 class MobileEnhancements {
     constructor() {
         this.isMobile = window.innerWidth <= 768;
@@ -19,7 +21,7 @@ class MobileEnhancements {
         this.setupAccessibilityEnhancements();
         
         this.initialized = true;
-        console.log('Simplified mobile enhancements initialized');
+        logger.debug('Simplified mobile enhancements initialized');
     }
 
     /**

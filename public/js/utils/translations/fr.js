@@ -140,6 +140,8 @@ export default {
         time_seconds: "Temps (s)",
         correct_answer: "Réponse Correcte",
         tolerance: "Tolérance (+/-)",
+        explanation_optional: "Explication (optionnel)",
+        explanation_placeholder: "Expliquez pourquoi la bonne réponse est correcte...",
         enter_question_with_latex: "Entrez votre question (supporte LaTeX)",
         option_a: "Option A",
         option_b: "Option B",
@@ -273,6 +275,7 @@ export default {
         true_false_type: "Type Vrai/Faux",
         multiple_correct_type: "Type Réponses Multiples",
         numeric_answer_type: "Type Réponse Numérique",
+        ordering_type: "Classement",
         difficulty_level: "Niveau de Difficulté",
         number_of_questions: "Nombre de Questions",
         source_material: "Matériel Source",
@@ -284,6 +287,8 @@ export default {
         huggingface_free: "HuggingFace (Gratuit)",
         choose_model: "Choisir le Modèle",
         select_ollama_model: "Sélectionner le Modèle Ollama",
+        choose_claude_model: "Choisir le Modèle Claude",
+        select_claude_model: "Sélectionnez le modèle Claude à utiliser pour la génération",
         loading_models_placeholder: "Chargement des modèles...",
         api_key: "Clé API",
         api_key_stored_locally: "Clé API stockée localement",
@@ -362,6 +367,7 @@ export default {
         question_type_true_false: "Vrai/Faux",
         question_type_multiple_correct: "Réponses Multiples",
         question_type_numeric: "Numérique",
+        question_type_ordering: "Classement",
 
         load_saved_quiz: "Charger un Quiz Sauvegardé",
         total: "Total",
@@ -458,4 +464,11 @@ export default {
         save_progress: "Sauvegarder les progrès",
         test_questions: "Tester les questions",
         more_options: "Plus d'Options"
+
+        // Sound settings
+        toggle_sound_tooltip: "Basculer le son",
+        sound: "Son",
+        mute_sound: "Couper le son",
+        unmute_sound: "Activer le son"
+
 };

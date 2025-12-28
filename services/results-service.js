@@ -192,7 +192,8 @@ class ResultsService {
      * Generate simple player-centric CSV
      */
     _generateSimpleCSV(data) {
-        let csv = 'Player Name,Question #,Question Text,Player Answer,Correct Answer,Is Correct,Time (seconds),Points\n';
+        let csv = '\ufeff'; // UTF-8 BOM for Excel compatibility
+        csv += 'Player Name,Question #,Question Text,Player Answer,Correct Answer,Is Correct,Time (seconds),Points\n';
 
         const players = data.results || [];
         const questions = data.questions || [];
@@ -206,12 +207,37 @@ class ResultsService {
                         let correctAnswer = question ? question.correctAnswer : 'Unknown';
                         let playerAnswer = answer.answer;
 
-                        // Handle array answers
-                        if (Array.isArray(correctAnswer)) {
-                            correctAnswer = correctAnswer.join(', ');
-                        }
-                        if (Array.isArray(playerAnswer)) {
-                            playerAnswer = playerAnswer.join(', ');
+                        // Handle different question types
+                        if (question?.type === 'ordering') {
+                            // For ordering questions, show with option text if available
+                            if (question.correctOrder) {
+                                if (question.options && question.options.length > 0) {
+                                    correctAnswer = question.correctOrder.map(idx => question.options[idx] || `#${idx}`).join(' → ');
+                                } else {
+                                    correctAnswer = question.correctOrder.join(' → ');
+                                }
+                            }
+                            if (Array.isArray(playerAnswer)) {
+                                if (question.options && question.options.length > 0) {
+                                    playerAnswer = playerAnswer.map(idx => question.options[idx] || `#${idx}`).join(' → ');
+                                } else {
+                                    playerAnswer = playerAnswer.join(' → ');
+                                }
+                            }
+                        } else if (question?.type === 'multiple-correct' && question.correctAnswers) {
+                            // For multiple correct
+                            correctAnswer = question.correctAnswers.join(', ');
+                            if (Array.isArray(playerAnswer)) {
+                                playerAnswer = playerAnswer.join(', ');
+                            }
+                        } else {
+                            // Handle array answers for other types
+                            if (Array.isArray(correctAnswer)) {
+                                correctAnswer = correctAnswer.join(', ');
+                            }
+                            if (Array.isArray(playerAnswer)) {
+                                playerAnswer = playerAnswer.join(', ');
+                            }
                         }
 
                         const isCorrectText = answer.isCorrect ? 'Yes' : 'No';
@@ -219,11 +245,11 @@ class ResultsService {
                         const points = answer.points || 0;
 
                         const row = [
-                            `"${player.name || 'Anonymous'}"`,
+                            this._sanitizeCsvValue(player.name || 'Anonymous'),
                             qIndex + 1,
-                            `"${questionText.replace(/"/g, '""')}"`,
-                            `"${playerAnswer || 'No Answer'}"`,
-                            `"${correctAnswer}"`,
+                            this._sanitizeCsvValue(questionText),
+                            this._sanitizeCsvValue(playerAnswer || 'No Answer'),
+                            this._sanitizeCsvValue(correctAnswer),
                             `"${isCorrectText}"`,
                             timeSeconds,
                             points
@@ -247,18 +273,19 @@ class ResultsService {
             return this._generateFallbackCSV(data);
         }
 
-        let csv = '';
+        let csv = '\ufeff'; // UTF-8 BOM for Excel compatibility
         const players = data.results || [];
 
         // Build header row
         let header = ['Question', 'Correct Answer', 'Difficulty'];
 
-        // Add columns for each player
+        // Add columns for each player (sanitize names to prevent injection)
         players.forEach(player => {
-            header.push(`${player.name} Answer`);
-            header.push(`${player.name} Time (s)`);
-            header.push(`${player.name} Points`);
-            header.push(`${player.name} Correct`);
+            const safeName = this._sanitizeHeaderName(player.name);
+            header.push(`${safeName} Answer`);
+            header.push(`${safeName} Time (s)`);
+            header.push(`${safeName} Points`);
+            header.push(`${safeName} Correct`);
         });
 
         // Add analytics columns
@@ -269,19 +296,31 @@ class ResultsService {
         header.push('Hardest For');
         header.push('Common Wrong Answer');
 
-        csv = header.map(h => `"${h}"`).join(',') + '\n';
+        csv += header.map(h => `"${h}"`).join(',') + '\n';
 
         // Generate question rows
         data.questions.forEach((question, qIndex) => {
             const questionText = (question.text || '').replace(/"/g, '""');
             let correctAnswer = question.correctAnswer;
-            if (Array.isArray(correctAnswer)) {
+
+            // Handle different question types
+            if (question.type === 'ordering' && question.correctOrder) {
+                // For ordering questions, show the sequence with option text if available
+                if (question.options && question.options.length > 0) {
+                    correctAnswer = question.correctOrder.map(idx => question.options[idx] || `#${idx}`).join(' → ');
+                } else {
+                    correctAnswer = question.correctOrder.join(' → ');
+                }
+            } else if (question.type === 'multiple-correct' && question.correctAnswers) {
+                // For multiple correct, show comma-separated
+                correctAnswer = question.correctAnswers.join(', ');
+            } else if (Array.isArray(correctAnswer)) {
                 correctAnswer = correctAnswer.join(', ');
             }
 
             let row = [
-                `"${questionText}"`,
-                `"${correctAnswer}"`,
+                this._sanitizeCsvValue(questionText),
+                this._sanitizeCsvValue(correctAnswer),
                 `"${question.difficulty || 'medium'}"`
             ];
 
@@ -304,7 +343,7 @@ class ResultsService {
                         displayAnswer = displayAnswer.join(', ');
                     }
 
-                    row.push(`"${displayAnswer}"`);
+                    row.push(this._sanitizeCsvValue(displayAnswer));
                     row.push(Math.round(playerAnswer.timeMs / 1000));
                     row.push(playerAnswer.points);
                     row.push(playerAnswer.isCorrect ? '✓' : '✗');
@@ -367,8 +406,8 @@ class ResultsService {
             row.push(avgTime);
             row.push(totalPointsPossible);
             row.push(totalPointsEarned);
-            row.push(`"${hardestFor}"`);
-            row.push(`"${commonWrongText}"`);
+            row.push(this._sanitizeCsvValue(hardestFor));
+            row.push(this._sanitizeCsvValue(commonWrongText));
 
             csv += row.join(',') + '\n';
         });
@@ -411,9 +450,9 @@ class ResultsService {
 
         data.results.forEach(player => {
             const row = [
-                `"${data.quizTitle || 'Untitled Quiz'}"`,
+                this._sanitizeCsvValue(data.quizTitle || 'Untitled Quiz'),
                 data.gamePin,
-                `"${player.name}"`,
+                this._sanitizeCsvValue(player.name),
                 player.score,
                 data.startTime,
                 data.endTime
@@ -422,6 +461,45 @@ class ResultsService {
         });
 
         return csv;
+    }
+
+    /**
+     * Sanitize CSV value to prevent formula injection attacks
+     * Prepends single quote to values starting with =, +, -, @, or tab
+     * @param {string} value - Value to sanitize
+     * @returns {string} - Sanitized and quoted CSV value
+     */
+    _sanitizeCsvValue(value) {
+        if (value === null || value === undefined) return '""';
+        let str = String(value);
+
+        // Escape existing double quotes
+        str = str.replace(/"/g, '""');
+
+        // Prepend single quote to values that could be interpreted as formulas
+        if (/^[=+\-@\t\r]/.test(str)) {
+            str = "'" + str;
+        }
+
+        return `"${str}"`;
+    }
+
+    /**
+     * Sanitize a name for use in CSV headers (no quotes, just strip dangerous chars)
+     * @param {string} name - Name to sanitize
+     * @returns {string} - Sanitized name
+     */
+    _sanitizeHeaderName(name) {
+        if (name === null || name === undefined) return 'Anonymous';
+        let str = String(name);
+
+        // Remove or escape characters that could be dangerous in headers
+        if (/^[=+\-@\t\r]/.test(str)) {
+            str = "'" + str;
+        }
+
+        // Also escape double quotes
+        return str.replace(/"/g, "'");
     }
 }
 

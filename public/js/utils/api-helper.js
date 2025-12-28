@@ -58,6 +58,3 @@ export class APIHelper {
         return response.json();
     }
 }
-
-// Export singleton instance
-export const apiHelper = new APIHelper();

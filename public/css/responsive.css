@@ -94,7 +94,8 @@
     .language-selector,
     .font-size-control,
     #fullscreen-toggle,
-    #theme-toggle {
+    #theme-toggle,
+    #sound-toggle {
         display: none !important;
     }
     
@@ -3086,6 +3087,7 @@
     
     /* Navigation and control buttons */
     .theme-toggle,
+    .sound-toggle,
     .language-selector,
     .preview-nav-btn,
     .carousel-nav-btn,

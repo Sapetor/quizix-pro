@@ -444,6 +444,12 @@
                         <span class="control-icon">☀️</span>
                         <span class="control-label" data-translate="theme">theme</span>
                     </button>
+
+                    <!-- Sound Toggle -->
+                    <button id="sound-toggle-mobile-header" class="mobile-control-btn mobile-header" data-title-translate="toggle_sound_tooltip">
+                        <span class="control-icon">🔊</span>
+                        <span class="control-label" data-translate="sound">sound</span>
+                    </button>
                 </div>
             </div>
             
@@ -553,6 +559,7 @@
                 </button>
                 <button id="fullscreen-toggle" class="theme-toggle" data-translate-title="toggle_fullscreen_tooltip">⛶</button>
                 <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip">☀️</button>
+                <button id="sound-toggle" class="sound-toggle" data-translate-title="toggle_sound_tooltip">🔊</button>
             </div>
         </header>
 
@@ -865,6 +872,13 @@
                                         <span class="ordering-number">4</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div class="explanation-section">
+                                <details>
+                                    <summary data-translate="explanation_optional">Explanation (optional)</summary>
+                                    <textarea class="question-explanation" placeholder="Explain why the correct answer is correct..." data-translate-placeholder="explanation_placeholder"></textarea>
+                                </details>
                             </div>
                         </div>
                     </div>
@@ -1181,6 +1195,20 @@
                                 </div>
                                 <div class="stat-count" id="stat-count-3">0</div>
                             </div>
+                            <div class="stat-item" id="stat-item-4" style="display: none;">
+                                <div class="option-label">E</div>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" id="stat-fill-4" style="width: 0%"></div>
+                                </div>
+                                <div class="stat-count" id="stat-count-4">0</div>
+                            </div>
+                            <div class="stat-item" id="stat-item-5" style="display: none;">
+                                <div class="option-label">F</div>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" id="stat-fill-5" style="width: 0%"></div>
+                                </div>
+                                <div class="stat-count" id="stat-count-5">0</div>
+                            </div>
                         </div>
                         <div class="response-summary" id="response-summary">
                             <span id="responses-count">0</span> <span data-translate="of">of</span> <span id="total-players">0</span> <span data-translate="players_have_answered">players have answered</span>
@@ -1425,7 +1453,18 @@
                         </select>
                         <small data-translate="select_ollama_model">Select which Ollama model to use for generation</small>
                     </div>
-                    
+
+                    <div class="model-selection" id="claude-model-selection" style="display: none;">
+                        <label for="claude-model" data-translate="choose_claude_model">Choose Claude Model:</label>
+                        <select id="claude-model" class="input-field">
+                            <option value="claude-sonnet-4-5">Claude Sonnet 4.5 (Recommended)</option>
+                            <option value="claude-haiku-4-5">Claude Haiku 4.5 (Fast & Cheap)</option>
+                            <option value="claude-opus-4-5">Claude Opus 4.5 (Most Capable)</option>
+                            <option value="claude-sonnet-4-0">Claude Sonnet 4 (Legacy)</option>
+                        </select>
+                        <small data-translate="select_claude_model">Select which Claude model to use for generation</small>
+                    </div>
+
                     <div class="api-key-section" id="api-key-section" style="display: none;">
                         <label for="ai-api-key" data-translate="api_key">API Key:</label>
                         <input type="password" id="ai-api-key" class="input-field" placeholder="Enter your API key" data-translate-placeholder="enter_api_key_placeholder">
@@ -1515,10 +1554,13 @@
                             <label class="checkbox-label">
                                 <input type="checkbox" id="type-numeric"> <span data-translate="numeric_answer_type">Numeric Answer</span>
                             </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="type-ordering"> <span data-translate="ordering_type">Ordering</span>
+                            </label>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Cost Estimation -->
                 <div class="cost-estimation" id="cost-estimation" style="display: none;">
                     <div class="cost-info">
@@ -1694,6 +1736,7 @@
                 <span id="modal-feedback-text"></span>
             </div>
             <div class="score-display" id="modal-score-display"></div>
+            <div class="modal-explanation" id="modal-explanation"></div>
         </div>
     </div>
 

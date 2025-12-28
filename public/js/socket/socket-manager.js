@@ -15,9 +15,21 @@ export class SocketManager {
         this.uiManager = uiManager;
         this.soundManager = soundManager;
         this.currentPlayerName = null; // Store current player name for language updates
-        
+
         this.initializeSocketListeners();
         this.initializeLanguageListener();
+    }
+
+    /**
+     * Escape HTML to prevent XSS attacks
+     * @param {string} text - Text to escape
+     * @returns {string} - Escaped text
+     */
+    escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
     }
 
     /**
@@ -52,8 +64,9 @@ export class SocketManager {
             
             // 🔧 FIX: Initialize empty player list for new lobby to prevent phantom players
             this.gameManager.updatePlayersList([]);
+            this._lastPlayerCount = 0; // Reset player count tracking for join sounds
             logger.debug('🧹 Initialized empty player list for new lobby');
-            
+
             this.uiManager.showScreen('game-lobby');
         });
         
@@ -280,7 +293,13 @@ export class SocketManager {
             this.gameManager.showLeaderboard(data.leaderboard);
         });
 
-        // Answer statistics updates
+        // Live answer count updates (during question)
+        this.socket.on('answer-count-update', (data) => {
+            logger.debug('Live answer count update:', data);
+            this.gameManager.updateLiveAnswerCount(data);
+        });
+
+        // Answer statistics updates (after question ends)
         this.socket.on('answer-statistics', (data) => {
             logger.debug('Answer statistics received:', data);
             this.gameManager.updateAnswerStatistics(data);
@@ -293,8 +312,21 @@ export class SocketManager {
 
         this.socket.on('player-list-update', (data) => {
             logger.debug('Player list updated:', data);
+
+            // Track previous count to detect new players
+            const previousCount = this._lastPlayerCount || 0;
+            const newCount = data.players ? data.players.length : 0;
+            this._lastPlayerCount = newCount;
+
+            // Play join sound if player count increased (only for host)
+            if (newCount > previousCount && this.gameManager.stateManager?.getGameState().isHost) {
+                if (this.soundManager && this.soundManager.isSoundsEnabled()) {
+                    this.soundManager.playPlayerJoinSound();
+                }
+            }
+
             this.gameManager.updatePlayersList(data.players);
-            
+
             // Update player count in lobby if we're in player lobby
             if (this.uiManager.currentScreen === 'player-lobby') {
                 const lobbyPlayerCount = document.getElementById('lobby-player-count');
@@ -338,6 +370,17 @@ export class SocketManager {
 
         this.socket.on('player-disconnected', (data) => {
             logger.debug('Player disconnected:', data);
+
+            // Play leave sound (only for host)
+            if (this.gameManager.stateManager?.getGameState().isHost) {
+                if (this.soundManager && this.soundManager.isSoundsEnabled()) {
+                    this.soundManager.playPlayerLeaveSound();
+                }
+            }
+
+            // Update player count tracking
+            this._lastPlayerCount = data.players ? data.players.length : 0;
+
             this.gameManager.updatePlayersList(data.players);
         });
 
@@ -389,7 +432,7 @@ export class SocketManager {
                 const answerDiv = document.createElement('div');
                 answerDiv.className = 'answer-stat';
                 answerDiv.innerHTML = `
-                    <span class="answer-label">${answer}</span>
+                    <span class="answer-label">${this.escapeHtml(answer)}</span>
                     <span class="answer-count">${count}</span>
                 `;
                 distributionDiv.appendChild(answerDiv);

@@ -66,6 +66,12 @@ export class QuizManager {
             difficulty: questionDifficulty
         };
 
+        // Extract optional explanation field (from AI generator or manual entry)
+        const explanationElement = questionElement.querySelector('.question-explanation');
+        if (explanationElement && explanationElement.value?.trim()) {
+            questionData.explanation = explanationElement.value.trim();
+        }
+
         // Use QuestionTypeRegistry for type-specific data extraction
         const typeSpecificData = QuestionTypeRegistry.extractData(questionType, questionElement);
         Object.assign(questionData, typeSpecificData);
@@ -237,8 +243,8 @@ export class QuizManager {
         // Set up modal event handlers
         this.setupLoadQuizModalHandlers(modal);
         
-        // Cache quiz list element for better performance
-        if (!this.cachedQuizListElement) {
+        // Cache quiz list element for better performance (validate it's still in DOM)
+        if (!this.cachedQuizListElement || !document.contains(this.cachedQuizListElement)) {
             this.cachedQuizListElement = document.getElementById('quiz-list');
         }
         const quizList = this.cachedQuizListElement;
@@ -395,10 +401,13 @@ export class QuizManager {
      * Set up event handlers for load quiz modal
      */
     setupLoadQuizModalHandlers(modal) {
-        // Store handler references for cleanup
-        if (!this.loadQuizModalHandlers) {
-            this.loadQuizModalHandlers = {};
+        // Clean up any existing handlers first to prevent accumulation
+        if (this.loadQuizModalHandlers) {
+            this.cleanupLoadQuizModalHandlers(modal);
         }
+
+        // Store handler references for cleanup
+        this.loadQuizModalHandlers = {};
 
         // Click outside to close
         this.loadQuizModalHandlers.modalClick = (e) => {
@@ -987,16 +996,24 @@ export class QuizManager {
             questionType.dispatchEvent(new Event('change'));
         }
         
-        // Set question time
+        // Set question time (with NaN protection)
         const questionTime = questionElement.querySelector('.question-time');
         if (questionTime) {
-            questionTime.value = questionData.time || 30;
+            const timeValue = parseInt(questionData.time, 10);
+            questionTime.value = !isNaN(timeValue) && timeValue > 0 ? timeValue : 30;
         }
         
         // Set question difficulty
         const questionDifficulty = questionElement.querySelector('.question-difficulty');
         if (questionDifficulty) {
             questionDifficulty.value = questionData.difficulty || 'medium';
+        }
+
+        // Set explanation (optional field from AI generator or manual entry)
+        const questionExplanation = questionElement.querySelector('.question-explanation');
+        if (questionExplanation && questionData.explanation) {
+            questionExplanation.value = questionData.explanation;
+            logger.debug('Set explanation:', questionData.explanation.substring(0, 50) + '...');
         }
     }
 
@@ -1138,12 +1155,57 @@ export class QuizManager {
     /**
      * Populate type-specific question data with proper timing
      * Uses QuestionTypeRegistry for centralized population logic
+     *
+     * Note: AI generator may use different property names than QuestionTypeRegistry expects:
+     * - AI uses correctAnswer/correctAnswers, registry expects correctIndex/correctIndices
      */
     populateTypeSpecificData(questionElement, questionData) {
         setTimeout(() => {
             logger.debug('Populating type-specific data for:', questionData.type);
-            QuestionTypeRegistry.populateQuestion(questionData.type, questionElement, questionData);
+
+            // Normalize property names from AI generator to match QuestionTypeRegistry expectations
+            const normalizedData = this.normalizeQuestionData(questionData);
+
+            QuestionTypeRegistry.populateQuestion(questionData.type, questionElement, normalizedData);
         }, 100);
+    }
+
+    /**
+     * Normalize question data property names
+     * Maps AI generator output to QuestionTypeRegistry expected format
+     */
+    normalizeQuestionData(questionData) {
+        const normalized = { ...questionData };
+
+        switch (questionData.type) {
+            case 'multiple-choice':
+                // AI uses correctAnswer (index), registry expects correctIndex
+                if (normalized.correctAnswer !== undefined && normalized.correctIndex === undefined) {
+                    normalized.correctIndex = normalized.correctAnswer;
+                    logger.debug('Normalized correctAnswer -> correctIndex:', normalized.correctIndex);
+                }
+                break;
+
+            case 'multiple-correct':
+                // AI uses correctAnswers (array), registry expects correctIndices
+                if (normalized.correctAnswers !== undefined && normalized.correctIndices === undefined) {
+                    normalized.correctIndices = normalized.correctAnswers;
+                    logger.debug('Normalized correctAnswers -> correctIndices:', normalized.correctIndices);
+                }
+                break;
+
+            case 'true-false':
+                // AI may use string "true"/"false", registry expects boolean
+                if (typeof normalized.correctAnswer === 'string') {
+                    normalized.correctAnswer = normalized.correctAnswer.toLowerCase() === 'true';
+                    logger.debug('Normalized true-false correctAnswer string -> boolean:', normalized.correctAnswer);
+                }
+                break;
+
+            // numeric already uses correctAnswer as number, which matches registry
+        }
+
+        return normalized;
     }
 
     /**

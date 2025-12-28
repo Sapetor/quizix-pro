@@ -124,6 +124,8 @@ export default {
         time_seconds: "Tiempo (s)",
         correct_answer: "Respuesta Correcta",
         tolerance: "Tolerancia (+/-)",
+        explanation_optional: "Explicación (opcional)",
+        explanation_placeholder: "Explica por qué la respuesta correcta es correcta...",
         enter_question_with_latex: "Introduce tu pregunta (soporta LaTeX)",
         option_a: "Opción A",
         option_b: "Opción B",
@@ -260,6 +262,7 @@ export default {
         true_false_type: "Tipo Verdadero/Falso",
         multiple_correct_type: "Tipo Múltiples Correctas",
         numeric_answer_type: "Tipo Respuesta Numérica",
+        ordering_type: "Ordenamiento",
         difficulty_level: "Nivel de Dificultad",
         number_of_questions: "Número de Preguntas",
         source_material: "Material Fuente",
@@ -271,6 +274,8 @@ export default {
         huggingface_free: "HuggingFace (Gratis)",
         choose_model: "Elegir Modelo",
         select_ollama_model: "Seleccionar Modelo Ollama",
+        choose_claude_model: "Elegir Modelo Claude",
+        select_claude_model: "Seleccione qué modelo de Claude usar para la generación",
         loading_models_placeholder: "Cargando modelos...",
         api_key: "Clave API",
         api_key_stored_locally: "Clave API almacenada localmente",
@@ -349,6 +354,7 @@ export default {
         question_type_true_false: "Verdadero/Falso",
         question_type_multiple_correct: "Múltiples Correctas",
         question_type_numeric: "Numérica",
+        question_type_ordering: "Ordenamiento",
 
         load_saved_quiz: "Cargar Quiz Guardado", 
         total: "Total",
@@ -444,7 +450,13 @@ export default {
         
         // Mobile editor menu items
         import: "Importar",
-        export: "Exportar", 
+        export: "Exportar",
         results: "Resultados",
-        to_top: "Ir Arriba"
+        to_top: "Ir Arriba",
+
+        // Sound settings
+        toggle_sound_tooltip: "Alternar sonido",
+        sound: "Sonido",
+        mute_sound: "Silenciar sonido",
+        unmute_sound: "Activar sonido"
 };
