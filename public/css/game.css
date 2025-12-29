@@ -638,7 +638,7 @@
     min-height: 70px;
     text-align: left;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* Changed from hidden to prevent text truncation on mobile */
     border: none;
     outline: none;
     width: 100%;

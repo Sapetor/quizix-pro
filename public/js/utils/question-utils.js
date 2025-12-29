@@ -169,16 +169,24 @@ export class QuestionUtils {
                 
                 if (question.type === 'multiple-choice') {
                     // Find where the original correct answer ended up
-                    const oldCorrectIndex = question.correctAnswer;
+                    // Support both correctAnswer and correctIndex (server prefers correctIndex)
+                    const oldCorrectIndex = question.correctIndex !== undefined
+                        ? question.correctIndex
+                        : question.correctAnswer;
                     const newCorrectIndex = shuffledIndices.indexOf(oldCorrectIndex);
+                    // Update BOTH fields to ensure consistency with server
                     newQuestion.correctAnswer = newCorrectIndex;
+                    newQuestion.correctIndex = newCorrectIndex;
                 } else if (question.type === 'multiple-correct') {
                     // Map all correct answer indices to their new positions
-                    const oldCorrectAnswers = question.correctAnswers || [];
-                    const newCorrectAnswers = oldCorrectAnswers.map(oldIndex => 
+                    // Support both correctAnswers and correctIndices (server prefers correctIndices)
+                    const oldCorrectAnswers = question.correctIndices || question.correctAnswers || [];
+                    const newCorrectAnswers = oldCorrectAnswers.map(oldIndex =>
                         shuffledIndices.indexOf(oldIndex)
                     ).sort();
+                    // Update BOTH fields to ensure consistency with server
                     newQuestion.correctAnswers = newCorrectAnswers;
+                    newQuestion.correctIndices = newCorrectAnswers;
                 }
                 
                 return newQuestion;
