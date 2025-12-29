@@ -438,7 +438,7 @@ export default {
         begin_hosting: "ホストを開始",
         save_progress: "進捗を保存",
         test_questions: "問題をテスト",
-        more_options: "その他のオプション"
+        more_options: "その他のオプション",
 
         // Sound settings
         toggle_sound_tooltip: "音声を切り替える",

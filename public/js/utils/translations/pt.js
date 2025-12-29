@@ -439,7 +439,7 @@ export default {
         begin_hosting: "Iniciar hospedagem",
         save_progress: "Salvar progresso",
         test_questions: "Testar perguntas",
-        more_options: "Mais Opções"
+        more_options: "Mais Opções",
 
         // Sound settings
         toggle_sound_tooltip: "Alternar som",

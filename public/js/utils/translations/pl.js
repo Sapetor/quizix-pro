@@ -441,7 +441,7 @@ export default {
         begin_hosting: "Rozpocznij prowadzenie", 
         save_progress: "Zapisz postęp",
         test_questions: "Testuj pytania",
-        more_options: "Więcej Opcji"
+        more_options: "Więcej Opcji",
 
         // Sound settings
         toggle_sound_tooltip: "Przełącz dźwięk",

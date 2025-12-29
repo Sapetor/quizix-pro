@@ -447,7 +447,7 @@ export default {
         begin_hosting: "Inizia hosting",
         save_progress: "Salva progresso",
         test_questions: "Testa domande",
-        more_options: "Altre Opzioni"
+        more_options: "Altre Opzioni",
 
         // Sound settings
         toggle_sound_tooltip: "Attiva/disattiva suono",

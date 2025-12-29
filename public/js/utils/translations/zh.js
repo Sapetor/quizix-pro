@@ -437,7 +437,7 @@ export default {
         begin_hosting: "开始主持",
         save_progress: "保存进度",
         test_questions: "测试问题",
-        more_options: "更多选项"
+        more_options: "更多选项",
 
         // Sound settings
         toggle_sound_tooltip: "切换声音",

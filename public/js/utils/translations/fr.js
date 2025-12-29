@@ -466,7 +466,7 @@ export default {
         begin_hosting: "Commencer l'hébergement",
         save_progress: "Sauvegarder les progrès",
         test_questions: "Tester les questions",
-        more_options: "Plus d'Options"
+        more_options: "Plus d'Options",
 
         // Sound settings
         toggle_sound_tooltip: "Basculer le son",
