@@ -402,7 +402,22 @@ export default {
         download_results: "結果をダウンロード",
         select_results: "ダウンロードする結果を選択...",
         finish_quiz: "クイズを終了",
-        
+
+        // Results Viewer keys
+        view_quiz_results: "クイズ結果を表示",
+        total_quizzes: "クイズ総数",
+        total_participants: "参加者総数",
+        avg_score: "平均スコア",
+        search_quiz_title: "クイズタイトルで検索...",
+        sort_newest_first: "新しい順",
+        sort_oldest_first: "古い順",
+        sort_title_az: "タイトル A-Z",
+        sort_most_participants: "参加者が多い順",
+        date_completed: "完了日",
+        participants: "参加者",
+        download_csv: "CSVダウンロード",
+        delete_result: "結果を削除",
+
         // Connection quality keys
         connection_excellent: "優秀",
         connection_good: "良好", 

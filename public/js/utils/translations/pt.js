@@ -403,7 +403,22 @@ export default {
         download_results: "Baixar Resultados",
         select_results: "Selecionar resultados para baixar...",
         finish_quiz: "Finalizar Quiz",
-        
+
+        // Results Viewer keys
+        view_quiz_results: "Ver Resultados do Quiz",
+        total_quizzes: "Total de Quizzes",
+        total_participants: "Total de Participantes",
+        avg_score: "Pontuação Média",
+        search_quiz_title: "Pesquisar por título do quiz...",
+        sort_newest_first: "Mais Recente Primeiro",
+        sort_oldest_first: "Mais Antigo Primeiro",
+        sort_title_az: "Título A-Z",
+        sort_most_participants: "Mais Participantes",
+        date_completed: "Data de Conclusão",
+        participants: "Participantes",
+        download_csv: "Baixar CSV",
+        delete_result: "Excluir Resultado",
+
         // Connection quality keys
         connection_excellent: "Excelente",
         connection_good: "Bom", 

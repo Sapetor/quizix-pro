@@ -397,7 +397,22 @@ export default {
         download_results: "下载结果",
         select_results: "选择要下载的结果...",
         finish_quiz: "结束测验",
-        
+
+        // Results Viewer keys
+        view_quiz_results: "查看测验结果",
+        total_quizzes: "测验总数",
+        total_participants: "参与者总数",
+        avg_score: "平均分数",
+        search_quiz_title: "按测验标题搜索...",
+        sort_newest_first: "最新优先",
+        sort_oldest_first: "最早优先",
+        sort_title_az: "标题 A-Z",
+        sort_most_participants: "参与者最多",
+        date_completed: "完成日期",
+        participants: "参与者",
+        download_csv: "下载CSV",
+        delete_result: "删除结果",
+
         // Connection quality keys
         connection_excellent: "优秀",
         connection_good: "良好", 

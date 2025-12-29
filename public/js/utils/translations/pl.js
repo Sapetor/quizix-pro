@@ -387,7 +387,22 @@ export default {
         download_results: "Pobierz Wyniki",
         select_results: "Wybierz wyniki do pobrania...",
         finish_quiz: "Zakończ Quiz",
-        
+
+        // Results Viewer keys
+        view_quiz_results: "Zobacz Wyniki Quizu",
+        total_quizzes: "Wszystkich Quizów",
+        total_participants: "Wszystkich Uczestników",
+        avg_score: "Średni Wynik",
+        search_quiz_title: "Szukaj po tytule quizu...",
+        sort_newest_first: "Najnowsze Najpierw",
+        sort_oldest_first: "Najstarsze Najpierw",
+        sort_title_az: "Tytuł A-Z",
+        sort_most_participants: "Najwięcej Uczestników",
+        date_completed: "Data Ukończenia",
+        participants: "Uczestnicy",
+        download_csv: "Pobierz CSV",
+        delete_result: "Usuń Wynik",
+
         // Game UI text
         question_will_appear_here: "Pytanie pojawi się tutaj",
         question_alternatives: "Alternatywy Pytania",

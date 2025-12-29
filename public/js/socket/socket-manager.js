@@ -275,19 +275,7 @@ export class SocketManager {
             this.gameManager.showAnswerSubmitted(data.answer);
         });
 
-        // Statistics and updates
-        this.socket.on('statistics-update', (data) => {
-            logger.debug('Statistics updated:', data);
-            this.updateStatistics(data);
-        });
-
-        this.socket.on('leaderboard-update', (data) => {
-            logger.debug('Leaderboard updated:', data);
-            this.gameManager.showLeaderboard(data.leaderboard);
-            // Note: Removed fanfare from here - it should only play at final game end
-        });
-
-        // Show leaderboard (new event for improved flow)
+        // Show leaderboard
         this.socket.on('show-leaderboard', (data) => {
             logger.debug('Showing leaderboard:', data);
             this.gameManager.showLeaderboard(data.leaderboard);
@@ -303,11 +291,6 @@ export class SocketManager {
         this.socket.on('answer-statistics', (data) => {
             logger.debug('Answer statistics received:', data);
             this.gameManager.updateAnswerStatistics(data);
-        });
-
-        this.socket.on('players-update', (data) => {
-            logger.debug('Players updated:', data);
-            this.gameManager.updatePlayersList(data.players);
         });
 
         this.socket.on('player-list-update', (data) => {
@@ -362,12 +345,6 @@ export class SocketManager {
             translationManager.showAlert('error', data.message || 'Name is already taken');
         });
 
-        // Host-specific events
-        this.socket.on('host-statistics', (data) => {
-            logger.debug('Host statistics:', data);
-            this.updateHostStatistics(data);
-        });
-
         this.socket.on('player-disconnected', (data) => {
             logger.debug('Player disconnected:', data);
 
@@ -382,11 +359,6 @@ export class SocketManager {
             this._lastPlayerCount = data.players ? data.players.length : 0;
 
             this.gameManager.updatePlayersList(data.players);
-        });
-
-        this.socket.on('all-players-answered', (data) => {
-            logger.debug('All players answered:', data);
-            // Could show visual feedback that all players have answered
         });
 
         // Special events
@@ -408,90 +380,6 @@ export class SocketManager {
             logger.error('Reconnection failed');
             translationManager.showAlert('error', 'Failed to reconnect to server');
         });
-    }
-
-    /**
-     * Update game statistics display
-     */
-    updateStatistics(data) {
-        if (!data.statistics) return;
-        
-        const statsContainer = document.getElementById('game-statistics');
-        if (!statsContainer) return;
-        
-        // Clear previous statistics
-        statsContainer.innerHTML = '';
-        
-        // Show answer distribution
-        if (data.statistics.answerDistribution) {
-            const distributionDiv = document.createElement('div');
-            distributionDiv.className = 'answer-distribution';
-            distributionDiv.innerHTML = '<h4>Answer Distribution</h4>';
-            
-            Object.entries(data.statistics.answerDistribution).forEach(([answer, count]) => {
-                const answerDiv = document.createElement('div');
-                answerDiv.className = 'answer-stat';
-                answerDiv.innerHTML = `
-                    <span class="answer-label">${this.escapeHtml(answer)}</span>
-                    <span class="answer-count">${count}</span>
-                `;
-                distributionDiv.appendChild(answerDiv);
-            });
-            
-            statsContainer.appendChild(distributionDiv);
-        }
-        
-        // Show response time statistics
-        if (data.statistics.averageResponseTime) {
-            const responseTimeDiv = document.createElement('div');
-            responseTimeDiv.className = 'response-time-stat';
-            responseTimeDiv.innerHTML = `
-                <h4>Average Response Time</h4>
-                <span class="time-value">${data.statistics.averageResponseTime.toFixed(1)}s</span>
-            `;
-            statsContainer.appendChild(responseTimeDiv);
-        }
-        
-        // Show participation rate
-        if (data.statistics.participationRate !== undefined) {
-            const participationDiv = document.createElement('div');
-            participationDiv.className = 'participation-stat';
-            participationDiv.innerHTML = `
-                <h4>Participation Rate</h4>
-                <span class="participation-value">${(data.statistics.participationRate * 100).toFixed(1)}%</span>
-            `;
-            statsContainer.appendChild(participationDiv);
-        }
-    }
-
-    /**
-     * Update host-specific statistics
-     */
-    updateHostStatistics(data) {
-        // Update host dashboard with detailed statistics
-        const hostStats = document.getElementById('host-statistics');
-        if (!hostStats) return;
-        
-        hostStats.innerHTML = `
-            <div class="host-stat-grid">
-                <div class="host-stat-item">
-                    <h4>Total Players</h4>
-                    <span class="stat-value">${data.totalPlayers || 0}</span>
-                </div>
-                <div class="host-stat-item">
-                    <h4>Answered</h4>
-                    <span class="stat-value">${data.playersAnswered || 0}</span>
-                </div>
-                <div class="host-stat-item">
-                    <h4>Correct</h4>
-                    <span class="stat-value">${data.correctAnswers || 0}</span>
-                </div>
-                <div class="host-stat-item">
-                    <h4>Avg Time</h4>
-                    <span class="stat-value">${data.averageTime ? data.averageTime.toFixed(1) + 's' : 'N/A'}</span>
-                </div>
-            </div>
-        `;
     }
 
     /**
