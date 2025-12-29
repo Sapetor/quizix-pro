@@ -103,13 +103,33 @@ class PlayerManagementService {
     if (playerData && game) {
       game.removePlayer(socketId);
 
+      const currentPlayers = Array.from(game.players.values()).map(p => ({
+        id: p.id,
+        name: p.name
+      }));
+
       // Broadcast updated player list
       io.to(`game-${playerData.gamePin}`).emit('player-list-update', {
-        players: Array.from(game.players.values()).map(p => ({
-          id: p.id,
-          name: p.name
-        }))
+        players: currentPlayers
       });
+
+      // Emit player-disconnected event for audio feedback
+      io.to(`game-${playerData.gamePin}`).emit('player-disconnected', {
+        playerName: playerData.name,
+        players: currentPlayers
+      });
+
+      // Update live answer count if game is in question state
+      if (game.gameState === 'question' && game.hostId) {
+        const totalPlayers = game.players.size;
+        const answeredPlayers = Array.from(game.players.values())
+          .filter(player => player.answers && player.answers[game.currentQuestion]).length;
+
+        io.to(game.hostId).emit('answer-count-update', {
+          answeredPlayers: answeredPlayers,
+          totalPlayers: totalPlayers
+        });
+      }
 
       this.logger.info(`Player ${playerData.name} disconnected from game ${playerData.gamePin}`);
     }

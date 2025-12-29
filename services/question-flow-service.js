@@ -48,15 +48,18 @@ class QuestionFlowService {
 
     this.logger.debug(`Answer submitted: ${answeredPlayers}/${totalPlayers} players answered`);
 
-    // Emit live answer count update to host
-    const liveStats = {
-      answeredPlayers: answeredPlayers,
-      totalPlayers: totalPlayers
-    };
-    io.to(game.hostId).emit('answer-count-update', liveStats);
+    // Emit live answer count update to host (only if host is connected)
+    if (game.hostId) {
+      const liveStats = {
+        answeredPlayers: answeredPlayers,
+        totalPlayers: totalPlayers
+      };
+      io.to(game.hostId).emit('answer-count-update', liveStats);
+    }
 
-    // If all players answered, end question early
-    if (answeredPlayers >= totalPlayers && totalPlayers > 0 && game.gameState === 'question') {
+    // If all players answered, end question early (check flag to prevent duplicates)
+    if (answeredPlayers >= totalPlayers && totalPlayers > 0 &&
+        game.gameState === 'question' && !game.endingQuestionEarly) {
       this.endQuestionEarly(game, io);
     }
   }
@@ -67,6 +70,13 @@ class QuestionFlowService {
    * @param {Object} io - Socket.IO instance
    */
   endQuestionEarly(game, io) {
+    // Prevent duplicate calls with flag
+    if (game.endingQuestionEarly) {
+      this.logger.debug('Already ending question early, ignoring duplicate call');
+      return;
+    }
+    game.endingQuestionEarly = true;
+
     this.logger.debug(`All players answered, ending question early for game ${game.pin}`);
 
     // Clear existing timers
@@ -82,35 +92,49 @@ class QuestionFlowService {
 
     // Wait 1 second before revealing answers (gives players time to see their submission)
     setTimeout(() => {
-      if (game.gameState !== 'question') {
-        this.logger.debug('Game state changed, skipping early end');
-        return;
+      try {
+        // Reset flag
+        game.endingQuestionEarly = false;
+
+        if (game.gameState !== 'question') {
+          this.logger.debug('Game state changed, skipping early end');
+          return;
+        }
+
+        // End the question
+        game.endQuestion();
+
+        // Get question data with null check
+        const question = game.quiz.questions[game.currentQuestion];
+        if (!question) {
+          this.logger.error(`Question not found at index ${game.currentQuestion}`);
+          return;
+        }
+
+        // Build correct answer data
+        const correctAnswerData = this.buildCorrectAnswerData(question);
+
+        // Emit question timeout with early end flag
+        io.to(`game-${game.pin}`).emit('question-timeout', {
+          ...correctAnswerData,
+          earlyEnd: true
+        });
+
+        // Get and emit answer statistics to host (only if host connected)
+        if (game.hostId) {
+          const answerStats = game.getAnswerStatistics();
+          io.to(game.hostId).emit('answer-statistics', answerStats);
+        }
+
+        // Send individual results to each player
+        this.emitPlayerResults(game, io);
+
+        // Advance to next question
+        this.gameSessionService.advanceToNextQuestion(game, io);
+      } catch (error) {
+        this.logger.error('Error in endQuestionEarly callback:', error);
+        game.endingQuestionEarly = false;
       }
-
-      // End the question
-      game.endQuestion();
-
-      // Get question data
-      const question = game.quiz.questions[game.currentQuestion];
-
-      // Build correct answer data
-      const correctAnswerData = this.buildCorrectAnswerData(question);
-
-      // Emit question timeout with early end flag
-      io.to(`game-${game.pin}`).emit('question-timeout', {
-        ...correctAnswerData,
-        earlyEnd: true
-      });
-
-      // Get and emit answer statistics to host
-      const answerStats = game.getAnswerStatistics();
-      io.to(game.hostId).emit('answer-statistics', answerStats);
-
-      // Send individual results to each player
-      this.emitPlayerResults(game, io);
-
-      // Advance to next question
-      this.gameSessionService.advanceToNextQuestion(game, io);
     }, 1000);
   }
 

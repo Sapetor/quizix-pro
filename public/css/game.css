@@ -2410,10 +2410,37 @@
 }
 
 .feedback-modal.incorrect::before {
-    background: linear-gradient(135deg, 
-        rgba(239, 68, 68, 0.2) 0%, 
+    background: linear-gradient(135deg,
+        rgba(239, 68, 68, 0.2) 0%,
         rgba(220, 38, 38, 0.1) 100%);
     opacity: 1;
+}
+
+/* Partially correct state (ordering questions with partial credit) */
+.feedback-modal.partial {
+    border-color: var(--color-warning-500, #f59e0b);
+    box-shadow: 0 20px 60px rgba(245, 158, 11, 0.4);
+}
+
+.feedback-modal.partial::before {
+    background: linear-gradient(135deg,
+        rgba(245, 158, 11, 0.2) 0%,
+        rgba(217, 119, 6, 0.1) 100%);
+    opacity: 1;
+}
+
+.feedback-modal.partial .feedback-message {
+    color: var(--color-warning-500, #f59e0b);
+}
+
+.feedback-modal.partial .feedback-icon {
+    color: var(--color-warning-500, #f59e0b);
+}
+
+.feedback-modal.partial .score-display {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: var(--color-warning-500, #f59e0b);
 }
 
 /* Modal feedback message styling */
@@ -2602,6 +2629,17 @@
     color: #f87171;
 }
 
+[data-theme="dark"] .feedback-modal.partial .feedback-message,
+[data-theme="dark"] .feedback-modal.partial .feedback-icon {
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .feedback-modal.partial .score-display {
+    background: rgba(251, 191, 36, 0.2);
+    border-color: rgba(251, 191, 36, 0.4);
+    color: #fbbf24;
+}
+
 /* Light theme modal adjustments */
 [data-theme="light"] .feedback-modal {
     background: rgba(255, 255, 255, 0.95);
@@ -2643,6 +2681,17 @@
     background: rgba(254, 242, 242, 0.9);
     border-color: rgba(220, 38, 38, 0.3);
     color: #dc2626;
+}
+
+[data-theme="light"] .feedback-modal.partial .feedback-message,
+[data-theme="light"] .feedback-modal.partial .feedback-icon {
+    color: #d97706;
+}
+
+[data-theme="light"] .feedback-modal.partial .score-display {
+    background: rgba(255, 251, 235, 0.9);
+    border-color: rgba(217, 119, 6, 0.3);
+    color: #d97706;
 }
 
 /* Mobile optimizations for modal feedback */

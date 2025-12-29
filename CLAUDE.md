@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 **Status**: Production-ready with comprehensive mobile optimizations, unified theme management, enhanced carousel functionality, multi-language support, and Railway cloud deployment.
 
-**Recent Refactoring**: Weeks 1-3 complete (~2,101 lines eliminated/refactored). See `REFACTORING_SUMMARY.md` for details.
+**Recent Refactoring**: Weeks 1-3 and 5 complete (~1,466 lines removed/refactored). See `REFACTORING_ROADMAP.md` for details.
 
 ## Commands
 
@@ -36,8 +36,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **Encrypted security** layer for sensitive data
 
 **Backend (Node.js/Express - server.js):**
-- **1,177 lines** of production-grade server code (reduced 51% through Weeks 1-3 refactoring)
-- Service-oriented architecture with 6 dedicated backend services
+- **1,229 lines** of production-grade server code (reduced 33% through refactoring)
+- Service-oriented architecture with 8 dedicated backend services
 - Socket.IO real-time multiplayer communication (100+ event handlers extracted to services)
 - RESTful API with 15+ endpoints for quiz/results management
 - QR code generation with caching
@@ -240,9 +240,8 @@ quizix-pro/
 ├── results/              # Quiz game results archives
 ├── docs/                 # Documentation
 ├── debug/                # Debug UI tools
-├── server.js             # Express backend (1,845 lines)
-├── REFACTORING_SUMMARY.md  # Week 1-2 refactoring summary
-├── REFACTORING_ROADMAP.md  # Future refactoring opportunities
+├── server.js             # Express backend (1,229 lines)
+├── REFACTORING_ROADMAP.md  # Refactoring status and roadmap
 └── package.json          # Dependencies and scripts
 ```
 
@@ -339,12 +338,18 @@ quizix-pro/
 - Compact connection status indicator (32px circular)
 - Zoom compatibility at 150%+ levels
 
-## Theme Management
+## Settings & State Management
 
-- **SettingsManager**: Centralized theme management across desktop and mobile
-- **Consistent Emojis**: ☀️ for light mode, 🌙 for dark mode (showing current state)
-- **Multi-Button Support**: Synchronized theme toggles in header, mobile, and settings
-- **Persistent Storage**: Uses `quizSettings` localStorage format
+**Single Source of Truth Architecture:**
+- **SettingsManager**: Facade that delegates to specialized managers
+- **TranslationManager**: Source of truth for language (stores in `language` key)
+- **SoundManager**: Source of truth for audio settings (stores in `quizAudioSettings` key)
+- **GameStateManager**: Source of truth for game state (`gameEnded`, `resultShown`, etc.)
+
+**Theme Management:**
+- Consistent Emojis: ☀️ for light mode, 🌙 for dark mode (showing current state)
+- Multi-Button Support: Synchronized theme toggles in header, mobile, and settings
+- Persistent Storage: Theme stored in `quizSettings` localStorage
 
 ## Internationalization
 

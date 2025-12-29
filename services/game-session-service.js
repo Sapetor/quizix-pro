@@ -179,6 +179,14 @@ class GameSessionService {
    */
   handleQuestionTimeout(game, io, question) {
     game.endQuestion();
+
+    // Guard against null/undefined question
+    if (!question) {
+      this.logger.error(`Question timeout called with null question for game ${game.pin}`);
+      this.advanceToNextQuestion(game, io);
+      return;
+    }
+
     const correctAnswer = question.correctAnswer;
     let correctOption = '';
 
@@ -526,22 +534,32 @@ class Game {
 
     // Handle partial credit for ordering questions
     let points = 0;
+    let partialScore = null; // Only set for ordering questions
     if (question.type === 'ordering' && typeof isCorrect === 'number') {
       // isCorrect is a decimal (0-1) representing percentage correct
+      partialScore = isCorrect; // Store the partial score (0-1)
       points = Math.floor((basePoints + scaledTimeBonus) * isCorrect);
-      // Convert to boolean for storage (consider >0.5 as correct for statistics)
-      const wasCorrect = isCorrect >= 0.5;
+      // Only mark as "correct" if the order is 100% right
+      // Partial credit still gives points, but isCorrect = false unless perfect
+      const wasCorrect = isCorrect === 1;
       isCorrect = wasCorrect;
     } else {
       points = isCorrect ? basePoints + scaledTimeBonus : 0;
     }
 
-    player.answers[this.currentQuestion] = {
+    const answerData = {
       answer,
       isCorrect,
       points,
       timeMs: Date.now() - this.questionStartTime
     };
+
+    // Add partialScore for ordering questions (enables "partially correct" feedback)
+    if (partialScore !== null) {
+      answerData.partialScore = partialScore;
+    }
+
+    player.answers[this.currentQuestion] = answerData;
     player.score += points;
 
     return { isCorrect, points };
@@ -655,11 +673,18 @@ class Game {
 
   /**
    * Save game results to file
+   * Note: Client-side also saves via REST API for redundancy
    */
   saveResults() {
     try {
       const fs = require('fs');
       const path = require('path');
+
+      // Ensure results directory exists
+      const resultsDir = 'results';
+      if (!fs.existsSync(resultsDir)) {
+        fs.mkdirSync(resultsDir, { recursive: true });
+      }
 
       const results = {
         quizTitle: this.quiz.title || 'Untitled Quiz',
@@ -671,17 +696,22 @@ class Game {
         })),
         startTime: this.startTime,
         endTime: this.endTime,
+        saved: new Date().toISOString(),
         questions: this.quiz.questions.map((q, index) => ({
           questionNumber: index + 1,
           text: q.question || q.text,
           type: q.type || 'multiple-choice',
-          correctAnswer: q.correctAnswer || q.correctAnswers,
-          difficulty: q.difficulty || 'medium'
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+          correctAnswers: q.correctAnswers,
+          correctOrder: q.correctOrder,
+          difficulty: q.difficulty || 'medium',
+          timeLimit: q.timeLimit || q.time
         }))
       };
 
       const filename = `results_${this.pin}_${Date.now()}.json`;
-      fs.writeFileSync(path.join('results', filename), JSON.stringify(results, null, 2));
+      fs.writeFileSync(path.join(resultsDir, filename), JSON.stringify(results, null, 2));
       this.logger.info(`Results saved: ${filename}`);
     } catch (error) {
       this.logger.error('Error saving game results:', error);

@@ -73,6 +73,7 @@ export default {
         game_starting: "Game is starting!",
         correct_answer_msg: "Correct!",
         incorrect_answer_msg: "Incorrect!",
+        partially_correct: "Partially Correct!",
         submitting: "Submitting...",
         waiting_for_results: "Waiting for results...",
         points: "points",

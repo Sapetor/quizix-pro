@@ -334,6 +334,96 @@ export class ModalFeedback {
     }
 
     /**
+     * Show partially correct answer feedback (for ordering questions with partial credit)
+     * @param {string} message - Custom message (optional)
+     * @param {number} score - Score to display (optional)
+     * @param {number} autoDismissTime - Auto-dismiss time in ms (default: 3000)
+     * @param {string} explanation - Explanation text (optional)
+     * @param {number} partialScore - Partial score as decimal 0-1 (optional, for display)
+     */
+    showPartial(message = null, score = null, autoDismissTime = 3000, explanation = null, partialScore = null) {
+        if (!this.overlay || !this.modal) {
+            logger.error('❌ Cannot show modal feedback - elements not initialized');
+            return;
+        }
+
+        // Clear any existing timer
+        if (this.currentTimer) {
+            clearTimeout(this.currentTimer);
+            this.currentTimer = null;
+        }
+
+        // Set modal state to partial
+        this.modal.className = 'feedback-modal';
+        this.modal.classList.add('partial');
+
+        if (explanation) {
+            this.modal.classList.add('has-explanation');
+        }
+
+        // Set partial feedback content
+        this.updatePartialContent(message, score, explanation, partialScore);
+
+        // Show modal with animation
+        this.overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // Auto-dismiss after specified time
+        if (autoDismissTime > 0) {
+            this.currentTimer = setTimeout(() => {
+                this.hide();
+            }, autoDismissTime);
+        }
+
+        logger.debug('🎭 Modal feedback shown: partial');
+    }
+
+    /**
+     * Update modal content for partial correctness
+     */
+    updatePartialContent(message, score, explanation, partialScore) {
+        // Set feedback icon - partial gets a "so-so" emoji
+        if (this.feedbackIcon) {
+            this.feedbackIcon.textContent = '🔶';
+            this.feedbackIcon.style.animation = 'none';
+            this.feedbackIcon.style.transform = 'none';
+        }
+
+        // Set feedback message
+        if (this.feedbackText) {
+            const percentText = partialScore !== null ? ` (${Math.round(partialScore * 100)}%)` : '';
+            const feedbackMessage = message || (getTranslation('partially_correct') || 'Partially Correct!') + percentText;
+            this.feedbackText.textContent = feedbackMessage;
+        }
+
+        // Set score display
+        if (this.scoreDisplay && score !== null && score > 0) {
+            this.scoreDisplay.textContent = `+${score}`;
+            this.scoreDisplay.style.display = 'inline-block';
+        } else if (this.scoreDisplay) {
+            this.scoreDisplay.style.display = 'none';
+        }
+
+        // Set explanation display
+        if (this.explanationDisplay) {
+            if (explanation && explanation.trim()) {
+                this.explanationDisplay.innerHTML = `<span class="explanation-label">💡</span><span class="explanation-text">${this.escapeHtmlPreservingLatex(explanation)}</span>`;
+                this.explanationDisplay.style.display = 'block';
+
+                const textSpan = this.explanationDisplay.querySelector('.explanation-text');
+                if (textSpan) {
+                    simpleMathJaxService.render([textSpan]).catch(err => {
+                        logger.debug('MathJax render in modal explanation (non-blocking):', err);
+                    });
+                }
+            } else {
+                this.explanationDisplay.style.display = 'none';
+                this.explanationDisplay.innerHTML = '';
+            }
+        }
+    }
+
+    /**
      * Show answer submission feedback with neutral styling
      * @param {string} message - Submission message (required)
      * @param {number} autoDismissTime - Auto-dismiss time in ms (default: 2000)

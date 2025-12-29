@@ -10,13 +10,15 @@ export class SettingsManager {
     constructor() {
         this.settings = {
             theme: 'light',
-            soundEnabled: true,
-            language: 'en',
+            // Note: soundEnabled is NOT stored here - SoundManager is the source of truth
+            // Use getSoundEnabled() to get current sound state
+            // Note: language is NOT stored here - TranslationManager is the source of truth
+            // Use getLanguage() to get current language
             autoSave: true,
             animations: true,
             fullscreenMode: false
         };
-        
+
         // Store event handler references for cleanup
         this.eventHandlers = {};
         
@@ -275,26 +277,31 @@ export class SettingsManager {
     }
 
     /**
-     * Set sound enabled/disabled
+     * Set sound enabled/disabled - delegates to SoundManager (source of truth)
+     * Note: Sound state is stored in 'quizAudioSettings' by SoundManager, not in quizSettings
      */
     setSoundEnabled(enabled) {
-        this.settings.soundEnabled = enabled;
-        this.saveSettings();
+        const soundManager = window.game?.soundManager;
+        if (!soundManager) return;
+
+        if (enabled) {
+            soundManager.unmute();
+        } else {
+            soundManager.mute();
+        }
         this.updateSettingsUI();
     }
 
     /**
-     * Sync sound state from SoundManager (used on initialization)
+     * Get sound enabled status from SoundManager (source of truth)
      */
-    syncSoundStateFromManager() {
+    getSoundEnabled() {
         const soundManager = window.game?.soundManager;
-        if (soundManager) {
-            this.settings.soundEnabled = soundManager.isSoundsEnabled();
-        }
+        return soundManager?.isSoundsEnabled() ?? true;
     }
 
     /**
-     * Toggle sound
+     * Toggle sound - delegates to SoundManager
      */
     toggleSound() {
         const soundManager = window.game?.soundManager;
@@ -302,12 +309,10 @@ export class SettingsManager {
 
         if (soundManager.isSoundsEnabled()) {
             soundManager.mute();
-            this.settings.soundEnabled = false;
         } else {
             soundManager.unmute();
-            this.settings.soundEnabled = true;
         }
-        this.saveSettings();
+        // SoundManager.mute()/unmute() saves to localStorage automatically
         this.updateSoundToggleButtons();
     }
 
@@ -341,12 +346,23 @@ export class SettingsManager {
     }
 
     /**
-     * Set language
+     * Set language - delegates to TranslationManager which is the source of truth
+     * Note: Language is stored in 'language' localStorage key by TranslationManager,
+     * not in quizSettings, to avoid duplication
      */
-    setLanguage(language) {
-        this.settings.language = language;
-        this.saveSettings();
-        this.updateSettingsUI();
+    async setLanguage(language) {
+        const success = await translationManager.setLanguage(language);
+        if (success) {
+            this.updateSettingsUI();
+        }
+        return success;
+    }
+
+    /**
+     * Get current language from TranslationManager (source of truth)
+     */
+    getLanguage() {
+        return translationManager.getCurrentLanguage();
     }
 
     /**
@@ -374,8 +390,16 @@ export class SettingsManager {
 
     /**
      * Get specific setting
+     * Note: For 'soundEnabled' and 'language', delegates to their respective managers
      */
     getSetting(key) {
+        // Delegate to source of truth managers for these keys
+        if (key === 'soundEnabled') {
+            return this.getSoundEnabled();
+        }
+        if (key === 'language') {
+            return this.getLanguage();
+        }
         return this.settings[key];
     }
 
@@ -394,13 +418,17 @@ export class SettingsManager {
     resetSettings() {
         this.settings = {
             theme: 'light',
-            soundEnabled: true,
-            language: 'en',
             autoSave: true,
             animations: true,
             fullscreenMode: false
         };
-        
+
+        // Reset language via TranslationManager (source of truth)
+        translationManager.setLanguage('en');
+
+        // Reset sound via SoundManager (source of truth)
+        this.setSoundEnabled(true);
+
         this.saveSettings();
         this.applySettings();
     }
@@ -445,11 +473,12 @@ export class SettingsManager {
         // Update fullscreen toggle
         this.updateFullscreenButton();
         
-        // Update language selector
+        // Update language selector - use getLanguage() which reads from TranslationManager
+        const currentLanguage = this.getLanguage();
         const languageButtons = document.querySelectorAll('[data-lang]');
         languageButtons.forEach(button => {
             const lang = button.getAttribute('data-lang');
-            if (lang === this.settings.language) {
+            if (lang === currentLanguage) {
                 button.classList.add('active');
             } else {
                 button.classList.remove('active');
@@ -497,8 +526,7 @@ export class SettingsManager {
             }
         });
 
-        // Initial sound button state - sync from SoundManager
-        this.syncSoundStateFromManager();
+        // Initial sound button state - reads from SoundManager (source of truth)
         this.updateSoundToggleButtons();
         
         // Fullscreen toggle
@@ -524,15 +552,9 @@ export class SettingsManager {
             });
         }
         
-        // Language buttons
-        const languageButtons = document.querySelectorAll('[data-lang]');
-        languageButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const lang = button.getAttribute('data-lang');
-                this.setLanguage(lang);
-            });
-        });
-        
+        // Note: Language buttons are handled by app.js which calls translationManager.setLanguage()
+        // SettingsManager.setLanguage() delegates to TranslationManager, so no duplicate handlers needed
+
         // Handle fullscreen change events
         document.addEventListener('fullscreenchange', () => {
             this.settings.fullscreenMode = !!document.fullscreenElement;

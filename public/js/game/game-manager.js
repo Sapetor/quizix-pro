@@ -38,10 +38,8 @@ export class GameManager {
         
         // Keep these specific to GameManager for now
         this.lastDisplayQuestionTime = 0; // Prevent rapid successive displayQuestion calls
-        
-        // Game state properties
-        this.gameEnded = false;
-        this.resultShown = false;
+
+        // Game state properties (gameEnded/resultShown moved to stateManager - single source of truth)
         this.currentQuizTitle = null;
         this.gameStartTime = null;
         
@@ -338,11 +336,20 @@ export class GameManager {
             const isCorrect = data.isCorrect !== undefined ? data.isCorrect : data.correct;
             const earnedPoints = data.points || 0;
             const explanation = data.explanation || null;
+            const partialScore = data.partialScore; // For ordering questions with partial credit
+
+            // Determine if this is a partial correct (ordering question with some but not all correct)
+            const isPartiallyCorrect = !isCorrect && partialScore !== undefined && partialScore > 0;
 
             // Prepare feedback message
-            let feedbackMessage = isCorrect
-                ? getTranslation('correct_answer_msg')
-                : getTranslation('incorrect_answer_msg');
+            let feedbackMessage;
+            if (isCorrect) {
+                feedbackMessage = getTranslation('correct_answer_msg');
+            } else if (isPartiallyCorrect) {
+                feedbackMessage = getTranslation('partially_correct') || 'Partially Correct!';
+            } else {
+                feedbackMessage = getTranslation('incorrect_answer_msg');
+            }
 
             // Add total score to message if available
             if (earnedPoints > 0 && data.totalScore !== undefined) {
@@ -355,10 +362,12 @@ export class GameManager {
             // Show modal feedback instead of inline feedback
             if (isCorrect) {
                 modalFeedback.showCorrect(feedbackMessage, earnedPoints, displayDuration, explanation);
+            } else if (isPartiallyCorrect) {
+                modalFeedback.showPartial(feedbackMessage, earnedPoints, displayDuration, explanation, partialScore);
             } else {
                 modalFeedback.showIncorrect(feedbackMessage, earnedPoints, displayDuration, explanation);
             }
-            
+
             // Show correct answer if player was wrong (preserve existing functionality)
             if (!isCorrect && data.correctAnswer !== undefined) {
                 // Delay to allow modal to appear first
@@ -366,9 +375,14 @@ export class GameManager {
                     this.showCorrectAnswerOnClient(data.correctAnswer);
                 }, 500);
             }
-            
-            // Play result sound 
+
+            // Play result sound
             if (isCorrect) {
+                if (this.soundManager.soundsEnabled) {
+                    this.soundManager.playCorrectAnswerSound();
+                }
+            } else if (isPartiallyCorrect) {
+                // Play a different sound for partial - use correct sound but it's not as celebratory
                 if (this.soundManager.soundsEnabled) {
                     this.soundManager.playCorrectAnswerSound();
                 }
@@ -1266,8 +1280,8 @@ export class GameManager {
             this.showPlayerFinalScreen(leaderboard);
         }
         
-        // Mark game as ended
-        this.gameEnded = true;
+        // Mark game as ended (via stateManager - single source of truth)
+        this.stateManager.endGame();
         logger.debug('🎉 Final results display completed');
     }
 
@@ -1562,10 +1576,9 @@ export class GameManager {
         this.currentQuestion = null;
         this.selectedAnswer = null;
         this.playerAnswers.clear();
-        this.gameEnded = false;
-        this.resultShown = false;
+        // gameEnded/resultShown now handled by stateManager.reset() below
         this.stopTimer();
-        
+
         // CRITICAL FIX: Reset the modular state manager too!
         // This was causing the new game restart bug where stale state from
         // previous games would interfere with new games

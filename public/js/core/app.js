@@ -909,10 +909,10 @@ export class QuizGame {
     }
 
     /**
-     * Get sound enabled status
+     * Get sound enabled status - delegates to SettingsManager which reads from SoundManager
      */
     isSoundEnabled() {
-        return this.settingsManager.getSetting('soundEnabled');
+        return this.settingsManager.getSoundEnabled();
     }
 
     /**

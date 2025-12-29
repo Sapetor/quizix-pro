@@ -2053,8 +2053,24 @@ Please respond with only valid JSON. Do not include explanations or additional t
         // Fix trailing commas before closing brackets/braces
         fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
 
-        // Fix common quote issues first
-        fixed = fixed.replace(/'/g, '"'); // Replace single quotes with double quotes
+        // Only replace single quotes used as JSON delimiters, not those inside strings
+        // Check if the JSON uses single quotes as delimiters (invalid JSON but some AI might produce)
+        // Pattern: single quote at start of value (after :, [, or ,) or at end of value (before ], }, or ,)
+        // Only apply if it looks like single quotes are used as JSON delimiters
+        const usesSingleQuoteDelimiters = /:\s*'[^']*'|,\s*'[^']*'|\[\s*'[^']*'/.test(fixed) &&
+                                           !/"[^"]*'[^"]*"/.test(fixed); // But not if single quotes are inside double-quoted strings
+
+        if (usesSingleQuoteDelimiters) {
+            // Replace single quotes used as string delimiters with double quotes
+            // Match: opening single quote after structural chars, or closing single quote before structural chars
+            fixed = fixed.replace(/:\s*'/g, ': "');
+            fixed = fixed.replace(/'\s*,/g, '",');
+            fixed = fixed.replace(/'\s*}/g, '"}');
+            fixed = fixed.replace(/'\s*]/g, '"]');
+            fixed = fixed.replace(/\[\s*'/g, '["');
+            fixed = fixed.replace(/,\s*'/g, ',"');
+            logger.debug('🔧 Fixed single-quote JSON delimiters');
+        }
 
         // Fix missing quotes around property names
         fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');

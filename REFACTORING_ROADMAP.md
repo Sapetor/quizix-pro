@@ -2,7 +2,7 @@
 
 **Purpose**: Future refactoring opportunities prioritized by impact vs effort.
 
-**Status**: Weeks 1-3 complete. Below are optional future improvements.
+**Status**: Weeks 1-3 and 5 complete. Refactoring goals achieved. Only Week 6 remains as optional future work.
 
 ---
 
@@ -28,123 +28,118 @@
 - Early question ending logic
 
 ### Actual Results
-- server.js: 1,845 lines → 1,177 lines (668 lines removed, 36% reduction)
+- server.js: 1,845 lines → 1,229 lines (616 lines removed, 33% reduction)
 - Socket.IO logic now testable in isolation ✅
 - Cleaner separation of concerns ✅
 - All functionality tested and working ✅
 
 ---
 
-## Week 4: AI Integration Service (Optional)
+## ~~Week 4: AI Integration Service~~ ⏭️ **SKIPPED**
 
-**Priority**: Low | **Effort**: 2-3 hours | **Impact**: Low
+**Priority**: Low | **Effort**: 2-3 hours | **Impact**: Very Low | **Status**: ⏭️ Skipped
 
-### Current State
-- AI endpoints in server.js (/api/claude/generate)
-- Mixed with other API routes
-
-### Proposed
-- Extract to `AIGenerationService`
-- Support multiple providers (Claude, Ollama, HuggingFace)
-- Question validation and formatting
-
-### Benefits
-- Cleaner separation
-- Easier to add new AI providers
-- Better error handling for AI failures
+### Why Skipped
+- Only ~108 lines of AI code in server.js (lines 665-773)
+- Just 2 simple proxy endpoints (`/api/ollama/models`, `/api/claude/generate`)
+- No complex logic - simply forwards requests to external APIs
+- Extracting would create a service with almost no business logic
+- Not worth the effort for such minimal code
 
 ---
 
-## Week 5: Frontend State Management (Optional)
+## ~~Week 5: Frontend State Management~~ ✅ **COMPLETED**
 
-**Priority**: Low | **Effort**: 6-8 hours | **Impact**: Medium
+**Priority**: Low | **Effort**: 6-8 hours | **Impact**: Medium | **Status**: ✅ Complete
 
-### Current State
-- State scattered across multiple managers
-- GameStateManager, UIStateManager, SettingsManager all coexist
-- Some state duplication between managers
+### Completed Changes
 
-### Proposed
-- Evaluate if consolidation is needed
-- Consider event-driven state updates
-- Centralized state store (if complexity warrants)
+**1. GameManager State Consolidation** ✅
+- Removed duplicate `gameEnded` and `resultShown` properties
+- GameStateManager is now single source of truth for game state
 
-### Benefits
-- Single source of truth for application state
-- Easier debugging
-- Better state synchronization
+**2. Language State Consolidation** ✅
+- TranslationManager is now single source of truth
+- SettingsManager.setLanguage() delegates to TranslationManager
+- Removed duplicate `language` from quizSettings
 
-### Risks
-- Large refactor with high risk of bugs
-- Current architecture is working well
-- May be over-engineering
+**3. Sound State Consolidation** ✅
+- SoundManager is now single source of truth (uses `quizAudioSettings`)
+- SettingsManager.setSoundEnabled() delegates to SoundManager
+- Removed duplicate `soundEnabled` from quizSettings
+
+### Actual Results
+- Single source of truth for each state domain ✅
+- SettingsManager acts as facade, delegates to specialized managers ✅
+- Backward compatible - getSetting() still works for callers ✅
 
 ---
 
 ## Week 6: Question Type Plugin System (Optional)
 
-**Priority**: Very Low | **Effort**: 8-10 hours | **Impact**: Low
+**Priority**: Very Low | **Effort**: 8-10 hours | **Impact**: Low | **Status**: Not Started
 
-### Current State
-- QuestionTypeRegistry works well
-- Adding new question types still requires changes in 13+ files
+### Current State (as of Dec 2025)
+- QuestionTypeRegistry centralizes validation, scoring, and extraction
+- 10 files still have question type switch statements
+- Adding new question types requires changes in multiple places
+- Current 5 question types: multiple-choice, multiple-correct, true-false, numeric, ordering
 
-### Proposed
-- True plugin architecture
-- Auto-registration of question types
+### Files with Question Type Logic
+1. `public/js/game/game-manager.js`
+2. `public/js/game/modules/question-renderer.js`
+3. `public/js/game/modules/player-interaction-manager.js`
+4. `public/js/quiz/quiz-manager.js`
+5. `public/js/ui/preview-manager.js`
+6. `public/js/utils/question-utils.js`
+7. `public/js/utils/results-viewer.js`
+8. `public/js/ai/generator.js`
+9. `public/js/core/app.js`
+10. `public/js/utils/globals.js`
+
+### Proposed (if ever needed)
+- True plugin architecture with auto-registration
+- Each question type as self-contained module
 - Convention-over-configuration approach
 
-### Benefits
-- Add question types without touching core code
-- Better extensibility
-- Cleaner separation
+### When to Consider
+- Only if planning to add 5+ new question types
+- Only if building a question type marketplace
+- Only if third-party extensibility is needed
 
-### Risks
-- Significant architecture change
-- Current system already improved from Week 1
-- May not be worth the effort for this app's scale
+### Recommendation
+**Skip** - Current system works well. The 5 existing question types cover most quiz needs. Over-engineering for this app's scale.
 
 ---
 
-## Recommendations
+## Summary
 
-### Do Next (If Continuing Refactoring)
-1. **Week 3: Socket.IO Handler Extraction** - Most value for effort
-   - Keeps momentum going
-   - Natural next step after backend services
-   - Clear boundaries
+### Completed Refactoring
+| Week | Task | Lines Saved | Status |
+|------|------|-------------|--------|
+| 1-2 | Backend Services & QuestionTypeRegistry | ~800 | ✅ Done |
+| 3 | Socket.IO Handler Extraction | ~616 | ✅ Done |
+| 4 | AI Integration Service | N/A | ⏭️ Skipped |
+| 5 | Frontend State Management | ~50 | ✅ Done |
 
-### Skip for Now
-- **Week 4**: AI service extraction is low priority
-- **Week 5**: State management works well currently
-- **Week 6**: Question type plugin system is over-engineering
+**Total**: ~1,466 lines removed/refactored, cleaner architecture, single sources of truth.
 
-### Stop Here (Recommended)
-- Weeks 1-2 achieved core goals
-- Codebase is significantly improved
-- Diminishing returns on further refactoring
-- Better to ship and iterate later if pain points emerge
+### Remaining (Optional)
+- **Week 6**: Question Type Plugin - Only pursue if adding many new question types
 
 ---
 
-## When to Revisit
+## Final Recommendation
 
-**Revisit Week 3 if:**
-- Adding complex multiplayer features (tournaments, spectators, etc.)
-- Socket.IO handlers become difficult to maintain
-- Need to write tests for game session logic
+**Stop here.** The codebase is now well-structured:
+- 8 backend services with clear responsibilities
+- Single source of truth for game state, language, and sound
+- QuestionTypeRegistry centralizes question logic
+- server.js reduced by 33%
 
-**Revisit Week 5 if:**
-- State bugs becoming frequent
-- Difficulty tracking state across managers
-- Need for time-travel debugging
-
-**Revisit Week 6 if:**
-- Planning to add 10+ new question types
-- Building a question type marketplace
-- Need third-party extensibility
+Further refactoring has diminishing returns. Better to ship features and revisit only if pain points emerge.
 
 ---
 
-**Last Updated**: 2025-11-10
-**Next Review**: When pain points emerge (not proactively)
+**Last Updated**: 2025-12-28
+**Next Review**: Only when pain points emerge (not proactively)

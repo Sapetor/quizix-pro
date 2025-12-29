@@ -210,7 +210,7 @@ class ResultsService {
                         // Handle different question types
                         if (question?.type === 'ordering') {
                             // For ordering questions, show with option text if available
-                            if (question.correctOrder) {
+                            if (question.correctOrder && question.correctOrder.length > 0) {
                                 if (question.options && question.options.length > 0) {
                                     correctAnswer = question.correctOrder.map(idx => question.options[idx] || `#${idx}`).join(' → ');
                                 } else {
@@ -241,7 +241,7 @@ class ResultsService {
                         }
 
                         const isCorrectText = answer.isCorrect ? 'Yes' : 'No';
-                        const timeSeconds = Math.round(answer.timeMs / 1000);
+                        const timeSeconds = Math.round((answer.timeMs || 0) / 1000);
                         const points = answer.points || 0;
 
                         const row = [
@@ -304,14 +304,14 @@ class ResultsService {
             let correctAnswer = question.correctAnswer;
 
             // Handle different question types
-            if (question.type === 'ordering' && question.correctOrder) {
+            if (question.type === 'ordering' && question.correctOrder && question.correctOrder.length > 0) {
                 // For ordering questions, show the sequence with option text if available
                 if (question.options && question.options.length > 0) {
                     correctAnswer = question.correctOrder.map(idx => question.options[idx] || `#${idx}`).join(' → ');
                 } else {
                     correctAnswer = question.correctOrder.join(' → ');
                 }
-            } else if (question.type === 'multiple-correct' && question.correctAnswers) {
+            } else if (question.type === 'multiple-correct' && question.correctAnswers && question.correctAnswers.length > 0) {
                 // For multiple correct, show comma-separated
                 correctAnswer = question.correctAnswers.join(', ');
             } else if (Array.isArray(correctAnswer)) {
@@ -321,7 +321,7 @@ class ResultsService {
             let row = [
                 this._sanitizeCsvValue(questionText),
                 this._sanitizeCsvValue(correctAnswer),
-                `"${question.difficulty || 'medium'}"`
+                this._sanitizeCsvValue(question.difficulty || 'medium')
             ];
 
             // Analytics tracking
@@ -344,8 +344,8 @@ class ResultsService {
                     }
 
                     row.push(this._sanitizeCsvValue(displayAnswer));
-                    row.push(Math.round(playerAnswer.timeMs / 1000));
-                    row.push(playerAnswer.points);
+                    row.push(Math.round((playerAnswer.timeMs || 0) / 1000));
+                    row.push(playerAnswer.points || 0);
                     row.push(playerAnswer.isCorrect ? '✓' : '✗');
 
                     // Collect analytics
@@ -355,8 +355,8 @@ class ResultsService {
                         wrongAnswers[String(displayAnswer)] = (wrongAnswers[String(displayAnswer)] || 0) + 1;
                     }
 
-                    totalTime += playerAnswer.timeMs / 1000;
-                    totalPointsEarned += playerAnswer.points;
+                    totalTime += (playerAnswer.timeMs || 0) / 1000;
+                    totalPointsEarned += playerAnswer.points || 0;
                     responseCount++;
                     totalPointsPossible = Math.max(totalPointsPossible, playerAnswer.points || 100);
 
@@ -424,20 +424,21 @@ class ResultsService {
     _generateSummary(data, totalColumns) {
         const totalPlayers = data.results.length;
         const totalQuestions = data.questions.length;
-        const gameScore = data.results.reduce((sum, p) => sum + p.score, 0);
+        const gameScore = data.results.reduce((sum, p) => sum + (p.score || 0), 0);
         const maxPossibleScore = totalPlayers * totalQuestions * 100;
         const overallSuccess = maxPossibleScore > 0 ? (gameScore / maxPossibleScore * 100).toFixed(1) : '0';
 
         const emptyCols = '"' + '","'.repeat(Math.max(0, totalColumns - 2)) + '"';
 
+        // Sanitize all user-provided values to prevent CSV injection
         let summary = '\n';
         summary += `"=== GAME SUMMARY ===",${emptyCols}\n`;
-        summary += `"Quiz Title","${data.quizTitle || 'Untitled Quiz'}",${emptyCols}\n`;
-        summary += `"Game PIN","${data.gamePin}",${emptyCols}\n`;
+        summary += `"Quiz Title",${this._sanitizeCsvValue(data.quizTitle || 'Untitled Quiz')},${emptyCols}\n`;
+        summary += `"Game PIN",${this._sanitizeCsvValue(data.gamePin)},${emptyCols}\n`;
         summary += `"Total Players","${totalPlayers}",${emptyCols}\n`;
         summary += `"Total Questions","${totalQuestions}",${emptyCols}\n`;
         summary += `"Overall Success Rate","${overallSuccess}%",${emptyCols}\n`;
-        summary += `"Game Duration","${data.startTime} to ${data.endTime}",${emptyCols}\n`;
+        summary += `"Game Duration",${this._sanitizeCsvValue((data.startTime || '') + ' to ' + (data.endTime || ''))},${emptyCols}\n`;
 
         return summary;
     }
@@ -446,16 +447,17 @@ class ResultsService {
      * Generate fallback CSV when no question data available
      */
     _generateFallbackCSV(data) {
-        let csv = 'Quiz Title,Game PIN,Player Name,Score,Start Time,End Time\n';
+        let csv = '\ufeff'; // UTF-8 BOM for Excel compatibility
+        csv += 'Quiz Title,Game PIN,Player Name,Score,Start Time,End Time\n';
 
         data.results.forEach(player => {
             const row = [
                 this._sanitizeCsvValue(data.quizTitle || 'Untitled Quiz'),
-                data.gamePin,
+                this._sanitizeCsvValue(data.gamePin),
                 this._sanitizeCsvValue(player.name),
-                player.score,
-                data.startTime,
-                data.endTime
+                player.score || 0,
+                this._sanitizeCsvValue(data.startTime || ''),
+                this._sanitizeCsvValue(data.endTime || '')
             ].join(',');
             csv += row + '\n';
         });
