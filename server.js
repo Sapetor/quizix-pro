@@ -1048,6 +1048,20 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle intentional leave (player clicks leave button)
+  socket.on('leave-game', () => {
+    try {
+      const playerData = playerManagementService.getPlayer(socket.id);
+      if (playerData) {
+        const game = gameSessionService.getGame(playerData.gamePin);
+        playerManagementService.handlePlayerDisconnect(socket.id, game, io);
+        logger.info(`Player ${playerData.name} left game ${playerData.gamePin} intentionally`);
+      }
+    } catch (error) {
+      logger.error('Error handling leave-game:', error);
+    }
+  });
+
   socket.on('disconnect', () => {
     // Handle player disconnect
     const playerData = playerManagementService.getPlayer(socket.id);

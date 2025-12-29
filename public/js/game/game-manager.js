@@ -613,8 +613,10 @@ export class GameManager {
         const options = document.querySelectorAll('.option-display');
         
         if (questionType === 'multiple-choice') {
+            // Support both correctAnswer and correctIndex (server may use either)
+            const correctIdx = data.correctIndex !== undefined ? data.correctIndex : data.correctAnswer;
             options.forEach((option, index) => {
-                if (index === data.correctAnswer) {
+                if (index === correctIdx) {
                     option.style.border = '5px solid #2ecc71';
                     option.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
                     option.style.color = '#2ecc71';
@@ -632,9 +634,10 @@ export class GameManager {
                 options[correctIndex].style.fontWeight = 'bold';
             }
         } else if (questionType === 'multiple-correct') {
-            // Highlight multiple correct answers
-            if (data.correctAnswers && Array.isArray(data.correctAnswers)) {
-                data.correctAnswers.forEach(index => {
+            // Support both correctAnswers and correctIndices (server may use either)
+            const correctIndices = data.correctIndices || data.correctAnswers || [];
+            if (Array.isArray(correctIndices)) {
+                correctIndices.forEach(index => {
                     if (options[index]) {
                         options[index].style.border = '5px solid #2ecc71';
                         options[index].style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
