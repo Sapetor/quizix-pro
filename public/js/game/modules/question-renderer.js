@@ -154,7 +154,9 @@ export class QuestionRenderer {
         if (data.type === 'multiple-choice' || data.type === 'multiple-correct') {
             data.options.forEach((option, index) => {
                 if (options[index]) {
-                    options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${this.displayManager.mathRenderer.formatCodeBlocks(option)}`;
+                    // Handle null/undefined options gracefully
+                    const optionText = option != null ? option : '';
+                    options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${this.displayManager.mathRenderer.formatCodeBlocks(optionText)}`;
                     options[index].classList.add('tex2jax_process'); // Add MathJax processing class
                     options[index].style.display = 'block';
                     // Add data-multiple attribute for multiple-correct questions to get special styling

@@ -32,6 +32,11 @@ class QuestionFlowService {
 
     if (!game || game.gameState !== 'question') {
       this.logger.warn(`Answer submission rejected: game not in question state`);
+      // Inform player their answer was rejected (too late or game not ready)
+      socket.emit('answer-rejected', {
+        reason: game ? 'question_ended' : 'game_not_found',
+        message: game ? 'Question has already ended' : 'Game not found'
+      });
       return;
     }
 

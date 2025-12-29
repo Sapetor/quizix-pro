@@ -275,6 +275,11 @@ export class SocketManager {
             this.gameManager.showAnswerSubmitted(data.answer);
         });
 
+        this.socket.on('answer-rejected', (data) => {
+            logger.warn('Answer rejected:', data);
+            this.gameManager.showAnswerRejected(data.message || 'Answer could not be submitted');
+        });
+
         // Show leaderboard
         this.socket.on('show-leaderboard', (data) => {
             logger.debug('Showing leaderboard:', data);

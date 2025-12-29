@@ -346,10 +346,21 @@ class ResultsService {
                     row.push(this._sanitizeCsvValue(displayAnswer));
                     row.push(Math.round((playerAnswer.timeMs || 0) / 1000));
                     row.push(playerAnswer.points || 0);
-                    row.push(playerAnswer.isCorrect ? '✓' : '✗');
+
+                    // Handle partial credit for ordering questions
+                    let resultSymbol;
+                    if (playerAnswer.isCorrect) {
+                        resultSymbol = '✓';
+                    } else if (playerAnswer.partialScore !== undefined && playerAnswer.partialScore > 0) {
+                        // Show partial score percentage for ordering questions
+                        resultSymbol = `~${Math.round(playerAnswer.partialScore * 100)}%`;
+                    } else {
+                        resultSymbol = '✗';
+                    }
+                    row.push(resultSymbol);
 
                     // Collect analytics
-                    if (playerAnswer.isCorrect) {
+                    if (playerAnswer.isCorrect || (playerAnswer.partialScore && playerAnswer.partialScore === 1)) {
                         correctCount++;
                     } else {
                         wrongAnswers[String(displayAnswer)] = (wrongAnswers[String(displayAnswer)] || 0) + 1;

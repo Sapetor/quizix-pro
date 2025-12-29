@@ -19,6 +19,42 @@ export class PlayerInteractionManager {
         this.submitMultipleCorrectAnswer = this.submitMultipleCorrectAnswer.bind(this);
         this.submitNumericAnswer = this.submitNumericAnswer.bind(this);
         this.submitOrderingAnswer = this.submitOrderingAnswer.bind(this);
+
+        // Store bound handlers for cleanup (prevents memory leaks)
+        this._handleMultipleChoiceClick = this._handleMultipleChoiceClick.bind(this);
+        this._handleTrueFalseClick = this._handleTrueFalseClick.bind(this);
+        this._handleNumericKeypress = this._handleNumericKeypress.bind(this);
+    }
+
+    /**
+     * Handler for multiple choice option clicks (bound for cleanup)
+     */
+    _handleMultipleChoiceClick(event) {
+        if (event.target.classList.contains('player-option')) {
+            const answer = parseInt(event.target.dataset.answer);
+            if (!isNaN(answer)) {
+                this.selectAnswer(answer);
+            }
+        }
+    }
+
+    /**
+     * Handler for true/false option clicks (bound for cleanup)
+     */
+    _handleTrueFalseClick(event) {
+        if (event.target.classList.contains('tf-option')) {
+            const answer = event.target.dataset.answer === 'true';
+            this.selectAnswer(answer);
+        }
+    }
+
+    /**
+     * Handler for numeric input keypress (bound for cleanup)
+     */
+    _handleNumericKeypress(event) {
+        if (event.key === 'Enter') {
+            this.submitNumericAnswer();
+        }
     }
 
     /**
@@ -26,9 +62,9 @@ export class PlayerInteractionManager {
      */
     selectAnswer(answer) {
         const gameState = this.gameStateManager.getGameState();
-        
-        if (gameState.isHost || gameState.resultShown) {
-            logger.debug('Ignoring answer selection - host mode or result already shown');
+
+        if (gameState.isHost || gameState.resultShown || gameState.answerSubmitted) {
+            logger.debug('Ignoring answer selection - host mode, result shown, or already submitted');
             return;
         }
 
@@ -277,44 +313,28 @@ export class PlayerInteractionManager {
      * Setup event listeners for player interactions
      */
     setupEventListeners() {
-        // Multiple choice option clicks
-        document.addEventListener('click', (event) => {
-            if (event.target.classList.contains('player-option')) {
-                const answer = parseInt(event.target.dataset.answer);
-                if (!isNaN(answer)) {
-                    this.selectAnswer(answer);
-                }
-            }
-        });
-        
-        // True/false option clicks
-        document.addEventListener('click', (event) => {
-            if (event.target.classList.contains('tf-option')) {
-                const answer = event.target.dataset.answer === 'true';
-                this.selectAnswer(answer);
-            }
-        });
-        
+        // Multiple choice option clicks (using bound handler for cleanup)
+        document.addEventListener('click', this._handleMultipleChoiceClick);
+
+        // True/false option clicks (using bound handler for cleanup)
+        document.addEventListener('click', this._handleTrueFalseClick);
+
         // Multiple correct submit button
         const mcSubmitBtn = document.getElementById('submit-multiple-correct');
         if (mcSubmitBtn) {
             mcSubmitBtn.addEventListener('click', this.submitMultipleCorrectAnswer);
         }
-        
+
         // Numeric submit button
         const numericSubmitBtn = document.getElementById('submit-numeric');
         if (numericSubmitBtn) {
             numericSubmitBtn.addEventListener('click', this.submitNumericAnswer);
         }
 
-        // Enter key for numeric input
+        // Enter key for numeric input (using bound handler for cleanup)
         const numericInput = document.getElementById('numeric-answer-input');
         if (numericInput) {
-            numericInput.addEventListener('keypress', (event) => {
-                if (event.key === 'Enter') {
-                    this.submitNumericAnswer();
-                }
-            });
+            numericInput.addEventListener('keypress', this._handleNumericKeypress);
         }
 
         // Note: Ordering submit button is wired up in question-renderer.js setupPlayerOrderingOptions()
@@ -327,15 +347,24 @@ export class PlayerInteractionManager {
      * Remove event listeners
      */
     removeEventListeners() {
-        // Remove specific event listeners
+        // Remove document-level click listeners (prevents memory leaks)
+        document.removeEventListener('click', this._handleMultipleChoiceClick);
+        document.removeEventListener('click', this._handleTrueFalseClick);
+
+        // Remove specific element listeners
         const mcSubmitBtn = document.getElementById('submit-multiple-correct');
         if (mcSubmitBtn) {
             mcSubmitBtn.removeEventListener('click', this.submitMultipleCorrectAnswer);
         }
-        
+
         const numericSubmitBtn = document.getElementById('submit-numeric');
         if (numericSubmitBtn) {
             numericSubmitBtn.removeEventListener('click', this.submitNumericAnswer);
+        }
+
+        const numericInput = document.getElementById('numeric-answer-input');
+        if (numericInput) {
+            numericInput.removeEventListener('keypress', this._handleNumericKeypress);
         }
 
         // Note: Ordering submit button listener removed by GameManager tracked event cleanup

@@ -445,6 +445,20 @@ export class GameManager {
     }
 
     /**
+     * Show answer rejected feedback using modal system
+     */
+    showAnswerRejected(message) {
+        logger.warn('showAnswerRejected called:', message);
+
+        const displayText = message || getTranslation('answer_not_submitted') || 'Answer could not be submitted';
+
+        // Show modal feedback with error styling
+        modalFeedback.show(false, displayText, null, 2500);
+
+        logger.debug('Answer rejection modal feedback shown:', displayText);
+    }
+
+    /**
      * Show correct answer on client side when player was wrong (from monolithic version)
      */
     showCorrectAnswerOnClient(correctAnswer) {

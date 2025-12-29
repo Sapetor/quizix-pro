@@ -163,8 +163,8 @@ export class MathRenderer {
             return `<pre><code class="language-${lang}">${this.escapeHtml(trimmedCode)}</code></pre>`;
         });
         
-        // Convert inline code (`code`)
-        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+        // Convert inline code (`code`) - escape HTML to prevent XSS
+        text = text.replace(/`([^`]+)`/g, (_, code) => `<code>${this.escapeHtml(code)}</code>`);
         
         return text;
     }

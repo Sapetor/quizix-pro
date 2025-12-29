@@ -31,12 +31,48 @@ class GameSessionService {
   }
 
   /**
+   * Clean up stale games (older than maxAge or orphaned)
+   * Called before creating new games to prevent memory buildup
+   * @param {number} maxAgeMs - Maximum age in milliseconds (default 2 hours)
+   */
+  cleanupStaleGames(maxAgeMs = 2 * 60 * 60 * 1000) {
+    const now = Date.now();
+    const staleGames = [];
+
+    for (const [pin, game] of this.games) {
+      const age = now - (game.createdAt || now);
+      const isStale = age > maxAgeMs;
+      const isOrphanedLobby = game.gameState === 'lobby' && game.players.size === 0 && age > 30 * 60 * 1000; // Empty lobby > 30min
+
+      if (isStale || isOrphanedLobby) {
+        staleGames.push({ pin, reason: isStale ? 'expired' : 'orphaned_lobby' });
+      }
+    }
+
+    for (const { pin, reason } of staleGames) {
+      const game = this.games.get(pin);
+      if (game) {
+        game.clearTimers();
+        this.games.delete(pin);
+        this.logger.info(`Cleaned up stale game ${pin} (${reason})`);
+      }
+    }
+
+    if (staleGames.length > 0) {
+      this.logger.debug(`Cleaned up ${staleGames.length} stale games`);
+    }
+  }
+
+  /**
    * Create a new game session
    * @param {string} hostId - Socket ID of the host
    * @param {Object} quiz - Quiz data
    * @returns {Object} Game instance
    */
   createGame(hostId, quiz) {
+    // Clean up any stale games before creating a new one
+    this.cleanupStaleGames();
+
     const game = new Game(hostId, quiz, this.logger, this.config);
     this.games.set(game.pin, game);
     this.logger.info(`Game created with PIN: ${game.pin}`);
@@ -178,6 +214,12 @@ class GameSessionService {
    * @param {Object} question - Question data
    */
   handleQuestionTimeout(game, io, question) {
+    // Guard against race condition: question may have ended early
+    if (game.gameState !== 'question') {
+      this.logger.debug(`Question timeout ignored - game already in state: ${game.gameState}`);
+      return;
+    }
+
     game.endQuestion();
 
     // Guard against null/undefined question
@@ -419,8 +461,10 @@ class Game {
     this.questionTimer = null;
     this.advanceTimer = null;
     this.isAdvancing = false;
+    this.endingQuestionEarly = false;
     this.startTime = null;
     this.endTime = null;
+    this.createdAt = Date.now(); // Track game creation time for cleanup
     this.manualAdvancement = quiz.manualAdvancement || false;
     this.logger = logger;
     this.config = config;
@@ -515,7 +559,8 @@ class Game {
 
     // Use QuestionTypeService for centralized scoring logic
     const correctAnswerKey = this.getCorrectAnswerKey(question);
-    const options = questionType === 'numeric' ? { tolerance: question.tolerance || 0.1 } : {};
+    const defaultTolerance = this.config.SCORING?.DEFAULT_NUMERIC_TOLERANCE || 0.1;
+    const options = questionType === 'numeric' ? { tolerance: question.tolerance || defaultTolerance } : {};
 
     let isCorrect = QuestionTypeService.scoreAnswer(
       questionType,
@@ -584,16 +629,27 @@ class Game {
       case 'ordering':
         return question.correctOrder || [];
       default:
+        this.logger.warn(`Unknown question type '${type}', using default correctAnswer field`);
         return question.correctAnswer;
     }
   }
 
   /**
    * Update the leaderboard
+   * Sorts by score (descending), then by total time (ascending) as tiebreaker
    */
   updateLeaderboard() {
     this.leaderboard = Array.from(this.players.values())
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => {
+        // Primary sort: higher score wins
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        // Tiebreaker: faster total response time wins
+        const aTotalTime = Object.values(a.answers).reduce((sum, ans) => sum + (ans.timeMs || 0), 0);
+        const bTotalTime = Object.values(b.answers).reduce((sum, ans) => sum + (ans.timeMs || 0), 0);
+        return aTotalTime - bTotalTime;
+      })
       .slice(0, 10);
   }
 

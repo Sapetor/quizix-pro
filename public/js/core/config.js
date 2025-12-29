@@ -68,6 +68,7 @@ export const TIMING = {
 export const SCORING = {
     BASE_POINTS: 100,
     MAX_BONUS_TIME: 10000,
+    DEFAULT_NUMERIC_TOLERANCE: 0.1, // Default tolerance for numeric answers (10%)
 };
 
 export const LIMITS = {
