@@ -12,6 +12,7 @@ export class BaseCarousel {
         this.dots = [];
         this.isTransitioning = false;
         this.autoPlayInterval = null;
+        this.autoPlayResumeTimer = null; // Track resume timer to prevent race conditions
         this.isAutoPlaying = false;
         this.autoPlayDelay = options.autoPlayDelay || 5000;
         this.minSwipeDistance = options.minSwipeDistance || 50;
@@ -150,6 +151,8 @@ export class BaseCarousel {
 
     // Touch event handlers
     handleTouchStart(e) {
+        // Safety check for touch array bounds
+        if (!e.touches || e.touches.length === 0) return;
         this.touchStartX = e.touches[0].clientX;
         this.touchStartY = e.touches[0].clientY;
         this.isDragging = true;
@@ -158,6 +161,8 @@ export class BaseCarousel {
 
     handleTouchMove(e) {
         if (!this.isDragging) return;
+        // Safety check for touch array bounds
+        if (!e.touches || e.touches.length === 0) return;
 
         const diffX = Math.abs(e.touches[0].clientX - this.touchStartX);
         const diffY = Math.abs(e.touches[0].clientY - this.touchStartY);
@@ -170,6 +175,8 @@ export class BaseCarousel {
 
     handleTouchEnd(e) {
         if (!this.isDragging) return;
+        // Safety check for changedTouches array bounds
+        if (!e.changedTouches || e.changedTouches.length === 0) return;
 
         const endX = e.changedTouches[0].clientX;
         const diffX = this.touchStartX - endX;
@@ -287,11 +294,24 @@ export class BaseCarousel {
     }
 
     scheduleAutoPlayResume(delay = 2000) {
-        setTimeout(() => this.resumeAutoPlay(), delay);
+        // Clear any existing resume timer to prevent race conditions
+        if (this.autoPlayResumeTimer) {
+            clearTimeout(this.autoPlayResumeTimer);
+        }
+        this.autoPlayResumeTimer = setTimeout(() => {
+            this.autoPlayResumeTimer = null;
+            this.resumeAutoPlay();
+        }, delay);
     }
 
     destroy() {
         this.pauseAutoPlay();
+
+        // Clear resume timer to prevent callbacks after destroy
+        if (this.autoPlayResumeTimer) {
+            clearTimeout(this.autoPlayResumeTimer);
+            this.autoPlayResumeTimer = null;
+        }
 
         // Remove container event listeners
         if (this.container) {
