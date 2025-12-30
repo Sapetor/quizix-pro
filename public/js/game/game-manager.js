@@ -123,20 +123,27 @@ export class GameManager {
     initializeQuestionDisplay(data) {
         const gameState = this.stateManager.getGameState();
         logger.debug('QuestionInit', { type: data.type, options: data.options?.length, isHost: gameState.isHost });
-        
+
+        // CRITICAL: Hide and clear modal feedback to prevent stale explanation display
+        // This ensures previous question's explanation doesn't show while waiting for new results
+        if (modalFeedback) {
+            modalFeedback.hide();
+            modalFeedback.clearContent();
+        }
+
         // FIXED: Re-enable conservative element cleaning to prevent MathJax interference
         this.cleanGameElementsForFreshRendering();
-        
-        
+
+
         // Initialize question state using state manager
         this.stateManager.initializeQuestionState(data);
-        
+
         // Reset button states for new question
         this.resetButtonStatesForNewQuestion();
-        
+
         // Reset player interaction state (clear highlighting, etc.)
         this.interactionManager.reset();
-        
+
     }
 
     /**

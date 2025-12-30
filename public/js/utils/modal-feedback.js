@@ -219,6 +219,32 @@ export class ModalFeedback {
     }
 
     /**
+     * Clear all modal content to prevent stale data display
+     * Called when starting a new question to ensure clean state
+     */
+    clearContent() {
+        if (this.feedbackIcon) {
+            this.feedbackIcon.textContent = '';
+        }
+        if (this.feedbackText) {
+            this.feedbackText.textContent = '';
+        }
+        if (this.scoreDisplay) {
+            this.scoreDisplay.textContent = '';
+            this.scoreDisplay.style.display = 'none';
+        }
+        if (this.explanationDisplay) {
+            this.explanationDisplay.innerHTML = '';
+            this.explanationDisplay.style.display = 'none';
+        }
+        // Remove state classes
+        if (this.modal) {
+            this.modal.className = 'feedback-modal';
+        }
+        logger.debug('🎭 Modal feedback content cleared');
+    }
+
+    /**
      * Show correct answer feedback with confetti animation
      * @param {string} message - Custom message (optional)
      * @param {number} score - Score to display (optional)
