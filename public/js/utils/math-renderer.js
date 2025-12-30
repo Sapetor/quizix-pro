@@ -155,10 +155,13 @@ export class MathRenderer {
      */
     formatCodeBlocks(text) {
         if (!text) return text;
-        
+
         // Convert code blocks (```language ... ```)
         text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, language, code) => {
-            const lang = language || 'text';
+            // SECURITY: Sanitize language to prevent XSS via class attribute injection
+            // Only allow alphanumeric characters and common language names
+            const rawLang = language || 'text';
+            const lang = rawLang.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 30) || 'text';
             const trimmedCode = code.trim();
             return `<pre><code class="language-${lang}">${this.escapeHtml(trimmedCode)}</code></pre>`;
         });

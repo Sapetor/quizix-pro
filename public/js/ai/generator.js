@@ -3604,21 +3604,27 @@ QUESTION QUALITY & FEEDBACK:
             existingModal.remove();
         }
 
+        // SECURITY: Escape all user-provided content to prevent XSS
+        const safeIcon = this.escapeHtml(icon || '❌');
+        const safeTitle = this.escapeHtml(title || 'Error');
+        // Escape message and preserve line breaks
+        const safeMessage = this.escapeHtml(message || '').replace(/\n/g, '<br>');
+
         // Create simple red error modal
         const modalHTML = `
             <div id="simple-error-modal" class="modal" style="display: flex !important; z-index: 20000 !important; background: rgba(0,0,0,0.7) !important;">
                 <div class="modal-content" style="
-                    max-width: 400px !important; 
-                    margin: auto !important; 
-                    background: white !important; 
+                    max-width: 400px !important;
+                    margin: auto !important;
+                    background: white !important;
                     border-radius: 8px !important;
                     text-align: center !important;
                     padding: 30px !important;
                     border: 3px solid #dc2626 !important;
                 ">
-                    <div style="font-size: 3rem; margin-bottom: 15px;">${icon}</div>
-                    <h3 style="margin: 0 0 15px 0 !important; color: #dc2626 !important; font-size: 1.3rem;">${title}</h3>
-                    <p style="margin: 0 0 25px 0 !important; color: #dc2626 !important; font-size: 16px !important; font-weight: 500 !important;">${message}</p>
+                    <div style="font-size: 3rem; margin-bottom: 15px;">${safeIcon}</div>
+                    <h3 style="margin: 0 0 15px 0 !important; color: #dc2626 !important; font-size: 1.3rem;">${safeTitle}</h3>
+                    <p style="margin: 0 0 25px 0 !important; color: #dc2626 !important; font-size: 16px !important; font-weight: 500 !important;">${safeMessage}</p>
                     <button id="simple-error-ok" style="
                         background: #dc2626 !important;
                         color: white !important;
