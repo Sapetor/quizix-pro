@@ -210,7 +210,7 @@ export class GameManager {
         logger.debug('Finalizing question display');
         
         // Play question start sound
-        if (this.soundManager.soundsEnabled) {
+        if (this.soundManager?.isSoundsEnabled()) {
             this.soundManager.playQuestionStartSound();
         }
         
@@ -378,16 +378,16 @@ export class GameManager {
 
             // Play result sound
             if (isCorrect) {
-                if (this.soundManager.soundsEnabled) {
+                if (this.soundManager?.isSoundsEnabled()) {
                     this.soundManager.playCorrectAnswerSound();
                 }
             } else if (isPartiallyCorrect) {
                 // Play a different sound for partial - use correct sound but it's not as celebratory
-                if (this.soundManager.soundsEnabled) {
+                if (this.soundManager?.isSoundsEnabled()) {
                     this.soundManager.playCorrectAnswerSound();
                 }
             } else {
-                if (this.soundManager.soundsEnabled) {
+                if (this.soundManager?.isSoundsEnabled()) {
                     this.soundManager.playIncorrectAnswerSound();
                 }
             }
@@ -1465,7 +1465,7 @@ export class GameManager {
      * Play game ending fanfare (from monolithic version)
      */
     playGameEndingFanfare() {
-        if (this.soundManager.soundsEnabled) {
+        if (this.soundManager?.isSoundsEnabled()) {
             this.soundManager.playVictorySound();
         }
     }

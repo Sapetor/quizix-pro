@@ -102,7 +102,7 @@ export class PlayerInteractionManager {
             selectedOption.style.transition = 'all 0.2s ease';
             
             // Play selection sound
-            if (this.soundManager && this.soundManager.soundsEnabled) {
+            if (this.soundManager?.isSoundsEnabled()) {
                 this.soundManager.playEnhancedSound(800, 0.1, 'sine', 0.1);
             }
             
@@ -243,7 +243,7 @@ export class PlayerInteractionManager {
         // Feedback will be shown by the socket event response (original system)
         
         // Play submission sound
-        if (this.soundManager && this.soundManager.soundsEnabled) {
+        if (this.soundManager?.isSoundsEnabled()) {
             this.soundManager.playEnhancedSound(1000, 0.2, 'sine', 0.15);
         }
     }
