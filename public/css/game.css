@@ -3283,10 +3283,9 @@
         }
         
         /* 🎯 ULTRATHINK SMART SOLUTION: Content-aware mobile layout */
-        
-        /* Hide ALL interfering elements during mobile gameplay */
+
+        /* Hide interfering elements during mobile gameplay (but NOT feedback modal!) */
         .container.game-state-playing,
-        .game-state-playing #feedback-modal-overlay,
         .game-state-playing header,
         .game-state-playing .horizontal-toolbar,
         .game-state-playing .left-toolbar,
