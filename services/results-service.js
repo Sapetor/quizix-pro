@@ -141,8 +141,13 @@ class ResultsService {
             throw new Error('Result file not found');
         }
 
-        const data = JSON.parse(fsSync.readFileSync(filePath, 'utf8'));
-        return data;
+        try {
+            const data = JSON.parse(fsSync.readFileSync(filePath, 'utf8'));
+            return data;
+        } catch (parseError) {
+            this.logger.error(`Failed to parse result file ${filename}:`, parseError);
+            throw new Error('Result file is corrupted or invalid JSON');
+        }
     }
 
     /**
@@ -167,7 +172,13 @@ class ResultsService {
             throw new Error('Result file not found');
         }
 
-        const data = JSON.parse(fsSync.readFileSync(filePath, 'utf8'));
+        let data;
+        try {
+            data = JSON.parse(fsSync.readFileSync(filePath, 'utf8'));
+        } catch (parseError) {
+            this.logger.error(`Failed to parse result file for export ${filename}:`, parseError);
+            throw new Error('Result file is corrupted or invalid JSON');
+        }
 
         if (format.toLowerCase() === 'csv') {
             return {

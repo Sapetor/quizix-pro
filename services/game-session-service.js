@@ -220,6 +220,12 @@ class GameSessionService {
       return;
     }
 
+    // Guard against race condition: question may be ending early via QuestionFlowService
+    if (game.endingQuestionEarly) {
+      this.logger.debug(`Question timeout ignored - question ending early`);
+      return;
+    }
+
     game.endQuestion();
 
     // Guard against null/undefined question

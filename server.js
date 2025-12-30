@@ -410,10 +410,17 @@ app.post('/upload', upload.single('image'), (req, res) => {
       }
 
       // Verify actual file content matches claimed type (magic byte check)
-      const fd = fs.openSync(req.file.path, 'r');
+      // Use try/finally to ensure file descriptor is always closed
+      let fd;
       const buffer = Buffer.alloc(12);
-      fs.readSync(fd, buffer, 0, 12, 0);
-      fs.closeSync(fd);
+      try {
+        fd = fs.openSync(req.file.path, 'r');
+        fs.readSync(fd, buffer, 0, 12, 0);
+      } finally {
+        if (fd !== undefined) {
+          fs.closeSync(fd);
+        }
+      }
 
       const isValidImage = (
         // JPEG: FF D8 FF
@@ -585,9 +592,10 @@ app.get('/api/results/:filename/export/:format', async (req, res) => {
     
     const exportData = await resultsService.exportResults(filename, format, exportType);
     
-    // Set response headers
+    // Set response headers - sanitize filename to prevent header injection
+    const sanitizedFilename = exportData.filename.replace(/[\r\n"]/g, '_');
     res.setHeader('Content-Type', exportData.type);
-    res.setHeader('Content-Disposition', `attachment; filename="${exportData.filename}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${sanitizedFilename}"`);
     
     // Send content (string for CSV, use send(); JSON use json())
     if (exportData.type === 'text/csv') {

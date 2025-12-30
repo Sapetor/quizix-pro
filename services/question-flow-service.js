@@ -98,11 +98,10 @@ class QuestionFlowService {
     // Wait 1 second before revealing answers (gives players time to see their submission)
     setTimeout(() => {
       try {
-        // Reset flag
-        game.endingQuestionEarly = false;
-
+        // Check game state BEFORE resetting flag
         if (game.gameState !== 'question') {
           this.logger.debug('Game state changed, skipping early end');
+          game.endingQuestionEarly = false;
           return;
         }
 
@@ -113,6 +112,7 @@ class QuestionFlowService {
         const question = game.quiz.questions[game.currentQuestion];
         if (!question) {
           this.logger.error(`Question not found at index ${game.currentQuestion}`);
+          game.endingQuestionEarly = false;
           return;
         }
 
@@ -136,6 +136,9 @@ class QuestionFlowService {
 
         // Advance to next question
         this.gameSessionService.advanceToNextQuestion(game, io);
+
+        // Reset flag AFTER successful completion
+        game.endingQuestionEarly = false;
       } catch (error) {
         this.logger.error('Error in endQuestionEarly callback:', error);
         game.endingQuestionEarly = false;

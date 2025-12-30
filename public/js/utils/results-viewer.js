@@ -14,7 +14,7 @@ export class ResultsViewer {
         this.filteredResults = null;
         this.currentDetailResult = null;
         this.currentExportFormat = 'analytics';
-        
+
         this.initializeEventListeners();
         
         // Listen to results service updates
@@ -69,11 +69,23 @@ export class ResultsViewer {
             this.updateSummaryStats();
             this.renderResults();
         }
-        
+
         // Close detail modal if we're viewing the deleted result
         if (this.currentDetailResult && this.currentDetailResult.filename === filename) {
             this.hideDetailModal();
         }
+    }
+
+    /**
+     * Escape HTML to prevent XSS attacks
+     * @param {string} text - Text to escape
+     * @returns {string} - Escaped text safe for innerHTML
+     */
+    escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
     }
 
     /**
@@ -182,6 +194,18 @@ export class ResultsViewer {
         if (modal) {
             this.populateDetailModal(result);
             modal.style.display = 'flex';
+        }
+    }
+
+    /**
+     * Show detail modal by looking up filename (safer alternative to inline JSON)
+     */
+    showDetailModalByFilename(filename) {
+        const result = this.filteredResults?.find(r => r.filename === filename);
+        if (result) {
+            this.showDetailModal(result);
+        } else {
+            logger.warn('Result not found for filename:', filename);
         }
     }
 
@@ -320,12 +344,12 @@ export class ResultsViewer {
             const formattedDate = this.formatDate(result.saved);
 
             return `
-                <div class="result-item" data-filename="${result.filename}">
+                <div class="result-item" data-filename="${this.escapeHtml(result.filename)}">
                     <div class="result-info">
-                        <div class="result-title">${result.quizTitle || 'Untitled Quiz'}</div>
+                        <div class="result-title">${this.escapeHtml(result.quizTitle || 'Untitled Quiz')}</div>
                         <div class="result-meta">
                             <span>📅 ${formattedDate}</span>
-                            <span>🎯 PIN: ${result.gamePin}</span>
+                            <span>🎯 PIN: ${this.escapeHtml(result.gamePin)}</span>
                             <span>👥 ${participantCount} participants</span>
                             <span>📊 ${avgScore}% avg score</span>
                         </div>
@@ -366,19 +390,24 @@ export class ResultsViewer {
 
     /**
      * Calculate average score for a result
+     * Based on percentage of correct answers, not raw scores
+     * (since scores vary by difficulty and time bonus)
      */
     calculateAverageScore(result) {
         if (!result.results || result.results.length === 0) return '0';
-        
-        let totalScore = 0;
-        let totalPossible = 0;
-        
+
+        let totalCorrect = 0;
+        let totalQuestions = 0;
+
         result.results.forEach(player => {
-            totalScore += player.score || 0;
-            totalPossible += player.maxScore || 0;
+            const answers = player.answers || [];
+            const playerQuestions = answers.length;
+            const playerCorrect = answers.filter(a => a?.isCorrect).length;
+            totalCorrect += playerCorrect;
+            totalQuestions += playerQuestions;
         });
-        
-        return totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
+
+        return totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
     }
 
     /**
@@ -620,23 +649,21 @@ export class ResultsViewer {
         // Sort participants by score (descending)
         const sortedResults = [...fullResult.results].sort((a, b) => (b.score || 0) - (a.score || 0));
 
-        // Calculate max score for percentage calculation
-        const maxPossibleScore = sortedResults.length > 0 ? 
-            Math.max(...sortedResults.map(p => p.answers?.length || 0)) * 100 : 0;
-
         const participantsHTML = `
             <div class="participant-header">Participant Results</div>
             ${sortedResults.map(player => {
                 const playerScore = player.score || 0;
-                const answeredQuestions = player.answers?.filter(a => a).length || 0;
                 const totalQuestions = player.answers?.length || 0;
-                const percentage = totalQuestions > 0 ? Math.round((playerScore / (totalQuestions * 100)) * 100) : 0;
+                // Calculate percentage based on correct answers, not score
+                // (score varies by difficulty and time bonus, making 100pts/question incorrect)
+                const correctAnswers = player.answers?.filter(a => a?.isCorrect).length || 0;
+                const percentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
                 const scoreClass = this.getScoreClass(percentage);
                 const timeDisplay = player.completedAt ? this.formatTime(player.completedAt) : 'N/A';
                 
                 return `
                     <div class="participant-row">
-                        <div class="participant-name">${player.name || 'Anonymous'}</div>
+                        <div class="participant-name">${this.escapeHtml(player.name || 'Anonymous')}</div>
                         <div class="participant-score ${scoreClass}">${playerScore} pts</div>
                         <div class="participant-percentage ${scoreClass}">${percentage}%</div>
                         <div class="participant-time">${timeDisplay}</div>
@@ -1258,7 +1285,7 @@ export class ResultsViewer {
                 
                 <div class="modal-footer">
                     <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
-                    <button class="btn primary" onclick="resultsViewer.showDetailModal(${JSON.stringify(result).replace(/"/g, '&quot;')}); this.closest('.modal-overlay').remove();">View Basic Results</button>
+                    <button class="btn primary" data-filename="${this.escapeHtml(result.filename)}" onclick="resultsViewer.showDetailModalByFilename(this.dataset.filename); this.closest('.modal-overlay').remove();">View Basic Results</button>
                 </div>
             </div>
         `;
