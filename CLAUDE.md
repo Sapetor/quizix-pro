@@ -482,3 +482,4 @@ quizix-pro/
   - Claude prompt engineering for consistent SVG output
   - Automatic image upload to `/uploads/` directory
   - Preview rendering in AI generator modal
+

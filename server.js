@@ -867,30 +867,6 @@ app.get('/api/ping', (req, res) => {
 
 // Game state management is now handled by GameSessionService and PlayerManagementService
 
-// Security: Validate filenames to prevent path traversal attacks
-function validateFilename(filename) {
-  if (!filename || typeof filename !== 'string') {
-    return false;
-  }
-
-  // Check for path traversal attempts
-  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-    return false;
-  }
-
-  // Check for absolute paths
-  if (path.isAbsolute(filename)) {
-    return false;
-  }
-
-  // Allow only alphanumeric characters, dots, hyphens, and underscores
-  if (!/^[a-zA-Z0-9._-]+$/.test(filename)) {
-    return false;
-  }
-
-  return true;
-}
-
 // Socket.IO rate limiting helper
 const socketRateLimits = new Map();
 

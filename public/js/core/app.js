@@ -17,7 +17,6 @@ import { addQuestion, createQuestionElement, randomizeAnswers, shuffleArray } fr
 import { translationManager, showErrorAlert, createQuestionCounter } from '../utils/translation-manager.js';
 import { toastNotifications } from '../utils/toast-notifications.js';
 import { connectionStatus } from '../utils/connection-status.js';
-import { keyboardShortcuts } from '../utils/keyboard-shortcuts.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
 import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/globals.js';
