@@ -417,18 +417,28 @@ export function updateQuestionType(selectElement) {
     } else {
         // Basic implementation for question type switching
         const questionItem = selectElement.closest('.question-item');
-        if (!questionItem) return;
+        if (!questionItem) {
+            logger.warn('updateQuestionType: Could not find parent question-item');
+            return;
+        }
 
         const questionType = selectElement.value;
+        if (!questionType) {
+            logger.warn('updateQuestionType: No question type selected');
+            return;
+        }
+
         const allOptions = questionItem.querySelectorAll('.answer-options');
-        
+
         // Hide all option types
         allOptions.forEach(opt => opt.style.display = 'none');
-        
-        // Show the selected type
+
+        // Show the selected type - handle hyphenated names (e.g., multiple-choice)
         const targetOptions = questionItem.querySelector(`.${questionType}-options`);
         if (targetOptions) {
             targetOptions.style.display = 'block';
+        } else {
+            logger.warn(`updateQuestionType: Could not find options container for type '${questionType}'`);
         }
     }
 }

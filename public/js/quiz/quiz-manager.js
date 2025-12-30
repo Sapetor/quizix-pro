@@ -997,7 +997,8 @@ export class QuizManager {
         }
         
         // Set question time (with NaN protection)
-        const questionTime = questionElement.querySelector('.question-time');
+        // Match the selector used in extractQuestionData: .question-time-limit
+        const questionTime = questionElement.querySelector('.question-time-limit');
         if (questionTime) {
             const timeValue = parseInt(questionData.time, 10);
             questionTime.value = !isNaN(timeValue) && timeValue > 0 ? timeValue : 30;
@@ -1326,23 +1327,35 @@ export class QuizManager {
             // Add a new question
             logger.debug('🔧 AddGeneratedQuestion - Creating new question element');
             if (window.game && window.game.addQuestion) {
+                const initialCount = questionElements.length;
                 window.game.addQuestion();
-                
-                // Wait longer for DOM to update when creating new elements
-                setTimeout(() => {
+
+                // Use retry mechanism instead of fixed timeout to handle varying DOM update speeds
+                const maxRetries = 10;
+                const retryDelay = 50;
+                let retryCount = 0;
+
+                const findAndPopulate = () => {
                     const updatedQuestionElements = document.querySelectorAll('.question-item');
-                    targetElement = updatedQuestionElements[updatedQuestionElements.length - 1];
-                    
-                    if (targetElement) {
+
+                    // Check if a new question was actually added
+                    if (updatedQuestionElements.length > initialCount) {
+                        targetElement = updatedQuestionElements[updatedQuestionElements.length - 1];
                         logger.debug('🔧 AddGeneratedQuestion - New element created, populating data');
                         // Use same processing as addQuestionFromData for consistency
                         this.cleanTranslationKeysInElement(targetElement);
                         this.populateQuestionElement(targetElement, questionData);
                         translationManager.translateContainer(targetElement);
+                    } else if (retryCount < maxRetries) {
+                        retryCount++;
+                        setTimeout(findAndPopulate, retryDelay);
                     } else {
-                        logger.error('🔧 AddGeneratedQuestion - Failed to find new question element');
+                        logger.error('🔧 AddGeneratedQuestion - Failed to find new question element after retries');
                     }
-                }, 300); // Increased timeout to 300ms for DOM updates + any animations
+                };
+
+                // Start checking after initial delay
+                setTimeout(findAndPopulate, 50);
             } else {
                 logger.error('addQuestion function not available');
                 return;

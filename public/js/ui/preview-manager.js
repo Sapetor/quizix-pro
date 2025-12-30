@@ -723,18 +723,27 @@ export class PreviewManager {
     }
 
     /**
-     * Debounce utility function
+     * Debounce utility function with cancel support
      */
     debounce(func, wait) {
         let timeout;
-        return function executedFunction(...args) {
+        const executedFunction = (...args) => {
             const later = () => {
                 clearTimeout(timeout);
+                timeout = null;
                 func(...args);
             };
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
+        // Add cancel method for cleanup
+        executedFunction.cancel = () => {
+            if (timeout) {
+                clearTimeout(timeout);
+                timeout = null;
+            }
+        };
+        return executedFunction;
     }
 
 
@@ -1271,7 +1280,9 @@ export class PreviewManager {
         
         // Touch/swipe support on the preview content area
         const container = document.getElementById('mobile-preview-container');
-        const previewContent = container ? container.querySelector('.preview-content-split') : null;
+        // Look for mobile-specific content class (.mobile-content) or fallback to split class
+        const previewContent = container ?
+            (container.querySelector('.mobile-content') || container.querySelector('.preview-content-split')) : null;
         if (previewContent) {
             this.setupMobileSwipeListeners(previewContent);
         }
@@ -1350,8 +1361,8 @@ export class PreviewManager {
     updateMobilePreview() {
         const questionItems = document.querySelectorAll('.question-item');
         const totalQuestions = questionItems.length;
-        const counterDisplay = document.getElementById('mobile-preview-counter-display');
-        const counterSplit = document.getElementById('mobile-preview-counter-display');
+        const counterDisplay = document.getElementById('mobile-preview-question-counter-display');
+        const counterSplit = document.getElementById('mobile-preview-question-counter-display');
         const prevBtn = document.getElementById('mobile-preview-prev');
         const nextBtn = document.getElementById('mobile-preview-next');
         
@@ -1414,7 +1425,7 @@ export class PreviewManager {
      */
     showEmptyMobilePreview() {
         const previewText = document.getElementById('mobile-preview-question-text');
-        const counterDisplay = document.getElementById('mobile-preview-counter-display');
+        const counterDisplay = document.getElementById('mobile-preview-question-counter-display');
         
         if (previewText) {
             previewText.textContent = translationManager.getTranslationSync('no_questions_to_preview') || 'No questions to preview';
@@ -1433,8 +1444,8 @@ export class PreviewManager {
      * Update mobile preview navigation
      */
     updateMobilePreviewNavigation(totalQuestions) {
-        const counterDisplay = document.getElementById('mobile-preview-counter-display');
-        const questionCounterDisplay = document.getElementById('mobile-preview-question-counter-display');
+        const counterDisplay = document.getElementById('mobile-preview-question-counter-display');
+        const questionCounterDisplay = counterDisplay; // Same element, keep for backwards compatibility
         const prevBtn = document.getElementById('mobile-preview-prev');
         const nextBtn = document.getElementById('mobile-preview-next');
         

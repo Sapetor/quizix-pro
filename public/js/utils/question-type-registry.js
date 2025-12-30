@@ -59,13 +59,30 @@ const QUESTION_TYPES = {
         return { options: [], correctIndex: 0 };
       }
 
-      const options = Array.from(optionsContainer.querySelectorAll('.option'))
-        .map(opt => opt.value.trim())
-        .filter(opt => opt);
+      // Get all options including empty ones to track original positions
+      const allOptionInputs = Array.from(optionsContainer.querySelectorAll('.option'));
+      const allOptions = allOptionInputs.map(opt => opt.value.trim());
+
+      // Filter to non-empty options and track index mapping
+      const indexMap = []; // Maps new index to original index
+      const options = [];
+      allOptions.forEach((opt, originalIndex) => {
+        if (opt) {
+          indexMap.push(originalIndex);
+          options.push(opt);
+        }
+      });
 
       // Get correct answer from <select class="correct-answer">
       const correctAnswerElement = optionsContainer.querySelector('.correct-answer');
-      const correctIndex = correctAnswerElement ? parseInt(correctAnswerElement.value) : 0;
+      const originalCorrectIndex = correctAnswerElement ? parseInt(correctAnswerElement.value) : 0;
+
+      // Remap correct index to filtered array position
+      let correctIndex = indexMap.indexOf(originalCorrectIndex);
+      if (correctIndex === -1) {
+        // Original correct answer was empty/removed, default to first option
+        correctIndex = 0;
+      }
 
       return {
         options,
@@ -153,15 +170,30 @@ const QUESTION_TYPES = {
         return { options: [], correctIndices: [] };
       }
 
-      const options = Array.from(optionsContainer.querySelectorAll('.option'))
-        .map(opt => opt.value.trim())
-        .filter(opt => opt);
+      // Get all options including empty ones to track original positions
+      const allOptionInputs = Array.from(optionsContainer.querySelectorAll('.option'));
+      const allOptions = allOptionInputs.map(opt => opt.value.trim());
 
-      // Get correct answers from checked checkboxes
+      // Filter to non-empty options and track index mapping
+      const indexMap = []; // Maps new index to original index
+      const options = [];
+      allOptions.forEach((opt, originalIndex) => {
+        if (opt) {
+          indexMap.push(originalIndex);
+          options.push(opt);
+        }
+      });
+
+      // Get correct answers from checked checkboxes and remap to filtered positions
       const correctIndices = [];
       const correctCheckboxes = optionsContainer.querySelectorAll('.correct-option:checked');
       correctCheckboxes.forEach(checkbox => {
-        correctIndices.push(parseInt(checkbox.dataset.option));
+        const originalIndex = parseInt(checkbox.dataset.option);
+        const newIndex = indexMap.indexOf(originalIndex);
+        // Only include if the original index maps to a non-empty option
+        if (newIndex !== -1) {
+          correctIndices.push(newIndex);
+        }
       });
 
       return { options, correctIndices };
