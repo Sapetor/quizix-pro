@@ -376,10 +376,12 @@ export class GameManager {
             }
 
             // Show correct answer if player was wrong (preserve existing functionality)
-            if (!isCorrect && data.correctAnswer !== undefined) {
+            if (!isCorrect && (data.correctAnswer !== undefined || data.correctAnswers !== undefined)) {
                 // Delay to allow modal to appear first
                 setTimeout(() => {
-                    this.showCorrectAnswerOnClient(data.correctAnswer);
+                    // Handle multiple-correct questions (array) or single answer
+                    const correctData = data.correctAnswers !== undefined ? data.correctAnswers : data.correctAnswer;
+                    this.showCorrectAnswerOnClient(correctData, data.questionType || data.type);
                 }, 500);
             }
 
@@ -468,9 +470,23 @@ export class GameManager {
     /**
      * Show correct answer on client side when player was wrong (from monolithic version)
      */
-    showCorrectAnswerOnClient(correctAnswer) {
-        logger.debug('Showing correct answer on client:', correctAnswer);
-        
+    showCorrectAnswerOnClient(correctAnswer, questionType) {
+        logger.debug('Showing correct answer on client:', correctAnswer, 'type:', questionType);
+
+        // Handle multiple-correct questions (array of correct indices)
+        if (questionType === 'multiple-correct' && Array.isArray(correctAnswer)) {
+            const checkboxOptions = document.querySelectorAll('.checkbox-option');
+            correctAnswer.forEach(index => {
+                if (checkboxOptions[index]) {
+                    checkboxOptions[index].classList.add('correct-answer');
+                    checkboxOptions[index].style.border = '3px solid #2ecc71';
+                    checkboxOptions[index].style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+                    logger.debug('Highlighted correct checkbox option:', index);
+                }
+            });
+            return;
+        }
+
         // Handle multiple choice options
         const options = document.querySelectorAll('.player-option');
         if (typeof correctAnswer === 'number' && options[correctAnswer]) {
@@ -479,7 +495,7 @@ export class GameManager {
             options[correctAnswer].style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
             logger.debug('Highlighted correct option:', correctAnswer);
         }
-        
+
         // Handle true/false options
         if (typeof correctAnswer === 'boolean') {
             // Convert boolean to index for UI highlighting: true = 0, false = 1

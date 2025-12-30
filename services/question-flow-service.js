@@ -207,9 +207,10 @@ class QuestionFlowService {
    * @param {Object} io - Socket.IO instance
    */
   emitPlayerResults(game, io) {
-    // Get explanation from current question if available
+    // Get explanation and correct answer data from current question
     const currentQuestion = game.quiz.questions[game.currentQuestion];
     const explanation = currentQuestion?.explanation || null;
+    const correctAnswerData = this.getCorrectAnswerData(currentQuestion);
 
     game.players.forEach((player, playerId) => {
       const playerAnswer = player.answers[game.currentQuestion];
@@ -219,14 +220,20 @@ class QuestionFlowService {
           isCorrect: playerAnswer.isCorrect,
           points: playerAnswer.points,
           totalScore: player.score,
-          explanation: explanation
+          explanation: explanation,
+          questionType: correctAnswerData.questionType,
+          correctAnswer: correctAnswerData.correctAnswer,
+          correctAnswers: correctAnswerData.correctAnswers
         });
       } else {
         io.to(playerId).emit('player-result', {
           isCorrect: false,
           points: 0,
           totalScore: player.score,
-          explanation: explanation
+          explanation: explanation,
+          questionType: correctAnswerData.questionType,
+          correctAnswer: correctAnswerData.correctAnswer,
+          correctAnswers: correctAnswerData.correctAnswers
         });
       }
     });
