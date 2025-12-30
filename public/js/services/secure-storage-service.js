@@ -132,12 +132,8 @@ export class SecureStorageService {
 
             const storedData = localStorage.getItem(this.keyPrefix + key);
             if (!storedData) {
-                // Try fallback to plaintext if encrypted version doesn't exist
-                const plaintextData = localStorage.getItem(this.keyPrefix + key + '_plaintext');
-                if (plaintextData) {
-                    logger.debug(`Retrieved fallback plaintext item: ${key}`);
-                    return plaintextData;
-                }
+                // SECURITY: Removed plaintext fallback - fail securely instead
+                // If encrypted version doesn't exist, return null
                 return null;
             }
 
@@ -162,12 +158,8 @@ export class SecureStorageService {
             return result;
         } catch (error) {
             logger.error('Failed to retrieve secure item:', error);
-            // Try fallback to plaintext on decryption error
-            const plaintextData = localStorage.getItem(this.keyPrefix + key + '_plaintext');
-            if (plaintextData) {
-                logger.debug(`Retrieved fallback plaintext item after error: ${key}`);
-                return plaintextData;
-            }
+            // SECURITY: Removed plaintext fallback - fail securely instead
+            // Decryption errors should not silently fall back to unencrypted data
             return null;
         }
     }
@@ -179,6 +171,8 @@ export class SecureStorageService {
     removeSecureItem(key) {
         try {
             localStorage.removeItem(this.keyPrefix + key);
+            // Also remove any legacy plaintext version for cleanup
+            localStorage.removeItem(this.keyPrefix + key + '_plaintext');
             logger.debug(`Secure item removed: ${key}`);
             return true;
         } catch (error) {

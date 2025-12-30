@@ -415,7 +415,7 @@ export class SettingsManager {
     /**
      * Reset settings to defaults
      */
-    resetSettings() {
+    async resetSettings() {
         this.settings = {
             theme: 'light',
             autoSave: true,
@@ -423,8 +423,8 @@ export class SettingsManager {
             fullscreenMode: false
         };
 
-        // Reset language via TranslationManager (source of truth)
-        translationManager.setLanguage('en');
+        // Reset language via TranslationManager (source of truth) - await async operation
+        await translationManager.setLanguage('en');
 
         // Reset sound via SoundManager (source of truth)
         this.setSoundEnabled(true);
@@ -590,24 +590,65 @@ export class SettingsManager {
     }
 
     /**
-     * Import settings
+     * Import settings with validation
      */
     async importSettings(file) {
         try {
             const text = await file.text();
             const importData = JSON.parse(text);
-            
+
             if (importData.settings) {
-                this.settings = { ...this.settings, ...importData.settings };
+                // Validate imported settings to prevent injection attacks
+                const validatedSettings = this.validateImportedSettings(importData.settings);
+                this.settings = { ...this.settings, ...validatedSettings };
                 this.saveSettings();
                 this.applySettings();
                 return true;
             }
-            
+
             return false;
         } catch (error) {
             logger.error('Failed to import settings:', error);
             return false;
         }
+    }
+
+    /**
+     * Validate imported settings structure and types
+     * @param {Object} settings - Settings to validate
+     * @returns {Object} Validated settings with only known keys and correct types
+     */
+    validateImportedSettings(settings) {
+        const validated = {};
+
+        // Define allowed settings with their expected types and validators
+        const schema = {
+            theme: { type: 'string', values: ['light', 'dark'] },
+            autoSave: { type: 'boolean' },
+            animations: { type: 'boolean' },
+            fullscreenMode: { type: 'boolean' }
+        };
+
+        for (const [key, config] of Object.entries(schema)) {
+            if (key in settings) {
+                const value = settings[key];
+
+                // Type check
+                if (typeof value !== config.type) {
+                    logger.warn(`Invalid type for setting ${key}: expected ${config.type}, got ${typeof value}`);
+                    continue;
+                }
+
+                // Value validation for enums
+                if (config.values && !config.values.includes(value)) {
+                    logger.warn(`Invalid value for setting ${key}: ${value}`);
+                    continue;
+                }
+
+                validated[key] = value;
+            }
+        }
+
+        return validated;
     }
 }

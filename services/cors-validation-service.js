@@ -53,9 +53,9 @@ class CORSValidationService {
             // Azure Static Web Apps
             /^https:\/\/[a-zA-Z0-9-]+\.azurestaticapps\.net$/,
             // Google Cloud Run
-            /^https:\/\/[a-zA-Z0-9-]+-[a-zA-Z0-9-]+\.a\.run\.app$/,
-            // Custom domains (be careful with this pattern)
-            /^https:\/\/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/
+            /^https:\/\/[a-zA-Z0-9-]+-[a-zA-Z0-9-]+\.a\.run\.app$/
+            // SECURITY: Removed overly permissive custom domain pattern
+            // Custom domains must be explicitly added via addAllowedOrigin()
         ];
 
         // Fix environment detection - prioritize production detection
