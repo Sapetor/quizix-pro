@@ -56,6 +56,7 @@ export class AIQuestionGenerator {
         
         this.isGenerating = false; // Flag to prevent multiple simultaneous generations
         this.eventHandlers = {}; // Store event handler references for cleanup
+        this.previewEventHandlers = {}; // Store preview modal handler references for cleanup
         this.initializeEventListeners();
         this.initializeSecureStorage();
     }
@@ -258,8 +259,36 @@ export class AIQuestionGenerator {
             apiKeyInput.removeEventListener('blur', this.eventHandlers.apiKeyBlur);
         }
 
+        // Clean up preview modal event listeners
+        const previewModal = document.getElementById('question-preview-modal');
+        const previewCloseBtn = document.getElementById('close-question-preview');
+        const previewCancelBtn = document.getElementById('cancel-question-preview');
+        const confirmBtn = document.getElementById('confirm-add-questions');
+        const selectAllBtn = document.getElementById('select-all-questions');
+        const deselectAllBtn = document.getElementById('deselect-all-questions');
+
+        if (previewCloseBtn && this.previewEventHandlers.closeClick) {
+            previewCloseBtn.removeEventListener('click', this.previewEventHandlers.closeClick);
+        }
+        if (previewCancelBtn && this.previewEventHandlers.cancelClick) {
+            previewCancelBtn.removeEventListener('click', this.previewEventHandlers.cancelClick);
+        }
+        if (confirmBtn && this.previewEventHandlers.confirmClick) {
+            confirmBtn.removeEventListener('click', this.previewEventHandlers.confirmClick);
+        }
+        if (selectAllBtn && this.previewEventHandlers.selectAllClick) {
+            selectAllBtn.removeEventListener('click', this.previewEventHandlers.selectAllClick);
+        }
+        if (deselectAllBtn && this.previewEventHandlers.deselectAllClick) {
+            deselectAllBtn.removeEventListener('click', this.previewEventHandlers.deselectAllClick);
+        }
+        if (previewModal && this.previewEventHandlers.modalClick) {
+            previewModal.removeEventListener('click', this.previewEventHandlers.modalClick);
+        }
+
         // Clear handler references
         this.eventHandlers = {};
+        this.previewEventHandlers = {};
 
         logger.debug('AI Generator event listeners cleaned up');
     }
@@ -275,27 +304,35 @@ export class AIQuestionGenerator {
         const selectAllBtn = document.getElementById('select-all-questions');
         const deselectAllBtn = document.getElementById('deselect-all-questions');
 
+        // Store handler references for cleanup
+        this.previewEventHandlers.closeClick = () => this.closePreviewModal();
+        this.previewEventHandlers.cancelClick = () => this.closePreviewModal();
+        this.previewEventHandlers.confirmClick = () => this.confirmAddSelectedQuestions();
+        this.previewEventHandlers.selectAllClick = () => this.selectAllQuestions(true);
+        this.previewEventHandlers.deselectAllClick = () => this.selectAllQuestions(false);
+        this.previewEventHandlers.modalClick = (e) => {
+            if (e.target === previewModal) {
+                this.closePreviewModal();
+            }
+        };
+
         if (closeBtn) {
-            closeBtn.addEventListener('click', () => this.closePreviewModal());
+            closeBtn.addEventListener('click', this.previewEventHandlers.closeClick);
         }
         if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => this.closePreviewModal());
+            cancelBtn.addEventListener('click', this.previewEventHandlers.cancelClick);
         }
         if (confirmBtn) {
-            confirmBtn.addEventListener('click', () => this.confirmAddSelectedQuestions());
+            confirmBtn.addEventListener('click', this.previewEventHandlers.confirmClick);
         }
         if (selectAllBtn) {
-            selectAllBtn.addEventListener('click', () => this.selectAllQuestions(true));
+            selectAllBtn.addEventListener('click', this.previewEventHandlers.selectAllClick);
         }
         if (deselectAllBtn) {
-            deselectAllBtn.addEventListener('click', () => this.selectAllQuestions(false));
+            deselectAllBtn.addEventListener('click', this.previewEventHandlers.deselectAllClick);
         }
         if (previewModal) {
-            previewModal.addEventListener('click', (e) => {
-                if (e.target === previewModal) {
-                    this.closePreviewModal();
-                }
-            });
+            previewModal.addEventListener('click', this.previewEventHandlers.modalClick);
         }
     }
 

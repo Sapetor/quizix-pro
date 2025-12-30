@@ -11,10 +11,14 @@ export class KeyboardShortcuts {
         this.shortcuts = new Map();
         this.isEnabled = true;
         this.activeModals = new Set();
-        
+
+        // Track event handlers for cleanup
+        this._keydownHandler = null;
+        this._mutationObserver = null;
+
         this.initializeShortcuts();
         this.bindEvents();
-        
+
         logger.debug('Keyboard shortcuts manager initialized');
     }
 
@@ -203,15 +207,16 @@ export class KeyboardShortcuts {
      * Bind keyboard event listeners
      */
     bindEvents() {
-        document.addEventListener('keydown', (event) => {
+        // Store handler reference for cleanup
+        this._keydownHandler = (event) => {
             if (!this.isEnabled) return;
-            
+
             // Skip if user is typing in an input field
             if (this.isInputActive(event.target)) return;
-            
+
             const keyString = this.eventToKeyString(event);
             const shortcut = this.shortcuts.get(keyString);
-            
+
             if (shortcut) {
                 try {
                     shortcut.callback(event);
@@ -220,10 +225,11 @@ export class KeyboardShortcuts {
                     logger.error('Keyboard shortcut error:', error);
                 }
             }
-        });
+        };
+        document.addEventListener('keydown', this._keydownHandler);
 
-        // Track modal states
-        const observer = new MutationObserver((mutations) => {
+        // Track modal states - store observer reference for cleanup
+        this._mutationObserver = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
                     const element = mutation.target;
@@ -239,7 +245,7 @@ export class KeyboardShortcuts {
             });
         });
 
-        observer.observe(document.body, {
+        this._mutationObserver.observe(document.body, {
             subtree: true,
             attributes: true,
             attributeFilter: ['style']
@@ -405,6 +411,29 @@ export class KeyboardShortcuts {
         `;
 
         return html;
+    }
+
+    /**
+     * Clean up event listeners and observers
+     */
+    destroy() {
+        // Remove keydown listener
+        if (this._keydownHandler) {
+            document.removeEventListener('keydown', this._keydownHandler);
+            this._keydownHandler = null;
+        }
+
+        // Disconnect mutation observer
+        if (this._mutationObserver) {
+            this._mutationObserver.disconnect();
+            this._mutationObserver = null;
+        }
+
+        // Clear shortcuts
+        this.shortcuts.clear();
+        this.activeModals.clear();
+
+        logger.debug('Keyboard shortcuts manager destroyed');
     }
 }
 

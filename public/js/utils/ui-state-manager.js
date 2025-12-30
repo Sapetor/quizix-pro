@@ -178,23 +178,29 @@ export class UIStateManager {
      */
     setState(state, options = {}) {
         if (this.currentState === state) return;
-        
+
         logger.debug(`🎮 UI state changing: ${this.currentState} → ${state}`);
-        
+
         this.previousState = this.currentState;
         this.currentState = state;
-        
+
+        // Guard against null container
+        if (!this.container) {
+            logger.warn('UIStateManager: container not found, skipping class changes');
+            return;
+        }
+
         // Remove all game state classes
         this.container.classList.remove(
             'game-state-lobby',
-            'game-state-editing', 
+            'game-state-editing',
             'game-state-playing',
             'game-state-results',
             'ui-revealed',
             'gesture-reveal',
             'show-floating-controls'
         );
-        
+
         // Apply new state class
         this.container.classList.add(`game-state-${state}`);
         
@@ -273,7 +279,8 @@ export class UIStateManager {
      */
     temporaryUIReveal(duration = 5000) {
         if (this.currentState !== 'playing') return;
-        
+        if (!this.container) return;
+
         this.container.classList.add('ui-revealed');
         
         // Clear existing timer
@@ -294,14 +301,17 @@ export class UIStateManager {
      */
     gestureUIReveal() {
         if (this.currentState !== 'playing') return;
-        
+        if (!this.container) return;
+
         this.container.classList.add('gesture-reveal');
-        
+
         // Auto-hide after shorter duration for gestures
         setTimeout(() => {
-            this.container.classList.remove('gesture-reveal');
+            if (this.container) {
+                this.container.classList.remove('gesture-reveal');
+            }
         }, 3000);
-        
+
         logger.debug('🎮 UI revealed via gesture');
     }
 
@@ -309,13 +319,15 @@ export class UIStateManager {
      * Hide UI (return to immersive mode)
      */
     hideUI() {
-        this.container.classList.remove('ui-revealed', 'gesture-reveal');
-        
+        if (this.container) {
+            this.container.classList.remove('ui-revealed', 'gesture-reveal');
+        }
+
         if (this.uiRevealTimer) {
             clearTimeout(this.uiRevealTimer);
             this.uiRevealTimer = null;
         }
-        
+
         logger.debug('🎮 UI hidden - returned to immersive mode');
     }
 
@@ -325,7 +337,9 @@ export class UIStateManager {
     setupAutoHideFloatingControls() {
         // Hide floating controls after inactivity
         this.autoHideTimer = setTimeout(() => {
-            this.container.classList.remove('show-floating-controls');
+            if (this.container) {
+                this.container.classList.remove('show-floating-controls');
+            }
         }, 15000); // Hide after 15 seconds
     }
 
@@ -368,7 +382,8 @@ export class UIStateManager {
      * Check if UI is currently revealed
      */
     isUIRevealed() {
-        return this.container.classList.contains('ui-revealed') || 
+        if (!this.container) return false;
+        return this.container.classList.contains('ui-revealed') ||
                this.container.classList.contains('gesture-reveal');
     }
 

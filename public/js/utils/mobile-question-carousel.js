@@ -14,6 +14,16 @@ class MobileQuestionCarousel {
         this.carouselContainer = null;
         this.questionsWrapper = null;
         this.initialized = false;
+
+        // Track resources for cleanup
+        this._mutationObserver = null;
+        this._boundHandlers = {
+            addBtn: null,
+            prevBtn: null,
+            nextBtn: null,
+            dotClicks: []
+        };
+        this._syncListeners = []; // Track sync listeners for cleanup
     }
 
     /**
@@ -93,33 +103,37 @@ class MobileQuestionCarousel {
         // Add Question button
         const addBtn = document.getElementById('mobile-add-question-btn');
         if (addBtn) {
-            addBtn.addEventListener('click', () => this.addQuestion());
+            this._boundHandlers.addBtn = () => this.addQuestion();
+            addBtn.addEventListener('click', this._boundHandlers.addBtn);
         }
-        
+
         // Navigation buttons - use setTimeout to ensure they exist
         setTimeout(() => {
             const prevBtn = document.getElementById('mobile-prev-btn');
             const nextBtn = document.getElementById('mobile-next-btn');
-            
+
             if (prevBtn) {
-                prevBtn.addEventListener('click', () => this.previousQuestion());
+                this._boundHandlers.prevBtn = () => this.previousQuestion();
+                prevBtn.addEventListener('click', this._boundHandlers.prevBtn);
             }
-            
+
             if (nextBtn) {
-                nextBtn.addEventListener('click', () => this.nextQuestion());
+                this._boundHandlers.nextBtn = () => this.nextQuestion();
+                nextBtn.addEventListener('click', this._boundHandlers.nextBtn);
             }
         }, 100);
 
         // Listen for question changes in the main editor
         const questionsContainer = document.getElementById('questions-container');
         if (questionsContainer) {
-            const observer = new MutationObserver(() => {
+            // Store observer reference for cleanup
+            this._mutationObserver = new MutationObserver(() => {
                 if (this.isCarouselActive) {
                     setTimeout(() => this.updateCarousel(), 50);
                 }
             });
-            
-            observer.observe(questionsContainer, {
+
+            this._mutationObserver.observe(questionsContainer, {
                 childList: true,
                 subtree: true
             });
@@ -188,6 +202,12 @@ class MobileQuestionCarousel {
         const indicators = document.getElementById('mobile-question-indicators');
         if (!indicators) return;
 
+        // Clean up old dot listeners before recreating
+        this._boundHandlers.dotClicks.forEach(({ dot, handler }) => {
+            dot.removeEventListener('click', handler);
+        });
+        this._boundHandlers.dotClicks = [];
+
         indicators.innerHTML = '';
 
         this.questions.forEach((_, index) => {
@@ -196,8 +216,10 @@ class MobileQuestionCarousel {
             if (index === this.currentIndex) {
                 dot.classList.add('active');
             }
-            
-            dot.addEventListener('click', () => this.navigateToQuestion(index));
+
+            const handler = () => this.navigateToQuestion(index);
+            dot.addEventListener('click', handler);
+            this._boundHandlers.dotClicks.push({ dot, handler });
             indicators.appendChild(dot);
         });
     }
@@ -292,16 +314,15 @@ class MobileQuestionCarousel {
      * Set up two-way synchronization between original and clone
      */
     setupTwoWaySync(original, clone) {
+        // Clean up previous sync listeners before adding new ones
+        this._cleanupSyncListeners();
+
         const originalInputs = original.querySelectorAll('input, textarea, select');
         const cloneInputs = clone.querySelectorAll('input, textarea, select');
-        
+
         cloneInputs.forEach((cloneInput, index) => {
             const originalInput = originalInputs[index];
             if (!originalInput) return;
-
-            // Remove any existing listeners to avoid duplicates
-            cloneInput.removeEventListener('input', this.syncToOriginal);
-            cloneInput.removeEventListener('change', this.syncToOriginal);
 
             // Create sync function for this specific pair
             const syncToOriginal = () => {
@@ -317,7 +338,23 @@ class MobileQuestionCarousel {
             // Add event listeners for real-time sync
             cloneInput.addEventListener('input', syncToOriginal);
             cloneInput.addEventListener('change', syncToOriginal);
+
+            // Track for cleanup
+            this._syncListeners.push(
+                { element: cloneInput, type: 'input', handler: syncToOriginal },
+                { element: cloneInput, type: 'change', handler: syncToOriginal }
+            );
         });
+    }
+
+    /**
+     * Clean up sync listeners from previous question
+     */
+    _cleanupSyncListeners() {
+        this._syncListeners.forEach(({ element, type, handler }) => {
+            element.removeEventListener(type, handler);
+        });
+        this._syncListeners = [];
     }
 
     /**
@@ -380,6 +417,59 @@ class MobileQuestionCarousel {
      */
     isActive() {
         return this.isCarouselActive;
+    }
+
+    /**
+     * Destroy carousel and clean up all resources
+     */
+    destroy() {
+        // Disconnect mutation observer
+        if (this._mutationObserver) {
+            this._mutationObserver.disconnect();
+            this._mutationObserver = null;
+        }
+
+        // Clean up sync listeners
+        this._cleanupSyncListeners();
+
+        // Remove button event listeners
+        const addBtn = document.getElementById('mobile-add-question-btn');
+        if (addBtn && this._boundHandlers.addBtn) {
+            addBtn.removeEventListener('click', this._boundHandlers.addBtn);
+        }
+
+        const prevBtn = document.getElementById('mobile-prev-btn');
+        if (prevBtn && this._boundHandlers.prevBtn) {
+            prevBtn.removeEventListener('click', this._boundHandlers.prevBtn);
+        }
+
+        const nextBtn = document.getElementById('mobile-next-btn');
+        if (nextBtn && this._boundHandlers.nextBtn) {
+            nextBtn.removeEventListener('click', this._boundHandlers.nextBtn);
+        }
+
+        // Remove dot click listeners
+        this._boundHandlers.dotClicks.forEach(({ dot, handler }) => {
+            dot.removeEventListener('click', handler);
+        });
+        this._boundHandlers.dotClicks = [];
+
+        // Remove carousel container from DOM
+        if (this.carouselContainer && this.carouselContainer.parentNode) {
+            this.carouselContainer.parentNode.removeChild(this.carouselContainer);
+        }
+
+        // Reset state
+        this.carouselContainer = null;
+        this.questionsWrapper = null;
+        this.questions = [];
+        this.currentIndex = 0;
+        this.isCarouselActive = false;
+        this.initialized = false;
+
+        document.body.classList.remove('mobile-carousel-active');
+
+        logger.debug('MobileQuestionCarousel destroyed and cleaned up');
     }
 }
 

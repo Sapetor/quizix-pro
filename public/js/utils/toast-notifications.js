@@ -62,19 +62,23 @@ export class ToastNotifications {
             toast.classList.add('toast-show');
         });
 
-        // Auto-dismiss
-        const dismissTimer = setTimeout(() => {
+        // Auto-dismiss - store timer on element for cleanup
+        toast._dismissTimer = setTimeout(() => {
+            toast._dismissTimer = null;
             this.dismiss(toast);
         }, duration);
 
         // Allow manual dismissal by clicking
         toast.addEventListener('click', () => {
-            clearTimeout(dismissTimer);
+            if (toast._dismissTimer) {
+                clearTimeout(toast._dismissTimer);
+                toast._dismissTimer = null;
+            }
             this.dismiss(toast);
         });
 
         logger.debug(`🍞 Toast shown: ${type} - ${message}`);
-        
+
         return toast;
     }
 
@@ -100,15 +104,28 @@ export class ToastNotifications {
     dismiss(toast) {
         if (!toast || !toast.parentNode) return;
 
+        // Clear any pending dismiss timer
+        if (toast._dismissTimer) {
+            clearTimeout(toast._dismissTimer);
+            toast._dismissTimer = null;
+        }
+
+        // Clear any pending animation timer
+        if (toast._animTimer) {
+            clearTimeout(toast._animTimer);
+            toast._animTimer = null;
+        }
+
         // Trigger exit animation
         toast.classList.add('toast-hide');
 
-        // Remove after animation completes
-        setTimeout(() => {
+        // Remove after animation completes - track this timer too
+        toast._animTimer = setTimeout(() => {
+            toast._animTimer = null;
             if (toast.parentNode) {
                 toast.parentNode.removeChild(toast);
             }
-            
+
             // Remove from tracking array
             const index = this.toasts.indexOf(toast);
             if (index > -1) {
