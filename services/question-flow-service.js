@@ -96,7 +96,9 @@ class QuestionFlowService {
     }
 
     // Wait 1 second before revealing answers (gives players time to see their submission)
-    setTimeout(() => {
+    // Store timer ID for proper cleanup if game is destroyed
+    game.earlyEndTimer = setTimeout(() => {
+      game.earlyEndTimer = null;
       try {
         // Check game state BEFORE resetting flag
         if (game.gameState !== 'question') {
@@ -164,7 +166,11 @@ class QuestionFlowService {
 
       case 'multiple-correct':
         const correctAnswers = question.correctAnswers || [];
-        correctOption = correctAnswers.map(idx => question.options[idx]).join(', ');
+        // Validate indices before accessing options array
+        correctOption = correctAnswers
+          .filter(idx => question.options && idx >= 0 && idx < question.options.length)
+          .map(idx => question.options[idx])
+          .join(', ');
         break;
 
       case 'true-false':
@@ -177,7 +183,11 @@ class QuestionFlowService {
 
       case 'ordering':
         const correctOrder = question.correctOrder || [];
-        correctOption = correctOrder.map(idx => question.options[idx]).join(' → ');
+        // Validate indices before accessing options array
+        correctOption = correctOrder
+          .filter(idx => question.options && idx >= 0 && idx < question.options.length)
+          .map(idx => question.options[idx])
+          .join(' → ');
         break;
 
       default:

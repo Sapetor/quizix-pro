@@ -159,7 +159,9 @@ class GameSessionService {
    * @param {Object} io - Socket.IO instance
    */
   autoAdvanceToFirstQuestion(game, io) {
-    setTimeout(() => {
+    // Store timer ID for proper cleanup
+    game.startTimer = setTimeout(() => {
+      game.startTimer = null;
       if (game.gameState === 'finished') {
         return;
       }
@@ -226,6 +228,12 @@ class GameSessionService {
       return;
     }
 
+    // Clear early end timer if it exists (race condition prevention)
+    if (game.earlyEndTimer) {
+      clearTimeout(game.earlyEndTimer);
+      game.earlyEndTimer = null;
+    }
+
     game.endQuestion();
 
     // Guard against null/undefined question
@@ -277,24 +285,22 @@ class GameSessionService {
     const answerStats = game.getAnswerStatistics();
     io.to(game.hostId).emit('answer-statistics', answerStats);
 
-    // Send individual results to each player (include explanation from timeoutData)
+    // Send individual results to each player (include all answer data for client display)
     game.players.forEach((player, playerId) => {
       const playerAnswer = player.answers[game.currentQuestion];
-      if (playerAnswer) {
-        io.to(playerId).emit('player-result', {
-          isCorrect: playerAnswer.isCorrect,
-          points: playerAnswer.points,
-          totalScore: player.score,
-          explanation: timeoutData.explanation
-        });
-      } else {
-        io.to(playerId).emit('player-result', {
-          isCorrect: false,
-          points: 0,
-          totalScore: player.score,
-          explanation: timeoutData.explanation
-        });
+      const resultData = {
+        isCorrect: playerAnswer ? playerAnswer.isCorrect : false,
+        points: playerAnswer ? playerAnswer.points : 0,
+        totalScore: player.score,
+        explanation: timeoutData.explanation,
+        questionType: timeoutData.questionType,
+        correctAnswer: timeoutData.correctAnswer
+      };
+      // Include correctAnswers array for multiple-correct questions
+      if (timeoutData.correctAnswers) {
+        resultData.correctAnswers = timeoutData.correctAnswers;
       }
+      io.to(playerId).emit('player-result', resultData);
     });
 
     // Advance to next question or end game
@@ -393,7 +399,9 @@ class GameSessionService {
       leaderboard: game.leaderboard.slice(0, 5)
     });
 
-    setTimeout(() => {
+    // Store timer ID for proper cleanup
+    game.advanceTimer = setTimeout(() => {
+      game.advanceTimer = null;
       const hasMoreQuestions = game.nextQuestion();
 
       if (hasMoreQuestions) {
@@ -781,12 +789,10 @@ class Game {
   }
 
   /**
-   * Clean up game resources and remove stale player references
+   * Clear all active timers to prevent memory leaks
+   * Called during game cleanup and when game is deleted
    */
-  cleanup() {
-    this.logger.debug(`Cleaning up game ${this.pin} with ${this.players.size} players`);
-
-    // Clear all timers to prevent memory leaks
+  clearTimers() {
     if (this.questionTimer) {
       clearTimeout(this.questionTimer);
       this.questionTimer = null;
@@ -795,6 +801,24 @@ class Game {
       clearTimeout(this.advanceTimer);
       this.advanceTimer = null;
     }
+    if (this.earlyEndTimer) {
+      clearTimeout(this.earlyEndTimer);
+      this.earlyEndTimer = null;
+    }
+    if (this.startTimer) {
+      clearTimeout(this.startTimer);
+      this.startTimer = null;
+    }
+  }
+
+  /**
+   * Clean up game resources and remove stale player references
+   */
+  cleanup() {
+    this.logger.debug(`Cleaning up game ${this.pin} with ${this.players.size} players`);
+
+    // Clear all timers to prevent memory leaks
+    this.clearTimers();
 
     // Clear internal player references
     this.players.clear();

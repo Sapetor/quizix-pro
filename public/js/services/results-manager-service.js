@@ -257,7 +257,8 @@ export class ResultsManagerService {
         try {
             logger.debug(`📊 Deleting result: ${filename}`);
 
-            const response = await this.fetchWithRetry(APIHelper.getApiUrl(`api/results/${filename}`), {
+            // Include confirm=true parameter required by server for security
+            const response = await this.fetchWithRetry(APIHelper.getApiUrl(`api/results/${filename}?confirm=true`), {
                 method: 'DELETE'
             });
             

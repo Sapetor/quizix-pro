@@ -18,12 +18,24 @@ A sophisticated quiz platform that runs locally on your network, featuring LaTeX
 - **Multiple Correct Answers**: Select all that apply questions
 - **True/False**: Simple binary choice questions
 - **Numeric Input**: Mathematical calculations with tolerance settings
+- **Ordering**: Drag-and-drop sequence arrangement questions
 
 ### Rich Content Support
 - **LaTeX Equations**: Full mathematical notation support ($x^2 + y^2 = z^2$)
 - **Image Questions**: Upload and display images in questions
+- **Code Syntax Highlighting**: Display formatted code snippets in questions
 - **Enhanced Timing**: Automatic answer revelation when time expires
 - **No Spoilers**: Correct answers hidden until timer ends
+
+### AI Question Generation
+- **Claude API**: Generate questions using Anthropic's Claude models
+- **Ollama**: Local AI model support for offline generation
+- **HuggingFace**: Additional AI provider options
+- **Smart Formatting**: Auto-detect LaTeX and code content
+
+### Multi-Language Support
+- **9 Languages**: English, Spanish, French, German, Italian, Portuguese, Polish, Japanese, Chinese
+- **Dynamic Switching**: Change language on-the-fly without reload
 
 ## 🛠️ Installation
 
@@ -111,22 +123,22 @@ The server binds to `0.0.0.0` by default, making it accessible from any device o
 ## 🎨 Customization
 
 ### Adding More Question Types
-Edit `server.js` to support additional question formats:
-- True/False questions
-- Image-based questions
-- Text input questions
+See `docs/ADD-QUESTION-TYPE.md` for a comprehensive guide. Key files:
+- `public/js/utils/question-type-registry.js` - Question type definitions
+- `server.js` - Server-side validation
+- `public/css/components.css` - Question styling
 
 ### Styling
-Modify `public/styles.css` to change:
-- Colors and themes
-- Fonts and layouts
-- Animations and effects
+Modify files in `public/css/` to change:
+- `variables.css` - Colors and themes
+- `components.css` - Component layouts
+- `animations.css` - Effects and transitions
 
-### Game Logic
-Update `public/script.js` to adjust:
-- Scoring algorithms
-- Timer settings
-- Game flow
+### Configuration
+Update `public/js/core/config.js` to adjust:
+- Scoring algorithms (`SCORING`)
+- Timer settings (`TIMING`)
+- Color palette (`COLORS`)
 
 ## 🐛 Troubleshooting
 
@@ -149,19 +161,22 @@ Update `public/script.js` to adjust:
 
 ## 🔒 Security Notes
 
-- This application is designed for local network use only
-- Don't expose it to the internet without proper security measures
-- No user data is permanently stored
-- All game data is cleared when the server restarts
+- This application is designed for local network use
+- Deploy on Railway or Kubernetes for cloud access with proper HTTPS
+- Quiz and results data can be persisted to disk (saved in `quizzes/` and `results/` folders)
+- API keys are encrypted with AES-GCM when stored client-side
+- Server-side API keys supported via `CLAUDE_API_KEY` environment variable
+- File uploads use cryptographically secure naming
+- Socket.IO connections are rate-limited to prevent abuse
 
 ## 🤝 Contributing
 
 Feel free to fork this project and add your own features:
-- Sound effects and music
-- More question types
-- Team-based gameplay
-- Save/load quiz functionality
-- Statistics and analytics
+- Team-based gameplay modes
+- Custom scoring algorithms
+- Additional AI providers for question generation
+- New question types (see `docs/ADD-QUESTION-TYPE.md`)
+- Custom themes and branding
 
 ## 📝 License
 

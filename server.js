@@ -11,6 +11,7 @@ const cors = require('cors');
 const multer = require('multer');
 const QRCode = require('qrcode');
 const os = require('os');
+const crypto = require('crypto');
 const compression = require('compression');
 const { CORSValidationService } = require('./services/cors-validation-service');
 const { QuestionTypeService } = require('./services/question-type-service');
@@ -355,7 +356,8 @@ const storage = multer.diskStorage({
     cb(null, 'public/uploads/');
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+    const randomBytes = crypto.randomBytes(16).toString('hex');
+    cb(null, Date.now() + '-' + randomBytes + path.extname(file.originalname));
   }
 });
 
@@ -559,9 +561,27 @@ app.get('/api/results', async (req, res) => {
 });
 
 // Delete quiz result endpoint (must be before GET route to avoid conflicts)
+// Security: Requires same-origin and confirmation parameter
 app.delete('/api/results/:filename', async (req, res) => {
   try {
+    // Validate origin - must be same host
+    const origin = req.get('origin') || req.get('referer');
+    const host = req.get('host');
+    if (origin && !origin.includes(host)) {
+      logger.warn(`Rejected cross-origin delete attempt from ${origin}`);
+      return res.status(403).json({ error: 'Cross-origin requests not allowed' });
+    }
+
+    // Require confirmation parameter to prevent accidental deletes
+    if (req.query.confirm !== 'true') {
+      return res.status(400).json({ error: 'Delete requires confirm=true parameter' });
+    }
+
     const filename = req.params.filename;
+
+    // Audit log the deletion
+    logger.info(`Result file deletion requested: ${filename} from ${req.ip}`);
+
     const result = await resultsService.deleteResult(filename);
     res.json(result);
   } catch (error) {
@@ -642,6 +662,12 @@ app.get('/api/active-games', (req, res) => {
 app.get('/api/qr/:pin', async (req, res) => {
   try {
     const { pin } = req.params;
+
+    // Validate PIN format - must be 6 digits
+    if (!pin || !/^\d{6}$/.test(pin)) {
+      return res.status(400).json({ error: 'Invalid PIN format. Must be 6 digits.' });
+    }
+
     const game = gameSessionService.getGame(pin);
 
     if (!game) {
@@ -696,21 +722,38 @@ app.get('/api/ollama/models', async (req, res) => {
 });
 
 // Claude API proxy endpoint
+// Supports two modes:
+// 1. Server-side key: Set CLAUDE_API_KEY env var (recommended for production)
+// 2. BYOK (Bring Your Own Key): Client provides key in request body
 app.post('/api/claude/generate', async (req, res) => {
   try {
-    const { prompt, apiKey, numQuestions, model } = req.body;
+    const { prompt, apiKey: clientApiKey, numQuestions, model } = req.body;
 
     // More detailed validation
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
+    // Use server-side API key if available, otherwise require client key
+    const serverApiKey = process.env.CLAUDE_API_KEY;
+    const apiKey = serverApiKey || clientApiKey;
+
     if (!apiKey) {
-      return res.status(400).json({ error: 'API key is required' });
+      return res.status(400).json({
+        error: 'API key is required',
+        hint: serverApiKey ? undefined : 'Set CLAUDE_API_KEY environment variable or provide key in request'
+      });
     }
 
     if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
       return res.status(400).json({ error: 'Valid API key is required' });
+    }
+
+    // Log which mode is being used (without exposing key)
+    if (serverApiKey) {
+      logger.debug('Using server-side Claude API key');
+    } else {
+      logger.debug('Using client-provided Claude API key');
     }
 
     // Import node-fetch for HTTP requests
@@ -780,6 +823,14 @@ app.post('/api/claude/generate', async (req, res) => {
   }
 });
 
+// Check if server has configured API keys (for client UI)
+app.get('/api/ai/config', (req, res) => {
+  res.json({
+    claudeKeyConfigured: !!process.env.CLAUDE_API_KEY,
+    ollamaAvailable: true, // Ollama doesn't require API key
+    // Don't expose actual keys, just whether they're configured
+  });
+});
 
 // Debug endpoint to check file existence (disabled in production)
 if (!isProduction) {
@@ -870,7 +921,7 @@ app.get('/api/ping', (req, res) => {
 // Socket.IO rate limiting helper
 const socketRateLimits = new Map();
 
-function checkRateLimit(socketId, eventName, maxPerSecond = 10) {
+function checkRateLimit(socketId, eventName, maxPerSecond = 10, socket = null) {
   const key = `${socketId}:${eventName}`;
   const now = Date.now();
   const limit = socketRateLimits.get(key);
@@ -882,6 +933,10 @@ function checkRateLimit(socketId, eventName, maxPerSecond = 10) {
 
   if (limit.count >= maxPerSecond) {
     logger.warn(`Rate limit exceeded for socket ${socketId} on event ${eventName}`);
+    // Notify client about rate limiting
+    if (socket) {
+      socket.emit('rate-limited', { event: eventName, message: 'Too many requests, please slow down' });
+    }
     return false;
   }
 
@@ -903,112 +958,131 @@ setInterval(() => {
 io.on('connection', (socket) => {
 
   socket.on('host-join', (data) => {
-    if (!checkRateLimit(socket.id, 'host-join', 5)) return;
-    const clientIP = socket.handshake.address;
+    if (!checkRateLimit(socket.id, 'host-join', 5, socket)) return;
+    try {
+      const clientIP = socket.handshake.address;
 
-    logger.debug('host-join event received');
-    logger.debug('host-join received data:', JSON.stringify(data, null, 2));
-    logger.debug('quiz title from data:', data?.quiz?.title);
+      logger.debug('host-join event received');
+      logger.debug('host-join received data:', JSON.stringify(data, null, 2));
+      logger.debug('quiz title from data:', data?.quiz?.title);
 
-    if (!data || !data.quiz || !Array.isArray(data.quiz.questions)) {
-      socket.emit('error', { message: 'Invalid quiz data' });
-      return;
+      if (!data || !data.quiz || !Array.isArray(data.quiz.questions)) {
+        socket.emit('error', { message: 'Invalid quiz data' });
+        return;
+      }
+
+      const { quiz } = data;
+      logger.debug('extracted quiz title:', quiz.title);
+
+      if (quiz.questions.length === 0) {
+        socket.emit('error', { message: 'Quiz must have at least one question' });
+        return;
+      }
+
+      // Check if host already has an existing game
+      const existingGame = gameSessionService.findGameByHost(socket.id);
+      if (existingGame) {
+        existingGame.endQuestion();
+        io.to(`game-${existingGame.pin}`).emit('game-ended', { reason: 'Host started new game' });
+        gameSessionService.deleteGame(existingGame.pin);
+      }
+
+      // Create new game
+      const game = gameSessionService.createGame(socket.id, quiz);
+
+      socket.join(`game-${game.pin}`);
+      logger.debug('Sending game-created with title:', quiz.title);
+      socket.emit('game-created', {
+        pin: game.pin,
+        gameId: game.id,
+        title: quiz.title
+      });
+
+      socket.broadcast.emit('game-available', {
+        pin: game.pin,
+        title: quiz.title,
+        questionCount: quiz.questions.length,
+        created: game.createdAt
+      });
+    } catch (error) {
+      logger.error('Error in host-join handler:', error);
+      socket.emit('error', { message: 'Failed to create game' });
     }
-
-    const { quiz } = data;
-    logger.debug('extracted quiz title:', quiz.title);
-
-    if (quiz.questions.length === 0) {
-      socket.emit('error', { message: 'Quiz must have at least one question' });
-      return;
-    }
-
-    // Check if host already has an existing game
-    const existingGame = gameSessionService.findGameByHost(socket.id);
-    if (existingGame) {
-      existingGame.endQuestion();
-      io.to(`game-${existingGame.pin}`).emit('game-ended', { reason: 'Host started new game' });
-      gameSessionService.deleteGame(existingGame.pin);
-    }
-
-    // Create new game
-    const game = gameSessionService.createGame(socket.id, quiz);
-
-    socket.join(`game-${game.pin}`);
-    logger.debug('Sending game-created with title:', quiz.title);
-    socket.emit('game-created', {
-      pin: game.pin,
-      gameId: game.id,
-      title: quiz.title
-    });
-
-    socket.broadcast.emit('game-available', {
-      pin: game.pin,
-      title: quiz.title,
-      questionCount: quiz.questions.length,
-      created: game.createdAt
-    });
   });
 
   socket.on('player-join', (data) => {
-    if (!checkRateLimit(socket.id, 'player-join', 5)) return;
-    if (!data || typeof data !== 'object') {
-      socket.emit('error', { message: 'Invalid request data' });
-      return;
-    }
+    if (!checkRateLimit(socket.id, 'player-join', 5, socket)) return;
+    try {
+      if (!data || typeof data !== 'object') {
+        socket.emit('error', { message: 'Invalid request data' });
+        return;
+      }
 
-    const { pin, name } = data;
-    const game = gameSessionService.getGame(pin);
+      const { pin, name } = data;
+      const game = gameSessionService.getGame(pin);
 
-    const result = playerManagementService.handlePlayerJoin(
-      socket.id,
-      pin,
-      name,
-      game,
-      socket,
-      io
-    );
+      const result = playerManagementService.handlePlayerJoin(
+        socket.id,
+        pin,
+        name,
+        game,
+        socket,
+        io
+      );
 
-    if (!result.success) {
-      socket.emit('error', { message: result.error });
+      if (!result.success) {
+        socket.emit('error', { message: result.error });
+      }
+    } catch (error) {
+      logger.error('Error in player-join handler:', error);
+      socket.emit('error', { message: 'Failed to join game' });
     }
   });
 
   socket.on('start-game', () => {
-    if (!checkRateLimit(socket.id, 'start-game', 3)) return;
-    const game = gameSessionService.findGameByHost(socket.id);
-    if (!game) {
-      return;
-    }
+    if (!checkRateLimit(socket.id, 'start-game', 3, socket)) return;
+    try {
+      const game = gameSessionService.findGameByHost(socket.id);
+      if (!game) {
+        return;
+      }
 
-    gameSessionService.startGame(game, io);
+      gameSessionService.startGame(game, io);
+    } catch (error) {
+      logger.error('Error in start-game handler:', error);
+      socket.emit('error', { message: 'Failed to start game' });
+    }
   });
 
   socket.on('submit-answer', (data) => {
-    if (!checkRateLimit(socket.id, 'submit-answer', 3)) return; // Strict limit: 3 per second
-    if (!data || data.answer === undefined) {
-      return;
+    if (!checkRateLimit(socket.id, 'submit-answer', 3, socket)) return; // Strict limit: 3 per second
+    try {
+      if (!data || data.answer === undefined) {
+        return;
+      }
+
+      const { answer, type } = data;
+      const playerData = playerManagementService.getPlayer(socket.id);
+      if (!playerData) return;
+
+      const game = gameSessionService.getGame(playerData.gamePin);
+
+      questionFlowService.handleAnswerSubmission(
+        socket.id,
+        answer,
+        type,
+        playerData,
+        game,
+        socket,
+        io
+      );
+    } catch (error) {
+      logger.error('Error in submit-answer handler:', error);
     }
-
-    const { answer, type } = data;
-    const playerData = playerManagementService.getPlayer(socket.id);
-    if (!playerData) return;
-
-    const game = gameSessionService.getGame(playerData.gamePin);
-
-    questionFlowService.handleAnswerSubmission(
-      socket.id,
-      answer,
-      type,
-      playerData,
-      game,
-      socket,
-      io
-    );
   });
 
   socket.on('next-question', () => {
-    if (!checkRateLimit(socket.id, 'next-question', 5)) return;
+    if (!checkRateLimit(socket.id, 'next-question', 5, socket)) return;
     try {
       logger.debug('NEXT-QUESTION EVENT RECEIVED');
       const game = gameSessionService.findGameByHost(socket.id);
@@ -1047,22 +1121,26 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    // Handle player disconnect
-    const playerData = playerManagementService.getPlayer(socket.id);
-    if (playerData) {
-      const game = gameSessionService.getGame(playerData.gamePin);
-      playerManagementService.handlePlayerDisconnect(socket.id, game, io);
-    }
+    try {
+      // Handle player disconnect
+      const playerData = playerManagementService.getPlayer(socket.id);
+      if (playerData) {
+        const game = gameSessionService.getGame(playerData.gamePin);
+        playerManagementService.handlePlayerDisconnect(socket.id, game, io);
+      }
 
-    // Handle host disconnect
-    const hostedGame = gameSessionService.findGameByHost(socket.id);
-    if (hostedGame) {
-      playerManagementService.handleHostDisconnect(hostedGame, io);
-      gameSessionService.deleteGame(hostedGame.pin);
-    }
+      // Handle host disconnect
+      const hostedGame = gameSessionService.findGameByHost(socket.id);
+      if (hostedGame) {
+        playerManagementService.handleHostDisconnect(hostedGame, io);
+        gameSessionService.deleteGame(hostedGame.pin);
+      }
 
-    // Clean up orphaned games
-    gameSessionService.cleanupOrphanedGames(io);
+      // Clean up orphaned games
+      gameSessionService.cleanupOrphanedGames(io);
+    } catch (error) {
+      logger.error('Error in disconnect handler:', error);
+    }
   });
 });
 

@@ -78,6 +78,46 @@ export const LIMITS = {
     MAX_PLAYER_NUMBER: 999,
 };
 
+// Semantic color palette for consistent UI
+// Use these constants instead of hardcoding colors in components
+export const COLORS = {
+    // Status colors
+    SUCCESS: '#10b981',      // Green - correct answers, success states
+    WARNING: '#f59e0b',      // Amber - warnings, medium difficulty
+    ERROR: '#ef4444',        // Red - errors, hard difficulty, wrong answers
+    INFO: '#3b82f6',         // Blue - information, primary actions
+
+    // Difficulty indicators
+    DIFFICULTY: {
+        EASY: '#22c55e',     // Green
+        MEDIUM: '#f59e0b',   // Amber
+        HARD: '#ef4444',     // Red
+    },
+
+    // Chart/visualization colors
+    CHART: {
+        PRIMARY: '#3b82f6',   // Blue
+        SECONDARY: '#10b981', // Green
+        TERTIARY: '#f59e0b',  // Orange
+        QUATERNARY: '#ef4444',// Red
+        PURPLE: '#8b5cf6',
+        CYAN: '#06b6d4',
+    },
+
+    // UI element colors
+    BORDER: '#374151',
+    OVERLAY: 'rgba(0, 0, 0, 0.5)',
+    HIGHLIGHT: 'rgba(255, 215, 0, 0.2)',
+
+    // With opacity variants (for backgrounds)
+    withOpacity: (hex, opacity) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+};
+
 // Simplified audio settings
 export const AUDIO = {
     QUESTION_START_FREQ: 800,

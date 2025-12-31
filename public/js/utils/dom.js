@@ -295,5 +295,34 @@ export class DOMManager {
 // Create singleton instance
 export const dom = new DOMManager();
 
+/**
+ * Escape HTML entities to prevent XSS attacks
+ * This is a shared utility function that can be imported directly
+ * @param {string} text - Text to escape
+ * @returns {string} - Escaped text safe for innerHTML
+ */
+export function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+/**
+ * Escape HTML but preserve LaTeX delimiters for MathJax rendering
+ * @param {string} text - Text to escape
+ * @returns {string} - Escaped text with LaTeX delimiters preserved
+ */
+export function escapeHtmlPreservingLatex(text) {
+    if (!text) return '';
+    // Escape HTML entities but keep $ and \ for LaTeX
+    const escaped = escapeHtml(text);
+    // Restore LaTeX delimiters that were escaped
+    return escaped
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/\\(.)/g, '\\$1'); // Preserve backslash escapes for LaTeX
+}
+
 // Export for direct use
 export default dom;

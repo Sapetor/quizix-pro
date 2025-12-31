@@ -15,6 +15,7 @@ export class SocketManager {
         this.uiManager = uiManager;
         this.soundManager = soundManager;
         this.currentPlayerName = null; // Store current player name for language updates
+        this.abortController = new AbortController(); // For cleanup of event listeners
 
         this.initializeSocketListeners();
         this.initializeLanguageListener();
@@ -103,7 +104,7 @@ export class SocketManager {
         // Game flow events
         this.socket.on('game-started', (data) => {
             logger.debug('Game started:', data);
-            const isHost = this.gameManager.stateManager ? this.gameManager.stateManager.getGameState().isHost : false;
+            const isHost = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
             
             if (isHost) {
                 this.uiManager.showScreen('host-game-screen');
@@ -157,7 +158,7 @@ export class SocketManager {
             }
             
             // Show correct answer on host side
-            const isHost = this.gameManager.stateManager ? this.gameManager.stateManager.getGameState().isHost : false;
+            const isHost = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
             if (isHost) {
                 this.gameManager.showCorrectAnswer(data);
             }
@@ -173,9 +174,9 @@ export class SocketManager {
                 
                 // Update button text based on whether it's the last question
                 // Check both data.isLastQuestion and current question number vs total questions
-                const gameState = this.gameManager.stateManager.getGameState();
-                const currentQuestion = gameState.currentQuestion;
-                const isLastQuestion = (data && data.isLastQuestion) || 
+                const gameState = this.gameManager.stateManager?.getGameState();
+                const currentQuestion = gameState?.currentQuestion;
+                const isLastQuestion = (data && data.isLastQuestion) ||
                                      (currentQuestion && currentQuestion.questionNumber >= currentQuestion.totalQuestions);
                 
                 if (isLastQuestion) {
@@ -458,14 +459,15 @@ export class SocketManager {
      */
     initializeLanguageListener() {
         // Listen for language change events to update personalized messages
+        // Use AbortController signal for proper cleanup on disconnect
         document.addEventListener('languageChanged', (event) => {
             logger.debug('Language changed, updating personalized messages');
-            
+
             // Update the player welcome message if we have a current player name
             if (this.currentPlayerName) {
                 this.updatePlayerWelcomeMessage(this.currentPlayerName);
             }
-        });
+        }, { signal: this.abortController.signal });
     }
 
     /**
@@ -564,6 +566,8 @@ export class SocketManager {
      * Disconnect from server
      */
     disconnect() {
+        // Clean up event listeners
+        this.abortController.abort();
         this.socket.disconnect();
     }
 }

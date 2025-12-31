@@ -31,7 +31,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **Modular ES6** with proper imports/exports
 - **Service-oriented** architecture with dedicated services
 - **Manager pattern** with single responsibility principle
-- **Centralized configuration** in `public/js/core/config.js`
+- **Centralized configuration** in `public/js/core/config.js` (includes `COLORS` palette, `TIMING`, `SCORING` constants)
 - **Unified error handling** via `unified-error-handler.js`
 - **Encrypted security** layer for sensitive data
 
@@ -47,14 +47,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - AI integration proxy (Claude, Ollama, HuggingFace)
 
 **Key API Endpoints:**
-- `POST /upload` - Secure image upload for quiz questions
+- `POST /upload` - Secure image upload with cryptographic file naming
 - `POST /api/save-quiz` - Persist quiz to disk as JSON
 - `GET /api/quizzes` - List all available quizzes
 - `GET /api/quiz/:filename` - Load specific quiz data
 - `POST /api/save-results` - Archive game results with metadata
 - `GET /api/results` - List saved results with filtering
 - `GET /api/qr/:pin` - Generate QR code with caching
-- `POST /api/claude/generate` - AI question generation proxy
+- `POST /api/claude/generate` - AI question generation proxy (supports server-side API key)
+- `GET /api/ai/config` - Check AI provider configuration status
 - `GET /api/results/:filename/export/:format` - Export as CSV/JSON
 
 **Frontend Core Managers:**
@@ -94,7 +95,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `public/js/utils/keyboard-shortcuts.js` - Keyboard command handling
 - `public/js/utils/connection-status.js` - Network status indicator (32px circular)
 - `public/js/utils/question-utils.js` - Question HTML generation and answer randomization
-- `public/js/utils/dom.js` - Safe DOM manipulation wrapper
+- `public/js/utils/dom.js` - Safe DOM manipulation wrapper with `escapeHtml()` and `escapeHtmlPreservingLatex()` utilities
 
 **Backend Services (Node.js):**
 - `services/quiz-service.js` - Quiz CRUD operations (save, list, load)
@@ -150,9 +151,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - Use unified SettingsManager for all theme/settings operations
 - Use ImagePathResolver for all image operations (centralized path handling for Kubernetes)
 - Use QuestionTypeRegistry for all question type operations (Week 1 refactoring)
+- Use `COLORS` constants from config.js instead of hardcoding color values
+- Use `escapeHtml()` from dom.js for XSS prevention (use `escapeHtmlPreservingLatex()` for math content)
 - Implement auto-play carousels with intelligent pause/resume
 - Handle mobile viewport differences with responsive CSS
 - Clean up event listeners and timers to prevent memory leaks
+- Use AbortController pattern for document-level event listeners
 - Use try-catch blocks with unified error handler for critical operations
 
 **Image Path Handling Pattern:**
@@ -286,10 +290,12 @@ quizix-pro/
 
 **AI Integration:**
 - Claude API for intelligent question generation
+- Server-side API key support via `CLAUDE_API_KEY` environment variable
 - Ollama local model support
 - HuggingFace model integration
-- Secure API key storage with AES-GCM encryption
+- Secure client-side API key storage with AES-GCM encryption (BYOK pattern)
 - Question quality validation and formatting
+- `/api/ai/config` endpoint for checking provider availability
 
 ## Testing Infrastructure
 
@@ -384,16 +390,21 @@ quizix-pro/
 
 **Security Measures:**
 - **AES-GCM Encryption**: Secure storage for API keys via `secure-storage-service.js`
+- **Server-Side API Keys**: Optional `CLAUDE_API_KEY` env var for production deployments
 - **CORS Validation**: Configurable via `cors-validation-service.js` for local network and cloud deployment
 - **File Upload Security**:
   - 5MB size limit enforced
   - File type validation (images only)
+  - Cryptographically secure file naming (`crypto.randomBytes()`)
   - Filename sanitization to prevent path traversal attacks
   - Multer middleware with security configuration
 - **Input Validation**:
-  - HTML escaping to prevent XSS attacks
-  - Socket.IO event validation
+  - HTML escaping via shared `escapeHtml()` utility in `dom.js`
+  - Socket.IO event validation with try-catch error handling
   - Quiz data validation on save/load
+- **Rate Limiting**:
+  - Socket.IO event rate limiting (10 events/second per client)
+  - Client notification via `rate-limited` event
 - **Environment Variables**: Sensitive configuration via `.env` files
 - **HTTPS Support**: Ready for SSL/TLS in production
 - **Network Configuration**:
@@ -421,7 +432,9 @@ quizix-pro/
 
 **Memory Management:**
 - **Event Listener Tracking**: Cleanup tracked listeners to prevent memory leaks
-- **Timer Management**: Proper cleanup of setInterval/setTimeout references
+- **AbortController Pattern**: Socket manager uses AbortController for automatic event listener cleanup
+- **Timer Management**: Centralized `clearTimers()` method in Game class for proper cleanup
+  - Tracks: `questionTimer`, `advanceTimer`, `earlyEndTimer`, `startTimer`
 - **Player Reference Cleanup**: Game state reset and player data cleanup between games
 - **DOM Reference Release**: Clear references to removed DOM elements
 - **Socket.IO Cleanup**: Proper disconnection and event listener removal
@@ -455,6 +468,8 @@ quizix-pro/
 - **Answer Statistics**: Live answer distribution and player response tracking
 - **Automatic Advancement**: Optional auto-progression to next question
 - **Connection Handling**: Reconnection logic with game state recovery
+- **Error Handling**: All socket event handlers wrapped in try-catch blocks
+- **Rate Limiting**: Per-client rate limiting with `rate-limited` event notification
 - **Error Propagation**: Socket errors surfaced to UI with user-friendly messages
 
 **Testing Considerations:**
