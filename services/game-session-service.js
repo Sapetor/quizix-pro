@@ -16,6 +16,36 @@ class GameSessionService {
     this.logger = logger;
     this.config = config;
     this.games = new Map();
+    this.cleanupInterval = null;
+
+    // Start periodic cleanup every 30 minutes instead of per-game-creation
+    this.startPeriodicCleanup();
+  }
+
+  /**
+   * Start periodic stale game cleanup
+   * Runs every 30 minutes to clean up old/orphaned games
+   */
+  startPeriodicCleanup() {
+    // Run cleanup every 30 minutes (more efficient than per-creation)
+    this.cleanupInterval = setInterval(() => {
+      this.cleanupStaleGames();
+    }, 30 * 60 * 1000);
+
+    // Run initial cleanup after 5 minutes
+    setTimeout(() => {
+      this.cleanupStaleGames();
+    }, 5 * 60 * 1000);
+  }
+
+  /**
+   * Stop periodic cleanup (for graceful shutdown)
+   */
+  stopPeriodicCleanup() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
   }
 
   /**
@@ -32,7 +62,7 @@ class GameSessionService {
 
   /**
    * Clean up stale games (older than maxAge or orphaned)
-   * Called before creating new games to prevent memory buildup
+   * Called periodically by interval timer to prevent memory buildup
    * @param {number} maxAgeMs - Maximum age in milliseconds (default 2 hours)
    */
   cleanupStaleGames(maxAgeMs = 2 * 60 * 60 * 1000) {
@@ -70,9 +100,6 @@ class GameSessionService {
    * @returns {Object} Game instance
    */
   createGame(hostId, quiz) {
-    // Clean up any stale games before creating a new one
-    this.cleanupStaleGames();
-
     const game = new Game(hostId, quiz, this.logger, this.config);
     this.games.set(game.pin, game);
     this.logger.info(`Game created with PIN: ${game.pin}`);
@@ -234,6 +261,9 @@ class GameSessionService {
       game.earlyEndTimer = null;
     }
 
+    // Reset endingQuestionEarly flag in case it was being set
+    game.endingQuestionEarly = false;
+
     game.endQuestion();
 
     // Guard against null/undefined question
@@ -252,7 +282,11 @@ class GameSessionService {
         break;
       case 'multiple-correct':
         const correctAnswers = question.correctAnswers || [];
-        correctOption = correctAnswers.map(idx => question.options[idx]).join(', ');
+        // Validate indices before accessing options array
+        correctOption = correctAnswers
+          .filter(idx => question.options && idx >= 0 && idx < question.options.length)
+          .map(idx => question.options[idx])
+          .join(', ');
         break;
       case 'true-false':
         correctOption = correctAnswer;
@@ -262,7 +296,11 @@ class GameSessionService {
         break;
       case 'ordering':
         const correctOrder = question.correctOrder || [];
-        correctOption = correctOrder.map(idx => question.options[idx]).join(' → ');
+        // Validate indices before accessing options array
+        correctOption = correctOrder
+          .filter(idx => question.options && idx >= 0 && idx < question.options.length)
+          .map(idx => question.options[idx])
+          .join(' → ');
         break;
     }
 
@@ -350,7 +388,9 @@ class GameSessionService {
           leaderboard: game.leaderboard.slice(0, 5)
         });
 
-        game.advanceTimer = setTimeout(() => {
+        // Use separate leaderboardTimer to avoid overwriting advanceTimer
+        game.leaderboardTimer = setTimeout(() => {
+          game.leaderboardTimer = null;
           if (game.gameState === 'finished') {
             game.isAdvancing = false;
             return;
@@ -440,6 +480,10 @@ class GameSessionService {
       clearTimeout(game.advanceTimer);
       game.advanceTimer = null;
     }
+    if (game.leaderboardTimer) {
+      clearTimeout(game.leaderboardTimer);
+      game.leaderboardTimer = null;
+    }
 
     io.to(game.hostId).emit('hide-next-button');
 
@@ -474,6 +518,9 @@ class Game {
     this.leaderboard = [];
     this.questionTimer = null;
     this.advanceTimer = null;
+    this.leaderboardTimer = null;
+    this.startTimer = null;
+    this.earlyEndTimer = null;
     this.isAdvancing = false;
     this.endingQuestionEarly = false;
     this.startTime = null;
@@ -534,6 +581,7 @@ class Game {
       this.gameState = 'question';
       this.questionTimer = null;
       this.advanceTimer = null;
+      this.leaderboardTimer = null;
       this.logger.debug(`Advanced to question ${this.currentQuestion + 1}`);
     } else {
       this.logger.debug('NO MORE QUESTIONS - should end game');
@@ -808,6 +856,10 @@ class Game {
     if (this.startTimer) {
       clearTimeout(this.startTimer);
       this.startTimer = null;
+    }
+    if (this.leaderboardTimer) {
+      clearTimeout(this.leaderboardTimer);
+      this.leaderboardTimer = null;
     }
   }
 

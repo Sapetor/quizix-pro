@@ -6,7 +6,7 @@
 
 import { translationManager, getTranslation, getTrueFalseText } from '../../utils/translation-manager.js';
 import { logger, TIMING } from '../../core/config.js';
-import { dom } from '../../utils/dom.js';
+import { dom, escapeHtmlPreservingLatex } from '../../utils/dom.js';
 
 export class QuestionRenderer {
     constructor(displayManager, stateManager, uiManager, gameManager) {
@@ -154,9 +154,10 @@ export class QuestionRenderer {
         if (data.type === 'multiple-choice' || data.type === 'multiple-correct') {
             data.options.forEach((option, index) => {
                 if (options[index]) {
-                    // Handle null/undefined options gracefully
+                    // Handle null/undefined options gracefully and escape to prevent XSS
                     const optionText = option != null ? option : '';
-                    options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${this.displayManager.mathRenderer.formatCodeBlocks(optionText)}`;
+                    const safeOptionText = escapeHtmlPreservingLatex(optionText);
+                    options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${this.displayManager.mathRenderer.formatCodeBlocks(safeOptionText)}`;
                     options[index].classList.add('tex2jax_process'); // Add MathJax processing class
                     options[index].style.display = 'block';
                     // Add data-multiple attribute for multiple-correct questions to get special styling
@@ -402,7 +403,8 @@ export class QuestionRenderer {
                     return;
                 }
                 
-                button.innerHTML = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${this.displayManager.mathRenderer.formatCodeBlocks(data.options[index])}`;
+                const safeOption = escapeHtmlPreservingLatex(data.options[index] || '');
+                button.innerHTML = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${this.displayManager.mathRenderer.formatCodeBlocks(safeOption)}`;
                 button.setAttribute('data-answer', index.toString());
                 button.classList.remove('selected', 'disabled');
                 button.classList.add('tex2jax_process'); // Add MathJax processing class
@@ -434,7 +436,8 @@ export class QuestionRenderer {
         checkboxes.forEach(cb => cb.checked = false);
         checkboxLabels.forEach((label, index) => {
             if (data.options && data.options[index]) {
-                const formattedOption = this.displayManager.mathRenderer.formatCodeBlocks(data.options[index]);
+                const safeOption = escapeHtmlPreservingLatex(data.options[index]);
+                const formattedOption = this.displayManager.mathRenderer.formatCodeBlocks(safeOption);
                 label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${translationManager.getOptionLetter(index)}: ${formattedOption}`;
                 label.setAttribute('data-option', index);
                 

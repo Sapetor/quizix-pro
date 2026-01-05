@@ -33,9 +33,10 @@ export class QuizGame {
         const basePath = document.querySelector('base')?.getAttribute('href') || '/';
         const cleanPath = basePath.replace(/\/$/, '');
         this.socket = io({ path: cleanPath + '/socket.io' });
-        
-        // Initialize socket connection
-        
+
+        // AbortController for cleanup of document-level event listeners
+        this.abortController = new AbortController();
+
         // Initialize all managers with error handling
         try {
             this.settingsManager = new SettingsManager();
@@ -301,18 +302,18 @@ export class QuizGame {
             }, TIMING.AUTO_SAVE_DELAY);
         });
 
-        // Global click handler for game interactions
+        // Global click handler for game interactions (with abort signal for cleanup)
         document.addEventListener('click', (e) => {
             // Handle player answer selection
             if (e.target.closest('#player-game-screen')) {
                 this.handlePlayerGameClick(e);
             }
-            
+
             // Handle PIN copy to clipboard
             if (e.target.closest('#game-pin')) {
                 this.copyPinToClipboard(e.target.closest('#game-pin'));
             }
-        });
+        }, { signal: this.abortController.signal });
 
         // Numeric answer input
         safeAddEventListener('numeric-answer-input', 'keypress', (e) => {
@@ -1176,19 +1177,25 @@ export class QuizGame {
      */
     cleanup() {
         logger.debug('QuizGame cleanup started');
-        
+
+        // Abort all document-level event listeners
+        if (this.abortController) {
+            this.abortController.abort();
+            logger.debug('AbortController aborted - document listeners removed');
+        }
+
         // Disable auto-hide toolbar if active
         if (isAutoHideToolbarActive()) {
             disableAutoHideToolbar();
             logger.debug('Auto-hide toolbar disabled during cleanup');
         }
-        
+
         // Clear any timers or intervals if needed
         if (this.gameManager && this.gameManager.timer) {
             clearInterval(this.gameManager.timer);
             this.gameManager.timer = null;
         }
-        
+
         logger.debug('QuizGame cleanup completed');
     }
 }

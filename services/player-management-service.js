@@ -42,6 +42,15 @@ class PlayerManagementService {
       };
     }
 
+    // Validate name content - allow alphanumeric, spaces, and common special chars
+    // Prevents XSS and other injection attacks
+    if (!/^[\p{L}\p{N}\s\-_'.!?]+$/u.test(name)) {
+      return {
+        success: false,
+        error: 'Name contains invalid characters'
+      };
+    }
+
     // Check if game exists
     if (!game) {
       return {

@@ -22,6 +22,24 @@ class ResultsService {
     }
 
     /**
+     * Validate that a file path stays within the results directory
+     * Prevents path traversal attacks
+     * @param {string} filename - Filename to validate
+     * @returns {string} - Safe resolved path
+     * @throws {Error} - If path escapes results directory
+     */
+    validatePath(filename) {
+        const resolvedBase = path.resolve(this.resultsDir);
+        const resolvedPath = path.resolve(this.resultsDir, filename);
+
+        if (!resolvedPath.startsWith(resolvedBase + path.sep) && resolvedPath !== resolvedBase) {
+            throw new Error('Invalid path: attempted directory traversal');
+        }
+
+        return resolvedPath;
+    }
+
+    /**
      * Save quiz results
      */
     async saveResults(quizTitle, gamePin, results, startTime, endTime, questions) {
@@ -110,7 +128,7 @@ class ResultsService {
             throw new Error('Invalid filename format');
         }
 
-        const filePath = path.join(this.resultsDir, filename);
+        const filePath = this.validatePath(filename);
         this.logger.info(`Checking file path: ${filePath}`);
         this.logger.info(`File exists: ${fsSync.existsSync(filePath)}`);
 
@@ -135,7 +153,7 @@ class ResultsService {
             throw new Error('Invalid filename format');
         }
 
-        const filePath = path.join(this.resultsDir, filename);
+        const filePath = this.validatePath(filename);
 
         if (!fsSync.existsSync(filePath)) {
             throw new Error('Result file not found');
@@ -166,7 +184,7 @@ class ResultsService {
             throw new Error('Invalid export type. Use analytics or simple.');
         }
 
-        const filePath = path.join(this.resultsDir, filename);
+        const filePath = this.validatePath(filename);
 
         if (!fsSync.existsSync(filePath)) {
             throw new Error('Result file not found');
@@ -489,7 +507,7 @@ class ResultsService {
 
     /**
      * Sanitize CSV value to prevent formula injection attacks
-     * Prepends single quote to values starting with =, +, -, @, or tab
+     * Uses multiple defense layers per OWASP recommendations
      * @param {string} value - Value to sanitize
      * @returns {string} - Sanitized and quoted CSV value
      */
@@ -497,11 +515,17 @@ class ResultsService {
         if (value === null || value === undefined) return '""';
         let str = String(value);
 
+        // Remove newlines and carriage returns (prevent row injection)
+        str = str.replace(/[\r\n]+/g, ' ');
+
         // Escape existing double quotes
         str = str.replace(/"/g, '""');
 
         // Prepend single quote to values that could be interpreted as formulas
-        if (/^[=+\-@\t\r]/.test(str)) {
+        // Covers: = + - @ and also tab, |, ! which some spreadsheets interpret
+        if (/^[=+\-@\t\r|!]/.test(str)) {
+            // Use tab prefix as additional protection (Excel-specific)
+            // The single quote tells Excel to treat as text
             str = "'" + str;
         }
 

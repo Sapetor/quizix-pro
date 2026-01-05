@@ -25,7 +25,10 @@ export class PreviewManager {
         this.previewMode = false;
         this.manualNavigationInProgress = false;
         this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), TIMING.ANIMATION_DURATION);
-        
+
+        // Track all timers for proper cleanup
+        this.activeTimers = new Set();
+
         // Store listener references for proper cleanup
         this.listeners = {
             prevBtn: null,
@@ -38,6 +41,37 @@ export class PreviewManager {
             trueFalseHandler: null,
             imageHandler: null
         };
+    }
+
+    /**
+     * Create a tracked setTimeout that can be cleaned up
+     * @param {Function} callback - Function to execute
+     * @param {number} delay - Delay in milliseconds
+     * @returns {number} Timer ID
+     */
+    createTrackedTimeout(callback, delay) {
+        const timerId = setTimeout(() => {
+            this.activeTimers.delete(timerId);
+            callback();
+        }, delay);
+        this.activeTimers.add(timerId);
+        return timerId;
+    }
+
+    /**
+     * Clear all tracked timers
+     */
+    clearAllTimers() {
+        for (const timerId of this.activeTimers) {
+            clearTimeout(timerId);
+        }
+        this.activeTimers.clear();
+
+        // Also clear the autoScrollTimeout if it exists
+        if (this.autoScrollTimeout) {
+            clearTimeout(this.autoScrollTimeout);
+            this.autoScrollTimeout = null;
+        }
     }
 
     /**
@@ -130,11 +164,11 @@ export class PreviewManager {
         // Clean up listeners first
         this.cleanupPreviewListeners();
         this.splitLayoutManager.cleanupSplitLayout();
-        
-        // Clear any pending timeouts to prevent glitchy behavior
-        clearTimeout(this.autoScrollTimeout);
+
+        // Clear all tracked timers to prevent stale callbacks
+        this.clearAllTimers();
         clearTimeout(this.updatePreviewTimeout);
-        
+
         // Stop any pending debounced updates
         if (this.updatePreviewDebounced && this.updatePreviewDebounced.cancel) {
             this.updatePreviewDebounced.cancel();
@@ -805,7 +839,10 @@ export class PreviewManager {
      */
     hideMobilePreview() {
         logger.debug('Hiding mobile preview overlay');
-        
+
+        // Clear all tracked timers to prevent stale callbacks
+        this.clearAllTimers();
+
         // Restore ALL hidden elements using stored references
         if (this.hiddenElements) {
             this.hiddenElements.forEach(hiddenElement => {

@@ -4,6 +4,7 @@
  */
 
 import { logger } from '../core/config.js';
+import { escapeHtml } from './dom.js';
 
 export class ToastNotifications {
     constructor() {
@@ -46,10 +47,12 @@ export class ToastNotifications {
         // Add icon based on type
         const icon = this.getIcon(type);
         
+        // Escape message to prevent XSS attacks
+        const safeMessage = escapeHtml(message);
         toast.innerHTML = `
             <div class="toast-content">
                 <span class="toast-icon">${icon}</span>
-                <span class="toast-message">${message}</span>
+                <span class="toast-message">${safeMessage}</span>
             </div>
         `;
 

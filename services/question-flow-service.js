@@ -149,6 +149,15 @@ class QuestionFlowService {
   }
 
   /**
+   * Get correct answer data for a question (alias for buildCorrectAnswerData)
+   * @param {Object} question - Question data
+   * @returns {Object} Correct answer data
+   */
+  getCorrectAnswerData(question) {
+    return this.buildCorrectAnswerData(question);
+  }
+
+  /**
    * Build correct answer data for a question
    * @param {Object} question - Question data
    * @returns {Object} Correct answer data

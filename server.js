@@ -413,13 +413,13 @@ app.post('/upload', upload.single('image'), (req, res) => {
 
       // Verify actual file content matches claimed type (magic byte check)
       // Use try/finally to ensure file descriptor is always closed
-      let fd;
+      let fd = null;
       const buffer = Buffer.alloc(12);
       try {
         fd = fs.openSync(req.file.path, 'r');
         fs.readSync(fd, buffer, 0, 12, 0);
       } finally {
-        if (fd !== undefined) {
+        if (fd !== null) {
           fs.closeSync(fd);
         }
       }
@@ -468,10 +468,31 @@ const pdfUpload = multer({
   }
 });
 
+// Helper to add timeout to async operations
+function withTimeout(promise, timeoutMs, errorMessage) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    )
+  ]);
+}
+
 app.post('/api/extract-pdf', pdfUpload.single('pdf'), async (req, res) => {
+  const PDF_PARSE_TIMEOUT_MS = 30000; // 30 second timeout for PDF parsing
+
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No PDF file uploaded' });
+    }
+
+    // Reject very large files early (before parsing)
+    const MAX_PDF_SIZE = 10 * 1024 * 1024; // 10MB
+    if (req.file.size > MAX_PDF_SIZE) {
+      return res.status(413).json({
+        error: 'PDF too large',
+        message: 'PDF file exceeds 10MB limit. Please use a smaller file or copy text manually.'
+      });
     }
 
     // Dynamic import of pdf-parse (optional dependency)
@@ -486,7 +507,12 @@ app.post('/api/extract-pdf', pdfUpload.single('pdf'), async (req, res) => {
       });
     }
 
-    const pdfData = await pdfParse(req.file.buffer);
+    // Parse with timeout to prevent hanging on malformed PDFs
+    const pdfData = await withTimeout(
+      pdfParse(req.file.buffer),
+      PDF_PARSE_TIMEOUT_MS,
+      'PDF parsing timed out. The file may be too complex or corrupted.'
+    );
 
     logger.info(`PDF extracted: ${req.file.originalname}, ${pdfData.numpages} pages, ${pdfData.text.length} chars`);
 
@@ -497,6 +523,12 @@ app.post('/api/extract-pdf', pdfUpload.single('pdf'), async (req, res) => {
     });
   } catch (error) {
     logger.error('PDF extraction error:', error);
+
+    // Provide user-friendly error messages
+    if (error.message.includes('timed out')) {
+      return res.status(408).json({ error: error.message });
+    }
+
     res.status(500).json({ error: 'Failed to extract text from PDF: ' + error.message });
   }
 });
@@ -721,6 +753,40 @@ app.get('/api/ollama/models', async (req, res) => {
   }
 });
 
+// BYOK (Bring Your Own Key) rate limiter for Claude API
+// Prevents abuse when users provide their own API keys
+const byokRateLimits = new Map();
+const BYOK_MAX_REQUESTS_PER_MINUTE = 10;
+const BYOK_WINDOW_MS = 60 * 1000; // 1 minute
+
+function checkByokRateLimit(ip) {
+  const now = Date.now();
+  const limit = byokRateLimits.get(ip);
+
+  if (!limit || now > limit.resetTime) {
+    byokRateLimits.set(ip, { count: 1, resetTime: now + BYOK_WINDOW_MS });
+    return { allowed: true, remaining: BYOK_MAX_REQUESTS_PER_MINUTE - 1 };
+  }
+
+  if (limit.count >= BYOK_MAX_REQUESTS_PER_MINUTE) {
+    const retryAfter = Math.ceil((limit.resetTime - now) / 1000);
+    return { allowed: false, retryAfter, remaining: 0 };
+  }
+
+  limit.count++;
+  return { allowed: true, remaining: BYOK_MAX_REQUESTS_PER_MINUTE - limit.count };
+}
+
+// Cleanup old BYOK rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, limit] of byokRateLimits.entries()) {
+    if (now > limit.resetTime + 60000) {
+      byokRateLimits.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+
 // Claude API proxy endpoint
 // Supports two modes:
 // 1. Server-side key: Set CLAUDE_API_KEY env var (recommended for production)
@@ -737,6 +803,24 @@ app.post('/api/claude/generate', async (req, res) => {
     // Use server-side API key if available, otherwise require client key
     const serverApiKey = process.env.CLAUDE_API_KEY;
     const apiKey = serverApiKey || clientApiKey;
+
+    // Apply rate limiting for BYOK mode only (server key has no limit)
+    if (!serverApiKey && clientApiKey) {
+      const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+      const rateCheck = checkByokRateLimit(clientIP);
+
+      if (!rateCheck.allowed) {
+        logger.warn(`BYOK rate limit exceeded for IP: ${clientIP}`);
+        return res.status(429).json({
+          error: 'Rate limit exceeded',
+          message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
+          retryAfter: rateCheck.retryAfter
+        });
+      }
+
+      // Add rate limit headers
+      res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
+    }
 
     if (!apiKey) {
       return res.status(400).json({

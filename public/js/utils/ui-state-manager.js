@@ -13,13 +13,15 @@ export class UIStateManager {
         this.previousState = null;
         this.uiRevealTimer = null;
         this.autoHideTimer = null;
+        this.inactivityTimer = null;
         this.gestureStartY = 0;
         this.gestureThreshold = 50; // pixels
-        
+        this.abortController = new AbortController(); // For cleanup of event listeners
+
         this.initializeElements();
         this.setupEventListeners();
         this.setupGestureNavigation();
-        
+
         logger.debug('🎮 UI State Manager initialized');
     }
 
@@ -78,11 +80,14 @@ export class UIStateManager {
                 </button>
             `;
             document.body.appendChild(uiReveal);
-            
-            // Setup UI reveal event listener
-            document.getElementById('ui-reveal-btn').addEventListener('click', () => {
-                this.temporaryUIReveal();
-            });
+
+            // Setup UI reveal event listener with abort signal
+            const revealBtn = document.getElementById('ui-reveal-btn');
+            if (revealBtn) {
+                revealBtn.addEventListener('click', () => {
+                    this.temporaryUIReveal();
+                }, { signal: this.abortController.signal });
+            }
         }
     }
 
@@ -90,84 +95,87 @@ export class UIStateManager {
      * Setup event listeners for state management
      */
     setupEventListeners() {
+        const signal = this.abortController.signal;
+
         // Listen for game events to automatically change states
         document.addEventListener('game-state-change', (event) => {
             this.setState(event.detail.state, event.detail.options);
-        });
-        
+        }, { signal });
+
         // Listen for escape key to reveal UI temporarily
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && this.currentState === 'playing') {
                 this.temporaryUIReveal();
             }
-        });
-        
+        }, { signal });
+
         // Auto-hide UI after period of inactivity during gameplay
-        let inactivityTimer;
         const resetInactivityTimer = () => {
-            clearTimeout(inactivityTimer);
+            clearTimeout(this.inactivityTimer);
             if (this.currentState === 'playing') {
-                inactivityTimer = setTimeout(() => {
+                this.inactivityTimer = setTimeout(() => {
                     this.hideUI();
                 }, 10000); // Hide after 10 seconds of inactivity
             }
         };
-        
-        document.addEventListener('mousemove', resetInactivityTimer);
-        document.addEventListener('touchstart', resetInactivityTimer);
-        document.addEventListener('keydown', resetInactivityTimer);
+
+        document.addEventListener('mousemove', resetInactivityTimer, { signal });
+        document.addEventListener('touchstart', resetInactivityTimer, { signal });
+        document.addEventListener('keydown', resetInactivityTimer, { signal });
     }
 
     /**
      * Setup gesture navigation for mobile UI control
      */
     setupGestureNavigation() {
+        const signal = this.abortController.signal;
         let gestureElement = document.body;
-        
+
         gestureElement.addEventListener('touchstart', (e) => {
             this.gestureStartY = e.touches[0].clientY;
-        }, { passive: true });
-        
+        }, { passive: true, signal });
+
         gestureElement.addEventListener('touchmove', (e) => {
             if (this.currentState !== 'playing') return;
-            
+
             const currentY = e.touches[0].clientY;
             const deltaY = currentY - this.gestureStartY;
-            
+
             // Swipe down from top to reveal UI
             if (deltaY > this.gestureThreshold && this.gestureStartY < 100) {
                 this.gestureUIReveal();
                 e.preventDefault();
             }
-        }, { passive: false });
+        }, { passive: false, signal });
     }
 
     /**
      * Setup floating controls event listeners
      */
     setupFloatingControlsEvents() {
+        const signal = this.abortController.signal;
         const floatingMenu = document.getElementById('floating-menu');
         const floatingTheme = document.getElementById('floating-theme');
         const floatingFullscreen = document.getElementById('floating-fullscreen');
-        
+
         if (floatingMenu) {
             floatingMenu.addEventListener('click', () => {
                 this.temporaryUIReveal();
-            });
+            }, { signal });
         }
-        
+
         if (floatingTheme) {
             floatingTheme.addEventListener('click', () => {
                 if (window.toggleTheme) {
                     window.toggleTheme();
                 }
-            });
+            }, { signal });
         }
-        
+
         if (floatingFullscreen) {
             floatingFullscreen.addEventListener('click', () => {
                 this.toggleFullscreen();
-            });
+            }, { signal });
         }
     }
 
@@ -391,8 +399,27 @@ export class UIStateManager {
      * Cleanup method
      */
     destroy() {
+        // Clear all timers
         this.clearAutoHideTimers();
-        // Remove event listeners would go here if we tracked them
+        if (this.inactivityTimer) {
+            clearTimeout(this.inactivityTimer);
+            this.inactivityTimer = null;
+        }
+
+        // Abort all event listeners
+        this.abortController.abort();
+
+        // Remove floating controls from DOM
+        const floatingControls = document.querySelector('.floating-controls');
+        if (floatingControls && floatingControls.parentNode) {
+            floatingControls.parentNode.removeChild(floatingControls);
+        }
+
+        const uiReveal = document.querySelector('.game-ui-reveal');
+        if (uiReveal && uiReveal.parentNode) {
+            uiReveal.parentNode.removeChild(uiReveal);
+        }
+
         logger.debug('🎮 UI State Manager destroyed');
     }
 }

@@ -17,20 +17,36 @@ export class SocketManager {
         this.currentPlayerName = null; // Store current player name for language updates
         this.abortController = new AbortController(); // For cleanup of event listeners
 
+        // Cached DOM element references (lazy-loaded)
+        this._cachedElements = {};
+
         this.initializeSocketListeners();
         this.initializeLanguageListener();
     }
 
     /**
-     * Escape HTML to prevent XSS attacks
-     * @param {string} text - Text to escape
-     * @returns {string} - Escaped text
+     * Get cached DOM element by ID (lazy-load and cache)
+     * @param {string} id - Element ID
+     * @returns {HTMLElement|null}
      */
-    escapeHtml(text) {
-        if (text === null || text === undefined) return '';
-        const div = document.createElement('div');
-        div.textContent = String(text);
-        return div.innerHTML;
+    _getElement(id) {
+        if (!this._cachedElements[id]) {
+            this._cachedElements[id] = document.getElementById(id);
+        }
+        return this._cachedElements[id];
+    }
+
+    /**
+     * Get cached DOM element by selector (lazy-load and cache)
+     * @param {string} selector - CSS selector
+     * @returns {HTMLElement|null}
+     */
+    _getElementBySelector(selector) {
+        const key = `sel:${selector}`;
+        if (!this._cachedElements[key]) {
+            this._cachedElements[key] = document.querySelector(selector);
+        }
+        return this._cachedElements[key];
     }
 
     /**
@@ -44,6 +60,10 @@ export class SocketManager {
 
         this.socket.on('disconnect', () => {
             logger.debug('Disconnected from server');
+            // Stop active timers to prevent phantom timer updates while disconnected
+            if (this.gameManager) {
+                this.gameManager.stopTimer();
+            }
         });
 
         // Game creation and joining
@@ -166,19 +186,19 @@ export class SocketManager {
 
         this.socket.on('show-next-button', (data) => {
             logger.debug('Showing next question button', data);
-            
+
             // Show buttons in leaderboard screen (original buttons)
-            const nextButton = document.getElementById('next-question');
+            const nextButton = this._getElement('next-question');
             if (nextButton) {
                 nextButton.style.display = 'block';
-                
+
                 // Update button text based on whether it's the last question
                 // Check both data.isLastQuestion and current question number vs total questions
                 const gameState = this.gameManager.stateManager?.getGameState();
                 const currentQuestion = gameState?.currentQuestion;
                 const isLastQuestion = (data && data.isLastQuestion) ||
                                      (currentQuestion && currentQuestion.questionNumber >= currentQuestion.totalQuestions);
-                
+
                 if (isLastQuestion) {
                     nextButton.textContent = translationManager.getTranslationSync('finish_quiz') || 'Finish Quiz';
                 } else {
@@ -199,14 +219,14 @@ export class SocketManager {
                 nextButton.style.cursor = '';
                 nextButton.style.boxShadow = '';
             }
-            
+
             // Also show buttons in host-game-screen (for statistics phase) - now in stats header
-            const statsControls = document.querySelector('.stats-controls');
-            const nextButtonStats = document.getElementById('next-question-stats');
+            const statsControls = this._getElementBySelector('.stats-controls');
+            const nextButtonStats = this._getElement('next-question-stats');
             if (statsControls && nextButtonStats) {
                 statsControls.style.display = 'flex';
                 nextButtonStats.style.display = 'block';
-                
+
                 // Update stats button text as well
                 if (data && data.isLastQuestion) {
                     nextButtonStats.textContent = translationManager.getTranslationSync('finish_quiz') || 'Finish Quiz';
@@ -218,17 +238,17 @@ export class SocketManager {
 
         this.socket.on('hide-next-button', () => {
             logger.debug('Hiding next question button');
-            
+
             // Hide button in leaderboard screen
-            const nextButton = document.getElementById('next-question');
+            const nextButton = this._getElement('next-question');
             if (nextButton) {
                 nextButton.style.display = 'none';
                 nextButton.onclick = null; // Clear onclick handler
             }
-            
+
             // Hide buttons in host-game-screen - now in stats header
-            const statsControls = document.querySelector('.stats-controls');
-            const nextButtonStats = document.getElementById('next-question-stats');
+            const statsControls = this._getElementBySelector('.stats-controls');
+            const nextButtonStats = this._getElement('next-question-stats');
             if (statsControls && nextButtonStats) {
                 statsControls.style.display = 'none';
                 nextButtonStats.style.display = 'none';
@@ -246,7 +266,7 @@ export class SocketManager {
             }
             
             // Hide manual advancement button
-            const nextButton = document.getElementById('next-question');
+            const nextButton = this._getElement('next-question');
             if (nextButton) {
                 nextButton.style.display = 'none';
                 nextButton.onclick = null;
@@ -318,7 +338,7 @@ export class SocketManager {
 
             // Update player count in lobby if we're in player lobby
             if (this.uiManager.currentScreen === 'player-lobby') {
-                const lobbyPlayerCount = document.getElementById('lobby-player-count');
+                const lobbyPlayerCount = this._getElement('lobby-player-count');
                 if (lobbyPlayerCount && data.players) {
                     lobbyPlayerCount.textContent = data.players.length;
                 }
@@ -407,19 +427,19 @@ export class SocketManager {
      */
     updatePlayerLobbyDisplay(gamePin, players) {
         // Update game PIN display
-        const lobbyPinDisplay = document.getElementById('lobby-pin-display');
+        const lobbyPinDisplay = this._getElement('lobby-pin-display');
         if (lobbyPinDisplay && gamePin) {
             lobbyPinDisplay.textContent = gamePin;
         }
 
         // Update player count
-        const lobbyPlayerCount = document.getElementById('lobby-player-count');
+        const lobbyPlayerCount = this._getElement('lobby-player-count');
         if (lobbyPlayerCount && players) {
             lobbyPlayerCount.textContent = players.length;
         }
 
         // Show the lobby info section
-        const lobbyInfo = document.getElementById('lobby-info');
+        const lobbyInfo = this._getElement('lobby-info');
         if (lobbyInfo) {
             lobbyInfo.style.display = 'flex';
         }
@@ -432,7 +452,7 @@ export class SocketManager {
      * @param {string} playerName - The name of the player who joined
      */
     updatePlayerWelcomeMessage(playerName) {
-        const playerInfo = document.getElementById('player-info');
+        const playerInfo = this._getElement('player-info');
         if (playerInfo && playerName && playerName !== 'Host') {
             // Store the player name for language updates
             this.currentPlayerName = playerName;
@@ -568,6 +588,12 @@ export class SocketManager {
     disconnect() {
         // Clean up event listeners
         this.abortController.abort();
+
+        // Clean up game state when intentionally disconnecting
+        if (this.gameManager) {
+            this.gameManager.cleanup();
+        }
+
         this.socket.disconnect();
     }
 }

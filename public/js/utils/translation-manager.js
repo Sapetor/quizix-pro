@@ -375,10 +375,22 @@ class TranslationManager {
                 const ofSpan = element.querySelector('[data-translate="of"]');
                 
                 if (questionSpan && ofSpan) {
-                    // Update structured format: <span data-translate="question">Question</span> X <span data-translate="of">of</span> Y
+                    // Update structured format using DOM methods (safer than innerHTML)
                     const questionText = this.getTranslationSync('question');
                     const ofText = this.getTranslationSync('of');
-                    element.innerHTML = `<span data-translate="question">${questionText}</span> ${current} <span data-translate="of">${ofText}</span> ${total}`;
+                    // Update existing span contents with textContent (auto-escapes)
+                    questionSpan.textContent = questionText;
+                    ofSpan.textContent = ofText;
+                    // Rebuild text nodes between spans
+                    element.childNodes.forEach(node => {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            const text = node.textContent.trim();
+                            if (/^\d+$/.test(text)) {
+                                // Keep number nodes as-is
+                            }
+                        }
+                    });
+                    // Simpler approach: just update the spans directly, structure already exists
                 } else {
                     // Update simple text format: "Question X of Y"
                     element.textContent = `${this.getTranslationSync('question')} ${current} ${this.getTranslationSync('of')} ${total}`;

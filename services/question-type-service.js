@@ -7,9 +7,17 @@
  * Note: Keep in sync with public/js/utils/question-type-registry.js
  */
 
+// Respect production environment - only log in development
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
+
 const logger = {
-  warn: (msg, ...args) => console.warn(`⚠️ [QuestionTypeService] ${msg}`, ...args),
-  error: (msg, ...args) => console.error(`❌ [QuestionTypeService] ${msg}`, ...args)
+  warn: (msg, ...args) => {
+    if (!isProduction) console.warn(`⚠️ [QuestionTypeService] ${msg}`, ...args);
+  },
+  error: (msg, ...args) => {
+    // Errors are always logged, but could be sent to external service in production
+    console.error(`❌ [QuestionTypeService] ${msg}`, ...args);
+  }
 };
 
 /**
