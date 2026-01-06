@@ -2826,16 +2826,49 @@
     }
     
     /* === HOST CODE BLOCKS MOBILE === */
-    
-    /* Host question code blocks inherit base styles on mobile */
-    
+
+    /* Host question code blocks on mobile - improved readability */
+    /* Must use theme selectors to override dark mode !important rules */
+    :not([data-theme="light"]) #current-question pre,
+    [data-theme="light"] #current-question pre,
+    #current-question pre {
+        font-size: 0.68rem !important;
+        padding: 12px !important;
+        margin: 12px auto !important;
+        max-width: calc(100vw - 48px) !important;
+        overflow-x: auto !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Add scroll indicator shadow for code blocks */
+    #current-question pre::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 20px;
+        background: linear-gradient(to right, transparent, rgba(0,0,0,0.3));
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    #current-question:has(pre) {
+        position: relative;
+    }
+
     /* Host option code blocks on mobile */
     .option-display pre {
-        font-size: 0.75rem;
-        padding: 12px;
-        margin: 10px 0;
+        font-size: 0.7rem;
+        padding: 10px;
+        margin: 8px 0;
         max-width: calc(100vw - 80px);
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
     /* Layout adjustments for code-heavy questions on mobile */
@@ -2982,15 +3015,23 @@
     }
     
     /* === ULTRA-MOBILE HOST CODE BLOCKS === */
-    
-    /* Host question code blocks inherit base styles on small screens */
-    
+
+    /* Host question code blocks on very small screens */
+    #current-question pre {
+        font-size: 0.58rem;
+        padding: 10px;
+        margin: 10px auto;
+        max-width: calc(100vw - 24px);
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
     /* Host option code blocks on very small screens */
     .option-display pre {
-        font-size: 0.65rem;
-        padding: 10px;
-        margin: 8px 0;
-        max-width: calc(100vw - 60px);
+        font-size: 0.6rem;
+        padding: 8px;
+        margin: 6px 0;
+        max-width: calc(100vw - 48px);
     }
     
     /* Ultra-compact layout for code-heavy questions */

@@ -1349,14 +1349,25 @@
         margin: 10px 5px;
     } */
     
-    /* Code blocks in mobile */
+    /* Code blocks in mobile - wrap long lines to prevent horizontal scroll */
+    /* Must use theme selectors with !important to override dark mode rules */
+    :not([data-theme="light"]) #player-question-text pre,
+    :not([data-theme="light"]) #current-question pre,
+    :not([data-theme="light"]) .player-option pre,
+    [data-theme="light"] #player-question-text pre,
+    [data-theme="light"] #current-question pre,
+    [data-theme="light"] .player-option pre,
     #player-question-text pre,
-    #current-question pre, /* Match host-side with client-side mobile styling */
+    #current-question pre,
     .player-option pre {
-        font-size: 0.7em;
-        padding: 12px;
-        max-width: calc(95vw - 20px);
-        overflow-x: auto;
+        font-size: 0.68rem !important;
+        padding: 12px !important;
+        max-width: calc(100vw - 48px) !important;
+        overflow-x: auto !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        -webkit-overflow-scrolling: touch;
     }
     
     .player-option:has(pre) {
