@@ -79,13 +79,29 @@ export class QuizManager {
         // Extract image data - check both src and dataset.url
         const imageElement = questionElement.querySelector('.question-image');
         if (imageElement) {
-            // First check dataset.url (where uploaded images are stored)
-            let imageUrl = imageElement.dataset.url || imageElement.src;
-            
+            // Prefer dataset.url (where uploaded images are stored)
+            // Only fall back to src if it's a meaningful URL (not empty or base URL)
+            let imageUrl = imageElement.dataset.url;
+
+            // If no dataset.url, check src but filter out browser-resolved empty URLs
+            if (!imageUrl) {
+                const srcUrl = imageElement.src;
+                // Exclude empty, base URL, or URLs that end with just a slash
+                const isEmptyOrBaseUrl = !srcUrl ||
+                    srcUrl === '' ||
+                    srcUrl === window.location.origin ||
+                    srcUrl === window.location.origin + '/' ||
+                    srcUrl.endsWith('/') && !srcUrl.includes('/uploads/');
+
+                if (!isEmptyOrBaseUrl) {
+                    imageUrl = srcUrl;
+                }
+            }
+
             // Validate that we have a meaningful image URL
-            if (imageUrl && imageUrl.trim() !== '' && !imageUrl.endsWith('/') && imageUrl !== window.location.origin && imageUrl !== window.location.origin + '/') {
+            if (imageUrl && imageUrl.trim() !== '') {
                 logger.debug('Found image for question:', imageUrl);
-                
+
                 // Handle data URIs (base64 images)
                 if (imageUrl.startsWith('data:')) {
                     questionData.image = imageUrl;
@@ -93,9 +109,6 @@ export class QuizManager {
                     // Use centralized imagePathResolver for consistent path handling
                     questionData.image = imagePathResolver.toStoragePath(imageUrl);
                 }
-            } else if (imageUrl) {
-                logger.warn('Invalid image URL format:', imageUrl);
-                questionData.image = ''; // Clear invalid URL
             }
             
             if (questionData.image) {
