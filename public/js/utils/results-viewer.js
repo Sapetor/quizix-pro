@@ -274,8 +274,19 @@ export class ResultsViewer {
         const resultsList = document.getElementById('results-list');
         if (resultsList) {
             resultsList.innerHTML = `
-                <div class="empty-results">
-                    <div class="icon">⚠️</div>
+                <div class="empty-results empty-state">
+                    <div class="empty-state-illustration">
+                        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Warning triangle -->
+                            <path d="M60 20L15 100h90L60 20z" fill="currentColor" opacity="0.1" stroke="currentColor" stroke-width="2.5" opacity="0.5"/>
+                            <!-- Exclamation mark -->
+                            <line x1="60" y1="45" x2="60" y2="70" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+                            <circle cx="60" cy="82" r="3" fill="currentColor" opacity="0.7"/>
+                            <!-- Small decorative elements -->
+                            <circle cx="25" cy="95" r="2" fill="currentColor" opacity="0.3"/>
+                            <circle cx="95" cy="95" r="2" fill="currentColor" opacity="0.3"/>
+                        </svg>
+                    </div>
                     <h4>Error</h4>
                     <p>${message}</p>
                 </div>
@@ -329,8 +340,22 @@ export class ResultsViewer {
 
         if (!this.filteredResults || this.filteredResults.length === 0) {
             resultsList.innerHTML = `
-                <div class="empty-results">
-                    <div class="icon">📊</div>
+                <div class="empty-results empty-state">
+                    <div class="empty-state-illustration">
+                        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Bar chart placeholder -->
+                            <rect x="15" y="70" width="18" height="35" rx="3" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+                            <rect x="40" y="50" width="18" height="55" rx="3" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+                            <rect x="65" y="60" width="18" height="45" rx="3" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+                            <rect x="90" y="40" width="18" height="65" rx="3" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+                            <!-- Magnifying glass with question mark -->
+                            <circle cx="55" cy="35" r="18" fill="none" stroke="currentColor" stroke-width="2.5" opacity="0.6"/>
+                            <line x1="68" y1="48" x2="82" y2="62" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+                            <text x="55" y="42" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor" opacity="0.5">?</text>
+                            <!-- Baseline -->
+                            <line x1="10" y1="105" x2="110" y2="105" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+                        </svg>
+                    </div>
                     <h4>No Results Found</h4>
                     <p>No quiz results match your search criteria.</p>
                 </div>
@@ -637,8 +662,24 @@ export class ResultsViewer {
 
         if (!fullResult.results || fullResult.results.length === 0) {
             participantResults.innerHTML = `
-                <div class="empty-results">
-                    <div class="icon">👥</div>
+                <div class="empty-results empty-state">
+                    <div class="empty-state-illustration">
+                        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Three person silhouettes (empty/ghost) -->
+                            <circle cx="35" cy="40" r="12" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3" opacity="0.4"/>
+                            <path d="M20 80c0-12 7-20 15-20s15 8 15 20" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3" opacity="0.4"/>
+                            <circle cx="60" cy="35" r="14" fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3" opacity="0.5"/>
+                            <path d="M42 85c0-14 8-23 18-23s18 9 18 23" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3" opacity="0.5"/>
+                            <circle cx="85" cy="40" r="12" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3" opacity="0.4"/>
+                            <path d="M70 80c0-12 7-20 15-20s15 8 15 20" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3" opacity="0.4"/>
+                            <!-- Question marks above -->
+                            <text x="35" y="22" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.4">?</text>
+                            <text x="60" y="16" text-anchor="middle" font-size="14" fill="currentColor" opacity="0.5">?</text>
+                            <text x="85" y="22" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.4">?</text>
+                            <!-- Ground line -->
+                            <line x1="15" y1="95" x2="105" y2="95" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+                        </svg>
+                    </div>
                     <h4>No Participants</h4>
                     <p>No participant data available for this quiz.</p>
                 </div>

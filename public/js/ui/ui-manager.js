@@ -275,6 +275,23 @@ export class UIManager {
             } else {
                 gamesContainer.innerHTML = `
                     <div class="no-games">
+                        <div class="empty-state-illustration">
+                            <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Game/Quiz cards stacked -->
+                                <rect x="25" y="35" width="50" height="60" rx="6" fill="currentColor" opacity="0.1" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+                                <rect x="30" y="30" width="50" height="60" rx="6" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+                                <rect x="35" y="25" width="50" height="60" rx="6" fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+                                <!-- Question mark on top card -->
+                                <text x="60" y="62" text-anchor="middle" font-size="28" font-weight="bold" fill="currentColor" opacity="0.6">?</text>
+                                <!-- Magnifying glass searching -->
+                                <circle cx="85" cy="80" r="16" fill="none" stroke="currentColor" stroke-width="3" opacity="0.7"/>
+                                <line x1="96" y1="91" x2="108" y2="103" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+                                <!-- Empty indicator dots -->
+                                <circle cx="50" cy="105" r="3" fill="currentColor" opacity="0.3"/>
+                                <circle cx="60" cy="105" r="3" fill="currentColor" opacity="0.3"/>
+                                <circle cx="70" cy="105" r="3" fill="currentColor" opacity="0.3"/>
+                            </svg>
+                        </div>
                         <h3>${translationManager.getTranslationSync('no_games_found')}</h3>
                         <p>${translationManager.getTranslationSync('ask_someone_host')}</p>
                     </div>
@@ -289,9 +306,25 @@ export class UIManager {
             
             gamesContainer.innerHTML = `
                 <div class="no-games">
+                    <div class="empty-state-illustration">
+                        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Cloud with X mark for connection error -->
+                            <path d="M85 65c8.284 0 15-6.716 15-15 0-7.18-5.044-13.178-11.786-14.647C87.412 25.726 79.18 18 69.167 18c-8.58 0-15.91 5.44-18.697 13.05C45.913 29.366 40.615 28 35 28c-13.807 0-25 11.193-25 25s11.193 25 25 25h50z" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="2.5" opacity="0.5"/>
+                            <!-- X mark on cloud -->
+                            <line x1="50" y1="40" x2="70" y2="60" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+                            <line x1="70" y1="40" x2="50" y2="60" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+                            <!-- Broken connection lines below -->
+                            <line x1="35" y1="80" x2="45" y2="90" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 4" opacity="0.4"/>
+                            <line x1="60" y1="75" x2="60" y2="95" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 4" opacity="0.4"/>
+                            <line x1="85" y1="80" x2="75" y2="90" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 4" opacity="0.4"/>
+                            <!-- Warning triangle -->
+                            <path d="M60 98l-8 14h16l-8-14z" fill="currentColor" opacity="0.6"/>
+                            <text x="60" y="110" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor" opacity="0.3">!</text>
+                        </svg>
+                    </div>
                     <h3>${translationManager.getTranslationSync('failed_load_games')}</h3>
                     <p>${translationManager.getTranslationSync('check_connection')}</p>
-                    <details style="margin-top: 10px; font-size: 0.8em; color: #666;">
+                    <details style="margin-top: 10px; font-size: 0.8em; opacity: 0.7;">
                         <summary>Debug Info (tap to expand)</summary>
                         <p><strong>Error:</strong> ${errorMessage}</p>
                         <p><strong>Host:</strong> ${window.location.host}</p>

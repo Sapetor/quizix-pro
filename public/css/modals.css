@@ -627,13 +627,14 @@
 .score-average { color: #f59e0b; }
 .score-poor { color: #ef4444; }
 
-/* Empty state */
+/* Empty state - enhanced with illustrations (see components.css for .empty-state base) */
 .empty-results {
     text-align: center;
     padding: 40px 20px;
     color: var(--text-secondary);
 }
 
+/* Legacy icon support (deprecated - use .empty-state-illustration instead) */
 .empty-results .icon {
     font-size: 3rem;
     margin-bottom: 15px;
@@ -641,8 +642,23 @@
 }
 
 .empty-results h4 {
-    margin-bottom: 10px;
+    margin: 0 0 8px 0;
     color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.empty-results p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* When using new empty-state class with empty-results */
+.empty-results.empty-state {
+    background: var(--glass-light);
+    border-radius: var(--border-radius-large);
+    border: 1px dashed var(--glass-border);
 }
 
 /* Dark theme adjustments */

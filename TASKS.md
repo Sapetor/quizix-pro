@@ -12,7 +12,7 @@ Work through these one at a time. After completing each task, commit and `/clear
 ## UX Improvements
 
 - [x] **UX-1**: Add tooltips to toolbar emoji buttons (➕ 💾 📂 🤖 👁️ etc)
-- [ ] **UX-2**: Add helpful illustration to empty states (No active games found)
+- [x] **UX-2**: Add helpful illustration to empty states (No active games found)
 - [ ] **UX-3**: Create first-time user onboarding tutorial/wizard
 - [ ] **UX-4**: Add keyboard shortcuts help overlay (press ? to show)
 - [ ] **UX-5**: Add question count/progress indicator in quiz editor
