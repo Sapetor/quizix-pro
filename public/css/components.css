@@ -975,9 +975,11 @@ select:focus-visible {
     font-size: 15px;
     min-height: 48px;
     min-width: 120px; /* Prevent narrowing at different zoom levels, reduced due to more space from hidden connection text */
+    width: fit-content; /* Allow button to grow with content for accessibility large font mode */
     border-radius: 12px;
     font-weight: 700;
     letter-spacing: -0.01em;
+    white-space: nowrap; /* Prevent text wrapping */
     background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600)) !important;
     box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25), 0 2px 6px rgba(0, 0, 0, 0.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
