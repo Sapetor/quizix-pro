@@ -34,6 +34,23 @@ body {
     display: none !important;
 }
 
+/* Screenshot Mode - Apply to document root to disable stacking context properties
+   that can cause rendering issues in full-page screenshots */
+html.screenshot-mode .modal {
+    contain: none !important;
+    will-change: auto !important;
+}
+
+html.screenshot-mode .modal-content {
+    will-change: auto !important;
+    backface-visibility: visible !important;
+}
+
+html.screenshot-mode .toast-container,
+html.screenshot-mode .toast {
+    will-change: auto !important;
+}
+
 /* Remove any jarring transitions during theme switching on load */
 body:not(.loaded) * {
     transition: none !important;

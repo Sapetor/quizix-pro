@@ -773,8 +773,9 @@ select:focus-visible {
 /* Mobile-specific language dropdown fixes */
 @media (max-width: 768px) {
     .header-controls .language-dropdown-options {
-        /* Use maximum z-index to ensure it appears above all elements including join container */
-        z-index: 2147483647; /* Maximum 32-bit integer for z-index */
+        /* High z-index to ensure it appears above all elements including join container */
+        /* Note: Reduced from 2147483647 to avoid browser rendering bugs in full-page screenshots */
+        z-index: 11000;
         /* Use fixed positioning on mobile to escape ALL stacking contexts */
         position: fixed !important;
         /* Position relative to the dropdown button */
@@ -797,8 +798,8 @@ select:focus-visible {
     /* Mobile dropdown positioning script will set left/top dynamically */
     .header-controls .language-dropdown.open .language-dropdown-options {
         /* Mobile positioning will be handled by JavaScript */
-        /* Force maximum visibility */
-        z-index: 2147483647 !important;
+        /* Force maximum visibility (reduced from 2147483647 to avoid screenshot rendering bugs) */
+        z-index: 11000 !important;
         visibility: visible !important;
         opacity: 1 !important;
         pointer-events: auto !important;
@@ -814,7 +815,7 @@ select:focus-visible {
     /* Aggressive body portal dropdown - when moved to body to escape ALL containers */
     body > .language-dropdown-options[data-portal-moved="true"] {
         position: fixed !important;
-        z-index: 2147483647 !important;
+        z-index: 11000 !important;
         visibility: visible !important;
         opacity: 1 !important;
         pointer-events: auto !important;

@@ -7,7 +7,7 @@ Work through these one at a time. After completing each task, commit and `/clear
 - [x] **BUG-1**: Fix Average Score calculation showing 493% in Results Viewer
 - [x] **BUG-2**: Fix split resize handle blocking clicks on mobile preview panel
 - [x] **BUG-3**: Fix Create Lobby button truncation in accessibility large font mode
-- [ ] **BUG-4**: Fix full-page screenshot CSS stacking context issue
+- [x] **BUG-4**: Fix full-page screenshot CSS stacking context issue
 
 ## UX Improvements
 

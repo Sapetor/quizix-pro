@@ -20,8 +20,10 @@
     padding: 20px;
     box-sizing: border-box;
     /* Performance optimizations for mobile and older devices */
+    /* Note: Using 'layout style' instead of 'layout style paint' to avoid
+       stacking context issues that cause clipping in full-page screenshots */
     will-change: opacity;
-    contain: layout style paint;
+    contain: layout style;
 }
 
 .modal-content {

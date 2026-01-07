@@ -1167,7 +1167,8 @@
         left: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
-        z-index: 999999 !important; /* Extremely high z-index to cover everything */
+        /* High z-index to cover everything (reduced from 999999 to avoid screenshot rendering bugs) */
+        z-index: 50000 !important;
         background: var(--background-primary) !important;
         backdrop-filter: none !important; /* Remove any transparency effects */
         -webkit-backdrop-filter: none !important;

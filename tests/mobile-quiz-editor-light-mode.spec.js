@@ -1,5 +1,25 @@
 const { test, expect } = require('@playwright/test');
 
+/**
+ * Helper function to take a full-page screenshot with proper stacking context handling
+ * Adds the screenshot-mode class to disable CSS properties that cause rendering issues
+ */
+async function takeCleanScreenshot(page, path) {
+  // Enable screenshot mode to disable stacking context properties
+  await page.evaluate(() => {
+    document.documentElement.classList.add('screenshot-mode');
+  });
+  await page.waitForTimeout(100); // Allow styles to apply
+
+  // Take screenshot
+  await page.screenshot({ path, fullPage: true });
+
+  // Disable screenshot mode
+  await page.evaluate(() => {
+    document.documentElement.classList.remove('screenshot-mode');
+  });
+}
+
 test.describe('Mobile Quiz Editor Light Mode Contrast Test', () => {
   test.beforeEach(async ({ page }) => {
     // Set mobile viewport to iPhone 12 dimensions (375x812)
@@ -50,10 +70,7 @@ test.describe('Mobile Quiz Editor Light Mode Contrast Test', () => {
     await page.waitForTimeout(1000);
     
     // Take screenshot of initial quiz editor state
-    await page.screenshot({ 
-      path: '.playwright-mcp/mobile-quiz-editor-light-mode-initial.png',
-      fullPage: true 
-    });
+    await takeCleanScreenshot(page, '.playwright-mcp/mobile-quiz-editor-light-mode-initial.png');
     
     // Step 3: Add a simple multiple choice question
     console.log('Step 3: Adding a simple multiple choice question');
@@ -81,10 +98,7 @@ test.describe('Mobile Quiz Editor Light Mode Contrast Test', () => {
     }
     
     // Take screenshot after adding question
-    await page.screenshot({ 
-      path: '.playwright-mcp/mobile-quiz-editor-with-question.png',
-      fullPage: true 
-    });
+    await takeCleanScreenshot(page, '.playwright-mcp/mobile-quiz-editor-with-question.png');
     
     // Step 4: Open mobile live preview
     console.log('Step 4: Opening mobile live preview');
@@ -122,10 +136,7 @@ test.describe('Mobile Quiz Editor Light Mode Contrast Test', () => {
     await page.waitForTimeout(2000);
     
     // Take screenshot of the mobile preview in light mode
-    await page.screenshot({ 
-      path: '.playwright-mcp/mobile-quiz-editor-light-mode-preview.png',
-      fullPage: true 
-    });
+    await takeCleanScreenshot(page, '.playwright-mcp/mobile-quiz-editor-light-mode-preview.png');
     
     // Step 6: Analyze contrast and UI elements
     console.log('Step 6: Analyzing contrast and UI elements');
@@ -196,10 +207,7 @@ test.describe('Mobile Quiz Editor Light Mode Contrast Test', () => {
     console.log(`Readable text elements: ${readableTextCount} out of ${Math.min(10, totalTextElements)} checked`);
     
     // Final screenshot with annotations
-    await page.screenshot({ 
-      path: '.playwright-mcp/mobile-quiz-editor-light-mode-final.png',
-      fullPage: true 
-    });
+    await takeCleanScreenshot(page, '.playwright-mcp/mobile-quiz-editor-light-mode-final.png');
     
     // Step 8: Assertions to verify proper functioning
     console.log('Step 8: Performing final assertions');
@@ -236,10 +244,7 @@ test.describe('Mobile Quiz Editor Light Mode Contrast Test', () => {
     }
     
     // Take screenshot in current theme
-    await page.screenshot({ 
-      path: '.playwright-mcp/mobile-theme-before-switch.png',
-      fullPage: true 
-    });
+    await takeCleanScreenshot(page, '.playwright-mcp/mobile-theme-before-switch.png');
     
     // Try to find and click theme toggle (use the specific main theme toggle button)
     const themeToggle = page.locator('#theme-toggle');
@@ -248,19 +253,13 @@ test.describe('Mobile Quiz Editor Light Mode Contrast Test', () => {
       await page.waitForTimeout(1000); // Wait for theme transition
       
       // Take screenshot after theme switch
-      await page.screenshot({ 
-        path: '.playwright-mcp/mobile-theme-after-switch.png',
-        fullPage: true 
-      });
-      
+      await takeCleanScreenshot(page, '.playwright-mcp/mobile-theme-after-switch.png');
+
       // Switch back to ensure we end in light mode
       await themeToggle.click();
       await page.waitForTimeout(1000);
-      
-      await page.screenshot({ 
-        path: '.playwright-mcp/mobile-theme-back-to-light.png',
-        fullPage: true 
-      });
+
+      await takeCleanScreenshot(page, '.playwright-mcp/mobile-theme-back-to-light.png');
     }
     
     expect(true).toBeTruthy(); // Test passes if we can execute without errors
