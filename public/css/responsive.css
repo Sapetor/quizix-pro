@@ -86,6 +86,12 @@
     .quiz-editor-section {
         padding: 30px 0 30px 45px; /* Slightly reduced for tablets but maintain left spacing */
     }
+
+    /* Hide resize handle on tablet/mobile - layout is single column, no split to resize */
+    .split-resize-handle {
+        display: none !important;
+        pointer-events: none !important;
+    }
 }
 
 /* Mobile and Small Tablet (768px and below) */
