@@ -311,6 +311,8 @@ export class ResultsManagerService {
 
     /**
      * Calculate summary statistics for results
+     * Uses correct answer percentage (not raw scores) to avoid inflated percentages
+     * from difficulty multipliers and time bonuses
      */
     calculateSummaryStats(results) {
         if (!results || results.length === 0) {
@@ -323,26 +325,26 @@ export class ResultsManagerService {
         }
 
         let totalParticipants = 0;
-        let totalScore = 0;
-        let totalPossibleScore = 0;
+        let totalCorrectAnswers = 0;
+        let totalQuestions = 0;
 
         results.forEach(result => {
             if (result.results && Array.isArray(result.results)) {
                 totalParticipants += result.results.length;
-                
+
                 result.results.forEach(player => {
-                    totalScore += player.score || 0;
-                    // Estimate max possible score if not provided
-                    const estimatedMax = player.maxScore || 
-                                       (player.answers?.length || 1) * 100;
-                    totalPossibleScore += estimatedMax;
+                    const answers = player.answers || [];
+                    const playerQuestions = answers.length;
+                    const playerCorrect = answers.filter(a => a?.isCorrect).length;
+                    totalCorrectAnswers += playerCorrect;
+                    totalQuestions += playerQuestions;
                 });
             }
         });
 
-        const averageScore = totalPossibleScore > 0 ? 
-            Math.round((totalScore / totalPossibleScore) * 100) : 0;
-        const averageParticipants = results.length > 0 ? 
+        const averageScore = totalQuestions > 0 ?
+            Math.round((totalCorrectAnswers / totalQuestions) * 100) : 0;
+        const averageParticipants = results.length > 0 ?
             Math.round(totalParticipants / results.length) : 0;
 
         return {
