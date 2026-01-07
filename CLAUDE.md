@@ -142,6 +142,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 9. **Verify Socket.IO events** - check both client and server event handlers when modifying real-time features
 10. **Test mobile carousels** - auto-play, pause/resume, gesture handling must work correctly
 11. **Use ImagePathResolver for all image paths** - Never manually construct image paths; always use `imagePathResolver.toStoragePath()` for saving and `imagePathResolver.toDisplayPath()` for display
+12. **Use theme-specific selectors for mobile CSS overrides** - Dark mode rules use `:not([data-theme="light"])` with `!important`, so mobile overrides must match this specificity pattern
 
 **Best Practices:**
 - Keep functions focused on single responsibilities
@@ -174,6 +175,24 @@ imageElement.src = displayPath; // Display: /quizmaster/uploads/file.gif
 // When rendering in game (full absolute URL)
 const absoluteUrl = imagePathResolver.toAbsoluteUrl(storagePath);
 imageElement.src = absoluteUrl; // Display: http://host/quizmaster/uploads/file.gif
+```
+
+**Theme-Specific CSS Override Pattern:**
+```css
+/* Problem: Dark mode rules use high-specificity selectors with !important */
+:not([data-theme="light"]) #current-question pre {
+    white-space: pre !important;  /* This blocks mobile overrides */
+}
+
+/* Solution: Mobile media queries MUST use the same theme selectors */
+@media (max-width: 768px) {
+    :not([data-theme="light"]) #current-question pre,
+    [data-theme="light"] #current-question pre,
+    #current-question pre {
+        white-space: pre-wrap !important;  /* Now overrides dark mode */
+        word-break: break-word !important;
+    }
+}
 ```
 
 ## Adding New Question Types
@@ -287,6 +306,7 @@ quizix-pro/
 - Reduced MathJax rendering delays on mobile
 - Zoom compatibility at 150%+ levels
 - Compact connection status (32px circular)
+- Code block line wrapping (`white-space: pre-wrap`) to prevent horizontal scroll
 
 **AI Integration:**
 - Claude API for intelligent question generation

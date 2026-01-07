@@ -48,9 +48,44 @@ public/css/
 
 ### CSS Specificity Calculation
 - Inline styles: 1,0,0,0
-- IDs: 0,1,0,0  
+- IDs: 0,1,0,0
 - Classes/attributes/pseudo-classes: 0,0,1,0
 - Elements/pseudo-elements: 0,0,0,1
+
+### Theme-Specific Selector Specificity
+
+**Critical Issue**: Dark mode rules use `:not([data-theme="light"])` selector with `!important`, creating high specificity that blocks simple mobile overrides.
+
+**Example** (from `game.css`):
+```css
+/* Dark mode rule - Specificity: 0,2,1,1 (pseudo-class + attribute + ID + element) */
+:not([data-theme="light"]) #current-question pre {
+    white-space: pre !important;
+}
+
+/* Simple mobile override - Specificity: 0,1,0,1 (ID + element) - FAILS */
+@media (max-width: 768px) {
+    #current-question pre {
+        white-space: pre-wrap !important;  /* Won't override! */
+    }
+}
+```
+
+**Solution**: Mobile overrides MUST include theme selectors to match specificity:
+```css
+@media (max-width: 768px) {
+    :not([data-theme="light"]) #current-question pre,
+    [data-theme="light"] #current-question pre,
+    #current-question pre {
+        white-space: pre-wrap !important;  /* Now overrides! */
+    }
+}
+```
+
+**Key Files with Theme Selectors**:
+- `game.css` lines 497-515: Dark mode code block styles
+- `game.css` lines 455-493: Light mode code block styles
+- `responsive.css` lines 1352-1371: Mobile code block overrides
 
 ## Checkbox Options Architecture
 
@@ -152,10 +187,13 @@ CSS changes may not appear due to browser caching. The project uses version-base
 
 **In index.html**:
 ```html
-<link rel="stylesheet" href="css/main.css?v=modular-4.1">
+<link rel="stylesheet" href="css/main.bundle.css?v=11.6">
 ```
 
-Update the version number when making significant CSS changes.
+**Important**: Update the version number when making CSS changes:
+1. Edit `public/index.html` (two places: preload and noscript)
+2. Increment version (e.g., `v=11.6` to `v=11.7`)
+3. Test with hard refresh or incognito window
 
 ## File Organization Best Practices
 
@@ -254,3 +292,47 @@ When modifying checkbox styling:
 - Always test both split-screen and modal preview modes
 - MathJax rendering requires proper timing after DOM updates
 - Question navigation needs robust bounds checking
+
+## Code Block Mobile Styling
+
+### Problem: Code Blocks Overflow on Mobile
+Code blocks with syntax highlighting were cut off horizontally on mobile host view, requiring horizontal scroll.
+
+### Root Cause
+1. Base styles set `white-space: pre` to preserve code formatting
+2. Dark mode rules in `game.css` used `:not([data-theme="light"])` with `!important`
+3. Simple mobile media query selectors couldn't override due to lower specificity
+
+### Solution
+Mobile overrides in `responsive.css` and `game.css` must:
+1. Use theme-specific selectors to match specificity
+2. Set `white-space: pre-wrap` to allow line wrapping
+3. Set `word-break: break-word` for long identifiers
+
+**Implemented Pattern** (in `responsive.css`):
+```css
+@media (max-width: 768px) {
+    :not([data-theme="light"]) #current-question pre,
+    :not([data-theme="light"]) #player-question-text pre,
+    :not([data-theme="light"]) .player-option pre,
+    [data-theme="light"] #current-question pre,
+    [data-theme="light"] #player-question-text pre,
+    [data-theme="light"] .player-option pre,
+    #current-question pre,
+    #player-question-text pre,
+    .player-option pre {
+        font-size: 0.68rem !important;
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+        max-width: calc(100vw - 48px) !important;
+    }
+}
+```
+
+### Testing Checklist
+When modifying code block styling:
+- [ ] Code wraps properly on mobile (no horizontal scroll)
+- [ ] Syntax highlighting colors preserved
+- [ ] Works in both dark and light themes
+- [ ] Font size readable on mobile (~0.68rem)
+- [ ] Long lines wrap at word boundaries when possible
