@@ -33,9 +33,9 @@
     color: var(--modal-text);
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
-    padding: 32px;
+    padding: calc(24px * var(--global-font-scale)); /* Scales with font for accessibility */
     width: 100%;
-    max-width: 600px;
+    max-width: min(600px, 95vw); /* Responsive max-width */
     max-height: 85vh;
     overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);

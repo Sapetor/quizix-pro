@@ -376,13 +376,13 @@ header {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    min-height: 160px; /* Increased from 120px */
+    min-height: calc(160px * var(--global-font-scale)); /* Scales with font for accessibility */
 }
 
 /* Bottom cards with increased heights for better space usage */
 .info-card,
 .action-card {
-    min-height: 100px; /* Increased from 60px */
+    min-height: calc(100px * var(--global-font-scale)); /* Scales with font for accessibility */
     padding: 20px; /* Increased from 12px */
 }
 
@@ -440,7 +440,7 @@ header {
 }
 
 .players-list-card .players-grid {
-    min-height: 100px;
+    min-height: calc(100px * var(--global-font-scale)); /* Scales with font for accessibility */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -657,7 +657,7 @@ header {
     width: 100%;
     font-size: 1.1rem;
     padding: 16px 24px;
-    min-height: 56px;
+    min-height: calc(56px * var(--global-font-scale)); /* Scales with font for accessibility */
 }
 
 /* General Players Grid Styling (now used in card) */
@@ -723,37 +723,37 @@ header {
     
     .lobby-card {
         padding: 15px;
-        min-height: 100px;
+        min-height: calc(100px * var(--global-font-scale)); /* Scales with font for accessibility */
     }
-    
+
     /* Bottom cards (Game Info and Ready to Start) maintain reduced height on mobile */
     .info-card,
     .action-card {
-        min-height: 70px;
+        min-height: calc(70px * var(--global-font-scale)); /* Scales with font for accessibility */
         padding: 12px;
     }
-    
+
     .pin-display {
         font-size: 1.5rem;
         padding: 8px 12px;
     }
-    
+
     .pin-plain-text {
         font-size: 0.75rem;
     }
-    
+
     .player-count-number {
         font-size: 1.8rem;
     }
-    
+
     .game-info-row {
         gap: 15px;
     }
-    
+
     .players-list-card .players-grid {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        min-height: 60px;
-        max-height: 80px;
+        min-height: calc(60px * var(--global-font-scale)); /* Scales with font for accessibility */
+        max-height: calc(80px * var(--global-font-scale)); /* Scales with font for accessibility */
     }
 }
 
@@ -777,13 +777,13 @@ header {
     .lobby-container {
         max-width: 1200px;
     }
-    
+
     .lobby-layout {
         gap: 25px;
     }
-    
+
     .lobby-card {
-        min-height: 140px;
+        min-height: calc(140px * var(--global-font-scale)); /* Scales with font for accessibility */
     }
 }
 

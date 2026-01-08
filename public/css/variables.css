@@ -177,11 +177,17 @@
     --code-content-max-width: 800px;
     --mixed-content-max-width: 750px;
     
-    /* Question type specific adjustments */
-    --multiple-choice-option-height: 60px;
-    --true-false-option-height: 65px;
-    --numeric-input-height: 50px;
-    --checkbox-option-height: 45px;
+    /* Question type specific adjustments - scale with font for accessibility */
+    --multiple-choice-option-height: calc(60px * var(--global-font-scale));
+    --true-false-option-height: calc(65px * var(--global-font-scale));
+    --numeric-input-height: calc(50px * var(--global-font-scale));
+    --checkbox-option-height: calc(45px * var(--global-font-scale));
+
+    /* Interactive element heights - scale with font for accessibility */
+    --button-min-height: calc(44px * var(--global-font-scale));
+    --input-min-height: calc(48px * var(--global-font-scale));
+    --timer-height: calc(48px * var(--global-font-scale));
+    --counter-height: calc(48px * var(--global-font-scale));
 
     /* Preview Settings Variables */
     --split-left: 50fr;

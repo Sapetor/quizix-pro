@@ -214,7 +214,7 @@
     justify-content: center;
     text-align: center;
     line-height: 1;
-    height: 48px; /* Match timer height for perfect alignment */
+    min-height: var(--counter-height); /* Scales with font for accessibility */
 }
 
 #timer {
@@ -233,7 +233,7 @@
     justify-content: center;
     text-align: center;
     line-height: 1;
-    height: 48px; /* Fixed height for consistent alignment */
+    min-height: var(--timer-height); /* Scales with font for accessibility */
 }
 
 #timer.warning {
@@ -3480,8 +3480,8 @@
     }
     
     .floating-control-btn {
-        width: 48px;
-        height: 48px;
+        width: var(--input-min-height); /* Scales with font for accessibility */
+        height: var(--input-min-height); /* Scales with font for accessibility */
         font-size: 20px;
     }
 }

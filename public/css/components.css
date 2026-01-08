@@ -98,7 +98,7 @@
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
-    min-height: 44px;
+    min-height: var(--button-min-height); /* Scales with --global-font-scale for accessibility */
     letter-spacing: -0.01em;
     
     /* Default Glass Style */
@@ -311,7 +311,7 @@ input, select, textarea {
     transition: all 0.2s ease;
     outline: none;
     box-shadow: var(--shadow-sm);
-    min-height: 48px; /* Touch-friendly */
+    min-height: var(--input-min-height); /* Scales with --global-font-scale for accessibility */
 }
 
 input:focus, select:focus, textarea:focus {
@@ -1041,16 +1041,16 @@ button:disabled:focus-visible {
     .header-controls .language-option {
         padding: 16px 20px;
         font-size: 16px;
-        min-height: 54px; /* Touch-friendly minimum height */
+        min-height: calc(54px * var(--global-font-scale)); /* Touch-friendly, scales with font */
         display: flex;
         align-items: center;
         gap: 12px;
     }
-    
+
     /* Ensure dropdown selected area is touch-friendly */
     .header-controls .language-dropdown-selected {
         padding: 12px 16px;
-        min-height: 48px;
+        min-height: var(--input-min-height); /* Scales with font */
         font-size: 16px;
         display: flex;
         align-items: center;
@@ -1174,7 +1174,7 @@ button:disabled:focus-visible {
 .header-controls .start-game-header {
     padding: 12px 20px;
     font-size: 15px;
-    min-height: 48px;
+    min-height: var(--input-min-height); /* Scales with font for accessibility */
     min-width: 120px; /* Prevent narrowing at different zoom levels, reduced due to more space from hidden connection text */
     width: fit-content; /* Allow button to grow with content for accessibility large font mode */
     border-radius: 12px;
@@ -2313,7 +2313,7 @@ button:disabled:focus-visible {
 
 .options-container input,
 .answer-options input {
-    min-height: 44px !important;
+    min-height: var(--button-min-height) !important; /* Scales with font for accessibility */
     padding: 12px !important;
     font-size: 15px !important;
     margin-bottom: 12px !important;
@@ -2757,12 +2757,12 @@ button:disabled:focus-visible {
 }
 
 /* === ACCESSIBILITY ENHANCEMENTS === */
-/* Larger touch targets for mobile */
+/* Larger touch targets for mobile - scales with font for accessibility */
 @media (max-width: 768px) {
     .player-option,
     .checkbox-option,
     .tf-option {
-        min-height: 48px; /* Minimum touch target size */
+        min-height: var(--input-min-height); /* Scales with font for accessibility */
         padding: 12px 16px !important;
     }
 }
@@ -3916,7 +3916,7 @@ html {
 
 .ordering-option {
     flex: 1;
-    min-height: 44px;
+    min-height: var(--button-min-height); /* Scales with font for accessibility */
     padding: 10px 14px !important;
     font-size: 15px !important;
     background: var(--glass-light) !important;
