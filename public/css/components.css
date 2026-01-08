@@ -1201,6 +1201,41 @@ select:focus-visible {
     transform: none !important;
 }
 
+/* === EDITOR QUESTION COUNT INDICATOR === */
+.editor-question-count {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    margin: 16px 0;
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.question-count-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.question-count-label {
+    font-size: 1rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Light theme adjustment */
+[data-theme="light"] .editor-question-count {
+    background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-500));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 /* AI Generator Modal checkbox labels - prevent gray backgrounds */
 .ai-generator-modal .checkbox-label,
 #ai-generator-modal .checkbox-label,

@@ -44,6 +44,7 @@ export default {
         offline: "Offline",
         players: "giocatori",
         questions: "domande",
+        questions_total: "Domande",
         next_question: "Prossima Domanda",
         submit_answer: "Invia Risposta",
         true: "VERO",

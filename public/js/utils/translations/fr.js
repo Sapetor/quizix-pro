@@ -47,6 +47,7 @@ export default {
         offline: "Hors ligne",
         players: "joueurs",
         questions: "questions",
+        questions_total: "Questions",
         next_question: "Question Suivante",
         submit_answer: "Soumettre la Réponse",
         true: "VRAI",

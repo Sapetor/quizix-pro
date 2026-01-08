@@ -56,6 +56,7 @@ export default {
         offline: "Desconectado",
         players: "jugadores",
         questions: "preguntas",
+        questions_total: "Preguntas",
         next_question: "Siguiente Pregunta",
         submit_answer: "Enviar Respuesta",
         true: "VERDADERO",

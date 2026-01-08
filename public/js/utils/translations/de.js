@@ -49,6 +49,7 @@ export default {
         offline: "Offline",
         players: "Spieler",
         questions: "Fragen",
+        questions_total: "Fragen",
         next_question: "Nächste Frage",
         submit_answer: "Antwort abschicken",
         true: "WAHR",

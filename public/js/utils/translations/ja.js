@@ -49,6 +49,7 @@ export default {
         offline: "オフライン",
         players: "プレイヤー",
         questions: "質問",
+        questions_total: "問",
         next_question: "次の質問",
         submit_answer: "回答を送信",
         true: "正しい",

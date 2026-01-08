@@ -60,6 +60,7 @@ export default {
         quality: "Quality",
         players: "players",
         questions: "questions",
+        questions_total: "Questions",
         next_question: "Next Question",
         submit_answer: "Submit Answer",
         true: "TRUE",

@@ -48,6 +48,7 @@ export default {
         offline: "Offline",
         players: "graczy",
         questions: "pytań",
+        questions_total: "Pytań",
         next_question: "Następne Pytanie",
         submit_answer: "Prześlij Odpowiedź",
         true: "PRAWDA",

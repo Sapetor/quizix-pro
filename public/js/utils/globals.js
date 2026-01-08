@@ -478,12 +478,63 @@ export function removeQuestion(buttonElement) {
     const questionItem = buttonElement.closest('.question-item');
     if (questionItem) {
         questionItem.remove();
-        
+
         // Update questions UI in single operation to prevent visual glitches
         if (window.game && window.game.quizManager && window.game.quizManager.updateQuestionsUI) {
             window.game.quizManager.updateQuestionsUI();
         }
+
+        // Dispatch custom event for question count update
+        const questionsContainer = document.getElementById('questions-container');
+        const newCount = questionsContainer ? questionsContainer.children.length : 0;
+        const event = new CustomEvent('questionRemoved', {
+            detail: { questionCount: newCount }
+        });
+        document.dispatchEvent(event);
     }
+}
+
+/**
+ * Update the editor question count indicator
+ * Called when questions are added, removed, or quiz is loaded
+ */
+export function updateEditorQuestionCount() {
+    const questionsContainer = document.getElementById('questions-container');
+    const countElement = document.getElementById('editor-question-count-number');
+
+    if (!questionsContainer || !countElement) {
+        return;
+    }
+
+    const count = questionsContainer.children.length;
+    countElement.textContent = count;
+    logger.debug(`Editor question count updated: ${count}`);
+}
+
+/**
+ * Initialize editor question count listeners
+ * Sets up event handlers for dynamic count updates
+ */
+export function initializeEditorQuestionCount() {
+    // Update count on page load
+    updateEditorQuestionCount();
+
+    // Listen for question added events
+    document.addEventListener('questionAdded', () => {
+        updateEditorQuestionCount();
+    });
+
+    // Listen for question removed events
+    document.addEventListener('questionRemoved', () => {
+        updateEditorQuestionCount();
+    });
+
+    // Listen for quiz loaded events (custom event from quiz-manager)
+    document.addEventListener('quizLoaded', () => {
+        updateEditorQuestionCount();
+    });
+
+    logger.debug('Editor question count listeners initialized');
 }
 
 export function scrollToCurrentQuestion() {
@@ -933,8 +984,10 @@ function initializeBackToTopButton() {
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeBackToTopButton);
+    document.addEventListener('DOMContentLoaded', initializeEditorQuestionCount);
 } else {
     initializeBackToTopButton();
+    initializeEditorQuestionCount();
 }
 
 // Global function registry - consolidated approach to reduce namespace pollution
@@ -959,7 +1012,9 @@ const globalFunctions = {
     uploadImage,
     removeImage,
     removeQuestion,
-    
+    updateEditorQuestionCount,
+    initializeEditorQuestionCount,
+
     // Navigation functions
     scrollToCurrentQuestion,
     scrollToTop,
@@ -1049,3 +1104,5 @@ window.toggleLanguageDropdown = toggleLanguageDropdown;   // Internal/fallback u
 window.openAIGeneratorModal = openAIGeneratorModal;       // Lazy-loaded AI functionality
 window.uploadImage = uploadImage;                         // Internal usage
 window.removeQuestion = removeQuestion;                   // Internal usage
+window.updateEditorQuestionCount = updateEditorQuestionCount;   // Editor question count
+window.initializeEditorQuestionCount = initializeEditorQuestionCount; // Editor count init

@@ -44,6 +44,7 @@ export default {
         offline: "离线",
         players: "玩家",
         questions: "问题",
+        questions_total: "题",
         next_question: "下一个问题",
         submit_answer: "提交答案",
         true: "正确",

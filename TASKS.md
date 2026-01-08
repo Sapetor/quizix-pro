@@ -15,7 +15,7 @@ Work through these one at a time. After completing each task, commit and `/clear
 - [x] **UX-2**: Add helpful illustration to empty states (No active games found)
 - [x] **UX-3**: Create first-time user onboarding tutorial/wizard
 - [x] **UX-4**: Add keyboard shortcuts help overlay (press ? to show)
-- [ ] **UX-5**: Add question count/progress indicator in quiz editor
+- [x] **UX-5**: Add question count/progress indicator in quiz editor
 
 ## Accessibility
 

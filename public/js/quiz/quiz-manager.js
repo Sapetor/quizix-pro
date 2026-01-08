@@ -472,6 +472,12 @@ export class QuizManager {
                 try {
                     await this.populateQuizBuilder(cleanedData);
                     logger.debug('Quiz populated successfully');
+
+                    // Dispatch quizLoaded event for editor question count update
+                    const event = new CustomEvent('quizLoaded', {
+                        detail: { questionCount: cleanedData.questions.length, title: cleanedData.title }
+                    });
+                    document.dispatchEvent(event);
                 } catch (populateError) {
                     logger.warn('Error in populateQuizBuilder, but continuing:', populateError);
                     // Continue anyway - don't let this break the flow
