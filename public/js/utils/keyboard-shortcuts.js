@@ -380,7 +380,7 @@ export class KeyboardShortcuts {
             <div class="modal-content shortcuts-help-content">
                 <div class="modal-header">
                     <h2>⌨️ Keyboard Shortcuts</h2>
-                    <button class="close-btn">×</button>
+                    <button class="close-btn" aria-label="Close" data-translate-aria-label="close">×</button>
                 </div>
                 <div class="shortcuts-body">
         `;

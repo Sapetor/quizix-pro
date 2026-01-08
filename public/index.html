@@ -385,7 +385,7 @@
                 <!-- Mobile Controls in Header -->
                 <div class="mobile-header-controls">
                     <!-- Return to Main Button (only visible when not on main menu) -->
-                    <button id="mobile-return-to-main" class="mobile-control-btn mobile-header return-to-main-btn mobile-only" onclick="returnToMainFromHeader()" data-translate-title="return_to_main" style="display: none;">
+                    <button id="mobile-return-to-main" class="mobile-control-btn mobile-header return-to-main-btn mobile-only" onclick="returnToMainFromHeader()" data-translate-title="return_to_main" data-translate-aria-label="return_to_main" style="display: none;">
                         <span class="control-icon">🏠</span>
                         <span class="control-label" data-translate="return_to_main">Return to Main Menu</span>
                     </button>
@@ -440,13 +440,13 @@
                     </div>
                     
                     <!-- Theme Toggle -->
-                    <button id="theme-toggle-mobile-header" class="mobile-control-btn mobile-header" data-translate-title="toggle_dark_mode_tooltip">
+                    <button id="theme-toggle-mobile-header" class="mobile-control-btn mobile-header" data-translate-title="toggle_dark_mode_tooltip" data-translate-aria-label="toggle_dark_mode_tooltip">
                         <span class="control-icon">☀️</span>
                         <span class="control-label" data-translate="theme">theme</span>
                     </button>
 
                     <!-- Sound Toggle -->
-                    <button id="sound-toggle-mobile-header" class="mobile-control-btn mobile-header" data-translate-title="toggle_sound_tooltip">
+                    <button id="sound-toggle-mobile-header" class="mobile-control-btn mobile-header" data-translate-title="toggle_sound_tooltip" data-translate-aria-label="toggle_sound_tooltip">
                         <span class="control-icon">🔊</span>
                         <span class="control-label" data-translate="sound">sound</span>
                     </button>
@@ -507,40 +507,40 @@
                 <!-- Horizontal Toolbar (shown only in host editing mode) -->
                 <div class="horizontal-toolbar" id="horizontal-toolbar" style="display: none;">
                     <div class="toolbar-group">
-                        <button class="toolbar-btn" id="toolbar-add-question" data-translate-title="add_question_tooltip">
+                        <button class="toolbar-btn" id="toolbar-add-question" data-translate-title="add_question_tooltip" data-translate-aria-label="add_question_tooltip">
                             <span class="toolbar-icon">➕</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip">
+                        <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip" data-translate-aria-label="save_quiz_tooltip">
                             <span class="toolbar-icon">💾</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip">
+                        <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip" data-translate-aria-label="load_quiz_tooltip">
                             <span class="toolbar-icon">📂</span>
                         </button>
                     </div>
                     
                     <div class="toolbar-group">
-                        <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip">
+                        <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip" data-translate-aria-label="ai_generator_tooltip">
                             <span class="toolbar-icon">🤖</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-preview" data-translate-title="toggle_preview_tooltip">
+                        <button class="toolbar-btn" id="toolbar-preview" data-translate-title="toggle_preview_tooltip" data-translate-aria-label="toggle_preview_tooltip">
                             <span class="toolbar-icon">👁️</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_quiz_tooltip">
+                        <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_quiz_tooltip" data-translate-aria-label="import_quiz_tooltip">
                             <span class="toolbar-icon">📥</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-export" data-translate-title="export_quiz_tooltip">
+                        <button class="toolbar-btn" id="toolbar-export" data-translate-title="export_quiz_tooltip" data-translate-aria-label="export_quiz_tooltip">
                             <span class="toolbar-icon">📤</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-results" data-translate-title="view_results_tooltip">
+                        <button class="toolbar-btn" id="toolbar-results" data-translate-title="view_results_tooltip" data-translate-aria-label="view_results_tooltip">
                             <span class="toolbar-icon">📊</span>
                         </button>
                     </div>
                     
                     <div class="toolbar-group">
-                        <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip">
+                        <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip" data-translate-aria-label="back_to_top_tooltip">
                             <span class="toolbar-icon">⬆️</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip">
+                        <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip" data-translate-aria-label="go_to_bottom_tooltip">
                             <span class="toolbar-icon">⬇️</span>
                         </button>
                     </div>
@@ -549,17 +549,17 @@
                 <!-- Desktop Theme and Controls (hidden on mobile) -->
                 <!-- Global Font Size Control (hidden on mobile) -->
                 <div class="font-size-control">
-                    <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size_tooltip" onclick="toggleGlobalFontSize();">
+                    <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size_tooltip" data-translate-aria-label="adjust_font_size_tooltip" onclick="toggleGlobalFontSize();">
                         <span id="font-size-icon">A</span>
                     </button>
                 </div>
-                
-                <button id="desktop-return-to-main" class="theme-toggle desktop-only" data-translate-title="return_to_main" onclick="returnToMainFromHeader()" style="display: none;">
+
+                <button id="desktop-return-to-main" class="theme-toggle desktop-only" data-translate-title="return_to_main" data-translate-aria-label="return_to_main" onclick="returnToMainFromHeader()" style="display: none;">
                     <span class="control-icon">🏠</span>
                 </button>
-                <button id="fullscreen-toggle" class="theme-toggle" data-translate-title="toggle_fullscreen_tooltip">⛶</button>
-                <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip">☀️</button>
-                <button id="sound-toggle" class="sound-toggle" data-translate-title="toggle_sound_tooltip">🔊</button>
+                <button id="fullscreen-toggle" class="theme-toggle" data-translate-title="toggle_fullscreen_tooltip" data-translate-aria-label="toggle_fullscreen_tooltip">⛶</button>
+                <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip" data-translate-aria-label="toggle_dark_mode_tooltip">☀️</button>
+                <button id="sound-toggle" class="sound-toggle" data-translate-title="toggle_sound_tooltip" data-translate-aria-label="toggle_sound_tooltip">🔊</button>
             </div>
         </header>
 
@@ -919,8 +919,8 @@
                     
                     <div class="preview-navigation-bar">
                         <div class="preview-nav-section">
-                            <button id="preview-prev-split" class="nav-btn">◀</button>
-                            <button id="preview-next-split" class="nav-btn">▶</button>
+                            <button id="preview-prev-split" class="nav-btn" data-translate-aria-label="previous">◀</button>
+                            <button id="preview-next-split" class="nav-btn" data-translate-aria-label="next">▶</button>
                         </div>
                         <span id="preview-question-counter-split">Q1/1</span>
                         <div class="preview-nav-section">
@@ -1012,7 +1012,7 @@
                     <div class="preview-title-section">
                         <h2>📱 <span data-translate="question_preview">Question Preview</span></h2>
                     </div>
-                    <button id="close-preview" class="close-btn" onclick="closePreviewModal()">×</button>
+                    <button id="close-preview" class="close-btn" onclick="closePreviewModal()" data-translate-aria-label="close">×</button>
                 </div>
                 
                 <div class="preview-navigation-bar">
@@ -1439,7 +1439,7 @@
             <div class="modal-content large">
                 <div class="modal-header">
                     <h3>🤖 <span data-translate="ai_generator">AI Question Generator</span></h3>
-                    <button id="close-ai-generator" class="close-btn">&times;</button>
+                    <button id="close-ai-generator" class="close-btn" data-translate-aria-label="close">&times;</button>
                 </div>
                 
                 <div class="ai-config-section">
@@ -1601,7 +1601,7 @@
         <div class="modal-content large">
             <div class="modal-header">
                 <h3>📝 <span data-translate="preview_generated_questions">Preview Generated Questions</span></h3>
-                <button id="close-question-preview" class="close-btn">&times;</button>
+                <button id="close-question-preview" class="close-btn" data-translate-aria-label="close">&times;</button>
             </div>
 
             <div class="preview-instructions">
@@ -1639,7 +1639,7 @@
         <div class="modal-content large">
             <div class="modal-header">
                 <h3>📊 <span data-translate="view_quiz_results">Quiz Results History</span></h3>
-                <button id="close-results-viewer" class="close-btn">&times;</button>
+                <button id="close-results-viewer" class="close-btn" data-translate-aria-label="close">&times;</button>
             </div>
             
             <div class="results-content">
@@ -1693,7 +1693,7 @@
         <div class="modal-content large">
             <div class="modal-header">
                 <h3 id="result-detail-title" data-translate="quiz_results_detail">Quiz Results Detail</h3>
-                <button id="close-result-detail" class="close-btn">&times;</button>
+                <button id="close-result-detail" class="close-btn" data-translate-aria-label="close">&times;</button>
             </div>
             
             <div class="result-detail-content">
@@ -1752,7 +1752,7 @@
             <div class="mobile-quiz-sheet-header">
                 <div class="mobile-quiz-sheet-handle" onclick="hideMobileQuizSheet()"></div>
                 <h3 class="mobile-quiz-sheet-title" data-translate="quiz_actions">Quiz Actions</h3>
-                <button class="mobile-quiz-sheet-close" onclick="hideMobileQuizSheet()">×</button>
+                <button class="mobile-quiz-sheet-close" onclick="hideMobileQuizSheet()" data-translate-aria-label="close">×</button>
             </div>
             
             <div class="mobile-quiz-sheet-content">
