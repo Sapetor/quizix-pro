@@ -16,6 +16,7 @@ import './utils/mobile-carousel.js'; // Airbnb-style mobile carousel for main me
 import './utils/main-menu-carousel.js'; // Main menu preview carousel
 import './utils/mobile-quiz-controls.js'; // Mobile quiz management controls (FAB and bottom sheet)
 import './utils/mobile-question-carousel.js'; // Mobile question carousel for quiz editor
+import { onboardingTutorial } from './utils/onboarding-tutorial.js'; // First-time user onboarding
 
 /**
  * Update language dropdown display to show the currently selected language
@@ -177,7 +178,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         logger.debug(`App initialized for ${isMobile ? 'mobile' : 'desktop'} layout`);
-        
+
+        // Start onboarding tutorial for first-time users
+        // Delay slightly to ensure UI is fully rendered
+        setTimeout(() => {
+            if (onboardingTutorial.shouldShowOnboarding()) {
+                onboardingTutorial.start();
+                logger.debug('Onboarding tutorial started for first-time user');
+            }
+        }, 800);
+
         // FOUC Prevention: Add loaded class for smooth appearance
         document.body.classList.add('loaded');
         

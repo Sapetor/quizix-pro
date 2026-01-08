@@ -475,6 +475,27 @@ export default {
         toggle_sound_tooltip: "Ton umschalten",
         sound: "Ton",
         mute_sound: "Ton ausschalten",
-        unmute_sound: "Ton einschalten"
+        unmute_sound: "Ton einschalten",
 
+        // Onboarding tutorial
+        onboarding_step1_title: "Spiel erstellen",
+        onboarding_step1_content: "Starten Sie hier, um Ihr eigenes Quiz zu erstellen. Klicken Sie auf diese Schaltfläche, um den Editor zu öffnen.",
+        onboarding_step2_title: "Fragen hinzufügen",
+        onboarding_step2_content: "Verwenden Sie diese Schaltfläche, um neue Fragen hinzuzufügen. Sie können Multiple-Choice, Wahr/Falsch, numerische und Reihenfolge-Fragen erstellen.",
+        onboarding_step3_title: "Quiz speichern",
+        onboarding_step3_content: "Vergessen Sie nicht zu speichern! Klicken Sie hier, um Ihr Quiz zu speichern.",
+        onboarding_step4_title: "KI-Fragengenerator",
+        onboarding_step4_content: "Lassen Sie KI Ihnen helfen! Fügen Sie Inhalte ein und die KI generiert Fragen für Sie.",
+        onboarding_step5_title: "Vorschau",
+        onboarding_step5_content: "Sehen Sie, wie Ihre Fragen für die Spieler aussehen werden, bevor Sie beginnen.",
+        onboarding_step6_title: "Lobby erstellen",
+        onboarding_step6_content: "Bereit zu spielen? Klicken Sie hier, um eine Lobby zu erstellen und einen PIN-Code zum Teilen zu erhalten.",
+        onboarding_step7_title: "Spiel beitreten",
+        onboarding_step7_content: "Oder treten Sie als Spieler bei! Geben Sie den 6-stelligen PIN ein, den der Gastgeber geteilt hat.",
+        onboarding_next: "Weiter",
+        onboarding_back: "Zurück",
+        onboarding_skip: "Überspringen",
+        onboarding_finish: "Los geht's!",
+        onboarding_dont_show: "Nicht mehr anzeigen",
+        onboarding_step_of: "Schritt {0} von {1}"
 };

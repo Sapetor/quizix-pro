@@ -458,6 +458,27 @@ export default {
         toggle_sound_tooltip: "切换声音",
         sound: "声音",
         mute_sound: "静音",
-        unmute_sound: "取消静音"
+        unmute_sound: "取消静音",
 
+        // Onboarding tutorial
+        onboarding_step1_title: "创建游戏",
+        onboarding_step1_content: "从这里开始创建您自己的测验。点击此按钮进入编辑器。",
+        onboarding_step2_title: "添加问题",
+        onboarding_step2_content: "使用此按钮添加新问题。您可以创建选择题、判断题、数字题和排序题。",
+        onboarding_step3_title: "保存测验",
+        onboarding_step3_content: "别忘了保存！点击这里保存您的测验。",
+        onboarding_step4_title: "AI问题生成器",
+        onboarding_step4_content: "让AI帮助您！粘贴任何内容，AI将为您生成问题。",
+        onboarding_step5_title: "预览问题",
+        onboarding_step5_content: "在开始游戏之前，查看问题对玩家的显示效果。",
+        onboarding_step6_title: "创建大厅",
+        onboarding_step6_content: "准备好玩了吗？点击这里创建大厅并获取分享的PIN码。",
+        onboarding_step7_title: "加入游戏",
+        onboarding_step7_content: "或者作为玩家加入！输入主持人分享的6位PIN码。",
+        onboarding_next: "下一步",
+        onboarding_back: "返回",
+        onboarding_skip: "跳过教程",
+        onboarding_finish: "开始！",
+        onboarding_dont_show: "不再显示",
+        onboarding_step_of: "步骤 {0}/{1}"
 };

@@ -476,5 +476,27 @@ export default {
         toggle_sound_tooltip: "Alternar sonido",
         sound: "Sonido",
         mute_sound: "Silenciar sonido",
-        unmute_sound: "Activar sonido"
+        unmute_sound: "Activar sonido",
+
+        // Onboarding tutorial
+        onboarding_step1_title: "Crear un Juego",
+        onboarding_step1_content: "Comienza aquí para crear tu propio cuestionario. Haz clic en este botón para entrar al editor.",
+        onboarding_step2_title: "Agregar Preguntas",
+        onboarding_step2_content: "Usa este botón para agregar nuevas preguntas. Puedes crear preguntas de opción múltiple, verdadero/falso, numéricas y de ordenamiento.",
+        onboarding_step3_title: "Guardar tu Cuestionario",
+        onboarding_step3_content: "¡No olvides guardar! Haz clic aquí para guardar tu cuestionario y usarlo después.",
+        onboarding_step4_title: "Generador de Preguntas IA",
+        onboarding_step4_content: "¡Deja que la IA te ayude! Pega cualquier contenido y la IA generará preguntas para ti.",
+        onboarding_step5_title: "Vista Previa",
+        onboarding_step5_content: "Mira cómo se verán tus preguntas para los jugadores antes de iniciar el juego.",
+        onboarding_step6_title: "Crear Sala",
+        onboarding_step6_content: "¿Listo para jugar? Haz clic aquí para crear una sala y obtener un PIN para compartir.",
+        onboarding_step7_title: "Unirse a un Juego",
+        onboarding_step7_content: "¡O únete como jugador! Ingresa el PIN de 6 dígitos que compartió el anfitrión.",
+        onboarding_next: "Siguiente",
+        onboarding_back: "Atrás",
+        onboarding_skip: "Saltar Tour",
+        onboarding_finish: "¡Comenzar!",
+        onboarding_dont_show: "No mostrar de nuevo",
+        onboarding_step_of: "Paso {0} de {1}"
 };

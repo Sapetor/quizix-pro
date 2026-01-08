@@ -462,6 +462,27 @@ export default {
         toggle_sound_tooltip: "Przełącz dźwięk",
         sound: "Dźwięk",
         mute_sound: "Wycisz dźwięk",
-        unmute_sound: "Włącz dźwięk"
+        unmute_sound: "Włącz dźwięk",
 
+        // Onboarding tutorial
+        onboarding_step1_title: "Utwórz Grę",
+        onboarding_step1_content: "Zacznij tutaj, aby stworzyć własny quiz. Kliknij ten przycisk, aby wejść do edytora.",
+        onboarding_step2_title: "Dodaj Pytania",
+        onboarding_step2_content: "Użyj tego przycisku, aby dodać nowe pytania. Możesz tworzyć pytania wielokrotnego wyboru, prawda/fałsz, numeryczne i porządkowania.",
+        onboarding_step3_title: "Zapisz Quiz",
+        onboarding_step3_content: "Nie zapomnij zapisać! Kliknij tutaj, aby zapisać swój quiz.",
+        onboarding_step4_title: "Generator Pytań AI",
+        onboarding_step4_content: "Pozwól AI ci pomóc! Wklej dowolną treść, a AI wygeneruje dla ciebie pytania.",
+        onboarding_step5_title: "Podgląd Pytań",
+        onboarding_step5_content: "Zobacz, jak twoje pytania będą wyglądać dla graczy przed rozpoczęciem gry.",
+        onboarding_step6_title: "Utwórz Lobby",
+        onboarding_step6_content: "Gotowy do gry? Kliknij tutaj, aby utworzyć lobby i uzyskać kod PIN do udostępnienia.",
+        onboarding_step7_title: "Dołącz do Gry",
+        onboarding_step7_content: "Lub dołącz jako gracz! Wprowadź 6-cyfrowy PIN udostępniony przez gospodarza.",
+        onboarding_next: "Dalej",
+        onboarding_back: "Wstecz",
+        onboarding_skip: "Pomiń",
+        onboarding_finish: "Zaczynamy!",
+        onboarding_dont_show: "Nie pokazuj ponownie",
+        onboarding_step_of: "Krok {0} z {1}"
 };

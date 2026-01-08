@@ -468,6 +468,27 @@ export default {
         toggle_sound_tooltip: "Attiva/disattiva suono",
         sound: "Suono",
         mute_sound: "Disattiva suono",
-        unmute_sound: "Attiva suono"
+        unmute_sound: "Attiva suono",
 
+        // Onboarding tutorial
+        onboarding_step1_title: "Ospita un Gioco",
+        onboarding_step1_content: "Inizia qui per creare il tuo quiz. Clicca questo pulsante per entrare nell'editor.",
+        onboarding_step2_title: "Aggiungi Domande",
+        onboarding_step2_content: "Usa questo pulsante per aggiungere nuove domande. Puoi creare domande a scelta multipla, vero/falso, numeriche e di ordinamento.",
+        onboarding_step3_title: "Salva il Quiz",
+        onboarding_step3_content: "Non dimenticare di salvare! Clicca qui per salvare il tuo quiz.",
+        onboarding_step4_title: "Generatore IA",
+        onboarding_step4_content: "Lascia che l'IA ti aiuti! Incolla del contenuto e l'IA genererà domande per te.",
+        onboarding_step5_title: "Anteprima",
+        onboarding_step5_content: "Guarda come appariranno le tue domande ai giocatori prima di iniziare.",
+        onboarding_step6_title: "Crea Lobby",
+        onboarding_step6_content: "Pronto a giocare? Clicca qui per creare una lobby e ottenere un codice PIN da condividere.",
+        onboarding_step7_title: "Unisciti a un Gioco",
+        onboarding_step7_content: "Oppure unisciti come giocatore! Inserisci il PIN a 6 cifre condiviso dall'host.",
+        onboarding_next: "Avanti",
+        onboarding_back: "Indietro",
+        onboarding_skip: "Salta Tour",
+        onboarding_finish: "Inizia!",
+        onboarding_dont_show: "Non mostrare più",
+        onboarding_step_of: "Passo {0} di {1}"
 };

@@ -460,6 +460,27 @@ export default {
         toggle_sound_tooltip: "Alternar som",
         sound: "Som",
         mute_sound: "Desativar som",
-        unmute_sound: "Ativar som"
+        unmute_sound: "Ativar som",
 
+        // Onboarding tutorial
+        onboarding_step1_title: "Criar um Jogo",
+        onboarding_step1_content: "Comece aqui para criar seu próprio quiz. Clique neste botão para entrar no editor.",
+        onboarding_step2_title: "Adicionar Perguntas",
+        onboarding_step2_content: "Use este botão para adicionar novas perguntas. Você pode criar perguntas de múltipla escolha, verdadeiro/falso, numéricas e de ordenação.",
+        onboarding_step3_title: "Salvar seu Quiz",
+        onboarding_step3_content: "Não esqueça de salvar! Clique aqui para salvar seu quiz.",
+        onboarding_step4_title: "Gerador de Perguntas IA",
+        onboarding_step4_content: "Deixe a IA te ajudar! Cole qualquer conteúdo e a IA gerará perguntas para você.",
+        onboarding_step5_title: "Visualizar Perguntas",
+        onboarding_step5_content: "Veja como suas perguntas aparecerão para os jogadores antes de começar.",
+        onboarding_step6_title: "Criar Sala",
+        onboarding_step6_content: "Pronto para jogar? Clique aqui para criar uma sala e obter um código PIN para compartilhar.",
+        onboarding_step7_title: "Entrar em um Jogo",
+        onboarding_step7_content: "Ou entre como jogador! Digite o PIN de 6 dígitos compartilhado pelo anfitrião.",
+        onboarding_next: "Próximo",
+        onboarding_back: "Voltar",
+        onboarding_skip: "Pular Tour",
+        onboarding_finish: "Começar!",
+        onboarding_dont_show: "Não mostrar novamente",
+        onboarding_step_of: "Passo {0} de {1}"
 };

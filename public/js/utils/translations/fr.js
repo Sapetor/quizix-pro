@@ -487,6 +487,27 @@ export default {
         toggle_sound_tooltip: "Basculer le son",
         sound: "Son",
         mute_sound: "Couper le son",
-        unmute_sound: "Activer le son"
+        unmute_sound: "Activer le son",
 
+        // Onboarding tutorial
+        onboarding_step1_title: "Héberger un Jeu",
+        onboarding_step1_content: "Commencez ici pour créer votre quiz. Cliquez sur ce bouton pour accéder à l'éditeur.",
+        onboarding_step2_title: "Ajouter des Questions",
+        onboarding_step2_content: "Utilisez ce bouton pour ajouter de nouvelles questions. Vous pouvez créer des QCM, vrai/faux, numériques et des questions d'ordonnancement.",
+        onboarding_step3_title: "Sauvegarder votre Quiz",
+        onboarding_step3_content: "N'oubliez pas de sauvegarder ! Cliquez ici pour enregistrer votre quiz.",
+        onboarding_step4_title: "Générateur IA",
+        onboarding_step4_content: "Laissez l'IA vous aider ! Collez du contenu et l'IA générera des questions pour vous.",
+        onboarding_step5_title: "Aperçu",
+        onboarding_step5_content: "Voyez comment vos questions apparaîtront aux joueurs avant de commencer.",
+        onboarding_step6_title: "Créer un Lobby",
+        onboarding_step6_content: "Prêt à jouer ? Cliquez ici pour créer une salle et obtenir un code PIN à partager.",
+        onboarding_step7_title: "Rejoindre un Jeu",
+        onboarding_step7_content: "Ou rejoignez en tant que joueur ! Entrez le code PIN à 6 chiffres partagé par l'hôte.",
+        onboarding_next: "Suivant",
+        onboarding_back: "Retour",
+        onboarding_skip: "Passer",
+        onboarding_finish: "Commencer !",
+        onboarding_dont_show: "Ne plus afficher",
+        onboarding_step_of: "Étape {0} sur {1}"
 };

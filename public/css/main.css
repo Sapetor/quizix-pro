@@ -36,6 +36,9 @@
 /* Toast notifications - Non-intrusive notifications */
 @import './toasts.css';
 
+/* Onboarding tutorial - Spotlight-style guided tour */
+@import './onboarding.css';
+
 /* Responsive design - Media queries and mobile optimizations */
 @import './responsive.css';
 

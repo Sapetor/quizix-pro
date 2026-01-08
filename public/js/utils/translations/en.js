@@ -503,5 +503,27 @@ export default {
         toggle_sound_tooltip: "Toggle sound",
         sound: "Sound",
         mute_sound: "Mute sound",
-        unmute_sound: "Unmute sound"
+        unmute_sound: "Unmute sound",
+
+        // Onboarding tutorial
+        onboarding_step1_title: "Host a Game",
+        onboarding_step1_content: "Start here to create your own quiz. Click this button to enter the quiz editor.",
+        onboarding_step2_title: "Add Questions",
+        onboarding_step2_content: "Use this button to add new questions to your quiz. You can create multiple choice, true/false, numeric, and ordering questions.",
+        onboarding_step3_title: "Save Your Quiz",
+        onboarding_step3_content: "Don't forget to save! Click here to save your quiz so you can use it later.",
+        onboarding_step4_title: "AI Question Generator",
+        onboarding_step4_content: "Let AI help you create questions! Paste any content and the AI will generate quiz questions for you.",
+        onboarding_step5_title: "Preview Questions",
+        onboarding_step5_content: "See how your questions will look to players before starting the game.",
+        onboarding_step6_title: "Create Lobby",
+        onboarding_step6_content: "Ready to play? Click here to create a game lobby and get a PIN code to share with players.",
+        onboarding_step7_title: "Join a Game",
+        onboarding_step7_content: "Or join an existing game as a player! Enter the 6-digit PIN shared by the host.",
+        onboarding_next: "Next",
+        onboarding_back: "Back",
+        onboarding_skip: "Skip Tour",
+        onboarding_finish: "Get Started!",
+        onboarding_dont_show: "Don't show this again",
+        onboarding_step_of: "Step {0} of {1}"
 };

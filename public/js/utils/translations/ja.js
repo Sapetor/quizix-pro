@@ -459,6 +459,27 @@ export default {
         toggle_sound_tooltip: "音声を切り替える",
         sound: "音声",
         mute_sound: "音声をミュート",
-        unmute_sound: "音声をミュート解除"
+        unmute_sound: "音声をミュート解除",
 
+        // Onboarding tutorial
+        onboarding_step1_title: "ゲームを作成",
+        onboarding_step1_content: "ここからクイズを作成します。このボタンをクリックしてエディターに入ります。",
+        onboarding_step2_title: "質問を追加",
+        onboarding_step2_content: "このボタンで新しい質問を追加します。選択式、正誤、数値、並べ替えの質問を作成できます。",
+        onboarding_step3_title: "クイズを保存",
+        onboarding_step3_content: "保存を忘れずに！ここをクリックしてクイズを保存します。",
+        onboarding_step4_title: "AI質問生成",
+        onboarding_step4_content: "AIに手伝ってもらいましょう！コンテンツを貼り付けると、AIが質問を生成します。",
+        onboarding_step5_title: "プレビュー",
+        onboarding_step5_content: "ゲーム開始前に、プレイヤーに表示される質問を確認できます。",
+        onboarding_step6_title: "ロビーを作成",
+        onboarding_step6_content: "準備完了？ここをクリックしてロビーを作成し、共有するPINコードを取得します。",
+        onboarding_step7_title: "ゲームに参加",
+        onboarding_step7_content: "またはプレイヤーとして参加！ホストが共有した6桁のPINを入力してください。",
+        onboarding_next: "次へ",
+        onboarding_back: "戻る",
+        onboarding_skip: "スキップ",
+        onboarding_finish: "開始！",
+        onboarding_dont_show: "今後表示しない",
+        onboarding_step_of: "ステップ {0}/{1}"
 };
