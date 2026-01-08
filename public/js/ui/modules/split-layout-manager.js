@@ -6,6 +6,9 @@
 
 import { logger, UI } from '../../core/config.js';
 
+// Mobile breakpoint - matches CSS media query in responsive.css
+const MOBILE_BREAKPOINT = 1000;
+
 export class SplitLayoutManager {
     constructor() {
         // Drag functionality state
@@ -13,23 +16,69 @@ export class SplitLayoutManager {
         this.dragStartX = 0;
         this.initialSplitRatio = UI.INITIAL_SPLIT_RATIO;
         this.dragTooltip = null;
-        
+        this.dragFunctionalityInitialized = false;
+
         // Store listener references for proper cleanup
         this.listeners = {
             dragStart: null,
             dragMove: null,
-            dragEnd: null
+            dragEnd: null,
+            resize: null
         };
+    }
+
+    /**
+     * Check if viewport is mobile/tablet (≤1000px)
+     * Matches the CSS media query in responsive.css that hides the resize handle
+     */
+    isMobileViewport() {
+        return window.innerWidth <= MOBILE_BREAKPOINT;
     }
 
     /**
      * Initialize split layout mode
      */
     initializeSplitLayout() {
-        this.showResizeHandle();
+        // On mobile viewports, skip resize handle and drag functionality
+        // CSS already handles single-column layout at ≤1000px
+        if (!this.isMobileViewport()) {
+            this.showResizeHandle();
+            this.initializeDragFunctionality();
+        } else {
+            logger.debug('Mobile viewport detected, skipping resize handle initialization');
+        }
+
         this.setDefaultSplitRatio();
-        this.initializeDragFunctionality();
         this.loadSavedFontSize();
+        this.initializeResizeListener();
+    }
+
+    /**
+     * Initialize viewport resize listener to enable/disable drag functionality
+     */
+    initializeResizeListener() {
+        // Clean up existing resize listener if any
+        if (this.listeners.resize) {
+            window.removeEventListener('resize', this.listeners.resize);
+        }
+
+        this.listeners.resize = () => {
+            const isMobile = this.isMobileViewport();
+
+            if (isMobile && this.dragFunctionalityInitialized) {
+                // Switched to mobile - disable drag functionality
+                this.cleanupDragFunctionality();
+                this.hideResizeHandle();
+                logger.debug('Viewport resized to mobile, disabled resize handle');
+            } else if (!isMobile && !this.dragFunctionalityInitialized) {
+                // Switched to desktop - enable drag functionality
+                this.showResizeHandle();
+                this.initializeDragFunctionality();
+                logger.debug('Viewport resized to desktop, enabled resize handle');
+            }
+        };
+
+        window.addEventListener('resize', this.listeners.resize);
     }
 
     /**
@@ -38,6 +87,17 @@ export class SplitLayoutManager {
     cleanupSplitLayout() {
         this.hideResizeHandle();
         this.cleanupDragFunctionality();
+        this.cleanupResizeListener();
+    }
+
+    /**
+     * Cleanup viewport resize listener
+     */
+    cleanupResizeListener() {
+        if (this.listeners.resize) {
+            window.removeEventListener('resize', this.listeners.resize);
+            this.listeners.resize = null;
+        }
     }
 
     /**
@@ -169,7 +229,10 @@ export class SplitLayoutManager {
         resizeHandle.addEventListener('mousedown', this.listeners.dragStart);
         document.addEventListener('mousemove', this.listeners.dragMove);
         document.addEventListener('mouseup', this.listeners.dragEnd);
-        
+
+        // Mark as initialized for viewport resize tracking
+        this.dragFunctionalityInitialized = true;
+
         // Load saved ratio from localStorage
         this.loadSavedSplitRatio();
     }
@@ -273,9 +336,10 @@ export class SplitLayoutManager {
         
         // Reset drag state
         this.isDragging = false;
+        this.dragFunctionalityInitialized = false;
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
-        
+
         // Clean up tooltip
         this.hideDragTooltip();
     }
