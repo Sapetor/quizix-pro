@@ -684,16 +684,16 @@
     animation: selectedPulse 1.5s ease-in-out infinite;
 }
 
-/* Correct/Incorrect states override colors */
+/* Correct/Incorrect states override colors - WCAG AA accessible */
 .player-option.correct {
-    background: linear-gradient(135deg, var(--color-success-500), #10b981) !important;
-    box-shadow: 0 12px 40px rgba(16, 185, 129, 0.6) !important;
+    background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end)) !important;
+    box-shadow: 0 12px 40px var(--true-shadow-hover) !important;
     animation: correctPulse 2s ease-in-out infinite;
 }
 
 .player-option.incorrect {
-    background: linear-gradient(135deg, var(--color-error-500), #dc2626) !important;
-    box-shadow: 0 12px 40px rgba(239, 68, 68, 0.6) !important;
+    background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end)) !important;
+    box-shadow: 0 12px 40px var(--false-shadow-hover) !important;
     filter: brightness(0.8);
 }
 
@@ -1052,15 +1052,16 @@
     animation: selectedPulse 1.5s ease-in-out infinite;
 }
 
+/* WCAG AA accessible colors for correct/incorrect states */
 #player-true-false .tf-option.correct {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-    box-shadow: 0 12px 40px rgba(16, 185, 129, 0.6) !important;
+    background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end)) !important;
+    box-shadow: 0 12px 40px var(--true-shadow-hover) !important;
     animation: correctPulse 2s ease-in-out infinite;
 }
 
 #player-true-false .tf-option.incorrect {
-    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-    box-shadow: 0 12px 40px rgba(239, 68, 68, 0.6) !important;
+    background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end)) !important;
+    box-shadow: 0 12px 40px var(--false-shadow-hover) !important;
     filter: brightness(0.8);
 }
 

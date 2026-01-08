@@ -140,14 +140,17 @@ Multiple correct questions should display as **simple checkbox lists**, NOT styl
 3. **True/False**: Styled buttons (`.tf-option`)
 4. **Numeric**: Input field
 
-### Colorful Preview System
-The preview system includes colorful options for visual distinction:
-- Option A: Blue (`#3b82f6`)
-- Option B: Green (`#10b981`)
-- Option C: Orange (`#f59e0b`)
-- Option D: Red (`#ef4444`)
-- Option E: Purple (`#8b5cf6`)
-- Option F: Cyan (`#06b6d4`)
+### Colorful Preview System (WCAG AA Accessible)
+The preview system includes colorful options for visual distinction.
+All colors meet WCAG AA contrast requirements (≥4.5:1) with white text:
+- Option A: Blue (`#2563eb` → `#1d4ed8`) - 5.17:1 / 6.70:1
+- Option B: Green (`#047857` → `#065f46`) - 5.48:1 / 7.68:1
+- Option C: Orange (`#b45309` → `#92400e`) - 5.02:1 / 7.09:1
+- Option D: Red (`#dc2626` → `#b91c1c`) - 4.83:1 / 6.47:1
+- Option E: Purple (`#7c3aed` → `#6d28d9`) - 5.70:1 / 7.10:1
+- Option F: Cyan (`#0e7490` → `#155e75`) - 5.36:1 / 7.27:1
+
+**CSS Variables**: Use `--option-N-start` and `--option-N-end` from `variables.css`.
 
 **Important**: Checkbox options should NOT use these colors - they should remain neutral.
 

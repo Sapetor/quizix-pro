@@ -889,83 +889,84 @@ pre code {
 }
 
 /* === COLORFUL PREVIEW OPTIONS === */
+/* WCAG AA Accessible Colors: All meet ≥4.5:1 contrast with white text */
 .preview-content .player-option:nth-child(1),
 .preview-content-split .player-option:nth-child(1) {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Blue */
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%); /* Blue 5.17:1 */
 }
 
 .preview-content .player-option:nth-child(2),
 .preview-content-split .player-option:nth-child(2) {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%); /* Green */
+    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%); /* Green 5.48:1 */
 }
 
 .preview-content .player-option:nth-child(3),
 .preview-content-split .player-option:nth-child(3) {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Orange */
+    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%); /* Orange 5.02:1 */
 }
 
 .preview-content .player-option:nth-child(4),
 .preview-content-split .player-option:nth-child(4) {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Red */
+    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%); /* Red 4.83:1 */
 }
 
 .preview-content .player-option:nth-child(5),
 .preview-content-split .player-option:nth-child(5) {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); /* Purple */
+    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%); /* Purple 5.70:1 */
 }
 
 .preview-content .player-option:nth-child(6),
 .preview-content-split .player-option:nth-child(6) {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); /* Cyan */
+    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%); /* Cyan 5.36:1 */
 }
 
-/* Dark theme multicolored options - same colors as light theme */
+/* Dark theme multicolored options - use CSS variables for accessible colors */
 [data-theme="dark"] .preview-content .player-option:nth-child(1),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(1) {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Blue */
-    border: 2px solid rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%); /* Blue */
+    border: 2px solid var(--option-0-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px var(--option-0-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-option:nth-child(2),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(2) {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%); /* Green */
-    border: 2px solid rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%); /* Green */
+    border: 2px solid var(--option-1-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 12px var(--option-1-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-option:nth-child(3),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(3) {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Orange */
-    border: 2px solid rgba(245, 158, 11, 0.4);
+    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%); /* Orange */
+    border: 2px solid var(--option-2-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 4px 12px var(--option-2-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-option:nth-child(4),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(4) {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Red */
-    border: 2px solid rgba(239, 68, 68, 0.4);
+    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%); /* Red */
+    border: 2px solid var(--option-3-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    box-shadow: 0 4px 12px var(--option-3-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-option:nth-child(5),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(5) {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); /* Purple */
-    border: 2px solid rgba(139, 92, 246, 0.4);
+    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%); /* Purple */
+    border: 2px solid var(--option-4-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 4px 12px var(--option-4-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-option:nth-child(6),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(6) {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); /* Cyan */
-    border: 2px solid rgba(6, 182, 212, 0.4);
+    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%); /* Cyan */
+    border: 2px solid var(--option-5-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+    box-shadow: 0 4px 12px var(--option-5-shadow);
 }
 
 /* Fallback for additional options beyond 6 */
@@ -985,14 +986,15 @@ pre code {
 }
 
 /* Light theme multicolored checkbox options - match multiple choice colors */
+/* WCAG AA Accessible Colors */
 .preview-content .player-checkbox-options .checkbox-option:nth-child(1),
 .preview-content-split .player-checkbox-options .checkbox-option:nth-child(1),
 .preview-content .checkbox-option.preview-checkbox:nth-child(1),
 .preview-content-split .checkbox-option.preview-checkbox:nth-child(1) {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; /* Blue */
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%) !important; /* Blue */
     border: 2px solid rgba(255,255,255,0.3) !important;
     color: white !important;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2) !important;
+    box-shadow: 0 4px 12px var(--option-0-shadow) !important;
 }
 
 /* Colorful checkbox options - clean cascade without !important */
@@ -1035,47 +1037,47 @@ pre code {
     box-shadow: 0 4px 20px var(--option-5-shadow);
 }
 
-/* Dark theme multicolored checkbox options */
+/* Dark theme multicolored checkbox options - use CSS variables for accessible colors */
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(1),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(1) {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Blue */
-    border: 2px solid rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%); /* Blue */
+    border: 2px solid var(--option-0-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px var(--option-0-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(2),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(2) {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%); /* Green */
-    border: 2px solid rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%); /* Green */
+    border: 2px solid var(--option-1-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(3),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(3) {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Orange */
-    border: 2px solid rgba(245, 158, 11, 0.4);
+    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%); /* Orange */
+    border: 2px solid var(--option-2-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(4),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(4) {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Red */
-    border: 2px solid rgba(239, 68, 68, 0.4);
+    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%); /* Red */
+    border: 2px solid var(--option-3-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(5),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(5) {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); /* Purple */
-    border: 2px solid rgba(139, 92, 246, 0.4);
+    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%); /* Purple */
+    border: 2px solid var(--option-4-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(6),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(6) {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); /* Cyan */
-    border: 2px solid rgba(6, 182, 212, 0.4);
+    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%); /* Cyan */
+    border: 2px solid var(--option-5-shadow);
     color: #f8fafc;
 }
 
@@ -1217,69 +1219,71 @@ pre code {
     border-color: rgba(96, 165, 250, 0.7);
 }
 
-/* True button - vibrant green (using data attributes) */
+/* True button - WCAG AA accessible green (using data attributes) */
+/* Green: 5.48:1 / 7.68:1 contrast ratio */
 .preview-content .tf-option[data-option="true"],
 .preview-content-split .tf-option[data-option="true"],
 .tf-option[data-option="true"] {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important; /* Bright green */
-    border: 3px solid rgba(16, 185, 129, 0.6) !important;
-    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3) !important;
+    background: linear-gradient(135deg, var(--true-color-start) 0%, var(--true-color-end) 100%) !important;
+    border: 3px solid var(--true-shadow) !important;
+    box-shadow: 0 5px 15px var(--true-shadow) !important;
 }
 
 [data-theme="dark"] .preview-content .tf-option[data-option="true"],
 [data-theme="dark"] .preview-content-split .tf-option[data-option="true"],
 [data-theme="dark"] .tf-option[data-option="true"] {
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important; /* Slightly brighter for dark */
-    border: 3px solid rgba(34, 197, 94, 0.6) !important;
-    box-shadow: 0 5px 15px rgba(34, 197, 94, 0.3) !important;
+    background: linear-gradient(135deg, var(--true-color-start) 0%, var(--true-color-end) 100%) !important;
+    border: 3px solid var(--true-shadow) !important;
+    box-shadow: 0 5px 15px var(--true-shadow) !important;
 }
 
-/* False button - vibrant red (using data attributes) */
+/* False button - WCAG AA accessible red (using data attributes) */
+/* Red: 4.83:1 / 6.47:1 contrast ratio */
 .preview-content .tf-option[data-option="false"],
 .preview-content-split .tf-option[data-option="false"],
 .tf-option[data-option="false"] {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important; /* Bright red */
-    border: 3px solid rgba(239, 68, 68, 0.6) !important;
-    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3) !important;
+    background: linear-gradient(135deg, var(--false-color-start) 0%, var(--false-color-end) 100%) !important;
+    border: 3px solid var(--false-shadow) !important;
+    box-shadow: 0 5px 15px var(--false-shadow) !important;
 }
 
 [data-theme="dark"] .preview-content .tf-option[data-option="false"],
 [data-theme="dark"] .preview-content-split .tf-option[data-option="false"],
 [data-theme="dark"] .tf-option[data-option="false"] {
-    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important; /* Slightly brighter for dark */
-    border: 3px solid rgba(248, 113, 113, 0.6) !important;
-    box-shadow: 0 5px 15px rgba(248, 113, 113, 0.3) !important;
+    background: linear-gradient(135deg, var(--false-color-start) 0%, var(--false-color-end) 100%) !important;
+    border: 3px solid var(--false-shadow) !important;
+    box-shadow: 0 5px 15px var(--false-shadow) !important;
 }
 
 /* Enhanced hover effects for True/False */
 .preview-content .tf-option[data-option="true"]:hover,
 .preview-content-split .tf-option[data-option="true"]:hover,
 .tf-option[data-option="true"]:hover {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4) !important;
+    background: linear-gradient(135deg, var(--true-color-end) 0%, var(--true-color-end) 100%) !important;
+    box-shadow: 0 8px 20px var(--true-shadow-hover) !important;
     transform: translateY(-3px);
 }
 
 .preview-content .tf-option[data-option="false"]:hover,
 .preview-content-split .tf-option[data-option="false"]:hover,
 .tf-option[data-option="false"]:hover {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4) !important;
+    background: linear-gradient(135deg, var(--false-color-end) 0%, var(--false-color-end) 100%) !important;
+    box-shadow: 0 8px 20px var(--false-shadow-hover) !important;
     transform: translateY(-3px);
 }
 
 [data-theme="dark"] .preview-content .tf-option[data-option="true"]:hover,
 [data-theme="dark"] .preview-content-split .tf-option[data-option="true"]:hover,
 [data-theme="dark"] .tf-option[data-option="true"]:hover {
-    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
-    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4) !important;
+    background: linear-gradient(135deg, var(--true-color-end) 0%, var(--true-color-end) 100%) !important;
+    box-shadow: 0 8px 20px var(--true-shadow-hover) !important;
 }
 
 [data-theme="dark"] .preview-content .tf-option[data-option="false"]:hover,
 [data-theme="dark"] .preview-content-split .tf-option[data-option="false"]:hover,
 [data-theme="dark"] .tf-option[data-option="false"]:hover {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-    box-shadow: 0 8px 20px rgba(248, 113, 113, 0.4) !important;
+    background: linear-gradient(135deg, var(--false-color-end) 0%, var(--false-color-end) 100%) !important;
+    box-shadow: 0 8px 20px var(--false-shadow-hover) !important;
 }
 
 /* Removed - checkbox styling now comes from components.css */

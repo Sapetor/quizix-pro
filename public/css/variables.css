@@ -19,41 +19,43 @@
     --color-error-500: #ef4444;
     
     /* === COLORFUL OPTIONS SYSTEM === */
-    /* Option A - Blue */
-    --option-0-start: #3b82f6;
-    --option-0-end: #2563eb;
-    --option-0-shadow: rgba(59, 130, 246, 0.3);
-    --option-0-shadow-hover: rgba(59, 130, 246, 0.5);
-    
-    /* Option B - Green */
-    --option-1-start: #10b981;
-    --option-1-end: #059669;
-    --option-1-shadow: rgba(16, 185, 129, 0.3);
-    --option-1-shadow-hover: rgba(16, 185, 129, 0.5);
-    
-    /* Option C - Orange */
-    --option-2-start: #f59e0b;
-    --option-2-end: #d97706;
-    --option-2-shadow: rgba(245, 158, 11, 0.3);
-    --option-2-shadow-hover: rgba(245, 158, 11, 0.5);
-    
-    /* Option D - Red */
-    --option-3-start: #ef4444;
-    --option-3-end: #dc2626;
-    --option-3-shadow: rgba(239, 68, 68, 0.3);
-    --option-3-shadow-hover: rgba(239, 68, 68, 0.5);
-    
-    /* Option E - Purple */
-    --option-4-start: #8b5cf6;
-    --option-4-end: #7c3aed;
-    --option-4-shadow: rgba(139, 92, 246, 0.3);
-    --option-4-shadow-hover: rgba(139, 92, 246, 0.5);
-    
-    /* Option F - Cyan */
-    --option-5-start: #06b6d4;
-    --option-5-end: #0891b2;
-    --option-5-shadow: rgba(6, 182, 212, 0.3);
-    --option-5-shadow-hover: rgba(6, 182, 212, 0.5);
+    /* WCAG AA Accessible Colors: All meet ≥4.5:1 contrast with white text */
+
+    /* Option A - Blue (contrast: 5.17:1 / 6.70:1) */
+    --option-0-start: #2563eb;
+    --option-0-end: #1d4ed8;
+    --option-0-shadow: rgba(37, 99, 235, 0.3);
+    --option-0-shadow-hover: rgba(37, 99, 235, 0.5);
+
+    /* Option B - Green (contrast: 5.48:1 / 7.68:1) */
+    --option-1-start: #047857;
+    --option-1-end: #065f46;
+    --option-1-shadow: rgba(4, 120, 87, 0.3);
+    --option-1-shadow-hover: rgba(4, 120, 87, 0.5);
+
+    /* Option C - Orange (contrast: 5.02:1 / 7.09:1) */
+    --option-2-start: #b45309;
+    --option-2-end: #92400e;
+    --option-2-shadow: rgba(180, 83, 9, 0.3);
+    --option-2-shadow-hover: rgba(180, 83, 9, 0.5);
+
+    /* Option D - Red (contrast: 4.83:1 / 6.47:1) */
+    --option-3-start: #dc2626;
+    --option-3-end: #b91c1c;
+    --option-3-shadow: rgba(220, 38, 38, 0.3);
+    --option-3-shadow-hover: rgba(220, 38, 38, 0.5);
+
+    /* Option E - Purple (contrast: 5.70:1 / 7.10:1) */
+    --option-4-start: #7c3aed;
+    --option-4-end: #6d28d9;
+    --option-4-shadow: rgba(124, 58, 237, 0.3);
+    --option-4-shadow-hover: rgba(124, 58, 237, 0.5);
+
+    /* Option F - Cyan (contrast: 5.36:1 / 7.27:1) */
+    --option-5-start: #0e7490;
+    --option-5-end: #155e75;
+    --option-5-shadow: rgba(14, 116, 144, 0.3);
+    --option-5-shadow-hover: rgba(14, 116, 144, 0.5);
     
     /* True/False Colors */
     --true-color-start: var(--option-1-start);
