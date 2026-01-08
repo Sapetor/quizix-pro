@@ -158,6 +158,11 @@ export class KeyboardShortcuts {
             e.preventDefault();
             this.showShortcutsHelp();
         });
+
+        this.addShortcut('shift+/', 'Show Shortcuts Help (?)', (e) => {
+            e.preventDefault();
+            this.showShortcutsHelp();
+        });
     }
 
     /**
@@ -367,7 +372,7 @@ export class KeyboardShortcuts {
             ],
             'General': [
                 { keys: 'Escape', desc: 'Close Modal/Preview' },
-                { keys: 'F1', desc: 'Show This Help' }
+                { keys: '? / F1', desc: 'Show This Help' }
             ]
         };
 
