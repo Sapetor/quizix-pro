@@ -20,7 +20,7 @@ Work through these one at a time. After completing each task, commit and `/clear
 ## Accessibility
 
 - [x] **A11Y-1**: Add aria-labels to emoji-only buttons for screen readers
-- [ ] **A11Y-2**: Ensure visible focus indicators on all interactive elements
+- [x] **A11Y-2**: Ensure visible focus indicators on all interactive elements
 - [ ] **A11Y-3**: Verify answer option colors meet WCAG AA contrast requirements
 - [ ] **A11Y-4**: Fix layout overflow when accessibility large font is enabled
 

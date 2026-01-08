@@ -2444,8 +2444,9 @@
         transform: translateY(0);
     }
 
-    /* Remove persistent highlight states on mobile */
-    .mobile-quiz-action-btn:focus {
+    /* Remove persistent highlight states on mobile touch interactions */
+    /* Uses :focus:not(:focus-visible) to preserve keyboard focus indicators */
+    .mobile-quiz-action-btn:focus:not(:focus-visible) {
         outline: none;
         border-color: var(--accent-primary);
     }
@@ -2535,7 +2536,7 @@
         user-select: none;
     }
 
-    .mobile-quiz-secondary-btn:focus {
+    .mobile-quiz-secondary-btn:focus:not(:focus-visible) {
         outline: none;
         border-color: var(--accent-primary);
     }

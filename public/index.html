@@ -8,8 +8,8 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Preload critical CSS -->
-    <link rel="preload" href="css/main.bundle.css?v=11.6" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=11.6"></noscript>
+    <link rel="preload" href="css/main.bundle.css?v=11.7" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=11.7"></noscript>
     
     <!-- Preload critical JavaScript -->
     <link rel="preload" href="js/main.js" as="script" crossorigin="anonymous">
@@ -370,6 +370,9 @@
     </style>
 </head>
 <body>
+    <!-- Skip link for keyboard users (A11Y-2) -->
+    <a href="#main-content" class="skip-link" data-translate="skip_to_content">Skip to main content</a>
+
     <div class="container">
         <header>
             <!-- Desktop Title -->
@@ -563,6 +566,7 @@
             </div>
         </header>
 
+        <main id="main-content" role="main">
         <div id="main-menu" class="screen active">
             <!-- Original Desktop Menu Options (hidden on mobile) -->
             <div class="menu-options desktop-menu">
@@ -1810,6 +1814,7 @@
                 </div>
             </div>
         </div>
+        </main>
     </div>
 
     <!-- Socket.IO CDN for better WSL compatibility - fallback to local if CDN fails -->

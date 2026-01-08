@@ -491,6 +491,206 @@ select:focus-visible {
     }
 }
 
+/* === COMPREHENSIVE FOCUS INDICATORS (A11Y-2) === */
+/* Ensure all interactive elements have visible focus indicators */
+
+/* Toolbar buttons focus */
+.toolbar-btn:focus-visible,
+.horizontal-toolbar .toolbar-btn:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
+    z-index: 10;
+}
+
+/* Close buttons focus */
+.close-btn:focus-visible,
+.modal .close-btn:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+/* Navigation buttons focus */
+.nav-btn:focus-visible,
+.preview-navigation-bar .nav-btn:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
+}
+
+/* Tab buttons focus */
+.tab-btn:focus-visible,
+.analytics-tabs .tab-btn:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: -2px;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+/* Carousel navigation focus */
+.carousel-nav:focus-visible,
+.carousel-nav-btn:focus-visible,
+.carousel-dot:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+}
+
+/* Quiz item cards focus (keyboard navigable) */
+.quiz-item:focus-visible,
+.result-item:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12), var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+/* Links focus */
+a:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+    text-decoration: underline;
+}
+
+/* Theme toggle buttons focus */
+.theme-toggle:focus-visible,
+#theme-toggle:focus-visible,
+#mobile-theme-toggle:focus-visible,
+#settings-theme-toggle:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
+    border-radius: 12px;
+}
+
+/* Language selector focus */
+#language-selector:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+/* Mobile menu buttons focus */
+.mobile-menu-btn:focus-visible,
+.mobile-quiz-action-btn:focus-visible,
+.mobile-quiz-secondary-btn:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
+}
+
+/* FAB (Floating Action Button) focus */
+.fab:focus-visible,
+.mobile-fab:focus-visible,
+#mobile-quiz-fab:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.2);
+}
+
+/* Header control buttons focus */
+.header-controls button:focus-visible,
+.header-controls .btn:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
+}
+
+/* Onboarding elements focus */
+.onboarding-btn:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
+}
+
+.onboarding-dot:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* Results viewer buttons focus */
+.download-btn:focus-visible,
+.export-btn:focus-visible,
+.action-btn:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
+}
+
+/* AI generator buttons focus */
+.ai-generate-btn:focus-visible,
+.ai-action-btn:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
+}
+
+/* Ordering option focus */
+.ordering-option:focus-visible {
+    outline: 3px solid var(--accent-primary) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12) !important;
+}
+
+/* Skip link for keyboard users - hidden by default, visible on focus */
+.skip-link {
+    position: absolute;
+    top: -100px;
+    left: 10px;
+    z-index: 10000;
+    padding: 12px 24px;
+    background: var(--accent-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+    position: fixed;
+    top: 10px;
+    outline: 3px solid white;
+    outline-offset: 2px;
+}
+
+/* Dark theme focus adjustments */
+[data-theme="dark"] *:focus-visible {
+    --focus-color: #60a5fa; /* Lighter blue for dark mode */
+}
+
+[data-theme="dark"] .toolbar-btn:focus-visible,
+[data-theme="dark"] .close-btn:focus-visible,
+[data-theme="dark"] .nav-btn:focus-visible,
+[data-theme="dark"] .tab-btn:focus-visible {
+    outline-color: #60a5fa;
+    box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.2);
+}
+
+/* Light theme focus adjustments */
+[data-theme="light"] *:focus-visible {
+    --focus-color: #2563eb; /* Darker blue for light mode */
+}
+
+[data-theme="light"] .toolbar-btn:focus-visible,
+[data-theme="light"] .close-btn:focus-visible,
+[data-theme="light"] .nav-btn:focus-visible,
+[data-theme="light"] .tab-btn:focus-visible {
+    outline-color: #2563eb;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
+}
+
+/* Ensure disabled elements don't show focus ring */
+[disabled]:focus-visible,
+.disabled:focus-visible,
+button:disabled:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
 /* Critical Component Styles from styles.css */
 
 /* Checkbox and Toggle Styles */

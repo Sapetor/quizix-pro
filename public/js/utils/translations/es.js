@@ -1,6 +1,7 @@
 export default {
         app_title: "Quizix Pro",
         welcome_to: "Bienvenido a",
+        skip_to_content: "Saltar al contenido principal",
         host_game: "Crear Juego",
         join_game: "Unirse al Juego",
         start_game: "Iniciar Juego",
