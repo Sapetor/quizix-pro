@@ -1824,5 +1824,22 @@
     </script>
     <!-- Modular ES6 Structure -->
 <script type="module" src="js/main.js"></script>
+    <!-- Service Worker Registration for Static Asset Caching -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // Use base path for Kubernetes/cloud deployments
+                const basePath = document.querySelector('base')?.getAttribute('href') || '/';
+                const swPath = basePath + 'sw.js';
+                navigator.serviceWorker.register(swPath, { scope: basePath })
+                    .then((registration) => {
+                        console.log('[App] Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.warn('[App] Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
