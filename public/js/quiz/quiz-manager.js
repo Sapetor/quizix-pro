@@ -110,9 +110,16 @@ export class QuizManager {
                     questionData.image = imagePathResolver.toStoragePath(imageUrl);
                 }
             }
-            
+
+            // Extract WebP version if available (for optimized loading)
+            const webpUrl = imageElement.dataset.webpUrl;
+            if (webpUrl && webpUrl.trim() !== '') {
+                questionData.imageWebp = imagePathResolver.toStoragePath(webpUrl);
+                logger.debug('Found WebP image for question:', questionData.imageWebp);
+            }
+
             if (questionData.image) {
-                logger.debug('Processed image path for quiz save:', questionData.image);
+                logger.debug('Processed image path for quiz save:', questionData.image, 'WebP:', questionData.imageWebp);
             }
         }
         
@@ -1025,20 +1032,22 @@ export class QuizManager {
      */
     populateQuestionImage(questionElement, questionData) {
         if (!questionData.image) return;
-        
-        logger.debug('Populating image for question:', questionData.image);
+
+        logger.debug('Populating image for question:', questionData.image, 'WebP:', questionData.imageWebp);
         const imageElement = questionElement.querySelector('.question-image');
         const imagePreview = questionElement.querySelector('.image-preview');
-        
+
         if (!imageElement || !imagePreview) {
             logger.debug('Image elements not found in question DOM');
             return;
         }
-        
-        const imageSrc = this.resolveImageSource(questionData.image);
-        this.setupImageElement(imageElement, imageSrc, questionData.image);
+
+        // Use WebP version for display if available (better compression)
+        const displayImage = questionData.imageWebp || questionData.image;
+        const imageSrc = this.resolveImageSource(displayImage);
+        this.setupImageElement(imageElement, imageSrc, questionData.image, questionData.imageWebp);
         this.setupImageHandlers(imageElement, imagePreview, questionData.image);
-        
+
         imagePreview.style.display = 'block';
         logger.debug('Image populated:', imageElement.src);
     }
@@ -1053,10 +1062,17 @@ export class QuizManager {
 
     /**
      * Set up image element with source and data attributes
+     * @param {HTMLImageElement} imageElement - The image element
+     * @param {string} imageSrc - The display source URL
+     * @param {string} originalImageData - The original image storage path
+     * @param {string|null} webpImageData - The WebP image storage path (if available)
      */
-    setupImageElement(imageElement, imageSrc, originalImageData) {
+    setupImageElement(imageElement, imageSrc, originalImageData, webpImageData = null) {
         imageElement.src = imageSrc;
         imageElement.dataset.url = originalImageData;
+        if (webpImageData) {
+            imageElement.dataset.webpUrl = webpImageData;
+        }
     }
 
     /**

@@ -13,6 +13,7 @@ const QRCode = require('qrcode');
 const os = require('os');
 const crypto = require('crypto');
 const compression = require('compression');
+const sharp = require('sharp');
 const { CORSValidationService } = require('./services/cors-validation-service');
 const { QuestionTypeService } = require('./services/question-type-service');
 const { QuizService } = require('./services/quiz-service');
@@ -378,13 +379,13 @@ const upload = multer({
   }
 });
 
-app.post('/upload', upload.single('image'), (req, res) => {
+app.post('/upload', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       logger.warn('Upload attempt with no file');
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    
+
     // Enhanced debugging for Ubuntu binary file issues
     logger.info(`File uploaded successfully: ${req.file.filename}`);
     logger.debug(`Upload details:`, {
@@ -395,7 +396,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
       filename: req.file.filename,
       path: req.file.path
     });
-    
+
     // Verify the file was actually written correctly
     if (fs.existsSync(req.file.path)) {
       const stats = fs.statSync(req.file.path);
@@ -424,31 +425,71 @@ app.post('/upload', upload.single('image'), (req, res) => {
         }
       }
 
-      const isValidImage = (
-        // JPEG: FF D8 FF
-        (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) ||
-        // PNG: 89 50 4E 47
-        (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) ||
-        // GIF: 47 49 46 38
-        (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) ||
-        // WebP: 52 49 46 46 ... 57 45 42 50
-        (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
-         buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) ||
-        // BMP: 42 4D
-        (buffer[0] === 0x42 && buffer[1] === 0x4D)
-      );
+      // Detect image type from magic bytes
+      const isJPEG = buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
+      const isPNG = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47;
+      const isGIF = buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38;
+      const isWebP = buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+                     buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
+      const isBMP = buffer[0] === 0x42 && buffer[1] === 0x4D;
+
+      const isValidImage = isJPEG || isPNG || isGIF || isWebP || isBMP;
 
       if (!isValidImage) {
         logger.warn(`File content doesn't match image signature: ${req.file.filename}`);
         fs.unlinkSync(req.file.path); // Delete suspicious file
         return res.status(400).json({ error: 'Invalid image file content' });
       }
+
+      // Convert to WebP for better compression (skip if already WebP or animated GIF)
+      let webpUrl = null;
+      let webpFilename = null;
+      const originalUrl = `/uploads/${req.file.filename}`;
+
+      // Skip WebP conversion for already-WebP files and GIFs (to preserve animations)
+      if (!isWebP && !isGIF) {
+        try {
+          // Generate WebP filename (replace extension with .webp)
+          const baseName = req.file.filename.replace(/\.[^.]+$/, '');
+          webpFilename = `${baseName}.webp`;
+          const webpPath = path.join(req.file.destination, webpFilename);
+
+          // Convert to WebP with quality setting (80 is a good balance)
+          await sharp(req.file.path)
+            .webp({ quality: 80 })
+            .toFile(webpPath);
+
+          const webpStats = fs.statSync(webpPath);
+          const originalSize = stats.size;
+          const webpSize = webpStats.size;
+          const savings = ((originalSize - webpSize) / originalSize * 100).toFixed(1);
+
+          logger.info(`WebP conversion: ${req.file.filename} -> ${webpFilename} (${savings}% smaller)`);
+          webpUrl = `/uploads/${webpFilename}`;
+        } catch (conversionError) {
+          // Log but don't fail - original file is still valid
+          logger.warn(`WebP conversion failed for ${req.file.filename}:`, conversionError.message);
+        }
+      } else if (isWebP) {
+        // File is already WebP, use it directly
+        webpUrl = originalUrl;
+        webpFilename = req.file.filename;
+        logger.debug(`File already WebP: ${req.file.filename}`);
+      } else {
+        logger.debug(`Skipping WebP conversion for GIF: ${req.file.filename}`);
+      }
+
+      // Return both URLs - client can choose which to use
+      res.json({
+        filename: req.file.filename,
+        url: originalUrl,
+        webpFilename: webpFilename,
+        webpUrl: webpUrl
+      });
     } else {
       logger.error(`File not found after upload: ${req.file.path}`);
       return res.status(500).json({ error: 'File upload failed - file not saved' });
     }
-
-    res.json({ filename: req.file.filename, url: `/uploads/${req.file.filename}` });
   } catch (error) {
     logger.error('Upload error:', error);
     res.status(500).json({ error: 'Upload failed' });

@@ -32,8 +32,8 @@ Work through these one at a time. After completing each task, commit and `/clear
 
 ## Performance
 
-- [ ] **PERF-1**: Implement lazy loading for AI Generator and Results Viewer modals
-- [ ] **PERF-2**: Add WebP image support with fallback for quiz images
+- [x] **PERF-1**: Implement lazy loading for AI Generator and Results Viewer modals
+- [x] **PERF-2**: Add WebP image support with fallback for quiz images
 - [ ] **PERF-3**: Add Service Worker for offline quiz viewing support
 
 ---

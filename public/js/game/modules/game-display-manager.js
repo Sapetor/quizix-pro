@@ -69,50 +69,61 @@ export class GameDisplayManager {
 
     /**
      * Update question image display for host or player
+     * Uses <picture> element for WebP with fallback support
      */
     updateQuestionImage(data, containerId) {
         const imageContainer = document.getElementById(containerId);
         if (!imageContainer) {
             return;
         }
-        
+
         // Validate image data first
         if (!data.image || !data.image.trim() || data.image === 'undefined' || data.image === 'null') {
             // Hide the container if no valid image
             imageContainer.style.display = 'none';
             return;
         }
-        
+
         // Additional validation for invalid paths
         if (data.image.includes('nonexistent') || data.image === window.location.origin + '/') {
             imageContainer.style.display = 'none';
             return;
         }
-        
-        // Create or update image element
-        let img = imageContainer.querySelector('img');
-        if (!img) {
-            img = document.createElement('img');
-            img.className = 'question-image';
-            img.style.maxWidth = '100%';
-            img.style.maxHeight = '300px';
-            img.style.height = 'auto';
-            img.style.borderRadius = '8px';
-            img.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-            img.style.margin = '15px 0';
-            imageContainer.appendChild(img);
-        }
-        
-        // Set image source using centralized path resolver
-        const imageSrc = imagePathResolver.toAbsoluteUrl(data.image);
+
+        // Get image sources
+        const originalSrc = imagePathResolver.toAbsoluteUrl(data.image);
+        const webpSrc = data.imageWebp ? imagePathResolver.toAbsoluteUrl(data.imageWebp) : null;
 
         // If no valid image URL, hide container
-        if (!imageSrc || imageSrc.trim() === '') {
+        if (!originalSrc || originalSrc.trim() === '') {
             imageContainer.style.display = 'none';
             return;
         }
 
+        // Clear existing content and create <picture> element for WebP fallback
+        imageContainer.innerHTML = '';
+
+        const picture = document.createElement('picture');
+
+        // Add WebP source if available
+        if (webpSrc) {
+            const webpSource = document.createElement('source');
+            webpSource.srcset = webpSrc;
+            webpSource.type = 'image/webp';
+            picture.appendChild(webpSource);
+        }
+
+        // Create fallback img element
+        const img = document.createElement('img');
+        img.className = 'question-image';
+        img.src = originalSrc;
         img.alt = 'Question Image';
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '300px';
+        img.style.height = 'auto';
+        img.style.borderRadius = '8px';
+        img.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+        img.style.margin = '15px 0';
 
         // Silent error handling - hide container on load failure
         img.onerror = () => {
@@ -123,8 +134,8 @@ export class GameDisplayManager {
             imageContainer.style.display = 'block';
         };
 
-        // Set src last to trigger load/error events
-        img.src = imageSrc;
+        picture.appendChild(img);
+        imageContainer.appendChild(picture);
     }
 
     /**

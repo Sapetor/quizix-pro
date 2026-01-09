@@ -554,10 +554,11 @@ export class PreviewManager {
         const questionType = questionItem.querySelector('.question-type')?.value || 'multiple-choice';
         const imageElement = questionItem.querySelector('.question-image');
         const imageUrl = imageElement ? imageElement.dataset.url || '' : '';
+        const imageWebpUrl = imageElement ? imageElement.dataset.webpUrl || '' : '';
 
         logger.debug('Question text:', questionText);
         logger.debug('Question type:', questionType);
-        logger.debug('Image URL:', imageUrl);
+        logger.debug('Image URL:', imageUrl, 'WebP:', imageWebpUrl);
 
         // Use QuestionTypeRegistry for consistent extraction
         const typeSpecificData = QuestionTypeRegistry.extractData(questionType, questionItem);
@@ -567,6 +568,7 @@ export class PreviewManager {
             question: questionText,
             type: questionType,
             image: imageUrl,
+            imageWebp: imageWebpUrl,
             ...typeSpecificData
         };
 

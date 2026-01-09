@@ -152,8 +152,17 @@ export class QuizGame {
             const storagePath = imagePathResolver.toStoragePath(result.url);
             const displayPath = imagePathResolver.toDisplayPath(storagePath);
 
+            // Handle WebP version if available
+            let webpStoragePath = null;
+            let webpDisplayPath = null;
+            if (result.webpUrl) {
+                webpStoragePath = imagePathResolver.toStoragePath(result.webpUrl);
+                webpDisplayPath = imagePathResolver.toDisplayPath(webpStoragePath);
+                logger.debug('WebP version available:', webpStoragePath);
+            }
+
             // Update the image preview
-            this.updateImagePreview(inputElement, storagePath, displayPath);
+            this.updateImagePreview(inputElement, storagePath, displayPath, webpStoragePath, webpDisplayPath);
 
         } catch (error) {
             logger.error('Image upload failed:', error);
@@ -176,8 +185,10 @@ export class QuizGame {
      * @param {HTMLInputElement} inputElement - The file input element
      * @param {string} storagePath - The portable storage path (e.g., /uploads/file.gif)
      * @param {string} displayPath - The environment-specific display path
+     * @param {string|null} webpStoragePath - The WebP storage path (if available)
+     * @param {string|null} webpDisplayPath - The WebP display path (if available)
      */
-    updateImagePreview(inputElement, storagePath, displayPath) {
+    updateImagePreview(inputElement, storagePath, displayPath, webpStoragePath = null, webpDisplayPath = null) {
         const questionItem = inputElement.closest('.question-item');
         if (!questionItem) {
             logger.error('Could not find question item for image preview');
@@ -192,10 +203,17 @@ export class QuizGame {
             return;
         }
 
-        // Set the display path for showing the image
-        imageElement.src = displayPath;
-        // Store the portable storage path for quiz saving - crucial for cross-environment compatibility
+        // Use WebP for display if available (better compression), fallback to original
+        const actualDisplayPath = webpDisplayPath || displayPath;
+        imageElement.src = actualDisplayPath;
+
+        // Store the portable storage paths for quiz saving
+        // Store original path in dataset.url (backwards compatible)
         imageElement.dataset.url = storagePath;
+        // Store WebP path separately if available
+        if (webpStoragePath) {
+            imageElement.dataset.webpUrl = webpStoragePath;
+        }
         imageElement.alt = 'Question Image';
 
         // Show the preview
@@ -207,7 +225,7 @@ export class QuizGame {
             imageUploadDiv.style.opacity = '1';
         }
 
-        logger.debug('Image preview updated - Storage:', storagePath, 'Display:', displayPath);
+        logger.debug('Image preview updated - Storage:', storagePath, 'WebP:', webpStoragePath, 'Display:', actualDisplayPath);
     }
 
     /**

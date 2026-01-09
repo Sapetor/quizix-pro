@@ -20,22 +20,22 @@ export class PreviewRenderer {
      */
     renderSplitQuestionPreview(data) {
         logger.debug('Rendering split question preview:', data);
-        
+
         // Clear previous content and reset states
         this.clearAllSplitAnswerTypes();
-        
+
         // Render question text
         this.renderSplitQuestionText(data.question);
-        
+
         // Render answer type
         this.renderSplitAnswerType(data);
-        
+
         // Update counter
         this.updateSplitQuestionCounter(data.questionNumber, data.totalQuestions);
-        
-        // Handle image if present
+
+        // Handle image if present (prefer WebP for better compression)
         if (data.image) {
-            this.handleSplitQuestionImage(data.image);
+            this.handleSplitQuestionImage(data.imageWebp || data.image);
         }
     }
 
