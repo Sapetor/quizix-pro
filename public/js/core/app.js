@@ -25,8 +25,7 @@ import { imagePathResolver } from '../utils/image-path-resolver.js';
 
 export class QuizGame {
     constructor() {
-        const timestamp = new Date().toISOString();
-        logger.debug(`🟣 [${timestamp}] QuizGame constructor called`);
+        logger.debug('QuizGame constructor called');
         logger.info('Initializing QuizGame...');
         
         // Initialize socket connection with base path support for Kubernetes
@@ -58,12 +57,10 @@ export class QuizGame {
         
         this.soundManager = new SoundManager();
         this.uiManager = new UIManager();
-        
-        const mathRendererTimestamp = new Date().toISOString();
-        logger.debug(`🟣 [${mathRendererTimestamp}] Creating MathRenderer (which creates SimpleMathJaxService)`);
+
+        logger.debug('Creating MathRenderer');
         this.mathRenderer = new MathRenderer();
-        const mathRendererCreatedTimestamp = new Date().toISOString();
-        logger.debug(`🟣 [${mathRendererCreatedTimestamp}] MathRenderer created`);
+        logger.debug('MathRenderer created');
         
         this.previewManager = new PreviewManager(this.mathRenderer);
         this.gameManager = new GameManager(this.socket, this.uiManager, this.soundManager);
@@ -598,27 +595,26 @@ export class QuizGame {
     }
 
     /**
+     * Reset game and return to main menu (shared logic for newGame and exitToMainMenu)
+     */
+    resetAndReturnToMenu() {
+        this.gameManager.resetGameState();
+
+        if (this.gameManager.timer) {
+            clearInterval(this.gameManager.timer);
+            this.gameManager.timer = null;
+        }
+
+        this.uiManager.showScreen('main-menu');
+    }
+
+    /**
      * Start a new game
      */
     newGame() {
         try {
-            logger.debug('New Game button clicked - starting reset');
-            
-            // Reset game state
-            this.gameManager.resetGameState();
-            logger.debug('Game state reset completed');
-            
-            // Clear any timers
-            if (this.gameManager.timer) {
-                clearInterval(this.gameManager.timer);
-                this.gameManager.timer = null;
-                logger.debug('Game timer cleared');
-            }
-
-            // Return to main menu
-            logger.debug('Switching to main menu');
-            this.uiManager.showScreen('main-menu');
-            logger.debug('New Game process completed successfully');
+            logger.debug('New Game - resetting and returning to main menu');
+            this.resetAndReturnToMenu();
         } catch (error) {
             logger.error('Error in newGame():', error);
             // Fallback - try to at least show main menu
@@ -634,22 +630,8 @@ export class QuizGame {
      * Exit current game and return to main menu
      */
     exitToMainMenu() {
-        // Reset game state
-        this.gameManager.resetGameState();
-        
-        // Clear any timers
-        if (this.gameManager.timer) {
-            clearInterval(this.gameManager.timer);
-            this.gameManager.timer = null;
-        }
-
-        // Keep socket connected for future games - just like newGame() does
-        // No need to disconnect as the socket can be reused for new games
-
-        // Return to main menu
-        this.uiManager.showScreen('main-menu');
-        
-        logger.debug('Exited game and returned to main menu (socket kept connected)');
+        this.resetAndReturnToMenu();
+        logger.debug('Exited game and returned to main menu');
     }
 
     /**
@@ -1009,53 +991,22 @@ export class QuizGame {
      * Update game translations when language changes
      */
     updateGameTranslations() {
-        // Update host question counter if visible and has content
-        const questionCounter = document.getElementById('question-counter');
-        if (questionCounter && questionCounter.textContent.trim()) {
-            // Extract current numbers from existing text and rebuild with new translation
-            const match = questionCounter.textContent.match(/(\d+).*?(\d+)/);
+        // Helper to update question counter elements with new translations
+        const updateQuestionCounter = (elementId) => {
+            const element = document.getElementById(elementId);
+            if (!element?.textContent.trim()) return;
+
+            const match = element.textContent.match(/(\d+).*?(\d+)/);
             if (match) {
-                const currentQ = match[1];
-                const totalQ = match[2];
-                questionCounter.textContent = createQuestionCounter(currentQ, totalQ);
+                element.textContent = createQuestionCounter(match[1], match[2]);
             }
-        }
-        
-        // Update player question counter if visible and has content
-        const playerQuestionCounter = document.getElementById('player-question-counter');
-        if (playerQuestionCounter && playerQuestionCounter.textContent.trim()) {
-            // Extract current numbers from existing text and rebuild with new translation
-            const match = playerQuestionCounter.textContent.match(/(\d+).*?(\d+)/);
-            if (match) {
-                const currentQ = match[1];
-                const totalQ = match[2];
-                playerQuestionCounter.textContent = createQuestionCounter(currentQ, totalQ);
-            }
-        }
-        
-        // Update preview question counter if visible and has content
-        const previewCounter = document.getElementById('preview-question-counter');
-        if (previewCounter && previewCounter.textContent.trim()) {
-            const match = previewCounter.textContent.match(/(\d+).*?(\d+)/);
-            if (match) {
-                const currentQ = match[1];
-                const totalQ = match[2];
-                previewCounter.textContent = createQuestionCounter(currentQ, totalQ);
-            }
-        }
-        
-        // Update preview question counter display inside preview content
-        const previewCounterDisplay = document.getElementById('preview-question-counter-display');
-        if (previewCounterDisplay && previewCounterDisplay.textContent.trim()) {
-            const match = previewCounterDisplay.textContent.match(/(\d+).*?(\d+)/);
-            if (match) {
-                const currentQ = match[1];
-                const totalQ = match[2];
-                previewCounterDisplay.textContent = createQuestionCounter(currentQ, totalQ);
-            }
-        }
-        
-        // Update other game-specific elements that need translation
+        };
+
+        // Update all question counter elements
+        ['question-counter', 'player-question-counter', 'preview-question-counter', 'preview-question-counter-display']
+            .forEach(updateQuestionCounter);
+
+        // Update player info if visible
         const playerInfo = document.getElementById('player-info');
         if (playerInfo && this.gameManager.playerName) {
             playerInfo.textContent = `${translationManager.getTranslationSync('welcome')}, ${this.gameManager.playerName}!`;

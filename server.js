@@ -6,7 +6,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
+// uuid removed - not currently used (GameSessionService generates PINs)
 const cors = require('cors');
 const multer = require('multer');
 const QRCode = require('qrcode');
@@ -194,24 +194,20 @@ app.use(express.static('public', {
     const userAgent = res.req.headers['user-agent'] || '';
     const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
 
+    // Helper for JS/CSS cache times (production: 48h mobile, 24h desktop; dev: 5 minutes)
+    const getAssetMaxAge = () => isProduction ? (isMobile ? 172800 : 86400) : 300;
+
     // Critical fix: Proper MIME types for JavaScript modules
     if (path.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-      // Reduced cache time for development to see changes quickly
-      const maxAge = isProduction
-        ? (isMobile ? 172800 : 86400) // Production: 48 hours mobile, 24 hours desktop
-        : (isMobile ? 300 : 300);     // Development: 5 minutes for quick updates
-      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+      res.setHeader('Cache-Control', `public, max-age=${getAssetMaxAge()}`);
       res.setHeader('Vary', 'Accept-Encoding, User-Agent');
     }
 
     // CSS files
     if (path.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css; charset=utf-8');
-      const maxAge = isProduction
-        ? (isMobile ? 172800 : 86400)
-        : (isMobile ? 300 : 300);
-      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+      res.setHeader('Cache-Control', `public, max-age=${getAssetMaxAge()}`);
       res.setHeader('Vary', 'Accept-Encoding, User-Agent');
     }
 
@@ -690,12 +686,8 @@ app.get('/api/results/:filename/export/:format', async (req, res) => {
     res.setHeader('Content-Type', exportData.type);
     res.setHeader('Content-Disposition', `attachment; filename="${sanitizedFilename}"`);
     
-    // Send content (string for CSV, use send(); JSON use json())
-    if (exportData.type === 'text/csv') {
-      res.send(exportData.content);
-    } else {
-      res.send(exportData.content);
-    }
+    // Send content (works for both CSV and JSON)
+    res.send(exportData.content);
   } catch (error) {
     logger.error('Error exporting result file:', error);
     const statusCode = error.message === 'Result file not found' ? 404 : 400;
@@ -1085,8 +1077,6 @@ io.on('connection', (socket) => {
   socket.on('host-join', (data) => {
     if (!checkRateLimit(socket.id, 'host-join', 5, socket)) return;
     try {
-      const clientIP = socket.handshake.address;
-
       logger.debug('host-join event received');
       logger.debug('host-join received data:', JSON.stringify(data, null, 2));
       logger.debug('quiz title from data:', data?.quiz?.title);
