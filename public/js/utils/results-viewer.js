@@ -8,6 +8,7 @@ import { unifiedErrorHandler as errorHandler } from './unified-error-handler.js'
 import { logger } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
+import { SwipeToDelete } from './swipe-to-delete.js';
 
 export class ResultsViewer {
     constructor() {
@@ -15,14 +16,42 @@ export class ResultsViewer {
         this.currentDetailResult = null;
         this.currentExportFormat = 'analytics';
 
+        // Initialize swipe-to-delete handler for mobile
+        this.swipeToDelete = new SwipeToDelete({
+            deleteThreshold: 100,
+            revealThreshold: 60,
+            maxSwipeDistance: 120,
+            onDelete: (filename) => this.handleSwipeDelete(filename)
+        });
+
         this.initializeEventListeners();
-        
+
         // Listen to results service updates
         resultsManagerService.addListener((event, data) => {
             this.handleServiceUpdate(event, data);
         });
-        
+
         logger.debug('🔧 ResultsViewer initialized');
+    }
+
+    /**
+     * Handle swipe-to-delete gesture
+     */
+    async handleSwipeDelete(filename) {
+        if (!translationManager.showConfirm('confirm_delete_result')) {
+            // User cancelled, reset the item
+            this.swipeToDelete.refresh();
+            return;
+        }
+
+        try {
+            logger.debug(`📊 Swipe deleting result: ${filename}`);
+            await resultsManagerService.deleteResult(filename);
+        } catch (error) {
+            logger.error('❌ Error deleting result via swipe:', error);
+            showErrorAlert('Failed to delete result');
+            this.swipeToDelete.refresh();
+        }
     }
 
     /**
@@ -169,9 +198,23 @@ export class ResultsViewer {
         if (modal) {
             modal.style.display = 'flex';
             await this.loadResults();
+
+            // Initialize swipe-to-delete on mobile
+            this.initSwipeToDelete();
         } else {
             logger.error('📊 Results viewing modal not found');
             showErrorAlert('Results viewer not available');
+        }
+    }
+
+    /**
+     * Initialize swipe-to-delete for mobile devices
+     */
+    initSwipeToDelete() {
+        const resultsList = document.getElementById('results-list');
+        if (resultsList) {
+            this.swipeToDelete.init(resultsList, '.result-item');
+            logger.debug('📊 Swipe-to-delete initialized');
         }
     }
 
@@ -182,6 +225,11 @@ export class ResultsViewer {
         const modal = document.getElementById('results-viewing-modal');
         if (modal) {
             modal.style.display = 'none';
+        }
+
+        // Cleanup swipe handler
+        if (this.swipeToDelete) {
+            this.swipeToDelete.resetAllItems();
         }
     }
 
@@ -370,6 +418,12 @@ export class ResultsViewer {
 
             return `
                 <div class="result-item" data-filename="${this.escapeHtml(result.filename)}">
+                    <div class="swipe-delete-action">
+                        <div class="swipe-delete-icon">
+                            <span>🗑️</span>
+                            <span>Delete</span>
+                        </div>
+                    </div>
                     <div class="result-info">
                         <div class="result-title">${this.escapeHtml(result.quizTitle || 'Untitled Quiz')}</div>
                         <div class="result-meta">
@@ -392,6 +446,7 @@ export class ResultsViewer {
                             🗑️ Delete
                         </button>
                     </div>
+                    <span class="swipe-hint">← swipe</span>
                 </div>
             `;
         }).join('');
@@ -401,8 +456,8 @@ export class ResultsViewer {
         // Add click listeners for detail view
         resultsList.querySelectorAll('.result-item').forEach(item => {
             item.addEventListener('click', (e) => {
-                // Don't trigger detail view if clicking action buttons
-                if (!e.target.closest('.result-actions')) {
+                // Don't trigger detail view if clicking action buttons or swipe action
+                if (!e.target.closest('.result-actions') && !e.target.closest('.swipe-delete-action')) {
                     const filename = item.dataset.filename;
                     const result = this.filteredResults.find(r => r.filename === filename);
                     if (result) {
@@ -410,7 +465,24 @@ export class ResultsViewer {
                     }
                 }
             });
+
+            // Add click handler for swipe delete action (when revealed)
+            const deleteAction = item.querySelector('.swipe-delete-action');
+            if (deleteAction) {
+                deleteAction.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const filename = item.dataset.filename;
+                    if (filename) {
+                        this.handleSwipeDelete(filename);
+                    }
+                });
+            }
         });
+
+        // Refresh swipe-to-delete handler for new items
+        if (this.swipeToDelete) {
+            this.swipeToDelete.refresh();
+        }
     }
 
     /**

@@ -706,6 +706,14 @@
 
 /* Button styles inherit from components.css */
 
+/* ============================================
+   Desktop: Hide swipe-to-delete elements
+   ============================================ */
+.swipe-delete-action,
+.swipe-hint {
+    display: none;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .filter-group {
@@ -742,6 +750,113 @@
     
     .refresh-btn {
         justify-content: center;
+    }
+
+    /* ============================================
+       Mobile Swipe-to-Delete for Results List
+       ============================================ */
+
+    /* Container needs to clip swiped items */
+    .results-list {
+        overflow: hidden;
+    }
+
+    /* Result item swipe container - needs solid background to cover delete action */
+    .result-item {
+        position: relative;
+        transform: translateX(0);
+        will-change: transform;
+        touch-action: pan-y;
+        background: var(--modal-bg, #1a1a2e);
+        z-index: 1;
+    }
+
+    [data-theme="light"] .result-item {
+        background: var(--modal-bg, #ffffff);
+    }
+
+    .result-item.swiping {
+        transition: none !important;
+    }
+
+    .result-item.swipe-revealed {
+        /* Keep item revealed */
+    }
+
+    .result-item.swipe-deleting {
+        pointer-events: none;
+    }
+
+    /* Delete action revealed behind the item */
+    .swipe-delete-action {
+        display: flex;
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 120px;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(90deg, #dc2626, #ef4444);
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 0;
+        cursor: pointer;
+    }
+
+    .swipe-delete-action:active {
+        background: linear-gradient(90deg, #b91c1c, #dc2626);
+    }
+
+    .swipe-delete-icon {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .swipe-delete-icon span:first-child {
+        font-size: 1.2rem;
+    }
+
+    .swipe-delete-icon span:last-child {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Hide desktop action buttons on mobile when swipe is available */
+    .result-item .result-actions {
+        opacity: 1;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .result-item .result-actions .delete {
+        display: none; /* Hide delete button, use swipe instead */
+    }
+
+    /* Swipe hint indicator (visual cue for mobile users) */
+    .swipe-hint {
+        display: block;
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-secondary);
+        opacity: 0.4;
+        font-size: 0.7rem;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .result-item:hover .swipe-hint,
+    .result-item.swiping .swipe-hint,
+    .result-item.swipe-revealed .swipe-hint {
+        opacity: 0;
     }
 }
 
