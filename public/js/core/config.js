@@ -109,6 +109,10 @@ export const COLORS = {
     OVERLAY: 'rgba(0, 0, 0, 0.5)',
     HIGHLIGHT: 'rgba(255, 215, 0, 0.2)',
 
+    // Answer feedback colors
+    CORRECT_ANSWER: '#2ecc71',
+    CORRECT_ANSWER_BG: 'rgba(46, 204, 113, 0.2)',
+
     // With opacity variants (for backgrounds)
     withOpacity: (hex, opacity) => {
         const r = parseInt(hex.slice(1, 3), 16);
@@ -137,6 +141,9 @@ export const UI = {
         xlarge: 1.6
     },
     INITIAL_SPLIT_RATIO: 50,
+    MAX_STAT_ITEMS: 6,        // Maximum stat items shown in statistics grid
+    MAX_NUMERIC_DISPLAY: 6,   // Maximum numeric answers to display in stats
+    DEFAULT_TIMER_SECONDS: 30, // Default question timer in seconds
 };
 
 export const VALIDATION = {

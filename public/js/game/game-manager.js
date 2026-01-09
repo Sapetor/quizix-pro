@@ -4,7 +4,7 @@
  */
 
 import { translationManager, getTranslation, getTrueFalseText } from '../utils/translation-manager.js';
-import { TIMING, logger, UI, ANIMATION } from '../core/config.js';
+import { TIMING, logger, UI, ANIMATION, COLORS } from '../core/config.js';
 // MathRenderer and mathJaxService now handled by GameDisplayManager
 import { simpleMathJaxService } from '../utils/simple-mathjax-service.js';
 import { dom } from '../utils/dom.js';
@@ -197,18 +197,6 @@ export class GameManager {
 
         return null;
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
     /**
      * Finalize question display with common actions
@@ -417,40 +405,49 @@ export class GameManager {
      */
     showAnswerSubmitted(answer) {
         logger.debug('showAnswerSubmitted called with:', answer);
-        
-        let displayText = '';
+
+        const prefix = getTranslation('answer_submitted');
+        const displayText = `${prefix}: ${this.formatAnswerForDisplay(answer)}`;
+
+        // Show modal feedback with submission-specific styling (2 seconds)
+        modalFeedback.showSubmission(displayText, 2000);
+        logger.debug('Answer submission modal feedback shown:', displayText);
+    }
+
+    /**
+     * Format answer value for display based on type
+     */
+    formatAnswerForDisplay(answer) {
+        if (Array.isArray(answer)) {
+            return answer.map(a => String.fromCharCode(65 + a)).join(', ');
+        }
+
+        if (typeof answer === 'boolean') {
+            return answer ? getTranslation('true') : getTranslation('false');
+        }
+
+        if (typeof answer === 'string') {
+            return answer.toUpperCase();
+        }
+
         if (typeof answer === 'number') {
-            // Check the current question type to determine how to display the answer
             const gameState = this.stateManager.getGameState();
             const questionType = gameState.currentQuestion?.type;
-            
+
+            // For numeric questions, show the actual number
             if (questionType === 'numeric') {
-                // For numeric questions, always show the actual number
-                displayText = `${getTranslation('answer_submitted')}: ${answer}`;
-            } else if (Number.isInteger(answer) && answer >= 0 && answer <= 3) {
-                // Multiple choice answer - convert to letter
-                const letter = String.fromCharCode(65 + answer);
-                displayText = `${getTranslation('answer_submitted')}: ${letter}`;
-            } else {
-                // Fallback for other numeric values
-                displayText = `${getTranslation('answer_submitted')}: ${answer}`;
+                return String(answer);
             }
-        } else if (Array.isArray(answer)) {
-            const letters = answer.map(a => String.fromCharCode(65 + a)).join(', ');
-            displayText = `${getTranslation('answer_submitted')}: ${letters}`;
-        } else if (typeof answer === 'boolean') {
-            const translatedValue = answer ? getTranslation('true') : getTranslation('false');
-            displayText = `${getTranslation('answer_submitted')}: ${translatedValue}`;
-        } else if (typeof answer === 'string') {
-            displayText = `${getTranslation('answer_submitted')}: ${answer.toUpperCase()}`;
-        } else {
-            displayText = `${getTranslation('answer_submitted')}: ${answer}`;
+
+            // For multiple choice (0-3), convert to letter A-D
+            if (Number.isInteger(answer) && answer >= 0 && answer <= 3) {
+                return String.fromCharCode(65 + answer);
+            }
+
+            return String(answer);
         }
-        
-        // Show modal feedback with submission-specific styling (original nice system)
-        modalFeedback.showSubmission(displayText, 2000); // 2 seconds for submission confirmation
-        
-        logger.debug('Answer submission modal feedback shown:', displayText);
+
+        return String(answer);
     }
 
     /**
@@ -478,9 +475,7 @@ export class GameManager {
             const checkboxOptions = document.querySelectorAll('.checkbox-option');
             correctAnswer.forEach(index => {
                 if (checkboxOptions[index]) {
-                    checkboxOptions[index].classList.add('correct-answer');
-                    checkboxOptions[index].style.border = '3px solid #2ecc71';
-                    checkboxOptions[index].style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+                    this.applyCorrectAnswerStyle(checkboxOptions[index]);
                     logger.debug('Highlighted correct checkbox option:', index);
                 }
             });
@@ -490,32 +485,36 @@ export class GameManager {
         // Handle multiple choice options
         const options = document.querySelectorAll('.player-option');
         if (typeof correctAnswer === 'number' && options[correctAnswer]) {
-            options[correctAnswer].classList.add('correct-answer');
-            options[correctAnswer].style.border = '3px solid #2ecc71';
-            options[correctAnswer].style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+            this.applyCorrectAnswerStyle(options[correctAnswer]);
             logger.debug('Highlighted correct option:', correctAnswer);
         }
 
         // Handle true/false options
         if (typeof correctAnswer === 'boolean') {
             // Convert boolean to index for UI highlighting: true = 0, false = 1
-            const index = correctAnswer === true ? 0 : 1;
+            const index = correctAnswer ? 0 : 1;
             const correctTFOption = document.querySelector(`[data-answer="${index}"]`);
-            if (correctTFOption && correctTFOption.classList.contains('tf-option')) {
-                correctTFOption.classList.add('correct-answer');
-                correctTFOption.style.border = '3px solid #2ecc71';
-                correctTFOption.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+            if (correctTFOption?.classList.contains('tf-option')) {
+                this.applyCorrectAnswerStyle(correctTFOption);
                 logger.debug('Highlighted correct T/F option:', correctAnswer, 'at index:', index);
             }
         } else {
             const correctTFOption = document.querySelector(`[data-answer="${correctAnswer}"]`);
-            if (correctTFOption && (correctTFOption.classList.contains('true-btn') || correctTFOption.classList.contains('false-btn'))) {
-                correctTFOption.classList.add('correct-answer');
-                correctTFOption.style.border = '3px solid #2ecc71';
-                correctTFOption.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+            if (correctTFOption?.classList.contains('true-btn') || correctTFOption?.classList.contains('false-btn')) {
+                this.applyCorrectAnswerStyle(correctTFOption);
                 logger.debug('Highlighted correct T/F option:', correctAnswer);
             }
         }
+    }
+
+    /**
+     * Apply correct answer styling to an element
+     */
+    applyCorrectAnswerStyle(element) {
+        if (!element) return;
+        element.classList.add('correct-answer');
+        element.style.border = `3px solid ${COLORS.CORRECT_ANSWER}`;
+        element.style.backgroundColor = COLORS.CORRECT_ANSWER_BG;
     }
 
     /**
@@ -645,30 +644,22 @@ export class GameManager {
     highlightCorrectAnswers(data) {
         const gameState = this.stateManager.getGameState();
         if (!gameState.isHost) return;
-        
+
         const questionType = data.questionType || data.type;
         const options = document.querySelectorAll('.option-display');
-        
+
         if (questionType === 'multiple-choice') {
             // Support both correctAnswer and correctIndex (server may use either)
-            const correctIdx = data.correctIndex !== undefined ? data.correctIndex : data.correctAnswer;
-            options.forEach((option, index) => {
-                if (index === correctIdx) {
-                    option.style.border = '5px solid #2ecc71';
-                    option.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
-                    option.style.color = '#2ecc71';
-                    option.style.fontWeight = 'bold';
-                }
-            });
+            const correctIdx = data.correctIndex ?? data.correctAnswer;
+            if (options[correctIdx]) {
+                this.applyHostCorrectStyle(options[correctIdx]);
+            }
         } else if (questionType === 'true-false') {
             // For true-false, correctAnswer is a string ("true" or "false")
             // Convert to index: "true" = 0, "false" = 1
             const correctIndex = (data.correctAnswer === true || data.correctAnswer === 'true') ? 0 : 1;
             if (options[correctIndex]) {
-                options[correctIndex].style.border = '5px solid #2ecc71';
-                options[correctIndex].style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
-                options[correctIndex].style.color = '#2ecc71';
-                options[correctIndex].style.fontWeight = 'bold';
+                this.applyHostCorrectStyle(options[correctIndex]);
             }
         } else if (questionType === 'multiple-correct') {
             // Support both correctAnswers and correctIndices (server may use either)
@@ -676,14 +667,22 @@ export class GameManager {
             if (Array.isArray(correctIndices)) {
                 correctIndices.forEach(index => {
                     if (options[index]) {
-                        options[index].style.border = '5px solid #2ecc71';
-                        options[index].style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
-                        options[index].style.color = '#2ecc71';
-                        options[index].style.fontWeight = 'bold';
+                        this.applyHostCorrectStyle(options[index]);
                     }
                 });
             }
         }
+    }
+
+    /**
+     * Apply correct answer styling to host display element (thicker border)
+     */
+    applyHostCorrectStyle(element) {
+        if (!element) return;
+        element.style.border = `5px solid ${COLORS.CORRECT_ANSWER}`;
+        element.style.backgroundColor = COLORS.CORRECT_ANSWER_BG;
+        element.style.color = COLORS.CORRECT_ANSWER;
+        element.style.fontWeight = 'bold';
     }
 
     /**
@@ -953,8 +952,8 @@ export class GameManager {
             return;
         }
 
-        // Show up to 6 most common answers
-        const maxDisplay = 6;
+        // Show up to max common answers
+        const maxDisplay = UI.MAX_NUMERIC_DISPLAY;
         const totalAnswers = Object.values(answerCounts).reduce((sum, count) => sum + count, 0);
         
         // Sort by count (descending) then by value (ascending)
@@ -1042,7 +1041,7 @@ export class GameManager {
      * Setup multiple choice statistics display
      */
     setupMultipleChoiceStats(optionCount) {
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < UI.MAX_STAT_ITEMS; i++) {
             const statItem = document.getElementById(`stat-item-${i}`);
             const optionLabel = statItem?.querySelector('.option-label');
 
@@ -1063,7 +1062,7 @@ export class GameManager {
      */
     setupTrueFalseStats() {
         const tfTexts = getTrueFalseText();
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < UI.MAX_STAT_ITEMS; i++) {
             const statItem = document.getElementById(`stat-item-${i}`);
             const optionLabel = statItem?.querySelector('.option-label');
             
@@ -1088,7 +1087,7 @@ export class GameManager {
      */
     setupNumericStats(answerCounts) {
         // Hide all regular stat items
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < UI.MAX_STAT_ITEMS; i++) {
             const statItem = document.getElementById(`stat-item-${i}`);
             if (statItem) {
                 statItem.style.display = 'none';
@@ -1106,7 +1105,7 @@ export class GameManager {
      */
     setupOrderingStats(answerCounts) {
         // Hide all regular stat items
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < UI.MAX_STAT_ITEMS; i++) {
             const statItem = document.getElementById(`stat-item-${i}`);
             if (statItem) {
                 statItem.style.display = 'none';
@@ -1137,7 +1136,7 @@ export class GameManager {
         const sortedOrders = orderKeys.sort((a, b) => answerCounts[b] - answerCounts[a]);
         const maxCount = answerCounts[sortedOrders[0]] || 1;
 
-        sortedOrders.slice(0, 6).forEach(orderKey => {
+        sortedOrders.slice(0, UI.MAX_STAT_ITEMS).forEach(orderKey => {
             try {
                 const count = answerCounts[orderKey] || 0;
                 const percentage = Math.round((count / maxCount) * 100);
@@ -1591,15 +1590,6 @@ export class GameManager {
      */
     stopTimer() {
         this.timerManager.stopTimer();
-    }
-
-    /**
-     * Escape HTML to prevent XSS
-     */
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 
     /**

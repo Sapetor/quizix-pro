@@ -5,7 +5,7 @@
 
 import { translationManager } from '../utils/translation-manager.js';
 import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
-import { logger } from '../core/config.js';
+import { logger, UI } from '../core/config.js';
 import { uiStateManager } from '../utils/ui-state-manager.js';
 
 export class SocketManager {
@@ -47,6 +47,21 @@ export class SocketManager {
             this._cachedElements[key] = document.querySelector(selector);
         }
         return this._cachedElements[key];
+    }
+
+    /**
+     * Reset button to default styles (clear any inline overrides)
+     * @param {HTMLElement} button - Button element to reset
+     */
+    _resetButtonStyles(button) {
+        if (!button) return;
+        button.onclick = null;
+        const stylesToReset = [
+            'position', 'bottom', 'right', 'zIndex', 'backgroundColor',
+            'color', 'border', 'padding', 'borderRadius', 'fontSize',
+            'cursor', 'boxShadow'
+        ];
+        stylesToReset.forEach(prop => { button.style[prop] = ''; });
     }
 
     /**
@@ -135,24 +150,17 @@ export class SocketManager {
 
         this.socket.on('question-start', errorBoundary.safeSocketHandler((data) => {
             logger.debug('Question started:', data);
-            logger.debug('Question timeLimit value:', data.timeLimit, 'Type:', typeof data.timeLimit);
-            logger.debug('Question image data:', JSON.stringify(data.image), 'Has image:', !!data.image);
-            logger.debug('Full question data received:', JSON.stringify(data, null, 2));
-            
-            
+
             // Switch to playing state for immersive gameplay
-            if (uiStateManager && typeof uiStateManager.setState === 'function') {
-                uiStateManager.setState('playing');
-            }
-            
+            uiStateManager?.setState?.('playing');
+
             this.gameManager.displayQuestion(data);
-            
-            // Ensure timer has valid duration
-            const timerDuration = data.timeLimit && !isNaN(data.timeLimit) ? data.timeLimit * 1000 : 30000; // Default 30 seconds
-            // logger.debug('Timer duration calculated:', timerDuration);
-            this.gameManager.startTimer(timerDuration);
-            
-            if (this.soundManager.isEnabled()) {
+
+            // Ensure timer has valid duration (convert seconds to ms)
+            const timeLimit = data.timeLimit && !isNaN(data.timeLimit) ? data.timeLimit : UI.DEFAULT_TIMER_SECONDS;
+            this.gameManager.startTimer(timeLimit * 1000);
+
+            if (this.soundManager?.isEnabled()) {
                 this.soundManager.playQuestionStartSound();
             }
         }, 'question-start'));
@@ -187,52 +195,31 @@ export class SocketManager {
         this.socket.on('show-next-button', (data) => {
             logger.debug('Showing next question button', data);
 
-            // Show buttons in leaderboard screen (original buttons)
+            // Determine if this is the last question
+            const gameState = this.gameManager.stateManager?.getGameState();
+            const currentQuestion = gameState?.currentQuestion;
+            const isLastQuestion = data?.isLastQuestion ||
+                (currentQuestion?.questionNumber >= currentQuestion?.totalQuestions);
+
+            const buttonText = isLastQuestion
+                ? (translationManager.getTranslationSync('finish_quiz') || 'Finish Quiz')
+                : (translationManager.getTranslationSync('next_question') || 'Next Question');
+
+            // Show buttons in leaderboard screen
             const nextButton = this._getElement('next-question');
             if (nextButton) {
                 nextButton.style.display = 'block';
-
-                // Update button text based on whether it's the last question
-                // Check both data.isLastQuestion and current question number vs total questions
-                const gameState = this.gameManager.stateManager?.getGameState();
-                const currentQuestion = gameState?.currentQuestion;
-                const isLastQuestion = (data && data.isLastQuestion) ||
-                                     (currentQuestion && currentQuestion.questionNumber >= currentQuestion.totalQuestions);
-
-                if (isLastQuestion) {
-                    nextButton.textContent = translationManager.getTranslationSync('finish_quiz') || 'Finish Quiz';
-                } else {
-                    nextButton.textContent = translationManager.getTranslationSync('next_question') || 'Next Question';
-                }
-                // Clear any existing onclick handler and styling
-                nextButton.onclick = null;
-                nextButton.style.position = '';
-                nextButton.style.bottom = '';
-                nextButton.style.right = '';
-                nextButton.style.zIndex = '';
-                nextButton.style.backgroundColor = '';
-                nextButton.style.color = '';
-                nextButton.style.border = '';
-                nextButton.style.padding = '';
-                nextButton.style.borderRadius = '';
-                nextButton.style.fontSize = '';
-                nextButton.style.cursor = '';
-                nextButton.style.boxShadow = '';
+                nextButton.textContent = buttonText;
+                this._resetButtonStyles(nextButton);
             }
 
-            // Also show buttons in host-game-screen (for statistics phase) - now in stats header
+            // Also show buttons in host-game-screen (for statistics phase)
             const statsControls = this._getElementBySelector('.stats-controls');
             const nextButtonStats = this._getElement('next-question-stats');
             if (statsControls && nextButtonStats) {
                 statsControls.style.display = 'flex';
                 nextButtonStats.style.display = 'block';
-
-                // Update stats button text as well
-                if (data && data.isLastQuestion) {
-                    nextButtonStats.textContent = translationManager.getTranslationSync('finish_quiz') || 'Finish Quiz';
-                } else {
-                    nextButtonStats.textContent = translationManager.getTranslationSync('next_question') || 'Next Question';
-                }
+                nextButtonStats.textContent = buttonText;
             }
         });
 
@@ -243,51 +230,39 @@ export class SocketManager {
             const nextButton = this._getElement('next-question');
             if (nextButton) {
                 nextButton.style.display = 'none';
-                nextButton.onclick = null; // Clear onclick handler
+                nextButton.onclick = null;
             }
 
-            // Hide buttons in host-game-screen - now in stats header
+            // Hide buttons in host-game-screen
             const statsControls = this._getElementBySelector('.stats-controls');
             const nextButtonStats = this._getElement('next-question-stats');
-            if (statsControls && nextButtonStats) {
-                statsControls.style.display = 'none';
-                nextButtonStats.style.display = 'none';
-            }
+            if (statsControls) statsControls.style.display = 'none';
+            if (nextButtonStats) nextButtonStats.style.display = 'none';
         });
 
         this.socket.on('game-end', (data) => {
-            logger.debug('CLIENT: game-end event received!', data);
-            logger.debug('🎉 Game ended - triggering final results:', data);
-            
+            logger.debug('Game ended - triggering final results:', data);
+
             // Switch to results state for leaderboard and celebration
-            if (window.uiStateManager && typeof window.uiStateManager.setState === 'function') {
+            if (window.uiStateManager?.setState) {
                 window.uiStateManager.setState('results');
-                logger.debug('CLIENT: Set game state to results');
             }
-            
+
             // Hide manual advancement button
             const nextButton = this._getElement('next-question');
             if (nextButton) {
                 nextButton.style.display = 'none';
                 nextButton.onclick = null;
-                logger.debug('CLIENT: Hid next question button');
             }
-            
-            // Clear any remaining timers
+
+            // Clear any remaining timers and show final results
             this.gameManager.stopTimer();
-            logger.debug('CLIENT: Stopped timer');
-            
-            // Show final results immediately (server already has delay)
-            logger.debug('CLIENT: About to call showFinalResults with leaderboard:', data.finalLeaderboard);
-            logger.debug('🎉 Calling showFinalResults with leaderboard:', data.finalLeaderboard);
             this.gameManager.showFinalResults(data.finalLeaderboard);
-            logger.debug('CLIENT: showFinalResults called');
         });
 
         // Player-specific events
         this.socket.on('player-result', errorBoundary.safeSocketHandler((data) => {
-            logger.debug('🎯 Player result event received:', data);
-            logger.debug('🎯 Calling gameManager.showPlayerResult...');
+            logger.debug('Player result received:', data);
             this.gameManager.showPlayerResult(data);
         }, 'player-result'));
 
@@ -412,14 +387,8 @@ export class SocketManager {
      * Join game by PIN
      */
     joinGame(pin, playerName) {
-        logger.debug('Attempting to join game with PIN:', pin, 'Name:', playerName);
-        
-        
-        this.socket.emit('player-join', {
-            pin: pin,
-            name: playerName
-        });
-        logger.debug('Emitted player-join event');
+        logger.debug('Joining game:', { pin, playerName });
+        this.socket.emit('player-join', { pin, name: playerName });
     }
 
     /**
@@ -494,25 +463,18 @@ export class SocketManager {
      * Create game
      */
     createGame(quizData) {
-        logger.debug('SocketManager.createGame called with:', quizData);
-        logger.debug('Socket connected:', this.socket.connected);
-        
-        // Set quiz title in GameManager for results saving
-        if (quizData?.quiz?.title && this.gameManager) {
-            this.gameManager.setQuizTitle(quizData.quiz.title);
-        }
-        
-        // Set full quiz data for detailed analytics export
+        logger.debug('Creating game with quiz:', quizData?.quiz?.title);
+
+        // Set quiz data in GameManager for results saving and analytics
         if (quizData?.quiz && this.gameManager) {
+            this.gameManager.setQuizTitle(quizData.quiz.title);
             this.gameManager.setQuizData(quizData.quiz);
         }
-        
+
         try {
-            logger.debug('About to emit host-join with data:', JSON.stringify(quizData, null, 2));
             this.socket.emit('host-join', quizData);
-            logger.debug('Emitted host-join event successfully');
         } catch (error) {
-            logger.error('Error emitting host-join:', error);
+            logger.error('Error creating game:', error);
         }
     }
 
@@ -520,22 +482,18 @@ export class SocketManager {
      * Start game
      */
     startGame() {
-        logger.debug('Attempting to start game...');
-        logger.debug('Socket connected:', this.socket.connected);
-        
+        logger.debug('Starting game');
+
         // Play game start sound
-        if (this.soundManager && this.soundManager.isEnabled()) {
+        if (this.soundManager?.isEnabled()) {
             this.soundManager.playGameStartSound();
         }
-        
+
         // Mark game start time in GameManager for results saving
-        if (this.gameManager) {
-            this.gameManager.markGameStartTime();
-        }
-        
+        this.gameManager?.markGameStartTime();
+
         try {
             this.socket.emit('start-game');
-            logger.debug('Emitted start-game event successfully');
         } catch (error) {
             logger.error('Error starting game:', error);
         }
@@ -556,9 +514,8 @@ export class SocketManager {
      * Request next question (manual advancement)
      */
     nextQuestion() {
-        logger.debug('CLIENT: socketManager.nextQuestion() called - emitting next-question event');
+        logger.debug('Requesting next question');
         this.socket.emit('next-question');
-        logger.debug('CLIENT: next-question event emitted');
     }
 
     /**
