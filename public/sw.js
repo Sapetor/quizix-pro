@@ -35,22 +35,8 @@ const NETWORK_ONLY_PATTERNS = [
     /\/qr\//             // QR codes
 ];
 
-// Patterns for cacheable static assets
-const CACHEABLE_PATTERNS = [
-    /\.js(\?.*)?$/,      // JavaScript files
-    /\.css(\?.*)?$/,     // CSS files
-    /\.png$/,            // PNG images
-    /\.jpg$/,            // JPG images
-    /\.jpeg$/,           // JPEG images
-    /\.gif$/,            // GIF images
-    /\.webp$/,           // WebP images
-    /\.svg$/,            // SVG images
-    /\.woff2?$/,         // Web fonts
-    /\.ttf$/,            // TrueType fonts
-    /\.mp3$/,            // Audio files
-    /\.wav$/,            // Audio files
-    /\.ico$/             // Favicon
-];
+// Single pattern for cacheable static assets (JS, CSS, images, fonts, audio)
+const CACHEABLE_ASSET_PATTERN = /\.(js|css|png|jpe?g|gif|webp|svg|woff2?|ttf|mp3|wav|ico)(\?.*)?$/;
 
 // CDN hosts we trust and want to cache
 const CACHEABLE_CDN_HOSTS = [
@@ -71,17 +57,12 @@ function isNetworkOnly(url) {
  * Check if a request is for a cacheable static asset
  */
 function isCacheableAsset(url) {
-    // Check if it's from our origin
+    // Cache assets from our origin that match the pattern
     if (url.origin === self.location.origin) {
-        return CACHEABLE_PATTERNS.some(pattern => pattern.test(url.pathname));
+        return CACHEABLE_ASSET_PATTERN.test(url.pathname);
     }
-
-    // Check if it's from a trusted CDN
-    if (CACHEABLE_CDN_HOSTS.includes(url.host)) {
-        return true;
-    }
-
-    return false;
+    // Cache all resources from trusted CDNs
+    return CACHEABLE_CDN_HOSTS.includes(url.host);
 }
 
 /**
@@ -175,27 +156,17 @@ async function cacheFirst(request) {
     const cachedResponse = await cache.match(request);
 
     if (cachedResponse) {
-        // Return cached response immediately
-        // Optionally update cache in background (stale-while-revalidate)
         return cachedResponse;
     }
 
-    // Not in cache, fetch from network
-    try {
-        const networkResponse = await fetch(request);
+    const networkResponse = await fetch(request);
 
-        // Only cache successful responses
-        if (networkResponse.ok) {
-            // Clone the response since it can only be consumed once
-            cache.put(request, networkResponse.clone());
-        }
-
-        return networkResponse;
-    } catch (error) {
-        console.warn('[SW] Fetch failed:', request.url, error);
-        // Could return a fallback here if needed
-        throw error;
+    // Cache successful responses (clone since response can only be consumed once)
+    if (networkResponse.ok) {
+        cache.put(request, networkResponse.clone());
     }
+
+    return networkResponse;
 }
 
 /**
@@ -232,13 +203,16 @@ async function networkFirst(request) {
  * Message handler for cache management
  */
 self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
+    const { type } = event.data || {};
 
-    if (event.data && event.data.type === 'CLEAR_CACHE') {
-        caches.delete(CACHE_NAME).then(() => {
-            console.log('[SW] Cache cleared');
-        });
+    switch (type) {
+        case 'SKIP_WAITING':
+            self.skipWaiting();
+            break;
+        case 'CLEAR_CACHE':
+            caches.delete(CACHE_NAME).then(() => {
+                console.log('[SW] Cache cleared');
+            });
+            break;
     }
 });
