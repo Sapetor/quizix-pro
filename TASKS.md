@@ -27,7 +27,7 @@ Work through these one at a time. After completing each task, commit and `/clear
 ## Mobile
 
 - [x] **MOB-1**: Hide/disable split-view resize handle on mobile viewports
-- [ ] **MOB-2**: Ensure all touch targets meet 44x44px minimum size
+- [x] **MOB-2**: Ensure all touch targets meet 44x44px minimum size
 - [ ] **MOB-3**: Add swipe-to-delete gesture on results list items
 
 ## Performance

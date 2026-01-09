@@ -1995,6 +1995,26 @@
         min-height: unset !important;
         font-size: 0px !important;
         line-height: 0 !important;
+        /* MOB-2: Enable invisible touch target positioning */
+        position: relative !important;
+    }
+
+    /* MOB-2: Invisible 44x44px touch targets for carousel dots */
+    .carousel-dots .carousel-dot::before,
+    button.carousel-dot::before,
+    .carousel-dot[data-slide]::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        /* Invisible but captures touch events */
+        background: transparent !important;
     }
 }
 
@@ -2840,6 +2860,23 @@
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
         user-select: none;
+        /* MOB-2: Enable invisible touch target positioning */
+        position: relative;
+    }
+
+    /* MOB-2: Invisible 44x44px touch targets for preview carousel dots */
+    .preview-carousel-dot::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 50%;
+        background: transparent;
     }
     
     .preview-carousel-dot.active {
@@ -2926,6 +2963,28 @@
         border: none !important;
         background: rgba(255, 255, 255, 0.4) !important;
         transform: none !important; /* Reset any transforms */
+        /* MOB-2: Enable invisible touch target positioning */
+        position: relative !important;
+    }
+
+    /* MOB-2: Invisible 44x44px touch targets for preview carousel dots (nuclear option) */
+    .mobile-preview-showcase .preview-carousel-dots .preview-carousel-dot::before,
+    .mobile-preview-showcase button.preview-carousel-dot::before,
+    .mobile-preview-showcase .preview-carousel-dot[data-slide]::before,
+    .mobile-preview-showcase .preview-carousel-dot[data-index]::before,
+    div.mobile-preview-showcase .preview-carousel-dots button.preview-carousel-dot::before,
+    div.mobile-preview-showcase button.preview-carousel-dot[data-index]::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        background: transparent !important;
     }
     
     /* Active state for preview carousel dots - Ultra high specificity */
@@ -2950,8 +3009,25 @@
         margin: 0 !important;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
         background: rgba(255, 255, 255, 0.4) !important;
+        /* MOB-2: Enable invisible touch target positioning */
+        position: relative !important;
     }
-    
+
+    /* MOB-2: Invisible 44x44px touch targets for bottom carousel dots */
+    button.preview-carousel-dot[data-index]::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        background: transparent !important;
+    }
+
     button.preview-carousel-dot[data-index].active {
         background: #3b82f6 !important;
         box-shadow: 0 0 12px rgba(59, 130, 246, 0.4) !important;
@@ -2974,11 +3050,29 @@
         border: none !important;
         font-size: 0 !important;
         line-height: 0 !important;
+        /* MOB-2: Enable invisible touch target positioning */
+        position: relative !important;
     }
-    
+
     .mobile-preview-showcase .preview-carousel-navigation button[class*="preview-carousel-dot"].active {
         background: #3b82f6 !important;
         transform: scale(1.3) !important;
+    }
+
+    /* MOB-2: Invisible 44x44px touch targets for preview carousel dots */
+    .mobile-preview-showcase .preview-carousel-navigation button[class*="preview-carousel-dot"]::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        /* Invisible but captures touch events */
+        background: transparent !important;
     }
 }
 
