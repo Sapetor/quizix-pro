@@ -1,19 +1,26 @@
 /**
- * Swipe-to-Delete - Mobile touch gesture handler for list items
- * Provides swipe-left-to-reveal-delete functionality for mobile devices
+ * SwipeToDelete - Mobile touch gesture handler for list items
+ * Enables swipe-left-to-reveal-delete functionality on touch devices
  */
 
 import { logger } from '../core/config.js';
 
+const DEFAULT_DELETE_THRESHOLD = 100;
+const DEFAULT_REVEAL_THRESHOLD = 60;
+const DEFAULT_MAX_SWIPE_DISTANCE = 120;
+const MOBILE_BREAKPOINT = 768;
+const SWIPE_DIRECTION_THRESHOLD = 10;
+const TRANSITION_DURATION = 200;
+
 export class SwipeToDelete {
     constructor(options = {}) {
         this.container = null;
-        this.items = [];
+        this.itemSelector = null;
         this.onDelete = options.onDelete || null;
-        this.deleteThreshold = options.deleteThreshold || 100; // px to trigger delete
-        this.revealThreshold = options.revealThreshold || 60; // px to reveal delete button
-        this.maxSwipeDistance = options.maxSwipeDistance || 120; // max swipe distance
-        this.enabled = options.enabled !== false; // enabled by default
+        this.deleteThreshold = options.deleteThreshold || DEFAULT_DELETE_THRESHOLD;
+        this.revealThreshold = options.revealThreshold || DEFAULT_REVEAL_THRESHOLD;
+        this.maxSwipeDistance = options.maxSwipeDistance || DEFAULT_MAX_SWIPE_DISTANCE;
+        this.enabled = options.enabled !== false;
 
         // Touch state
         this.activeItem = null;
@@ -21,30 +28,21 @@ export class SwipeToDelete {
         this.touchStartY = 0;
         this.currentTranslateX = 0;
         this.isDragging = false;
-        this.isHorizontalSwipe = null; // null until determined
+        this.isHorizontalSwipe = null;
 
         // Bound event handlers for cleanup
-        this._boundHandlers = {
-            touchstart: null,
-            touchmove: null,
-            touchend: null,
-            touchcancel: null
-        };
+        this._boundHandlers = {};
+        this._outsideClickHandler = null;
 
         logger.debug('SwipeToDelete initialized');
     }
 
     /**
      * Initialize swipe handling on a container
-     * @param {string|HTMLElement} containerSelector - Container selector or element
-     * @param {string} itemSelector - Selector for swipeable items within container
      */
     init(containerSelector, itemSelector = '.result-item') {
-        if (!this.enabled) return;
-
-        // Only enable on mobile/touch devices
-        if (!this.isTouchDevice()) {
-            logger.debug('SwipeToDelete: Not a touch device, skipping initialization');
+        if (!this.enabled || !this.isTouchDevice()) {
+            logger.debug('SwipeToDelete: Skipping initialization (disabled or non-touch device)');
             return;
         }
 
@@ -59,17 +57,16 @@ export class SwipeToDelete {
 
         this.itemSelector = itemSelector;
         this.setupEventListeners();
-
-        logger.debug('SwipeToDelete: Initialized on container', this.container);
+        logger.debug('SwipeToDelete: Initialized on container');
     }
 
     /**
      * Check if device supports touch
      */
     isTouchDevice() {
-        return ('ontouchstart' in window) ||
-               (navigator.maxTouchPoints > 0) ||
-               (window.innerWidth <= 768);
+        return 'ontouchstart' in window ||
+               navigator.maxTouchPoints > 0 ||
+               window.innerWidth <= MOBILE_BREAKPOINT;
     }
 
     /**
@@ -78,10 +75,12 @@ export class SwipeToDelete {
     setupEventListeners() {
         if (!this.container) return;
 
-        this._boundHandlers.touchstart = (e) => this.handleTouchStart(e);
-        this._boundHandlers.touchmove = (e) => this.handleTouchMove(e);
-        this._boundHandlers.touchend = (e) => this.handleTouchEnd(e);
-        this._boundHandlers.touchcancel = (e) => this.handleTouchEnd(e);
+        this._boundHandlers = {
+            touchstart: (e) => this.handleTouchStart(e),
+            touchmove: (e) => this.handleTouchMove(e),
+            touchend: (e) => this.handleTouchEnd(e),
+            touchcancel: (e) => this.handleTouchEnd(e)
+        };
 
         this.container.addEventListener('touchstart', this._boundHandlers.touchstart, { passive: true });
         this.container.addEventListener('touchmove', this._boundHandlers.touchmove, { passive: false });
@@ -89,13 +88,9 @@ export class SwipeToDelete {
         this.container.addEventListener('touchcancel', this._boundHandlers.touchcancel, { passive: true });
     }
 
-    /**
-     * Handle touch start
-     */
     handleTouchStart(e) {
-        if (!e.touches || e.touches.length === 0) return;
+        if (!e.touches?.length) return;
 
-        // Find the swipeable item
         const item = e.target.closest(this.itemSelector);
         if (!item) return;
 
@@ -114,91 +109,68 @@ export class SwipeToDelete {
         this.touchStartY = e.touches[0].clientY;
         this.isDragging = true;
         this.isHorizontalSwipe = null;
+        this.currentTranslateX = this.getTranslateX(item);
 
-        // Get current translate if item is already swiped
-        const transform = getComputedStyle(item).transform;
-        if (transform && transform !== 'none') {
-            const matrix = new DOMMatrix(transform);
-            this.currentTranslateX = matrix.m41;
-        } else {
-            this.currentTranslateX = 0;
-        }
-
-        // Add swiping class for visual feedback
         item.classList.add('swiping');
     }
 
     /**
-     * Handle touch move
+     * Get current translateX value from element's transform
      */
+    getTranslateX(element) {
+        const transform = getComputedStyle(element).transform;
+        if (transform && transform !== 'none') {
+            return new DOMMatrix(transform).m41;
+        }
+        return 0;
+    }
+
     handleTouchMove(e) {
-        if (!this.isDragging || !this.activeItem) return;
-        if (!e.touches || e.touches.length === 0) return;
+        if (!this.isDragging || !this.activeItem || !e.touches?.length) return;
 
         const currentX = e.touches[0].clientX;
         const currentY = e.touches[0].clientY;
         const diffX = currentX - this.touchStartX;
         const diffY = currentY - this.touchStartY;
 
-        // Determine swipe direction on first move
+        // Determine swipe direction on first significant move
         if (this.isHorizontalSwipe === null) {
-            if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+            const threshold = SWIPE_DIRECTION_THRESHOLD;
+            if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
                 this.isHorizontalSwipe = Math.abs(diffX) > Math.abs(diffY);
             }
         }
 
-        // Only handle horizontal swipes
-        if (!this.isHorizontalSwipe) {
-            return;
-        }
+        if (!this.isHorizontalSwipe) return;
 
         // Prevent vertical scrolling during horizontal swipe
         e.preventDefault();
 
-        // Calculate new position (only allow left swipe, negative values)
-        let newTranslateX = this.currentTranslateX + diffX;
-
-        // Limit swipe distance
-        newTranslateX = Math.max(-this.maxSwipeDistance, Math.min(0, newTranslateX));
-
-        // Apply transform
+        // Calculate new position (only allow left swipe)
+        const newTranslateX = Math.max(-this.maxSwipeDistance, Math.min(0, this.currentTranslateX + diffX));
         this.activeItem.style.transform = `translateX(${newTranslateX}px)`;
 
-        // Show/hide delete action based on swipe distance
+        // Update delete action opacity based on swipe progress
         const deleteAction = this.activeItem.querySelector('.swipe-delete-action');
         if (deleteAction) {
             const progress = Math.abs(newTranslateX) / this.maxSwipeDistance;
-            deleteAction.style.opacity = Math.min(1, progress * 1.5);
+            deleteAction.style.opacity = String(Math.min(1, progress * 1.5));
         }
     }
 
-    /**
-     * Handle touch end
-     */
-    handleTouchEnd(e) {
+    handleTouchEnd() {
         if (!this.isDragging || !this.activeItem) return;
 
         this.isDragging = false;
         this.activeItem.classList.remove('swiping');
 
-        // Get final position
-        const transform = getComputedStyle(this.activeItem).transform;
-        let finalX = 0;
-        if (transform && transform !== 'none') {
-            const matrix = new DOMMatrix(transform);
-            finalX = matrix.m41;
-        }
-
-        const swipeDistance = Math.abs(finalX);
+        const swipeDistance = Math.abs(this.getTranslateX(this.activeItem));
 
         if (swipeDistance >= this.deleteThreshold) {
-            // Trigger delete
             this.triggerDelete(this.activeItem);
         } else if (swipeDistance >= this.revealThreshold) {
-            // Snap to reveal position
             this.revealDeleteAction(this.activeItem);
         } else {
-            // Snap back to original position
             this.resetItem(this.activeItem);
         }
 
@@ -206,18 +178,16 @@ export class SwipeToDelete {
     }
 
     /**
-     * Reveal delete action for an item
+     * Reveal delete action by snapping to reveal position
      */
     revealDeleteAction(item) {
         item.classList.add('swipe-revealed');
-        item.style.transition = 'transform 0.2s ease-out';
-        item.style.transform = `translateX(-${this.maxSwipeDistance}px)`;
+        this.applyTransition(item, `translateX(-${this.maxSwipeDistance}px)`);
 
-        // Setup tap-outside-to-close
         setTimeout(() => {
             item.style.transition = '';
             this.setupOutsideClickHandler(item);
-        }, 200);
+        }, TRANSITION_DURATION);
     }
 
     /**
@@ -227,8 +197,7 @@ export class SwipeToDelete {
         if (!item) return;
 
         item.classList.remove('swipe-revealed', 'swiping');
-        item.style.transition = 'transform 0.2s ease-out';
-        item.style.transform = 'translateX(0)';
+        this.applyTransition(item, 'translateX(0)');
 
         const deleteAction = item.querySelector('.swipe-delete-action');
         if (deleteAction) {
@@ -237,19 +206,25 @@ export class SwipeToDelete {
 
         setTimeout(() => {
             item.style.transition = '';
-        }, 200);
+        }, TRANSITION_DURATION);
 
-        // Remove outside click handler
         this.removeOutsideClickHandler();
     }
 
     /**
-     * Trigger delete action
+     * Apply transition with transform
+     */
+    applyTransition(element, transform) {
+        element.style.transition = `transform ${TRANSITION_DURATION}ms ease-out`;
+        element.style.transform = transform;
+    }
+
+    /**
+     * Trigger delete animation and callback
      */
     triggerDelete(item) {
         const filename = item.dataset.filename;
 
-        // Animate out
         item.classList.add('swipe-deleting');
         item.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
         item.style.transform = 'translateX(-100%)';
@@ -272,72 +247,46 @@ export class SwipeToDelete {
             }
         };
 
-        // Use capture phase to catch clicks before they bubble
+        // Use capture phase and slight delay to avoid immediate trigger
         setTimeout(() => {
             document.addEventListener('touchstart', this._outsideClickHandler, { capture: true, passive: true });
             document.addEventListener('click', this._outsideClickHandler, { capture: true });
         }, 100);
     }
 
-    /**
-     * Remove outside click handler
-     */
     removeOutsideClickHandler() {
-        if (this._outsideClickHandler) {
-            document.removeEventListener('touchstart', this._outsideClickHandler, { capture: true });
-            document.removeEventListener('click', this._outsideClickHandler, { capture: true });
-            this._outsideClickHandler = null;
-        }
+        if (!this._outsideClickHandler) return;
+
+        document.removeEventListener('touchstart', this._outsideClickHandler, { capture: true });
+        document.removeEventListener('click', this._outsideClickHandler, { capture: true });
+        this._outsideClickHandler = null;
     }
 
-    /**
-     * Reset all items
-     */
     resetAllItems() {
         const items = this.container?.querySelectorAll(this.itemSelector);
-        if (items) {
-            items.forEach(item => this.resetItem(item));
-        }
+        items?.forEach(item => this.resetItem(item));
     }
 
     /**
-     * Refresh to handle newly added items
-     * Called after results list is re-rendered
+     * Refresh handler for newly added items (called after list re-render)
      */
     refresh() {
-        // Reset any open items
         this.resetAllItems();
         this.activeItem = null;
     }
 
-    /**
-     * Destroy and cleanup
-     */
     destroy() {
         if (this.container) {
-            if (this._boundHandlers.touchstart) {
-                this.container.removeEventListener('touchstart', this._boundHandlers.touchstart);
-            }
-            if (this._boundHandlers.touchmove) {
-                this.container.removeEventListener('touchmove', this._boundHandlers.touchmove);
-            }
-            if (this._boundHandlers.touchend) {
-                this.container.removeEventListener('touchend', this._boundHandlers.touchend);
-            }
-            if (this._boundHandlers.touchcancel) {
-                this.container.removeEventListener('touchcancel', this._boundHandlers.touchcancel);
-            }
+            const events = ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
+            events.forEach(event => {
+                if (this._boundHandlers[event]) {
+                    this.container.removeEventListener(event, this._boundHandlers[event]);
+                }
+            });
         }
 
         this.removeOutsideClickHandler();
-
-        this._boundHandlers = {
-            touchstart: null,
-            touchmove: null,
-            touchend: null,
-            touchcancel: null
-        };
-
+        this._boundHandlers = {};
         this.container = null;
         this.activeItem = null;
 

@@ -4,11 +4,11 @@
  */
 
 import { translationManager, showErrorAlert, showSuccessAlert } from './translation-manager.js';
-import { unifiedErrorHandler as errorHandler } from './unified-error-handler.js';
 import { logger } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
 import { SwipeToDelete } from './swipe-to-delete.js';
+import { escapeHtml } from './dom.js';
 
 export class ResultsViewer {
     constructor() {
@@ -31,7 +31,7 @@ export class ResultsViewer {
             this.handleServiceUpdate(event, data);
         });
 
-        logger.debug('🔧 ResultsViewer initialized');
+        logger.debug('ResultsViewer initialized');
     }
 
     /**
@@ -39,16 +39,15 @@ export class ResultsViewer {
      */
     async handleSwipeDelete(filename) {
         if (!translationManager.showConfirm('confirm_delete_result')) {
-            // User cancelled, reset the item
             this.swipeToDelete.refresh();
             return;
         }
 
         try {
-            logger.debug(`📊 Swipe deleting result: ${filename}`);
+            logger.debug(`Swipe deleting result: ${filename}`);
             await resultsManagerService.deleteResult(filename);
         } catch (error) {
-            logger.error('❌ Error deleting result via swipe:', error);
+            logger.error('Error deleting result via swipe:', error);
             showErrorAlert('Failed to delete result');
             this.swipeToDelete.refresh();
         }
@@ -100,21 +99,9 @@ export class ResultsViewer {
         }
 
         // Close detail modal if we're viewing the deleted result
-        if (this.currentDetailResult && this.currentDetailResult.filename === filename) {
+        if (this.currentDetailResult?.filename === filename) {
             this.hideDetailModal();
         }
-    }
-
-    /**
-     * Escape HTML to prevent XSS attacks
-     * @param {string} text - Text to escape
-     * @returns {string} - Escaped text safe for innerHTML
-     */
-    escapeHtml(text) {
-        if (text === null || text === undefined) return '';
-        const div = document.createElement('div');
-        div.textContent = String(text);
-        return div.innerHTML;
     }
 
     /**
@@ -193,18 +180,17 @@ export class ResultsViewer {
      * Show the results viewing modal
      */
     async showModal() {
-        logger.debug('📊 Opening results viewing modal');
         const modal = document.getElementById('results-viewing-modal');
-        if (modal) {
-            modal.style.display = 'flex';
-            await this.loadResults();
-
-            // Initialize swipe-to-delete on mobile
-            this.initSwipeToDelete();
-        } else {
-            logger.error('📊 Results viewing modal not found');
+        if (!modal) {
+            logger.error('Results viewing modal not found');
             showErrorAlert('Results viewer not available');
+            return;
         }
+
+        logger.debug('Opening results viewing modal');
+        modal.style.display = 'flex';
+        await this.loadResults();
+        this.initSwipeToDelete();
     }
 
     /**
@@ -214,7 +200,6 @@ export class ResultsViewer {
         const resultsList = document.getElementById('results-list');
         if (resultsList) {
             this.swipeToDelete.init(resultsList, '.result-item');
-            logger.debug('📊 Swipe-to-delete initialized');
         }
     }
 
@@ -226,11 +211,7 @@ export class ResultsViewer {
         if (modal) {
             modal.style.display = 'none';
         }
-
-        // Cleanup swipe handler
-        if (this.swipeToDelete) {
-            this.swipeToDelete.resetAllItems();
-        }
+        this.swipeToDelete?.resetAllItems();
     }
 
     /**
@@ -246,7 +227,7 @@ export class ResultsViewer {
     }
 
     /**
-     * Show detail modal by looking up filename (safer alternative to inline JSON)
+     * Show detail modal by looking up filename
      */
     showDetailModalByFilename(filename) {
         const result = this.filteredResults?.find(r => r.filename === filename);
@@ -257,9 +238,6 @@ export class ResultsViewer {
         }
     }
 
-    /**
-     * Hide the result detail modal
-     */
     hideDetailModal() {
         const modal = document.getElementById('result-detail-modal');
         if (modal) {
@@ -274,10 +252,9 @@ export class ResultsViewer {
     async loadResults() {
         try {
             const results = await resultsManagerService.fetchResults();
-            // Results are already handled via service listeners
-            logger.debug(`📊 Loaded ${results.length} results via service`);
+            logger.debug(`Loaded ${results.length} results`);
         } catch (error) {
-            logger.error('❌ Error loading results via service:', error);
+            logger.error('Error loading results:', error);
             this.showError('Failed to load quiz results');
         }
     }
@@ -287,17 +264,14 @@ export class ResultsViewer {
      */
     async refreshResults() {
         try {
-            await resultsManagerService.fetchResults(true); // Force refresh
+            await resultsManagerService.fetchResults(true);
             showSuccessAlert('Results refreshed successfully');
         } catch (error) {
-            logger.error('❌ Error refreshing results:', error);
+            logger.error('Error refreshing results:', error);
             showErrorAlert('Failed to refresh results');
         }
     }
 
-    /**
-     * Show loading state
-     */
     showLoading() {
         const loadingEl = document.getElementById('results-loading');
         if (loadingEl) {
@@ -305,9 +279,6 @@ export class ResultsViewer {
         }
     }
 
-    /**
-     * Hide loading state
-     */
     hideLoading() {
         const loadingEl = document.getElementById('results-loading');
         if (loadingEl) {
@@ -417,7 +388,7 @@ export class ResultsViewer {
             const formattedDate = this.formatDate(result.saved);
 
             return `
-                <div class="result-item" data-filename="${this.escapeHtml(result.filename)}">
+                <div class="result-item" data-filename="${escapeHtml(result.filename)}">
                     <div class="swipe-delete-action">
                         <div class="swipe-delete-icon">
                             <span>🗑️</span>
@@ -425,10 +396,10 @@ export class ResultsViewer {
                         </div>
                     </div>
                     <div class="result-info">
-                        <div class="result-title">${this.escapeHtml(result.quizTitle || 'Untitled Quiz')}</div>
+                        <div class="result-title">${escapeHtml(result.quizTitle || 'Untitled Quiz')}</div>
                         <div class="result-meta">
                             <span>📅 ${formattedDate}</span>
-                            <span>🎯 PIN: ${this.escapeHtml(result.gamePin)}</span>
+                            <span>🎯 PIN: ${escapeHtml(result.gamePin)}</span>
                             <span>👥 ${participantCount} participants</span>
                             <span>📊 ${avgScore}% avg score</span>
                         </div>
@@ -776,7 +747,7 @@ export class ResultsViewer {
                 
                 return `
                     <div class="participant-row">
-                        <div class="participant-name">${this.escapeHtml(player.name || 'Anonymous')}</div>
+                        <div class="participant-name">${escapeHtml(player.name || 'Anonymous')}</div>
                         <div class="participant-score ${scoreClass}">${playerScore} pts</div>
                         <div class="participant-percentage ${scoreClass}">${percentage}%</div>
                         <div class="participant-time">${timeDisplay}</div>
@@ -814,16 +785,13 @@ export class ResultsViewer {
      * Quick download functionality
      */
     async quickDownload(filename, format = null) {
+        const exportFormat = format || this.currentExportFormat;
+        logger.debug(`Downloading result ${filename} as ${exportFormat}`);
+
         try {
-            logger.debug(`📊 Quick downloading result: ${filename}`);
-            
-            const exportFormat = format || this.currentExportFormat;
-            logger.debug(`📊 Using ${exportFormat} format for download`);
-            
             await resultsManagerService.downloadResult(filename, exportFormat, 'csv');
-            return; // Service handles the download, so exit early
-            } catch (error) {
-            logger.error('❌ Error downloading result:', error);
+        } catch (error) {
+            logger.error('Error downloading result:', error);
             showErrorAlert('Failed to download result');
         }
     }
@@ -837,12 +805,10 @@ export class ResultsViewer {
         }
 
         try {
-            logger.debug(`📊 Deleting result: ${filename}`);
-            
+            logger.debug(`Deleting result: ${filename}`);
             await resultsManagerService.deleteResult(filename);
-            
         } catch (error) {
-            logger.error('❌ Error deleting result:', error);
+            logger.error('Error deleting result:', error);
             showErrorAlert('Failed to delete result');
         }
     }
@@ -851,19 +817,17 @@ export class ResultsViewer {
      * Download current result from detail modal
      */
     async downloadCurrentResult() {
-        if (this.currentDetailResult) {
-            await this.quickDownload(this.currentDetailResult.filename);
-        }
+        if (!this.currentDetailResult) return;
+        await this.quickDownload(this.currentDetailResult.filename);
     }
 
     /**
      * Delete current result from detail modal
      */
     async deleteCurrentResult() {
-        if (this.currentDetailResult) {
-            await this.quickDelete(this.currentDetailResult.filename);
-            this.hideDetailModal();
-        }
+        if (!this.currentDetailResult) return;
+        await this.quickDelete(this.currentDetailResult.filename);
+        this.hideDetailModal();
     }
 
     /**
@@ -993,47 +957,34 @@ export class ResultsViewer {
             // Check for question data in multiple possible formats
             let questions = fullResult.questions || fullResult.questionMetadata || [];
             const results = fullResult.results || [];
-            
-            logger.debug('Analytics data check:', {
-                hasQuestions: questions.length > 0,
-                hasResults: results.length > 0,
-                questionsCount: questions.length,
-                resultsCount: results.length
-            });
 
             // Fallback: Try to reconstruct basic question info from player results
-            if ((!questions || questions.length === 0) && results.length > 0) {
-                logger.debug('📊 Attempting to reconstruct question data from player results');
+            if (questions.length === 0 && results.length > 0) {
                 questions = this.reconstructQuestionsFromResults(results);
-                
                 if (questions.length > 0) {
-                    logger.debug('📊 Successfully reconstructed', questions.length, 'questions from results');
-                    fullResult.questions = questions; // Cache for future use
+                    logger.debug(`Reconstructed ${questions.length} questions from results`);
+                    fullResult.questions = questions;
                 } else {
-                    logger.debug('📊 Could not reconstruct question data - showing unavailable modal');
                     this.hideLoading();
                     this.showAnalyticsUnavailableModal(fullResult);
                     return;
                 }
-            } else if (!questions || questions.length === 0) {
+            } else if (questions.length === 0) {
                 this.hideLoading();
                 this.showAnalyticsUnavailableModal(fullResult);
                 return;
             }
 
-            if (!results || results.length === 0) {
+            if (results.length === 0) {
                 this.hideLoading();
                 this.showError('No player response data available for analytics.');
                 return;
             }
 
-            // Calculate analytics
             const questionAnalytics = this.calculateQuestionAnalytics(fullResult);
             const summaryStats = this.getQuizSummaryStats(questionAnalytics);
 
             this.hideLoading();
-            
-            // Create and show analytics modal
             this.createAnalyticsModal(fullResult, questionAnalytics, summaryStats);
             
         } catch (error) {
@@ -1398,7 +1349,7 @@ export class ResultsViewer {
                 
                 <div class="modal-footer">
                     <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
-                    <button class="btn primary" data-filename="${this.escapeHtml(result.filename)}" onclick="resultsViewer.showDetailModalByFilename(this.dataset.filename); this.closest('.modal-overlay').remove();">View Basic Results</button>
+                    <button class="btn primary" data-filename="${escapeHtml(result.filename)}" onclick="resultsViewer.showDetailModalByFilename(this.dataset.filename); this.closest('.modal-overlay').remove();">View Basic Results</button>
                 </div>
             </div>
         `;
@@ -1426,24 +1377,17 @@ export class ResultsViewer {
             const questionCount = firstPlayer.answers.length;
 
             for (let i = 0; i < questionCount; i++) {
-                // Reconstruct basic question info - limited but better than nothing
                 questions.push({
                     questionNumber: i + 1,
-                    text: `Question ${i + 1}`, // Generic placeholder since we don't have original text
-                    type: 'multiple-choice', // Assume multiple choice as default
+                    text: `Question ${i + 1}`,
+                    type: 'multiple-choice',
                     correctAnswer: this.inferCorrectAnswer(results, i),
                     difficulty: 'unknown',
-                    reconstructed: true // Flag to indicate this is reconstructed data
+                    reconstructed: true
                 });
             }
 
-            logger.debug('📊 Reconstructed questions:', {
-                count: questions.length,
-                playerCount: results.length
-            });
-
             return questions;
-
         } catch (error) {
             logger.error('Failed to reconstruct questions from results:', error);
             return [];
@@ -1451,54 +1395,45 @@ export class ResultsViewer {
     }
 
     /**
-     * Try to infer the correct answer by looking at which answer got the highest scores
+     * Infer the correct answer by analyzing which answers received points
      */
     inferCorrectAnswer(results, questionIndex) {
-        try {
-            const answerCounts = {};
-            const correctAnswers = [];
+        const answerStats = new Map();
+        let firstCorrectAnswer = null;
 
-            // Count answers and track which ones resulted in points
-            results.forEach(player => {
-                const answer = player.answers[questionIndex];
-                const score = player.scores && player.scores[questionIndex] ? player.scores[questionIndex] : 0;
-                
-                if (answer !== undefined && answer !== null) {
-                    if (!answerCounts[answer]) {
-                        answerCounts[answer] = { count: 0, totalScore: 0 };
-                    }
-                    answerCounts[answer].count++;
-                    answerCounts[answer].totalScore += score;
-                    
-                    // If this answer got points, it's likely correct
-                    if (score > 0) {
-                        correctAnswers.push(answer);
-                    }
-                }
-            });
+        for (const player of results) {
+            const answer = player.answers?.[questionIndex];
+            const score = player.scores?.[questionIndex] || 0;
 
-            // Return the most common correct answer, or the answer with highest total score
-            if (correctAnswers.length > 0) {
-                return correctAnswers[0];
+            if (answer == null) continue;
+
+            const stats = answerStats.get(answer) || { count: 0, totalScore: 0 };
+            stats.count++;
+            stats.totalScore += score;
+            answerStats.set(answer, stats);
+
+            if (score > 0 && !firstCorrectAnswer) {
+                firstCorrectAnswer = answer;
             }
-
-            // Fallback: return the answer with highest average score
-            let bestAnswer = null;
-            let highestAvgScore = 0;
-            Object.keys(answerCounts).forEach(answer => {
-                const avgScore = answerCounts[answer].totalScore / answerCounts[answer].count;
-                if (avgScore > highestAvgScore) {
-                    highestAvgScore = avgScore;
-                    bestAnswer = answer;
-                }
-            });
-
-            return bestAnswer || 'Unknown';
-
-        } catch (error) {
-            logger.error('Failed to infer correct answer:', error);
-            return 'Unknown';
         }
+
+        if (firstCorrectAnswer) {
+            return firstCorrectAnswer;
+        }
+
+        // Fallback: find answer with highest average score
+        let bestAnswer = null;
+        let highestAvgScore = 0;
+
+        for (const [answer, stats] of answerStats) {
+            const avgScore = stats.totalScore / stats.count;
+            if (avgScore > highestAvgScore) {
+                highestAvgScore = avgScore;
+                bestAnswer = answer;
+            }
+        }
+
+        return bestAnswer || 'Unknown';
     }
 }
 
