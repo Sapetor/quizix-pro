@@ -16,9 +16,72 @@ import { secureStorage } from '../services/secure-storage-service.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 import { toastNotifications } from '../utils/toast-notifications.js';
+import { escapeHtml } from '../utils/dom.js';
 
 // Import XLSX library for Excel processing
 const XLSX = window.XLSX;
+
+// Constants extracted to avoid duplication
+const LANGUAGE_NAMES = {
+    'en': 'English',
+    'es': 'Spanish',
+    'fr': 'French',
+    'de': 'German',
+    'it': 'Italian',
+    'pt': 'Portuguese',
+    'pl': 'Polish',
+    'ja': 'Japanese',
+    'zh': 'Chinese'
+};
+
+const LANGUAGE_NATIVE_NAMES = {
+    'en': 'English',
+    'es': 'Espanol',
+    'fr': 'Francais',
+    'de': 'Deutsch',
+    'it': 'Italiano',
+    'pt': 'Portugues',
+    'pl': 'Polski',
+    'ja': 'Japanese',
+    'zh': 'Chinese'
+};
+
+const OPTION_COLORS = [
+    { bg: 'rgba(59, 130, 246, 0.15)', border: '#3b82f6', text: '#3b82f6' },   // Blue
+    { bg: 'rgba(16, 185, 129, 0.15)', border: '#10b981', text: '#10b981' },   // Green
+    { bg: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b', text: '#f59e0b' },   // Orange
+    { bg: 'rgba(239, 68, 68, 0.15)', border: '#ef4444', text: '#ef4444' },    // Red
+    { bg: 'rgba(139, 92, 246, 0.15)', border: '#8b5cf6', text: '#8b5cf6' },   // Purple
+    { bg: 'rgba(6, 182, 212, 0.15)', border: '#06b6d4', text: '#06b6d4' }     // Cyan
+];
+
+const DIFFICULTY_COLORS = {
+    easy: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
+    medium: { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b' },
+    hard: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' }
+};
+
+const TYPE_EMOJIS = {
+    'mathematics': '\u{1F4D0}',
+    'programming': '\u{1F4BB}',
+    'physics': '\u{26A1}',
+    'chemistry': '\u{1F9EA}',
+    'biology': '\u{1F9EC}',
+    'history': '\u{1F4DC}',
+    'economics': '\u{1F4CA}',
+    'general': '\u{1F4DD}'
+};
+
+const CONTENT_TYPE_TRANSLATION_KEYS = {
+    'mathematics': 'content_type_mathematics',
+    'programming': 'content_type_programming',
+    'physics': 'content_type_physics',
+    'chemistry': 'content_type_chemistry',
+    'biology': 'content_type_biology',
+    'history': 'content_type_history',
+    'economics': 'content_type_economics',
+    'general': 'content_type_general'
+};
 
 export class AIQuestionGenerator {
     constructor() {
@@ -461,6 +524,70 @@ export class AIQuestionGenerator {
     }
 
     /**
+     * Build HTML for a single option in the preview
+     * @param {string} text - Option text
+     * @param {number} index - Option index
+     * @param {boolean} isCorrect - Whether this is the correct answer
+     * @returns {string} - HTML string for the option
+     */
+    buildOptionHtml(text, index, isCorrect) {
+        const color = OPTION_COLORS[index % OPTION_COLORS.length];
+        return `
+            <div class="ai-preview-option ${isCorrect ? 'correct' : ''}"
+                 style="background: ${color.bg}; border-left: 4px solid ${color.border};">
+                <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${String.fromCharCode(65 + index)}</span>
+                <span class="ai-option-text">${escapeHtml(text)}</span>
+                ${isCorrect ? '<span class="ai-correct-badge">\u2713</span>' : ''}
+            </div>`;
+    }
+
+    /**
+     * Build options HTML based on question type
+     * @param {Object} question - Question data
+     * @returns {string} - HTML string for all options
+     */
+    buildOptionsHtml(question) {
+        const type = question.type;
+
+        if (type === 'multiple-choice' || type === 'true-false') {
+            const options = question.options || [];
+            const correctIndex = question.correctAnswer ?? 0;
+            return options.map((opt, i) => this.buildOptionHtml(opt, i, i === correctIndex)).join('');
+        }
+
+        if (type === 'multiple-correct') {
+            const options = question.options || [];
+            const correctAnswers = question.correctAnswers || [];
+            return options.map((opt, i) => this.buildOptionHtml(opt, i, correctAnswers.includes(i))).join('');
+        }
+
+        if (type === 'numeric') {
+            const answerLabel = translationManager.getTranslationSync('correct_answer') || 'Correct Answer';
+            const color = OPTION_COLORS[0];
+            return `
+                <div class="ai-preview-option correct" style="background: ${color.bg}; border-left: 4px solid ${color.border};">
+                    <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${answerLabel}:</span>
+                    <span class="ai-option-text">${escapeHtml(String(question.correctAnswer))}</span>
+                    <span class="ai-correct-badge">\u2713</span>
+                </div>`;
+        }
+
+        if (type === 'ordering') {
+            const items = question.options || question.items || [];
+            return items.map((item, i) => {
+                const color = OPTION_COLORS[i % OPTION_COLORS.length];
+                return `
+                    <div class="ai-preview-option" style="background: ${color.bg}; border-left: 4px solid ${color.border};">
+                        <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${i + 1}</span>
+                        <span class="ai-option-text">${escapeHtml(item)}</span>
+                    </div>`;
+            }).join('');
+        }
+
+        return '';
+    }
+
+    /**
      * Render a single question for preview
      * @param {Object} question - Question data
      * @param {number} index - Question index
@@ -475,80 +602,17 @@ export class AIQuestionGenerator {
         const typeKey = `question_type_${question.type?.replace('-', '_')}`;
         const typeLabel = translationManager.getTranslationSync(typeKey) || question.type || 'Unknown';
 
-        // Colorful option colors (matching app preview)
-        const optionColors = [
-            { bg: 'rgba(59, 130, 246, 0.15)', border: '#3b82f6', text: '#3b82f6' },   // Blue
-            { bg: 'rgba(16, 185, 129, 0.15)', border: '#10b981', text: '#10b981' },   // Green
-            { bg: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b', text: '#f59e0b' },   // Orange
-            { bg: 'rgba(239, 68, 68, 0.15)', border: '#ef4444', text: '#ef4444' },    // Red
-            { bg: 'rgba(139, 92, 246, 0.15)', border: '#8b5cf6', text: '#8b5cf6' },   // Purple
-            { bg: 'rgba(6, 182, 212, 0.15)', border: '#06b6d4', text: '#06b6d4' }     // Cyan
-        ];
-
         // Build options HTML based on question type
-        let optionsHtml = '';
-        if (question.type === 'multiple-choice' || question.type === 'true-false') {
-            const options = question.options || [];
-            const correctIndex = question.correctAnswer ?? 0;
-            optionsHtml = options.map((opt, i) => {
-                const color = optionColors[i % optionColors.length];
-                const isCorrect = i === correctIndex;
-                return `
-                <div class="ai-preview-option ${isCorrect ? 'correct' : ''}"
-                     style="background: ${color.bg}; border-left: 4px solid ${color.border};">
-                    <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${String.fromCharCode(65 + i)}</span>
-                    <span class="ai-option-text">${this.escapeHtml(opt)}</span>
-                    ${isCorrect ? '<span class="ai-correct-badge">✓</span>' : ''}
-                </div>`;
-            }).join('');
-        } else if (question.type === 'multiple-correct') {
-            const options = question.options || [];
-            const correctAnswers = question.correctAnswers || [];
-            optionsHtml = options.map((opt, i) => {
-                const color = optionColors[i % optionColors.length];
-                const isCorrect = correctAnswers.includes(i);
-                return `
-                <div class="ai-preview-option ${isCorrect ? 'correct' : ''}"
-                     style="background: ${color.bg}; border-left: 4px solid ${color.border};">
-                    <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${String.fromCharCode(65 + i)}</span>
-                    <span class="ai-option-text">${this.escapeHtml(opt)}</span>
-                    ${isCorrect ? '<span class="ai-correct-badge">✓</span>' : ''}
-                </div>`;
-            }).join('');
-        } else if (question.type === 'numeric') {
-            const answerLabel = translationManager.getTranslationSync('correct_answer') || 'Correct Answer';
-            const color = optionColors[0];
-            optionsHtml = `
-                <div class="ai-preview-option correct" style="background: ${color.bg}; border-left: 4px solid ${color.border};">
-                    <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${answerLabel}:</span>
-                    <span class="ai-option-text">${this.escapeHtml(String(question.correctAnswer))}</span>
-                    <span class="ai-correct-badge">✓</span>
-                </div>`;
-        } else if (question.type === 'ordering') {
-            const items = question.options || question.items || [];
-            optionsHtml = items.map((item, i) => {
-                const color = optionColors[i % optionColors.length];
-                return `
-                <div class="ai-preview-option" style="background: ${color.bg}; border-left: 4px solid ${color.border};">
-                    <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${i + 1}</span>
-                    <span class="ai-option-text">${this.escapeHtml(item)}</span>
-                </div>`;
-            }).join('');
-        }
+        const optionsHtml = this.buildOptionsHtml(question);
 
         // Explanation section if available
         const explanationHtml = question.explanation
-            ? `<div class="ai-preview-explanation"><span class="explanation-icon">💡</span> ${this.escapeHtml(question.explanation)}</div>`
+            ? `<div class="ai-preview-explanation"><span class="explanation-icon">\u{1F4A1}</span> ${escapeHtml(question.explanation)}</div>`
             : '';
 
         // Difficulty badge with color
         const difficulty = question.difficulty || 'medium';
-        const difficultyColors = {
-            easy: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
-            medium: { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b' },
-            hard: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' }
-        };
-        const diffColor = difficultyColors[difficulty] || difficultyColors.medium;
+        const diffColor = DIFFICULTY_COLORS[difficulty] || DIFFICULTY_COLORS.medium;
         const difficultyLabel = translationManager.getTranslationSync(difficulty) || difficulty;
 
         // Time limit display
@@ -570,7 +634,7 @@ export class AIQuestionGenerator {
                     <button class="ai-regenerate-btn" title="Regenerate this question" data-index="${index}">🔄</button>
                 </div>
             </div>
-            <div class="ai-preview-question-text" data-field="question">${this.escapeHtml(question.question)}</div>
+            <div class="ai-preview-question-text" data-field="question">${escapeHtml(question.question)}</div>
             <div class="ai-preview-options" data-field="options">${optionsHtml}</div>
             ${explanationHtml}
         `;
@@ -693,7 +757,7 @@ export class AIQuestionGenerator {
         const questionTextEl = item.querySelector('.ai-preview-question-text');
         if (questionTextEl) {
             questionTextEl.innerHTML = `
-                <textarea class="ai-edit-field ai-edit-question" rows="3">${this.escapeHtml(question.question)}</textarea>
+                <textarea class="ai-edit-field ai-edit-question" rows="3">${escapeHtml(question.question)}</textarea>
             `;
         }
 
@@ -708,7 +772,7 @@ export class AIQuestionGenerator {
                     return `
                         <div class="ai-edit-option-row">
                             <input type="number" class="ai-edit-order" value="${position}" min="1" max="${question.options.length}" data-index="${i}" style="width: 50px;">
-                            <input type="text" class="ai-edit-field ai-edit-option" value="${this.escapeHtml(opt)}" data-index="${i}">
+                            <input type="text" class="ai-edit-field ai-edit-option" value="${escapeHtml(opt)}" data-index="${i}">
                         </div>
                     `;
                 }).join('');
@@ -731,7 +795,7 @@ export class AIQuestionGenerator {
                                    name="correct-${index}" value="${i}"
                                    ${isCorrect ? 'checked' : ''}
                                    class="ai-edit-correct">
-                            <input type="text" class="ai-edit-field ai-edit-option" value="${this.escapeHtml(opt)}" data-index="${i}">
+                            <input type="text" class="ai-edit-field ai-edit-option" value="${escapeHtml(opt)}" data-index="${i}">
                         </div>
                     `;
                 }).join('');
@@ -741,9 +805,9 @@ export class AIQuestionGenerator {
             optionsEl.innerHTML = `
                 <div class="ai-edit-option-row">
                     <label>Answer:</label>
-                    <input type="number" class="ai-edit-field ai-edit-numeric" value="${this.escapeHtml(String(question.correctAnswer))}" step="any">
+                    <input type="number" class="ai-edit-field ai-edit-numeric" value="${escapeHtml(String(question.correctAnswer))}" step="any">
                     <label>Tolerance:</label>
-                    <input type="number" class="ai-edit-field ai-edit-tolerance" value="${this.escapeHtml(String(question.tolerance || 0))}" step="any">
+                    <input type="number" class="ai-edit-field ai-edit-tolerance" value="${escapeHtml(String(question.tolerance || 0))}" step="any">
                 </div>
             `;
         }
@@ -1052,18 +1116,6 @@ RULES:
     }
 
     /**
-     * Escape HTML to prevent XSS
-     * @param {string} text - Text to escape
-     * @returns {string} - Escaped text
-     */
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    /**
      * Truncate text at a word boundary to avoid cutting words mid-way
      * @param {string} text - Text to truncate
      * @param {number} maxLength - Maximum length
@@ -1219,20 +1271,7 @@ RULES:
                     // Use simplified prompt on retries
                     const currentPrompt = attempt === 1 ? prompt : this.buildRetryPrompt(content, questionCount, difficulty, selectedTypes, attempt);
 
-                    switch (provider) {
-                        case 'ollama':
-                            questions = await this.generateWithOllama(currentPrompt);
-                            break;
-                        case 'openai':
-                            questions = await this.generateWithOpenAI(currentPrompt);
-                            break;
-                        case 'claude':
-                            questions = await this.generateWithClaude(currentPrompt);
-                            break;
-                        case 'gemini':
-                            questions = await this.generateWithGemini(currentPrompt);
-                            break;
-                    }
+                    questions = await this.generateWithProvider(provider, currentPrompt);
 
                     // If we got questions, break out of retry loop
                     if (questions && questions.length > 0) {
@@ -1350,23 +1389,10 @@ RULES:
         
         // Build prompt and generate
         const prompt = this.buildPrompt(structuredText, batchSize, difficulty, selectedTypes);
-        
+
         let questions = [];
         try {
-            switch (provider) {
-                case 'ollama':
-                    questions = await this.generateWithOllama(prompt);
-                    break;
-                case 'openai':
-                    questions = await this.generateWithOpenAI(prompt);
-                    break;
-                case 'claude':
-                    questions = await this.generateWithClaude(prompt);
-                    break;
-                case 'gemini':
-                    questions = await this.generateWithGemini(prompt);
-                    break;
-            }
+            questions = await this.generateWithProvider(provider, prompt);
         } catch (error) {
             logger.error('Batch generation error:', error);
             showAlert(`Batch ${currentBatch} failed: ${error.message}`, 'error');
@@ -1478,19 +1504,7 @@ RULES:
         // Use translation manager to get current app language
         const language = translationManager.getCurrentLanguage() || 'en';
 
-        const languageNames = {
-            'en': 'English',
-            'es': 'Spanish',
-            'fr': 'French',
-            'de': 'German',
-            'it': 'Italian',
-            'pt': 'Portuguese',
-            'pl': 'Polish',
-            'ja': 'Japanese',
-            'zh': 'Chinese'
-        };
-
-        const targetLanguage = languageNames[language] || 'English';
+        const targetLanguage = LANGUAGE_NAMES[language] || 'English';
 
         // Build Bloom's taxonomy instructions
         const bloomInstructions = this.buildBloomInstructions(cognitiveLevel);
@@ -1585,11 +1599,7 @@ IMPORTANT: You MUST output all ${questionCount} complete questions. Do not trunc
      */
     buildRetryPrompt(content, questionCount, difficulty, selectedTypes, attemptNumber) {
         const language = translationManager.getCurrentLanguage() || 'en';
-        const languageNames = {
-            'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German',
-            'it': 'Italian', 'pt': 'Portuguese', 'pl': 'Polish', 'ja': 'Japanese', 'zh': 'Chinese'
-        };
-        const targetLanguage = languageNames[language] || 'English';
+        const targetLanguage = LANGUAGE_NAMES[language] || 'English';
 
         // On second retry, reduce question count if more than 1
         const adjustedCount = attemptNumber >= 3 && questionCount > 1 ? Math.ceil(questionCount / 2) : questionCount;
@@ -1695,18 +1705,7 @@ COGNITIVE LEVEL (Bloom's Taxonomy - ${cognitiveLevel.toUpperCase()}):
 
     buildExcelConversionPrompt(content, selectedTypes) {
         const language = translationManager.getCurrentLanguage() || 'en';
-        const languageNames = {
-            'en': 'English',
-            'es': 'Spanish', 
-            'fr': 'French',
-            'de': 'German',
-            'it': 'Italian',
-            'pt': 'Portuguese', 
-            'pl': 'Polish',
-            'ja': 'Japanese',
-            'zh': 'Chinese'
-        };
-        const targetLanguage = languageNames[language] || 'English';
+        const targetLanguage = LANGUAGE_NAMES[language] || 'English';
 
         return `CONVERT EXCEL QUESTIONS TO JSON - DO NOT MAKE UP NEW QUESTIONS
 
@@ -1742,6 +1741,27 @@ CRITICAL RULES:
 Start converting now. Return only the JSON array.`;
     }
 
+    /**
+     * Generate questions using the specified provider
+     * Consolidates provider dispatch logic into a single method
+     * @param {string} provider - Provider name ('ollama', 'openai', 'claude', 'gemini')
+     * @param {string} prompt - The prompt to send
+     * @returns {Promise<Array>} - Generated questions
+     */
+    async generateWithProvider(provider, prompt) {
+        switch (provider) {
+            case 'ollama':
+                return await this.generateWithOllama(prompt);
+            case 'openai':
+                return await this.generateWithOpenAI(prompt);
+            case 'claude':
+                return await this.generateWithClaude(prompt);
+            case 'gemini':
+                return await this.generateWithGemini(prompt);
+            default:
+                throw new Error(`Unknown provider: ${provider}`);
+        }
+    }
 
     async generateWithOllama(prompt) {
         return await errorHandler.safeNetworkOperation(async () => {
@@ -2268,84 +2288,41 @@ Please respond with only valid JSON. Do not include explanations or additional t
             const result = {
                 type: 'general',
                 language: null,
-                hasExistingQuestions: false,
+                hasExistingQuestions: AI.EXISTING_QUESTIONS_INDICATORS?.test(content) || false,
                 needsLatex: false,
                 needsCodeBlocks: false,
                 wordCount: content.split(/\s+/).filter(w => w.length > 0).length
             };
 
-            // Check if content contains existing questions (from file upload)
-            if (AI.EXISTING_QUESTIONS_INDICATORS?.test(content)) {
-                result.hasExistingQuestions = true;
-            }
+            // Content type detection - order matters (more specific patterns first)
+            const contentTypeChecks = [
+                { pattern: AI.MATH_INDICATORS, type: 'mathematics', needsLatex: true },
+                { pattern: AI.PHYSICS_INDICATORS, type: 'physics', needsLatex: true },
+                { pattern: AI.CHEMISTRY_INDICATORS, type: 'chemistry', needsLatex: true },
+                { pattern: AI.PROGRAMMING_INDICATORS, type: 'programming', needsCodeBlocks: true },
+                { pattern: AI.BIOLOGY_INDICATORS, type: 'biology' },
+                { pattern: AI.HISTORY_INDICATORS, type: 'history' },
+                { pattern: AI.ECONOMICS_INDICATORS, type: 'economics' }
+            ];
 
-            // Mathematics - needs LaTeX formatting
-            if (AI.MATH_INDICATORS?.test(content)) {
-                result.type = 'mathematics';
-                result.needsLatex = true;
-                this.updateContentAnalysisUI(result);
-                this.updateCostEstimation(content);
-                return result;
-            }
-
-            // Programming - detect specific language for syntax highlighting
-            if (AI.PROGRAMMING_INDICATORS?.test(content)) {
-                result.type = 'programming';
-                result.needsCodeBlocks = true;
-                // Detect specific programming language
-                if (AI.CODE_LANGUAGE_HINTS) {
-                    for (const [lang, pattern] of Object.entries(AI.CODE_LANGUAGE_HINTS)) {
-                        if (pattern.test(content)) {
-                            result.language = lang;
-                            break;
+            for (const check of contentTypeChecks) {
+                if (check.pattern?.test(content)) {
+                    result.type = check.type;
+                    if (check.needsLatex) result.needsLatex = true;
+                    if (check.needsCodeBlocks) {
+                        result.needsCodeBlocks = true;
+                        // Detect specific programming language
+                        if (AI.CODE_LANGUAGE_HINTS) {
+                            for (const [lang, pattern] of Object.entries(AI.CODE_LANGUAGE_HINTS)) {
+                                if (pattern.test(content)) {
+                                    result.language = lang;
+                                    break;
+                                }
+                            }
                         }
                     }
+                    break;
                 }
-                this.updateContentAnalysisUI(result);
-                this.updateCostEstimation(content);
-                return result;
-            }
-
-            // Physics - needs LaTeX for formulas
-            if (AI.PHYSICS_INDICATORS?.test(content)) {
-                result.type = 'physics';
-                result.needsLatex = true;
-                this.updateContentAnalysisUI(result);
-                this.updateCostEstimation(content);
-                return result;
-            }
-
-            // Chemistry - needs LaTeX for formulas and equations
-            if (AI.CHEMISTRY_INDICATORS?.test(content)) {
-                result.type = 'chemistry';
-                result.needsLatex = true;
-                this.updateContentAnalysisUI(result);
-                this.updateCostEstimation(content);
-                return result;
-            }
-
-            // Biology
-            if (AI.BIOLOGY_INDICATORS?.test(content)) {
-                result.type = 'biology';
-                this.updateContentAnalysisUI(result);
-                this.updateCostEstimation(content);
-                return result;
-            }
-
-            // History
-            if (AI.HISTORY_INDICATORS?.test(content)) {
-                result.type = 'history';
-                this.updateContentAnalysisUI(result);
-                this.updateCostEstimation(content);
-                return result;
-            }
-
-            // Economics
-            if (AI.ECONOMICS_INDICATORS?.test(content)) {
-                result.type = 'economics';
-                this.updateContentAnalysisUI(result);
-                this.updateCostEstimation(content);
-                return result;
             }
 
             this.updateContentAnalysisUI(result);
@@ -2379,30 +2356,10 @@ Please respond with only valid JSON. Do not include explanations or additional t
         panel.style.display = 'block';
 
         // Update type with emoji and translated name
-        const typeEmojis = {
-            'mathematics': '📐',
-            'programming': '💻',
-            'physics': '⚡',
-            'chemistry': '🧪',
-            'biology': '🧬',
-            'history': '📜',
-            'economics': '📊',
-            'general': '📝'
-        };
-        const typeTranslationKeys = {
-            'mathematics': 'content_type_mathematics',
-            'programming': 'content_type_programming',
-            'physics': 'content_type_physics',
-            'chemistry': 'content_type_chemistry',
-            'biology': 'content_type_biology',
-            'history': 'content_type_history',
-            'economics': 'content_type_economics',
-            'general': 'content_type_general'
-        };
         if (typeEl) {
-            const typeKey = typeTranslationKeys[result.type] || 'content_type_general';
+            const typeKey = CONTENT_TYPE_TRANSLATION_KEYS[result.type] || 'content_type_general';
             const typeName = translationManager.getTranslationSync(typeKey) || 'General';
-            typeEl.textContent = `${typeEmojis[result.type] || '📝'} ${typeName}`;
+            typeEl.textContent = `${TYPE_EMOJIS[result.type] || TYPE_EMOJIS.general} ${typeName}`;
         }
 
         // Update formatting with translations
@@ -2462,19 +2419,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
         if (!languageNameEl) return;
 
         const language = translationManager.getCurrentLanguage() || 'en';
-        const languageNames = {
-            'en': 'English',
-            'es': 'Español',
-            'fr': 'Français',
-            'de': 'Deutsch',
-            'it': 'Italiano',
-            'pt': 'Português',
-            'pl': 'Polski',
-            'ja': '日本語',
-            'zh': '中文'
-        };
-
-        languageNameEl.textContent = languageNames[language] || 'English';
+        languageNameEl.textContent = LANGUAGE_NATIVE_NAMES[language] || 'English';
     }
 
     /**
@@ -2591,55 +2536,39 @@ QUESTION QUALITY & FEEDBACK:
     async handleProviderChange(provider) {
         return await errorHandler.wrapAsyncOperation(async () => {
             // Prevent multiple simultaneous calls
-            if (this.isChangingProvider) {
-                logger.debug('HandleProviderChange - Already changing provider, ignoring call for:', provider);
-                return;
-            }
-            
+            if (this.isChangingProvider) return;
+
             this.isChangingProvider = true;
-            logger.debug('HandleProviderChange called with provider:', provider);
-            
+
             try {
                 const apiKeySection = document.getElementById('api-key-section');
                 const modelSelection = document.getElementById('model-selection');
-                
-                logger.debug('HandleProviderChange - Elements found:', { apiKeySection: !!apiKeySection, modelSelection: !!modelSelection });
-                
+                const claudeModelSelection = document.getElementById('claude-model-selection');
+
                 if (!apiKeySection || !modelSelection) return;
-                
+
+                // Show/hide API key section based on provider requirements
                 const needsApiKey = this.providers[provider]?.apiKey;
-                
+                apiKeySection.style.display = needsApiKey ? 'block' : 'none';
                 if (needsApiKey) {
-                    apiKeySection.style.display = 'block';
-                    // Clear API key input to force user to enter fresh key every time
                     const apiKeyInput = document.getElementById('ai-api-key');
                     if (apiKeyInput) {
                         apiKeyInput.value = '';
                         apiKeyInput.placeholder = 'Enter your API key';
                     }
-                } else {
-                    apiKeySection.style.display = 'none';
                 }
-                
-                // Model selection visibility and loading
-                const claudeModelSelection = document.getElementById('claude-model-selection');
 
+                // Handle model selection visibility
                 if (provider === 'ollama') {
-                    logger.debug('HandleProviderChange - Showing model selection for Ollama');
-                    // Make sure it's visible (remove hidden class if it exists)
                     modelSelection.classList.remove('hidden');
                     modelSelection.style.display = 'block';
                     if (claudeModelSelection) claudeModelSelection.style.display = 'none';
-
-                    // Load the models
                     await this.loadOllamaModels();
                 } else if (provider === 'claude') {
-                    logger.debug('HandleProviderChange - Showing model selection for Claude');
                     modelSelection.classList.add('hidden');
                     modelSelection.style.display = 'none';
                     if (claudeModelSelection) claudeModelSelection.style.display = 'block';
                 } else {
-                    logger.debug('HandleProviderChange - Hiding model selection for provider:', provider);
                     modelSelection.classList.add('hidden');
                     modelSelection.style.display = 'none';
                     if (claudeModelSelection) claudeModelSelection.style.display = 'none';
@@ -2650,10 +2579,10 @@ QUESTION QUALITY & FEEDBACK:
         }, {
             errorType: errorHandler.errorTypes.SYSTEM,
             context: 'provider-change',
-            userMessage: null, // Silent failure for UI operations
+            userMessage: null,
             retryable: false,
             fallback: () => {
-                this.isChangingProvider = false; // Ensure flag is reset on error
+                this.isChangingProvider = false;
             }
         });
     }
@@ -2662,28 +2591,20 @@ QUESTION QUALITY & FEEDBACK:
         return await errorHandler.wrapAsyncOperation(async () => {
             const modelSelect = document.getElementById('ollama-model');
             const modelSelection = document.getElementById('model-selection');
-            
-            if (!modelSelect) {
-                logger.debug('LoadOllamaModels - Model select element not found');
-                return;
-            }
 
-            logger.debug('LoadOllamaModels - Starting model loading');
-            
-            // Ensure the parent div is visible first
+            if (!modelSelect) return;
+
+            // Ensure the parent div is visible
             if (modelSelection) {
                 modelSelection.classList.remove('hidden');
                 modelSelection.style.display = 'block';
-                logger.debug('LoadOllamaModels - Ensured model selection div is visible');
             }
-            
-            // Set initial loading state and disable the select element
-            modelSelect.innerHTML = '<option value="">🔄 Loading models...</option>';
-            modelSelect.disabled = true;
-            
-            try {
-                logger.debug('LoadOllamaModels - Fetching from:', AI.OLLAMA_TAGS_ENDPOINT);
 
+            // Set loading state
+            modelSelect.innerHTML = '<option value="">\u{1F504} Loading models...</option>';
+            modelSelect.disabled = true;
+
+            try {
                 // Use AbortController with short timeout - Ollama should respond quickly if running
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 2000);
@@ -2692,96 +2613,67 @@ QUESTION QUALITY & FEEDBACK:
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);
-                
-                logger.debug('LoadOllamaModels - Fetch response status:', response.status);
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 const data = await response.json();
-                logger.debug('LoadOllamaModels - Response data:', data);
-                
                 const models = data.models || [];
-                logger.debug('LoadOllamaModels - Found models count:', models.length);
-                
-                // Clear existing options and populate with models
-                modelSelect.innerHTML = ''; 
-                
+
+                modelSelect.innerHTML = '';
+
                 if (models.length === 0) {
-                    logger.debug('LoadOllamaModels - No models found, showing message');
                     modelSelect.innerHTML = '<option value="">No models found</option>';
                 } else {
-                    logger.debug('LoadOllamaModels - Populating select with models');
-                    
-                    models.forEach((model, index) => {
+                    models.forEach(model => {
                         const option = document.createElement('option');
                         option.value = model.name;
                         option.textContent = `${model.name} (${(model.size / 1024 / 1024 / 1024).toFixed(1)}GB)`;
                         modelSelect.appendChild(option);
-                        logger.debug(`LoadOllamaModels - Added model ${index + 1}:`, model.name);
                     });
-                    
+
                     // Restore saved selection or set default
                     const savedModel = localStorage.getItem('ollama_selected_model');
                     if (savedModel && models.some(m => m.name === savedModel)) {
                         modelSelect.value = savedModel;
-                        logger.debug('LoadOllamaModels - Set saved model:', savedModel);
                     } else if (models.length > 0) {
-                        // Set default to first available model
                         modelSelect.value = models[0].name;
                         localStorage.setItem('ollama_selected_model', models[0].name);
-                        logger.debug('LoadOllamaModels - Set default model:', models[0].name);
                     }
                 }
-                
-                logger.debug('LoadOllamaModels - Final select options count:', modelSelect.options.length);
-                
+
             } finally {
                 modelSelect.disabled = false;
-                
-                // Force visibility again after loading
+                // Ensure visibility after loading
                 if (modelSelection) {
                     modelSelection.classList.remove('hidden');
                     modelSelection.style.display = 'block';
-                    logger.debug('LoadOllamaModels - Final visibility enforcement');
                 }
-                
-                logger.debug('LoadOllamaModels - Enabled select, final state:', {
-                    optionsCount: modelSelect.options.length,
-                    selectedValue: modelSelect.value,
-                    disabled: modelSelect.disabled,
-                    parentVisible: modelSelection ? window.getComputedStyle(modelSelection).display : 'unknown'
-                });
             }
         }, {
             errorType: errorHandler.errorTypes.NETWORK,
             context: 'ollama-model-loading',
-            userMessage: null, // Don't show alert for model loading failures
-            silent: true, // Don't log to console - Ollama may not be available
+            userMessage: null,
+            silent: true,
             retryable: false,
             fallback: () => {
-                // Load fallback models on failure
                 const modelSelect = document.getElementById('ollama-model');
-                if (modelSelect) {
-                    logger.debug('LoadOllamaModels - Loading fallback models');
-                    const fallbackModels = this.providers.ollama.models;
-                    if (fallbackModels && fallbackModels.length > 0) {
-                        modelSelect.innerHTML = '';
-                        fallbackModels.forEach(modelName => {
-                            const option = document.createElement('option');
-                            option.value = modelName;
-                            option.textContent = `${modelName} (fallback)`;
-                            modelSelect.appendChild(option);
-                        });
-                        
-                        // Set first fallback as default
-                        modelSelect.value = fallbackModels[0];
-                        localStorage.setItem('ollama_selected_model', fallbackModels[0]);
-                        logger.debug('LoadOllamaModels - Set fallback default:', fallbackModels[0]);
-                    } else {
-                        modelSelect.innerHTML = '<option value="">❌ Ollama not available</option>';
-                    }
+                if (!modelSelect) return;
+
+                const fallbackModels = this.providers.ollama.models;
+                if (fallbackModels && fallbackModels.length > 0) {
+                    modelSelect.innerHTML = '';
+                    fallbackModels.forEach(modelName => {
+                        const option = document.createElement('option');
+                        option.value = modelName;
+                        option.textContent = `${modelName} (fallback)`;
+                        modelSelect.appendChild(option);
+                    });
+                    modelSelect.value = fallbackModels[0];
+                    localStorage.setItem('ollama_selected_model', fallbackModels[0]);
+                } else {
+                    modelSelect.innerHTML = '<option value="">\u274C Ollama not available</option>';
                 }
             }
         });
@@ -3507,16 +3399,12 @@ QUESTION QUALITY & FEEDBACK:
     async openModal() {
         const modal = document.getElementById('ai-generator-modal');
         if (modal) {
-            logger.debug('🚀 OpenModal - START');
             modal.style.display = 'flex';
 
             // Set provider to 'ollama' immediately
             const providerSelect = document.getElementById('ai-provider');
-            logger.debug('🚀 OpenModal - Provider select found:', !!providerSelect);
             if (providerSelect) {
-                logger.debug('🚀 OpenModal - Provider select current value before:', providerSelect.value);
                 providerSelect.value = 'ollama';
-                logger.debug('🚀 OpenModal - Provider select set to:', providerSelect.value);
             }
 
             // Clear API key input field to force fresh entry every time
@@ -3528,12 +3416,9 @@ QUESTION QUALITY & FEEDBACK:
 
             // Show the model selection div immediately (Ollama is default)
             const modelSelection = document.getElementById('model-selection');
-            logger.debug('🚀 OpenModal - Model selection div found:', !!modelSelection);
             if (modelSelection) {
-                logger.debug('🚀 OpenModal - Model selection current display before:', window.getComputedStyle(modelSelection).display);
                 modelSelection.classList.remove('hidden');
                 modelSelection.style.display = 'block';
-                logger.debug('🚀 OpenModal - Model selection set to block, computed style now:', window.getComputedStyle(modelSelection).display);
             }
 
             // Hide Claude model selection (Ollama is default provider)
@@ -3544,19 +3429,15 @@ QUESTION QUALITY & FEEDBACK:
 
             // Show loading message immediately
             const modelSelect = document.getElementById('ollama-model');
-            logger.debug('🚀 OpenModal - Model select found:', !!modelSelect);
             if (modelSelect) {
-                logger.debug('🚀 OpenModal - Model select current innerHTML before:', modelSelect.innerHTML);
-                modelSelect.innerHTML = '<option value="">🔄 Loading models...</option>';
+                modelSelect.innerHTML = '<option value="">\u{1F504} Loading models...</option>';
                 modelSelect.disabled = true;
-                logger.debug('🚀 OpenModal - Model select set to loading, innerHTML now:', modelSelect.innerHTML);
-                logger.debug('🚀 OpenModal - Model select disabled:', modelSelect.disabled);
             }
 
             // Clear previous content
             const contentTextarea = document.getElementById('source-content');
             if (contentTextarea && !contentTextarea.value.trim()) {
-                contentTextarea.placeholder = 'Enter your content here (e.g., a passage of text, topics to generate questions about, or paste from a document). ..';
+                contentTextarea.placeholder = 'Enter your content here (e.g., a passage of text, topics to generate questions about, or paste from a document)...';
             }
 
             // Reset question count to default
@@ -3568,26 +3449,10 @@ QUESTION QUALITY & FEEDBACK:
             // Update output language indicator
             this.updateOutputLanguageIndicator();
 
-            logger.debug('🚀 OpenModal - About to set timeout for delayed loading');
-            
             // Trigger the actual model loading after a short delay to let everything settle
             setTimeout(async () => {
-                logger.debug('🚀 OpenModal - TIMEOUT TRIGGERED - Delayed model loading starting');
-                
-                // Debug current state before loading
-                const currentModelSelection = document.getElementById('model-selection');
-                const currentModelSelect = document.getElementById('ollama-model');
-                
-                logger.debug('🚀 TIMEOUT - Model selection div exists:', !!currentModelSelection);
-                logger.debug('🚀 TIMEOUT - Model selection computed display:', currentModelSelection ? window.getComputedStyle(currentModelSelection).display : 'NOT_FOUND');
-                logger.debug('🚀 TIMEOUT - Model select exists:', !!currentModelSelect);
-                logger.debug('🚀 TIMEOUT - Model select innerHTML:', currentModelSelect ? currentModelSelect.innerHTML : 'NOT_FOUND');
-                
                 await this.loadOllamaModels();
-                logger.debug('🚀 OpenModal - TIMEOUT COMPLETED - Model loading finished');
             }, 100);
-            
-            logger.debug('🚀 OpenModal - END');
         }
     }
 
@@ -3642,10 +3507,10 @@ QUESTION QUALITY & FEEDBACK:
         }
 
         // SECURITY: Escape all user-provided content to prevent XSS
-        const safeIcon = this.escapeHtml(icon || '❌');
-        const safeTitle = this.escapeHtml(title || 'Error');
+        const safeIcon = escapeHtml(icon || '❌');
+        const safeTitle = escapeHtml(title || 'Error');
         // Escape message and preserve line breaks
-        const safeMessage = this.escapeHtml(message || '').replace(/\n/g, '<br>');
+        const safeMessage = escapeHtml(message || '').replace(/\n/g, '<br>');
 
         // Create simple red error modal
         const modalHTML = `

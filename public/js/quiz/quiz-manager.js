@@ -7,12 +7,36 @@ import { translationManager, showErrorAlert, showSuccessAlert } from '../utils/t
 import { createQuestionElement } from '../utils/question-utils.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
-// errorBoundary is an alias for errorHandler for semantic clarity
-const errorBoundary = errorHandler;
 import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
+
+// Shared translation fallback map used for cleaning translation keys from loaded data
+const TRANSLATION_FALLBACKS = {
+    'multiple_choice': 'Multiple Choice',
+    'multiple_correct': 'Multiple Correct Answers',
+    'true_false': 'True/False',
+    'numeric': 'Numeric Answer',
+    'easy': 'Easy',
+    'medium': 'Medium',
+    'hard': 'Hard',
+    'time_seconds': 'Time (sec)',
+    'add_image': 'Add Image',
+    'remove_image': 'Remove Image',
+    'remove': 'Remove',
+    'a_is_correct': 'A is correct',
+    'b_is_correct': 'B is correct',
+    'c_is_correct': 'C is correct',
+    'd_is_correct': 'D is correct',
+    'true': 'True',
+    'false': 'False',
+    'question': 'Question',
+    'enter_question_preview': 'Enter your question above to see preview',
+    'enter_question_with_latex': 'Enter your question (supports LaTeX)',
+    'toggle_live_preview': 'Live Preview',
+    'close_live_preview': 'Close Live Preview'
+};
 
 export class QuizManager {
     constructor(uiManager) {
@@ -34,17 +58,61 @@ export class QuizManager {
      * Collect all questions from the quiz builder
      */
     collectQuestions() {
-        const questions = [];
-        const questionElements = document.querySelectorAll('.question-item');
-        
-        questionElements.forEach(questionElement => {
-            const questionData = this.extractQuestionData(questionElement);
-            if (questionData) {
-                questions.push(questionData);
-            }
-        });
-        
-        return questions;
+        return Array.from(document.querySelectorAll('.question-item'))
+            .map(el => this.extractQuestionData(el))
+            .filter(Boolean);
+    }
+
+    /**
+     * Check if a URL is empty or a base URL (not a meaningful image path)
+     */
+    isEmptyOrBaseUrl(url) {
+        if (!url || url === '') return true;
+        const origin = window.location.origin;
+        if (url === origin || url === origin + '/') return true;
+        return url.endsWith('/') && !url.includes('/uploads/');
+    }
+
+    /**
+     * Extract image URL from element, preferring dataset.url over src
+     */
+    extractImageUrl(imageElement) {
+        // Prefer dataset.url (where uploaded images are stored)
+        if (imageElement.dataset.url) {
+            return imageElement.dataset.url;
+        }
+
+        // Fall back to src if it's a meaningful URL
+        const srcUrl = imageElement.src;
+        return this.isEmptyOrBaseUrl(srcUrl) ? null : srcUrl;
+    }
+
+    /**
+     * Extract and process image data from question element
+     */
+    extractQuestionImageData(questionElement, questionData) {
+        const imageElement = questionElement.querySelector('.question-image');
+        if (!imageElement) return;
+
+        const imageUrl = this.extractImageUrl(imageElement);
+        if (imageUrl?.trim()) {
+            logger.debug('Found image for question:', imageUrl);
+            // Handle data URIs or use path resolver for regular URLs
+            questionData.image = imageUrl.startsWith('data:')
+                ? imageUrl
+                : imagePathResolver.toStoragePath(imageUrl);
+        }
+
+        // Extract WebP version if available (for optimized loading)
+        const webpUrl = imageElement.dataset.webpUrl;
+        if (webpUrl?.trim()) {
+            questionData.imageWebp = imagePathResolver.toStoragePath(webpUrl);
+            logger.debug('Found WebP image for question:', questionData.imageWebp);
+        }
+
+        if (questionData.image) {
+            logger.debug('Processed image path for quiz save:', questionData.image, 'WebP:', questionData.imageWebp);
+        }
     }
 
     /**
@@ -54,76 +122,63 @@ export class QuizManager {
     extractQuestionData(questionElement) {
         const questionText = questionElement.querySelector('.question-text')?.value?.trim();
         const questionType = questionElement.querySelector('.question-type')?.value;
-        const questionTime = parseInt(questionElement.querySelector('.question-time-limit')?.value) || 30;
-        const questionDifficulty = questionElement.querySelector('.question-difficulty')?.value || 'medium';
-
         if (!questionText || !questionType) return null;
 
         const questionData = {
             question: questionText,
             type: questionType,
-            time: questionTime,
-            difficulty: questionDifficulty
+            time: parseInt(questionElement.querySelector('.question-time-limit')?.value) || 30,
+            difficulty: questionElement.querySelector('.question-difficulty')?.value || 'medium'
         };
 
-        // Extract optional explanation field (from AI generator or manual entry)
-        const explanationElement = questionElement.querySelector('.question-explanation');
-        if (explanationElement && explanationElement.value?.trim()) {
-            questionData.explanation = explanationElement.value.trim();
+        // Extract optional explanation field
+        const explanation = questionElement.querySelector('.question-explanation')?.value?.trim();
+        if (explanation) {
+            questionData.explanation = explanation;
         }
 
         // Use QuestionTypeRegistry for type-specific data extraction
-        const typeSpecificData = QuestionTypeRegistry.extractData(questionType, questionElement);
-        Object.assign(questionData, typeSpecificData);
+        Object.assign(questionData, QuestionTypeRegistry.extractData(questionType, questionElement));
 
-        // Extract image data - check both src and dataset.url
-        const imageElement = questionElement.querySelector('.question-image');
-        if (imageElement) {
-            // Prefer dataset.url (where uploaded images are stored)
-            // Only fall back to src if it's a meaningful URL (not empty or base URL)
-            let imageUrl = imageElement.dataset.url;
+        // Extract image data
+        this.extractQuestionImageData(questionElement, questionData);
 
-            // If no dataset.url, check src but filter out browser-resolved empty URLs
-            if (!imageUrl) {
-                const srcUrl = imageElement.src;
-                // Exclude empty, base URL, or URLs that end with just a slash
-                const isEmptyOrBaseUrl = !srcUrl ||
-                    srcUrl === '' ||
-                    srcUrl === window.location.origin ||
-                    srcUrl === window.location.origin + '/' ||
-                    srcUrl.endsWith('/') && !srcUrl.includes('/uploads/');
-
-                if (!isEmptyOrBaseUrl) {
-                    imageUrl = srcUrl;
-                }
-            }
-
-            // Validate that we have a meaningful image URL
-            if (imageUrl && imageUrl.trim() !== '') {
-                logger.debug('Found image for question:', imageUrl);
-
-                // Handle data URIs (base64 images)
-                if (imageUrl.startsWith('data:')) {
-                    questionData.image = imageUrl;
-                } else {
-                    // Use centralized imagePathResolver for consistent path handling
-                    questionData.image = imagePathResolver.toStoragePath(imageUrl);
-                }
-            }
-
-            // Extract WebP version if available (for optimized loading)
-            const webpUrl = imageElement.dataset.webpUrl;
-            if (webpUrl && webpUrl.trim() !== '') {
-                questionData.imageWebp = imagePathResolver.toStoragePath(webpUrl);
-                logger.debug('Found WebP image for question:', questionData.imageWebp);
-            }
-
-            if (questionData.image) {
-                logger.debug('Processed image path for quiz save:', questionData.image, 'WebP:', questionData.imageWebp);
-            }
-        }
-        
         return questionData;
+    }
+
+    /**
+     * Validate type-specific question requirements
+     * @returns {string|null} Error translation key if invalid, null if valid
+     */
+    validateQuestionType(question) {
+        const hasMinOptions = question.options?.length >= 2;
+
+        switch (question.type) {
+            case 'multiple-choice': {
+                if (!hasMinOptions) return 'question_needs_two_options';
+                const correctIndex = question.correctIndex ?? question.correctAnswer;
+                if (correctIndex === undefined || correctIndex < 0 || correctIndex >= question.options.length) {
+                    return 'invalid_correct_answer';
+                }
+                break;
+            }
+            case 'multiple-correct': {
+                if (!hasMinOptions) return 'question_needs_two_options';
+                const correctIndices = question.correctIndices || question.correctAnswers;
+                if (!correctIndices?.length) return 'select_at_least_one_correct';
+                break;
+            }
+            case 'numeric':
+                if (isNaN(question.correctAnswer)) return 'invalid_numeric_answer';
+                break;
+            case 'ordering':
+                if (!hasMinOptions) return 'ordering_needs_two_items';
+                if (!question.correctOrder || question.correctOrder.length !== question.options?.length) {
+                    return 'invalid_ordering';
+                }
+                break;
+        }
+        return null;
     }
 
     /**
@@ -131,55 +186,22 @@ export class QuizManager {
      */
     validateQuestions(questions) {
         const errors = [];
-        
+
         questions.forEach((question, index) => {
             const questionNum = index + 1;
-            
+
             // Check for question text
-            if (!question.question || question.question.trim() === '') {
+            if (!question.question?.trim()) {
                 errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('question_missing_text')}`);
             }
-            
-            // LaTeX validation temporarily disabled to fix blocking error
-            logger.debug('Skipping LaTeX validation for question', questionNum);
-            
+
             // Type-specific validation
-            if (question.type === 'multiple-choice' || question.type === 'multiple-correct') {
-                if (!question.options || question.options.length < 2) {
-                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('question_needs_two_options')}`);
-                }
-
-                if (question.type === 'multiple-choice') {
-                    // Registry uses "correctIndex" not "correctAnswer"
-                    const correctIndex = question.correctIndex !== undefined ? question.correctIndex : question.correctAnswer;
-                    if (correctIndex === undefined || correctIndex < 0 || correctIndex >= question.options.length) {
-                        errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_correct_answer')}`);
-                    }
-                }
-
-                if (question.type === 'multiple-correct') {
-                    // Registry uses "correctIndices" not "correctAnswers"
-                    const correctIndices = question.correctIndices || question.correctAnswers;
-                    if (!correctIndices || correctIndices.length === 0) {
-                        errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('select_at_least_one_correct')}`);
-                    }
-                }
-            }
-            
-            if (question.type === 'numeric' && isNaN(question.correctAnswer)) {
-                errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_numeric_answer')}`);
-            }
-
-            if (question.type === 'ordering') {
-                if (!question.options || question.options.length < 2) {
-                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('ordering_needs_two_items')}`);
-                }
-                if (!question.correctOrder || question.correctOrder.length !== question.options?.length) {
-                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_ordering')}`);
-                }
+            const typeError = this.validateQuestionType(question);
+            if (typeError) {
+                errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync(typeError)}`);
             }
         });
-        
+
         return errors;
     }
 
@@ -187,7 +209,7 @@ export class QuizManager {
      * Save quiz to server
      */
     async saveQuiz() {
-        return await errorBoundary.safeNetworkOperation(async () => {
+        return await errorHandler.safeNetworkOperation(async () => {
             const title = document.getElementById('quiz-title')?.value?.trim();
             if (!title) {
                 showErrorAlert('please_enter_quiz_title');
@@ -308,30 +330,37 @@ export class QuizManager {
     }
 
     /**
+     * Hide a modal element by setting display and visibility
+     */
+    hideModalElement(modal) {
+        if (!modal?.style) return;
+        modal.style.display = 'none';
+        modal.style.visibility = 'hidden';
+    }
+
+    /**
      * Hide load quiz modal
      */
     hideLoadQuizModal() {
         const modal = document.getElementById('load-quiz-modal');
-        if (modal) {
-            logger.debug('Hiding load quiz modal');
-            modal.style.display = 'none';
-            modal.style.visibility = 'hidden'; // Double insurance
-            
-            // Clean up event handlers
-            this.cleanupLoadQuizModalHandlers(modal);
-            
-            // Force DOM update with multiple approaches
-            modal.offsetHeight; // Force reflow
-            requestAnimationFrame(() => {
-                if (modal.style.display !== 'none') {
-                    modal.style.display = 'none';
-                }
-            });
-            
-            logger.debug('Load quiz modal hidden');
-        } else {
+        if (!modal) {
             logger.warn('Load quiz modal not found when trying to hide');
+            return;
         }
+
+        logger.debug('Hiding load quiz modal');
+        this.hideModalElement(modal);
+        this.cleanupLoadQuizModalHandlers(modal);
+
+        // Force DOM update
+        modal.offsetHeight; // Force reflow
+        requestAnimationFrame(() => {
+            if (modal.style.display !== 'none') {
+                modal.style.display = 'none';
+            }
+        });
+
+        logger.debug('Load quiz modal hidden');
     }
 
     /**
@@ -340,28 +369,19 @@ export class QuizManager {
     forceCloseModal() {
         try {
             logger.warn('Force closing modal as backup mechanism');
-            
+
             // Find and hide all possible modals
-            const possibleModals = [
-                document.getElementById('load-quiz-modal'),
-                document.querySelector('.modal'),
-                document.querySelector('[id*="modal"]'),
-                ...document.querySelectorAll('.modal, [id*="modal"]')
-            ];
-            
-            possibleModals.forEach(modal => {
-                if (modal && modal.style) {
-                    modal.style.display = 'none';
-                    modal.style.visibility = 'hidden';
-                    modal.style.opacity = '0';
-                }
+            const selectors = ['#load-quiz-modal', '.modal', '[id*="modal"]'];
+            selectors.forEach(selector => {
+                document.querySelectorAll(selector).forEach(modal => {
+                    this.hideModalElement(modal);
+                    if (modal?.style) modal.style.opacity = '0';
+                });
             });
-            
-            // Also remove any backdrop/overlay
-            document.querySelectorAll('.modal-backdrop, .overlay').forEach(backdrop => {
-                if (backdrop) backdrop.remove();
-            });
-            
+
+            // Remove any backdrop/overlay
+            document.querySelectorAll('.modal-backdrop, .overlay').forEach(el => el.remove());
+
             logger.debug('Force modal close completed');
         } catch (error) {
             logger.error('Error in force close modal:', error);
@@ -700,123 +720,64 @@ export class QuizManager {
     }
 
     /**
+     * Create or get remove button for a question item
+     */
+    ensureRemoveButton(questionItem) {
+        let removeButton = questionItem.querySelector('.remove-question');
+        if (removeButton) return removeButton;
+
+        removeButton = document.createElement('button');
+        removeButton.className = 'btn secondary remove-question';
+        removeButton.onclick = () => {
+            questionItem.remove();
+            this.updateQuestionsUI();
+        };
+        removeButton.setAttribute('data-translate', 'remove');
+        removeButton.textContent = translationManager.getTranslationSync('remove') || 'Remove';
+        questionItem.appendChild(removeButton);
+        return removeButton;
+    }
+
+    /**
      * Combined update method for questions UI - prevents visual glitches
      * Updates both remove button visibility and question numbering in single operation
      */
     updateQuestionsUI() {
         const questionsContainer = document.getElementById('questions-container');
         if (!questionsContainer) return;
-        
+
         const questionItems = questionsContainer.querySelectorAll('.question-item');
         const hasMultipleQuestions = questionItems.length > 1;
-        
+
         logger.debug(`updateQuestionsUI: Found ${questionItems.length} questions, hasMultipleQuestions: ${hasMultipleQuestions}`);
-        
+
         questionItems.forEach((questionItem, index) => {
             // Update data-question attribute only if needed
-            const currentDataQuestion = questionItem.getAttribute('data-question');
-            if (currentDataQuestion !== index.toString()) {
+            if (questionItem.getAttribute('data-question') !== index.toString()) {
                 questionItem.setAttribute('data-question', index);
-                
+
                 // Update the question heading with proper translation
                 const questionHeading = questionItem.querySelector('h3');
                 if (questionHeading) {
-                    const questionNumber = index + 1;
-                    questionHeading.innerHTML = `<span data-translate="question">Question</span> ${questionNumber}`;
+                    questionHeading.innerHTML = `<span data-translate="question">Question</span> ${index + 1}`;
                     translationManager.translateContainer(questionHeading);
                 }
             }
-            
-            // Handle remove button visibility - show only when multiple questions exist
-            let removeButton = questionItem.querySelector('.remove-question');
-            
-            // If remove button doesn't exist, create it
-            if (!removeButton) {
-                removeButton = document.createElement('button');
-                removeButton.className = 'btn secondary remove-question';
-                removeButton.onclick = () => {
-                    questionItem.remove();
-                    this.updateRemoveButtonVisibility();
-                    this.updateQuestionNumbering();
-                };
-                removeButton.setAttribute('data-translate', 'remove');
-                removeButton.textContent = translationManager.getTranslationSync('remove') || 'Remove';
-                questionItem.appendChild(removeButton);
-                logger.debug(`Question ${index + 1}: Created missing remove button`);
-            }
-            
-            const shouldShow = hasMultipleQuestions ? 'block' : 'none';
-            removeButton.style.display = shouldShow;
-            logger.debug(`Question ${index + 1}: Set removeButton display to "${shouldShow}"`);
-            
+
+            // Handle remove button visibility
+            const removeButton = this.ensureRemoveButton(questionItem);
+            removeButton.style.display = hasMultipleQuestions ? 'block' : 'none';
         });
-        
+
         logger.debug(`Updated questions UI for ${questionItems.length} questions`);
     }
 
     /**
      * Update remove button visibility for all questions
-     * Show remove buttons when there are multiple questions, hide when only one
+     * @deprecated Use updateQuestionsUI() instead - kept for backward compatibility
      */
     updateRemoveButtonVisibility() {
-        const questionsContainer = document.getElementById('questions-container');
-        if (!questionsContainer) return;
-        
-        const questionItems = questionsContainer.querySelectorAll('.question-item');
-        const hasMultipleQuestions = questionItems.length > 1;
-        
-        questionItems.forEach((questionItem, index) => {
-            let removeButton = questionItem.querySelector('.remove-question');
-            
-            // If remove button doesn't exist, create it
-            if (!removeButton) {
-                removeButton = document.createElement('button');
-                removeButton.className = 'btn secondary remove-question';
-                removeButton.onclick = () => {
-                    questionItem.remove();
-                    this.updateRemoveButtonVisibility();
-                    this.updateQuestionNumbering();
-                };
-                removeButton.setAttribute('data-translate', 'remove');
-                removeButton.textContent = translationManager.getTranslationSync('remove') || 'Remove';
-                questionItem.appendChild(removeButton);
-            }
-            
-            // Show remove button only when multiple questions exist
-            if (hasMultipleQuestions) {
-                removeButton.style.display = 'block';
-            } else {
-                removeButton.style.display = 'none';
-            }
-        });
-        
-        logger.debug(`Updated remove button visibility for ${questionItems.length} questions`);
-    }
-
-    /**
-     * Update question numbering after questions are added or removed
-     */
-    updateQuestionNumbering() {
-        const questionsContainer = document.getElementById('questions-container');
-        if (!questionsContainer) return;
-        
-        const questionItems = questionsContainer.querySelectorAll('.question-item');
-        
-        questionItems.forEach((questionItem, index) => {
-            // Update data-question attribute
-            questionItem.setAttribute('data-question', index);
-            
-            // Update the question heading text
-            const questionHeading = questionItem.querySelector('h3');
-            if (questionHeading) {
-                const questionNumber = index + 1;
-                // Use translation system instead of hardcoded English
-                const questionText = translationManager.getTranslationSync('question') || 'Question';
-                questionHeading.textContent = `${questionText} ${questionNumber}`;
-            }
-        });
-        
-        logger.debug(`Updated question numbering for ${questionItems.length} questions`);
+        this.updateQuestionsUI();
     }
 
     /**
@@ -853,81 +814,51 @@ export class QuizManager {
     }
 
     /**
+     * Replace translation keys in text with fallback values
+     * @returns {string|null} Replaced text if changes made, null otherwise
+     */
+    replaceTranslationKeys(text) {
+        if (!text) return null;
+
+        let result = text;
+        let changed = false;
+
+        for (const [key, value] of Object.entries(TRANSLATION_FALLBACKS)) {
+            const regex = new RegExp(`\\b${key}\\b`, 'g');
+            if (regex.test(result)) {
+                result = result.replace(regex, value);
+                changed = true;
+            }
+        }
+
+        return changed ? result : null;
+    }
+
+    /**
      * Clean translation keys from an element without destroying DOM structure
      */
     cleanTranslationKeysInElement(element) {
-        const translationMap = {
-            'multiple_choice': 'Multiple Choice',
-            'multiple_correct': 'Multiple Correct Answers', 
-            'true_false': 'True/False',
-            'numeric': 'Numeric Answer',
-            'easy': 'Easy',
-            'medium': 'Medium', 
-            'hard': 'Hard',
-            'time_seconds': 'Time (sec)',
-            'add_image': 'Add Image',
-            'remove_image': 'Remove Image',
-            'remove': 'Remove',
-            'a_is_correct': 'A is correct',
-            'b_is_correct': 'B is correct',
-            'c_is_correct': 'C is correct', 
-            'd_is_correct': 'D is correct',
-            'true': 'True',
-            'false': 'False',
-            'question': 'Question',
-            'enter_question_preview': 'Enter your question above to see preview',
-            'enter_question_with_latex': 'Enter your question (supports LaTeX)',
-            'toggle_live_preview': 'Live Preview',
-            'close_live_preview': 'Close Live Preview'
-        };
-        
         // Clean text content in text nodes (preserving DOM structure)
-        const walker = document.createTreeWalker(
-            element,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
-        
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+
         const textNodes = [];
         let node;
         while (node = walker.nextNode()) {
             textNodes.push(node);
         }
-        
+
         textNodes.forEach(textNode => {
-            let content = textNode.textContent;
-            let changed = false;
-            
-            for (const [key, value] of Object.entries(translationMap)) {
-                const regex = new RegExp(`\\b${key}\\b`, 'g');
-                if (regex.test(content)) {
-                    content = content.replace(regex, value);
-                    changed = true;
-                }
-            }
-            
-            if (changed) {
-                textNode.textContent = content;
+            const replaced = this.replaceTranslationKeys(textNode.textContent);
+            if (replaced) {
+                textNode.textContent = replaced;
             }
         });
-        
+
         // Clean placeholder attributes
         element.querySelectorAll('[placeholder]').forEach(el => {
-            const placeholder = el.getAttribute('placeholder');
-            let cleanedPlaceholder = placeholder;
-            let changed = false;
-            
-            for (const [key, value] of Object.entries(translationMap)) {
-                const regex = new RegExp(`\\b${key}\\b`, 'g');
-                if (regex.test(cleanedPlaceholder)) {
-                    cleanedPlaceholder = cleanedPlaceholder.replace(regex, value);
-                    changed = true;
-                }
-            }
-            
-            if (changed) {
-                el.setAttribute('placeholder', cleanedPlaceholder);
+            const replaced = this.replaceTranslationKeys(el.getAttribute('placeholder'));
+            if (replaced) {
+                el.setAttribute('placeholder', replaced);
             }
         });
     }
@@ -936,41 +867,7 @@ export class QuizManager {
      * Clean translation keys from loaded data (legacy method for backward compatibility)
      */
     cleanTranslationKeys(htmlString) {
-        if (!htmlString) return htmlString;
-        
-        // Map of translation keys to English text
-        const translationMap = {
-            'multiple_choice': 'Multiple Choice',
-            'multiple_correct': 'Multiple Correct Answers', 
-            'true_false': 'True/False',
-            'numeric': 'Numeric Answer',
-            'easy': 'Easy',
-            'medium': 'Medium', 
-            'hard': 'Hard',
-            'time_seconds': 'Time (sec)',
-            'add_image': 'Add Image',
-            'remove_image': 'Remove Image',
-            'remove': 'Remove',
-            'a_is_correct': 'A is correct',
-            'b_is_correct': 'B is correct',
-            'c_is_correct': 'C is correct', 
-            'd_is_correct': 'D is correct',
-            'true': 'True',
-            'false': 'False',
-            'question': 'Question',
-            'enter_question_preview': 'Enter your question above to see preview',
-            'enter_question_with_latex': 'Enter your question (supports LaTeX)',
-            'toggle_live_preview': 'Live Preview',
-            'close_live_preview': 'Close Live Preview'
-        };
-        
-        let cleaned = htmlString;
-        for (const [key, value] of Object.entries(translationMap)) {
-            // Replace translation keys that appear as standalone text
-            cleaned = cleaned.replace(new RegExp(`\\b${key}\\b`, 'g'), value);
-        }
-        
-        return cleaned;
+        return this.replaceTranslationKeys(htmlString) || htmlString;
     }
 
     /**
@@ -1383,22 +1280,13 @@ export class QuizManager {
 
     /**
      * Check if a question element is empty/default
-     * @param {HTMLElement} questionElement - Question DOM element to check
-     * @returns {boolean} - True if question is empty
      */
     isEmptyQuestion(questionElement) {
         const questionText = questionElement.querySelector('.question-text')?.value?.trim();
+        if (questionText) return false;
+
         const options = questionElement.querySelectorAll('.option');
-        let hasEmptyOptions = true;
-        
-        // Check if all options are empty
-        options.forEach(option => {
-            if (option.value?.trim()) {
-                hasEmptyOptions = false;
-            }
-        });
-        
-        return !questionText && hasEmptyOptions;
+        return Array.from(options).every(opt => !opt.value?.trim());
     }
 
     /**
@@ -1536,30 +1424,29 @@ export class QuizManager {
     }
 
     /**
+     * Schedule auto-save with debounce (5 second delay)
+     */
+    scheduleAutoSave() {
+        clearTimeout(this.autoSaveTimeout);
+        this.autoSaveTimeout = setTimeout(() => this.autoSaveQuiz(), 5000);
+    }
+
+    /**
      * Setup auto-save functionality
      */
     setupAutoSave() {
-        // Set up auto-save on quiz title change
+        // Auto-save on quiz title change
         const titleInput = document.getElementById('quiz-title');
         if (titleInput) {
-            titleInput.addEventListener('input', () => {
-                clearTimeout(this.autoSaveTimeout);
-                this.autoSaveTimeout = setTimeout(() => {
-                    this.autoSaveQuiz();
-                }, 5000); // Auto-save after 5 seconds of inactivity
-            });
+            titleInput.addEventListener('input', () => this.scheduleAutoSave());
         }
-        
+
         // Auto-save on question changes with tracked listener
-        const questionInputHandler = (event) => {
+        this.addDocumentListenerTracked('input', (event) => {
             if (event.target.closest('.question')) {
-                clearTimeout(this.autoSaveTimeout);
-                this.autoSaveTimeout = setTimeout(() => {
-                    this.autoSaveQuiz();
-                }, 5000);
+                this.scheduleAutoSave();
             }
-        };
-        this.addDocumentListenerTracked('input', questionInputHandler);
+        });
     }
 
     /**

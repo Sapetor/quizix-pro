@@ -20,7 +20,6 @@ export class PreviewManager {
         this.splitLayoutManager = new SplitLayoutManager();
         this.previewRenderer = new PreviewRenderer();
         this.currentPreviewQuestion = 0;
-        this.previewListenersSet = false;
         this.splitPreviewListenersSet = false;
         this.previewMode = false;
         this.manualNavigationInProgress = false;
@@ -228,12 +227,9 @@ export class PreviewManager {
         }
         
         this.setupSplitPreviewEventListeners();
-        this.updateSplitPreview();
-        
-        // Force update and MathJax rendering on a short delay to ensure DOM is ready
-        setTimeout(() => {
-            this.updateSplitPreview();
-        }, 100);
+
+        // Update preview with a short delay to ensure DOM is ready
+        this.createTrackedTimeout(() => this.updateSplitPreview(), 100);
     }
 
     /**
@@ -391,10 +387,8 @@ export class PreviewManager {
         const totalQuestions = questionItems.length;
         
         // Clear simple MathJax cache for fresh rendering
-        if (this.mathJaxService && this.mathJaxService.clearCache) {
-            this.mathJaxService.clearCache();
-            logger.debug('MathJax cache cleared for fresh preview rendering');
-        }
+        this.mathJaxService?.clearCache?.();
+        logger.debug('MathJax cache cleared for fresh preview rendering');
 
         // Track who called updateSplitPreview
         const stack = new Error().stack;
@@ -417,13 +411,10 @@ export class PreviewManager {
         this.updateSplitPreviewNavigation(totalQuestions);
         
         // Validate and clamp currentPreviewQuestion to valid range
-        if (this.currentPreviewQuestion < 0) {
-            logger.warn(`currentPreviewQuestion was negative (${this.currentPreviewQuestion}), resetting to 0`);
-            this.currentPreviewQuestion = 0;
-        }
-        if (this.currentPreviewQuestion >= totalQuestions) {
-            logger.warn(`currentPreviewQuestion was too high (${this.currentPreviewQuestion}), clamping to ${totalQuestions - 1}`);
-            this.currentPreviewQuestion = totalQuestions - 1;
+        const clampedIndex = Math.max(0, Math.min(this.currentPreviewQuestion, totalQuestions - 1));
+        if (clampedIndex !== this.currentPreviewQuestion) {
+            logger.warn(`currentPreviewQuestion was ${this.currentPreviewQuestion}, clamping to ${clampedIndex}`);
+            this.currentPreviewQuestion = clampedIndex;
         }
         
         // Get current question data
@@ -576,45 +567,6 @@ export class PreviewManager {
         return extractedData;
     }
 
-
-    /**
-     * Update the question counter display for split preview
-     */
-    updateSplitQuestionCounter(questionNumber, totalQuestions) {
-        const counterDisplay = document.getElementById('preview-question-counter-display-split');
-        if (counterDisplay) {
-            counterDisplay.textContent = `${translationManager.getTranslationSync('question')} ${questionNumber} ${translationManager.getTranslationSync('of')} ${totalQuestions}`;
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * Scroll to current question in editor
      */
@@ -751,8 +703,7 @@ export class PreviewManager {
             imageHandler: null
         };
         
-        // Reset flags
-        this.previewListenersSet = false;
+        // Reset flag
         this.splitPreviewListenersSet = false;
         
         logger.debug('Preview listeners cleanup completed');
@@ -781,7 +732,6 @@ export class PreviewManager {
         };
         return executedFunction;
     }
-
 
     /**
      * Show mobile full-screen carousel preview
@@ -1295,8 +1245,7 @@ export class PreviewManager {
         const closeBtn = document.getElementById('mobile-preview-close');
         const prevBtn = document.getElementById('mobile-preview-prev');
         const nextBtn = document.getElementById('mobile-preview-next');
-        const track = document.getElementById('mobile-preview-track');
-        
+
         // Close button
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
@@ -1400,26 +1349,17 @@ export class PreviewManager {
     updateMobilePreview() {
         const questionItems = document.querySelectorAll('.question-item');
         const totalQuestions = questionItems.length;
-        const counterDisplay = document.getElementById('mobile-preview-question-counter-display');
-        const counterSplit = document.getElementById('mobile-preview-question-counter-display');
-        const prevBtn = document.getElementById('mobile-preview-prev');
-        const nextBtn = document.getElementById('mobile-preview-next');
-        
+
         if (totalQuestions === 0) {
             this.showEmptyMobilePreview();
             return;
         }
 
+        // Validate and clamp currentPreviewQuestion to valid range
+        this.currentPreviewQuestion = Math.max(0, Math.min(this.currentPreviewQuestion, totalQuestions - 1));
+
         // Update navigation
         this.updateMobilePreviewNavigation(totalQuestions);
-        
-        // Validate and clamp currentPreviewQuestion to valid range
-        if (this.currentPreviewQuestion < 0) {
-            this.currentPreviewQuestion = 0;
-        }
-        if (this.currentPreviewQuestion >= totalQuestions) {
-            this.currentPreviewQuestion = totalQuestions - 1;
-        }
         
         // Get current question data
         const currentQuestion = questionItems[this.currentPreviewQuestion];
@@ -1484,29 +1424,21 @@ export class PreviewManager {
      */
     updateMobilePreviewNavigation(totalQuestions) {
         const counterDisplay = document.getElementById('mobile-preview-question-counter-display');
-        const questionCounterDisplay = counterDisplay; // Same element, keep for backwards compatibility
         const prevBtn = document.getElementById('mobile-preview-prev');
         const nextBtn = document.getElementById('mobile-preview-next');
-        
+
         const questionNumber = this.currentPreviewQuestion + 1;
-        
-        // Update navigation bar counter
+
+        // Update counter display
         if (counterDisplay) {
             counterDisplay.innerHTML = `<span data-translate="question">Question</span> ${questionNumber} <span data-translate="of">of</span> ${totalQuestions}`;
         }
-        
-        // Update question area counter
-        if (questionCounterDisplay) {
-            questionCounterDisplay.innerHTML = `<span data-translate="question">Question</span> ${questionNumber} <span data-translate="of">of</span> ${totalQuestions}`;
-        }
-        
+
         // Update translations for the newly inserted content
         setTimeout(() => {
-            if (translationManager && translationManager.updateGameTranslations) {
-                translationManager.updateGameTranslations();
-            }
+            translationManager?.updateGameTranslations?.();
         }, 50);
-        
+
         if (prevBtn) {
             prevBtn.disabled = this.currentPreviewQuestion === 0;
         }
@@ -1514,8 +1446,6 @@ export class PreviewManager {
             nextBtn.disabled = this.currentPreviewQuestion >= totalQuestions - 1;
         }
     }
-
-    // Old mobile rendering methods removed - now using desktop-style rendering
 
     /**
      * Cleanup mobile preview listeners
