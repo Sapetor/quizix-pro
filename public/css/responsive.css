@@ -3138,7 +3138,7 @@
     /* Ensure all interactive elements meet 44x44px minimum touch target */
     
     /* Universal button touch targets */
-    button,
+    button:not(.onboarding-dot):not(.carousel-dot):not(.preview-carousel-dot),
     .btn,
     .player-option,
     .checkbox-option,
@@ -3154,6 +3154,32 @@
         touch-action: manipulation; /* Prevent double-tap zoom */
         cursor: pointer;
         position: relative;
+    }
+
+    /* Onboarding dots - keep small with invisible touch targets */
+    .onboarding-dot {
+        width: 8px !important;
+        height: 8px !important;
+        min-width: 8px !important;
+        min-height: 8px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        position: relative !important;
+    }
+
+    /* Invisible 44x44 touch target for onboarding dots */
+    .onboarding-dot::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        background: transparent !important;
     }
 
     /* Enhanced touch feedback for mobile */
