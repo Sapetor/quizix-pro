@@ -6,6 +6,7 @@
 
 import { logger } from '../core/config.js';
 import { toastNotifications } from './toast-notifications.js';
+import { getItem, setItem } from './storage-utils.js';
 
 class TranslationManager {
     constructor() {
@@ -180,11 +181,7 @@ class TranslationManager {
         this.currentLanguage = languageCode;
         
         // Save to localStorage (with error handling for private browsing/quota)
-        try {
-            localStorage.setItem('language', languageCode);
-        } catch (e) {
-            logger.warn('Failed to save language preference:', e.message);
-        }
+        setItem('language', languageCode);
         
         // Unload previous language to save memory (except default)
         if (previousLanguage !== this.defaultLanguage && previousLanguage !== languageCode) {
@@ -503,8 +500,8 @@ class TranslationManager {
      */
     async initialize(languageCode = null) {
         // Get language from localStorage or use provided/default
-        const targetLanguage = languageCode || 
-                              localStorage.getItem('language') || 
+        const targetLanguage = languageCode ||
+                              getItem('language') ||
                               this.defaultLanguage;
         
         logger.debug(`Initializing translation manager with language: ${targetLanguage}`);

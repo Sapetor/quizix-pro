@@ -8,7 +8,8 @@ import { TIMING, logger } from '../core/config.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 import { uiStateManager } from '../utils/ui-state-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
-import { initializeAutoHideToolbar, disableAutoHideToolbar, isAutoHideToolbarActive, updateMobileReturnButtonVisibility } from '../utils/globals.js';
+import { initializeAutoHideToolbar, disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
+import { updateMobileReturnButtonVisibility } from '../utils/globals.js';
 
 export class UIManager {
     constructor() {

@@ -35,20 +35,25 @@ Tasks for the code-simplifier agent. Work through one at a time, commit, and `/c
 
 ## Code Duplication (Medium Impact)
 
-- [ ] **SIMP-5**: Unify event listener binding pattern from `results-viewer.js`
-  - `bindElement()` helper at line 134 is useful pattern
-  - Similar patterns repeated without helper in other files
-  - Extract to `utils/dom.js` and reuse
+- [x] **SIMP-5**: Unify event listener binding pattern from `results-viewer.js`
+  - Added `bindElement(elementId, event, handler, options)` to `utils/dom.js`
+  - Refactored `results-viewer.js` to import and use `bindElement` (removed local method)
+  - Refactored `app.js` to use `bindElement` (removed `safeAddEventListener` helper, ~35 usages)
+  - Pattern now available for other files to import from `dom.js`
 
-- [ ] **SIMP-6**: Consolidate localStorage access into `utils/storage-utils.js`
-  - 9 files directly access localStorage
-  - Some use try-catch, some don't
-  - Create safe `getItem()`, `setItem()` wrappers with error handling
+- [x] **SIMP-6**: Consolidate localStorage access into `utils/storage-utils.js`
+  - Created `storage-utils.js` (163 lines) with safe localStorage wrappers
+  - Exported: `getItem`, `setItem`, `removeItem`, `getJSON`, `setJSON`, `hasItem`, `clear`, `getKeys`, `removeByPrefix`
+  - Refactored 10 files: `main.js`, `sound-manager.js`, `settings-manager.js`, `quiz-manager.js`, `app.js`, `split-layout-manager.js`, `generator.js`, `globals.js`, `onboarding-tutorial.js`, `translation-manager.js`
+  - All localStorage operations now have consistent error handling
+  - Removed ~85 lines of duplicate try-catch blocks
 
-- [ ] **SIMP-7**: Extract color constants from `ai/generator.js` to `config.js`
-  - `OPTION_COLORS`, `DIFFICULTY_COLORS` defined locally (lines 49-62)
-  - Similar `COLORS` constant exists in `config.js`
-  - Consolidate to single source of truth
+- [x] **SIMP-7**: Extract color constants from `ai/generator.js` to `config.js`
+  - Moved `OPTION_COLORS` and `DIFFICULTY_COLORS` from `generator-templates.js` to `config.js`
+  - Added as `COLORS.OPTION_COLORS` and `COLORS.DIFFICULTY_COLORS` arrays
+  - Updated `generator-templates.js` to import from `config.js`
+  - Removed exports from `generator-templates.js` and imports from `generator.js`
+  - Single source of truth for all color constants established
 
 - [x] **SIMP-8**: Consolidate `LANGUAGE_NAMES` constants
   - Moved to `ai/prompts.js` as part of SIMP-1

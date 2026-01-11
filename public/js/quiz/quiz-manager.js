@@ -11,6 +11,7 @@ import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
+import { getJSON, setJSON, removeItem } from '../utils/storage-utils.js';
 
 // Shared translation fallback map used for cleaning translation keys from loaded data
 const TRANSLATION_FALLBACKS = {
@@ -1295,19 +1296,16 @@ export class QuizManager {
     autoSaveQuiz() {
         const title = document.getElementById('quiz-title')?.value?.trim();
         const questions = this.collectQuestions();
-        
+
         if (title || questions.length > 0) {
             const autoSaveData = {
                 title: title,
                 questions: questions,
                 timestamp: Date.now()
             };
-            
-            try {
-                localStorage.setItem('quizAutoSave', JSON.stringify(autoSaveData));
+
+            if (setJSON('quizAutoSave', autoSaveData)) {
                 logger.debug('Auto-saved quiz data');
-            } catch (error) {
-                logger.error('Failed to auto-save quiz:', error);
             }
         }
     }
@@ -1316,27 +1314,20 @@ export class QuizManager {
      * Load auto-saved quiz
      */
     async loadAutoSave() {
-        try {
-            const autoSaveData = localStorage.getItem('quizAutoSave');
-            if (autoSaveData) {
-                const data = JSON.parse(autoSaveData);
-                
-                // Check if auto-save is recent (within 24 hours)
-                const hoursSinceAutoSave = (Date.now() - data.timestamp) / (1000 * 60 * 60);
-                if (hoursSinceAutoSave < 24) {
-                    // Validate data before loading to prevent corruption
-                    if (this.validateQuizData(data)) {
-                        await this.populateQuizBuilder(data);
-                        logger.debug('Loaded auto-saved quiz data');
-                    } else {
-                        logger.warn('Auto-save data appears corrupted, clearing localStorage');
-                        localStorage.removeItem('quizAutoSave');
-                    }
+        const data = getJSON('quizAutoSave');
+        if (data) {
+            // Check if auto-save is recent (within 24 hours)
+            const hoursSinceAutoSave = (Date.now() - data.timestamp) / (1000 * 60 * 60);
+            if (hoursSinceAutoSave < 24) {
+                // Validate data before loading to prevent corruption
+                if (this.validateQuizData(data)) {
+                    await this.populateQuizBuilder(data);
+                    logger.debug('Loaded auto-saved quiz data');
+                } else {
+                    logger.warn('Auto-save data appears corrupted, clearing localStorage');
+                    removeItem('quizAutoSave');
                 }
             }
-        } catch (error) {
-            logger.error('Failed to load auto-save:', error);
-            localStorage.removeItem('quizAutoSave');
         }
     }
 

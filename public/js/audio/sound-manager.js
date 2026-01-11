@@ -15,6 +15,7 @@
  */
 
 import { logger } from '../core/config.js';
+import { getJSON, setJSON } from '../utils/storage-utils.js';
 
 // Storage key for audio settings
 const AUDIO_SETTINGS_KEY = 'quizAudioSettings';
@@ -48,27 +49,15 @@ export class SoundManager {
      * Load audio settings from localStorage
      */
     loadSettings() {
-        try {
-            const stored = localStorage.getItem(AUDIO_SETTINGS_KEY);
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                return { ...DEFAULT_SETTINGS, ...parsed };
-            }
-        } catch (e) {
-            logger.debug('Failed to load audio settings:', e);
-        }
-        return { ...DEFAULT_SETTINGS };
+        const stored = getJSON(AUDIO_SETTINGS_KEY);
+        return stored ? { ...DEFAULT_SETTINGS, ...stored } : { ...DEFAULT_SETTINGS };
     }
 
     /**
      * Save audio settings to localStorage
      */
     saveSettings() {
-        try {
-            localStorage.setItem(AUDIO_SETTINGS_KEY, JSON.stringify(this.settings));
-        } catch (e) {
-            logger.debug('Failed to save audio settings:', e);
-        }
+        setJSON(AUDIO_SETTINGS_KEY, this.settings);
     }
 
     /**

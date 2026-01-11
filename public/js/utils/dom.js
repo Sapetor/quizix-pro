@@ -324,5 +324,23 @@ export function escapeHtmlPreservingLatex(text) {
         .replace(/\\(.)/g, '\\$1'); // Preserve backslash escapes for LaTeX
 }
 
+/**
+ * Bind an event listener to an element by ID (safe - no error if element doesn't exist)
+ * This is a convenience function for the common pattern of getElementById + addEventListener
+ * @param {string} elementId - The ID of the element
+ * @param {string} event - The event type (e.g., 'click', 'input', 'change')
+ * @param {Function} handler - The event handler function
+ * @param {Object} [options] - Optional addEventListener options
+ * @returns {boolean} - True if element was found and listener attached
+ */
+export function bindElement(elementId, event, handler, options) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.addEventListener(event, handler, options);
+        return true;
+    }
+    return false;
+}
+
 // Export for direct use
 export default dom;

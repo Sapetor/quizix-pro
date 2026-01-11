@@ -5,6 +5,7 @@
 
 import { translationManager, getThemeToggleTitles } from '../utils/translation-manager.js';
 import { logger } from '../core/config.js';
+import { getJSON, setJSON } from '../utils/storage-utils.js';
 
 export class SettingsManager {
     constructor() {
@@ -29,15 +30,11 @@ export class SettingsManager {
      * Load settings from localStorage
      */
     loadSettings() {
-        try {
-            const savedSettings = localStorage.getItem('quizSettings');
-            if (savedSettings) {
-                this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
-            }
-        } catch (error) {
-            logger.error('Failed to load settings:', error);
+        const savedSettings = getJSON('quizSettings');
+        if (savedSettings) {
+            this.settings = { ...this.settings, ...savedSettings };
         }
-        
+
         // Apply loaded settings
         this.applySettings();
     }
@@ -46,11 +43,7 @@ export class SettingsManager {
      * Save settings to localStorage
      */
     saveSettings() {
-        try {
-            localStorage.setItem('quizSettings', JSON.stringify(this.settings));
-        } catch (error) {
-            logger.error('Failed to save settings:', error);
-        }
+        setJSON('quizSettings', this.settings);
     }
 
     /**

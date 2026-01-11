@@ -19,8 +19,10 @@ import { toastNotifications } from '../utils/toast-notifications.js';
 import { connectionStatus } from '../utils/connection-status.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
-import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/globals.js';
+import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
+import { bindElement } from '../utils/dom.js';
+import { getJSON, setJSON } from '../utils/storage-utils.js';
 // Results viewer will be lazy loaded when needed
 
 export class QuizGame {
@@ -229,15 +231,8 @@ export class QuizGame {
      * Initialize main event listeners
      */
     initializeEventListeners() {
-        const safeAddEventListener = (id, event, handler) => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.addEventListener(event, handler);
-            }
-        };
-
         // Screen navigation
-        safeAddEventListener('host-btn', 'click', () => {
+        bindElement('host-btn', 'click', () => {
             this.uiManager.showScreen('host-screen');
             // Show horizontal toolbar when entering host mode
             const horizontalToolbar = document.getElementById('horizontal-toolbar');
@@ -245,10 +240,10 @@ export class QuizGame {
                 horizontalToolbar.style.display = 'flex';
             }
         });
-        safeAddEventListener('join-btn', 'click', () => this.uiManager.showScreen('join-screen'));
+        bindElement('join-btn', 'click', () => this.uiManager.showScreen('join-screen'));
         
         // Mobile button handlers (same functionality as desktop)
-        safeAddEventListener('host-btn-mobile', 'click', () => {
+        bindElement('host-btn-mobile', 'click', () => {
             this.uiManager.showScreen('host-screen');
             // Show horizontal toolbar when entering host mode
             const horizontalToolbar = document.getElementById('horizontal-toolbar');
@@ -256,13 +251,13 @@ export class QuizGame {
                 horizontalToolbar.style.display = 'flex';
             }
         });
-        safeAddEventListener('join-btn-mobile', 'click', () => this.uiManager.showScreen('join-screen'));
-        safeAddEventListener('browse-games', 'click', () => this.uiManager.showGameBrowser());
-        safeAddEventListener('refresh-games', 'click', () => this.uiManager.refreshActiveGames());
-        safeAddEventListener('back-to-join', 'click', () => this.uiManager.showScreen('join-screen'));
-        safeAddEventListener('return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
-        safeAddEventListener('mobile-return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
-        safeAddEventListener('desktop-return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
+        bindElement('join-btn-mobile', 'click', () => this.uiManager.showScreen('join-screen'));
+        bindElement('browse-games', 'click', () => this.uiManager.showGameBrowser());
+        bindElement('refresh-games', 'click', () => this.uiManager.refreshActiveGames());
+        bindElement('back-to-join', 'click', () => this.uiManager.showScreen('join-screen'));
+        bindElement('return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
+        bindElement('mobile-return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
+        bindElement('desktop-return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
 
         // Language selection
         document.querySelectorAll('[data-lang]').forEach(btn => {
@@ -272,45 +267,45 @@ export class QuizGame {
         });
 
         // Quiz building
-        safeAddEventListener('add-question', 'click', () => this.addQuestion());
-        safeAddEventListener('save-quiz', 'click', () => this.quizManager.saveQuiz());
-        safeAddEventListener('load-quiz', 'click', () => this.quizManager.showLoadQuizModal());
-        safeAddEventListener('cancel-load', 'click', () => this.quizManager.hideLoadQuizModal());
-        safeAddEventListener('import-quiz', 'click', () => this.quizManager.importQuiz());
-        safeAddEventListener('import-file-input', 'change', (e) => this.quizManager.handleFileImport(e));
-        safeAddEventListener('preview-quiz', 'click', () => this.showQuizPreview());
-        safeAddEventListener('cancel-preview', 'click', () => this.hideQuizPreview());
+        bindElement('add-question', 'click', () => this.addQuestion());
+        bindElement('save-quiz', 'click', () => this.quizManager.saveQuiz());
+        bindElement('load-quiz', 'click', () => this.quizManager.showLoadQuizModal());
+        bindElement('cancel-load', 'click', () => this.quizManager.hideLoadQuizModal());
+        bindElement('import-quiz', 'click', () => this.quizManager.importQuiz());
+        bindElement('import-file-input', 'change', (e) => this.quizManager.handleFileImport(e));
+        bindElement('preview-quiz', 'click', () => this.showQuizPreview());
+        bindElement('cancel-preview', 'click', () => this.hideQuizPreview());
 
         // Game controls
-        safeAddEventListener('start-hosting', 'click', () => this.startHosting());
-        safeAddEventListener('start-hosting-top', 'click', () => this.startHosting());
-        safeAddEventListener('start-hosting-main', 'click', () => this.startHosting());
-        safeAddEventListener('start-hosting-header-small', 'click', () => this.startHosting());
-        safeAddEventListener('start-game', 'click', () => this.startGame());
-        safeAddEventListener('next-question', 'click', (e) => {
+        bindElement('start-hosting', 'click', () => this.startHosting());
+        bindElement('start-hosting-top', 'click', () => this.startHosting());
+        bindElement('start-hosting-main', 'click', () => this.startHosting());
+        bindElement('start-hosting-header-small', 'click', () => this.startHosting());
+        bindElement('start-game', 'click', () => this.startGame());
+        bindElement('next-question', 'click', (e) => {
             e.preventDefault();
             this.nextQuestion();
         });
-        safeAddEventListener('join-game', 'click', () => this.joinGame());
-        safeAddEventListener('new-game', 'click', () => {
+        bindElement('join-game', 'click', () => this.joinGame());
+        bindElement('new-game', 'click', () => {
             logger.debug('New Game button clicked!');
             this.newGame();
         });
-        safeAddEventListener('play-again', 'click', () => {
+        bindElement('play-again', 'click', () => {
             logger.debug('Play Again button clicked!');
             this.newGame();
         });
-        safeAddEventListener('exit-to-main', 'click', () => this.exitToMainMenu());
+        bindElement('exit-to-main', 'click', () => this.exitToMainMenu());
         
         // Statistics phase control buttons  
-        safeAddEventListener('next-question-stats', 'click', (e) => {
+        bindElement('next-question-stats', 'click', (e) => {
             e.preventDefault();
             this.nextQuestion();
         });
-        safeAddEventListener('exit-to-main-stats', 'click', () => this.exitToMainMenu());
+        bindElement('exit-to-main-stats', 'click', () => this.exitToMainMenu());
 
         // Auto-save setup
-        safeAddEventListener('quiz-title', 'input', () => {
+        bindElement('quiz-title', 'input', () => {
             clearTimeout(this.quizManager.autoSaveTimeout);
             this.quizManager.autoSaveTimeout = setTimeout(() => {
                 this.quizManager.autoSaveQuiz();
@@ -331,20 +326,20 @@ export class QuizGame {
         }, { signal: this.abortController.signal });
 
         // Numeric answer input
-        safeAddEventListener('numeric-answer-input', 'keypress', (e) => {
+        bindElement('numeric-answer-input', 'keypress', (e) => {
             if (e.key === 'Enter') {
                 this.gameManager.submitNumericAnswer();
             }
         });
 
         // Multiple correct answer submission
-        safeAddEventListener('submit-multiple', 'click', () => {
+        bindElement('submit-multiple', 'click', () => {
             this.gameManager.submitMultipleCorrectAnswer();
         });
 
         // Theme toggle is now handled by SettingsManager.initializeEventListeners()
         // Removed conflicting fallback event listener
-        safeAddEventListener('fullscreen-toggle', 'click', () => {
+        bindElement('fullscreen-toggle', 'click', () => {
             if (this.settingsManager.toggleFullscreen) {
                 this.settingsManager.toggleFullscreen();
             } else {
@@ -1043,13 +1038,9 @@ export class QuizGame {
             themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
         }
         // Save to quizSettings format for consistency with SettingsManager
-        try {
-            const savedSettings = JSON.parse(localStorage.getItem('quizSettings') || '{}');
-            savedSettings.theme = newTheme;
-            localStorage.setItem('quizSettings', JSON.stringify(savedSettings));
-        } catch (error) {
-            logger.warn('Failed to save theme to quizSettings:', error);
-        }
+        const savedSettings = getJSON('quizSettings', {});
+        savedSettings.theme = newTheme;
+        setJSON('quizSettings', savedSettings);
         logger.debug('Theme switched to:', newTheme);
     }
 

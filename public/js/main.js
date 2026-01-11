@@ -7,6 +7,7 @@ import { QuizGame } from './core/app.js';
 import { translationManager } from './utils/translation-manager.js';
 import { unifiedErrorHandler as errorBoundary } from './utils/unified-error-handler.js';
 import { TIMING, logger } from './core/config.js';
+import { getItem } from './utils/storage-utils.js';
 import './utils/globals.js'; // Import globals to make them available
 import { browserOptimizer } from './utils/browser-optimizer.js'; // Browser-specific optimizations
 import { contentDensityManager } from './utils/content-density-manager.js'; // Smart content spacing and sizing
@@ -78,14 +79,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     logger.debug('Quizix Pro - Initializing modular application...');
     
     // FOUC Prevention: Apply saved font size immediately (should already be done in HTML head)
-    const savedFontSize = localStorage.getItem('globalFontSize') || 'medium';
+    const savedFontSize = getItem('globalFontSize', 'medium');
     if (window.setGlobalFontSize) {
         window.setGlobalFontSize(savedFontSize);
     }
     
     await errorBoundary.safeNetworkOperation(async () => {
         // Initialize translation manager first
-        const savedLanguage = localStorage.getItem('language') || 'es';
+        const savedLanguage = getItem('language', 'es');
         logger.debug('Initializing translation manager with language:', savedLanguage);
         
         const success = await translationManager.initialize(savedLanguage);
@@ -208,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Initialize global font size after DOM is ready
         setTimeout(() => {
             errorBoundary.safeDOMOperation(() => {
-                const savedFontSize = localStorage.getItem('globalFontSize') || 'medium';
+                const savedFontSize = getItem('globalFontSize', 'medium');
                 logger.debug('Setting global font size to:', savedFontSize);
                 if (window.setGlobalFontSize) {
                     window.setGlobalFontSize(savedFontSize);

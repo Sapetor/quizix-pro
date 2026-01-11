@@ -5,6 +5,7 @@
  */
 
 import { logger, UI } from '../../core/config.js';
+import { getItem, setItem } from '../../utils/storage-utils.js';
 
 // Mobile breakpoint - matches CSS media query in responsive.css
 const MOBILE_BREAKPOINT = 1000;
@@ -218,7 +219,7 @@ export class SplitLayoutManager {
             const ratio = parseFloat(leftValue.slice(0, -2));
             
             if (!isNaN(ratio)) {
-                localStorage.setItem('splitRatio', ratio.toString());
+                setItem('splitRatio', ratio.toString());
                 logger.debug('Saved split ratio to localStorage', { ratio });
             }
             
@@ -254,7 +255,7 @@ export class SplitLayoutManager {
      * Load saved split ratio from localStorage
      */
     loadSavedSplitRatio() {
-        const savedRatio = localStorage.getItem('splitRatio');
+        const savedRatio = getItem('splitRatio');
         if (savedRatio) {
             const ratio = parseFloat(savedRatio);
             if (!isNaN(ratio) && ratio >= 25 && ratio <= 75) {
@@ -348,7 +349,7 @@ export class SplitLayoutManager {
      * Load saved font size preference
      */
     loadSavedFontSize() {
-        const savedSize = localStorage.getItem('fontSize');
+        const savedSize = getItem('fontSize');
         if (savedSize && ['small', 'medium', 'large', 'xlarge'].includes(savedSize)) {
             setTimeout(() => {
                 if (window.setGlobalFontSize) {

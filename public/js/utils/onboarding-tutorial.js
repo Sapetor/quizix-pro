@@ -5,6 +5,7 @@
 
 import { logger } from '../core/config.js';
 import { translationManager } from './translation-manager.js';
+import { getJSON, setJSON, removeItem } from './storage-utils.js';
 
 const STORAGE_KEY = 'quiz_onboarding_complete';
 const TUTORIAL_VERSION = 1;
@@ -107,34 +108,25 @@ class OnboardingTutorial {
      * Check if this is a first-time user
      */
     shouldShowOnboarding() {
-        try {
-            const data = localStorage.getItem(STORAGE_KEY);
-            if (!data) {
-                return true;
-            }
-            const parsed = JSON.parse(data);
-            // Also check version for future tutorial updates
-            return !parsed.completed || parsed.version < TUTORIAL_VERSION;
-        } catch (e) {
-            logger.debug('Error checking onboarding status:', e);
+        const data = getJSON(STORAGE_KEY);
+        if (!data) {
             return true;
         }
+        // Also check version for future tutorial updates
+        return !data.completed || data.version < TUTORIAL_VERSION;
     }
 
     /**
      * Mark onboarding as complete
      */
     setOnboardingComplete() {
-        try {
-            const data = {
-                completed: true,
-                completedAt: new Date().toISOString(),
-                version: TUTORIAL_VERSION
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        const data = {
+            completed: true,
+            completedAt: new Date().toISOString(),
+            version: TUTORIAL_VERSION
+        };
+        if (setJSON(STORAGE_KEY, data)) {
             logger.debug('Onboarding marked as complete');
-        } catch (e) {
-            logger.warn('Failed to save onboarding completion:', e);
         }
     }
 
@@ -142,11 +134,8 @@ class OnboardingTutorial {
      * Reset onboarding to show again (for testing or manual trigger)
      */
     resetOnboarding() {
-        try {
-            localStorage.removeItem(STORAGE_KEY);
+        if (removeItem(STORAGE_KEY)) {
             logger.debug('Onboarding reset');
-        } catch (e) {
-            logger.warn('Failed to reset onboarding:', e);
         }
     }
 

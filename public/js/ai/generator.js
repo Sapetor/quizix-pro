@@ -17,49 +17,46 @@ import { APIHelper } from '../utils/api-helper.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 import { toastNotifications } from '../utils/toast-notifications.js';
 import { escapeHtml } from '../utils/dom.js';
+import { getItem, setItem } from '../utils/storage-utils.js';
+import {
+    openModal,
+    closeModal,
+    bindOverlayClose,
+    bindEscapeClose,
+    unbindOverlayClose,
+    unbindEscapeClose,
+    getModal
+} from '../utils/modal-utils.js';
+
+// Import prompt templates
+import {
+    LANGUAGE_NAMES,
+    LANGUAGE_NATIVE_NAMES,
+    TYPE_EXAMPLES,
+    buildSingleQuestionPrompt,
+    buildMainPrompt,
+    buildRetryPrompt,
+    buildExcelConversionPrompt,
+    buildFormattingInstructions,
+    buildBloomInstructions,
+    buildOllamaEnhancedPrompt
+} from './prompts.js';
+
+// Import HTML templates
+import {
+    buildOptionHtml,
+    buildOptionsHtml,
+    buildQuestionCardHtml,
+    buildQuestionEditHtml,
+    buildOrderingEditHtml,
+    buildChoiceEditHtml,
+    buildNumericEditHtml,
+    buildEditActionsHtml,
+    buildViewActionsHtml
+} from './generator-templates.js';
 
 // Import XLSX library for Excel processing
 const XLSX = window.XLSX;
-
-// Constants extracted to avoid duplication
-const LANGUAGE_NAMES = {
-    'en': 'English',
-    'es': 'Spanish',
-    'fr': 'French',
-    'de': 'German',
-    'it': 'Italian',
-    'pt': 'Portuguese',
-    'pl': 'Polish',
-    'ja': 'Japanese',
-    'zh': 'Chinese'
-};
-
-const LANGUAGE_NATIVE_NAMES = {
-    'en': 'English',
-    'es': 'Espanol',
-    'fr': 'Francais',
-    'de': 'Deutsch',
-    'it': 'Italiano',
-    'pt': 'Portugues',
-    'pl': 'Polski',
-    'ja': 'Japanese',
-    'zh': 'Chinese'
-};
-
-const OPTION_COLORS = [
-    { bg: 'rgba(59, 130, 246, 0.15)', border: '#3b82f6', text: '#3b82f6' },   // Blue
-    { bg: 'rgba(16, 185, 129, 0.15)', border: '#10b981', text: '#10b981' },   // Green
-    { bg: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b', text: '#f59e0b' },   // Orange
-    { bg: 'rgba(239, 68, 68, 0.15)', border: '#ef4444', text: '#ef4444' },    // Red
-    { bg: 'rgba(139, 92, 246, 0.15)', border: '#8b5cf6', text: '#8b5cf6' },   // Purple
-    { bg: 'rgba(6, 182, 212, 0.15)', border: '#06b6d4', text: '#06b6d4' }     // Cyan
-];
-
-const DIFFICULTY_COLORS = {
-    easy: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
-    medium: { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b' },
-    hard: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' }
-};
 
 const TYPE_EMOJIS = {
     'mathematics': '\u{1F4D0}',
@@ -148,24 +145,15 @@ export class AIQuestionGenerator {
     }
 
     initializeEventListeners() {
-        const modal = document.getElementById('ai-generator-modal');
+        const modal = getModal('ai-generator-modal');
         const closeButton = document.getElementById('close-ai-generator');
 
-        // Store handler references for cleanup
-        this.eventHandlers.modalClick = (e) => {
-            if (e.target === modal) {
-                this.closeModal();
-            }
-        };
+        // Use modal-utils for overlay click and escape key handlers
+        this.eventHandlers.modalClick = bindOverlayClose(modal, () => this.closeModalMethod());
+        this.eventHandlers.keydown = bindEscapeClose(modal, () => this.closeModalMethod());
 
         this.eventHandlers.closeButtonClick = () => {
-            this.closeModal();
-        };
-
-        this.eventHandlers.keydown = (e) => {
-            if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
-                this.closeModal();
-            }
+            this.closeModalMethod();
         };
 
         this.eventHandlers.providerChange = (e) => {
@@ -174,7 +162,7 @@ export class AIQuestionGenerator {
 
         this.eventHandlers.modelChange = (e) => {
             if (e.target.value) {
-                localStorage.setItem('ollama_selected_model', e.target.value);
+                setItem('ollama_selected_model', e.target.value);
             }
         };
 
@@ -191,7 +179,7 @@ export class AIQuestionGenerator {
         };
 
         this.eventHandlers.cancelClick = () => {
-            this.closeModal();
+            this.closeModalMethod();
         };
 
         this.eventHandlers.apiKeyBlur = async (e) => {
@@ -213,16 +201,10 @@ export class AIQuestionGenerator {
             });
         };
 
-        // Add event listeners
-        if (modal) {
-            modal.addEventListener('click', this.eventHandlers.modalClick);
-        }
-
+        // Close button listener (modal click and keydown are handled by modal-utils)
         if (closeButton) {
             closeButton.addEventListener('click', this.eventHandlers.closeButtonClick);
         }
-
-        document.addEventListener('keydown', this.eventHandlers.keydown);
 
         // Provider selection change
         const providerSelect = document.getElementById('ai-provider');
@@ -524,70 +506,6 @@ export class AIQuestionGenerator {
     }
 
     /**
-     * Build HTML for a single option in the preview
-     * @param {string} text - Option text
-     * @param {number} index - Option index
-     * @param {boolean} isCorrect - Whether this is the correct answer
-     * @returns {string} - HTML string for the option
-     */
-    buildOptionHtml(text, index, isCorrect) {
-        const color = OPTION_COLORS[index % OPTION_COLORS.length];
-        return `
-            <div class="ai-preview-option ${isCorrect ? 'correct' : ''}"
-                 style="background: ${color.bg}; border-left: 4px solid ${color.border};">
-                <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${String.fromCharCode(65 + index)}</span>
-                <span class="ai-option-text">${escapeHtml(text)}</span>
-                ${isCorrect ? '<span class="ai-correct-badge">\u2713</span>' : ''}
-            </div>`;
-    }
-
-    /**
-     * Build options HTML based on question type
-     * @param {Object} question - Question data
-     * @returns {string} - HTML string for all options
-     */
-    buildOptionsHtml(question) {
-        const type = question.type;
-
-        if (type === 'multiple-choice' || type === 'true-false') {
-            const options = question.options || [];
-            const correctIndex = question.correctAnswer ?? 0;
-            return options.map((opt, i) => this.buildOptionHtml(opt, i, i === correctIndex)).join('');
-        }
-
-        if (type === 'multiple-correct') {
-            const options = question.options || [];
-            const correctAnswers = question.correctAnswers || [];
-            return options.map((opt, i) => this.buildOptionHtml(opt, i, correctAnswers.includes(i))).join('');
-        }
-
-        if (type === 'numeric') {
-            const answerLabel = translationManager.getTranslationSync('correct_answer') || 'Correct Answer';
-            const color = OPTION_COLORS[0];
-            return `
-                <div class="ai-preview-option correct" style="background: ${color.bg}; border-left: 4px solid ${color.border};">
-                    <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${answerLabel}:</span>
-                    <span class="ai-option-text">${escapeHtml(String(question.correctAnswer))}</span>
-                    <span class="ai-correct-badge">\u2713</span>
-                </div>`;
-        }
-
-        if (type === 'ordering') {
-            const items = question.options || question.items || [];
-            return items.map((item, i) => {
-                const color = OPTION_COLORS[i % OPTION_COLORS.length];
-                return `
-                    <div class="ai-preview-option" style="background: ${color.bg}; border-left: 4px solid ${color.border};">
-                        <span class="ai-option-letter" style="color: ${color.text}; font-weight: 700;">${i + 1}</span>
-                        <span class="ai-option-text">${escapeHtml(item)}</span>
-                    </div>`;
-            }).join('');
-        }
-
-        return '';
-    }
-
-    /**
      * Render a single question for preview
      * @param {Object} question - Question data
      * @param {number} index - Question index
@@ -598,46 +516,9 @@ export class AIQuestionGenerator {
         div.className = `preview-question-item ${question.selected ? 'selected' : 'rejected'}`;
         div.dataset.index = index;
 
-        // Get translated question type
-        const typeKey = `question_type_${question.type?.replace('-', '_')}`;
-        const typeLabel = translationManager.getTranslationSync(typeKey) || question.type || 'Unknown';
-
-        // Build options HTML based on question type
-        const optionsHtml = this.buildOptionsHtml(question);
-
-        // Explanation section if available
-        const explanationHtml = question.explanation
-            ? `<div class="ai-preview-explanation"><span class="explanation-icon">\u{1F4A1}</span> ${escapeHtml(question.explanation)}</div>`
-            : '';
-
-        // Difficulty badge with color
-        const difficulty = question.difficulty || 'medium';
-        const diffColor = DIFFICULTY_COLORS[difficulty] || DIFFICULTY_COLORS.medium;
-        const difficultyLabel = translationManager.getTranslationSync(difficulty) || difficulty;
-
-        // Time limit display
-        const timeLimit = question.timeLimit || 30;
-
-        div.innerHTML = `
-            <div class="ai-preview-header">
-                <label class="ai-preview-checkbox">
-                    <input type="checkbox" ${question.selected ? 'checked' : ''} />
-                    <span class="checkmark"></span>
-                </label>
-                <div class="ai-preview-badges">
-                    <span class="ai-type-badge">${typeLabel}</span>
-                    <span class="ai-difficulty-badge" style="background: ${diffColor.bg}; color: ${diffColor.text};">${difficultyLabel}</span>
-                    <span class="ai-time-badge">⏱️ ${timeLimit}s</span>
-                </div>
-                <div class="ai-preview-actions">
-                    <button class="ai-edit-btn" title="Edit question" data-index="${index}">✏️</button>
-                    <button class="ai-regenerate-btn" title="Regenerate this question" data-index="${index}">🔄</button>
-                </div>
-            </div>
-            <div class="ai-preview-question-text" data-field="question">${escapeHtml(question.question)}</div>
-            <div class="ai-preview-options" data-field="options">${optionsHtml}</div>
-            ${explanationHtml}
-        `;
+        // Build options HTML and full card using template functions
+        const optionsHtml = buildOptionsHtml(question);
+        div.innerHTML = buildQuestionCardHtml(question, index, optionsHtml);
 
         // Add click handler for checkbox
         const checkbox = div.querySelector('input[type="checkbox"]');
@@ -756,69 +637,25 @@ export class AIQuestionGenerator {
         // Replace question text with editable field
         const questionTextEl = item.querySelector('.ai-preview-question-text');
         if (questionTextEl) {
-            questionTextEl.innerHTML = `
-                <textarea class="ai-edit-field ai-edit-question" rows="3">${escapeHtml(question.question)}</textarea>
-            `;
+            questionTextEl.innerHTML = buildQuestionEditHtml(question.question);
         }
 
         // Replace options with editable fields (for types that have options)
         const optionsEl = item.querySelector('.ai-preview-options');
         if (optionsEl && question.options) {
             if (question.type === 'ordering') {
-                // Ordering uses number inputs for position
-                const optionInputs = question.options.map((opt, i) => {
-                    // Find position of this item in correctOrder (1-based for display)
-                    const position = question.correctOrder ? question.correctOrder.indexOf(i) + 1 : i + 1;
-                    return `
-                        <div class="ai-edit-option-row">
-                            <input type="number" class="ai-edit-order" value="${position}" min="1" max="${question.options.length}" data-index="${i}" style="width: 50px;">
-                            <input type="text" class="ai-edit-field ai-edit-option" value="${escapeHtml(opt)}" data-index="${i}">
-                        </div>
-                    `;
-                }).join('');
-                optionsEl.innerHTML = optionInputs;
+                optionsEl.innerHTML = buildOrderingEditHtml(question);
             } else {
-                const optionInputs = question.options.map((opt, i) => {
-                    let isCorrect = false;
-                    if (question.type === 'true-false') {
-                        // True-false uses "true"/"false" string, map to index
-                        isCorrect = (question.correctAnswer === 'true' && i === 0) ||
-                                   (question.correctAnswer === 'false' && i === 1);
-                    } else if (question.type === 'multiple-choice') {
-                        isCorrect = i === question.correctAnswer;
-                    } else if (question.type === 'multiple-correct') {
-                        isCorrect = question.correctAnswers?.includes(i);
-                    }
-                    return `
-                        <div class="ai-edit-option-row">
-                            <input type="${question.type === 'multiple-correct' ? 'checkbox' : 'radio'}"
-                                   name="correct-${index}" value="${i}"
-                                   ${isCorrect ? 'checked' : ''}
-                                   class="ai-edit-correct">
-                            <input type="text" class="ai-edit-field ai-edit-option" value="${escapeHtml(opt)}" data-index="${i}">
-                        </div>
-                    `;
-                }).join('');
-                optionsEl.innerHTML = optionInputs;
+                optionsEl.innerHTML = buildChoiceEditHtml(question, index);
             }
         } else if (optionsEl && question.type === 'numeric') {
-            optionsEl.innerHTML = `
-                <div class="ai-edit-option-row">
-                    <label>Answer:</label>
-                    <input type="number" class="ai-edit-field ai-edit-numeric" value="${escapeHtml(String(question.correctAnswer))}" step="any">
-                    <label>Tolerance:</label>
-                    <input type="number" class="ai-edit-field ai-edit-tolerance" value="${escapeHtml(String(question.tolerance || 0))}" step="any">
-                </div>
-            `;
+            optionsEl.innerHTML = buildNumericEditHtml(question);
         }
 
         // Replace action buttons with save/cancel
         const actionsEl = item.querySelector('.ai-preview-actions');
         if (actionsEl) {
-            actionsEl.innerHTML = `
-                <button class="ai-save-btn" title="Save changes" data-index="${index}">💾</button>
-                <button class="ai-cancel-btn" title="Cancel editing" data-index="${index}">❌</button>
-            `;
+            actionsEl.innerHTML = buildEditActionsHtml(index);
 
             // Add handlers
             actionsEl.querySelector('.ai-save-btn')?.addEventListener('click', (e) => {
@@ -980,32 +817,10 @@ export class AIQuestionGenerator {
 
     /**
      * Build a prompt for regenerating a single question
-     * @param {string} type - Question type
-     * @param {string} content - Source content
-     * @param {string} difficulty - Difficulty level
-     * @returns {string} Prompt for single question
+     * Delegates to prompts.js module
      */
     buildSingleQuestionPrompt(type, content, difficulty) {
-        const typeExamples = {
-            'multiple-choice': '{"question": "Question text?", "type": "multiple-choice", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "timeLimit": 30, "explanation": "Why A is correct", "difficulty": "medium"}',
-            'true-false': '{"question": "Statement to verify.", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20, "explanation": "Why true", "difficulty": "easy"}',
-            'multiple-correct': '{"question": "Select all that apply:", "type": "multiple-correct", "options": ["A", "B", "C", "D"], "correctAnswers": [0, 2], "timeLimit": 35, "explanation": "A and C are correct", "difficulty": "medium"}',
-            'numeric': '{"question": "Calculate the value:", "type": "numeric", "correctAnswer": 42, "tolerance": 0, "timeLimit": 25, "explanation": "The answer is 42", "difficulty": "medium"}',
-            'ordering': '{"question": "Arrange in order:", "type": "ordering", "options": ["First", "Second", "Third"], "correctOrder": [0, 1, 2], "timeLimit": 40, "explanation": "Correct sequence", "difficulty": "medium"}'
-        };
-
-        return `Generate exactly ONE ${type} question about this content. Difficulty: ${difficulty}.
-
-CONTENT:
-${content.substring(0, 2000)}
-
-OUTPUT FORMAT - Return ONLY valid JSON (no markdown, no explanation):
-${typeExamples[type] || typeExamples['multiple-choice']}
-
-RULES:
-1. Output ONLY the JSON object - start with { and end with }
-2. Base the question on the content provided
-3. Include all required fields: question, type, options (if applicable), correctAnswer/correctAnswers, timeLimit, explanation, difficulty`;
+        return buildSingleQuestionPrompt(type, content, difficulty);
     }
 
     /**
@@ -1103,7 +918,7 @@ RULES:
         this.closePreviewModal();
 
         // Close AI generator modal
-        this.closeModal();
+        this.closeModalMethod();
 
         // Process the selected questions
         await this.processGeneratedQuestions(selectedQuestions, false);
@@ -1417,7 +1232,7 @@ RULES:
             } else {
                 // All batches complete!
                 this.playCompletionChime();
-                this.closeModal();
+                this.closeModalMethod();
                 showAlert(`🎉 All ${totalBatches} batches completed! ${this.batchInfo.totalQuestions} questions generated successfully.`, 'success');
                 
                 // Reset batch info
@@ -1493,252 +1308,51 @@ RULES:
 
         // Detect content type for smart formatting
         const contentInfo = this.detectContentType(content);
-        const contentType = contentInfo.type || 'general';
-
-        // Check if content has existing questions to format vs content to generate from
-        const isFormattingExistingQuestions = contentInfo.hasExistingQuestions;
 
         // Get Bloom's taxonomy cognitive level
         const cognitiveLevel = document.getElementById('cognitive-level')?.value || 'mixed';
 
-        // Use translation manager to get current app language
-        const language = translationManager.getCurrentLanguage() || 'en';
-
-        const targetLanguage = LANGUAGE_NAMES[language] || 'English';
-
-        // Build Bloom's taxonomy instructions
-        const bloomInstructions = this.buildBloomInstructions(cognitiveLevel);
-
-        // Build question type description
-        let typeDescription = isFormattingExistingQuestions
-            ? `Format and convert the following ${questionCount} existing question${questionCount === 1 ? '' : 's'} into proper quiz format.`
-            : `Create EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} about the following content. Difficulty: ${difficulty}. Content type detected: ${contentType}.`;
-
-        let structureExamples = [];
-
-        // Build examples with LaTeX/code formatting based on content type
-        if (selectedTypes.includes('multiple-choice')) {
-            typeDescription += '\n- Some questions should be multiple choice (4 options, one correct)';
-            if (contentInfo.needsLatex) {
-                structureExamples.push('{"question": "What is the derivative of $f(x) = x^2 + 3x$?", "type": "multiple-choice", "options": ["$2x + 3$", "$x^2 + 3$", "$2x$", "$3x + 2$"], "correctAnswer": 0, "timeLimit": 30, "explanation": "Using power rule: derivative of $x^2$ is $2x$, derivative of $3x$ is $3$", "difficulty": "medium"}');
-            } else if (contentInfo.needsCodeBlocks) {
-                const lang = contentInfo.language || 'python';
-                structureExamples.push(`{"question": "What will this code output?\\n\`\`\`${lang}\\nprint(2 + 3 * 4)\\n\`\`\`", "type": "multiple-choice", "options": ["14", "20", "24", "Error"], "correctAnswer": 0, "timeLimit": 30, "explanation": "Multiplication has higher precedence than addition: 3*4=12, then 2+12=14", "difficulty": "easy"}`);
-            } else {
-                structureExamples.push('{"question": "Question text here?", "type": "multiple-choice", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": 0, "timeLimit": 30, "explanation": "Brief explanation of why this answer is correct", "difficulty": "medium"}');
-            }
-        }
-        if (selectedTypes.includes('true-false')) {
-            typeDescription += '\n- Some questions should be true/false (single factual statements)';
-            if (contentInfo.needsLatex) {
-                structureExamples.push('{"question": "The integral $\\\\int x^2 dx = \\\\frac{x^3}{3} + C$", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20, "explanation": "This is the correct antiderivative of $x^2$", "difficulty": "medium"}');
-            } else {
-                structureExamples.push('{"question": "Statement about the content.", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20, "explanation": "Explanation of the correct answer", "difficulty": "easy"}');
-            }
-        }
-        if (selectedTypes.includes('multiple-correct')) {
-            typeDescription += '\n- Some questions should allow multiple correct answers (use "correctAnswers" array)';
-            structureExamples.push('{"question": "Which of the following are TRUE? (Select all)", "type": "multiple-correct", "options": ["Correct A", "Wrong B", "Correct C", "Correct D"], "correctAnswers": [0, 2, 3], "timeLimit": 35, "explanation": "Options A, C, and D are correct because...", "difficulty": "hard"}');
-        }
-        if (selectedTypes.includes('numeric')) {
-            typeDescription += '\n- Some questions should have numeric answers';
-            if (contentInfo.needsLatex) {
-                structureExamples.push('{"question": "Solve for $x$: $2x + 6 = 14$", "type": "numeric", "correctAnswer": 4, "tolerance": 0, "timeLimit": 25, "explanation": "$2x = 8$, so $x = 4$", "difficulty": "easy"}');
-            } else {
-                structureExamples.push('{"question": "Numeric question from content?", "type": "numeric", "correctAnswer": 1991, "tolerance": 0, "timeLimit": 25, "explanation": "Explanation of the answer", "difficulty": "medium"}');
-            }
-        }
-        if (selectedTypes.includes('ordering')) {
-            typeDescription += '\n- Some questions should ask to arrange items in correct order (use "correctOrder" array with indices)';
-            structureExamples.push('{"question": "Arrange the following steps in the correct order:", "type": "ordering", "options": ["Step B", "Step D", "Step A", "Step C"], "correctOrder": [2, 0, 3, 1], "timeLimit": 40, "explanation": "The correct sequence is Step A, Step B, Step C, Step D", "difficulty": "medium"}');
-        }
-
-        const structureExample = `Return ONLY a valid JSON array with structures like these:\n[${structureExamples.join(',\n')}]`;
-
-        // Build formatting instructions based on content type
-        const formattingInstructions = this.buildFormattingInstructions(contentInfo);
-
-        // Build the main prompt - simplified and focused on reliable JSON output
-        let prompt = `You are a quiz question generator. Output ONLY valid JSON - no markdown, no explanations, no extra text.
-
-${typeDescription}
-${bloomInstructions}
-
-CONTENT TO USE:
-${content}
-
-OUTPUT FORMAT - Return a JSON array with EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'}:
-${structureExample}
-
-${formattingInstructions}
-
-STRICT RULES:
-1. Output ONLY the JSON array - start with [ and end with ]
-2. Generate ALL ${questionCount} questions - do not stop early
-3. All questions in ${targetLanguage} language
-4. Each question MUST have: question, type, options (except numeric), correctAnswer/correctAnswers, timeLimit, explanation, difficulty
-5. JSON structures by type:
-   - multiple-choice: "correctAnswer": 0-3 (integer index), "options": [4 items]
-   - true-false: "options": ["True", "False"], "correctAnswer": "true" or "false" (string)
-   - multiple-correct: "correctAnswers": [0, 2, 3] (array of indices), "options": [array]
-   - numeric: "correctAnswer": number, "tolerance": number, NO options field
-   - ordering: "options": [items], "correctOrder": [indices for correct sequence]
-6. Escape special characters in strings (quotes, backslashes, newlines)
-7. No trailing commas in JSON
-8. Complete EVERY question object before starting the next
-
-${isFormattingExistingQuestions ? 'PRESERVE original question text and answers.' : 'Base questions on the provided content.'}
-
-IMPORTANT: You MUST output all ${questionCount} complete questions. Do not truncate or stop early.`;
-
-        return prompt;
+        // Delegate to prompts.js module
+        return buildMainPrompt({
+            content,
+            questionCount,
+            difficulty,
+            selectedTypes,
+            contentInfo,
+            isFormattingExistingQuestions: contentInfo.hasExistingQuestions,
+            cognitiveLevel
+        });
     }
 
     /**
      * Build a simplified prompt for retry attempts after JSON parsing failures
+     * Delegates to prompts.js module
      */
     buildRetryPrompt(content, questionCount, difficulty, selectedTypes, attemptNumber) {
-        const language = translationManager.getCurrentLanguage() || 'en';
-        const targetLanguage = LANGUAGE_NAMES[language] || 'English';
-
-        // On second retry, reduce question count if more than 1
-        const adjustedCount = attemptNumber >= 3 && questionCount > 1 ? Math.ceil(questionCount / 2) : questionCount;
-
-        // Build minimal type examples
-        const typeExamples = [];
-        if (selectedTypes.includes('multiple-choice')) {
-            typeExamples.push('{"question":"Q?","type":"multiple-choice","options":["A","B","C","D"],"correctAnswer":0,"timeLimit":30,"difficulty":"medium"}');
-        }
-        if (selectedTypes.includes('true-false')) {
-            typeExamples.push('{"question":"Statement.","type":"true-false","options":["True","False"],"correctAnswer":"true","timeLimit":20,"difficulty":"easy"}');
-        }
-        if (selectedTypes.includes('multiple-correct')) {
-            typeExamples.push('{"question":"Select all.","type":"multiple-correct","options":["A","B","C","D"],"correctAnswers":[0,2],"timeLimit":35,"difficulty":"medium"}');
-        }
-        if (selectedTypes.includes('numeric')) {
-            typeExamples.push('{"question":"Calculate.","type":"numeric","correctAnswer":42,"tolerance":0,"timeLimit":25,"difficulty":"medium"}');
-        }
-        if (selectedTypes.includes('ordering')) {
-            typeExamples.push('{"question":"Order these.","type":"ordering","options":["B","A","C"],"correctOrder":[1,0,2],"timeLimit":40,"difficulty":"medium"}');
-        }
-
-        // Truncate content at word boundary for cleaner context
-        const truncatedContent = this.truncateAtWordBoundary(content, 2000);
-
-        // Very minimal, focused prompt for reliability
-        return `Generate ${adjustedCount} quiz question${adjustedCount === 1 ? '' : 's'} in ${targetLanguage} about:
-${truncatedContent}
-
-CRITICAL: Output ONLY a valid JSON array. No markdown, no explanation.
-
-Example format:
-[${typeExamples.join(',')}]
-
-Rules:
-- Start with [ end with ]
-- ${adjustedCount} questions exactly
-- Difficulty: ${difficulty}
-- Escape quotes with \\
-- No trailing commas
-
-JSON array only:`;
+        return buildRetryPrompt({
+            content,
+            questionCount,
+            difficulty,
+            selectedTypes,
+            attemptNumber,
+            truncateAtWordBoundary: this.truncateAtWordBoundary.bind(this)
+        });
     }
 
     /**
      * Build Bloom's taxonomy instructions based on selected cognitive level
+     * Delegates to prompts.js module
      */
     buildBloomInstructions(cognitiveLevel) {
-        if (cognitiveLevel === 'mixed') {
-            return `
-COGNITIVE LEVELS (Bloom's Taxonomy):
-- Mix questions across different cognitive levels for variety
-- Include some recall questions (Remember)
-- Include some understanding questions (Understand)
-- Include some application questions (Apply)
-`;
-        }
-
-        const bloomDescriptions = {
-            'remember': {
-                verbs: ['define', 'list', 'name', 'recall', 'identify', 'recognize', 'state'],
-                description: 'Focus on RECALL and RECOGNITION of facts',
-                example: 'What is the capital of France?'
-            },
-            'understand': {
-                verbs: ['explain', 'describe', 'summarize', 'interpret', 'classify', 'compare'],
-                description: 'Focus on EXPLAINING and INTERPRETING concepts',
-                example: 'Why does water boil at 100°C at sea level?'
-            },
-            'apply': {
-                verbs: ['apply', 'demonstrate', 'solve', 'use', 'implement', 'execute'],
-                description: 'Focus on USING knowledge in new situations',
-                example: 'Calculate the area of a triangle with base 5 and height 8.'
-            },
-            'analyze': {
-                verbs: ['analyze', 'compare', 'contrast', 'differentiate', 'examine', 'investigate'],
-                description: 'Focus on BREAKING DOWN information and finding relationships',
-                example: 'Compare and contrast mitosis and meiosis.'
-            },
-            'evaluate': {
-                verbs: ['evaluate', 'judge', 'critique', 'justify', 'argue', 'defend'],
-                description: 'Focus on MAKING JUDGMENTS based on criteria',
-                example: 'Which solution is most effective for reducing carbon emissions and why?'
-            },
-            'create': {
-                verbs: ['create', 'design', 'construct', 'develop', 'formulate', 'propose'],
-                description: 'Focus on CREATING new ideas or products',
-                example: 'Design an experiment to test plant growth under different light conditions.'
-            }
-        };
-
-        const level = bloomDescriptions[cognitiveLevel];
-        if (!level) return '';
-
-        return `
-COGNITIVE LEVEL (Bloom's Taxonomy - ${cognitiveLevel.toUpperCase()}):
-- ${level.description}
-- Use action verbs like: ${level.verbs.join(', ')}
-- Example question style: "${level.example}"
-- All questions should target THIS cognitive level
-`;
+        return buildBloomInstructions(cognitiveLevel);
     }
 
+    /**
+     * Build prompt for Excel conversion
+     * Delegates to prompts.js module
+     */
     buildExcelConversionPrompt(content, selectedTypes) {
-        const language = translationManager.getCurrentLanguage() || 'en';
-        const targetLanguage = LANGUAGE_NAMES[language] || 'English';
-
-        return `CONVERT EXCEL QUESTIONS TO JSON - DO NOT MAKE UP NEW QUESTIONS
-
-You must convert ONLY the questions that are in this Excel data. Do not create any new questions.
-
-${content}
-
-STEP BY STEP INSTRUCTIONS:
-1. Find each "Question X:" section in the Excel data above
-2. For each question, copy the exact text and answers from the Excel
-3. Convert to JSON format shown below
-4. Do NOT translate or change any text
-5. Do NOT create questions not in the Excel
-
-JSON TEMPLATE - Use exactly this format:
-{"question": "EXACT_TEXT_FROM_EXCEL_COLUMN_A", "type": "multiple-choice", "options": ["EXACT_TEXT_FROM_COLUMN_B", "EXACT_TEXT_FROM_COLUMN_C", "EXACT_TEXT_FROM_COLUMN_D", "EXACT_TEXT_FROM_COLUMN_E"], "correctAnswer": 0, "timeLimit": 30}
-
-CRITICAL RULES:
-- Use ONLY questions that appear in the Excel data above
-- COPY TEXT EXACTLY AS WRITTEN - do NOT change, rephrase, translate, or modify ANY words
-- DO NOT fix grammar, spelling, or punctuation - use the exact text from Excel
-- DO NOT add punctuation marks if they're not in the original text
-- DO NOT change question marks, periods, or any formatting
-- CRITICAL: Use the CORRECT_ANSWER_INDEX provided for each question:
-  * Look for "CORRECT_ANSWER_INDEX: [number]" in the data
-  * Use that exact number as the correctAnswer field
-  * Do NOT try to figure out the correct answer yourself
-  * The correctAnswer field must be 0, 1, 2, or 3 (not A, B, C, D)
-- Return valid JSON array format: [{"question": ...}, {"question": ...}]
-- NO explanations, NO extra text, ONLY the JSON array
-- PRESERVE EXACT TEXT: Copy every word, space, and character exactly as it appears in the Excel
-
-Start converting now. Return only the JSON array.`;
+        return buildExcelConversionPrompt(content, selectedTypes);
     }
 
     /**
@@ -1765,20 +1379,11 @@ Start converting now. Return only the JSON array.`;
 
     async generateWithOllama(prompt) {
         return await errorHandler.safeNetworkOperation(async () => {
-            const model = localStorage.getItem('ollama_selected_model') || AI.OLLAMA_DEFAULT_MODEL;
-            const timestamp = Date.now();
+            const model = getItem('ollama_selected_model') || AI.OLLAMA_DEFAULT_MODEL;
             const randomSeed = Math.floor(Math.random() * 10000);
-            
-            // Enhanced prompt specifically for Ollama to ensure 4 options
-            const enhancedPrompt = `[Session: ${timestamp}-${randomSeed}] ${prompt}
 
-OLLAMA SPECIFIC REQUIREMENTS:
-- For multiple-choice questions: You MUST provide exactly 4 options in the "options" array
-- NEVER generate multiple-choice questions with 3 or fewer options
-- If you cannot think of 4 good options, create plausible distractors related to the content
-- Example: "options": ["Correct answer", "Related but wrong", "Plausible distractor", "Another distractor"]
-
-Please respond with only valid JSON. Do not include explanations or additional text.`;
+            // Enhanced prompt specifically for Ollama - delegates to prompts.js
+            const enhancedPrompt = buildOllamaEnhancedPrompt(prompt);
 
             const response = await fetch(AI.OLLAMA_ENDPOINT, {
                 method: 'POST',
@@ -2481,56 +2086,10 @@ Please respond with only valid JSON. Do not include explanations or additional t
 
     /**
      * Build formatting instructions based on content type
+     * Delegates to prompts.js module
      */
     buildFormattingInstructions(contentInfo) {
-        let instructions = '';
-
-        if (contentInfo.needsLatex) {
-            instructions += `
-LATEX FORMATTING (IMPORTANT):
-- Use LaTeX syntax for ALL mathematical expressions, formulas, and equations
-- Inline math: Use $...$ (e.g., "The formula $E = mc^2$ shows..." or "Calculate $\\frac{x+1}{2}$")
-- Display math: Use $$...$$ for standalone equations (e.g., "$$\\int_0^\\infty e^{-x} dx = 1$$")
-- Common symbols: $\\alpha$, $\\beta$, $\\gamma$, $\\theta$, $\\pi$, $\\sigma$, $\\Delta$, $\\infty$
-- Fractions: $\\frac{numerator}{denominator}$
-- Square roots: $\\sqrt{x}$ or $\\sqrt[n]{x}$
-- Subscripts/superscripts: $x_1$, $x^2$, $x_1^2$
-- Summation: $\\sum_{i=1}^{n} x_i$
-- Integrals: $\\int_a^b f(x) dx$
-- Chemical formulas: $H_2O$, $CO_2$, $C_6H_{12}O_6$
-- Use LaTeX in BOTH questions AND answer options where appropriate
-`;
-        }
-
-        if (contentInfo.needsCodeBlocks) {
-            const langHint = contentInfo.language ? `Use \`\`\`${contentInfo.language}\` for code blocks.` : '';
-            instructions += `
-CODE FORMATTING (IMPORTANT):
-- Wrap ALL code snippets in markdown code blocks with language specification
-- Format: \`\`\`language
-code here
-\`\`\`
-${langHint}
-- Use inline code \`like this\` for short references (variable names, function names, keywords)
-- Ensure code is properly indented and formatted
-- Include necessary context (imports, function signatures) when relevant
-- For code output questions, show both code and expected output
-`;
-        }
-
-        // Add explanation and wrong answer feedback instructions
-        instructions += `
-QUESTION QUALITY & FEEDBACK:
-- Add an "explanation" field with a BRIEF explanation (1-2 sentences max) of why the correct answer is right
-- Add a "difficulty" field with value "easy", "medium", or "hard" based on content complexity
-- Add an "optionFeedback" array with SHORT feedback (max 15 words each) for wrong answers explaining WHY incorrect
-- For multiple-choice: optionFeedback should have feedback for indices that are NOT the correct answer
-- Example: "optionFeedback": [{"index": 1, "feedback": "Incorrect - this describes X not Y"}, {"index": 2, "feedback": "Common misconception"}]
-- Keep ALL text concise to ensure complete JSON output
-- Ensure questions test understanding, not just memorization
-`;
-
-        return instructions;
+        return buildFormattingInstructions(contentInfo);
     }
 
     async handleProviderChange(provider) {
@@ -2634,12 +2193,12 @@ QUESTION QUALITY & FEEDBACK:
                     });
 
                     // Restore saved selection or set default
-                    const savedModel = localStorage.getItem('ollama_selected_model');
+                    const savedModel = getItem('ollama_selected_model');
                     if (savedModel && models.some(m => m.name === savedModel)) {
                         modelSelect.value = savedModel;
                     } else if (models.length > 0) {
                         modelSelect.value = models[0].name;
-                        localStorage.setItem('ollama_selected_model', models[0].name);
+                        setItem('ollama_selected_model', models[0].name);
                     }
                 }
 
@@ -2671,7 +2230,7 @@ QUESTION QUALITY & FEEDBACK:
                         modelSelect.appendChild(option);
                     });
                     modelSelect.value = fallbackModels[0];
-                    localStorage.setItem('ollama_selected_model', fallbackModels[0]);
+                    setItem('ollama_selected_model', fallbackModels[0]);
                 } else {
                     modelSelect.innerHTML = '<option value="">\u274C Ollama not available</option>';
                 }
@@ -2854,7 +2413,7 @@ QUESTION QUALITY & FEEDBACK:
             };
             
             const modelName = provider === 'ollama' ? 
-                localStorage.getItem('ollama_selected_model') || 'Unknown Model' : 
+                getItem('ollama_selected_model') || 'Unknown Model' : 
                 provider.charAt(0).toUpperCase() + provider.slice(1);
             
             showAlert(`Excel file has ${totalRows} questions. Processing in ${this.batchInfo.totalBatches} batches of ${optimalBatchSize} questions each with ${modelName} for better accuracy.`, 'info');
@@ -3397,9 +2956,9 @@ QUESTION QUALITY & FEEDBACK:
     }
 
     async openModal() {
-        const modal = document.getElementById('ai-generator-modal');
+        const modal = getModal('ai-generator-modal');
         if (modal) {
-            modal.style.display = 'flex';
+            openModal(modal, { lockScroll: false });
 
             // Set provider to 'ollama' immediately
             const providerSelect = document.getElementById('ai-provider');
@@ -3456,10 +3015,10 @@ QUESTION QUALITY & FEEDBACK:
         }
     }
 
-    closeModal() {
-        const modal = document.getElementById('ai-generator-modal');
+    closeModalMethod() {
+        const modal = getModal('ai-generator-modal');
         if (modal) {
-            modal.style.display = 'none';
+            closeModal(modal, { unlockScroll: false });
         }
     }
 

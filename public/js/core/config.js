@@ -113,6 +113,23 @@ export const COLORS = {
     CORRECT_ANSWER: '#2ecc71',
     CORRECT_ANSWER_BG: 'rgba(46, 204, 113, 0.2)',
 
+    // AI Generator option colors (for preview display)
+    OPTION_COLORS: [
+        { bg: 'rgba(59, 130, 246, 0.15)', border: '#3b82f6', text: '#3b82f6' },   // Blue
+        { bg: 'rgba(16, 185, 129, 0.15)', border: '#10b981', text: '#10b981' },   // Green
+        { bg: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b', text: '#f59e0b' },   // Orange
+        { bg: 'rgba(239, 68, 68, 0.15)', border: '#ef4444', text: '#ef4444' },    // Red
+        { bg: 'rgba(139, 92, 246, 0.15)', border: '#8b5cf6', text: '#8b5cf6' },   // Purple
+        { bg: 'rgba(6, 182, 212, 0.15)', border: '#06b6d4', text: '#06b6d4' }     // Cyan
+    ],
+
+    // AI Generator difficulty badge colors
+    DIFFICULTY_COLORS: {
+        easy: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
+        medium: { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b' },
+        hard: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' }
+    },
+
     // With opacity variants (for backgrounds)
     withOpacity: (hex, opacity) => {
         const r = parseInt(hex.slice(1, 3), 16);
