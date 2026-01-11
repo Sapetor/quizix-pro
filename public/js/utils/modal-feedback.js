@@ -6,6 +6,14 @@
 import { logger, ANIMATION } from '../core/config.js';
 import { getTranslation } from './translation-manager.js';
 import { simpleMathJaxService } from './simple-mathjax-service.js';
+import {
+    openModal,
+    closeModal,
+    isModalOpen,
+    createModalBindings,
+    preventContentClose,
+    MODAL_MODES
+} from './modal-utils.js';
 
 export class ModalFeedback {
     constructor() {
@@ -16,10 +24,12 @@ export class ModalFeedback {
         this.scoreDisplay = null;
         this.explanationDisplay = null;
         this.currentTimer = null;
-        
+        this.modalBindings = null;
+        this.contentHandler = null;
+
         this.initializeElements();
         this.setupEventListeners();
-        
+
         logger.debug('🎭 Modal Feedback System initialized');
     }
 
@@ -43,30 +53,21 @@ export class ModalFeedback {
     }
 
     /**
-     * Setup event listeners for modal interactions
+     * Setup event listeners for modal interactions using modal-utils
      */
     setupEventListeners() {
         if (!this.overlay) return;
 
-        // Close modal on overlay click
-        this.overlay.addEventListener('click', (e) => {
-            if (e.target === this.overlay) {
-                this.hide();
-            }
-        });
-
-        // Close modal on escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.overlay.classList.contains('active')) {
-                this.hide();
-            }
-        });
+        // Create modal bindings for overlay click and escape key
+        this.modalBindings = createModalBindings(
+            this.overlay,
+            () => this.hide(),
+            { mode: MODAL_MODES.CLASS, activeClass: 'active' }
+        );
 
         // Prevent modal from closing when clicking inside the modal
         if (this.modal) {
-            this.modal.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
+            this.contentHandler = preventContentClose(this.modal);
         }
     }
 
@@ -102,11 +103,8 @@ export class ModalFeedback {
         // Set feedback content
         this.updateContent(isCorrect, message, score, explanation);
 
-        // Show modal with animation
-        this.overlay.classList.add('active');
-
-        // Prevent body scrolling when modal is open
-        document.body.style.overflow = 'hidden';
+        // Show modal with animation using modal-utils
+        openModal(this.overlay, { mode: MODAL_MODES.CLASS, activeClass: 'active', lockScroll: true });
 
         // Auto-dismiss after specified time
         if (autoDismissTime > 0) {
@@ -126,12 +124,9 @@ export class ModalFeedback {
      * @param {string} explanation - Explanation text (optional)
      */
     updateContent(isCorrect, message, score, explanation = null) {
-        // Set feedback icon - no rotating emoji for correct answers
+        // Set feedback icon - CSS handles animation reset via .feedback-icon styles
         if (this.feedbackIcon) {
             this.feedbackIcon.textContent = isCorrect ? '🎉' : '❌';
-            // Force remove any animation classes
-            this.feedbackIcon.style.animation = 'none';
-            this.feedbackIcon.style.transform = 'none';
         }
 
         // Set feedback message
@@ -142,20 +137,19 @@ export class ModalFeedback {
             this.feedbackText.textContent = feedbackMessage;
         }
 
-        // Set score display
+        // Set score display - use has-score class instead of inline style
         if (this.scoreDisplay && score !== null) {
             this.scoreDisplay.textContent = `+${score}`;
-            this.scoreDisplay.style.display = 'inline-block';
-        } else if (this.scoreDisplay) {
-            this.scoreDisplay.style.display = 'none';
+            this.modal.classList.add('has-score');
+        } else {
+            this.modal.classList.remove('has-score');
         }
 
-        // Set explanation display
+        // Set explanation display - CSS handles visibility via has-explanation class
         if (this.explanationDisplay) {
             if (explanation && explanation.trim()) {
                 // Use escapeHtmlPreservingLatex to allow MathJax to render formulas
                 this.explanationDisplay.innerHTML = `<span class="explanation-label">💡</span><span class="explanation-text">${this.escapeHtmlPreservingLatex(explanation)}</span>`;
-                this.explanationDisplay.style.display = 'block';
 
                 // Render MathJax for the explanation text
                 const textSpan = this.explanationDisplay.querySelector('.explanation-text');
@@ -165,7 +159,6 @@ export class ModalFeedback {
                     });
                 }
             } else {
-                this.explanationDisplay.style.display = 'none';
                 this.explanationDisplay.innerHTML = '';
             }
         }
@@ -209,11 +202,8 @@ export class ModalFeedback {
             this.currentTimer = null;
         }
 
-        // Hide modal with animation
-        this.overlay.classList.remove('active');
-
-        // Restore body scrolling
-        document.body.style.overflow = '';
+        // Hide modal with animation using modal-utils
+        closeModal(this.overlay, { mode: MODAL_MODES.CLASS, activeClass: 'active', unlockScroll: true });
 
         logger.debug('🎭 Modal feedback hidden');
     }
@@ -231,13 +221,11 @@ export class ModalFeedback {
         }
         if (this.scoreDisplay) {
             this.scoreDisplay.textContent = '';
-            this.scoreDisplay.style.display = 'none';
         }
         if (this.explanationDisplay) {
             this.explanationDisplay.innerHTML = '';
-            this.explanationDisplay.style.display = 'none';
         }
-        // Remove state classes
+        // Remove all state classes (correct, incorrect, partial, has-score, has-explanation)
         if (this.modal) {
             this.modal.className = 'feedback-modal';
         }
@@ -263,29 +251,21 @@ export class ModalFeedback {
      */
     triggerModalConfetti() {
         if (typeof confetti === 'function') {
-            logger.debug('🎊 CONFETTI DEBUG: Starting modal confetti animation with z-index 99999');
-            logger.debug('CONFETTI DEBUG: Modal confetti triggered!');
-            
-            // Create confetti canvas that sits above everything
+            logger.debug('🎊 CONFETTI DEBUG: Starting modal confetti animation');
+
+            // Create confetti canvas using CSS class for styling
             const confettiCanvas = document.createElement('canvas');
-            confettiCanvas.style.position = 'fixed';
-            confettiCanvas.style.top = '0';
-            confettiCanvas.style.left = '0';
-            confettiCanvas.style.width = '100vw';
-            confettiCanvas.style.height = '100vh';
-            confettiCanvas.style.zIndex = '2147483647'; // Maximum possible z-index to ensure it's above everything including backdrop-filter
-            confettiCanvas.style.pointerEvents = 'none';
-            confettiCanvas.style.background = 'transparent';
-            
-            // Try appending to modal overlay to inherit correct stacking context
+            confettiCanvas.className = 'confetti-canvas';
+
+            // Append to modal overlay for correct stacking context, or body as fallback
             if (this.overlay && this.overlay.classList.contains('active')) {
                 this.overlay.appendChild(confettiCanvas);
-                logger.debug('CONFETTI DEBUG: Canvas appended to modal overlay to avoid backdrop-filter blur');
+                logger.debug('CONFETTI DEBUG: Canvas appended to modal overlay');
             } else {
                 document.body.appendChild(confettiCanvas);
-                logger.debug('CONFETTI DEBUG: Canvas appended to body (fallback) with z-index:', confettiCanvas.style.zIndex);
+                logger.debug('CONFETTI DEBUG: Canvas appended to body (fallback)');
             }
-            
+
             // Create confetti instance targeting our canvas
             const confettiInstance = confetti.create(confettiCanvas, {
                 resize: true,
@@ -390,9 +370,8 @@ export class ModalFeedback {
         // Set partial feedback content
         this.updatePartialContent(message, score, explanation, partialScore);
 
-        // Show modal with animation
-        this.overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        // Show modal with animation using modal-utils
+        openModal(this.overlay, { mode: MODAL_MODES.CLASS, activeClass: 'active', lockScroll: true });
 
         // Auto-dismiss after specified time
         if (autoDismissTime > 0) {
@@ -408,11 +387,9 @@ export class ModalFeedback {
      * Update modal content for partial correctness
      */
     updatePartialContent(message, score, explanation, partialScore) {
-        // Set feedback icon - partial gets a "so-so" emoji
+        // Set feedback icon - CSS handles animation reset via .feedback-icon styles
         if (this.feedbackIcon) {
             this.feedbackIcon.textContent = '🔶';
-            this.feedbackIcon.style.animation = 'none';
-            this.feedbackIcon.style.transform = 'none';
         }
 
         // Set feedback message
@@ -422,19 +399,18 @@ export class ModalFeedback {
             this.feedbackText.textContent = feedbackMessage;
         }
 
-        // Set score display
+        // Set score display - use has-score class instead of inline style
         if (this.scoreDisplay && score !== null && score > 0) {
             this.scoreDisplay.textContent = `+${score}`;
-            this.scoreDisplay.style.display = 'inline-block';
-        } else if (this.scoreDisplay) {
-            this.scoreDisplay.style.display = 'none';
+            this.modal.classList.add('has-score');
+        } else {
+            this.modal.classList.remove('has-score');
         }
 
-        // Set explanation display
+        // Set explanation display - CSS handles visibility via has-explanation class
         if (this.explanationDisplay) {
             if (explanation && explanation.trim()) {
                 this.explanationDisplay.innerHTML = `<span class="explanation-label">💡</span><span class="explanation-text">${this.escapeHtmlPreservingLatex(explanation)}</span>`;
-                this.explanationDisplay.style.display = 'block';
 
                 const textSpan = this.explanationDisplay.querySelector('.explanation-text');
                 if (textSpan) {
@@ -443,7 +419,6 @@ export class ModalFeedback {
                     });
                 }
             } else {
-                this.explanationDisplay.style.display = 'none';
                 this.explanationDisplay.innerHTML = '';
             }
         }
@@ -472,11 +447,8 @@ export class ModalFeedback {
         // Set submission-specific content
         this.updateSubmissionContent(message);
 
-        // Show modal with animation
-        this.overlay.classList.add('active');
-
-        // Prevent body scrolling when modal is open
-        document.body.style.overflow = 'hidden';
+        // Show modal with animation using modal-utils
+        openModal(this.overlay, { mode: MODAL_MODES.CLASS, activeClass: 'active', lockScroll: true });
 
         // Auto-dismiss after specified time
         if (autoDismissTime > 0) {
@@ -493,14 +465,11 @@ export class ModalFeedback {
      * @param {string} message - Submission message
      */
     updateSubmissionContent(message) {
-        // Set exciting submission icon - rotate through different ones for variety
+        // Set exciting submission icon - CSS handles animation reset via .feedback-icon styles
         if (this.feedbackIcon) {
             const submissionIcons = ['🚀', '⚡', '🎯', '💫', '✨', '🔥'];
             const randomIcon = submissionIcons[Math.floor(Math.random() * submissionIcons.length)];
-            this.feedbackIcon.textContent = randomIcon; // Random exciting icon for answer submission!
-            // Force remove any animation classes
-            this.feedbackIcon.style.animation = 'none';
-            this.feedbackIcon.style.transform = 'none';
+            this.feedbackIcon.textContent = randomIcon;
         }
 
         // Set submission message
@@ -508,10 +477,8 @@ export class ModalFeedback {
             this.feedbackText.textContent = message;
         }
 
-        // Hide score display for submissions
-        if (this.scoreDisplay) {
-            this.scoreDisplay.style.display = 'none';
-        }
+        // Ensure score is hidden for submissions - use has-score class
+        this.modal.classList.remove('has-score');
     }
 
     /**
@@ -519,7 +486,7 @@ export class ModalFeedback {
      * @returns {boolean} True if modal is visible
      */
     isVisible() {
-        return this.overlay && this.overlay.classList.contains('active');
+        return isModalOpen(this.overlay, { mode: MODAL_MODES.CLASS, activeClass: 'active' });
     }
 
     /**
@@ -531,8 +498,15 @@ export class ModalFeedback {
             this.currentTimer = null;
         }
 
-        // Remove event listeners would go here if we tracked them
-        // For now, they're attached to DOM elements that will be cleaned up automatically
+        // Clean up modal bindings (overlay click and escape key handlers)
+        if (this.modalBindings?.cleanup) {
+            this.modalBindings.cleanup();
+        }
+
+        // Clean up content click handler
+        if (this.modal && this.contentHandler) {
+            this.modal.removeEventListener('click', this.contentHandler);
+        }
 
         logger.debug('🎭 Modal Feedback System destroyed');
     }
