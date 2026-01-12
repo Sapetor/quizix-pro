@@ -16,29 +16,6 @@ import { logger, LIMITS, UI } from '../core/config.js';
 import { translationManager } from './translation-manager.js';
 import { setItem, getJSON, setJSON } from './storage-utils.js';
 
-// Re-export from specialized managers for backward compatibility
-export {
-    toggleLanguageDropdown,
-    selectLanguage,
-    initializeDropdownListeners
-} from './language-dropdown-manager.js';
-
-export {
-    initializeAutoHideToolbar,
-    disableAutoHideToolbar,
-    isAutoHideToolbarActive
-} from './auto-hide-toolbar-manager.js';
-
-export {
-    scrollToTop,
-    initializeBackToTopButton
-} from './back-to-top-manager.js';
-
-export {
-    updateEditorQuestionCount,
-    initializeEditorQuestionCount
-} from './editor-question-count.js';
-
 // ============================================================================
 // Preview and Modal Functions
 // ============================================================================

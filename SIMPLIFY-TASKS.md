@@ -89,10 +89,11 @@ Tasks for the code-simplifier agent. Work through one at a time, commit, and `/c
 
 ## Dead Code & Cleanup (Low Impact)
 
-- [ ] **SIMP-11**: Review unused exports in `globals.js`
-  - Re-exports from 4 specialized managers
-  - Verify all re-exports are used
-  - Remove orphaned exports
+- [x] **SIMP-11**: Review unused exports in `globals.js`
+  - Removed 21 lines of orphaned re-exports from 4 specialized managers
+  - Functions are directly assigned to window object in their respective managers (language-dropdown-manager.js, auto-hide-toolbar-manager.js, back-to-top-manager.js, editor-question-count.js)
+  - Verified with Playwright MCP: language dropdown, language selection, and scroll-to-top all work correctly
+  - Kept initialization imports which are actually used in initializeGlobals()
 
 - [ ] **SIMP-12**: Review `game-manager.js` inline styles
   - 35 `.style.` manipulations found
