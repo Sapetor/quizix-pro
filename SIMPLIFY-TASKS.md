@@ -56,23 +56,34 @@ Tasks for the code-simplifier agent. Work through one at a time, commit, and `/c
   - Single source of truth for all color constants established
 
 - [x] **SIMP-8**: Consolidate `LANGUAGE_NAMES` constants
-  - Moved to `ai/prompts.js` as part of SIMP-1
-  - Now exported and imported by `generator.js`
-  - Could still be further consolidated with `translation-manager.js` if needed
+  - Created centralized `LANGUAGES` config in `core/config.js` with complete metadata
+  - Includes: language codes, English names, native names, flags, and welcome text
+  - Updated `prompts.js` to derive `LANGUAGE_NAMES` and `LANGUAGE_NATIVE_NAMES` from centralized config
+  - Updated `translation-manager.js` to use `LANGUAGES.SUPPORTED_CODES`
+  - Updated `language-dropdown-manager.js` to use `LANGUAGES.getWelcomeText()`
+  - Single source of truth for all language-related constants established
+  - Tested: Language switching works correctly for French and Japanese
 
 ---
 
 ## Error Handling (Medium Impact)
 
-- [ ] **SIMP-9**: Simplify error handling in `quiz-manager.js`
-  - 27 catch blocks found
-  - Many have similar error handling patterns
-  - Consolidate with `unifiedErrorHandler.wrapAsyncOperation()` where appropriate
+- [x] **SIMP-9**: Simplify error handling in `quiz-manager.js`
+  - Reduced from 27 try-catch blocks to just 2 (critical operations only)
+  - Replaced with `unifiedErrorHandler.wrapAsyncOperation()` for network operations
+  - Used `unifiedErrorHandler.safeExecute()` for operations that should continue on error
+  - Simplified methods: `showLoadQuizModal()`, `loadQuiz()`, `populateQuizBuilder()`, `handleFileImport()`, `exportQuiz()`, `cleanup()`, `forceCloseModal()`, `updatePreviewSafely()`
+  - Fixed: `safeExecute()` now properly handles async operations and catches promise rejections
+  - Tested: Quiz save/load/import/export functionality verified working
+  - Maintained all fallback behavior and error recovery logic
 
-- [ ] **SIMP-10**: Simplify error handling in `generator.js`
-  - 18 catch blocks found
-  - Standardize error messages and logging
-  - Use error handler wrapper consistently
+- [x] **SIMP-10**: Simplify error handling in `generator.js`
+  - Reduced from 18 catch blocks to 9 (50% reduction)
+  - Replaced 8 non-critical catch blocks with unified error handler wrappers
+  - Used `errorHandler.safeExecute()` for: completion chime, JSON parsing, content detection, Excel/image processing
+  - Used `errorHandler.wrapAsyncOperation()` for batch generation with retry fallback
+  - Kept 9 critical catch blocks for: UI state management, validation, complex retry logic, error re-throwing
+  - Standardized error messages and logging through unified error handler
 
 ---
 

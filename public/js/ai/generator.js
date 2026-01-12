@@ -1205,14 +1205,18 @@ export class AIQuestionGenerator {
         // Build prompt and generate
         const prompt = this.buildPrompt(structuredText, batchSize, difficulty, selectedTypes);
 
-        let questions = [];
-        try {
-            questions = await this.generateWithProvider(provider, prompt);
-        } catch (error) {
-            logger.error('Batch generation error:', error);
-            showAlert(`Batch ${currentBatch} failed: ${error.message}`, 'error');
-            return;
-        }
+        // Generate questions for this batch with error handling
+        const questions = await errorHandler.wrapAsyncOperation(
+            async () => await this.generateWithProvider(provider, prompt),
+            {
+                context: { operation: 'batch-generation', batch: currentBatch },
+                retryable: false,
+                fallback: () => {
+                    showAlert(`Batch ${currentBatch} failed. Please try again.`, 'error');
+                    return [];
+                }
+            }
+        );
         
         if (questions && questions.length > 0) {
             // Process questions for this batch
@@ -1254,44 +1258,46 @@ export class AIQuestionGenerator {
 
     playCompletionChime() {
         // Create and play completion sound similar to Claude Code's hook chime
-        try {
-            // Create a pleasant completion chime using Web Audio API
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // Create a sequence of pleasant tones
-            const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 - major chord
-            const duration = 0.3;
-            
-            frequencies.forEach((frequency, index) => {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + index * 0.15);
-                oscillator.type = 'sine';
-                
-                gainNode.gain.setValueAtTime(0, audioContext.currentTime + index * 0.15);
-                gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + index * 0.15 + 0.05);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.15 + duration);
-                
-                oscillator.start(audioContext.currentTime + index * 0.15);
-                oscillator.stop(audioContext.currentTime + index * 0.15 + duration);
-            });
-            
-            logger.debug('🔔 Completion chime played');
-        } catch (error) {
-            logger.debug('Could not play completion chime:', error);
+        errorHandler.safeExecute(
+            () => {
+                // Create a pleasant completion chime using Web Audio API
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                // Create a sequence of pleasant tones
+                const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 - major chord
+                const duration = 0.3;
+
+                frequencies.forEach((frequency, index) => {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + index * 0.15);
+                    oscillator.type = 'sine';
+
+                    gainNode.gain.setValueAtTime(0, audioContext.currentTime + index * 0.15);
+                    gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + index * 0.15 + 0.05);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.15 + duration);
+
+                    oscillator.start(audioContext.currentTime + index * 0.15);
+                    oscillator.stop(audioContext.currentTime + index * 0.15 + duration);
+                });
+
+                logger.debug('🔔 Completion chime played');
+            },
+            { operation: 'audio-completion-chime' },
             // Fallback: try to play a system beep
-            try {
-                const utterance = new SpeechSynthesisUtterance('');
-                utterance.volume = 0;
-                speechSynthesis.speak(utterance);
-            } catch (fallbackError) {
-                logger.debug('Fallback chime also failed');
-            }
-        }
+            () => errorHandler.safeExecute(
+                () => {
+                    const utterance = new SpeechSynthesisUtterance('');
+                    utterance.volume = 0;
+                    speechSynthesis.speak(utterance);
+                },
+                { operation: 'audio-fallback-beep' }
+            )
+        );
     }
 
     buildPrompt(content, questionCount, difficulty, selectedTypes) {
@@ -1503,12 +1509,15 @@ export class AIQuestionGenerator {
                 } else if (response.status === 403) {
                     errorMessage = 'Claude API access forbidden. Please check your API key permissions.';
                 } else {
-                    try {
-                        const errorText = await response.text();
-                        errorMessage = `Claude API error (${response.status}): ${errorText}`;
-                    } catch (e) {
-                        errorMessage = `Claude API error (${response.status})`;
-                    }
+                    // Try to get error text, fallback to status code only
+                    const errorText = await errorHandler.safeExecute(
+                        async () => await response.text(),
+                        { operation: 'parse-claude-error-text' },
+                        () => ''
+                    );
+                    errorMessage = errorText
+                        ? `Claude API error (${response.status}): ${errorText}`
+                        : `Claude API error (${response.status})`;
                 }
 
                 logger.debug('Claude API error message:', errorMessage);
@@ -1782,12 +1791,14 @@ export class AIQuestionGenerator {
         }
 
         // Additional validation: Try to parse and see if we can improve further
-        try {
-            JSON.parse(fixed);
-            logger.debug('🔧 JSON fix successful - valid JSON produced');
-        } catch (e) {
-            logger.warn('🔧 Fixed JSON still invalid, but will attempt to parse anyway:', e.message);
-        }
+        errorHandler.safeExecute(
+            () => {
+                JSON.parse(fixed);
+                logger.debug('🔧 JSON fix successful - valid JSON produced');
+            },
+            { operation: 'validate-json-fix' },
+            () => logger.warn('🔧 Fixed JSON still invalid, but will attempt to parse anyway')
+        );
 
         logger.debug('🔧 Applied JSON fixes, length changed from', jsonText.length, 'to', fixed.length);
         return fixed;
@@ -1805,26 +1816,27 @@ export class AIQuestionGenerator {
             const questions = [];
 
             for (const objText of jsonObjects) {
-                try {
-                    // Try to fix and parse each object individually
-                    let fixedObj = objText;
+                errorHandler.safeExecute(
+                    () => {
+                        // Try to fix and parse each object individually
+                        let fixedObj = objText;
 
-                    // Fix trailing commas
-                    fixedObj = fixedObj.replace(/,(\s*\})/g, '$1');
+                        // Fix trailing commas
+                        fixedObj = fixedObj.replace(/,(\s*\})/g, '$1');
 
-                    // Fix single quotes
-                    fixedObj = fixedObj.replace(/'/g, '"');
+                        // Fix single quotes
+                        fixedObj = fixedObj.replace(/'/g, '"');
 
-                    // Try to parse
-                    const parsed = JSON.parse(fixedObj);
+                        // Try to parse
+                        const parsed = JSON.parse(fixedObj);
 
-                    if (parsed.question && parsed.type) {
-                        questions.push(parsed);
-                        logger.debug('🔍 Successfully parsed JSON object:', parsed.question.substring(0, 50) + '...');
-                    }
-                } catch (e) {
-                    logger.warn('🔍 Failed to parse individual JSON object:', e.message);
-                }
+                        if (parsed.question && parsed.type) {
+                            questions.push(parsed);
+                            logger.debug('🔍 Successfully parsed JSON object:', parsed.question.substring(0, 50) + '...');
+                        }
+                    },
+                    { operation: 'parse-individual-json-object' }
+                );
             }
 
             if (questions.length > 0) {
@@ -1889,54 +1901,55 @@ export class AIQuestionGenerator {
             return { type: 'general', language: null, hasExistingQuestions: false };
         }
 
-        try {
-            const result = {
-                type: 'general',
-                language: null,
-                hasExistingQuestions: AI.EXISTING_QUESTIONS_INDICATORS?.test(content) || false,
-                needsLatex: false,
-                needsCodeBlocks: false,
-                wordCount: content.split(/\s+/).filter(w => w.length > 0).length
-            };
+        return errorHandler.safeExecute(
+            () => {
+                const result = {
+                    type: 'general',
+                    language: null,
+                    hasExistingQuestions: AI.EXISTING_QUESTIONS_INDICATORS?.test(content) || false,
+                    needsLatex: false,
+                    needsCodeBlocks: false,
+                    wordCount: content.split(/\s+/).filter(w => w.length > 0).length
+                };
 
-            // Content type detection - order matters (more specific patterns first)
-            const contentTypeChecks = [
-                { pattern: AI.MATH_INDICATORS, type: 'mathematics', needsLatex: true },
-                { pattern: AI.PHYSICS_INDICATORS, type: 'physics', needsLatex: true },
-                { pattern: AI.CHEMISTRY_INDICATORS, type: 'chemistry', needsLatex: true },
-                { pattern: AI.PROGRAMMING_INDICATORS, type: 'programming', needsCodeBlocks: true },
-                { pattern: AI.BIOLOGY_INDICATORS, type: 'biology' },
-                { pattern: AI.HISTORY_INDICATORS, type: 'history' },
-                { pattern: AI.ECONOMICS_INDICATORS, type: 'economics' }
-            ];
+                // Content type detection - order matters (more specific patterns first)
+                const contentTypeChecks = [
+                    { pattern: AI.MATH_INDICATORS, type: 'mathematics', needsLatex: true },
+                    { pattern: AI.PHYSICS_INDICATORS, type: 'physics', needsLatex: true },
+                    { pattern: AI.CHEMISTRY_INDICATORS, type: 'chemistry', needsLatex: true },
+                    { pattern: AI.PROGRAMMING_INDICATORS, type: 'programming', needsCodeBlocks: true },
+                    { pattern: AI.BIOLOGY_INDICATORS, type: 'biology' },
+                    { pattern: AI.HISTORY_INDICATORS, type: 'history' },
+                    { pattern: AI.ECONOMICS_INDICATORS, type: 'economics' }
+                ];
 
-            for (const check of contentTypeChecks) {
-                if (check.pattern?.test(content)) {
-                    result.type = check.type;
-                    if (check.needsLatex) result.needsLatex = true;
-                    if (check.needsCodeBlocks) {
-                        result.needsCodeBlocks = true;
-                        // Detect specific programming language
-                        if (AI.CODE_LANGUAGE_HINTS) {
-                            for (const [lang, pattern] of Object.entries(AI.CODE_LANGUAGE_HINTS)) {
-                                if (pattern.test(content)) {
-                                    result.language = lang;
-                                    break;
+                for (const check of contentTypeChecks) {
+                    if (check.pattern?.test(content)) {
+                        result.type = check.type;
+                        if (check.needsLatex) result.needsLatex = true;
+                        if (check.needsCodeBlocks) {
+                            result.needsCodeBlocks = true;
+                            // Detect specific programming language
+                            if (AI.CODE_LANGUAGE_HINTS) {
+                                for (const [lang, pattern] of Object.entries(AI.CODE_LANGUAGE_HINTS)) {
+                                    if (pattern.test(content)) {
+                                        result.language = lang;
+                                        break;
+                                    }
                                 }
                             }
                         }
+                        break;
                     }
-                    break;
                 }
-            }
 
-            this.updateContentAnalysisUI(result);
-            this.updateCostEstimation(content);
-            return result;
-        } catch (error) {
-            logger.warn('Content type detection failed:', error.message);
-            return { type: 'general', language: null, hasExistingQuestions: false };
-        }
+                this.updateContentAnalysisUI(result);
+                this.updateCostEstimation(content);
+                return result;
+            },
+            { operation: 'content-type-detection' },
+            () => ({ type: 'general', language: null, hasExistingQuestions: false })
+        );
     }
 
     /**
@@ -2327,48 +2340,48 @@ export class AIQuestionGenerator {
         
         const reader = new FileReader();
         reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                
-                // Use the first sheet
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                
-                // Convert to array of objects
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                
-                logger.debug('🗂️ Excel data parsed:', jsonData.length, 'rows');
-                
-                // Convert Excel data to structured text for AI processing
-                const structuredText = this.convertExcelToStructuredText(jsonData, file.name);
-                
-                if (structuredText) {
-                    // Put the structured text in the content textarea for AI processing
-                    const contentTextarea = document.getElementById('source-content');
-                    if (contentTextarea) {
-                        contentTextarea.value = structuredText;
-                        this.detectContentType(structuredText);
+            errorHandler.safeExecute(
+                () => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+
+                    // Use the first sheet
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+
+                    // Convert to array of objects
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    logger.debug('🗂️ Excel data parsed:', jsonData.length, 'rows');
+
+                    // Convert Excel data to structured text for AI processing
+                    const structuredText = this.convertExcelToStructuredText(jsonData, file.name);
+
+                    if (structuredText) {
+                        // Put the structured text in the content textarea for AI processing
+                        const contentTextarea = document.getElementById('source-content');
+                        if (contentTextarea) {
+                            contentTextarea.value = structuredText;
+                            this.detectContentType(structuredText);
+                        }
+
+                        // Auto-fill question count field with detected questions
+                        const questionCountField = document.getElementById('question-count');
+                        if (questionCountField && this.detectedQuestionCount) {
+                            const previousCount = questionCountField.value;
+                            questionCountField.value = this.detectedQuestionCount;
+                            logger.debug('🗂️ Auto-filled question count from', previousCount, 'to', this.detectedQuestionCount);
+                        }
+
+                        // Note: Batch processing alert will be shown by convertExcelToStructuredText if needed
+                        logger.debug('🗂️ Excel converted to structured text for AI');
+                    } else {
+                        throw new Error('No valid data found in Excel file');
                     }
-                    
-                    // Auto-fill question count field with detected questions
-                    const questionCountField = document.getElementById('question-count');
-                    if (questionCountField && this.detectedQuestionCount) {
-                        const previousCount = questionCountField.value;
-                        questionCountField.value = this.detectedQuestionCount;
-                        logger.debug('🗂️ Auto-filled question count from', previousCount, 'to', this.detectedQuestionCount);
-                    }
-                    
-                    // Note: Batch processing alert will be shown by convertExcelToStructuredText if needed
-                    logger.debug('🗂️ Excel converted to structured text for AI');
-                } else {
-                    throw new Error('No valid data found in Excel file');
-                }
-                
-            } catch (error) {
-                logger.error('🗂️ Excel processing failed:', error);
-                showAlert('Failed to process Excel file: ' + error.message, 'error');
-            }
+                },
+                { operation: 'excel-file-processing', filename: file.name },
+                (error) => showAlert('Failed to process Excel file: ' + error.message, 'error')
+            );
         };
         
         reader.onerror = (error) => {
@@ -2678,16 +2691,16 @@ export class AIQuestionGenerator {
                 // Generate image if AI provided image data
                 if (questionData.imageData && questionData.imageType) {
                     logger.debug(`🖼️ Rendering ${questionData.imageType} image for question ${index + 1}`);
-                    try {
-                        const imageUrl = await this.renderImageData(questionData.imageData, questionData.imageType);
-                        if (imageUrl) {
-                            questionData.image = imageUrl;
-                            logger.debug(`✅ Image rendered successfully: ${imageUrl.substring(0, 50)}...`);
-                        }
-                    } catch (error) {
-                        logger.warn(`⚠️ Image rendering failed for question ${index + 1}:`, error.message);
-                        // Continue without image - don't fail the whole question
-                    }
+                    await errorHandler.safeExecute(
+                        async () => {
+                            const imageUrl = await this.renderImageData(questionData.imageData, questionData.imageType);
+                            if (imageUrl) {
+                                questionData.image = imageUrl;
+                                logger.debug(`✅ Image rendered successfully: ${imageUrl.substring(0, 50)}...`);
+                            }
+                        },
+                        { operation: 'render-question-image', questionIndex: index + 1, imageType: questionData.imageType }
+                    );
                     // Remove temporary fields
                     delete questionData.imageData;
                     delete questionData.imageType;
