@@ -34,6 +34,44 @@ body {
     display: none !important;
 }
 
+.visible {
+    display: block !important;
+}
+
+.visible-flex {
+    display: flex !important;
+}
+
+/* Correct answer highlighting for player side */
+.correct-answer-highlight {
+    border: 3px solid var(--success-green) !important;
+    background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+/* Correct answer highlighting for host side - more prominent */
+.host-correct-answer {
+    border: 5px solid var(--success-green) !important;
+    background-color: rgba(34, 197, 94, 0.1) !important;
+    color: var(--success-green) !important;
+    font-weight: bold !important;
+}
+
+/* Scale animation for number changes */
+.scale-pulse {
+    animation: scalePulse 0.3s ease-in-out;
+}
+
+@keyframes scalePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Error state background */
+.error-bg {
+    background-color: #f39c12 !important;
+}
+
 /* Screenshot Mode - Apply to document root to disable stacking context properties
    that can cause rendering issues in full-page screenshots */
 html.screenshot-mode .modal {

@@ -176,7 +176,7 @@ export class GameManager {
         logger.debug('Player mode - setting up containers');
 
         // Hide all answer type containers
-        dom.queryAll('.player-answer-type').forEach(type => type.style.display = 'none');
+        dom.queryAll('.player-answer-type').forEach(type => type.classList.add('hidden'));
 
         // Get container configuration from registry
         const config = QuestionTypeRegistry.getPlayerContainerConfig(data.type);
@@ -189,7 +189,7 @@ export class GameManager {
         logger.debug(`${config.containerId} found:`, !!container);
 
         if (container) {
-            container.style.display = 'block';
+            container.classList.remove('hidden');
             const optionsContainer = container.querySelector(config.optionsSelector);
             logger.debug('Player optionsContainer set to:', optionsContainer);
             return optionsContainer;
@@ -512,9 +512,7 @@ export class GameManager {
      */
     applyCorrectAnswerStyle(element) {
         if (!element) return;
-        element.classList.add('correct-answer');
-        element.style.border = `3px solid ${COLORS.CORRECT_ANSWER}`;
-        element.style.backgroundColor = COLORS.CORRECT_ANSWER_BG;
+        element.classList.add('correct-answer', 'correct-answer-highlight');
     }
 
     /**
@@ -603,25 +601,25 @@ export class GameManager {
         // Clear host question image
         const hostImageContainer = document.getElementById('question-image-display');
         if (hostImageContainer) {
-            hostImageContainer.style.display = 'none';
+            hostImageContainer.classList.add('hidden');
             const hostImg = hostImageContainer.querySelector('img');
             if (hostImg) {
                 hostImg.src = '';
                 hostImg.removeAttribute('src');
             }
         }
-        
+
         // Clear player question image
         const playerImageContainer = document.getElementById('player-question-image');
         if (playerImageContainer) {
-            playerImageContainer.style.display = 'none';
+            playerImageContainer.classList.add('hidden');
             const playerImg = playerImageContainer.querySelector('img');
             if (playerImg) {
                 playerImg.src = '';
                 playerImg.removeAttribute('src');
             }
         }
-        
+
         logger.debug('🖼️ Cleared all question images');
     }
 
@@ -630,11 +628,7 @@ export class GameManager {
      */
     resetButtonStyles(options) {
         options.forEach(option => {
-            option.style.border = '';
-            option.style.backgroundColor = '';
-            option.style.color = '';
-            option.style.fontWeight = '';
-            option.style.display = 'block';
+            option.classList.remove('correct-answer-highlight', 'host-correct-answer', 'hidden');
         });
     }
 
@@ -679,10 +673,7 @@ export class GameManager {
      */
     applyHostCorrectStyle(element) {
         if (!element) return;
-        element.style.border = `5px solid ${COLORS.CORRECT_ANSWER}`;
-        element.style.backgroundColor = COLORS.CORRECT_ANSWER_BG;
-        element.style.color = COLORS.CORRECT_ANSWER;
-        element.style.fontWeight = 'bold';
+        element.classList.add('host-correct-answer');
     }
 
     /**
@@ -812,9 +803,9 @@ export class GameManager {
         // Hide the bottom options container for numeric questions
         const optionsContainer = document.getElementById('answer-options');
         if (optionsContainer) {
-            optionsContainer.style.display = 'none';
+            optionsContainer.classList.add('hidden');
         }
-        
+
         // Add class to hide the entire host-multiple-choice frame for numeric questions
         const hostMultipleChoice = document.getElementById('host-multiple-choice');
         if (hostMultipleChoice) {
@@ -838,7 +829,7 @@ export class GameManager {
         // Show the statistics container
         const container = document.getElementById('answer-statistics');
         if (container) {
-            container.style.display = 'block';
+            container.classList.remove('hidden');
         }
     }
 
@@ -863,11 +854,11 @@ export class GameManager {
             logger.warn('Answer statistics container not found in HTML');
             return;
         }
-        
+
         // Show statistics container
         if (statisticsContainer) {
-            statisticsContainer.style.display = 'block';
-            
+            statisticsContainer.classList.remove('hidden');
+
             // Update response counts
             dom.setContent('responses-count', data.answeredPlayers || 0);
             dom.setContent('total-players', data.totalPlayers || 0);
@@ -1047,11 +1038,13 @@ export class GameManager {
 
             if (statItem && optionLabel) {
                 if (i < optionCount) {
-                    statItem.style.display = 'flex';
+                    statItem.classList.remove('hidden');
+                    statItem.classList.add('visible-flex');
                     optionLabel.textContent = translationManager.getOptionLetter(i);
                     this.resetStatItemValues(statItem);
                 } else {
-                    statItem.style.display = 'none';
+                    statItem.classList.add('hidden');
+                    statItem.classList.remove('visible-flex');
                 }
             }
         }
@@ -1065,18 +1058,21 @@ export class GameManager {
         for (let i = 0; i < UI.MAX_STAT_ITEMS; i++) {
             const statItem = document.getElementById(`stat-item-${i}`);
             const optionLabel = statItem?.querySelector('.option-label');
-            
+
             if (statItem && optionLabel) {
                 if (i === 0) {
-                    statItem.style.display = 'flex';
+                    statItem.classList.remove('hidden');
+                    statItem.classList.add('visible-flex');
                     optionLabel.textContent = tfTexts.true;
                     this.resetStatItemValues(statItem);
                 } else if (i === 1) {
-                    statItem.style.display = 'flex';
+                    statItem.classList.remove('hidden');
+                    statItem.classList.add('visible-flex');
                     optionLabel.textContent = tfTexts.false;
                     this.resetStatItemValues(statItem);
                 } else {
-                    statItem.style.display = 'none';
+                    statItem.classList.add('hidden');
+                    statItem.classList.remove('visible-flex');
                 }
             }
         }
@@ -1090,7 +1086,8 @@ export class GameManager {
         for (let i = 0; i < UI.MAX_STAT_ITEMS; i++) {
             const statItem = document.getElementById(`stat-item-${i}`);
             if (statItem) {
-                statItem.style.display = 'none';
+                statItem.classList.add('hidden');
+                statItem.classList.remove('visible-flex');
             }
         }
 
@@ -1108,7 +1105,8 @@ export class GameManager {
         for (let i = 0; i < UI.MAX_STAT_ITEMS; i++) {
             const statItem = document.getElementById(`stat-item-${i}`);
             if (statItem) {
-                statItem.style.display = 'none';
+                statItem.classList.add('hidden');
+                statItem.classList.remove('visible-flex');
             }
         }
 
@@ -1205,7 +1203,7 @@ export class GameManager {
     hideAnswerStatistics() {
         const statisticsContainer = document.getElementById('answer-statistics');
         if (statisticsContainer) {
-            statisticsContainer.style.display = 'none';
+            statisticsContainer.classList.add('hidden');
         }
     }
 
@@ -1528,13 +1526,16 @@ export class GameManager {
             // Add a simple scale animation for number changes
             const currentCount = parseInt(lobbyPlayerCount.textContent) || 0;
             const newCount = players.length;
-            
+
             if (currentCount !== newCount) {
-                lobbyPlayerCount.style.transform = 'scale(1.2)';
+                lobbyPlayerCount.classList.add('scale-pulse');
                 setTimeout(() => {
                     lobbyPlayerCount.textContent = newCount;
-                    lobbyPlayerCount.style.transform = 'scale(1)';
                 }, 150);
+                // Remove class after animation completes so it can be triggered again
+                setTimeout(() => {
+                    lobbyPlayerCount.classList.remove('scale-pulse');
+                }, 300);
             }
         }
         
@@ -1909,7 +1910,7 @@ export class GameManager {
 
             // Hide all option containers
             document.querySelectorAll('.player-options, .answer-options').forEach(container => {
-                container.style.display = 'none';
+                container.classList.add('hidden');
             });
         } catch (error) {
             logger.error('Failed to show question error state:', error);
@@ -1924,16 +1925,17 @@ export class GameManager {
             const resultElement = document.getElementById('answer-feedback');
             if (resultElement) {
                 resultElement.classList.remove('hidden');
-                resultElement.style.backgroundColor = '#f39c12'; // Orange for error
-                
+                resultElement.classList.add('error-bg');
+
                 const messageElement = document.getElementById('feedback-message');
                 if (messageElement) {
                     messageElement.textContent = '⚠️ Result display error';
                 }
-                
-                // Hide after delay
+
+                // Hide after delay and clean up
                 setTimeout(() => {
                     resultElement.classList.add('hidden');
+                    resultElement.classList.remove('error-bg');
                 }, 3000);
             }
         } catch (error) {

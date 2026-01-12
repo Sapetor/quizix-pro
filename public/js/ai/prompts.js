@@ -6,34 +6,20 @@
  */
 
 import { translationManager } from '../utils/translation-manager.js';
+import { LANGUAGES } from '../core/config.js';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-export const LANGUAGE_NAMES = {
-    'en': 'English',
-    'es': 'Spanish',
-    'fr': 'French',
-    'de': 'German',
-    'it': 'Italian',
-    'pt': 'Portuguese',
-    'pl': 'Polish',
-    'ja': 'Japanese',
-    'zh': 'Chinese'
-};
+// Language name mappings (using centralized config from core/config.js)
+export const LANGUAGE_NAMES = Object.fromEntries(
+    LANGUAGES.SUPPORTED_CODES.map(code => [code, LANGUAGES.getEnglishName(code)])
+);
 
-export const LANGUAGE_NATIVE_NAMES = {
-    'en': 'English',
-    'es': 'Espanol',
-    'fr': 'Francais',
-    'de': 'Deutsch',
-    'it': 'Italiano',
-    'pt': 'Portugues',
-    'pl': 'Polski',
-    'ja': 'Japanese',
-    'zh': 'Chinese'
-};
+export const LANGUAGE_NATIVE_NAMES = Object.fromEntries(
+    LANGUAGES.SUPPORTED_CODES.map(code => [code, LANGUAGES.getNativeName(code)])
+);
 
 /**
  * JSON structure examples for each question type

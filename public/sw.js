@@ -8,7 +8,9 @@
  * - Network-only for API calls, Socket.IO, and user uploads
  */
 
-const CACHE_VERSION = 'v1';
+// IMPORTANT: Update this version when deploying new code to force cache refresh
+// Format: YYYYMMDD-HHMM or use a build hash
+const CACHE_VERSION = 'v20260112-0200';
 const CACHE_NAME = `quizix-static-${CACHE_VERSION}`;
 
 // Static assets to pre-cache on install (relative to service worker scope)

@@ -8,7 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 **Status**: Production-ready with comprehensive mobile optimizations, unified theme management, enhanced carousel functionality, multi-language support, and Railway cloud deployment.
 
-**Recent Refactoring**: Weeks 1-3 and 5 complete (~1,466 lines removed/refactored). See `REFACTORING_ROADMAP.md` for details.
+**Recent Refactoring**:
+- Weeks 1-3 and 5 complete (~1,466 lines removed/refactored). See `REFACTORING_ROADMAP.md` for details.
+- Code simplification phase (SIMP-1 through SIMP-12) complete (~400 lines removed/refactored). See `simplify-tasks.md` for details.
 
 ## Commands
 
@@ -80,7 +82,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 **Utility Modules:**
 - `public/js/utils/question-type-registry.js` - **Centralized question type definitions** (validation, extraction, population, scoring)
-- `public/js/utils/unified-error-handler.js` - Error boundary system
+- `public/js/utils/unified-error-handler.js` - Error boundary system with `wrapAsyncOperation()` and `safeExecute()` helpers
 - `public/js/utils/translation-manager.js` - i18n with 9 languages
 - `public/js/utils/math-renderer.js` - LaTeX/MathJax rendering
 - `public/js/utils/image-path-resolver.js` - **Centralized image path handling for Kubernetes deployments**
@@ -91,11 +93,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `public/js/utils/mobile-question-carousel.js` - Quiz editing carousel
 - `public/js/utils/toast-notifications.js` - Toast notification system
 - `public/js/utils/modal-feedback.js` - Modal result feedback
+- `public/js/utils/modal-utils.js` - **SIMP-3**: Shared modal helper functions (`openModal`, `closeModal`, `bindOverlayClose`, etc.)
 - `public/js/utils/ui-state-manager.js` - Game state UI tracking
 - `public/js/utils/keyboard-shortcuts.js` - Keyboard command handling
 - `public/js/utils/connection-status.js` - Network status indicator (32px circular)
 - `public/js/utils/question-utils.js` - Question HTML generation and answer randomization
-- `public/js/utils/dom.js` - Safe DOM manipulation wrapper with `escapeHtml()` and `escapeHtmlPreservingLatex()` utilities
+- `public/js/utils/storage-utils.js` - **SIMP-6**: Safe localStorage wrappers (`getItem`, `setItem`, `getJSON`, `setJSON`, etc.)
+- `public/js/utils/dom.js` - **SIMP-5**: Safe DOM manipulation with `escapeHtml()`, `escapeHtmlPreservingLatex()`, and `bindElement()` helper
 
 **Backend Services (Node.js):**
 - `services/quiz-service.js` - Quiz CRUD operations (save, list, load)
@@ -111,11 +115,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `public/js/services/results-manager-service.js` - Results data management
 - `public/js/services/secure-storage-service.js` - AES-GCM encrypted storage
 
+**AI Generator Modules:**
+- `public/js/ai/generator.js` - AI question generation (Claude, Ollama, HuggingFace)
+- `public/js/ai/prompts.js` - **SIMP-1**: AI prompt templates (441 lines extracted)
+- `public/js/ai/generator-templates.js` - **SIMP-2**: HTML template functions for AI generator (220 lines extracted)
+
 **CSS Architecture:**
 - `public/css/main.css` - Entry point with @import statements
 - `public/css/main.bundle.css` - Optimized production bundle (PostCSS)
 - `public/css/variables.css` - Design system (colors, spacing, typography)
-- `public/css/base.css` - Global styles, reset, utilities
+- `public/css/base.css` - **SIMP-12**: Global styles, reset, utilities (`.hidden`, `.visible`, `.visible-flex`, `.correct-answer-highlight`, `.host-correct-answer`, `.scale-pulse`, `.error-bg`)
 - `public/css/layout.css` - Grid/flex layouts, responsive breakpoints
 - `public/css/responsive.css` - Mobile optimizations (768px breakpoint)
 - `public/css/game.css` - Game-specific styling
@@ -152,13 +161,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - Use unified SettingsManager for all theme/settings operations
 - Use ImagePathResolver for all image operations (centralized path handling for Kubernetes)
 - Use QuestionTypeRegistry for all question type operations (Week 1 refactoring)
-- Use `COLORS` constants from config.js instead of hardcoding color values
+- Use `COLORS` constants from config.js instead of hardcoding color values (**SIMP-7**: includes `OPTION_COLORS`, `DIFFICULTY_COLORS`)
+- Use `LANGUAGES` config from config.js for language metadata (**SIMP-8**)
 - Use `escapeHtml()` from dom.js for XSS prevention (use `escapeHtmlPreservingLatex()` for math content)
+- Use `bindElement()` from dom.js for safe event listener binding (**SIMP-5**)
+- Use `storage-utils.js` for all localStorage operations (**SIMP-6**: `getItem`, `setItem`, `getJSON`, `setJSON`)
+- Use `modal-utils.js` for all modal operations (**SIMP-3**: `openModal`, `closeModal`, `bindOverlayClose`)
+- Use CSS classes instead of inline styles (**SIMP-12**: `.hidden`, `.visible-flex`, `.correct-answer-highlight`, etc.)
+- Use `unifiedErrorHandler.wrapAsyncOperation()` for network operations (**SIMP-9**, **SIMP-10**)
+- Use `unifiedErrorHandler.safeExecute()` for operations that should continue on error
 - Implement auto-play carousels with intelligent pause/resume
 - Handle mobile viewport differences with responsive CSS
 - Clean up event listeners and timers to prevent memory leaks
 - Use AbortController pattern for document-level event listeners
-- Use try-catch blocks with unified error handler for critical operations
 
 **Image Path Handling Pattern:**
 ```javascript

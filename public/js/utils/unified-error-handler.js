@@ -58,14 +58,43 @@ export class UnifiedErrorHandler {
 
     /**
      * Safe execution wrapper - replaces error-boundary.js safeExecute
+     * Handles both sync and async operations
      */
     safeExecute(operation, errorContext = {}, fallback = null) {
         try {
             const result = operation();
-            return Promise.resolve(result);
+
+            // If result is a Promise, handle async errors
+            if (result && typeof result.then === 'function') {
+                return result.catch(error => {
+                    this.log(error, errorContext, 'error');
+
+                    if (fallback && typeof fallback === 'function') {
+                        try {
+                            const fallbackResult = fallback();
+                            // Handle async fallback
+                            if (fallbackResult && typeof fallbackResult.then === 'function') {
+                                return fallbackResult.catch(fallbackError => {
+                                    this.log(fallbackError, { ...errorContext, isFallback: true }, 'warn');
+                                    return null;
+                                });
+                            }
+                            return fallbackResult;
+                        } catch (fallbackError) {
+                            this.log(fallbackError, { ...errorContext, isFallback: true }, 'warn');
+                            return null;
+                        }
+                    }
+
+                    return null;
+                });
+            }
+
+            // Sync operation
+            return result;
         } catch (error) {
             this.log(error, errorContext, 'error');
-            
+
             if (fallback && typeof fallback === 'function') {
                 try {
                     return fallback();
@@ -74,7 +103,7 @@ export class UnifiedErrorHandler {
                     return null;
                 }
             }
-            
+
             return null;
         }
     }

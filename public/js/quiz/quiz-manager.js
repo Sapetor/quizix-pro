@@ -276,17 +276,17 @@ export class QuizManager {
         const quizList = this.cachedQuizListElement;
         
         // Load quizzes list with performance optimization
-        try {
+        await this.errorHandler.wrapAsyncOperation(async () => {
             const response = await fetch(APIHelper.getApiUrl('api/quizzes'));
             const data = await response.json();
-            
+
             if (quizList) {
                 // Use DocumentFragment for better performance with multiple DOM operations
                 const fragment = document.createDocumentFragment();
-                
+
                 // Check if data is directly an array or has a quizzes property
                 const quizzes = Array.isArray(data) ? data : data.quizzes;
-                
+
                 if (quizzes && quizzes.length > 0) {
                     quizzes.forEach(quiz => {
                         const quizItem = document.createElement('div');
@@ -307,21 +307,24 @@ export class QuizManager {
                     noQuizzesDiv.innerHTML = `<p>${translationManager.getTranslationSync('no_saved_quizzes')}</p>`;
                     fragment.appendChild(noQuizzesDiv);
                 }
-                
+
                 // Batch DOM update for better performance
                 quizList.innerHTML = '';
                 quizList.appendChild(fragment);
             }
-        } catch (error) {
-            this.errorHandler.log(error, { operation: 'loadQuizzes' });
-            if (quizList) {
-                quizList.innerHTML = `
-                    <div class="no-quizzes">
-                        <p>${translationManager.getTranslationSync('failed_load_quizzes')}</p>
-                    </div>
-                `;
+        }, {
+            errorType: this.errorHandler.errorTypes.NETWORK,
+            context: { operation: 'loadQuizzes' },
+            fallback: () => {
+                if (quizList) {
+                    quizList.innerHTML = `
+                        <div class="no-quizzes">
+                            <p>${translationManager.getTranslationSync('failed_load_quizzes')}</p>
+                        </div>
+                    `;
+                }
             }
-        }
+        });
         
         // Show modal with requestAnimationFrame for smooth transition
         requestAnimationFrame(() => {
@@ -368,7 +371,7 @@ export class QuizManager {
      * Force close modal as last resort
      */
     forceCloseModal() {
-        try {
+        this.errorHandler.safeExecute(() => {
             logger.warn('Force closing modal as backup mechanism');
 
             // Find and hide all possible modals
@@ -384,9 +387,7 @@ export class QuizManager {
             document.querySelectorAll('.modal-backdrop, .overlay').forEach(el => el.remove());
 
             logger.debug('Force modal close completed');
-        } catch (error) {
-            logger.error('Error in force close modal:', error);
-        }
+        }, { operation: 'forceCloseModal' });
     }
 
     /**
@@ -395,15 +396,15 @@ export class QuizManager {
     updatePreviewSafely() {
         // Use setTimeout to completely separate this from the loading flow
         setTimeout(() => {
-            try {
+            this.errorHandler.safeExecute(() => {
                 logger.debug('Attempting safe preview update');
-                
-                if (window.previewManager && 
-                    typeof window.previewManager.isPreviewMode === 'function' && 
+
+                if (window.previewManager &&
+                    typeof window.previewManager.isPreviewMode === 'function' &&
                     window.previewManager.isPreviewMode()) {
-                    
+
                     logger.debug('Preview mode is active, updating preview');
-                    
+
                     if (typeof window.previewManager.updatePreview === 'function') {
                         window.previewManager.updatePreview();
                         logger.debug('Preview updated successfully');
@@ -413,11 +414,10 @@ export class QuizManager {
                 } else {
                     logger.debug('Preview mode not active, skipping update');
                 }
-                
-            } catch (error) {
-                logger.warn('Preview update failed, but quiz loaded successfully:', error);
-                // Explicitly don't propagate this error - quiz is already loaded successfully
-            }
+            }, {
+                operation: 'updatePreviewSafely',
+                silent: true // Don't show errors - quiz already loaded successfully
+            });
         }, 200); // Give modal time to close before updating preview
     }
 
@@ -476,27 +476,25 @@ export class QuizManager {
     async loadQuiz(filename) {
         let modalClosed = false;
         let successShown = false;
-        
-        try {
+
+        await this.errorHandler.wrapAsyncOperation(async () => {
             logger.debug('Starting bulletproof quiz loading for:', filename);
-            
+
             // Basic fetch and structure check only
             const response = await fetch(APIHelper.getApiUrl(`api/quiz/${filename}`));
             const data = await response.json();
-            
+
             if (response.ok && data && data.questions && Array.isArray(data.questions)) {
                 logger.debug('Valid quiz structure found with', data.questions.length, 'questions');
-                
-                // Clean data (safe operation)
-                let cleanedData;
-                try {
-                    cleanedData = this.cleanQuizData(data) || data;
-                } catch (cleanError) {
-                    logger.warn('Data cleaning failed, using original data:', cleanError);
-                    cleanedData = data;
-                }
-                
-                // Load quiz (wrapped in comprehensive try-catch)
+
+                // Clean data with safe execution
+                const cleanedData = this.errorHandler.safeExecute(
+                    () => this.cleanQuizData(data) || data,
+                    { operation: 'cleanQuizData' },
+                    () => data
+                );
+
+                // Load quiz with safe execution
                 try {
                     await this.populateQuizBuilder(cleanedData);
                     logger.debug('Quiz populated successfully');
@@ -510,57 +508,61 @@ export class QuizManager {
                     logger.warn('Error in populateQuizBuilder, but continuing:', populateError);
                     // Continue anyway - don't let this break the flow
                 }
-                
+
                 // ALWAYS close modal and show success, regardless of any errors above
-                try {
-                    this.hideLoadQuizModal();
-                    modalClosed = true;
-                    logger.debug('Modal closed successfully');
-                } catch (modalError) {
-                    logger.error('Error closing modal:', modalError);
-                    // Force modal close as backup
-                    this.forceCloseModal();
-                    modalClosed = true;
-                }
-                
-                try {
-                    showSuccessAlert('quiz_loaded_successfully');
-                    successShown = true;
-                    logger.debug('Success alert shown');
-                } catch (alertError) {
-                    logger.warn('Error showing success alert:', alertError);
-                }
-                
+                modalClosed = this.errorHandler.safeExecute(
+                    () => {
+                        this.hideLoadQuizModal();
+                        logger.debug('Modal closed successfully');
+                        return true;
+                    },
+                    { operation: 'hideLoadQuizModal' },
+                    () => {
+                        this.forceCloseModal();
+                        return true;
+                    }
+                );
+
+                successShown = this.errorHandler.safeExecute(
+                    () => {
+                        showSuccessAlert('quiz_loaded_successfully');
+                        logger.debug('Success alert shown');
+                        return true;
+                    },
+                    { operation: 'showSuccessAlert' },
+                    () => false
+                );
+
                 // Update preview AFTER everything else (completely separate)
                 this.updatePreviewSafely();
-                
+
             } else {
                 // Only show error for truly invalid data structure
                 logger.error('Invalid quiz data structure for:', filename);
                 translationManager.showAlert('error', 'Invalid quiz file format. Please check the file.');
             }
-            
-        } catch (error) {
-            logger.error('Critical quiz loading error:', error);
-            
-            // Emergency cleanup - ensure modal closes and user gets feedback
-            if (!modalClosed) {
-                try {
-                    this.hideLoadQuizModal();
-                } catch (e) {
-                    this.forceCloseModal();
+        }, {
+            errorType: this.errorHandler.errorTypes.NETWORK,
+            context: { operation: 'loadQuiz', filename },
+            fallback: () => {
+                // Emergency cleanup - ensure modal closes and user gets feedback
+                if (!modalClosed) {
+                    this.errorHandler.safeExecute(
+                        () => this.hideLoadQuizModal(),
+                        { operation: 'emergencyModalClose' },
+                        () => this.forceCloseModal()
+                    );
+                }
+
+                if (!successShown) {
+                    this.errorHandler.safeExecute(
+                        () => showErrorAlert('failed_load_quiz'),
+                        { operation: 'showErrorAlert' },
+                        () => translationManager.showAlert('error', 'Failed to load quiz. Please try again.')
+                    );
                 }
             }
-            
-            if (!successShown) {
-                try {
-                    showErrorAlert('failed_load_quiz');
-                } catch (e) {
-                    // Last resort alert
-                    translationManager.showAlert('error', 'Failed to load quiz. Please try again.');
-                }
-            }
-        }
+        });
     }
 
     /**
@@ -619,103 +621,84 @@ export class QuizManager {
      */
     async populateQuizBuilder(quizData) {
         logger.debug('Starting bulletproof populateQuizBuilder');
-        
+
         try {
             // ========== CRITICAL OPERATIONS (must succeed) ==========
-            
+
             // Set quiz title (essential)
-            try {
-                const titleInput = document.getElementById('quiz-title');
-                if (titleInput) {
-                    titleInput.value = quizData.title || '';
-                }
-            } catch (error) {
-                logger.error('Critical: Failed to set quiz title:', error);
-                throw error; // This is critical enough to fail the whole operation
+            const titleInput = document.getElementById('quiz-title');
+            if (!titleInput) {
+                throw new Error('Quiz title input not found');
             }
-            
+            titleInput.value = quizData.title || '';
+
             // Clear existing questions (essential)
-            try {
-                const questionsContainer = document.getElementById('questions-container');
-                if (questionsContainer) {
-                    questionsContainer.innerHTML = '';
-                } else {
-                    logger.error('Critical: Questions container not found');
-                    throw new Error('Questions container not found');
-                }
-            } catch (error) {
-                logger.error('Critical: Failed to clear questions container:', error);
-                throw error;
+            const questionsContainer = document.getElementById('questions-container');
+            if (!questionsContainer) {
+                throw new Error('Questions container not found');
             }
-            
+            questionsContainer.innerHTML = '';
+
             // Add loaded questions (essential)
-            try {
-                if (quizData.questions && Array.isArray(quizData.questions)) {
-                    quizData.questions.forEach((questionData, index) => {
-                        try {
-                            this.addQuestionFromData(questionData);
-                        } catch (questionError) {
-                            logger.warn(`Failed to add question ${index + 1}, skipping:`, questionError);
-                            // Don't fail the whole operation for one bad question
-                        }
-                    });
-                }
-                logger.debug('Questions added successfully');
-            } catch (error) {
-                logger.error('Critical: Failed to add questions:', error);
-                throw error;
+            if (quizData.questions && Array.isArray(quizData.questions)) {
+                quizData.questions.forEach((questionData, index) => {
+                    this.errorHandler.safeExecute(
+                        () => this.addQuestionFromData(questionData),
+                        { operation: 'addQuestionFromData', questionIndex: index }
+                    );
+                });
             }
-            
+            logger.debug('Questions added successfully');
+
             // ========== NICE-TO-HAVE OPERATIONS (don't let these break the flow) ==========
-            
-            // Translation loading (nice to have)
-            try {
-                const currentLang = translationManager.getCurrentLanguage();
-                await translationManager.ensureLanguageLoaded(currentLang);
-                logger.debug('Translations loaded successfully');
-            } catch (error) {
-                logger.warn('Non-critical: Translation loading failed:', error);
-            }
-            
-            // Container translation (nice to have)
-            try {
-                const questionsContainer = document.getElementById('questions-container');
-                if (questionsContainer) {
-                    translationManager.translateContainer(questionsContainer);
-                }
-            } catch (error) {
-                logger.warn('Non-critical: Container translation failed:', error);
-            }
-            
-            // Page translation (nice to have)
-            try {
-                translationManager.translatePage();
-            } catch (error) {
-                logger.warn('Non-critical: Page translation failed:', error);
-            }
-            
-            // UI updates (nice to have)
-            try {
-                this.updateQuestionsUI();
-            } catch (error) {
-                logger.warn('Non-critical: UI update failed:', error);
-            }
-            
-            // MathJax rendering (nice to have)
-            try {
-                this.renderMathForLoadedQuiz();
-            } catch (error) {
-                logger.warn('Non-critical: MathJax rendering failed:', error);
-            }
-            
+
+            // Translation loading
+            await this.errorHandler.safeExecute(
+                async () => {
+                    const currentLang = translationManager.getCurrentLanguage();
+                    await translationManager.ensureLanguageLoaded(currentLang);
+                    logger.debug('Translations loaded successfully');
+                },
+                { operation: 'ensureLanguageLoaded' }
+            );
+
+            // Container translation
+            this.errorHandler.safeExecute(
+                () => {
+                    const container = document.getElementById('questions-container');
+                    if (container) {
+                        translationManager.translateContainer(container);
+                    }
+                },
+                { operation: 'translateContainer' }
+            );
+
+            // Page translation
+            this.errorHandler.safeExecute(
+                () => translationManager.translatePage(),
+                { operation: 'translatePage' }
+            );
+
+            // UI updates
+            this.errorHandler.safeExecute(
+                () => this.updateQuestionsUI(),
+                { operation: 'updateQuestionsUI' }
+            );
+
+            // MathJax rendering
+            this.errorHandler.safeExecute(
+                () => this.renderMathForLoadedQuiz(),
+                { operation: 'renderMathForLoadedQuiz' }
+            );
+
             logger.debug('populateQuizBuilder completed successfully');
-            
+
         } catch (error) {
             logger.error('Critical error in populateQuizBuilder:', error);
             // Only throw if a truly critical operation failed
             throw error;
         }
-        
+
         // NOTE: Preview update is now handled separately in updatePreviewSafely()
         // This ensures it can't break the quiz loading flow
     }
@@ -1141,38 +1124,37 @@ export class QuizManager {
     async handleFileImport(event) {
         const file = event.target.files[0];
         if (!file) return;
-        
+
         if (!file.name.endsWith('.json')) {
             showErrorAlert('invalid_file_format');
             return;
         }
-        
-        try {
+
+        await this.errorHandler.wrapAsyncOperation(async () => {
             const text = await file.text();
             const quizData = JSON.parse(text);
-            
+
             // Validate quiz data structure
             if (!quizData.title || !quizData.questions || !Array.isArray(quizData.questions)) {
                 showErrorAlert('invalid_quiz_format');
                 return;
             }
-            
+
             // Validate questions
             const validationErrors = this.validateQuestions(quizData.questions);
             if (validationErrors.length > 0) {
                 translationManager.showAlert('error', translationManager.getTranslationSync('invalid_quiz_questions') + '\\n' + validationErrors.join('\\n'));
                 return;
             }
-            
+
             // Load the quiz
             await this.populateQuizBuilder(quizData);
             showSuccessAlert('quiz_imported_successfully');
-            
-        } catch (error) {
-            logger.error('Error importing quiz:', error);
-            showErrorAlert('failed_import_quiz');
-        }
-        
+        }, {
+            context: { operation: 'importQuiz', filename: file.name },
+            fallback: () => showErrorAlert('failed_import_quiz')
+        });
+
         // Clear file input
         event.target.value = '';
     }
@@ -1186,33 +1168,33 @@ export class QuizManager {
             showErrorAlert('please_enter_quiz_title');
             return;
         }
-        
+
         const questions = this.collectQuestions();
         if (questions.length === 0) {
             showErrorAlert('please_add_one_question');
             return;
         }
-        
+
         const quizData = {
             title: title,
             questions: questions,
             createdAt: new Date().toISOString()
         };
-        
-        try {
+
+        await this.errorHandler.wrapAsyncOperation(async () => {
             const dataStr = JSON.stringify(quizData, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            
+
             const link = document.createElement('a');
             link.href = URL.createObjectURL(dataBlob);
             link.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
             link.click();
-            
+
             showSuccessAlert('quiz_exported_successfully');
-        } catch (error) {
-            logger.error('Error exporting quiz:', error);
-            showErrorAlert('failed_export_quiz');
-        }
+        }, {
+            context: { operation: 'exportQuiz', title },
+            fallback: () => showErrorAlert('failed_export_quiz')
+        });
     }
 
     /**
@@ -1484,8 +1466,8 @@ export class QuizManager {
      */
     cleanup() {
         logger.debug('QuizManager cleanup started');
-        
-        try {
+
+        this.errorHandler.safeExecute(() => {
             // Clear auto-save timeout
             if (this.autoSaveTimeout) {
                 clearTimeout(this.autoSaveTimeout);
@@ -1495,12 +1477,13 @@ export class QuizManager {
             // Clear all document-level listeners
             let docListenerCount = 0;
             this.documentListeners.forEach(({ event, handler }) => {
-                try {
-                    document.removeEventListener(event, handler);
-                    docListenerCount++;
-                } catch (error) {
-                    logger.warn('Error removing document listener:', error);
-                }
+                this.errorHandler.safeExecute(
+                    () => {
+                        document.removeEventListener(event, handler);
+                        docListenerCount++;
+                    },
+                    { operation: 'removeDocumentListener', event }
+                );
             });
             this.documentListeners = [];
             logger.debug(`QuizManager: Cleaned up ${docListenerCount} document listeners`);
@@ -1509,20 +1492,19 @@ export class QuizManager {
             let elementListenerCount = 0;
             this.eventListeners.forEach((listeners, element) => {
                 listeners.forEach(({ event, handler }) => {
-                    try {
-                        element.removeEventListener(event, handler);
-                        elementListenerCount++;
-                    } catch (error) {
-                        logger.warn('Error removing element listener:', error);
-                    }
+                    this.errorHandler.safeExecute(
+                        () => {
+                            element.removeEventListener(event, handler);
+                            elementListenerCount++;
+                        },
+                        { operation: 'removeElementListener', event }
+                    );
                 });
             });
             this.eventListeners.clear();
             logger.debug(`QuizManager: Cleaned up ${elementListenerCount} element listeners`);
 
             logger.debug('QuizManager cleanup completed successfully');
-        } catch (error) {
-            logger.error('Error during QuizManager cleanup:', error);
-        }
+        }, { operation: 'cleanup' });
     }
 }

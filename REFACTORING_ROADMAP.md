@@ -2,7 +2,55 @@
 
 **Purpose**: Future refactoring opportunities prioritized by impact vs effort.
 
-**Status**: Weeks 1-3 and 5 complete. Refactoring goals achieved. Only Week 6 remains as optional future work.
+**Status**: Weeks 1-3 and 5 complete. Code simplification phase (SIMP-1 through SIMP-12) also complete. Refactoring goals achieved. Only Week 6 remains as optional future work.
+
+---
+
+## Code Simplification Phase ✅ **COMPLETED**
+
+**Priority**: High | **Effort**: 8-10 hours | **Impact**: High | **Status**: ✅ Complete (Jan 2026)
+
+### Overview
+Following the major refactoring work, a focused code simplification effort targeted redundant patterns, inline styles, error handling duplication, and scattered constants.
+
+### Completed Tasks
+
+**1. Module Extraction** ✅
+- **SIMP-1**: Extracted AI prompt templates to `ai/prompts.js` (441 lines)
+- **SIMP-2**: Extracted AI HTML templates to `ai/generator-templates.js` (220 lines)
+- **SIMP-3**: Created `modal-utils.js` with shared modal helpers (240 lines)
+- **SIMP-6**: Created `storage-utils.js` for safe localStorage wrappers (163 lines)
+
+**2. Constant Consolidation** ✅
+- **SIMP-7**: Moved `OPTION_COLORS` and `DIFFICULTY_COLORS` to `config.js`
+- **SIMP-8**: Created centralized `LANGUAGES` config with metadata (codes, names, flags, welcome text)
+
+**3. Pattern Unification** ✅
+- **SIMP-4**: Removed 25 inline style assignments from `modal-feedback.js`, replaced with CSS classes
+- **SIMP-5**: Added `bindElement()` to `dom.js`, unified event listener binding pattern
+- **SIMP-12**: Reduced `game-manager.js` from 35 to 5 `.style` manipulations (86% reduction)
+
+**4. Error Handling Simplification** ✅
+- **SIMP-9**: Simplified `quiz-manager.js` from 27 to 2 try-catch blocks using unified error handler
+- **SIMP-10**: Simplified `generator.js` from 18 to 9 catch blocks (50% reduction)
+
+**5. Dead Code Cleanup** ✅
+- **SIMP-11**: Removed 21 lines of orphaned re-exports from `globals.js`
+
+### New Utilities Created
+- `public/js/ai/prompts.js` - AI prompt template library
+- `public/js/ai/generator-templates.js` - HTML template functions for AI generator
+- `public/js/utils/modal-utils.js` - Shared modal helper functions
+- `public/js/utils/storage-utils.js` - Safe localStorage wrapper API
+- CSS utility classes in `base.css`: `.hidden`, `.visible`, `.visible-flex`, `.correct-answer-highlight`, `.host-correct-answer`, `.scale-pulse`, `.error-bg`
+
+### Actual Results
+- **~400 lines** removed through extraction and consolidation
+- **86% reduction** in inline style manipulations
+- **50-90% reduction** in duplicate error handling
+- Centralized constants in `config.js` (single source of truth)
+- Consistent error handling patterns across codebase
+- Reduced CSS specificity conflicts
 
 ---
 
@@ -115,14 +163,15 @@
 ## Summary
 
 ### Completed Refactoring
-| Week | Task | Lines Saved | Status |
-|------|------|-------------|--------|
-| 1-2 | Backend Services & QuestionTypeRegistry | ~800 | ✅ Done |
-| 3 | Socket.IO Handler Extraction | ~616 | ✅ Done |
-| 4 | AI Integration Service | N/A | ⏭️ Skipped |
-| 5 | Frontend State Management | ~50 | ✅ Done |
+| Phase | Task | Lines Saved | Status |
+|-------|------|-------------|--------|
+| Week 1-2 | Backend Services & QuestionTypeRegistry | ~800 | ✅ Done |
+| Week 3 | Socket.IO Handler Extraction | ~616 | ✅ Done |
+| Week 4 | AI Integration Service | N/A | ⏭️ Skipped |
+| Week 5 | Frontend State Management | ~50 | ✅ Done |
+| **Simplification** | **Code Simplification (SIMP-1 to SIMP-12)** | **~400** | **✅ Done** |
 
-**Total**: ~1,466 lines removed/refactored, cleaner architecture, single sources of truth.
+**Total**: ~1,866 lines removed/refactored, cleaner architecture, single sources of truth, unified patterns.
 
 ### Remaining (Optional)
 - **Week 6**: Question Type Plugin - Only pursue if adding many new question types
@@ -131,15 +180,19 @@
 
 ## Final Recommendation
 
-**Stop here.** The codebase is now well-structured:
+**Stop here.** The codebase is now well-structured and simplified:
 - 8 backend services with clear responsibilities
 - Single source of truth for game state, language, and sound
 - QuestionTypeRegistry centralizes question logic
 - server.js reduced by 33%
+- Unified error handling patterns across frontend
+- Centralized constants and utilities (modal-utils, storage-utils)
+- CSS utility classes replacing inline styles (86% reduction)
+- ~1,866 lines removed through refactoring and simplification
 
 Further refactoring has diminishing returns. Better to ship features and revisit only if pain points emerge.
 
 ---
 
-**Last Updated**: 2025-12-28
+**Last Updated**: 2026-01-12
 **Next Review**: Only when pain points emerge (not proactively)

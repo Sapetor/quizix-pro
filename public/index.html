@@ -1834,6 +1834,26 @@
                 navigator.serviceWorker.register(swPath, { scope: basePath })
                     .then((registration) => {
                         console.log('[App] Service Worker registered with scope:', registration.scope);
+
+                        // Check for updates every hour
+                        setInterval(() => {
+                            registration.update();
+                        }, 60 * 60 * 1000);
+
+                        // Check for updates immediately
+                        registration.update();
+
+                        // Listen for new service worker waiting to activate
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New service worker is ready, refresh to use it
+                                    console.log('[App] New version available! Reloading...');
+                                    window.location.reload();
+                                }
+                            });
+                        });
                     })
                     .catch((error) => {
                         console.warn('[App] Service Worker registration failed:', error);

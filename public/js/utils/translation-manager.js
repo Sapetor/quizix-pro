@@ -4,7 +4,7 @@
  * Replaces the monolithic translations.js with dynamic loading
  */
 
-import { logger } from '../core/config.js';
+import { logger, LANGUAGES } from '../core/config.js';
 import { toastNotifications } from './toast-notifications.js';
 import { getItem, setItem } from './storage-utils.js';
 
@@ -14,10 +14,10 @@ class TranslationManager {
         this.loadedTranslations = new Map();
         this.defaultLanguage = 'es';
         this.loadingPromises = new Map();
-        
-        // Supported languages
-        this.supportedLanguages = ['es', 'en', 'pl', 'fr', 'de', 'it', 'pt', 'ja', 'zh'];
-        
+
+        // Supported languages (using centralized config from core/config.js)
+        this.supportedLanguages = LANGUAGES.SUPPORTED_CODES;
+
         logger.debug('Translation manager initialized');
     }
 

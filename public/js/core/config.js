@@ -139,6 +139,86 @@ export const COLORS = {
     }
 };
 
+// Language configuration - single source of truth for all language-related metadata
+export const LANGUAGES = {
+    // Supported language codes (default order: Spanish first, then alphabetical by English name)
+    SUPPORTED_CODES: ['es', 'en', 'pl', 'fr', 'de', 'it', 'pt', 'ja', 'zh'],
+
+    // Complete language metadata
+    METADATA: {
+        'en': {
+            code: 'en',
+            englishName: 'English',
+            nativeName: 'English',
+            flag: '🇺🇸',
+            welcomeText: 'Welcome to'
+        },
+        'es': {
+            code: 'es',
+            englishName: 'Spanish',
+            nativeName: 'Español',
+            flag: '🇪🇸',
+            welcomeText: 'Bienvenido a'
+        },
+        'fr': {
+            code: 'fr',
+            englishName: 'French',
+            nativeName: 'Français',
+            flag: '🇫🇷',
+            welcomeText: 'Bienvenue à'
+        },
+        'de': {
+            code: 'de',
+            englishName: 'German',
+            nativeName: 'Deutsch',
+            flag: '🇩🇪',
+            welcomeText: 'Willkommen bei'
+        },
+        'it': {
+            code: 'it',
+            englishName: 'Italian',
+            nativeName: 'Italiano',
+            flag: '🇮🇹',
+            welcomeText: 'Benvenuto a'
+        },
+        'pt': {
+            code: 'pt',
+            englishName: 'Portuguese',
+            nativeName: 'Português',
+            flag: '🇵🇹',
+            welcomeText: 'Bem-vindo ao'
+        },
+        'pl': {
+            code: 'pl',
+            englishName: 'Polish',
+            nativeName: 'Polski',
+            flag: '🇵🇱',
+            welcomeText: 'Witamy w'
+        },
+        'ja': {
+            code: 'ja',
+            englishName: 'Japanese',
+            nativeName: 'Japanese',
+            flag: '🇯🇵',
+            welcomeText: 'ようこそ'
+        },
+        'zh': {
+            code: 'zh',
+            englishName: 'Chinese',
+            nativeName: 'Chinese',
+            flag: '🇨🇳',
+            welcomeText: '欢迎来到'
+        }
+    },
+
+    // Helper functions for language access
+    getEnglishName: (code) => LANGUAGES.METADATA[code]?.englishName || 'Unknown',
+    getNativeName: (code) => LANGUAGES.METADATA[code]?.nativeName || 'Unknown',
+    getFlag: (code) => LANGUAGES.METADATA[code]?.flag || '🌐',
+    getWelcomeText: (code) => LANGUAGES.METADATA[code]?.welcomeText || 'Welcome to',
+    isSupported: (code) => LANGUAGES.SUPPORTED_CODES.includes(code)
+};
+
 // Simplified audio settings
 export const AUDIO = {
     QUESTION_START_FREQ: 800,

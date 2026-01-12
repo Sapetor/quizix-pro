@@ -95,10 +95,17 @@ Tasks for the code-simplifier agent. Work through one at a time, commit, and `/c
   - Verified with Playwright MCP: language dropdown, language selection, and scroll-to-top all work correctly
   - Kept initialization imports which are actually used in initializeGlobals()
 
-- [ ] **SIMP-12**: Review `game-manager.js` inline styles
-  - 35 `.style.` manipulations found
-  - Some may be redundant with CSS class toggles
-  - Replace with classList.add/remove where possible
+- [x] **SIMP-12**: Review `game-manager.js` inline styles
+  - Reduced from 35 to 5 `.style.` manipulations (86% reduction)
+  - Replaced 17 `display` toggles with `.hidden`/`.visible`/`.visible-flex` classes
+  - Replaced 6 correct answer style assignments with `.correct-answer-highlight`/`.host-correct-answer` classes
+  - Replaced 2 transform animations with `.scale-pulse` class
+  - Replaced 1 error background with `.error-bg` class
+  - Added 6 new CSS utility classes to `base.css`
+  - Built CSS bundle and verified functionality with Playwright MCP
+  - Kept 5 remaining `.style.` for legitimate dynamic values:
+    - `pointerEvents` cleanup (lines 573-574)
+    - `statFill.style.width` for progress bar animations (lines 1168, 1190, 1193)
 
 - [ ] **SIMP-13**: Clean up `sound-manager.js` catch blocks
   - 13 catch blocks found

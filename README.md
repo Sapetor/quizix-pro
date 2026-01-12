@@ -169,6 +169,25 @@ Update `public/js/core/config.js` to adjust:
 - File uploads use cryptographically secure naming
 - Socket.IO connections are rate-limited to prevent abuse
 
+## 🏗️ Architecture & Code Quality
+
+This project follows modern best practices:
+- **Modular ES6**: Clean separation with ES6 modules and imports
+- **Service-Oriented**: Backend split into 8 specialized services
+- **Centralized Utilities**: Shared helpers for modals, storage, error handling
+- **CSS Architecture**: Utility-first classes with PostCSS bundling
+- **Type Safety**: Centralized constants and configuration
+- **Error Boundaries**: Unified error handling across codebase
+- **Memory Management**: Tracked event listeners and timer cleanup
+
+**Code Stats**:
+- ~1,866 lines removed through refactoring
+- 86% reduction in inline styles
+- Centralized constants in `config.js`
+- Unified error handling patterns
+
+See `REFACTORING_ROADMAP.md` and `simplify-tasks.md` for technical details.
+
 ## 🤝 Contributing
 
 Feel free to fork this project and add your own features:
@@ -177,6 +196,11 @@ Feel free to fork this project and add your own features:
 - Additional AI providers for question generation
 - New question types (see `docs/ADD-QUESTION-TYPE.md`)
 - Custom themes and branding
+
+**Developer Documentation**:
+- `CLAUDE.md` - Complete development guide
+- `REFACTORING_ROADMAP.md` - Refactoring history and decisions
+- `simplify-tasks.md` - Code simplification details
 
 ## 📝 License
 
