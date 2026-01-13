@@ -35,31 +35,31 @@ export class GameManager {
 
         // Initialize DOM Manager with common game elements
         dom.initializeGameElements();
-        
+
         // Keep these specific to GameManager for now
         this.lastDisplayQuestionTime = 0; // Prevent rapid successive displayQuestion calls
 
         // Game state properties (gameEnded/resultShown moved to stateManager - single source of truth)
         this.currentQuizTitle = null;
         this.gameStartTime = null;
-        
-        
+
+
         // Memory management tracking
         this.eventListeners = new Map(); // Track all event listeners for cleanup
         this.timers = new Set(); // Track all timers for cleanup
         this.playerAnswers = new Map(); // Track player answers for cleanup
-        
+
         // Bind cleanup methods
         this.cleanup = this.cleanup.bind(this);
         this.addEventListenerTracked = this.addEventListenerTracked.bind(this);
         this.createTimerTracked = this.createTimerTracked.bind(this);
-        
+
         // Auto-cleanup on page unload
         if (typeof window !== 'undefined') {
             window.addEventListener('beforeunload', this.cleanup);
             window.addEventListener('unload', this.cleanup);
         }
-        
+
 
     }
 
@@ -86,16 +86,16 @@ export class GameManager {
                 return;
             }
             this.lastDisplayQuestionTime = now;
-            
+
             logger.debug('Displaying question:', data);
-            
+
             // Initialize display state
             this.initializeQuestionDisplay(data);
-            
+
             // Get DOM elements and containers
             const elements = this.getQuestionElements();
             const optionsContainer = this.setupQuestionContainers(data);
-            
+
             // Update content based on host/player mode
             const gameState = this.stateManager.getGameState();
             if (gameState.isHost) {
@@ -103,7 +103,7 @@ export class GameManager {
             } else {
                 this.questionRenderer.updatePlayerDisplay(data, elements, optionsContainer);
             }
-            
+
             // Finalize display
             this.finalizeQuestionDisplay(data);
         }, {
@@ -158,14 +158,14 @@ export class GameManager {
      */
     setupQuestionContainers(data) {
         let optionsContainer = null;
-        
+
         const gameState = this.stateManager.getGameState();
         if (!gameState.isHost) {
             optionsContainer = this.setupPlayerContainers(data);
         } else {
             logger.debug('Host mode');
         }
-        
+
         return optionsContainer;
     }
 
@@ -203,15 +203,15 @@ export class GameManager {
      */
     finalizeQuestionDisplay(data) {
         logger.debug('Finalizing question display');
-        
+
         // Play question start sound
         if (this.soundManager?.isSoundsEnabled()) {
             this.soundManager.playQuestionStartSound();
         }
-        
+
         // Store current question data
         this.currentQuestion = data;
-        
+
         // Trigger mobile layout adaptation for content-aware display
         setTimeout(() => {
             document.dispatchEvent(new CustomEvent('question-content-updated', {
@@ -253,7 +253,7 @@ export class GameManager {
      */
     highlightSelectedAnswer(answer) {
         logger.debug('Highlighting selected answer:', answer);
-        
+
         // Handle multiple choice options
         const options = document.querySelectorAll('.player-option');
         options.forEach(option => {
@@ -261,19 +261,19 @@ export class GameManager {
             option.classList.remove('selected');
             option.classList.add('disabled');
         });
-        
+
         if (typeof answer === 'number' && options[answer]) {
             options[answer].classList.add('selected');
             logger.debug('Added selected class to option:', answer);
         }
-        
+
         // Handle true/false options
         const tfOptions = document.querySelectorAll('.true-btn, .false-btn');
         tfOptions.forEach(option => {
             option.disabled = true;
             option.classList.remove('selected');
         });
-        
+
         // Find and highlight the selected true/false option
         if (typeof answer === 'boolean') {
             // Convert boolean back to index for UI highlighting: true = 0, false = 1
@@ -290,7 +290,7 @@ export class GameManager {
                 logger.debug('Added selected class to T/F option:', answer);
             }
         }
-        
+
         // Handle multiple correct checkboxes
         const checkboxes = document.querySelectorAll('.multiple-correct-option');
         checkboxes.forEach(checkbox => {
@@ -320,14 +320,14 @@ export class GameManager {
     showPlayerResult(data) {
         return errorBoundary.safeExecute(() => {
             const gameState = this.stateManager.getGameState();
-            
+
             // Prevent multiple displays of same result
             if (gameState.resultShown) {
                 logger.debug('Result already shown, skipping');
                 return;
             }
             this.stateManager.markResultShown();
-            
+
             const isCorrect = data.isCorrect !== undefined ? data.isCorrect : data.correct;
             const earnedPoints = data.points || 0;
             const explanation = data.explanation || null;
@@ -388,7 +388,7 @@ export class GameManager {
                     this.soundManager.playIncorrectAnswerSound();
                 }
             }
-            
+
         }, {
             type: 'game_logic',
             operation: 'player_result',
@@ -520,13 +520,17 @@ export class GameManager {
      */
     resetButtonStatesForNewQuestion() {
         logger.debug('Resetting button states for new question');
-        
+
         // Reset selected answer
         this.selectedAnswer = null;
-        
+
+        // Clear player answers from previous question to prevent memory buildup
+        // This is especially important for long games with many questions
+        this.playerAnswers.clear();
+
         // Use centralized client selection clearing
         this.displayManager.clearClientSelections();
-        
+
         logger.debug('Button states reset completed via centralized method');
     }
 
@@ -536,7 +540,7 @@ export class GameManager {
     clearPreviousQuestionContent() {
         const gameState = this.stateManager.getGameState();
         if (!gameState.isHost) return;
-        
+
         // Use centralized host content clearing from DisplayManager
         this.displayManager.clearHostQuestionContent(true); // true = show loading message
     }
@@ -556,7 +560,7 @@ export class GameManager {
             '.checkbox-option',         // Multiple correct options
             '.numeric-input-container'  // Numeric input area
         ].join(', '));
-        
+
         gameElements.forEach(element => {
             if (element) {
                 // SIMPLIFIED: Remove all MathJax containers that cause conflicts
@@ -565,17 +569,17 @@ export class GameManager {
                     logger.debug('🧹 Removing existing MathJax containers');
                     existingMath.forEach(mjx => mjx.remove());
                 }
-                
+
                 // Remove MathJax processing classes that could cause conflicts
                 element.classList.remove('processing-math', 'math-ready', 'MathJax_Processed');
-                
+
                 // Remove any pointer-events none that might have been added
                 if (element.style.pointerEvents === 'none') {
                     element.style.pointerEvents = '';
                 }
             }
         });
-        
+
         // Clear any lingering question images from previous questions
         this.clearAllQuestionImages();
 
@@ -766,18 +770,18 @@ export class GameManager {
     }
 
     /**
-     * Show numeric correct answer in top frame 
+     * Show numeric correct answer in top frame
      */
     showNumericCorrectAnswer(correctAnswer, tolerance) {
         const gameState = this.stateManager.getGameState();
         if (!gameState.isHost) return;
-        
+
         // Remove any existing correct answer display
         const existingAnswer = document.querySelector('.numeric-correct-answer-display');
         if (existingAnswer) {
             existingAnswer.remove();
         }
-        
+
         // Show the answer in the question display area (top frame)
         const questionDisplay = document.getElementById('host-question-display');
         if (questionDisplay) {
@@ -785,7 +789,7 @@ export class GameManager {
             if (tolerance) {
                 answerText += ` (±${tolerance})`;
             }
-            
+
             // Create the correct answer display
             const correctAnswerDiv = document.createElement('div');
             correctAnswerDiv.className = 'numeric-correct-answer-display';
@@ -795,11 +799,11 @@ export class GameManager {
                     <div class="correct-text">${answerText}</div>
                 </div>
             `;
-            
+
             // Insert after the question content
             questionDisplay.appendChild(correctAnswerDiv);
         }
-        
+
         // Hide the bottom options container for numeric questions
         const optionsContainer = document.getElementById('answer-options');
         if (optionsContainer) {
@@ -839,7 +843,7 @@ export class GameManager {
     updateAnswerStatistics(data) {
         const gameState = this.stateManager.getGameState();
         if (!gameState.isHost || !data) return;
-        
+
         logger.debug('Answer statistics data received:', data);
         logger.debug('Data structure:', {
             answeredPlayers: data.answeredPlayers,
@@ -847,9 +851,9 @@ export class GameManager {
             answerCounts: data.answerCounts,
             questionType: data.questionType || data.type
         });
-        
+
         // Get existing statistics container
-        let statisticsContainer = document.getElementById('answer-statistics');
+        const statisticsContainer = document.getElementById('answer-statistics');
         if (!statisticsContainer) {
             logger.warn('Answer statistics container not found in HTML');
             return;
@@ -862,11 +866,11 @@ export class GameManager {
             // Update response counts
             dom.setContent('responses-count', data.answeredPlayers || 0);
             dom.setContent('total-players', data.totalPlayers || 0);
-            
+
             // Update individual answer statistics
             const questionType = data.questionType || data.type;
             logger.debug('Question type:', questionType, 'Answer counts:', data.answerCounts);
-            
+
             if (questionType === 'multiple-choice' || questionType === 'multiple-correct') {
                 const optionCount = data.optionCount || Object.keys(data.answerCounts).length || 4;
                 this.showMultipleChoiceStatistics(optionCount);
@@ -946,7 +950,7 @@ export class GameManager {
         // Show up to max common answers
         const maxDisplay = UI.MAX_NUMERIC_DISPLAY;
         const totalAnswers = Object.values(answerCounts).reduce((sum, count) => sum + count, 0);
-        
+
         // Sort by count (descending) then by value (ascending)
         const sortedByCount = sortedAnswers.sort((a, b) => {
             const countDiff = answerCounts[b] - answerCounts[a];
@@ -954,16 +958,16 @@ export class GameManager {
         });
 
         const displayAnswers = sortedByCount.slice(0, maxDisplay);
-        
+
         numericStatsDiv.innerHTML = `
             <div class="numeric-stats-header">
                 <h4>${getTranslation('player_answers')}</h4>
             </div>
             <div class="numeric-answers-list">
                 ${displayAnswers.map(answer => {
-                    const count = answerCounts[answer];
-                    const percentage = totalAnswers > 0 ? Math.round((count / totalAnswers) * 100) : 0;
-                    return `
+        const count = answerCounts[answer];
+        const percentage = totalAnswers > 0 ? Math.round((count / totalAnswers) * 100) : 0;
+        return `
                         <div class="numeric-answer-item">
                             <span class="answer-value">${answer}</span>
                             <div class="answer-bar-container">
@@ -972,7 +976,7 @@ export class GameManager {
                             </div>
                         </div>
                     `;
-                }).join('')}
+    }).join('')}
                 ${sortedAnswers.length > maxDisplay ? `
                     <div class="more-answers">
                         +${sortedAnswers.length - maxDisplay} ${getTranslation('more_answers')}
@@ -1174,16 +1178,16 @@ export class GameManager {
     updateStatItem(index, count, totalAnswered) {
         const statCount = document.getElementById(`stat-count-${index}`);
         const statFill = document.getElementById(`stat-fill-${index}`);
-        
+
         logger.debug(`updateStatItem: index=${index}, count=${count}, totalAnswered=${totalAnswered}`);
-        
+
         if (statCount) {
             statCount.textContent = count;
             logger.debug(`Updated stat count for index ${index}: ${count}`);
         } else {
             logger.warn(`stat-count-${index} element not found`);
         }
-        
+
         if (statFill) {
             if (totalAnswered > 0) {
                 const percentage = (count / totalAnswered) * ANIMATION.PERCENTAGE_CALCULATION_BASE;
@@ -1225,28 +1229,28 @@ export class GameManager {
     showFinalResults(leaderboard) {
         logger.debug('🎉 showFinalResults called with leaderboard:', leaderboard);
         logger.debug('🎉 isHost:', this.stateManager.getGameState().isHost, 'fanfarePlayed:', this.fanfarePlayed);
-        
+
         // Prevent multiple fanfare plays
         if (this.fanfarePlayed) {
             logger.debug('🎉 Fanfare already played, skipping');
             return;
         }
         this.fanfarePlayed = true;
-        
+
         // Update leaderboard display first
         this.updateLeaderboardDisplay(leaderboard);
-        
+
         const gameState = this.stateManager.getGameState();
         if (gameState.isHost) {
             logger.debug('🎉 HOST: Showing final results with confetti');
-            
+
             // Host gets full celebration with confetti and sounds
             const finalResults = document.getElementById('final-results');
             if (finalResults) {
                 logger.debug('🎉 HOST: final-results element found, showing animation');
                 finalResults.classList.remove('hidden');
                 finalResults.classList.add('game-complete-animation');
-                
+
                 // Remove animation class after animation completes
                 setTimeout(() => {
                     finalResults.classList.remove('game-complete-animation');
@@ -1254,17 +1258,17 @@ export class GameManager {
             } else {
                 logger.error('🎉 HOST: final-results element NOT FOUND!');
             }
-            
+
             // Switch to leaderboard screen first to ensure proper display context
             logger.debug('🎉 HOST: Switching to leaderboard-screen');
             this.uiManager.showScreen('leaderboard-screen');
-            
+
             // Show confetti celebration after screen switch with minimal delay
             setTimeout(() => {
                 logger.debug('🎉 HOST: Triggering confetti...');
                 this.showGameCompleteConfetti();
             }, 100); // Reduced from 200ms to 100ms for snappier response
-            
+
             // Play staggered placement sounds for dramatic reveal
             if (this.soundManager) {
                 // Third place at 300ms
@@ -1301,22 +1305,22 @@ export class GameManager {
 
             // Save results to server for later download
             this.saveGameResults(leaderboard);
-            
+
             // Show simple results downloader with longer delay to ensure results are saved
             setTimeout(() => {
                 logger.debug('🎉 HOST: Initializing results downloader...');
                 simpleResultsDownloader.showDownloadTool();
             }, 3000); // Wait for animations and results saving to complete
-            
+
         } else {
             logger.debug('🎉 PLAYER: Showing player final screen with confetti');
-            
+
             // Players get a dedicated final screen with special ending sound
             logger.debug('🎉 PLAYER: Player final screen - leaderboard:', leaderboard);
             this.playGameEndingFanfare();
             this.showPlayerFinalScreen(leaderboard);
         }
-        
+
         // Mark game as ended (via stateManager - single source of truth)
         this.stateManager.endGame();
         logger.debug('🎉 Final results display completed');
@@ -1328,25 +1332,25 @@ export class GameManager {
     updateLeaderboardDisplay(leaderboard) {
         const leaderboardList = dom.get('leaderboard-list');
         if (!leaderboardList) return;
-        
+
         dom.clearContent('leaderboard-list');
-        
+
         leaderboard.forEach((player, index) => {
             const item = document.createElement('div');
             item.className = 'leaderboard-item';
-            
+
             if (index === 0) item.classList.add('first');
             else if (index === 1) item.classList.add('second');
             else if (index === 2) item.classList.add('third');
-            
+
             const position = index + 1;
             const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}.`;
-            
+
             item.innerHTML = `
                 <span>${medal} ${this.escapeHtml(player.name)}</span>
                 <span>${player.score} pts</span>
             `;
-            
+
             leaderboardList.appendChild(item);
         });
     }
@@ -1356,15 +1360,15 @@ export class GameManager {
      */
     showPlayerFinalScreen(leaderboard) {
         logger.debug('showPlayerFinalScreen called with:', leaderboard);
-        
+
         // Find player's position in the final leaderboard
         let playerPosition = -1;
         let playerScore = 0;
-        
+
         // Get player's socket ID to find their position
         const playerId = this.socket.id;
         logger.debug('Player ID:', playerId);
-        
+
         if (leaderboard && Array.isArray(leaderboard)) {
             leaderboard.forEach((player, index) => {
                 if (player.id === playerId) {
@@ -1374,16 +1378,16 @@ export class GameManager {
                 }
             });
         }
-        
+
         // Update final position display
         if (playerPosition > 0) {
             dom.setContent('final-position', `#${playerPosition}`);
         }
         dom.setContent('final-score', `${playerScore} ${getTranslation('points')}`);
-        
+
         // Update top 3 players display
         this.updateFinalLeaderboard(leaderboard.slice(0, 3));
-        
+
         // Add confetti celebration for all players
         this.showGameCompleteConfetti();
 
@@ -1397,26 +1401,26 @@ export class GameManager {
     updateFinalLeaderboard(topPlayers) {
         const leaderboardContainer = document.getElementById('final-leaderboard');
         if (!leaderboardContainer) return;
-        
+
         leaderboardContainer.innerHTML = '';
-        
+
         topPlayers.forEach((player, index) => {
             const item = document.createElement('div');
             item.className = 'final-leaderboard-item';
-            
+
             const position = index + 1;
             const medal = ['🥇', '🥈', '🥉'][index] || '🏅';
-            
+
             item.innerHTML = `
                 <span class="medal">${medal}</span>
                 <span class="player-name">${this.escapeHtml(player.name)}</span>
                 <span class="player-score">${player.score} pts</span>
             `;
-            
+
             if (position === 1) item.classList.add('first');
             else if (position === 2) item.classList.add('second');
             else if (position === 3) item.classList.add('third');
-            
+
             leaderboardContainer.appendChild(item);
         });
     }
@@ -1428,18 +1432,18 @@ export class GameManager {
      */
     showGameCompleteConfetti() {
         logger.debug('🎊 showGameCompleteConfetti called');
-        
+
         if (!window.confetti) {
             logger.error('🎊 ERROR: Confetti library not loaded! Cannot show confetti.');
             return;
         }
-        
+
         logger.debug('🎊 Confetti library loaded, starting celebration...');
         logger.debug('CONFETTI DEBUG: showGameCompleteConfetti() called');
-        
+
         // Optimized confetti with timed bursts instead of continuous animation
         const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-        
+
         try {
             // Initial big burst
             logger.debug('🎊 Firing initial confetti burst...');
@@ -1449,11 +1453,11 @@ export class GameManager {
                 origin: { y: ANIMATION.CONFETTI_ORIGIN_Y },
                 colors: colors
             });
-            
+
             // Reduced side bursts for better performance - only 3 bursts instead of 5
             const burstTimes = [400, 800, 1200]; // Fewer, well-timed confetti bursts
             logger.debug('🎊 Scheduling', burstTimes.length, 'additional confetti bursts...');
-            
+
             burstTimes.forEach((time, index) => {
                 setTimeout(() => {
                     logger.debug(`🎊 Firing confetti burst ${index + 1}/${burstTimes.length} at ${time}ms`);
@@ -1473,7 +1477,7 @@ export class GameManager {
                     });
                 }, time);
             });
-            
+
             logger.debug('🎊 All confetti bursts scheduled successfully!');
         } catch (error) {
             logger.error('🎊 ERROR: Failed to show confetti:', error);
@@ -1501,15 +1505,15 @@ export class GameManager {
             logger.debug('players-list element not found');
             return;
         }
-        
+
         // Handle case where players is undefined or not an array
         if (!players || !Array.isArray(players)) {
             logger.debug('Players list is undefined or not an array:', players);
             return;
         }
-        
+
         playersListElement.innerHTML = '';
-        
+
         players.forEach(player => {
             const playerElement = document.createElement('div');
             playerElement.className = 'player-item';
@@ -1519,7 +1523,7 @@ export class GameManager {
             `;
             playersListElement.appendChild(playerElement);
         });
-        
+
         // Update player count in lobby with animation
         const lobbyPlayerCount = document.getElementById('lobby-player-count');
         if (lobbyPlayerCount) {
@@ -1538,7 +1542,7 @@ export class GameManager {
                 }, 300);
             }
         }
-        
+
         // Update legacy player count (for compatibility) - but check if element exists
         const legacyPlayerCount = document.getElementById('player-count');
         if (legacyPlayerCount) {
@@ -1603,7 +1607,7 @@ export class GameManager {
             hasCurrentQuiz: !!this.currentQuiz,
             questionsCount: this.currentQuiz?.questions?.length
         });
-        
+
         this.currentQuestion = null;
         this.selectedAnswer = null;
         this.playerAnswers.clear();
@@ -1614,33 +1618,33 @@ export class GameManager {
         // This was causing the new game restart bug where stale state from
         // previous games would interfere with new games
         this.stateManager.reset();
-        
+
         // Reset all game modules to ensure clean state for new games
         if (this.interactionManager) {
             this.interactionManager.reset();
         }
         // Timer is already reset by this.stopTimer() call above
-        
+
         // Reset fanfare played flag for new games
         this.fanfarePlayed = false;
-        
+
         // Hide the CSV download tool from previous game
         simpleResultsDownloader.hideDownloadTool();
-        
+
         // Hide final results overlay from previous game
         const finalResults = document.getElementById('final-results');
         if (finalResults) {
             finalResults.classList.add('hidden');
             finalResults.classList.remove('game-complete-animation');
         }
-        
+
         // 🔧 FIX: Clear player list UI to prevent phantom players from previous game
         const playersListElement = document.getElementById('players-list');
         if (playersListElement) {
             playersListElement.innerHTML = '';
             logger.debug('🧹 Cleared player list UI during game reset');
         }
-        
+
         // Reset player count displays
         const lobbyPlayerCount = document.getElementById('lobby-player-count');
         if (lobbyPlayerCount) {
@@ -1650,10 +1654,10 @@ export class GameManager {
         if (legacyPlayerCount) {
             legacyPlayerCount.textContent = '0';
         }
-        
+
         // Clean up event listeners and timers when resetting game
         this.cleanup();
-        
+
         logger.debug('🔄 Complete game state reset - both main and modular state managers');
     }
 
@@ -1699,12 +1703,12 @@ export class GameManager {
             quizId: quiz?.id
         });
         this.currentQuiz = quiz;
-        
+
         // Store quiz title separately as backup for results
         if (quiz?.title) {
             this.currentQuizTitle = quiz.title;
         }
-        
+
         logger.debug('📊 currentQuiz set successfully - analytics data preserved');
     }
 
@@ -1729,13 +1733,13 @@ export class GameManager {
 
         // Add the event listener
         element.addEventListener(event, handler, options);
-        
+
         // Track for cleanup
         if (!this.eventListeners.has(element)) {
             this.eventListeners.set(element, []);
         }
         this.eventListeners.get(element).push({ event, handler, options });
-        
+
         logger.debug(`Tracked event listener: ${event} on`, element);
     }
 
@@ -1745,7 +1749,7 @@ export class GameManager {
     createTimerTracked(callback, interval, isInterval = false) {
         const timer = isInterval ? setInterval(callback, interval) : setTimeout(callback, interval);
         this.timers.add(timer);
-        
+
         // logger.debug(`Tracked ${isInterval ? 'interval' : 'timeout'}:`, timer);
         return timer;
     }
@@ -1758,7 +1762,7 @@ export class GameManager {
         if (!element) return;
 
         element.removeEventListener(event, handler);
-        
+
         const listeners = this.eventListeners.get(element);
         if (listeners) {
             const index = listeners.findIndex(l => l.event === event && l.handler === handler);
@@ -1788,7 +1792,7 @@ export class GameManager {
      */
     cleanup() {
         logger.debug('GameManager cleanup started');
-        
+
         try {
             // Clear all tracked event listeners
             let listenerCount = 0;
@@ -1819,7 +1823,6 @@ export class GameManager {
             this.timers.clear();
             // logger.debug(`Cleaned up ${timerCount} timers`);
 
-            
 
             // Clear game state
             this.playerAnswers.clear();
@@ -1868,7 +1871,7 @@ export class GameManager {
      */
     createElementWithEvents(tagName, attributes = {}, events = {}) {
         const element = document.createElement(tagName);
-        
+
         // Set attributes
         Object.entries(attributes).forEach(([key, value]) => {
             if (key === 'className') {
@@ -1949,21 +1952,21 @@ export class GameManager {
     setStaticTimerDisplay(seconds) {
         this.timerManager.setStaticTimerDisplay(seconds);
     }
-    
+
     // ===============================
     // DEBUG METHODS - Call from browser console
     // ===============================
-    
+
     /**
      * Debug game state - call debugGame() from console
      */
 
-    
+
     /**
      * Debug MathJax state - call debugMathJax() from console
      */
 
-    
+
     /**
      * Debug LaTeX elements - call debugLatex() from console
      */
@@ -1975,7 +1978,7 @@ export class GameManager {
     async saveGameResults(leaderboard) {
         try {
             const gameState = this.stateManager.getGameState();
-            
+
             // Only save results if we're the host and have game data
             if (!gameState.isHost || !gameState.gamePin) {
                 logger.debug('📊 Not saving results - not host or no game PIN');
@@ -1984,7 +1987,7 @@ export class GameManager {
 
             // Get quiz title from the game data (if available)
             const quizTitle = this.currentQuizTitle || gameState.quizTitle || 'Unknown Quiz';
-            
+
             // Prepare results data for saving
             const resultsData = {
                 quizTitle: quizTitle,

@@ -18,29 +18,29 @@ function showMobileQuizSheet() {
         logger.debug('Sheet already opening, ignoring click');
         return;
     }
-    
+
     const overlay = document.getElementById('mobile-quiz-sheet-overlay');
     const sheet = document.getElementById('mobile-quiz-sheet');
     const fab = document.getElementById('mobile-quiz-fab');
-    
+
     if (!overlay || !sheet) {
         logger.warn('Mobile quiz sheet elements not found');
         return;
     }
-    
+
     // Mark as opening and disable FAB temporarily
     isShowingSheet = true;
     if (fab) {
         fab.classList.add('clicking');
     }
-    
+
     // Show overlay first
     overlay.classList.add('active');
-    
+
     // Add active class after a small delay for smooth animation
     setTimeout(() => {
         sheet.classList.add('active');
-        
+
         // Reset the click protection after animation
         setTimeout(() => {
             isShowingSheet = false;
@@ -49,9 +49,9 @@ function showMobileQuizSheet() {
             }
         }, 200);
     }, 10);
-    
+
     mobileQuizSheetVisible = true;
-    
+
     // Update translations for the mobile quiz sheet
     if (typeof translationManager !== 'undefined' && translationManager.updateGameTranslations) {
         // Use setTimeout to ensure DOM is fully rendered before translation updates
@@ -59,7 +59,7 @@ function showMobileQuizSheet() {
             translationManager.updateGameTranslations();
         }, 50);
     }
-    
+
     // Prevent body scroll when sheet is open
     document.body.style.overflow = 'hidden';
 }
@@ -71,29 +71,29 @@ function hideMobileQuizSheet() {
     const overlay = document.getElementById('mobile-quiz-sheet-overlay');
     const sheet = document.getElementById('mobile-quiz-sheet');
     const fab = document.getElementById('mobile-quiz-fab');
-    
+
     if (!overlay || !sheet) return;
-    
+
     // Reset click protection
     isShowingSheet = false;
     if (fab) {
         fab.classList.remove('clicking');
     }
-    
+
     // Clear any active/focus states from buttons
     const activeButtons = sheet.querySelectorAll('.mobile-quiz-action-btn:focus, .mobile-quiz-secondary-btn:focus');
     activeButtons.forEach(btn => btn.blur());
-    
+
     // Remove active class from sheet first
     sheet.classList.remove('active');
-    
+
     // Remove overlay after animation completes
     setTimeout(() => {
         overlay.classList.remove('active');
     }, 300);
-    
+
     mobileQuizSheetVisible = false;
-    
+
     // Restore body scroll
     document.body.style.overflow = '';
 }
@@ -128,7 +128,7 @@ function clearButtonStates() {
 function handleMobileLoadQuiz() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Small delay to ensure sheet is hidden before showing modal
     setTimeout(() => {
         // Use existing load quiz functionality
@@ -149,7 +149,7 @@ function handleMobileLoadQuiz() {
 function handleMobileSaveQuiz() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing save quiz functionality
     if (typeof saveQuiz === 'function') {
         saveQuiz();
@@ -167,14 +167,14 @@ function handleMobileSaveQuiz() {
 function handleMobileStartGame() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Check if we have questions first
     const questions = document.querySelectorAll('.question-item');
     if (questions.length === 0) {
         alert(translationManager.getTranslationSync('please_add_question_alert') || 'Please add at least one question before starting the game.');
         return;
     }
-    
+
     // Check if quiz has a title
     const quizTitle = document.getElementById('quiz-title');
     if (quizTitle && !quizTitle.value.trim()) {
@@ -182,7 +182,7 @@ function handleMobileStartGame() {
             return;
         }
     }
-    
+
     // Use existing start game functionality
     if (typeof startHosting === 'function') {
         startHosting();
@@ -206,7 +206,7 @@ function handleMobileStartGame() {
 function handleMobilePreview() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing preview functionality
     if (typeof togglePreviewMode === 'function') {
         togglePreviewMode();
@@ -223,7 +223,7 @@ function handleMobilePreview() {
 function handleMobileAI() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing AI generator functionality
     if (document.getElementById('toolbar-ai-gen')) {
         document.getElementById('toolbar-ai-gen').click();
@@ -238,7 +238,7 @@ function handleMobileAI() {
 function handleMobileImport() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing import functionality
     if (document.getElementById('toolbar-import')) {
         document.getElementById('toolbar-import').click();
@@ -255,7 +255,7 @@ function handleMobileImport() {
 function handleMobileExport() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing export functionality
     if (document.getElementById('toolbar-export')) {
         document.getElementById('toolbar-export').click();
@@ -270,7 +270,7 @@ function handleMobileExport() {
 function handleMobileResults() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing results functionality
     if (document.getElementById('toolbar-results')) {
         document.getElementById('toolbar-results').click();
@@ -285,7 +285,7 @@ function handleMobileResults() {
 function scrollToBottom() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Scroll to the bottom of the page
     window.scrollTo({
         top: document.body.scrollHeight,
@@ -303,18 +303,18 @@ function initializeMobileQuizControls() {
         let startY = 0;
         let currentY = 0;
         let isDragging = false;
-        
+
         sheet.addEventListener('touchstart', (e) => {
             startY = e.touches[0].clientY;
             isDragging = true;
         }, { passive: true });
-        
+
         sheet.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
-            
+
             currentY = e.touches[0].clientY;
             const deltaY = currentY - startY;
-            
+
             // Only allow downward swipe to close
             if (deltaY > 0) {
                 const progress = Math.min(deltaY / 100, 1);
@@ -322,12 +322,12 @@ function initializeMobileQuizControls() {
                 sheet.style.opacity = 1 - (progress * 0.3);
             }
         }, { passive: true });
-        
+
         sheet.addEventListener('touchend', () => {
             if (!isDragging) return;
-            
+
             const deltaY = currentY - startY;
-            
+
             // If swiped down more than 80px, close the sheet
             if (deltaY > 80) {
                 hideMobileQuizSheet();
@@ -336,22 +336,22 @@ function initializeMobileQuizControls() {
                 sheet.style.transform = '';
                 sheet.style.opacity = '';
             }
-            
+
             isDragging = false;
             startY = 0;
             currentY = 0;
         }, { passive: true });
     }
-    
+
     // Close sheet when clicking outside
     document.addEventListener('click', (e) => {
-        if (mobileQuizSheetVisible && 
-            !e.target.closest('#mobile-quiz-sheet') && 
+        if (mobileQuizSheetVisible &&
+            !e.target.closest('#mobile-quiz-sheet') &&
             !e.target.closest('#mobile-quiz-fab')) {
             hideMobileQuizSheet();
         }
     });
-    
+
     // Handle escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && mobileQuizSheetVisible) {

@@ -89,7 +89,7 @@ export class SocketManager {
             this.gameManager.setPlayerInfo('Host', true);
             this.uiManager.updateGamePin(data.pin);
             this.uiManager.loadQRCode(data.pin);
-            
+
             // Update quiz title in lobby
             if (data.title) {
                 logger.debug('Calling updateQuizTitle with:', data.title);
@@ -97,7 +97,7 @@ export class SocketManager {
             } else {
                 logger.warn('No quiz title received from server');
             }
-            
+
             // 🔧 FIX: Initialize empty player list for new lobby to prevent phantom players
             this.gameManager.updatePlayersList([]);
             this._lastPlayerCount = 0; // Reset player count tracking for join sounds
@@ -105,7 +105,7 @@ export class SocketManager {
 
             this.uiManager.showScreen('game-lobby');
         });
-        
+
         // Listen for new games becoming available
         this.socket.on('game-available', (data) => {
             logger.debug('New game available:', data);
@@ -117,16 +117,16 @@ export class SocketManager {
             logger.debug('Player joined:', data);
             logger.debug('data.players:', data.players);
             logger.debug('data keys:', Object.keys(data));
-            
+
             // Set player info correctly - player is NOT a host
             logger.debug('PlayerJoined', { playerName: data.playerName, gamePin: data.gamePin });
             if (data.playerName && data.gamePin) {
                 this.gameManager.setPlayerInfo(data.playerName, false);
                 this.gameManager.setGamePin(data.gamePin);
-                
+
                 // Update lobby display with game information
                 this.updatePlayerLobbyDisplay(data.gamePin, data.players);
-                
+
                 // Update "You're in!" message with player name
                 this.updatePlayerWelcomeMessage(data.playerName);
             } else {
@@ -140,7 +140,7 @@ export class SocketManager {
         this.socket.on('game-started', (data) => {
             logger.debug('Game started:', data);
             const isHost = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
-            
+
             if (isHost) {
                 this.uiManager.showScreen('host-game-screen');
             } else {
@@ -168,7 +168,7 @@ export class SocketManager {
         this.socket.on('question-end', (data) => {
             logger.debug('Question ended:', data);
             this.gameManager.stopTimer();
-            
+
             // New flow: question-end now shows statistics first, not leaderboard
             if (data && data.showStatistics) {
                 // Stay on host-game-screen to show statistics with new control buttons
@@ -179,12 +179,12 @@ export class SocketManager {
         this.socket.on('question-timeout', (data) => {
             logger.debug('Question timed out:', data);
             this.gameManager.stopTimer();
-            
+
             if (this.gameManager.timer) {
                 clearInterval(this.gameManager.timer);
                 this.gameManager.timer = null;
             }
-            
+
             // Show correct answer on host side
             const isHost = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
             if (isHost) {
@@ -425,10 +425,10 @@ export class SocketManager {
         if (playerInfo && playerName && playerName !== 'Host') {
             // Store the player name for language updates
             this.currentPlayerName = playerName;
-            
+
             // Remove the data-translate attribute to prevent automatic translation override
             playerInfo.removeAttribute('data-translate');
-            
+
             // Use the already imported translation manager from the top of the file
             const translatedMessage = translationManager.getTranslationSync('you_are_in_name');
             if (translatedMessage && translatedMessage !== 'you_are_in_name') {

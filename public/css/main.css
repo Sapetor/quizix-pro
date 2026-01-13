@@ -48,6 +48,9 @@
 /* Analytics - Question analytics and statistical visualizations */
 @import './analytics.css';
 
+/* Analytics Dashboard - Interactive Chart.js visualizations */
+@import './analytics-dashboard.css';
+
 /* Mobile enhancements consolidated into responsive.css */
 
 

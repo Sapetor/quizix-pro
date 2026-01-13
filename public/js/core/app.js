@@ -29,7 +29,7 @@ export class QuizGame {
     constructor() {
         logger.debug('QuizGame constructor called');
         logger.info('Initializing QuizGame...');
-        
+
         // Initialize socket connection with base path support for Kubernetes
         const basePath = document.querySelector('base')?.getAttribute('href') || '/';
         const cleanPath = basePath.replace(/\/$/, '');
@@ -56,30 +56,30 @@ export class QuizGame {
             };
             logger.warn('Using fallback SettingsManager');
         }
-        
+
         this.soundManager = new SoundManager();
         this.uiManager = new UIManager();
 
         logger.debug('Creating MathRenderer');
         this.mathRenderer = new MathRenderer();
         logger.debug('MathRenderer created');
-        
+
         this.previewManager = new PreviewManager(this.mathRenderer);
         this.gameManager = new GameManager(this.socket, this.uiManager, this.soundManager);
         this.quizManager = new QuizManager(this.uiManager);
         this.socketManager = new SocketManager(this.socket, this.gameManager, this.uiManager, this.soundManager);
-        
+
         // Update GameManager with SocketManager reference
         this.gameManager.setSocketManager(this.socketManager);
-        
+
         // Initialize connection status monitoring
         connectionStatus.setSocket(this.socket);
         this.aiGenerator = null; // Will be lazy loaded when needed
-        
+
         // Initialize core functionality
         this.initializeEventListeners();
         this.initializeToolbar();
-        
+
         // Make preview manager globally accessible for onclick handlers
         window.game = this;
 
@@ -88,12 +88,12 @@ export class QuizGame {
 
         // Load theme and settings
         this.settingsManager.initializeEventListeners();
-        
+
         // Set default player name
         this.setDefaultPlayerName();
-        
+
         // Logger system initialized and ready
-        
+
         logger.info('QuizGame initialized successfully');
     }
     /**
@@ -166,10 +166,10 @@ export class QuizGame {
         } catch (error) {
             logger.error('Image upload failed:', error);
             translationManager.showAlert('image_upload_failed');
-            
+
             // Reset the file input
             inputElement.value = '';
-            
+
             // Restore UI state
             const questionItem = inputElement.closest('.question-item');
             const imageUploadDiv = questionItem?.querySelector('.image-upload');
@@ -241,7 +241,7 @@ export class QuizGame {
             }
         });
         bindElement('join-btn', 'click', () => this.uiManager.showScreen('join-screen'));
-        
+
         // Mobile button handlers (same functionality as desktop)
         bindElement('host-btn-mobile', 'click', () => {
             this.uiManager.showScreen('host-screen');
@@ -296,8 +296,8 @@ export class QuizGame {
             this.newGame();
         });
         bindElement('exit-to-main', 'click', () => this.exitToMainMenu());
-        
-        // Statistics phase control buttons  
+
+        // Statistics phase control buttons
         bindElement('next-question-stats', 'click', (e) => {
             e.preventDefault();
             this.nextQuestion();
@@ -364,18 +364,18 @@ export class QuizGame {
         try {
             const pinDigitsElement = pinElement.querySelector('.pin-digits');
             const pin = pinDigitsElement ? pinDigitsElement.textContent.trim() : pinElement.textContent.trim();
-            
+
             if (pin && pin !== '------') {
                 await navigator.clipboard.writeText(pin);
-                
+
                 // Show visual feedback on the digits element
                 const targetElement = pinDigitsElement || pinElement;
                 const originalText = targetElement.textContent;
                 const originalBg = pinElement.style.backgroundColor;
-                
+
                 pinElement.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
                 targetElement.textContent = translationManager.getTranslationSync('copied') || 'Copied!';
-                
+
                 // Show toast notification
                 if (typeof translationManager !== 'undefined' && translationManager.showAlert) {
                     translationManager.showAlert('success', 'PIN copied to clipboard!');
@@ -383,7 +383,7 @@ export class QuizGame {
                     // Fallback notification
                     logger.info('PIN copied to clipboard:', pin);
                 }
-                
+
                 // Reset appearance after animation
                 setTimeout(() => {
                     targetElement.textContent = originalText;
@@ -417,24 +417,24 @@ export class QuizGame {
      */
     addQuestionAndScrollToIt() {
         this.addQuestion();
-        
+
         // Wait for the DOM to update, then scroll to the new question
         setTimeout(() => {
             const questionItems = document.querySelectorAll('.question-item');
             if (questionItems.length > 0) {
                 const lastQuestion = questionItems[questionItems.length - 1];
-                
+
                 // Use gentle scrolling that's less jarring
-                lastQuestion.scrollIntoView({ 
-                    behavior: 'smooth', 
+                lastQuestion.scrollIntoView({
+                    behavior: 'smooth',
                     block: 'start',
                     inline: 'nearest'
                 });
-                
+
                 // Add subtle highlight effect
                 lastQuestion.style.transition = 'background-color 0.5s ease';
                 lastQuestion.style.backgroundColor = 'rgba(37, 99, 235, 0.05)';
-                
+
                 setTimeout(() => {
                     lastQuestion.style.backgroundColor = '';
                     setTimeout(() => {
@@ -455,12 +455,12 @@ export class QuizGame {
             return;
         }
         this.startHostingCalled = true;
-        
+
         // Reset the flag after debounce delay
         setTimeout(() => {
             this.startHostingCalled = false;
         }, TIMING.LEADERBOARD_DISPLAY_TIME);
-        
+
         logger.info('startHosting called');
         const title = document.getElementById('quiz-title')?.value?.trim();
         logger.debug('Quiz title from input field:', title);
@@ -486,11 +486,11 @@ export class QuizGame {
 
         // Process questions
         let processedQuestions = [...questions];
-        
+
         if (randomizeQuestions) {
             processedQuestions = shuffleArray(processedQuestions);
         }
-        
+
         if (shouldRandomizeAnswers) {
             processedQuestions = randomizeAnswers(processedQuestions);
         }
@@ -573,18 +573,18 @@ export class QuizGame {
      */
     nextQuestion() {
         logger.debug('CLIENT: Next Question button clicked!');
-        
+
         // Debounce to prevent double calls
         if (this.nextQuestionCalled) {
             logger.debug('CLIENT: Debounced - ignoring click');
             return;
         }
         this.nextQuestionCalled = true;
-        
+
         setTimeout(() => {
             this.nextQuestionCalled = false;
         }, TIMING.DEBOUNCE_DELAY);
-        
+
         logger.debug('CLIENT: Calling socketManager.nextQuestion()');
         this.socketManager.nextQuestion();
     }
@@ -641,15 +641,15 @@ export class QuizGame {
 
         const modal = document.getElementById('preview-modal');
         const previewContainer = document.getElementById('quiz-preview-container');
-        
+
         if (!modal || !previewContainer) return;
 
         previewContainer.innerHTML = '';
-        
+
         questions.forEach((question, index) => {
             const questionDiv = document.createElement('div');
             questionDiv.className = 'preview-question';
-            
+
             let questionHTML = `
                 <h3>${translationManager.getTranslationSync('question')} ${index + 1}</h3>
                 <div class="preview-question-text">${this.mathRenderer.formatCodeBlocks(question.question)}</div>
@@ -658,14 +658,14 @@ export class QuizGame {
                     <span>${translationManager.getTranslationSync('time')}: ${question.time}s</span>
                 </div>
             `;
-            
+
             if (question.type === 'multiple-choice' || question.type === 'multiple-correct') {
                 questionHTML += '<div class="preview-options">';
                 question.options.forEach((option, optIndex) => {
-                    const isCorrect = question.type === 'multiple-choice' ? 
+                    const isCorrect = question.type === 'multiple-choice' ?
                         optIndex === question.correctAnswer :
                         question.correctAnswers?.includes(optIndex);
-                    
+
                     questionHTML += `
                         <div class="preview-option ${isCorrect ? 'correct' : ''}">
                             ${String.fromCharCode(65 + optIndex)}. ${this.mathRenderer.formatCodeBlocks(option)}
@@ -688,14 +688,14 @@ export class QuizGame {
                     </div>
                 `;
             }
-            
+
             questionDiv.innerHTML = questionHTML;
             previewContainer.appendChild(questionDiv);
         });
 
         // Render math in preview
         this.mathRenderer.renderMathJax(previewContainer);
-        
+
         modal.style.display = 'flex';
     }
 
@@ -723,7 +723,7 @@ export class QuizGame {
             { id: 'toolbar-export', handler: () => this.quizManager.exportQuiz() },
             { id: 'toolbar-results', handler: () => this.openResultsViewer() },
             { id: 'toolbar-top', handler: () => this.scrollToTop() },
-            { id: 'toolbar-bottom', handler: () => this.scrollToBottom() },
+            { id: 'toolbar-bottom', handler: () => this.scrollToBottom() }
         ];
 
         toolbarButtons.forEach(({ id, handler }) => {
@@ -757,20 +757,20 @@ export class QuizGame {
     async loadLastQuiz() {
         try {
             logger.debug('Loading quiz for game startup...');
-            
+
             // First check if we can fetch the quiz list
             const response = await fetch(APIHelper.getApiUrl('api/quizzes'));
             if (!response.ok) {
                 throw new Error(`Failed to fetch quizzes: ${response.status} ${response.statusText}`);
             }
-            
+
             const data = await response.json();
             logger.debug('Available quizzes:', data?.length || 0);
-            
+
             // Look for debug quiz first
             const debugQuizFilename = 'debug-width-quiz.json';
             const debugQuiz = data?.find(q => q.filename === debugQuizFilename);
-            
+
             let targetQuiz = null;
             if (debugQuiz) {
                 logger.debug('Found debug quiz:', debugQuiz.title);
@@ -781,18 +781,18 @@ export class QuizGame {
             } else {
                 throw new Error('No quizzes available');
             }
-            
+
             logger.debug('Loading quiz for debug:', targetQuiz.title);
-            
+
             // Load the quiz
             await this.quizManager.loadQuiz(targetQuiz.filename);
-            
+
             // Wait for quiz to load, then start the game
             setTimeout(() => {
                 try {
                     logger.debug('🐛 DEBUG: Auto-starting quiz...');
                     this.startHosting();
-                    
+
                     // Add debugging after game starts
                     setTimeout(() => {
                         try {
@@ -801,15 +801,15 @@ export class QuizGame {
                             logger.error('Debug analysis failed:', debugError);
                         }
                     }, TIMING.GAME_START_DELAY); // Wait for game to fully start
-                    
+
                 } catch (startError) {
                     logger.error('Failed to start game:', startError);
                 }
             }, TIMING.GAME_START_DELAY);
-            
+
         } catch (error) {
             logger.error('🐛 DEBUG: Error in loadLastQuiz:', error);
-            
+
             // Show user-friendly error
             const errorModal = document.getElementById('error-modal');
             if (errorModal) {
@@ -823,7 +823,7 @@ export class QuizGame {
             }
         }
     }
-    
+
     /**
      * Debug function to analyze question width styles
      */
@@ -837,9 +837,9 @@ export class QuizGame {
             logger.debug('Using direct quiz loading fallback');
             const filename = 'advanced_quiz_with_latex_images.json';
             this.quizManager.loadQuiz(filename);
-            
+
             toastNotifications.info('Debug: Loading LaTeX quiz - starting in 2 seconds...');
-            
+
             setTimeout(() => {
                 logger.debug('Auto-starting quiz via fallback method...');
                 this.startHosting();
@@ -856,25 +856,25 @@ export class QuizGame {
     async loadDefaultLatexQuiz() {
         try {
             logger.debug('Loading default LaTeX quiz for debugging');
-            
+
             // Try to load the advanced LaTeX quiz file directly
             const filename = 'advanced_quiz_with_latex_images.json';
             logger.debug('Attempting to load:', filename);
-            
+
             const response = await fetch(APIHelper.getApiUrl(`api/quiz/${filename}`));
             if (!response.ok) {
                 throw new Error(`Failed to load quiz: ${response.status}`);
             }
-            
+
             const quizData = await response.json();
             logger.debug('Loaded quiz data:', quizData);
-            
+
             if (quizData && quizData.quiz) {
                 // Use the quiz manager to populate the form
                 this.quizManager.populateQuizForm(quizData.quiz);
-                
+
                 toastNotifications.info(`Debug: Loaded "${quizData.quiz.title}" - starting game...`);
-                
+
                 // Wait for form to populate, then start game
                 setTimeout(() => {
                     logger.debug('Auto-starting loaded LaTeX quiz...');
@@ -915,14 +915,14 @@ export class QuizGame {
      */
     async openAIGeneratorModal() {
         logger.info('Opening AI Generator Modal');
-        
+
         // Lazy load AI generator if not already loaded
         if (!this.aiGenerator) {
             try {
                 logger.debug('Lazy loading AI Generator...');
                 const { AIQuestionGenerator } = await import('../ai/generator.js');
                 this.aiGenerator = new AIQuestionGenerator();
-                
+
                 // Initialize event listeners after creation
                 if (this.aiGenerator.initializeEventListeners) {
                     this.aiGenerator.initializeEventListeners();
@@ -938,7 +938,7 @@ export class QuizGame {
                 return;
             }
         }
-        
+
         // Use the AI generator's openModal method if available
         if (this.aiGenerator && this.aiGenerator.openModal) {
             this.aiGenerator.openModal();
@@ -961,7 +961,7 @@ export class QuizGame {
      */
     async openResultsViewer() {
         logger.info('Opening Results Viewer');
-        
+
         try {
             // Lazy load results viewer if not already loaded
             if (!window.resultsViewer) {
@@ -970,11 +970,11 @@ export class QuizGame {
                 window.resultsViewer = resultsViewer;
                 logger.debug('Results Viewer lazy loaded and available globally');
             }
-            
+
             // Open the results viewer modal
             window.resultsViewer.showModal();
             logger.debug('Results Viewer modal opened');
-            
+
         } catch (error) {
             logger.error('Failed to lazy load Results Viewer:', error);
             // Show fallback error message
@@ -1027,10 +1027,10 @@ export class QuizGame {
         logger.info('Fallback theme toggle called');
         const body = document.body;
         const themeToggle = document.getElementById('theme-toggle');
-        
+
         const currentTheme = body.getAttribute('data-theme') || 'light';
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        
+
         body.setAttribute('data-theme', newTheme);
         document.documentElement.setAttribute('data-theme', newTheme);
         if (themeToggle) {
@@ -1081,12 +1081,12 @@ export class QuizGame {
         const hostContainer = document.querySelector('.host-container');
         const quizEditor = document.querySelector('.quiz-editor-section');
         const isPreviewMode = hostContainer && hostContainer.classList.contains('split-screen');
-        
+
         logger.debug('Preview mode:', isPreviewMode);
-        
+
         if (quizEditor) {
             logger.debug('Quiz editor found, scrollHeight:', quizEditor.scrollHeight, 'clientHeight:', quizEditor.clientHeight);
-            
+
             if (isPreviewMode) {
                 // In split-screen mode, scroll the editor section directly
                 logger.debug('Scrolling editor section in split-screen mode');
@@ -1094,7 +1094,7 @@ export class QuizGame {
             } else {
                 // In single-screen mode, need to scroll the main container or window
                 logger.debug('Scrolling in single-screen mode');
-                
+
                 // Try scrolling the host container first
                 if (hostContainer && hostContainer.scrollHeight > hostContainer.clientHeight) {
                     logger.debug('Scrolling host container');
@@ -1104,7 +1104,7 @@ export class QuizGame {
                     logger.debug('Scrolling window');
                     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                 }
-                
+
                 // Also try scrolling the editor section itself in case it's scrollable
                 if (quizEditor.scrollHeight > quizEditor.clientHeight) {
                     logger.debug('Also scrolling editor section');

@@ -1,5 +1,5 @@
 /**
- * Game Display Manager Module  
+ * Game Display Manager Module
  * Handles question display, UI rendering, and DOM manipulation
  * Extracted from game-manager.js for better separation of concerns
  */
@@ -143,20 +143,20 @@ export class GameDisplayManager {
      */
     async renderQuestionMath(element, delay = 0) {
         if (!element) return;
-        
+
         try {
             // No delay - render immediately for faster LaTeX display
-            
+
             // Check if element still exists in DOM
             if (!document.contains(element)) {
                 logger.debug('Element removed from DOM before MathJax rendering, skipping');
                 return;
             }
-            
+
             // Use the simplified SimpleMathJaxService
             await simpleMathJaxService.render([element]);
             logger.debug('MathJax rendering completed for question');
-            
+
         } catch (err) {
             logger.warn('MathJax question render error (non-blocking):', err);
             // Don't throw - let the game continue without LaTeX rendering
@@ -168,13 +168,13 @@ export class GameDisplayManager {
      */
     displayQuestionText(element, questionText) {
         if (!element) return;
-        
+
         element.innerHTML = this.mathRenderer.formatCodeBlocks(questionText);
         logger.debug('Question text displayed');
-        
+
         // Apply syntax highlighting to code blocks
         this.mathRenderer.applySyntaxHighlighting(element);
-        
+
         // Render MathJax immediately after content update
         this.renderQuestionMath(element);
     }
@@ -186,7 +186,7 @@ export class GameDisplayManager {
      */
     clearQuestionDisplay() {
         const elements = this.getQuestionElements();
-        
+
         // Clear question text
         if (elements.hostQuestionElement) {
             elements.hostQuestionElement.innerHTML = '';
@@ -194,16 +194,16 @@ export class GameDisplayManager {
         if (elements.questionElement) {
             elements.questionElement.innerHTML = '';
         }
-        
+
         // Clear options container
         if (elements.hostOptionsContainer) {
             elements.hostOptionsContainer.innerHTML = '';
         }
-        
+
         // Hide image containers
         this.updateQuestionImage({ image: '' }, 'question-image-display');
         this.updateQuestionImage({ image: '' }, 'player-question-image');
-        
+
         logger.debug('Question display cleared');
     }
 
@@ -213,7 +213,7 @@ export class GameDisplayManager {
      */
     clearHostQuestionContent(showLoading = false) {
         const elements = this.getQuestionElements();
-        
+
         // Clear or show loading message in host question element
         if (elements.hostQuestionElement) {
             if (showLoading) {
@@ -247,7 +247,7 @@ export class GameDisplayManager {
             hostMultipleChoice.style.display = 'block';
             hostMultipleChoice.classList.remove('numeric-question-type');
         }
-        
+
         logger.debug('Host question content cleared', { showLoading });
     }
 
@@ -263,7 +263,7 @@ export class GameDisplayManager {
                 <div class="loading-text">${message}</div>
             </div>
         `;
-        
+
         // Style the loading element
         Object.assign(loadingElement.style, {
             position: 'fixed',
@@ -277,7 +277,7 @@ export class GameDisplayManager {
             justifyContent: 'center',
             zIndex: '9999'
         });
-        
+
         document.body.appendChild(loadingElement);
     }
 
@@ -297,7 +297,7 @@ export class GameDisplayManager {
      */
     clearClientSelections() {
         const elements = this.getClientElements();
-        
+
         // Clear multiple choice selections
         elements.multipleChoiceOptions.forEach(option => {
             option.classList.remove('selected', 'correct', 'incorrect', 'disabled');
@@ -315,7 +315,7 @@ export class GameDisplayManager {
             option.style.backgroundColor = '';
         });
 
-        // Clear checkbox selections  
+        // Clear checkbox selections
         elements.checkboxOptions.forEach(option => {
             const checkbox = option.querySelector('input[type="checkbox"]');
             if (checkbox) {
@@ -336,11 +336,11 @@ export class GameDisplayManager {
             elements.submitButton.disabled = false;
             elements.submitButton.textContent = getTranslation('submit_answer');
         }
-        
+
         if (elements.multipleSubmitButton) {
             elements.multipleSubmitButton.disabled = false;
         }
-        
+
         logger.debug('Client selections cleared');
     }
 
@@ -350,7 +350,7 @@ export class GameDisplayManager {
      */
     updateClientQuestionDisplay(data) {
         const elements = this.getClientElements();
-        
+
         // Update question text
         if (elements.questionText) {
             this.displayQuestionText(elements.questionText, data.question);

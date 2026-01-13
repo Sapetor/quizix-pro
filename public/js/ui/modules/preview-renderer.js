@@ -44,12 +44,12 @@ export class PreviewRenderer {
      */
     renderSplitQuestionText(questionText) {
         const previewElement = document.getElementById('preview-question-text-split');
-        
+
         if (!previewElement) {
             logger.warn('Preview question text element not found');
             return;
         }
-        
+
         if (questionText) {
             this.renderSplitTextWithLatex(previewElement, questionText);
         } else {
@@ -65,30 +65,30 @@ export class PreviewRenderer {
             logger.warn('Invalid element or text for LaTeX rendering');
             return;
         }
-        
+
         // Clear previous content
         element.innerHTML = '';
         element.style.opacity = '0';
         element.style.display = 'block';
-        
+
         // Format code blocks first
         const formattedContent = this.formatCodeBlocks(text);
-        
+
         // Set content first
         element.innerHTML = formattedContent;
         element.style.opacity = '0';
         element.style.display = 'block';
-        
+
         // Check for LaTeX content
         const hasLatex = this.mathJaxService.hasLatex(formattedContent);
-        
+
         // Always show content immediately - don't wait for MathJax
         element.style.opacity = '1';
-        
+
         if (hasLatex) {
             logger.debug('LaTeX content detected in preview, rendering with enhanced MathJax service');
             element.classList.add('tex2jax_process');
-            
+
             // Use enhanced MathJax service with queue and retry logic (non-blocking)
             this.mathJaxService.render([element]).then(() => {
                 logger.debug('Preview MathJax rendering completed successfully');
@@ -99,7 +99,7 @@ export class PreviewRenderer {
                 // Add class to indicate LaTeX failed but content is visible
                 element.classList.add('mathjax-failed');
             });
-            
+
         } else {
             logger.debug('Plain text preview rendering completed');
             element.classList.add('plain-text-rendered');
@@ -123,7 +123,7 @@ export class PreviewRenderer {
     handleSplitQuestionImage(imageData) {
         const imageDisplay = document.getElementById('preview-question-image-split');
         const img = imageDisplay?.querySelector('img');
-        
+
         if (imageData && imageDisplay && img) {
             imageDisplay.style.display = 'block';
             this.setupSplitImageHandlers(img, imageDisplay, imageData);
@@ -139,7 +139,7 @@ export class PreviewRenderer {
             logger.debug('Preview image loaded successfully');
             imageDisplay.classList.remove('loading');
         };
-        
+
         img.onerror = () => {
             this.showSplitImageError(imageDisplay, imageData);
         };
@@ -188,7 +188,7 @@ export class PreviewRenderer {
                 }
             }
         };
-        
+
         img.onerror = () => {
             if (attempt < maxRetries) {
                 logger.warn(`Preview image load failed, retrying (${attempt}/${maxRetries}): ${src}`);
@@ -205,7 +205,7 @@ export class PreviewRenderer {
                 }
             }
         };
-        
+
         img.src = src;
     }
 
@@ -214,7 +214,7 @@ export class PreviewRenderer {
      */
     showSplitImageError(imageDisplay, imageData) {
         logger.error('Failed to load preview image:', imageData);
-        
+
         let errorMsg = imageDisplay.querySelector('.image-error');
         if (!errorMsg) {
             errorMsg = document.createElement('div');
@@ -226,7 +226,7 @@ export class PreviewRenderer {
             `;
             imageDisplay.appendChild(errorMsg);
         }
-        
+
         imageDisplay.classList.remove('loading');
         this.logSplitImageError(imageData, imageDisplay, imageDisplay.querySelector('img'));
     }
@@ -248,7 +248,7 @@ export class PreviewRenderer {
      */
     clearAllSplitAnswerTypes() {
         this.resetSplitAnswerStates();
-        
+
         // Hide all answer containers
         const containerIds = [
             'preview-multiple-choice-split',
@@ -257,9 +257,9 @@ export class PreviewRenderer {
             'preview-numeric-split',
             'preview-ordering-split'
         ];
-        
+
         this.hideSplitAnswerContainers(containerIds);
-        
+
         // Clear and hide question image
         this.clearSplitQuestionImage();
     }
@@ -270,24 +270,24 @@ export class PreviewRenderer {
     clearSplitQuestionImage() {
         const imageDisplay = document.getElementById('preview-question-image-split');
         const img = imageDisplay?.querySelector('img');
-        
+
         if (imageDisplay) {
             imageDisplay.style.display = 'none';
             imageDisplay.classList.remove('loading');
         }
-        
+
         if (img) {
             img.src = '';
             img.onload = null;
             img.onerror = null;
         }
-        
+
         // Remove any error messages
         const errorMsg = imageDisplay?.querySelector('.image-error');
         if (errorMsg) {
             errorMsg.remove();
         }
-        
+
         logger.debug('Question image cleared and hidden');
     }
 
@@ -309,13 +309,13 @@ export class PreviewRenderer {
     resetSplitAnswerStates() {
         // Clear multiple choice content
         this.clearSplitAnswerContent('multiple-choice');
-        
-        // Clear multiple correct content  
+
+        // Clear multiple correct content
         this.clearSplitAnswerContent('multiple-correct');
-        
+
         // Reset true/false buttons
         this.resetSplitTrueFalseButtons('true-false');
-        
+
         // Clear numeric input
         this.resetSplitInputFields('numeric');
     }
@@ -328,7 +328,7 @@ export class PreviewRenderer {
         if (playerOptions) {
             playerOptions.innerHTML = '';
         }
-        
+
         const checkboxOptions = document.querySelector(`#preview-${type}-split .player-checkbox-options`);
         if (checkboxOptions) {
             checkboxOptions.innerHTML = '';
@@ -367,7 +367,7 @@ export class PreviewRenderer {
     renderSplitAnswerType(data) {
         // Hide all containers first
         this.clearAllSplitAnswerTypes();
-        
+
         // Show and populate the correct container
         switch (data.type) {
             case 'multiple-choice':
@@ -379,12 +379,12 @@ export class PreviewRenderer {
                 document.getElementById('preview-multiple-correct-split').style.display = 'block';
                 this.renderSplitMultipleCorrectPreview(data.options, data.correctIndices);
                 break;
-                
+
             case 'true-false':
                 document.getElementById('preview-true-false-split').style.display = 'block';
                 this.renderSplitTrueFalsePreview(data.correctAnswer);
                 break;
-                
+
             case 'numeric':
                 document.getElementById('preview-numeric-split').style.display = 'block';
                 this.renderSplitNumericPreview();
@@ -403,14 +403,14 @@ export class PreviewRenderer {
     renderSplitMultipleChoicePreview(options, correctAnswer) {
         const container = document.getElementById('preview-multiple-choice-split');
         const optionsContainer = container?.querySelector('.player-options');
-        
+
         if (!container || !optionsContainer) {
             logger.warn('Multiple choice preview containers not found');
             return;
         }
-        
+
         optionsContainer.innerHTML = '';
-        
+
         if (!options || options.length === 0) {
             // Simple translation map for "No options"
             const translations = {
@@ -423,25 +423,25 @@ export class PreviewRenderer {
             optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
             return;
         }
-        
+
         options.forEach((option, index) => {
             if (!option || option.trim() === '' || option === 'Option text') {
                 return;
             }
-            
+
             const optionDiv = document.createElement('div');
             optionDiv.className = 'player-option preview-option';
             optionDiv.setAttribute('data-option', index);
-            
+
             // Add correct answer styling
             if (index === correctAnswer) {
                 optionDiv.classList.add('correct');
             }
-            
+
             const optionLetter = translationManager.getOptionLetter(index);
             const hasLatex = this.hasLatexContent(option);
             const formattedContent = `${optionLetter}: ${this.formatCodeBlocks(option)}`;
-            
+
             this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
         });
     }
@@ -452,16 +452,16 @@ export class PreviewRenderer {
     renderSplitMultipleCorrectPreview(options, correctAnswers) {
         const container = document.getElementById('preview-multiple-correct-split');
         const optionsContainer = container?.querySelector('.player-checkbox-options');
-        
+
         if (!container || !optionsContainer) {
             logger.warn('Multiple correct preview containers not found');
             return;
         }
-        
+
         optionsContainer.innerHTML = '';
-        
+
         logger.debug('Multiple correct preview data:', { options, correctAnswers });
-        
+
         if (!options || options.length === 0) {
             // Simple translation map for "No options"
             const translations = {
@@ -474,27 +474,27 @@ export class PreviewRenderer {
             optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
             return;
         }
-        
+
         options.forEach((option, index) => {
             if (!option || option.trim() === '' || option === 'Option text') {
                 return;
             }
-            
+
             const optionDiv = document.createElement('div');
             optionDiv.className = 'checkbox-option preview-checkbox';
             optionDiv.setAttribute('data-option', index);
-            
+
             const isCorrect = correctAnswers && correctAnswers.includes(index);
-            
+
             // Add correct answer styling
             if (isCorrect) {
                 optionDiv.classList.add('correct-preview');
             }
-            
+
             const optionLetter = translationManager.getOptionLetter(index);
             const hasLatex = this.hasLatexContent(option);
             const formattedContent = `<input type="checkbox" ${isCorrect ? 'checked' : ''} disabled> ${optionLetter}: ${this.formatCodeBlocks(option)}`;
-            
+
             this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
         });
     }
@@ -505,21 +505,21 @@ export class PreviewRenderer {
     renderSplitTrueFalsePreview(correctAnswer) {
         const container = document.getElementById('preview-true-false-split');
         const tfContainer = container?.querySelector('.true-false-options');
-        
+
         if (!container || !tfContainer) {
             logger.warn('True/false preview containers not found');
             return;
         }
-        
+
         const trueOption = tfContainer.querySelector('.tf-option[data-answer="true"]');
         const falseOption = tfContainer.querySelector('.tf-option[data-answer="false"]');
-        
+
         if (trueOption && falseOption) {
             // Reset styles
             [trueOption, falseOption].forEach(option => {
                 option.classList.remove('correct');
             });
-            
+
             // Mark correct answer
             if (correctAnswer === true) {
                 trueOption.classList.add('correct');
@@ -625,10 +625,10 @@ export class PreviewRenderer {
         optionDiv.innerHTML = formattedContent;
         optionDiv.classList.add('tex2jax_process');
         container.appendChild(optionDiv);
-        
+
         // Always show option content immediately
         optionDiv.style.opacity = '1';
-        
+
         // Use simplified MathJax service for option rendering (non-blocking)
         this.mathJaxService.render([optionDiv]).then(() => {
             logger.debug('Option MathJax rendering completed');
@@ -652,17 +652,17 @@ export class PreviewRenderer {
      */
     formatCodeBlocks(text) {
         if (!text) return '';
-        
+
         // Convert code blocks (```language ... ```) - matches mathRenderer approach
         text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, language, code) => {
             const lang = language || 'text';
             const trimmedCode = code.trim();
             return `<pre><code class="language-${lang}">${this.escapeHtml(trimmedCode)}</code></pre>`;
         });
-        
+
         // Convert inline code (`code`) - escape HTML to prevent XSS
         text = text.replace(/`([^`]+)`/g, (_, code) => `<code>${this.escapeHtml(code)}</code>`);
-        
+
         return text;
     }
 
@@ -683,9 +683,9 @@ export class PreviewRenderer {
             logger.debug('MathJax rendering already in progress, skipping');
             return;
         }
-        
+
         this.mathJaxRenderingInProgress = true;
-        
+
         try {
             // Find specific preview elements that need MathJax rendering
             const previewContainer = document.querySelector('.preview-content-split');
@@ -694,7 +694,7 @@ export class PreviewRenderer {
                 this.mathJaxRenderingInProgress = false;
                 return;
             }
-            
+
             // Use enhanced service with queue and retry logic
             this.mathJaxService.renderAll(previewContainer).then(() => {
                 logger.debug('Preview MathJax rendering completed successfully');
@@ -703,7 +703,7 @@ export class PreviewRenderer {
             }).finally(() => {
                 this.mathJaxRenderingInProgress = false;
             });
-            
+
         } catch (error) {
             logger.warn('Preview MathJax rendering error:', error);
             this.mathJaxRenderingInProgress = false;
@@ -715,16 +715,16 @@ export class PreviewRenderer {
      */
     renderMobileQuestionPreview(data) {
         logger.debug('Rendering mobile question preview:', data);
-        
+
         // Clear previous content and reset states
         this.clearAllMobileAnswerTypes();
-        
+
         // Render question text
         this.renderMobileQuestionText(data.question);
-        
+
         // Render answer type
         this.renderMobileAnswerType(data);
-        
+
         // Handle image if present
         if (data.image) {
             this.handleMobileQuestionImage(data.image);
@@ -745,16 +745,16 @@ export class PreviewRenderer {
      */
     renderMobileQuestionText(questionText) {
         const previewElement = document.getElementById('mobile-preview-question-text');
-        
+
         if (!previewElement) {
             logger.warn('Mobile preview question text element not found');
             return;
         }
-        
+
         const hasLatex = this.hasLatexContent(questionText);
         const formattedText = this.formatCodeBlocks(questionText);
         previewElement.innerHTML = formattedText;
-        
+
         if (hasLatex) {
             previewElement.setAttribute('data-has-latex', 'true');
             // CRITICAL: Trigger MathJax rendering immediately after content insertion
@@ -762,7 +762,7 @@ export class PreviewRenderer {
         } else {
             previewElement.removeAttribute('data-has-latex');
         }
-        
+
         // Apply syntax highlighting for code blocks
         this.applyMobileCodeHighlighting(previewElement);
     }
@@ -780,7 +780,7 @@ export class PreviewRenderer {
             });
         } else if (window.MathJax?.Hub) {
             // Fallback to MathJax 2 API - immediate rendering
-            window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, element]);
+            window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, element]);
             logger.debug('Mobile LaTeX queued:', element.id);
         }
     }
@@ -790,7 +790,7 @@ export class PreviewRenderer {
      */
     applyMobileCodeHighlighting(element) {
         const codeBlocks = element.querySelectorAll('pre code');
-        
+
         if (codeBlocks.length > 0) {
             // Try to apply Highlight.js if available (like in-game)
             if (window.hljs && window.hljs.highlightElement) {
@@ -798,7 +798,7 @@ export class PreviewRenderer {
                     // Add proper classes and apply Highlight.js
                     if (!codeBlock.classList.contains('hljs')) {
                         window.hljs.highlightElement(codeBlock);
-                        
+
                         // Mark parent pre as having syntax highlighting
                         const preElement = codeBlock.closest('pre');
                         if (preElement) {
@@ -853,15 +853,15 @@ export class PreviewRenderer {
     renderMobileMultipleChoicePreview(options, correctAnswer) {
         const container = document.querySelector('#mobile-preview-answer-area .preview-multiple-choice');
         const optionsContainer = document.getElementById('mobile-preview-options');
-        
+
         if (!container || !optionsContainer) {
             logger.warn('Mobile multiple choice preview containers not found');
             return;
         }
-        
+
         container.style.display = 'block';
         optionsContainer.innerHTML = '';
-        
+
         if (!options || options.length === 0) {
             // Simple translation map for "No options"
             const translations = {
@@ -874,25 +874,25 @@ export class PreviewRenderer {
             optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
             return;
         }
-        
+
         options.forEach((option, index) => {
             if (!option || option.trim() === '' || option === 'Option text') {
                 return;
             }
-            
+
             const optionDiv = document.createElement('div');
             optionDiv.className = 'player-option preview-option';
             optionDiv.setAttribute('data-option', index);
-            
+
             // Add correct answer styling
             if (index === correctAnswer) {
                 optionDiv.classList.add('correct');
             }
-            
+
             const optionLetter = translationManager.getOptionLetter(index);
             const hasLatex = this.hasLatexContent(option);
             const formattedContent = `${optionLetter}: ${this.formatCodeBlocks(option)}`;
-            
+
             this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
         });
     }
@@ -903,15 +903,15 @@ export class PreviewRenderer {
     renderMobileMultipleCorrectPreview(options, correctAnswers) {
         const container = document.querySelector('#mobile-preview-answer-area .preview-multiple-correct');
         const optionsContainer = document.getElementById('mobile-preview-checkbox-options');
-        
+
         if (!container || !optionsContainer) {
             logger.warn('Mobile multiple correct preview containers not found');
             return;
         }
-        
+
         container.style.display = 'block';
         optionsContainer.innerHTML = '';
-        
+
         if (!options || options.length === 0) {
             // Simple translation map for "No options"
             const translations = {
@@ -924,46 +924,46 @@ export class PreviewRenderer {
             optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
             return;
         }
-        
+
         options.forEach((option, index) => {
             if (!option || option.trim() === '' || option === 'Option text') {
                 return;
             }
-            
+
             const optionDiv = document.createElement('div');
             optionDiv.className = 'checkbox-option preview-checkbox';
             optionDiv.setAttribute('data-option', index);
-            
+
             // Add correct answer styling
             if (correctAnswers && correctAnswers.includes(index)) {
                 optionDiv.classList.add('correct');
             }
-            
+
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.disabled = true;
             if (correctAnswers && correctAnswers.includes(index)) {
                 checkbox.checked = true;
             }
-            
+
             const optionLetter = translationManager.getOptionLetter(index);
             const hasLatex = this.hasLatexContent(option);
             const formattedContent = `${optionLetter}: ${this.formatCodeBlocks(option)}`;
-            
+
             optionDiv.appendChild(checkbox);
             optionDiv.insertAdjacentHTML('beforeend', ' ' + formattedContent);
-            
+
             if (hasLatex) {
                 optionDiv.setAttribute('data-has-latex', 'true');
                 optionDiv.classList.add('tex2jax_process');
             }
-            
+
             // Apply syntax highlighting for code blocks
             this.applyMobileCodeHighlighting(optionDiv);
-            
+
             optionsContainer.appendChild(optionDiv);
         });
-        
+
         // Single LaTeX rendering call for entire container
         this.triggerMobileLatexRendering(optionsContainer);
     }
@@ -974,15 +974,15 @@ export class PreviewRenderer {
     renderMobileTrueFalsePreview(correctAnswer) {
         const container = document.querySelector('#mobile-preview-answer-area .preview-true-false');
         const optionsContainer = document.getElementById('mobile-preview-tf-options');
-        
+
         if (!container || !optionsContainer) {
             logger.warn('Mobile true/false preview containers not found');
             return;
         }
-        
+
         container.style.display = 'block';
         optionsContainer.innerHTML = '';
-        
+
         // Create True option
         const trueOption = document.createElement('div');
         trueOption.className = 'tf-option preview-option';
@@ -991,7 +991,7 @@ export class PreviewRenderer {
             trueOption.classList.add('correct');
         }
         trueOption.textContent = translationManager.getTranslationSync('true') || 'True';
-        
+
         // Create False option
         const falseOption = document.createElement('div');
         falseOption.className = 'tf-option preview-option';
@@ -1000,7 +1000,7 @@ export class PreviewRenderer {
             falseOption.classList.add('correct');
         }
         falseOption.textContent = translationManager.getTranslationSync('false') || 'False';
-        
+
         optionsContainer.appendChild(trueOption);
         optionsContainer.appendChild(falseOption);
     }
@@ -1011,14 +1011,14 @@ export class PreviewRenderer {
     renderMobileNumericPreview(correctAnswer) {
         const container = document.querySelector('#mobile-preview-answer-area .preview-numeric');
         const inputContainer = document.getElementById('mobile-preview-numeric');
-        
+
         if (!container || !inputContainer) {
             logger.warn('Mobile numeric preview containers not found');
             return;
         }
-        
+
         container.style.display = 'block';
-        
+
         const input = inputContainer.querySelector('input[type="number"]');
         if (input) {
             input.placeholder = translationManager.getTranslationSync('enter_your_answer') || 'Enter your answer';

@@ -19,51 +19,51 @@ export class TimerManager {
     startTimer(duration, onTick = null, onComplete = null) {
         return errorBoundary.safeExecute(() => {
             logger.debug('Starting timer with duration:', duration, 'ms');
-            
+
             // Validate duration
             if (!duration || isNaN(duration) || duration <= 0) {
                 logger.error('Invalid timer duration:', duration, '- using 30 second default');
                 duration = 30000; // Default to 30 seconds
             }
-            
+
             // Clear existing timer
             this.stopTimer();
-            
+
             let timeRemaining = duration;
             this.updateTimerDisplay(timeRemaining);
-            
+
             // Call initial tick if provided
             if (onTick) {
                 onTick(timeRemaining);
             }
-            
+
             this.timer = setInterval(() => {
                 timeRemaining -= 1000;
                 logger.debug('Timer tick - timeRemaining:', timeRemaining);
-                
+
                 this.updateTimerDisplay(timeRemaining);
-                
+
                 // Call tick callback if provided
                 if (onTick) {
                     onTick(timeRemaining);
                 }
-                
+
                 if (timeRemaining <= 0) {
                     logger.debug('Timer finished');
                     this.stopTimer();
-                    
+
                     // Call completion callback if provided
                     if (onComplete) {
                         onComplete();
                     }
                 }
             }, 1000);
-            
+
             // Track timer for cleanup
             if (this.timer) {
                 this.trackedTimers.add(this.timer);
             }
-            
+
         }, {
             type: 'timer_management',
             operation: 'start_timer'
@@ -92,12 +92,12 @@ export class TimerManager {
     updateTimerDisplay(timeRemaining) {
         const timerElement = document.getElementById('timer');
         // logger.debug('updateTimerDisplay - element found:', !!timerElement, 'timeRemaining:', timeRemaining);
-        
+
         if (timerElement) {
             const seconds = Math.max(0, Math.ceil(timeRemaining / 1000));
             timerElement.textContent = seconds.toString();
             // logger.debug('Timer updated to:', seconds);
-            
+
             // Add warning class for last 10 seconds
             if (seconds <= 10 && seconds > 0) {
                 timerElement.classList.add('warning');
@@ -108,7 +108,7 @@ export class TimerManager {
             // Fallback: set to 0 if element not found
             // logger.debug('Timer set to 0 (fallback)');
         }
-        
+
         if (!timerElement) {
             // logger.debug('Timer element not found!');
         }
@@ -142,13 +142,13 @@ export class TimerManager {
      */
     getRemainingTime() {
         if (!this.timer) return 0;
-        
+
         const timerElement = document.getElementById('timer');
         if (timerElement) {
             const seconds = parseInt(timerElement.textContent) || 0;
             return seconds * 1000;
         }
-        
+
         return 0;
     }
 
@@ -157,7 +157,7 @@ export class TimerManager {
      */
     cleanup() {
         this.stopTimer();
-        
+
         // Clear any remaining tracked timers
         this.trackedTimers.forEach(timer => {
             try {
@@ -167,7 +167,7 @@ export class TimerManager {
                 logger.warn('Error clearing timer:', error);
             }
         });
-        
+
         this.trackedTimers.clear();
         logger.debug('TimerManager cleanup completed');
     }

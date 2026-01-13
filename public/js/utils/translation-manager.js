@@ -27,23 +27,23 @@ class TranslationManager {
     async getTranslation(key, params = []) {
         // Ensure current language is loaded
         await this.ensureLanguageLoaded(this.currentLanguage);
-        
+
         const translations = this.loadedTranslations.get(this.currentLanguage);
         let translation = translations?.[key];
-        
+
         // Fallback to default language if key not found
         if (!translation && this.currentLanguage !== this.defaultLanguage) {
             await this.ensureLanguageLoaded(this.defaultLanguage);
             const defaultTranslations = this.loadedTranslations.get(this.defaultLanguage);
             translation = defaultTranslations?.[key];
         }
-        
+
         // Final fallback to key itself
         if (!translation) {
             logger.warn(`Translation missing for key: ${key}`);
             translation = key;
         }
-        
+
         // Replace parameters
         return this.replaceParameters(translation, params);
     }
@@ -60,21 +60,21 @@ class TranslationManager {
 
         const translations = this.loadedTranslations.get(this.currentLanguage);
         let translation = translations?.[key];
-        
+
         // Fallback to default language
         if (!translation && this.currentLanguage !== this.defaultLanguage) {
             const defaultTranslations = this.loadedTranslations.get(this.defaultLanguage);
             translation = defaultTranslations?.[key];
         }
-        
+
         // Debug logging for missing translations
         if (!translation && key.startsWith('option_letter_')) {
             logger.warn(`Missing translation for ${key}. Available translations:`, translations ? Object.keys(translations).filter(k => k.includes('option')) : 'No translations loaded');
         }
-        
+
         // Final fallback
         translation = translation || key;
-        
+
         return this.replaceParameters(translation, params);
     }
 
@@ -85,7 +85,7 @@ class TranslationManager {
         if (!params || params.length === 0) {
             return translation;
         }
-        
+
         return translation.replace(/\{(\d+)\}/g, (match, index) => {
             const paramIndex = parseInt(index);
             return params[paramIndex] !== undefined ? params[paramIndex] : match;
@@ -109,7 +109,7 @@ class TranslationManager {
         // Create loading promise
         const loadingPromise = this.doLoadLanguage(languageCode);
         this.loadingPromises.set(languageCode, loadingPromise);
-        
+
         try {
             const translations = await loadingPromise;
             this.loadedTranslations.set(languageCode, translations);
@@ -131,14 +131,14 @@ class TranslationManager {
             logger.debug(`🔄 Attempting to load language: ${languageCode}`);
             const importPath = `./translations/${languageCode}.js`;
             logger.debug(`📁 Import path: ${importPath}`);
-            
+
             // Dynamic import of language module
             const module = await import(importPath);
-            logger.debug(`✅ Module loaded successfully:`, module);
-            
+            logger.debug('✅ Module loaded successfully:', module);
+
             const translations = module.default || module.translations;
-            logger.debug(`📖 Translations extracted:`, translations ? Object.keys(translations).length : 'null');
-            
+            logger.debug('📖 Translations extracted:', translations ? Object.keys(translations).length : 'null');
+
             return translations;
         } catch (error) {
             logger.error(`❌ Failed to import language module ${languageCode}:`, error);
@@ -154,7 +154,7 @@ class TranslationManager {
         if (this.loadedTranslations.has(languageCode)) {
             return this.loadedTranslations.get(languageCode);
         }
-        
+
         return this.loadLanguage(languageCode);
     }
 
@@ -168,7 +168,7 @@ class TranslationManager {
         }
 
         logger.debug(`Changing language from ${this.currentLanguage} to ${languageCode}`);
-        
+
         // Load new language
         const translations = await this.loadLanguage(languageCode);
         if (!translations) {
@@ -179,16 +179,16 @@ class TranslationManager {
         // Update current language
         const previousLanguage = this.currentLanguage;
         this.currentLanguage = languageCode;
-        
+
         // Save to localStorage (with error handling for private browsing/quota)
         setItem('language', languageCode);
-        
+
         // Unload previous language to save memory (except default)
         if (previousLanguage !== this.defaultLanguage && previousLanguage !== languageCode) {
             this.loadedTranslations.delete(previousLanguage);
             logger.debug(`Unloaded language: ${previousLanguage}`);
         }
-        
+
         logger.debug(`Language changed to: ${languageCode}`);
         return true;
     }
@@ -221,7 +221,7 @@ class TranslationManager {
         const loadedLanguages = Array.from(this.loadedTranslations.keys());
         const totalKeys = Array.from(this.loadedTranslations.values())
             .reduce((sum, translations) => sum + Object.keys(translations).length, 0);
-        
+
         return {
             loadedLanguages,
             currentLanguage: this.currentLanguage,
@@ -262,7 +262,7 @@ class TranslationManager {
         const letters = ['option_letter_a', 'option_letter_b', 'option_letter_c', 'option_letter_d', 'option_letter_e', 'option_letter_f'];
         const key = letters[index] || 'option_letter_a';
         const result = this.getTranslationSync(key);
-        
+
         // Debug logging for option letters
         if (result === key) {
             logger.warn(`Option letter translation failed for ${key}, returning fallback`);
@@ -270,7 +270,7 @@ class TranslationManager {
             const fallbackLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
             return fallbackLetters[index] || String.fromCharCode(65 + index);
         }
-        
+
         return result;
     }
 
@@ -284,15 +284,15 @@ class TranslationManager {
             logger.warn('No translations loaded for current language:', this.currentLanguage);
             return;
         }
-        
+
         logger.debug('Translating page with', Object.keys(translations).length, 'translations');
-        
+
         // Translate elements with data-translate attribute
         document.querySelectorAll('[data-translate]').forEach(element => {
             const translationKey = element.getAttribute('data-translate');
             const args = element.getAttribute('data-translate-args');
             const parsedArgs = args ? args.split(',').map(arg => arg.trim()) : [];
-            
+
             if (translationKey) {
                 const translatedText = this.getTranslationSync(translationKey, parsedArgs);
                 element.textContent = translatedText;
@@ -305,7 +305,7 @@ class TranslationManager {
             const translationKey = element.getAttribute('data-translate-title');
             const args = element.getAttribute('data-translate-title-args');
             const parsedArgs = args ? args.split(',').map(arg => arg.trim()) : [];
-            
+
             if (translationKey) {
                 element.title = this.getTranslationSync(translationKey, parsedArgs);
             }
@@ -342,15 +342,15 @@ class TranslationManager {
         if (success) {
             this.translatePage();
             this.updateGameTranslations();
-            
+
             // Update connection status translations
             if (window.connectionStatus) {
                 window.connectionStatus.refreshTranslations();
             }
-            
+
             // Dispatch language change event for custom components
-            const event = new CustomEvent('languageChanged', { 
-                detail: { language: languageCode } 
+            const event = new CustomEvent('languageChanged', {
+                detail: { language: languageCode }
             });
             document.dispatchEvent(event);
         }
@@ -370,7 +370,7 @@ class TranslationManager {
                 // Check if element has data-translate spans (structured format)
                 const questionSpan = element.querySelector('[data-translate="question"]');
                 const ofSpan = element.querySelector('[data-translate="of"]');
-                
+
                 if (questionSpan && ofSpan) {
                     // Update structured format using DOM methods (safer than innerHTML)
                     const questionText = this.getTranslationSync('question');
@@ -419,39 +419,39 @@ class TranslationManager {
      */
     translateContainer(container) {
         if (!container) return;
-        
+
         // Debug: count elements to translate
         const elementsToTranslate = container.querySelectorAll('[data-translate]');
         logger.debug(`🔍 translateContainer: Found ${elementsToTranslate.length} elements to translate`);
         logger.debug(`🌐 Current language: ${this.currentLanguage}`);
         logger.debug(`📚 Has translations loaded: ${this.loadedTranslations.has(this.currentLanguage)}`);
-        logger.debug(`🗂️ All loaded languages:`, Array.from(this.loadedTranslations.keys()));
-        logger.debug(`📊 Total loaded translations:`, this.loadedTranslations.size);
-        
+        logger.debug('🗂️ All loaded languages:', Array.from(this.loadedTranslations.keys()));
+        logger.debug('📊 Total loaded translations:', this.loadedTranslations.size);
+
         if (this.loadedTranslations.has(this.currentLanguage)) {
             const translations = this.loadedTranslations.get(this.currentLanguage);
-            logger.debug(`📖 Available translation keys:`, Object.keys(translations).slice(0, 10));
-            logger.debug(`🎯 Test translation for 'multiple_choice':`, translations['multiple_choice']);
+            logger.debug('📖 Available translation keys:', Object.keys(translations).slice(0, 10));
+            logger.debug('🎯 Test translation for \'multiple_choice\':', translations['multiple_choice']);
         } else {
             logger.error(`❌ No translations found for language: ${this.currentLanguage}`);
-            logger.error(`🔍 Available languages:`, Array.from(this.loadedTranslations.keys()));
+            logger.error('🔍 Available languages:', Array.from(this.loadedTranslations.keys()));
         }
-        
+
         // Translate elements with data-translate attribute within this container
         elementsToTranslate.forEach((element, index) => {
             const translationKey = element.getAttribute('data-translate');
             const args = element.getAttribute('data-translate-args');
             const parsedArgs = args ? args.split(',').map(arg => arg.trim()) : [];
-            
+
             if (translationKey) {
                 const originalText = element.textContent;
                 const translatedText = this.getTranslationSync(translationKey, parsedArgs);
                 element.textContent = translatedText;
-                
+
                 // Debug all translations, especially problematic ones
                 if (['add_image', 'time_seconds', 'multiple_choice', 'question', 'remove', 'a_is_correct'].includes(translationKey)) {
                     logger.debug(`🔤 Translation ${index + 1}: "${translationKey}" -> "${translatedText}" (was: "${originalText}")`);
-                    
+
                     if (translatedText === translationKey) {
                         logger.error(`❌ Translation FAILED for: ${translationKey}`);
                         logger.error('Loaded translations:', this.loadedTranslations.has(this.currentLanguage) ? 'YES' : 'NO');
@@ -466,7 +466,7 @@ class TranslationManager {
             const translationKey = element.getAttribute('data-translate-title');
             const args = element.getAttribute('data-translate-title-args');
             const parsedArgs = args ? args.split(',').map(arg => arg.trim()) : [];
-            
+
             if (translationKey) {
                 element.title = this.getTranslationSync(translationKey, parsedArgs);
             }
@@ -503,20 +503,20 @@ class TranslationManager {
         const targetLanguage = languageCode ||
                               getItem('language') ||
                               this.defaultLanguage;
-        
+
         logger.debug(`Initializing translation manager with language: ${targetLanguage}`);
-        
+
         try {
             // Load default language first
             await this.loadLanguage(this.defaultLanguage);
-            
+
             // Load target language if different
             if (targetLanguage !== this.defaultLanguage) {
                 await this.changeLanguage(targetLanguage);
             } else {
                 this.currentLanguage = this.defaultLanguage;
             }
-            
+
             logger.debug('Translation manager initialized successfully');
             return true;
         } catch (error) {
@@ -553,8 +553,8 @@ export async function changeLanguage(languageCode) {
     const success = await translationManager.changeLanguage(languageCode);
     if (success) {
         // Trigger UI update
-        const event = new CustomEvent('languageChanged', { 
-            detail: { language: languageCode } 
+        const event = new CustomEvent('languageChanged', {
+            detail: { language: languageCode }
         });
         document.dispatchEvent(event);
     }

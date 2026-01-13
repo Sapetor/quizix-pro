@@ -11,7 +11,7 @@ export class SecureStorageService {
         this.algorithm = 'AES-GCM';
         this.keyLength = 256;
         this.isSupported = this.constructor.isSupported();
-        
+
         // Only initialize encryption if Web Crypto API is supported
         if (this.isSupported) {
             this.initializeMasterKey().catch(error => {
@@ -30,7 +30,7 @@ export class SecureStorageService {
         try {
             // Check if master key exists
             const existingKey = localStorage.getItem('secure_master_key');
-            
+
             if (existingKey) {
                 // Import existing key
                 const keyData = JSON.parse(existingKey);
@@ -49,7 +49,7 @@ export class SecureStorageService {
                     true,
                     ['encrypt', 'decrypt']
                 );
-                
+
                 // Export and store the key
                 const exportedKey = await window.crypto.subtle.exportKey('jwk', this.masterKey);
                 localStorage.setItem('secure_master_key', JSON.stringify(exportedKey));
@@ -138,7 +138,7 @@ export class SecureStorageService {
             }
 
             const storageObject = JSON.parse(storedData);
-            
+
             // Reconstruct IV and encrypted data
             const iv = new Uint8Array(storageObject.iv);
             const encryptedData = new Uint8Array(storageObject.data);
@@ -153,7 +153,7 @@ export class SecureStorageService {
             // Convert back to string
             const decoder = new TextDecoder();
             const result = decoder.decode(decryptedData);
-            
+
             logger.debug(`Secure item retrieved: ${key}`);
             return result;
         } catch (error) {
@@ -194,14 +194,14 @@ export class SecureStorageService {
      */
     async migrateApiKeys() {
         logger.debug('Starting API key migration to secure storage');
-        
+
         const providers = ['openai', 'claude', 'huggingface'];
         let migratedCount = 0;
 
         for (const provider of providers) {
             const oldKey = `ai_api_key_${provider}`;
             const newKey = `api_key_${provider}`;
-            
+
             try {
                 const existingKey = localStorage.getItem(oldKey);
                 if (existingKey && !this.hasSecureItem(newKey)) {
@@ -231,11 +231,11 @@ export class SecureStorageService {
         try {
             const keys = Object.keys(localStorage).filter(key => key.startsWith(this.keyPrefix));
             keys.forEach(key => localStorage.removeItem(key));
-            
+
             // Also remove master key
             localStorage.removeItem('secure_master_key');
             this.masterKey = null;
-            
+
             logger.info('All secure storage cleared');
             return true;
         } catch (error) {

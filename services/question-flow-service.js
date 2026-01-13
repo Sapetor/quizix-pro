@@ -9,12 +9,12 @@
  */
 
 class QuestionFlowService {
-  constructor(logger, gameSessionService) {
-    this.logger = logger;
-    this.gameSessionService = gameSessionService;
-  }
+    constructor(logger, gameSessionService) {
+        this.logger = logger;
+        this.gameSessionService = gameSessionService;
+    }
 
-  /**
+    /**
    * Handle player answer submission
    * @param {string} socketId - Socket ID of the player
    * @param {*} answer - Player's answer
@@ -24,250 +24,250 @@ class QuestionFlowService {
    * @param {Object} socket - Socket instance
    * @param {Object} io - Socket.IO instance
    */
-  handleAnswerSubmission(socketId, answer, type, playerData, game, socket, io) {
-    if (!playerData) {
-      this.logger.warn(`Answer submission from unknown player: ${socketId}`);
-      return;
-    }
+    handleAnswerSubmission(socketId, answer, type, playerData, game, socket, io) {
+        if (!playerData) {
+            this.logger.warn(`Answer submission from unknown player: ${socketId}`);
+            return;
+        }
 
-    if (!game || game.gameState !== 'question') {
-      this.logger.warn(`Answer submission rejected: game not in question state`);
-      // Inform player their answer was rejected (too late or game not ready)
-      socket.emit('answer-rejected', {
-        reason: game ? 'question_ended' : 'game_not_found',
-        message: game ? 'Question has already ended' : 'Game not found'
-      });
-      return;
-    }
+        if (!game || game.gameState !== 'question') {
+            this.logger.warn('Answer submission rejected: game not in question state');
+            // Inform player their answer was rejected (too late or game not ready)
+            socket.emit('answer-rejected', {
+                reason: game ? 'question_ended' : 'game_not_found',
+                message: game ? 'Question has already ended' : 'Game not found'
+            });
+            return;
+        }
 
-    // Submit the answer
-    game.submitAnswer(socketId, answer, type);
+        // Submit the answer
+        game.submitAnswer(socketId, answer, type);
 
-    // Confirm submission to player
-    socket.emit('answer-submitted', { answer: answer });
+        // Confirm submission to player
+        socket.emit('answer-submitted', { answer: answer });
 
-    // Check if all players have answered
-    const totalPlayers = game.players.size;
-    const answeredPlayers = Array.from(game.players.values())
-      .filter(player => player.answers[game.currentQuestion]).length;
+        // Check if all players have answered
+        const totalPlayers = game.players.size;
+        const answeredPlayers = Array.from(game.players.values())
+            .filter(player => player.answers[game.currentQuestion]).length;
 
-    this.logger.debug(`Answer submitted: ${answeredPlayers}/${totalPlayers} players answered`);
+        this.logger.debug(`Answer submitted: ${answeredPlayers}/${totalPlayers} players answered`);
 
-    // Emit live answer count update to host (only if host is connected)
-    if (game.hostId) {
-      const liveStats = {
-        answeredPlayers: answeredPlayers,
-        totalPlayers: totalPlayers
-      };
-      io.to(game.hostId).emit('answer-count-update', liveStats);
-    }
+        // Emit live answer count update to host (only if host is connected)
+        if (game.hostId) {
+            const liveStats = {
+                answeredPlayers: answeredPlayers,
+                totalPlayers: totalPlayers
+            };
+            io.to(game.hostId).emit('answer-count-update', liveStats);
+        }
 
-    // If all players answered, end question early (check flag to prevent duplicates)
-    if (answeredPlayers >= totalPlayers && totalPlayers > 0 &&
+        // If all players answered, end question early (check flag to prevent duplicates)
+        if (answeredPlayers >= totalPlayers && totalPlayers > 0 &&
         game.gameState === 'question' && !game.endingQuestionEarly) {
-      this.endQuestionEarly(game, io);
+            this.endQuestionEarly(game, io);
+        }
     }
-  }
 
-  /**
+    /**
    * End question early when all players have answered
    * @param {Object} game - Game instance
    * @param {Object} io - Socket.IO instance
    */
-  endQuestionEarly(game, io) {
+    endQuestionEarly(game, io) {
     // Prevent duplicate calls with flag
-    if (game.endingQuestionEarly) {
-      this.logger.debug('Already ending question early, ignoring duplicate call');
-      return;
-    }
-    game.endingQuestionEarly = true;
+        if (game.endingQuestionEarly) {
+            this.logger.debug('Already ending question early, ignoring duplicate call');
+            return;
+        }
+        game.endingQuestionEarly = true;
 
-    this.logger.debug(`All players answered, ending question early for game ${game.pin}`);
+        this.logger.debug(`All players answered, ending question early for game ${game.pin}`);
 
-    // Clear existing timers
-    if (game.questionTimer) {
-      clearTimeout(game.questionTimer);
-      game.questionTimer = null;
-    }
-
-    if (game.advanceTimer) {
-      clearTimeout(game.advanceTimer);
-      game.advanceTimer = null;
-    }
-
-    // Wait 1 second before revealing answers (gives players time to see their submission)
-    // Store timer ID for proper cleanup if game is destroyed
-    game.earlyEndTimer = setTimeout(() => {
-      game.earlyEndTimer = null;
-      try {
-        // Check game state BEFORE resetting flag
-        if (game.gameState !== 'question') {
-          this.logger.debug('Game state changed, skipping early end');
-          game.endingQuestionEarly = false;
-          return;
+        // Clear existing timers
+        if (game.questionTimer) {
+            clearTimeout(game.questionTimer);
+            game.questionTimer = null;
         }
 
-        // End the question
-        game.endQuestion();
-
-        // Get question data with null check
-        const question = game.quiz.questions[game.currentQuestion];
-        if (!question) {
-          this.logger.error(`Question not found at index ${game.currentQuestion}`);
-          game.endingQuestionEarly = false;
-          return;
+        if (game.advanceTimer) {
+            clearTimeout(game.advanceTimer);
+            game.advanceTimer = null;
         }
 
-        // Build correct answer data
-        const correctAnswerData = this.buildCorrectAnswerData(question);
+        // Wait 1 second before revealing answers (gives players time to see their submission)
+        // Store timer ID for proper cleanup if game is destroyed
+        game.earlyEndTimer = setTimeout(() => {
+            game.earlyEndTimer = null;
+            try {
+                // Check game state BEFORE resetting flag
+                if (game.gameState !== 'question') {
+                    this.logger.debug('Game state changed, skipping early end');
+                    game.endingQuestionEarly = false;
+                    return;
+                }
 
-        // Emit question timeout with early end flag
-        io.to(`game-${game.pin}`).emit('question-timeout', {
-          ...correctAnswerData,
-          earlyEnd: true
-        });
+                // End the question
+                game.endQuestion();
 
-        // Get and emit answer statistics to host (only if host connected)
-        if (game.hostId) {
-          const answerStats = game.getAnswerStatistics();
-          io.to(game.hostId).emit('answer-statistics', answerStats);
-        }
+                // Get question data with null check
+                const question = game.quiz.questions[game.currentQuestion];
+                if (!question) {
+                    this.logger.error(`Question not found at index ${game.currentQuestion}`);
+                    game.endingQuestionEarly = false;
+                    return;
+                }
 
-        // Send individual results to each player
-        this.emitPlayerResults(game, io);
+                // Build correct answer data
+                const correctAnswerData = this.buildCorrectAnswerData(question);
 
-        // Advance to next question
-        this.gameSessionService.advanceToNextQuestion(game, io);
+                // Emit question timeout with early end flag
+                io.to(`game-${game.pin}`).emit('question-timeout', {
+                    ...correctAnswerData,
+                    earlyEnd: true
+                });
 
-        // Reset flag AFTER successful completion
-        game.endingQuestionEarly = false;
-      } catch (error) {
-        this.logger.error('Error in endQuestionEarly callback:', error);
-        game.endingQuestionEarly = false;
-      }
-    }, 1000);
-  }
+                // Get and emit answer statistics to host (only if host connected)
+                if (game.hostId) {
+                    const answerStats = game.getAnswerStatistics();
+                    io.to(game.hostId).emit('answer-statistics', answerStats);
+                }
 
-  /**
+                // Send individual results to each player
+                this.emitPlayerResults(game, io);
+
+                // Advance to next question
+                this.gameSessionService.advanceToNextQuestion(game, io);
+
+                // Reset flag AFTER successful completion
+                game.endingQuestionEarly = false;
+            } catch (error) {
+                this.logger.error('Error in endQuestionEarly callback:', error);
+                game.endingQuestionEarly = false;
+            }
+        }, 1000);
+    }
+
+    /**
    * Get correct answer data for a question (alias for buildCorrectAnswerData)
    * @param {Object} question - Question data
    * @returns {Object} Correct answer data
    */
-  getCorrectAnswerData(question) {
-    return this.buildCorrectAnswerData(question);
-  }
+    getCorrectAnswerData(question) {
+        return this.buildCorrectAnswerData(question);
+    }
 
-  /**
+    /**
    * Build correct answer data for a question
    * @param {Object} question - Question data
    * @returns {Object} Correct answer data
    */
-  buildCorrectAnswerData(question) {
-    const correctAnswer = question.correctAnswer;
-    let correctOption = '';
+    buildCorrectAnswerData(question) {
+        const correctAnswer = question.correctAnswer;
+        let correctOption = '';
 
-    switch (question.type || 'multiple-choice') {
-      case 'multiple-choice':
-        correctOption = question.options && question.options[correctAnswer]
-          ? question.options[correctAnswer]
-          : '';
-        break;
+        switch (question.type || 'multiple-choice') {
+            case 'multiple-choice':
+                correctOption = question.options && question.options[correctAnswer]
+                    ? question.options[correctAnswer]
+                    : '';
+                break;
 
-      case 'multiple-correct':
-        const correctAnswers = question.correctAnswers || [];
-        // Validate indices before accessing options array
-        correctOption = correctAnswers
-          .filter(idx => question.options && idx >= 0 && idx < question.options.length)
-          .map(idx => question.options[idx])
-          .join(', ');
-        break;
+            case 'multiple-correct':
+                const correctAnswers = question.correctAnswers || [];
+                // Validate indices before accessing options array
+                correctOption = correctAnswers
+                    .filter(idx => question.options && idx >= 0 && idx < question.options.length)
+                    .map(idx => question.options[idx])
+                    .join(', ');
+                break;
 
-      case 'true-false':
-        correctOption = correctAnswer;
-        break;
+            case 'true-false':
+                correctOption = correctAnswer;
+                break;
 
-      case 'numeric':
-        correctOption = correctAnswer.toString();
-        break;
+            case 'numeric':
+                correctOption = correctAnswer.toString();
+                break;
 
-      case 'ordering':
-        const correctOrder = question.correctOrder || [];
-        // Validate indices before accessing options array
-        correctOption = correctOrder
-          .filter(idx => question.options && idx >= 0 && idx < question.options.length)
-          .map(idx => question.options[idx])
-          .join(' → ');
-        break;
+            case 'ordering':
+                const correctOrder = question.correctOrder || [];
+                // Validate indices before accessing options array
+                correctOption = correctOrder
+                    .filter(idx => question.options && idx >= 0 && idx < question.options.length)
+                    .map(idx => question.options[idx])
+                    .join(' → ');
+                break;
 
-      default:
-        correctOption = correctAnswer;
-        break;
+            default:
+                correctOption = correctAnswer;
+                break;
+        }
+
+        const data = {
+            correctAnswer: correctAnswer,
+            correctOption: correctOption,
+            questionType: question.type || 'multiple-choice',
+            tolerance: question.tolerance || null,
+            explanation: question.explanation || null
+        };
+
+        // For multiple-correct questions, also send the correctAnswers array
+        if (question.type === 'multiple-correct') {
+            data.correctAnswers = question.correctAnswers || [];
+        }
+
+        return data;
     }
 
-    const data = {
-      correctAnswer: correctAnswer,
-      correctOption: correctOption,
-      questionType: question.type || 'multiple-choice',
-      tolerance: question.tolerance || null,
-      explanation: question.explanation || null
-    };
-
-    // For multiple-correct questions, also send the correctAnswers array
-    if (question.type === 'multiple-correct') {
-      data.correctAnswers = question.correctAnswers || [];
-    }
-
-    return data;
-  }
-
-  /**
+    /**
    * Emit individual results to each player
    * @param {Object} game - Game instance
    * @param {Object} io - Socket.IO instance
    */
-  emitPlayerResults(game, io) {
+    emitPlayerResults(game, io) {
     // Get explanation and correct answer data from current question
-    const currentQuestion = game.quiz.questions[game.currentQuestion];
-    const explanation = currentQuestion?.explanation || null;
-    const correctAnswerData = this.getCorrectAnswerData(currentQuestion);
+        const currentQuestion = game.quiz.questions[game.currentQuestion];
+        const explanation = currentQuestion?.explanation || null;
+        const correctAnswerData = this.getCorrectAnswerData(currentQuestion);
 
-    game.players.forEach((player, playerId) => {
-      const playerAnswer = player.answers[game.currentQuestion];
+        game.players.forEach((player, playerId) => {
+            const playerAnswer = player.answers[game.currentQuestion];
 
-      if (playerAnswer) {
-        io.to(playerId).emit('player-result', {
-          isCorrect: playerAnswer.isCorrect,
-          points: playerAnswer.points,
-          totalScore: player.score,
-          explanation: explanation,
-          questionType: correctAnswerData.questionType,
-          correctAnswer: correctAnswerData.correctAnswer,
-          correctAnswers: correctAnswerData.correctAnswers
+            if (playerAnswer) {
+                io.to(playerId).emit('player-result', {
+                    isCorrect: playerAnswer.isCorrect,
+                    points: playerAnswer.points,
+                    totalScore: player.score,
+                    explanation: explanation,
+                    questionType: correctAnswerData.questionType,
+                    correctAnswer: correctAnswerData.correctAnswer,
+                    correctAnswers: correctAnswerData.correctAnswers
+                });
+            } else {
+                io.to(playerId).emit('player-result', {
+                    isCorrect: false,
+                    points: 0,
+                    totalScore: player.score,
+                    explanation: explanation,
+                    questionType: correctAnswerData.questionType,
+                    correctAnswer: correctAnswerData.correctAnswer,
+                    correctAnswers: correctAnswerData.correctAnswers
+                });
+            }
         });
-      } else {
-        io.to(playerId).emit('player-result', {
-          isCorrect: false,
-          points: 0,
-          totalScore: player.score,
-          explanation: explanation,
-          questionType: correctAnswerData.questionType,
-          correctAnswer: correctAnswerData.correctAnswer,
-          correctAnswers: correctAnswerData.correctAnswers
-        });
-      }
-    });
 
-    this.logger.debug(`Emitted results to ${game.players.size} players`);
-  }
+        this.logger.debug(`Emitted results to ${game.players.size} players`);
+    }
 
-  /**
+    /**
    * Get answer statistics for current question
    * @param {Object} game - Game instance
    * @returns {Object} Statistics object
    */
-  getAnswerStatistics(game) {
-    return game.getAnswerStatistics();
-  }
+    getAnswerStatistics(game) {
+        return game.getAnswerStatistics();
+    }
 }
 
 module.exports = { QuestionFlowService };

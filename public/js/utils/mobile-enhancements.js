@@ -10,16 +10,16 @@ class MobileEnhancements {
         this.isMobile = window.innerWidth <= 768;
         this.isTouch = 'ontouchstart' in window;
         this.initialized = false;
-        
+
         this.init();
     }
 
     init() {
         if (this.initialized) return;
-        
+
         this.setupTouchFeedback();
         this.setupAccessibilityEnhancements();
-        
+
         this.initialized = true;
         logger.debug('Simplified mobile enhancements initialized');
     }
@@ -45,7 +45,7 @@ class MobileEnhancements {
 
     handleTouchStart(event) {
         const element = event.currentTarget;
-        
+
         // Remove existing ripple
         const existingRipple = element.querySelector('.ripple-effect');
         if (existingRipple) {
@@ -56,18 +56,18 @@ class MobileEnhancements {
         if (this.isMobile) {
             const ripple = document.createElement('span');
             ripple.classList.add('ripple-effect');
-            
+
             // Position ripple at touch point
             const rect = element.getBoundingClientRect();
             const x = (event.clientX || (event.touches && event.touches[0] && event.touches[0].clientX)) - rect.left;
             const y = (event.clientY || (event.touches && event.touches[0] && event.touches[0].clientY)) - rect.top;
-            
+
             if (x !== undefined && y !== undefined) {
                 ripple.style.left = `${x}px`;
                 ripple.style.top = `${y}px`;
-                
+
                 element.appendChild(ripple);
-                
+
                 // Remove ripple after animation
                 setTimeout(() => {
                     if (ripple.parentElement) {
@@ -83,9 +83,9 @@ class MobileEnhancements {
             mutations.forEach((mutation) => {
                 mutation.addedNodes.forEach((node) => {
                     if (node.nodeType === 1) { // Element node
-                        const newElements = node.querySelectorAll && 
+                        const newElements = node.querySelectorAll &&
                             node.querySelectorAll('.player-option, .checkbox-option, .tf-option, .btn');
-                        
+
                         if (newElements && newElements.length > 0) {
                             newElements.forEach(element => {
                                 element.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true });

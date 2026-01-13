@@ -25,20 +25,20 @@ export class GameStateManager {
      */
     initializeQuestionState(data) {
         logger.debug('Initializing question state:', data);
-        
+
         this.currentQuestion = data;
         this.selectedAnswer = null;
         this.resultShown = false;
         this.answerSubmitted = false;
-        
+
         // Timer management is now handled by TimerManager
-        
+
         // Set host/player mode based on player name
         if (this.playerName && this.playerName !== 'Host' && this.isHost !== false) {
             this.isHost = false;
             logger.debug('Setting player mode for:', this.playerName);
         }
-        
+
         logger.debug('Game state initialized for question:', data.questionNumber);
     }
 

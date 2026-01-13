@@ -85,7 +85,7 @@ export class ConnectionStatus {
         // Add click handler for details toggle
         const indicator = statusElement.querySelector('.connection-indicator');
         const details = statusElement.querySelector('.connection-details');
-        
+
         indicator.addEventListener('click', () => {
             const isVisible = details.style.display !== 'none';
             details.style.display = isVisible ? 'none' : 'block';
@@ -151,7 +151,7 @@ export class ConnectionStatus {
         this.isOnline = isOnline;
         this.updateUI();
         this.notifyCallbacks();
-        
+
         logger.info(`Network status changed: ${isOnline ? 'online' : 'offline'}`);
     }
 
@@ -160,7 +160,7 @@ export class ConnectionStatus {
      */
     async checkConnection() {
         const startTime = Date.now();
-        
+
         try {
             // Ping the server with a lightweight request
             const response = await fetch(APIHelper.getApiUrl('api/ping'), {
@@ -187,7 +187,7 @@ export class ConnectionStatus {
                     cache: 'no-cache',
                     signal: AbortSignal.timeout(3000)
                 });
-                
+
                 const pingTime = Date.now() - startTime;
                 this.lastPingTime = pingTime;
                 this.isOnline = fallbackResponse.ok;
@@ -240,11 +240,11 @@ export class ConnectionStatus {
 
         // Update details
         if (statusValue) {
-            statusValue.textContent = this.isOnline ? 
-                translationManager.getTranslationSync('connected') : 
+            statusValue.textContent = this.isOnline ?
+                translationManager.getTranslationSync('connected') :
                 translationManager.getTranslationSync('offline');
         }
-        
+
         if (pingValue) {
             pingValue.textContent = this.lastPingTime ? `${this.lastPingTime}ms` : '-';
         }
@@ -283,7 +283,7 @@ export class ConnectionStatus {
      */
     onStatusChange(callback) {
         this.callbacks.add(callback);
-        
+
         // Return unsubscribe function
         return () => {
             this.callbacks.delete(callback);
@@ -314,7 +314,7 @@ export class ConnectionStatus {
      */
     setSocket(socket) {
         this.socket = socket;
-        
+
         if (socket) {
             socket.on('connect', () => {
                 this.handleNetworkChange(true);

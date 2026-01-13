@@ -29,9 +29,9 @@ function updateLanguageDropdownDisplay(languageCode) {
         const desktopDropdown = document.getElementById('language-selector');
         const mobileDropdown = document.getElementById('mobile-language-selector');
         const mobileHeaderDropdown = document.getElementById('mobile-language-selector-header');
-        
+
         const dropdowns = [desktopDropdown, mobileDropdown, mobileHeaderDropdown].filter(d => d);
-        
+
         if (dropdowns.length === 0) {
             logger.debug('No language dropdowns found during initialization');
             return;
@@ -45,18 +45,18 @@ function updateLanguageDropdownDisplay(languageCode) {
             if (selectedFlag && selectedName && optionElement) {
                 const optionFlag = optionElement.querySelector('.language-flag');
                 const optionName = optionElement.querySelector('.language-name');
-                
+
                 if (optionFlag && optionName) {
                     // Update displayed flag and name
                     selectedFlag.textContent = optionFlag.textContent;
                     selectedName.textContent = optionName.textContent;
-                    
+
                     // Update translation key if present
                     const translateKey = optionName.getAttribute('data-translate');
                     if (translateKey) {
                         selectedName.setAttribute('data-translate', translateKey);
                     }
-                    
+
                     // Update selected state in options
                     dropdown.querySelectorAll('.language-option').forEach(option => {
                         option.classList.remove('selected');
@@ -65,7 +65,7 @@ function updateLanguageDropdownDisplay(languageCode) {
                 }
             }
         });
-        
+
         logger.debug(`Updated all language dropdown displays to: ${languageCode}`);
     } catch (error) {
         logger.error('Error updating language dropdown display:', error);
@@ -77,26 +77,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const timestamp = new Date().toISOString();
     logger.debug(`🟠 [${timestamp}] main.js DOMContentLoaded event fired`);
     logger.debug('Quizix Pro - Initializing modular application...');
-    
+
     // FOUC Prevention: Apply saved font size immediately (should already be done in HTML head)
     const savedFontSize = getItem('globalFontSize', 'medium');
     if (window.setGlobalFontSize) {
         window.setGlobalFontSize(savedFontSize);
     }
-    
+
     await errorBoundary.safeNetworkOperation(async () => {
         // Initialize translation manager first
         const savedLanguage = getItem('language', 'es');
         logger.debug('Initializing translation manager with language:', savedLanguage);
-        
+
         const success = await translationManager.initialize(savedLanguage);
         if (success) {
             logger.debug('Translation manager initialized successfully');
-            
+
             // Translate the page after initialization
             translationManager.translatePage();
             logger.debug('Page translated with language:', savedLanguage);
-            
+
             // Ensure main menu is translated specifically (fixes Quick Start Guide translation)
             setTimeout(() => {
                 const mainMenuScreen = document.getElementById('main-menu');
@@ -105,20 +105,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     logger.debug('🔄 Main menu screen translated specifically');
                 }
             }, 100);
-            
+
             // Update language dropdown display to show current language
             // Use setTimeout to ensure DOM is fully rendered
             setTimeout(() => {
                 updateLanguageDropdownDisplay(savedLanguage);
             }, 100);
-            
+
             // Log memory savings
             const memoryInfo = translationManager.getMemoryInfo();
             logger.debug('Translation memory info:', memoryInfo);
         } else {
             logger.error('Failed to initialize translation manager');
         }
-        
+
         // Initialize the main application
         const appInitTimestamp = new Date().toISOString();
         logger.debug(`🟠 [${appInitTimestamp}] Creating QuizGame instance`);
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const appCreatedTimestamp = new Date().toISOString();
         logger.debug(`🟠 [${appCreatedTimestamp}] QuizGame instance created successfully`);
         logger.debug('QuizGame instance created successfully');
-        
+
         // Check for QR code URL parameters and auto-fill PIN
         const urlParams = new URLSearchParams(window.location.search);
         const pinFromURL = urlParams.get('pin');
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (pinInput) {
                     pinInput.value = pinFromURL;
                     logger.debug('PIN pre-filled from QR code URL');
-                    
+
                     // Show the join screen
                     if (window.game && window.game.showScreen) {
                         window.game.showScreen('join-screen');
@@ -147,37 +147,37 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }, 100); // Small delay to ensure DOM is ready
         }
-        
+
         // Initialize content density manager for smart spacing
         contentDensityManager.initialize();
         logger.debug('Content density manager initialized');
-        
+
         // Initialize mobile layout manager for content-aware layouts
         const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         mobileLayoutManager.setEnabled(window.innerWidth <= 768);
         logger.debug('Mobile layout manager initialized');
-        
+
         // Initialize mobile enhancements for touch interactions and UX improvements
         if (window.mobileEnhancements) {
             logger.debug('Mobile enhancements initialized successfully');
         } else {
             logger.warn('Mobile enhancements not available');
         }
-        
+
         // Enhanced mobile initialization for better Android/iOS compatibility
         if (isMobile) {
             logger.info(`📱 Mobile device detected: ${navigator.userAgent.substring(0, 50)}...`);
-            
+
             // Add mobile-specific class for CSS optimizations
             document.body.classList.add('mobile-device');
-            
+
             // Mobile devices benefit from longer initialization delay
             setTimeout(() => {
                 document.body.classList.add('mobile-ready');
                 logger.debug('📱 Mobile initialization complete');
             }, 300);
         }
-        
+
         logger.debug(`App initialized for ${isMobile ? 'mobile' : 'desktop'} layout`);
 
         // Start onboarding tutorial for first-time users
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // FOUC Prevention: Add loaded class for smooth appearance
         document.body.classList.add('loaded');
-        
+
         // Make sure theme toggle is available globally
         window.toggleTheme = () => {
             logger.debug('Global theme toggle called');
@@ -201,11 +201,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 logger.debug('window.game.toggleTheme not available');
             }
         };
-        
+
         // Theme initialization is handled by SettingsManager
         // Remove conflicting theme initialization to prevent race conditions
         logger.debug('Theme initialization delegated to SettingsManager');
-        
+
         // Initialize global font size after DOM is ready
         setTimeout(() => {
             errorBoundary.safeDOMOperation(() => {
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Initialize browser optimizations
         logger.debug('Browser optimization status:', browserOptimizer.getOptimizationStatus());
-        
+
         logger.debug('Quizix Pro - Application initialized successfully');
     }, 'app_initialization', () => {
         logger.error('Failed to initialize application');

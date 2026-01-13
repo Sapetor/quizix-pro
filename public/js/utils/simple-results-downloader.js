@@ -12,12 +12,12 @@ import { APIHelper } from './api-helper.js';
 export class SimpleResultsDownloader {
     constructor() {
         this.currentExportFormat = 'simple'; // Default to simple format for this tool
-        
+
         // Listen to results service updates
         resultsManagerService.addListener((event, data) => {
             this.handleServiceUpdate(event, data);
         });
-        
+
         logger.debug('🔧 SimpleResultsDownloader initialized');
     }
 
@@ -55,7 +55,7 @@ export class SimpleResultsDownloader {
     async initializeDropdown() {
         const dropdown = document.getElementById('results-dropdown');
         const downloadButton = document.getElementById('download-selected');
-        
+
         if (!dropdown) {
             logger.warn('Results dropdown not found');
             return;
@@ -64,31 +64,31 @@ export class SimpleResultsDownloader {
         try {
             // Clear existing options except the first placeholder
             dropdown.innerHTML = '<option value="" data-translate="select_results">Select results to download...</option>';
-            
+
             // Fetch available results using the service
             logger.debug('📊 Fetching results via service...');
             const results = await resultsManagerService.fetchResults();
-            
+
             this.populateDropdownWithResults(results);
-            
+
             // Setup download button handler
             if (downloadButton) {
                 downloadButton.onclick = () => this.downloadSelected();
                 downloadButton.disabled = results.length === 0;
                 downloadButton.textContent = translationManager.getTranslationSync('download_csv') || 'Download CSV';
             }
-            
+
         } catch (error) {
             logger.error('❌ Error initializing results dropdown:', error);
             showErrorAlert('failed_fetch_results');
-            
+
             // Show error in dropdown
             const errorOption = document.createElement('option');
             errorOption.value = '';
             errorOption.textContent = translationManager.getTranslationSync('error_loading_results') || 'Error loading results';
             errorOption.disabled = true;
             dropdown.appendChild(errorOption);
-            
+
             if (downloadButton) {
                 downloadButton.disabled = true;
             }
@@ -101,7 +101,7 @@ export class SimpleResultsDownloader {
     populateDropdownWithResults(results) {
         const dropdown = document.getElementById('results-dropdown');
         const downloadButton = document.getElementById('download-selected');
-        
+
         if (!dropdown) return;
 
         // Clear existing options except the first placeholder
@@ -119,13 +119,13 @@ export class SimpleResultsDownloader {
             noResultsOption.textContent = translationManager.getTranslationSync('no_results_found') || 'No results found';
             noResultsOption.disabled = true;
             dropdown.appendChild(noResultsOption);
-            
+
             if (downloadButton) {
                 downloadButton.disabled = true;
             }
             return;
         }
-        
+
         // Populate dropdown with results (most recent first)
         results.forEach(result => {
             const option = document.createElement('option');
@@ -133,11 +133,11 @@ export class SimpleResultsDownloader {
             option.textContent = `${result.quizTitle} (PIN: ${result.gamePin}) - ${this.formatDate(result.saved)}`;
             dropdown.appendChild(option);
         });
-        
+
         if (downloadButton) {
             downloadButton.disabled = false;
         }
-        
+
         logger.debug(`📊 Populated dropdown with ${results.length} results`);
     }
 
@@ -147,35 +147,35 @@ export class SimpleResultsDownloader {
     async downloadSelected() {
         const dropdown = document.getElementById('results-dropdown');
         const downloadButton = document.getElementById('download-selected');
-        
+
         if (!dropdown || !dropdown.value) {
             showErrorAlert('Please select a result to download');
             return;
         }
-        
+
         const filename = dropdown.value;
-        
+
         try {
             if (downloadButton) {
                 downloadButton.disabled = true;
                 downloadButton.textContent = translationManager.getTranslationSync('loading') || 'Loading...';
             }
-            
+
             logger.debug(`📊 Downloading result: ${filename}`);
 
             // Simple direct API call - no over-engineered service layer
             const response = await fetch(APIHelper.getApiUrl(`api/results/${filename}/export/csv`));
-            
+
             if (!response.ok) {
                 throw new Error(`Download failed: ${response.status}`);
             }
-            
+
             // Create download
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const gamePin = filename.match(/results_(\d+)_/)?.[1] || 'unknown';
             const downloadFilename = `quiz_results_${gamePin}.csv`;
-            
+
             const link = document.createElement('a');
             link.href = url;
             link.download = downloadFilename;
@@ -183,9 +183,9 @@ export class SimpleResultsDownloader {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            
+
             logger.debug(`📊 Download completed: ${downloadFilename}`);
-            
+
         } catch (error) {
             logger.error('❌ Download failed:', error);
             showErrorAlert('Download failed. Please try again.');
@@ -202,7 +202,7 @@ export class SimpleResultsDownloader {
      */
     formatDate(dateString) {
         if (!dateString) return 'Unknown';
-        
+
         try {
             const date = new Date(dateString);
             return date.toLocaleString();
@@ -249,7 +249,7 @@ export class SimpleResultsDownloader {
             cursor: pointer;
             font-size: 14px;
         `;
-        
+
         viewAllBtn.addEventListener('click', () => {
             this.openFullResultsViewer();
         });
@@ -266,7 +266,7 @@ export class SimpleResultsDownloader {
      */
     async openFullResultsViewer() {
         logger.debug('📊 Opening full results viewer from simple downloader');
-        
+
         try {
             // Lazy load results viewer if not already loaded
             if (!window.resultsViewer) {
@@ -275,10 +275,10 @@ export class SimpleResultsDownloader {
                 window.resultsViewer = resultsViewer;
                 logger.debug('Results Viewer lazy loaded from simple downloader');
             }
-            
+
             // Open the results viewer modal
             window.resultsViewer.showModal();
-            
+
         } catch (error) {
             logger.error('Failed to load results viewer:', error);
             showErrorAlert('Could not open detailed results viewer');

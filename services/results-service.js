@@ -5,7 +5,6 @@
  */
 
 const fs = require('fs').promises;
-const fsSync = require('fs');
 const path = require('path');
 
 class ResultsService {
@@ -82,35 +81,41 @@ class ResultsService {
     async listResults() {
         this.logger.info('Listing results');
 
-        if (!fsSync.existsSync(this.resultsDir)) {
+        try {
+            await fs.access(this.resultsDir);
+        } catch {
             this.logger.info('Results directory does not exist');
             return [];
         }
 
-        const files = fsSync.readdirSync(this.resultsDir)
-            .filter(file => file.startsWith('results_') && file.endsWith('.json'))
-            .map(filename => {
-                try {
-                    const filePath = path.join(this.resultsDir, filename);
-                    const stats = fsSync.statSync(filePath);
-                    const data = JSON.parse(fsSync.readFileSync(filePath, 'utf8'));
+        const allFiles = await fs.readdir(this.resultsDir);
+        const resultFiles = allFiles.filter(file => file.startsWith('results_') && file.endsWith('.json'));
 
-                    return {
-                        filename,
-                        quizTitle: data.quizTitle || 'Untitled Quiz',
-                        gamePin: data.gamePin,
-                        participantCount: data.results?.length || 0,
-                        startTime: data.startTime,
-                        endTime: data.endTime,
-                        saved: data.saved || stats.mtime.toISOString(),
-                        fileSize: stats.size,
-                        results: data.results || []
-                    };
-                } catch (error) {
-                    this.logger.error(`Error reading result file ${filename}:`, error);
-                    return null;
-                }
-            })
+        const filePromises = resultFiles.map(async (filename) => {
+            try {
+                const filePath = path.join(this.resultsDir, filename);
+                const stats = await fs.stat(filePath);
+                const content = await fs.readFile(filePath, 'utf8');
+                const data = JSON.parse(content);
+
+                return {
+                    filename,
+                    quizTitle: data.quizTitle || 'Untitled Quiz',
+                    gamePin: data.gamePin,
+                    participantCount: data.results?.length || 0,
+                    startTime: data.startTime,
+                    endTime: data.endTime,
+                    saved: data.saved || stats.mtime.toISOString(),
+                    fileSize: stats.size,
+                    results: data.results || []
+                };
+            } catch (error) {
+                this.logger.error(`Error reading result file ${filename}:`, error);
+                return null;
+            }
+        });
+
+        const files = (await Promise.all(filePromises))
             .filter(result => result !== null)
             .sort((a, b) => new Date(b.saved) - new Date(a.saved));
 
@@ -130,13 +135,15 @@ class ResultsService {
 
         const filePath = this.validatePath(filename);
         this.logger.info(`Checking file path: ${filePath}`);
-        this.logger.info(`File exists: ${fsSync.existsSync(filePath)}`);
 
-        if (!fsSync.existsSync(filePath)) {
+        try {
+            await fs.access(filePath);
+        } catch {
+            this.logger.info(`File does not exist: ${filePath}`);
             throw new Error('Result file not found');
         }
 
-        fsSync.unlinkSync(filePath);
+        await fs.unlink(filePath);
         this.logger.info(`Result file deleted successfully: ${filename}`);
 
         return {
@@ -155,12 +162,15 @@ class ResultsService {
 
         const filePath = this.validatePath(filename);
 
-        if (!fsSync.existsSync(filePath)) {
+        try {
+            await fs.access(filePath);
+        } catch {
             throw new Error('Result file not found');
         }
 
         try {
-            const data = JSON.parse(fsSync.readFileSync(filePath, 'utf8'));
+            const content = await fs.readFile(filePath, 'utf8');
+            const data = JSON.parse(content);
             return data;
         } catch (parseError) {
             this.logger.error(`Failed to parse result file ${filename}:`, parseError);
@@ -186,13 +196,16 @@ class ResultsService {
 
         const filePath = this.validatePath(filename);
 
-        if (!fsSync.existsSync(filePath)) {
+        try {
+            await fs.access(filePath);
+        } catch {
             throw new Error('Result file not found');
         }
 
         let data;
         try {
-            data = JSON.parse(fsSync.readFileSync(filePath, 'utf8'));
+            const content = await fs.readFile(filePath, 'utf8');
+            data = JSON.parse(content);
         } catch (parseError) {
             this.logger.error(`Failed to parse result file for export ${filename}:`, parseError);
             throw new Error('Result file is corrupted or invalid JSON');
@@ -306,7 +319,7 @@ class ResultsService {
         const players = data.results || [];
 
         // Build header row
-        let header = ['Question', 'Correct Answer', 'Difficulty'];
+        const header = ['Question', 'Correct Answer', 'Difficulty'];
 
         // Add columns for each player (sanitize names to prevent injection)
         players.forEach(player => {
@@ -347,7 +360,7 @@ class ResultsService {
                 correctAnswer = correctAnswer.join(', ');
             }
 
-            let row = [
+            const row = [
                 this._sanitizeCsvValue(questionText),
                 this._sanitizeCsvValue(correctAnswer),
                 this._sanitizeCsvValue(question.difficulty || 'medium')
@@ -359,8 +372,8 @@ class ResultsService {
             let responseCount = 0;
             let totalPointsPossible = 0;
             let totalPointsEarned = 0;
-            let playerPerformances = [];
-            let wrongAnswers = {};
+            const playerPerformances = [];
+            const wrongAnswers = {};
 
             // Add player data columns
             players.forEach(player => {

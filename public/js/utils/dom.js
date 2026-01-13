@@ -34,7 +34,7 @@ export class DOMManager {
      */
     query(selector, context = document, cache = false) {
         const cacheKey = cache ? `${selector}:${context === document ? 'document' : context.id || 'element'}` : null;
-        
+
         // Fast path: return cached element without expensive DOM validation
         if (cache && cacheKey && this.elementCache.has(cacheKey)) {
             return this.elementCache.get(cacheKey);
@@ -174,7 +174,7 @@ export class DOMManager {
         const element = this.get(elementId);
         if (element) {
             element.addEventListener(event, handler, options);
-            
+
             // Track for cleanup
             const key = `${elementId}:${event}`;
             if (!this.eventListeners.has(key)) {
@@ -193,7 +193,7 @@ export class DOMManager {
         const element = this.get(elementId);
         if (element) {
             element.removeEventListener(event, handler);
-            
+
             // Remove from tracking
             const key = `${elementId}:${event}`;
             if (this.eventListeners.has(key)) {

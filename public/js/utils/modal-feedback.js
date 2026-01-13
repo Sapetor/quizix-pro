@@ -245,7 +245,7 @@ export class ModalFeedback {
         // Add confetti animation on top of the modal
         this.triggerModalConfetti();
     }
-    
+
     /**
      * Trigger confetti animation positioned over the modal feedback
      */
@@ -271,16 +271,16 @@ export class ModalFeedback {
                 resize: true,
                 useWorker: true
             });
-            
+
             // Get modal position for confetti targeting
             const modalRect = this.modal ? this.modal.getBoundingClientRect() : null;
             const viewportHeight = window.innerHeight;
             const viewportWidth = window.innerWidth;
-            
+
             // Calculate confetti origin relative to modal
             const originY = modalRect ? (modalRect.top / viewportHeight) - 0.1 : 0.1; // Above modal
             const originX = modalRect ? (modalRect.left + modalRect.width / 2) / viewportWidth : 0.5; // Center of modal
-            
+
             // Main burst over the modal - much bigger and more prominent
             confettiInstance({
                 particleCount: 150, // Much more particles for visibility
@@ -291,7 +291,7 @@ export class ModalFeedback {
                 scalar: 1.5, // Bigger particles
                 startVelocity: 60 // More explosive burst
             });
-            
+
             // Side bursts for extra celebration - more prominent
             setTimeout(() => {
                 confettiInstance({
@@ -304,7 +304,7 @@ export class ModalFeedback {
                     scalar: 1.3,
                     startVelocity: 50
                 });
-                
+
                 confettiInstance({
                     particleCount: 50,
                     angle: 120,
@@ -316,7 +316,7 @@ export class ModalFeedback {
                     startVelocity: 50
                 });
             }, 200);
-            
+
             // Remove canvas after animation completes
             setTimeout(() => {
                 if (confettiCanvas && confettiCanvas.parentNode) {

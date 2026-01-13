@@ -125,7 +125,7 @@ function flagProblematicQuestion(analysis) {
         flags.push({
             type: 'quick_wrong',
             severity: 'medium',
-            message: `Quick responses with errors - potential misconceptions`
+            message: 'Quick responses with errors - potential misconceptions'
         });
     }
 
@@ -290,8 +290,8 @@ export function createAnalyticsModal(result, analytics, summary) {
             <strong>Q${q.questionNumber}:</strong> ${escapeHtml(q.text.substring(0, 60))}...
             <div class="problem-flags">
                 ${q.problemFlags.map(flag =>
-                    `<span class="flag ${flag.severity}">${escapeHtml(flag.message)}</span>`
-                ).join('')}
+        `<span class="flag ${flag.severity}">${escapeHtml(flag.message)}</span>`
+    ).join('')}
             </div>
         </div>`
     ).join('');
@@ -357,8 +357,8 @@ export function createAnalyticsModal(result, analytics, summary) {
                             ${q.problemFlags.length > 0 ? `
                                 <div class="problem-flags">
                                     ${q.problemFlags.map(flag =>
-                                        `<span class="flag ${flag.severity}">${escapeHtml(flag.message)}</span>`
-                                    ).join('')}
+        `<span class="flag ${flag.severity}">${escapeHtml(flag.message)}</span>`
+    ).join('')}
                                 </div>
                             ` : ''}
                         </div>

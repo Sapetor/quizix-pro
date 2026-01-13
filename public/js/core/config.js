@@ -8,7 +8,7 @@ export const DEBUG = {
     ENABLED: true, // Set to false for production builds
     LEVELS: {
         ERROR: 1,
-        WARN: 2, 
+        WARN: 2,
         INFO: 3,
         DEBUG: 4
     },
@@ -46,13 +46,13 @@ export const TIMING = {
     GAME_START_DELAY: 2000,
     LEADERBOARD_DISPLAY_TIME: 3000,
     RESULT_DISPLAY_DURATION: 4000,
-    
+
     // Standard delays for UI operations
     ANIMATION_DURATION: 300,
     DEBOUNCE_DELAY: 1000,
     DOM_UPDATE_DELAY: 100,
     AUTO_SAVE_DELAY: 5000,
-    
+
     // MathJax rendering (simplified)
     MATHJAX_TIMEOUT: 100,
     MATHJAX_LOADING_TIMEOUT: 10000,
@@ -68,14 +68,14 @@ export const TIMING = {
 export const SCORING = {
     BASE_POINTS: 100,
     MAX_BONUS_TIME: 10000,
-    DEFAULT_NUMERIC_TOLERANCE: 0.1, // Default tolerance for numeric answers (10%)
+    DEFAULT_NUMERIC_TOLERANCE: 0.1 // Default tolerance for numeric answers (10%)
 };
 
 export const LIMITS = {
     MAX_PLAYER_NAME_LENGTH: 20,
     MIN_TIME_LIMIT: 5,
     MAX_TIME_LIMIT: 300,
-    MAX_PLAYER_NUMBER: 999,
+    MAX_PLAYER_NUMBER: 999
 };
 
 // Semantic color palette for consistent UI
@@ -91,7 +91,7 @@ export const COLORS = {
     DIFFICULTY: {
         EASY: '#22c55e',     // Green
         MEDIUM: '#f59e0b',   // Amber
-        HARD: '#ef4444',     // Red
+        HARD: '#ef4444'     // Red
     },
 
     // Chart/visualization colors
@@ -101,7 +101,7 @@ export const COLORS = {
         TERTIARY: '#f59e0b',  // Orange
         QUATERNARY: '#ef4444',// Red
         PURPLE: '#8b5cf6',
-        CYAN: '#06b6d4',
+        CYAN: '#06b6d4'
     },
 
     // UI element colors
@@ -224,7 +224,7 @@ export const AUDIO = {
     QUESTION_START_FREQ: 800,
     SUCCESS_FREQUENCIES: [523, 659, 784], // C, E, G notes
     WRONG_ANSWER_FREQ: 300,
-    STANDARD_DURATION: 0.3,
+    STANDARD_DURATION: 0.3
 };
 
 // Essential UI constants
@@ -240,20 +240,20 @@ export const UI = {
     INITIAL_SPLIT_RATIO: 50,
     MAX_STAT_ITEMS: 6,        // Maximum stat items shown in statistics grid
     MAX_NUMERIC_DISPLAY: 6,   // Maximum numeric answers to display in stats
-    DEFAULT_TIMER_SECONDS: 30, // Default question timer in seconds
+    DEFAULT_TIMER_SECONDS: 30 // Default question timer in seconds
 };
 
 export const VALIDATION = {
     MIN_QUESTIONS: 1,
     MAX_QUESTIONS: 100,
     MIN_OPTIONS: 2,
-    MAX_OPTIONS: 6,
+    MAX_OPTIONS: 6
 };
 
 export const DEFAULTS = {
     QUESTION_TIME: 20,
     DIFFICULTY: 'medium',
-    QUESTION_TYPE: 'multiple-choice',
+    QUESTION_TYPE: 'multiple-choice'
 };
 
 // AI Generation constants
@@ -298,7 +298,7 @@ export const AI = {
         sql: /\bSELECT\s+.*\bFROM\b|\bCREATE\s+TABLE\b|\bINSERT\s+INTO\b|\bUPDATE\s+.*\bSET\b|\bDELETE\s+FROM\b|\bJOIN\b.*\bON\b/i,
         cpp: /\#include\s*<|\busing\s+namespace\s+std|\bstd::|\bcout\s*<<|\bcin\s*>>|\bint\s+main\s*\(/i,
         html: /<(!DOCTYPE|html|head|body|div|span|p|a|img|table|form|input|button)\b/i,
-        css: /\{[^}]*:\s*[^;]+;[^}]*\}|@media\s+|@keyframes\s+|\.[\w-]+\s*\{|#[\w-]+\s*\{/i,
+        css: /\{[^}]*:\s*[^;]+;[^}]*\}|@media\s+|@keyframes\s+|\.[\w-]+\s*\{|#[\w-]+\s*\{/i
     }
 };
 
@@ -308,7 +308,7 @@ export const ANIMATION = {
     CONFETTI_BURST_PARTICLES: 35, // Added missing definition, moderate count
     CONFETTI_SPREAD: 70,
     CONFETTI_ORIGIN_Y: 0.1,
-    PERCENTAGE_CALCULATION_BASE: 100, // For statistics calculations
+    PERCENTAGE_CALCULATION_BASE: 100 // For statistics calculations
 };
 
 // API endpoints
@@ -319,7 +319,7 @@ export const API = {
     SAVE_RESULTS: 'api/save-results',
     UPLOAD: 'upload',
     QR_CODE: 'api/qr',
-    CLAUDE_GENERATE: 'api/claude/generate',
+    CLAUDE_GENERATE: 'api/claude/generate'
 };
 
 // Socket.IO event names
@@ -340,5 +340,5 @@ export const SOCKET_EVENTS = {
     SHOW_NEXT_BUTTON: 'show-next-button',
     HIDE_NEXT_BUTTON: 'hide-next-button',
     PLAYER_RESULT: 'player-result',
-    ERROR: 'error',
+    ERROR: 'error'
 };

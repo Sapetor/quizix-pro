@@ -10,8 +10,9 @@
 
 // IMPORTANT: Update this version when deploying new code to force cache refresh
 // Format: YYYYMMDD-HHMM or use a build hash
-const CACHE_VERSION = 'v20260112-0200';
+const CACHE_VERSION = 'v20260113-0300';
 const CACHE_NAME = `quizix-static-${CACHE_VERSION}`;
+const OFFLINE_CACHE_NAME = 'quizix-offline-data';
 
 // Static assets to pre-cache on install (relative to service worker scope)
 const PRECACHE_ASSETS = [
@@ -202,19 +203,110 @@ async function networkFirst(request) {
 }
 
 /**
- * Message handler for cache management
+ * Message handler for cache management and offline features
  */
 self.addEventListener('message', (event) => {
-    const { type } = event.data || {};
+    const { type, payload } = event.data || {};
 
     switch (type) {
         case 'SKIP_WAITING':
             self.skipWaiting();
             break;
+
         case 'CLEAR_CACHE':
             caches.delete(CACHE_NAME).then(() => {
                 console.log('[SW] Cache cleared');
             });
             break;
+
+        case 'CACHE_QUIZ':
+            // Cache a quiz for offline access
+            cacheQuizData(payload);
+            break;
+
+        case 'GET_CACHED_QUIZZES':
+            // Return cached quiz list
+            getCachedQuizzes().then(quizzes => {
+                event.ports[0].postMessage({ quizzes });
+            });
+            break;
+
+        case 'SYNC_STATUS':
+            // Report sync status
+            event.ports[0].postMessage({
+                online: self.navigator?.onLine ?? true,
+                cacheVersion: CACHE_VERSION
+            });
+            break;
     }
 });
+
+/**
+ * Cache quiz data for offline access
+ */
+async function cacheQuizData(quiz) {
+    if (!quiz) return;
+
+    try {
+        const cache = await caches.open(OFFLINE_CACHE_NAME);
+        const response = new Response(JSON.stringify(quiz), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        await cache.put(`/offline/quiz/${quiz.id}`, response);
+        console.log('[SW] Quiz cached for offline:', quiz.title);
+    } catch (error) {
+        console.error('[SW] Failed to cache quiz:', error);
+    }
+}
+
+/**
+ * Get cached quizzes
+ */
+async function getCachedQuizzes() {
+    try {
+        const cache = await caches.open(OFFLINE_CACHE_NAME);
+        const keys = await cache.keys();
+        const quizKeys = keys.filter(req => req.url.includes('/offline/quiz/'));
+
+        const quizzes = await Promise.all(
+            quizKeys.map(async (key) => {
+                const response = await cache.match(key);
+                return response.json();
+            })
+        );
+
+        return quizzes;
+    } catch (error) {
+        console.error('[SW] Failed to get cached quizzes:', error);
+        return [];
+    }
+}
+
+/**
+ * Background sync for queued saves
+ */
+self.addEventListener('sync', (event) => {
+    if (event.tag === 'sync-quizzes') {
+        event.waitUntil(syncQuizzes());
+    }
+});
+
+/**
+ * Sync queued quizzes to server
+ */
+async function syncQuizzes() {
+    console.log('[SW] Background sync triggered');
+
+    // Notify clients that sync is happening
+    const clients = await self.clients.matchAll();
+    clients.forEach(client => {
+        client.postMessage({ type: 'SYNC_STARTED' });
+    });
+
+    // Actual sync is handled by the OfflineStorageService in the main thread
+    // This just notifies that we're back online
+
+    clients.forEach(client => {
+        client.postMessage({ type: 'SYNC_COMPLETED' });
+    });
+}

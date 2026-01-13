@@ -1,0 +1,364 @@
+/**
+ * Analytics Dashboard Styles
+ * Styling for the interactive quiz analytics modal
+ */
+
+/* Modal Overlay */
+#analytics-dashboard-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#analytics-dashboard-modal.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Modal Content */
+.analytics-modal {
+    background: var(--bg-secondary, #1e1e2e);
+    border-radius: 16px;
+    width: 95%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+#analytics-dashboard-modal.visible .analytics-modal {
+    transform: scale(1);
+}
+
+/* Modal Header */
+.analytics-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.analytics-modal .modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-primary, #fff);
+}
+
+.analytics-modal .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #a0a0a0);
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.analytics-modal .modal-close:hover {
+    color: var(--text-primary, #fff);
+}
+
+/* Modal Body */
+.analytics-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+/* Tabs */
+.analytics-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 16px 24px;
+    background: var(--bg-tertiary, rgba(0, 0, 0, 0.2));
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.analytics-tab {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #a0a0a0);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.analytics-tab:hover {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--text-primary, #fff);
+}
+
+.analytics-tab.active {
+    background: rgba(99, 102, 241, 0.2);
+    color: var(--accent-color, #6366f1);
+}
+
+/* Content Panels */
+.analytics-content {
+    padding: 24px;
+}
+
+.analytics-panel {
+    display: none;
+}
+
+.analytics-panel.active {
+    display: block;
+}
+
+/* Grid Layout */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+/* Cards */
+.analytics-card {
+    background: var(--bg-tertiary, rgba(0, 0, 0, 0.2));
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.analytics-card.full-width {
+    grid-column: 1 / -1;
+}
+
+.analytics-card h3 {
+    margin: 0 0 16px 0;
+    font-size: 1rem;
+    color: var(--text-primary, #fff);
+    font-weight: 600;
+}
+
+.analytics-card canvas {
+    width: 100% !important;
+    height: 200px !important;
+}
+
+.analytics-card.full-width canvas {
+    height: 300px !important;
+}
+
+/* Summary Stats */
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 16px;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 8px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-color, #6366f1);
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #a0a0a0);
+    margin-top: 4px;
+}
+
+/* Difficult Questions List */
+.difficult-questions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.difficult-questions li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.difficult-questions .question-number {
+    background: var(--accent-color, #6366f1);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.difficult-questions .question-text {
+    flex: 1;
+    color: var(--text-primary, #fff);
+    font-size: 0.9rem;
+}
+
+.difficult-questions .success-rate {
+    background: rgba(34, 197, 94, 0.2);
+    color: rgb(34, 197, 94);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.difficult-questions .success-rate.low {
+    background: rgba(239, 68, 68, 0.2);
+    color: rgb(239, 68, 68);
+}
+
+/* Analytics Table */
+.analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.analytics-table th,
+.analytics-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.analytics-table th {
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-secondary, #a0a0a0);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.analytics-table td {
+    color: var(--text-primary, #fff);
+}
+
+.analytics-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.1);
+}
+
+/* Light Theme */
+[data-theme="light"] .analytics-modal {
+    background: #fff;
+}
+
+[data-theme="light"] .analytics-modal .modal-header h2 {
+    color: #1f2937;
+}
+
+[data-theme="light"] .analytics-modal .modal-close {
+    color: #6b7280;
+}
+
+[data-theme="light"] .analytics-modal .modal-close:hover {
+    color: #1f2937;
+}
+
+[data-theme="light"] .analytics-tabs {
+    background: #f3f4f6;
+}
+
+[data-theme="light"] .analytics-tab {
+    color: #6b7280;
+}
+
+[data-theme="light"] .analytics-tab:hover {
+    color: #1f2937;
+}
+
+[data-theme="light"] .analytics-card {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+}
+
+[data-theme="light"] .analytics-card h3 {
+    color: #1f2937;
+}
+
+[data-theme="light"] .stat-item {
+    background: rgba(99, 102, 241, 0.1);
+}
+
+[data-theme="light"] .stat-label {
+    color: #6b7280;
+}
+
+[data-theme="light"] .difficult-questions li {
+    background: #f3f4f6;
+}
+
+[data-theme="light"] .difficult-questions .question-text {
+    color: #1f2937;
+}
+
+[data-theme="light"] .analytics-table th {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+[data-theme="light"] .analytics-table td {
+    color: #1f2937;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .analytics-modal {
+        width: 100%;
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+    }
+
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .analytics-tabs {
+        overflow-x: auto;
+        padding: 12px 16px;
+    }
+
+    .analytics-tab {
+        white-space: nowrap;
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+
+    .analytics-content {
+        padding: 16px;
+    }
+
+    .analytics-card canvas {
+        height: 180px !important;
+    }
+}

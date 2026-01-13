@@ -5,7 +5,6 @@
  */
 
 const fs = require('fs').promises;
-const fsSync = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
@@ -153,11 +152,13 @@ class QuizService {
 
         const filePath = path.join(this.quizzesDir, filename);
 
-        if (!fsSync.existsSync(filePath)) {
+        try {
+            await fs.access(filePath);
+        } catch {
             throw new Error('Quiz not found');
         }
 
-        const data = JSON.parse(fsSync.readFileSync(filePath, 'utf8'));
+        const data = JSON.parse(await fs.readFile(filePath, 'utf8'));
         return data;
     }
 }

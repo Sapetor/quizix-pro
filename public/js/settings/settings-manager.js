@@ -22,7 +22,7 @@ export class SettingsManager {
 
         // Store event handler references for cleanup
         this.eventHandlers = {};
-        
+
         this.loadSettings();
     }
 
@@ -52,11 +52,11 @@ export class SettingsManager {
     applySettings() {
         // Apply theme
         this.applyTheme(this.settings.theme);
-        
+
         // Apply other settings
         this.applyAnimations(this.settings.animations);
         this.applyFullscreen(this.settings.fullscreenMode);
-        
+
         // Update UI elements
         this.updateSettingsUI();
     }
@@ -66,7 +66,7 @@ export class SettingsManager {
      */
     applyTheme(theme) {
         const body = document.body;
-        
+
         // Get all theme toggle buttons (desktop, mobile header, mobile bottom)
         const themeToggleButtons = [
             document.getElementById('theme-toggle'),
@@ -74,13 +74,13 @@ export class SettingsManager {
             document.getElementById('theme-toggle-mobile'), // fallback if still exists
             document.getElementById('mobile-theme-toggle')  // fallback if still exists
         ].filter(button => button !== null); // Remove null elements
-        
+
         if (theme === 'dark') {
             body.classList.add('dark-theme');
             body.classList.remove('light-theme');
             body.setAttribute('data-theme', 'dark');
             document.documentElement.setAttribute('data-theme', 'dark');
-            
+
             // Update all theme toggle buttons - show moon (current state: dark)
             themeToggleButtons.forEach(themeToggle => {
                 // Update icon span if it exists (for mobile header controls)
@@ -98,7 +98,7 @@ export class SettingsManager {
             body.classList.remove('dark-theme');
             body.setAttribute('data-theme', 'light');
             document.documentElement.setAttribute('data-theme', 'light');
-            
+
             // Update all theme toggle buttons - show sun (current state: light)
             themeToggleButtons.forEach(themeToggle => {
                 // Update icon span if it exists (for mobile header controls)
@@ -112,7 +112,7 @@ export class SettingsManager {
                 themeToggle.title = getThemeToggleTitles().switchToDark;
             });
         }
-        
+
         this.settings.theme = theme;
     }
 
@@ -125,10 +125,10 @@ export class SettingsManager {
         const currentTheme = body.getAttribute('data-theme') || this.settings.theme || 'light';
         logger.debug('Current theme from DOM:', currentTheme);
         logger.debug('Current theme from settings:', this.settings.theme);
-        
+
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         logger.debug('New theme will be:', newTheme);
-        
+
         this.applyTheme(newTheme);
         this.saveSettings();
         logger.debug('Theme after toggle:', this.settings.theme);
@@ -144,7 +144,7 @@ export class SettingsManager {
         } else {
             body.classList.add('no-animations');
         }
-        
+
         this.settings.animations = enabled;
     }
 
@@ -187,10 +187,10 @@ export class SettingsManager {
      */
     enterFullscreen() {
         const element = document.documentElement;
-        
+
         try {
             let fullscreenPromise;
-            
+
             if (element.requestFullscreen) {
                 fullscreenPromise = element.requestFullscreen();
             } else if (element.mozRequestFullScreen) { // Firefox
@@ -200,7 +200,7 @@ export class SettingsManager {
             } else if (element.msRequestFullscreen) { // IE/Edge
                 fullscreenPromise = element.msRequestFullscreen();
             }
-            
+
             // Handle promise-based fullscreen API
             if (fullscreenPromise && fullscreenPromise.then) {
                 fullscreenPromise
@@ -232,7 +232,7 @@ export class SettingsManager {
      */
     exitFullscreen() {
         // Only try to exit fullscreen if we're actually in fullscreen mode
-        if (document.fullscreenElement || document.webkitFullscreenElement || 
+        if (document.fullscreenElement || document.webkitFullscreenElement ||
             document.mozFullScreenElement || document.msFullscreenElement) {
             try {
                 if (document.exitFullscreen) {
@@ -248,7 +248,7 @@ export class SettingsManager {
                 logger.warn('Failed to exit fullscreen:', error);
             }
         }
-        
+
         this.settings.fullscreenMode = false;
         this.updateFullscreenButton();
     }
@@ -437,7 +437,7 @@ export class SettingsManager {
             document.getElementById('theme-toggle-mobile'),
             document.getElementById('mobile-theme-toggle')
         ].filter(button => button !== null);
-        
+
         themeToggleButtons.forEach(themeToggle => {
             const iconSpan = themeToggle.querySelector('.control-icon');
             // Update icon based on current theme - show current state
@@ -459,13 +459,13 @@ export class SettingsManager {
                 themeToggle.title = getThemeToggleTitles().switchToDark;
             }
         });
-        
+
         // Update sound toggle (reads from SoundManager)
         this.updateSoundToggleButtons();
 
         // Update fullscreen toggle
         this.updateFullscreenButton();
-        
+
         // Update language selector - use getLanguage() which reads from TranslationManager
         const currentLanguage = this.getLanguage();
         const languageButtons = document.querySelectorAll('[data-lang]');
@@ -477,13 +477,13 @@ export class SettingsManager {
                 button.classList.remove('active');
             }
         });
-        
+
         // Update auto-save toggle
         const autoSaveToggle = document.getElementById('auto-save-toggle');
         if (autoSaveToggle) {
             autoSaveToggle.checked = this.settings.autoSave;
         }
-        
+
         // Update animations toggle
         const animationsToggle = document.getElementById('animations-toggle');
         if (animationsToggle) {
@@ -500,13 +500,13 @@ export class SettingsManager {
             document.getElementById('theme-toggle'),
             document.getElementById('theme-toggle-mobile-header')
         ].filter(button => button !== null);
-        
+
         themeToggleButtons.forEach(themeToggle => {
             if (themeToggle) {
                 themeToggle.addEventListener('click', () => this.toggleTheme());
             }
         });
-        
+
         // Sound toggle (desktop and mobile)
         const soundToggleButtons = [
             document.getElementById('sound-toggle'),
@@ -521,13 +521,13 @@ export class SettingsManager {
 
         // Initial sound button state - reads from SoundManager (source of truth)
         this.updateSoundToggleButtons();
-        
+
         // Fullscreen toggle
         const fullscreenToggle = document.getElementById('fullscreen-toggle');
         if (fullscreenToggle) {
             fullscreenToggle.addEventListener('click', () => this.toggleFullscreen());
         }
-        
+
         // Auto-save toggle
         const autoSaveToggle = document.getElementById('auto-save-toggle');
         if (autoSaveToggle) {
@@ -535,7 +535,7 @@ export class SettingsManager {
                 this.setAutoSave(e.target.checked);
             });
         }
-        
+
         // Animations toggle
         const animationsToggle = document.getElementById('animations-toggle');
         if (animationsToggle) {
@@ -544,7 +544,7 @@ export class SettingsManager {
                 this.saveSettings();
             });
         }
-        
+
         // Note: Language buttons are handled by app.js which calls translationManager.setLanguage()
         // SettingsManager.setLanguage() delegates to TranslationManager, so no duplicate handlers needed
 
@@ -554,7 +554,7 @@ export class SettingsManager {
             this.updateFullscreenButton();
             this.saveSettings();
         });
-        
+
         // Handle fullscreen errors
         document.addEventListener('fullscreenerror', (e) => {
             logger.error('Fullscreen error:', e);
@@ -572,10 +572,10 @@ export class SettingsManager {
             settings: this.settings,
             exportedAt: new Date().toISOString()
         };
-        
+
         const dataStr = JSON.stringify(settingsData, null, 2);
         const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        
+
         const link = document.createElement('a');
         link.href = URL.createObjectURL(dataBlob);
         link.download = 'quizix-settings.json';

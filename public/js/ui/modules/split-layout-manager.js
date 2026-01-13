@@ -130,7 +130,7 @@ export class SplitLayoutManager {
             hostContainer.style.setProperty('--split-left', '70fr');
             hostContainer.style.setProperty('--split-right', '30fr');
             logger.debug('Set default 70/30 split ratio on preview activation');
-            
+
             // Position the drag handle at 70%
             this.updateDragHandlePosition(70);
         }
@@ -151,78 +151,78 @@ export class SplitLayoutManager {
             e.preventDefault();
             this.isDragging = true;
             this.dragStartX = e.clientX;
-            
+
             // Get current split ratio
             const hostContainer = document.querySelector('.host-container');
             const computedStyle = getComputedStyle(hostContainer);
             const leftValue = computedStyle.getPropertyValue('--split-left').trim();
-            
+
             if (leftValue.endsWith('fr')) {
                 this.initialSplitRatio = parseFloat(leftValue.slice(0, -2));
             } else {
                 this.initialSplitRatio = 70; // Default fallback
             }
-            
+
             resizeHandle.classList.add('dragging');
             document.body.style.cursor = 'col-resize';
             document.body.style.userSelect = 'none';
-            
+
             // Create and show tooltip
             this.createDragTooltip();
-            
+
             logger.debug('Drag started', { initialRatio: this.initialSplitRatio, startX: this.dragStartX });
         };
 
         // Mouse move during drag
         this.listeners.dragMove = (e) => {
             if (!this.isDragging) return;
-            
+
             e.preventDefault();
             const hostContainer = document.querySelector('.host-container');
             const containerRect = hostContainer.getBoundingClientRect();
             const containerWidth = containerRect.width;
             const mouseX = e.clientX - containerRect.left;
-            
+
             // Calculate new ratio (25% to 75% range)
             let newRatio = (mouseX / containerWidth) * 100;
             newRatio = Math.max(25, Math.min(75, newRatio));
-            
+
             // Update CSS custom properties
             hostContainer.style.setProperty('--split-left', `${newRatio}fr`);
             hostContainer.style.setProperty('--split-right', `${100 - newRatio}fr`);
-            
+
             // Update drag handle position
             this.updateDragHandlePosition(newRatio);
-            
+
             // Update tooltip position and content
             this.updateDragTooltip(e.clientX, newRatio);
-            
+
             logger.debug('Dragging', { newRatio, mouseX, containerWidth });
         };
 
         // Mouse up - end drag
         this.listeners.dragEnd = (e) => {
             if (!this.isDragging) return;
-            
+
             this.isDragging = false;
             resizeHandle.classList.remove('dragging');
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
-            
+
             // Hide and remove tooltip
             this.hideDragTooltip();
-            
+
             // Save the new ratio to localStorage
             const hostContainer = document.querySelector('.host-container');
             const computedStyle = getComputedStyle(hostContainer);
             const leftValue = computedStyle.getPropertyValue('--split-left').trim();
             const ratio = parseFloat(leftValue.slice(0, -2));
-            
+
             if (!isNaN(ratio)) {
                 setItem('splitRatio', ratio.toString());
                 logger.debug('Saved split ratio to localStorage', { ratio });
             }
-            
+
             logger.debug('Drag ended');
         };
 
@@ -244,10 +244,10 @@ export class SplitLayoutManager {
     updateDragHandlePosition(ratio) {
         const resizeHandle = document.getElementById('split-resize-handle');
         if (!resizeHandle) return;
-        
+
         // Position the handle at the split ratio percentage
         resizeHandle.style.left = `${ratio}%`;
-        
+
         logger.debug('Updated drag handle position', { ratio });
     }
 
@@ -277,12 +277,12 @@ export class SplitLayoutManager {
         if (this.dragTooltip) {
             this.dragTooltip.remove();
         }
-        
+
         this.dragTooltip = document.createElement('div');
         this.dragTooltip.className = 'drag-tooltip';
         this.dragTooltip.textContent = '50% / 50%';
         document.body.appendChild(this.dragTooltip);
-        
+
         // Show tooltip after a brief delay
         setTimeout(() => {
             if (this.dragTooltip) {
@@ -296,7 +296,7 @@ export class SplitLayoutManager {
      */
     updateDragTooltip(mouseX, ratio) {
         if (!this.dragTooltip) return;
-        
+
         this.dragTooltip.style.left = `${mouseX}px`;
         this.dragTooltip.style.top = `${window.scrollY + 100}px`;
         this.dragTooltip.textContent = `${Math.round(ratio)}% / ${Math.round(100 - ratio)}%`;
@@ -322,19 +322,19 @@ export class SplitLayoutManager {
      */
     cleanupDragFunctionality() {
         const resizeHandle = document.getElementById('split-resize-handle');
-        
+
         if (resizeHandle && this.listeners.dragStart) {
             resizeHandle.removeEventListener('mousedown', this.listeners.dragStart);
         }
-        
+
         if (this.listeners.dragMove) {
             document.removeEventListener('mousemove', this.listeners.dragMove);
         }
-        
+
         if (this.listeners.dragEnd) {
             document.removeEventListener('mouseup', this.listeners.dragEnd);
         }
-        
+
         // Reset drag state
         this.isDragging = false;
         this.dragFunctionalityInitialized = false;

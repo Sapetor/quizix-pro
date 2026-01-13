@@ -31,23 +31,23 @@ class MobileQuestionCarousel {
      */
     init() {
         if (this.initialized) return;
-        
+
         // Only initialize on mobile
         if (window.innerWidth > 768) return;
-        
+
         this.createCarouselStructure();
         this.setupEventListeners();
         this.isCarouselActive = true; // Always active on mobile
         this.initialized = true;
-        
+
         // Auto-activate carousel on mobile
         document.body.classList.add('mobile-carousel-active');
-        
+
         // Delay initial update to ensure DOM is ready
         setTimeout(() => {
             this.updateCarousel();
         }, 100);
-        
+
         logger.debug('Mobile Question Carousel initialized and activated');
     }
 
@@ -153,7 +153,7 @@ class MobileQuestionCarousel {
         } else {
             logger.warn('Add question functionality not found');
         }
-        
+
         // Update carousel after adding question
         setTimeout(() => {
             this.updateCarousel();
@@ -235,11 +235,11 @@ class MobileQuestionCarousel {
         if (prevBtn) {
             prevBtn.disabled = this.currentIndex === 0;
         }
-        
+
         if (nextBtn) {
             nextBtn.disabled = this.currentIndex === this.questions.length - 1;
         }
-        
+
         if (title) {
             title.textContent = getTranslation('question_x_of_y', [this.currentIndex + 1, this.questions.length]);
         }
@@ -268,10 +268,10 @@ class MobileQuestionCarousel {
         // Clone the current question and add it to carousel
         const clonedQuestion = currentQuestion.cloneNode(true);
         clonedQuestion.classList.add('mobile-question-active');
-        
+
         // Copy form values from original to clone
         this.syncFormValues(currentQuestion, clonedQuestion);
-        
+
         // Set up two-way sync between original and clone
         this.setupTwoWaySync(currentQuestion, clonedQuestion);
 
@@ -286,7 +286,7 @@ class MobileQuestionCarousel {
     syncFormValues(original, clone) {
         const originalInputs = original.querySelectorAll('input, textarea, select');
         const cloneInputs = clone.querySelectorAll('input, textarea, select');
-        
+
         originalInputs.forEach((input, index) => {
             if (cloneInputs[index]) {
                 if (input.type === 'checkbox' || input.type === 'radio') {
@@ -296,7 +296,7 @@ class MobileQuestionCarousel {
                 }
             }
         });
-        
+
         // Additional sync for question options that might not be captured above
         // Specifically sync multiple choice options
         const originalOptions = original.querySelectorAll('.option');
@@ -306,7 +306,7 @@ class MobileQuestionCarousel {
                 cloneOptions[index].value = option.value;
             }
         });
-        
+
         logger.debug('Form values synced from original to clone, including question options');
     }
 
@@ -364,7 +364,7 @@ class MobileQuestionCarousel {
         if (!this.questions || index < 0 || index >= this.questions.length) return;
 
         this.currentIndex = index;
-        
+
         // Show the selected question
         this.showCurrentQuestion();
 

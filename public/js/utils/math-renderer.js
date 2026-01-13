@@ -1,7 +1,7 @@
 /**
  * Math/LaTeX Renderer Module
  * Handles MathJax rendering and mathematical content formatting
- * 
+ *
  * EXTRACTION NOTES:
  * - Extracted from script.js lines 2742-2823, 3862-3921
  * - Includes robust MathJax integration with fallbacks and error handling
@@ -18,7 +18,7 @@ export class MathRenderer {
         this.mathJaxRenderTimeout = null;
         this.processingElements = new Set();
         this.mathJaxService = simpleMathJaxService;
-        
+
         logger.debug('🔄 MathRenderer: Using simplified MathJax service');
     }
 
@@ -43,22 +43,22 @@ export class MathRenderer {
      */
     async renderMathJax(element) {
         if (!element) return;
-        
+
         try {
             // Use simplified MathJax service
             await this.mathJaxService.render([element]);
-            
+
             // Ensure proper display styling after rendering
             const containers = element.querySelectorAll('.mjx-container');
             containers.forEach(container => {
                 container.style.display = 'inline-block';
                 container.style.verticalAlign = 'middle';
                 container.classList.add('MathJax_Processed');
-                
+
                 // Prevent pointer events on MathJax elements to allow parent clicking
                 container.style.pointerEvents = 'none';
             });
-            
+
         } catch (err) {
             logger.warn('MathJax rendering failed (non-blocking):', err);
         }
@@ -71,7 +71,7 @@ export class MathRenderer {
         if (this.mathJaxRenderTimeout) {
             clearTimeout(this.mathJaxRenderTimeout);
         }
-        
+
         try {
             // Find all elements with math content
             const elementsWithMath = document.querySelectorAll([
@@ -86,23 +86,23 @@ export class MathRenderer {
                 '.preview-content',
                 '.preview-content-split'
             ].join(', '));
-            
-            const mathElements = Array.from(elementsWithMath).filter(el => 
+
+            const mathElements = Array.from(elementsWithMath).filter(el =>
                 el.textContent.includes('$') || el.innerHTML.includes('$')
             );
-            
+
             if (mathElements.length === 0) {
                 logger.debug('🧮 No elements with LaTeX found for global rendering');
                 return;
             }
-            
+
             logger.debug('🧮 Global MathJax rendering for', mathElements.length, 'elements');
-            
+
             // Use simplified MathJax service for batch rendering
             await this.mathJaxService.render(mathElements);
-            
+
             logger.debug('✅ Global MathJax rendering completed');
-            
+
         } catch (err) {
             logger.error('❌ Global MathJax rendering failed:', err);
         }
@@ -115,7 +115,7 @@ export class MathRenderer {
         if (this.mathJaxRenderTimeout) {
             clearTimeout(this.mathJaxRenderTimeout);
         }
-        
+
         try {
             // Only target editor elements, NEVER game elements
             const editorElements = document.querySelectorAll([
@@ -126,23 +126,23 @@ export class MathRenderer {
                 '.preview-content',             // Preview content
                 '.preview-content-split'        // Split preview
             ].join(', '));
-            
-            const elementsWithMath = Array.from(editorElements).filter(el => 
+
+            const elementsWithMath = Array.from(editorElements).filter(el =>
                 el.textContent.includes('$') || el.innerHTML.includes('$')
             );
-            
+
             if (elementsWithMath.length === 0) {
                 logger.debug('🧮 No editor elements with LaTeX found');
                 return;
             }
-            
+
             logger.debug('🧮 Editor MathJax rendering for', elementsWithMath.length, 'elements (avoiding game elements)');
-            
+
             // Use simplified MathJax service for editor rendering
             await this.mathJaxService.render(elementsWithMath);
-            
+
             logger.debug('✅ Editor MathJax rendering completed');
-            
+
         } catch (err) {
             logger.error('❌ Editor MathJax rendering failed:', err);
         }
@@ -165,10 +165,10 @@ export class MathRenderer {
             const trimmedCode = code.trim();
             return `<pre><code class="language-${lang}">${this.escapeHtml(trimmedCode)}</code></pre>`;
         });
-        
+
         // Convert inline code (`code`) - escape HTML to prevent XSS
         text = text.replace(/`([^`]+)`/g, (_, code) => `<code>${this.escapeHtml(code)}</code>`);
-        
+
         return text;
     }
 
@@ -195,32 +195,32 @@ export class MathRenderer {
         try {
             // Find all code blocks with language classes
             const codeBlocks = element.querySelectorAll('pre code[class*="language-"]');
-            
+
             codeBlocks.forEach(codeBlock => {
                 // Apply syntax highlighting
                 window.hljs.highlightElement(codeBlock);
-                
+
                 // Add class to parent pre element for CSS targeting
                 const preElement = codeBlock.closest('pre');
                 if (preElement) {
                     preElement.classList.add('has-syntax-highlighting');
                 }
             });
-            
+
             // Also highlight any code blocks without specific language classes
             const genericCodeBlocks = element.querySelectorAll('pre code:not([class*="language-"])');
             genericCodeBlocks.forEach(codeBlock => {
                 // Add a generic class and highlight
                 codeBlock.className = 'language-text';
                 window.hljs.highlightElement(codeBlock);
-                
+
                 // Add class to parent pre element for CSS targeting
                 const preElement = codeBlock.closest('pre');
                 if (preElement) {
                     preElement.classList.add('has-syntax-highlighting');
                 }
             });
-            
+
         } catch (error) {
             // Silently handle syntax highlighting errors
             logger.warn('Syntax highlighting failed:', error);
@@ -233,13 +233,13 @@ export class MathRenderer {
      */
     processContentFormatting(element) {
         if (!element) return;
-        
+
         // First, format code blocks
         element.innerHTML = this.formatCodeBlocks(element.innerHTML);
-        
+
         // Then apply syntax highlighting to code blocks
         this.applySyntaxHighlighting(element);
-        
+
         // Finally, render MathJax
         this.renderMathJax(element);
     }
@@ -281,7 +281,7 @@ export class MathRenderer {
             clearTimeout(this.mathJaxRenderTimeout);
             this.mathJaxRenderTimeout = null;
         }
-        
+
         // Remove processing classes from any stuck elements
         this.processingElements.forEach(element => {
             element.classList.remove('processing-math');
@@ -296,12 +296,12 @@ export class MathRenderer {
     forceRerender() {
         // Remove all existing MathJax content
         document.querySelectorAll('.mjx-container, .MathJax').forEach(el => el.remove());
-        
+
         // Remove ready classes to force re-processing
         document.querySelectorAll('.math-ready').forEach(el => {
             el.classList.remove('math-ready');
         });
-        
+
         // Re-render everything
         this.renderMathJaxGlobal();
     }

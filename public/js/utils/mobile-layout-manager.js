@@ -13,7 +13,7 @@ export class MobileLayoutManager {
         this.viewportHeight = window.innerHeight;
         this.contentHeightThreshold = window.innerHeight * 0.85; // 85% of viewport
         this.enabled = window.innerWidth <= 768; // Mobile only
-        
+
         this.setupEventListeners();
         logger.debug('📱 Mobile Layout Manager initialized');
     }
@@ -35,7 +35,7 @@ export class MobileLayoutManager {
             this.viewportHeight = window.innerHeight;
             this.enabled = window.innerWidth <= 768;
             this.contentHeightThreshold = window.innerHeight * 0.85;
-            
+
             if (this.enabled) {
                 this.analyzeAndAdaptLayout();
             }
@@ -57,7 +57,7 @@ export class MobileLayoutManager {
 
         const container = document.querySelector('.container.game-state-playing');
         const playerContainer = document.querySelector('.player-game-container');
-        
+
         if (!container || !playerContainer) {
             logger.debug('📱 Mobile layout: Required containers not found');
             return;
@@ -149,7 +149,7 @@ export class MobileLayoutManager {
             /let\s+\w+\s*=/,
             /const\s+\w+\s*=/
         ];
-        
+
         return codeIndicators.some(pattern => pattern.test(content));
     }
 
@@ -157,7 +157,7 @@ export class MobileLayoutManager {
      * Detect images in content
      */
     detectImage(content) {
-        return /<img\b[^>]*>/i.test(content) || 
+        return /<img\b[^>]*>/i.test(content) ||
                content.includes('data:image/') ||
                /\.(jpg|jpeg|png|gif|webp|svg)/i.test(content);
     }
@@ -178,7 +178,7 @@ export class MobileLayoutManager {
             /\\text\{/,  // \text{}
             /\\mathbb/   // \mathbb{}
         ];
-        
+
         return latexPatterns.some(pattern => pattern.test(content));
     }
 
@@ -194,11 +194,11 @@ export class MobileLayoutManager {
             clone.style.height = 'auto';
             clone.style.width = element.offsetWidth + 'px';
             clone.style.top = '-9999px';
-            
+
             document.body.appendChild(clone);
             const height = clone.scrollHeight;
             document.body.removeChild(clone);
-            
+
             return height;
         } catch (error) {
             logger.warn('📱 Could not estimate content height:', error);

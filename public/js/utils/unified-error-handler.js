@@ -14,7 +14,7 @@ export class UnifiedErrorHandler {
         this.maxStoredErrors = 50;
         this.maxRetries = 3;
         this.retryDelay = 1000;
-        
+
         // Error type categories
         this.errorTypes = {
             NETWORK: 'network',
@@ -23,7 +23,7 @@ export class UnifiedErrorHandler {
             USER_INPUT: 'user_input',
             SYSTEM: 'system'
         };
-        
+
         this.setupGlobalErrorHandlers();
     }
 
@@ -33,7 +33,7 @@ export class UnifiedErrorHandler {
     log(error, context = {}, severity = 'error') {
         if (!error) error = new Error('Unknown error');
         if (typeof error === 'string') error = new Error(error);
-        
+
         const errorInfo = {
             timestamp: new Date().toISOString(),
             message: error.message || 'Unknown error',
@@ -145,7 +145,7 @@ export class UnifiedErrorHandler {
                     await this.delay(this.retryDelay * attempts);
                     continue;
                 }
-                
+
                 break;
             }
         }
@@ -176,11 +176,11 @@ export class UnifiedErrorHandler {
         try {
             return await operation();
         } catch (error) {
-            this.log(error, { 
-                type: this.errorTypes.NETWORK, 
-                operation: operationType 
+            this.log(error, {
+                type: this.errorTypes.NETWORK,
+                operation: operationType
             }, 'error');
-            
+
             if (fallback && typeof fallback === 'function') {
                 try {
                     return await fallback();
@@ -188,13 +188,13 @@ export class UnifiedErrorHandler {
                     this.log(fallbackError, { isFallback: true }, 'warn');
                 }
             }
-            
+
             return fallback;
         }
     }
 
     /**
-     * Safe socket handler - simplified from error-boundary.js  
+     * Safe socket handler - simplified from error-boundary.js
      */
     safeSocketHandler(handler, eventName) {
         return (data) => {

@@ -194,17 +194,17 @@ export class KeyboardShortcuts {
      */
     eventToKeyString(event) {
         const keys = [];
-        
+
         if (event.ctrlKey) keys.push('ctrl');
         if (event.shiftKey) keys.push('shift');
         if (event.altKey) keys.push('alt');
         if (event.metaKey) keys.push('meta');
-        
+
         const key = event.key.toLowerCase();
         if (!['control', 'shift', 'alt', 'meta'].includes(key)) {
             keys.push(key);
         }
-        
+
         return keys.sort().join('+');
     }
 
@@ -281,10 +281,10 @@ export class KeyboardShortcuts {
     isPreviewActive() {
         const previewModal = document.getElementById('preview-modal');
         const previewSplit = document.getElementById('live-preview');
-        
+
         const modalActive = previewModal && previewModal.style.display !== 'none';
         const splitActive = previewSplit && previewSplit.style.display !== 'none';
-        
+
         return modalActive || splitActive;
     }
 
@@ -303,7 +303,7 @@ export class KeyboardShortcuts {
         feedback.id = 'shortcut-feedback';
         feedback.className = 'shortcut-feedback';
         feedback.textContent = message;
-        
+
         document.body.appendChild(feedback);
 
         // Animate and remove
@@ -391,7 +391,7 @@ export class KeyboardShortcuts {
                     <h3>${category}</h3>
                     <div class="shortcut-list">
             `;
-            
+
             shortcuts.forEach(shortcut => {
                 html += `
                     <div class="shortcut-item">
@@ -400,7 +400,7 @@ export class KeyboardShortcuts {
                     </div>
                 `;
             });
-            
+
             html += `
                     </div>
                 </div>

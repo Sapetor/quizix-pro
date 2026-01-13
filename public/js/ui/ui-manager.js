@@ -19,34 +19,34 @@ export class UIManager {
 
     showScreen(screenId) {
         logger.debug('Switching to screen:', screenId);
-        
+
         // Hide all screens
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
         });
-        
+
         // Show target screen
         const targetScreen = document.getElementById(screenId);
         if (targetScreen) {
             targetScreen.classList.add('active');
             this.currentScreen = screenId;
             logger.debug('Successfully switched to screen:', screenId);
-            
+
             // Update mobile return button visibility
             updateMobileReturnButtonVisibility(screenId);
-            
+
             // Container layout handled automatically
-            
+
             // Show/hide header elements based on screen
             const headerStartBtn = document.getElementById('start-hosting-header-small');
             const horizontalToolbar = document.getElementById('horizontal-toolbar');
             const header = document.querySelector('header');
-            
+
             if (screenId === 'host-screen') {
                 // Show toolbar and start button for host screen
                 if (headerStartBtn) headerStartBtn.style.display = 'block';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
-                
+
                 // Translate toolbar tooltips after making it visible
                 setTimeout(() => {
                     if (horizontalToolbar) {
@@ -58,23 +58,23 @@ export class UIManager {
                         translationManager.translateContainer(header);
                     }
                 }, 50);
-                
+
                 // Remove any transition classes when returning to host screen
                 const container = document.querySelector('.container');
                 if (container) {
                     container.classList.remove('game-state-transition-host');
                 }
-                
+
                 // Set editing state for quiz creation
                 uiStateManager.setState('editing');
-                
+
                 // Initialize first question if questions container is empty
                 this.initializeQuizEditor();
             } else if (screenId === 'game-lobby') {
                 // Hide editing toolbar on lobby screen, but enable header auto-hide
                 if (headerStartBtn) headerStartBtn.style.display = 'none';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'none';
-                
+
                 // Initialize auto-hide functionality for HEADER on lobby screen
                 setTimeout(() => {
                     if (!isAutoHideToolbarActive()) {
@@ -85,7 +85,7 @@ export class UIManager {
                 // Hide toolbar and start button for other screens
                 if (headerStartBtn) headerStartBtn.style.display = 'none';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'none';
-                
+
                 // Disable auto-hide when leaving lobby/host screens
                 if (isAutoHideToolbarActive()) {
                     disableAutoHideToolbar();
@@ -99,7 +99,7 @@ export class UIManager {
                     }
                 }
             }
-            
+
             // Set appropriate game state based on screen
             switch (screenId) {
                 case 'main-menu':
@@ -133,7 +133,7 @@ export class UIManager {
                         header.style.pointerEvents = 'none';
                         header.style.transition = 'all 0.3s ease-in-out';
                     }
-                    
+
                     setTimeout(() => {
                         if (header && this.currentScreen === 'player-game-screen') {
                             header.style.position = 'absolute';
@@ -166,7 +166,7 @@ export class UIManager {
                     }
                     break;
             }
-            
+
             // Translate the new screen
             setTimeout(() => {
                 translationManager.translatePage();
@@ -189,7 +189,7 @@ export class UIManager {
             if (window.game && window.game.addQuestion) {
                 window.game.addQuestion();
                 logger.debug('Initialized quiz editor with first question');
-                
+
                 // Ensure remove button visibility is properly set for initial question
                 setTimeout(() => {
                     if (window.game.quizManager && window.game.quizManager.updateQuestionsUI) {
@@ -232,12 +232,12 @@ export class UIManager {
     async loadQRCode(pin) {
         try {
             const data = await APIHelper.fetchAPIJSON(`api/qr/${pin}`);
-            
+
             if (data.qrCode) {
                 const qrImage = document.getElementById('qr-code-image');
                 const qrLoading = document.querySelector('.qr-loading');
                 const gameUrl = document.getElementById('game-url');
-                
+
                 if (qrImage) {
                     qrImage.src = data.qrCode;
                     qrImage.style.display = 'block';
@@ -263,7 +263,7 @@ export class UIManager {
     async refreshActiveGames() {
         const gamesContainer = document.getElementById('games-list');
         if (!gamesContainer) return;
-        
+
         gamesContainer.innerHTML = `<div class="loading-games">${translationManager.getTranslationSync('loading_games')}</div>`;
 
         try {
@@ -300,11 +300,11 @@ export class UIManager {
             }
         } catch (error) {
             logger.error('Failed to fetch active games:', error);
-            
+
             // Show detailed error information for debugging
             const errorMessage = error.message || 'Unknown error';
             const isNetworkError = error.name === 'TypeError' && error.message.includes('fetch');
-            
+
             gamesContainer.innerHTML = `
                 <div class="no-games">
                     <div class="empty-state-illustration">
@@ -341,7 +341,7 @@ export class UIManager {
         const gamesContainer = document.getElementById('games-list');
         const gameCard = document.createElement('div');
         gameCard.className = 'game-card';
-        
+
         // Make the entire card clickable
         gameCard.style.cursor = 'pointer';
         gameCard.addEventListener('click', (e) => {
@@ -349,7 +349,7 @@ export class UIManager {
             e.preventDefault();
             window.game.joinGameByPin(game.pin);
         });
-        
+
         gameCard.innerHTML = `
             <div class="game-title">${this.escapeHtml(game.title)}</div>
             <div class="game-info">
@@ -372,7 +372,7 @@ export class UIManager {
             </div>
             <div class="game-pin-display">${game.pin}</div>
         `;
-        
+
         gamesContainer.appendChild(gameCard);
     }
 
@@ -385,11 +385,11 @@ export class UIManager {
     joinGameByPin(pin) {
         const pinInput = document.getElementById('game-pin-input');
         const nameInput = document.getElementById('player-name');
-        
+
         if (pinInput) {
             pinInput.value = pin;
             this.showScreen('join-screen');
-            
+
             // If player name is already entered, auto-join the game
             if (nameInput && nameInput.value.trim()) {
                 logger.debug('Auto-joining game with existing player name');

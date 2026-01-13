@@ -32,10 +32,10 @@ export class UIStateManager {
         this.container = document.querySelector('.container');
         this.header = document.querySelector('header');
         this.horizontalToolbar = document.querySelector('.horizontal-toolbar');
-        
+
         // Create floating controls if they don't exist
         this.createFloatingControls();
-        
+
         // Create UI reveal button if it doesn't exist
         this.createUIRevealButton();
     }
@@ -60,7 +60,7 @@ export class UIStateManager {
                 </button>
             `;
             document.body.appendChild(floatingControls);
-            
+
             // Setup floating controls event listeners
             this.setupFloatingControlsEvents();
         }
@@ -129,7 +129,7 @@ export class UIStateManager {
      */
     setupGestureNavigation() {
         const signal = this.abortController.signal;
-        let gestureElement = document.body;
+        const gestureElement = document.body;
 
         gestureElement.addEventListener('touchstart', (e) => {
             this.gestureStartY = e.touches[0].clientY;
@@ -211,7 +211,7 @@ export class UIStateManager {
 
         // Apply new state class
         this.container.classList.add(`game-state-${state}`);
-        
+
         // Handle state-specific logic
         switch (state) {
             case 'playing':
@@ -227,12 +227,12 @@ export class UIStateManager {
                 this.enterResultsState(options);
                 break;
         }
-        
+
         // Dispatch state change event for other components
         document.dispatchEvent(new CustomEvent('game-ui-state-changed', {
             detail: { state, previousState: this.previousState, options }
         }));
-        
+
         logger.debug(`🎮 UI state changed to: ${state}`);
     }
 
@@ -244,10 +244,10 @@ export class UIStateManager {
         setTimeout(() => {
             this.container.classList.add('show-floating-controls');
         }, 1000);
-        
+
         // Set up auto-hide for floating controls
         this.setupAutoHideFloatingControls();
-        
+
         logger.debug('🎮 Entered playing state - UI minimized for immersive experience');
     }
 
@@ -257,7 +257,7 @@ export class UIStateManager {
     enterLobbyState(options = {}) {
         // Clear any auto-hide timers
         this.clearAutoHideTimers();
-        
+
         logger.debug('🎮 Entered lobby state - full UI visibility');
     }
 
@@ -267,7 +267,7 @@ export class UIStateManager {
     enterEditingState(options = {}) {
         // Clear any auto-hide timers
         this.clearAutoHideTimers();
-        
+
         logger.debug('🎮 Entered editing state - enhanced UI for quiz creation');
     }
 
@@ -277,7 +277,7 @@ export class UIStateManager {
     enterResultsState(options = {}) {
         // Clear any auto-hide timers
         this.clearAutoHideTimers();
-        
+
         // Prepare for confetti and celebration animations
         logger.debug('🎮 Entered results state - optimized for celebration');
     }
@@ -290,17 +290,17 @@ export class UIStateManager {
         if (!this.container) return;
 
         this.container.classList.add('ui-revealed');
-        
+
         // Clear existing timer
         if (this.uiRevealTimer) {
             clearTimeout(this.uiRevealTimer);
         }
-        
+
         // Auto-hide after duration
         this.uiRevealTimer = setTimeout(() => {
             this.hideUI();
         }, duration);
-        
+
         logger.debug('🎮 UI temporarily revealed for 5 seconds');
     }
 
@@ -359,7 +359,7 @@ export class UIStateManager {
             clearTimeout(this.uiRevealTimer);
             this.uiRevealTimer = null;
         }
-        
+
         if (this.autoHideTimer) {
             clearTimeout(this.autoHideTimer);
             this.autoHideTimer = null;

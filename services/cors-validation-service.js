@@ -104,7 +104,7 @@ class CORSValidationService {
     isLocalNetworkOrigin(origin) {
         try {
             const url = new URL(origin);
-            
+
             // Validate protocol
             if (!['http:', 'https:'].includes(url.protocol)) {
                 return false;
@@ -137,7 +137,7 @@ class CORSValidationService {
     isCloudPlatformOrigin(origin) {
         try {
             const url = new URL(origin);
-            
+
             // Must be HTTPS for cloud platforms (security requirement)
             if (url.protocol !== 'https:') {
                 return false;

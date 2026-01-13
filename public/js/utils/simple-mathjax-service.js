@@ -10,10 +10,10 @@ export class SimpleMathJaxService {
         this.isReady = false;
         this.renderingInProgress = false;
         this.initializationAttempted = false;
-        
+
         // Simple cache for rendered content
         this.renderCache = new Map();
-        
+
         this.initializeMathJax();
     }
 
@@ -40,14 +40,14 @@ export class SimpleMathJaxService {
                         this.handleMathJaxReady();
                     }
                 });
-                
+
                 // Simple timeout fallback
                 setTimeout(() => {
                     if (!this.isReady && document.body) {
                         document.body.classList.add('mathjax-ready');
                     }
                 }, 3000);
-                
+
             } catch (error) {
                 logger.error('MathJax initialization error:', error);
             }
@@ -62,7 +62,7 @@ export class SimpleMathJaxService {
         if (document.body) {
             document.body.classList.add('mathjax-ready');
         }
-        
+
         if (window.MathJax && window.MathJax.typesetPromise) {
             logger.debug('MathJax ready for rendering');
         } else {
@@ -96,7 +96,7 @@ export class SimpleMathJaxService {
 
             const elementArray = Array.isArray(elements) ? elements : [elements];
             const validElements = elementArray.filter(el => el && el.nodeType === Node.ELEMENT_NODE);
-            
+
             if (validElements.length === 0) {
                 return Promise.resolve();
             }
@@ -123,20 +123,20 @@ export class SimpleMathJaxService {
             }
 
             this.renderingInProgress = true;
-            
+
             if (window.MathJax.typesetPromise) {
                 logger.debug(`Rendering MathJax for ${validElements.length} elements`);
                 await window.MathJax.typesetPromise(validElements);
                 logger.debug('MathJax rendering completed');
-                
+
                 // Mark elements as rendered to hide loading indicators
                 validElements.forEach(element => {
                     element.classList.add('rendered');
                 });
             }
-            
+
             return Promise.resolve();
-            
+
         } catch (error) {
             logger.warn('MathJax rendering error (non-blocking):', error);
             return Promise.resolve();
@@ -151,21 +151,21 @@ export class SimpleMathJaxService {
     async waitForMathJax(timeout = 1000) {
         return new Promise((resolve) => {
             const startTime = Date.now();
-            
+
             const checkReady = () => {
                 if (this.isAvailable()) {
                     resolve(true);
                     return;
                 }
-                
+
                 if (Date.now() - startTime >= timeout) {
                     resolve(false);
                     return;
                 }
-                
+
                 setTimeout(checkReady, 50);
             };
-            
+
             checkReady();
         });
     }
@@ -178,7 +178,7 @@ export class SimpleMathJaxService {
             if (!container || !container.querySelectorAll) {
                 return Promise.resolve();
             }
-            
+
             const elements = container.querySelectorAll('.tex2jax_process, [data-latex="true"]');
             if (elements.length > 0) {
                 logger.debug(`renderAll: processing ${elements.length} elements`);

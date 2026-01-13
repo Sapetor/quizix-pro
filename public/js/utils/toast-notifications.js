@@ -11,7 +11,7 @@ export class ToastNotifications {
         this.toasts = [];
         this.container = null;
         this.initializeContainer();
-        
+
         logger.debug('🍞 Toast Notification System initialized');
     }
 
@@ -21,7 +21,7 @@ export class ToastNotifications {
     initializeContainer() {
         // Check if container already exists
         this.container = document.getElementById('toast-container');
-        
+
         if (!this.container) {
             // Create container
             this.container = document.createElement('div');
@@ -34,7 +34,7 @@ export class ToastNotifications {
     /**
      * Show a toast notification
      * @param {string} message - Message to display
-     * @param {string} type - Type: 'success', 'error', 'info', 'warning' 
+     * @param {string} type - Type: 'success', 'error', 'info', 'warning'
      * @param {number} duration - Duration in ms (default: 3000)
      */
     show(message, type = 'info', duration = 3000) {
@@ -43,10 +43,10 @@ export class ToastNotifications {
         // Create toast element
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
-        
+
         // Add icon based on type
         const icon = this.getIcon(type);
-        
+
         // Escape message to prevent XSS attacks
         const safeMessage = escapeHtml(message);
         toast.innerHTML = `
@@ -93,7 +93,7 @@ export class ToastNotifications {
     getIcon(type) {
         const icons = {
             success: '✅',
-            error: '❌', 
+            error: '❌',
             warning: '⚠️',
             info: 'ℹ️'
         };
@@ -148,7 +148,7 @@ export class ToastNotifications {
 
     /**
      * Show error toast
-     * @param {string} message - Error message  
+     * @param {string} message - Error message
      * @param {number} duration - Duration in ms (default: 4000)
      */
     error(message, duration = 4000) {

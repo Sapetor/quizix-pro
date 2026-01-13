@@ -9,7 +9,14 @@
     "build:css": "postcss public/css/main.css -o public/css/main.bundle.css --verbose",
     "build:css:watch": "postcss public/css/main.css -o public/css/main.bundle.css --watch --verbose",
     "build": "npm run build:css",
-    "build:prod": "npm run build:css && echo 'CSS bundled for production'"
+    "build:prod": "npm run build:css && echo 'CSS bundled for production'",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{js,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{js,json,css,md}\"",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "compression": "^1.7.4",
@@ -26,13 +33,16 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
+    "@types/jest": "^30.0.0",
     "autoprefixer": "^10.4.17",
     "cssnano": "^6.0.3",
     "eslint": "^9.28.0",
+    "jest": "^30.2.0",
     "nodemon": "^3.0.1",
     "postcss": "^8.4.35",
     "postcss-cli": "^11.0.0",
-    "postcss-import": "^16.1.0"
+    "postcss-import": "^16.1.0",
+    "prettier": "^3.7.4"
   },
   "keywords": [
     "quiz",

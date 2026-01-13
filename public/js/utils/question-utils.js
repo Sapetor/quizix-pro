@@ -1,7 +1,7 @@
 /**
  * Question Utilities Module
  * Handles question creation and manipulation utilities
- * 
+ *
  * Note: Extraction/population logic has been moved to QuestionTypeRegistry
  * This file now only contains utilities for question HTML generation and answer randomization
  */
@@ -143,7 +143,7 @@ export class QuestionUtils {
         }
         return shuffled;
     }
-    
+
     /**
      * Randomize answer positions for multiple choice questions
      * @param {Array} questions - Array of questions
@@ -156,17 +156,17 @@ export class QuestionUtils {
                 if (!question.options || question.options.length < 2) {
                     return question; // Skip if not enough options
                 }
-                
+
                 // Create array of indices and shuffle them
                 const indices = question.options.map((_, index) => index);
                 const shuffledIndices = this.shuffleArray(indices);
-                
+
                 // Create new options array based on shuffled indices
                 const newOptions = shuffledIndices.map(oldIndex => question.options[oldIndex]);
-                
+
                 // Update correct answer mapping
                 const newQuestion = { ...question, options: newOptions };
-                
+
                 if (question.type === 'multiple-choice') {
                     // Find where the original correct answer ended up
                     // Support both correctAnswer and correctIndex (server prefers correctIndex)
@@ -188,7 +188,7 @@ export class QuestionUtils {
                     newQuestion.correctAnswers = newCorrectAnswers;
                     newQuestion.correctIndices = newCorrectAnswers;
                 }
-                
+
                 return newQuestion;
             }
 
@@ -211,27 +211,27 @@ export function addQuestion() {
         logger.error('Questions container not found');
         return;
     }
-    
+
     const questionCount = questionsContainer.children.length;
     logger.debug(`Current question count before adding: ${questionCount}`);
-    
+
     const questionDiv = document.createElement('div');
     questionDiv.className = 'question-item';
     questionDiv.setAttribute('data-question', questionCount);
-    
+
     questionDiv.innerHTML = questionUtils.generateQuestionHTML(questionCount);
-    
+
     questionsContainer.appendChild(questionDiv);
 
     const newQuestionCount = questionsContainer.children.length;
     logger.debug(`Question added, new count: ${newQuestionCount}`);
-    
+
     // Trigger custom event
     const event = new CustomEvent('questionAdded', {
         detail: { questionCount: newQuestionCount }
     });
     document.dispatchEvent(event);
-    
+
     return questionDiv;
 }
 
@@ -241,14 +241,14 @@ export function addQuestion() {
 export function createQuestionElement(questionData) {
     const questionDiv = document.createElement('div');
     questionDiv.className = 'question-item';
-    
+
     const questionCount = document.querySelectorAll('.question-item').length;
     questionDiv.setAttribute('data-question', questionCount);
-    
+
     questionDiv.innerHTML = questionUtils.generateQuestionHTML(questionCount);
-    
+
     // Note: Translation is handled by the caller to ensure proper timing
-    
+
     return questionDiv;
 }
 

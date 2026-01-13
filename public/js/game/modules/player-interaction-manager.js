@@ -13,7 +13,7 @@ export class PlayerInteractionManager {
         this.gameDisplayManager = gameDisplayManager;
         this.soundManager = soundManager;
         this.socketManager = socketManager;
-        
+
         // Bind methods to maintain context
         this.selectAnswer = this.selectAnswer.bind(this);
         this.submitMultipleCorrectAnswer = this.submitMultipleCorrectAnswer.bind(this);
@@ -70,13 +70,13 @@ export class PlayerInteractionManager {
 
         this.gameStateManager.setSelectedAnswer(answer);
         this.highlightSelectedAnswer(answer);
-        
+
         // Auto-submit for multiple choice and true-false
-        if (gameState.currentQuestion && 
+        if (gameState.currentQuestion &&
             (gameState.currentQuestion.type === 'multiple-choice' || gameState.currentQuestion.type === 'true-false')) {
             this.submitAnswer(answer);
         }
-        
+
         logger.debug('Answer selected:', answer);
     }
 
@@ -85,7 +85,7 @@ export class PlayerInteractionManager {
      */
     highlightSelectedAnswer(answer) {
         logger.debug('Highlighting selected answer:', answer);
-        
+
         // Remove previous selections
         document.querySelectorAll('.player-option, .tf-option').forEach(option => {
             option.classList.remove('selected');
@@ -93,19 +93,19 @@ export class PlayerInteractionManager {
             option.style.border = '';
             option.style.transform = '';
         });
-        
+
         // Highlight current selection with subtle border
         const selectedOption = document.querySelector(`[data-answer="${answer}"]`);
         if (selectedOption) {
             selectedOption.classList.add('selected');
             selectedOption.style.border = '3px solid var(--color-primary-500)';
             selectedOption.style.transition = 'all 0.2s ease';
-            
+
             // Play selection sound
             if (this.soundManager?.isSoundsEnabled()) {
                 this.soundManager.playEnhancedSound(800, 0.1, 'sine', 0.1);
             }
-            
+
             logger.debug('Answer highlighted successfully');
         }
     }
@@ -146,12 +146,12 @@ export class PlayerInteractionManager {
             const parentLabel = cb.closest('.checkbox-option');
             return parseInt(parentLabel.getAttribute('data-option'));
         });
-        
+
         if (selectedAnswers.length === 0) {
             this.showError(getTranslation('please_select_at_least_one'));
             return;
         }
-        
+
         logger.debug('Submitting multiple correct answers:', selectedAnswers);
         this.submitAnswer(selectedAnswers);
     }
@@ -172,13 +172,13 @@ export class PlayerInteractionManager {
             logger.error('Numeric input not found');
             return;
         }
-        
+
         const answer = parseFloat(numericInput.value);
         if (isNaN(answer)) {
             this.showError(getTranslation('please_enter_valid_number'));
             return;
         }
-        
+
         logger.debug('Submitting numeric answer:', answer);
         this.submitAnswer(answer);
     }
@@ -218,7 +218,7 @@ export class PlayerInteractionManager {
      */
     submitAnswer(answer) {
         const gameState = this.gameStateManager.getGameState();
-        
+
         if (gameState.isHost || gameState.answerSubmitted) {
             logger.debug('Cannot submit answer - host mode or answer already submitted');
             return;
@@ -230,18 +230,18 @@ export class PlayerInteractionManager {
         }
 
         logger.debug('Submitting answer:', answer);
-        
+
         // Mark answer as submitted to prevent double submission
         this.gameStateManager.markAnswerSubmitted();
-        
+
         // Store answer locally
         this.gameStateManager.storePlayerAnswer(gameState.playerName, answer);
-        
+
         // Send to server
         this.socketManager.submitAnswer(answer);
-        
+
         // Feedback will be shown by the socket event response (original system)
-        
+
         // Play submission sound
         if (this.soundManager?.isSoundsEnabled()) {
             this.soundManager.playEnhancedSound(1000, 0.2, 'sine', 0.15);
@@ -254,11 +254,11 @@ export class PlayerInteractionManager {
     formatAnswerForDisplay(answer) {
         const gameState = this.gameStateManager.getGameState();
         const questionType = gameState.currentQuestion?.type;
-        
+
         if (questionType === 'multiple-choice') {
             return `${translationManager.getOptionLetter(answer)}: ${gameState.currentQuestion?.options?.[answer] || answer}`;
         } else if (questionType === 'multiple-correct') {
-            return Array.isArray(answer) 
+            return Array.isArray(answer)
                 ? answer.map(a => `${translationManager.getOptionLetter(a)}: ${gameState.currentQuestion?.options?.[a] || a}`).join(', ')
                 : answer;
         } else if (questionType === 'true-false') {
@@ -273,7 +273,7 @@ export class PlayerInteractionManager {
      */
     showError(message) {
         logger.error('Player interaction error:', message);
-        
+
         // Create error element
         const errorElement = document.createElement('div');
         errorElement.className = 'player-error-message';
@@ -283,7 +283,7 @@ export class PlayerInteractionManager {
                 <div class="error-text">${message}</div>
             </div>
         `;
-        
+
         // Style the error
         Object.assign(errorElement.style, {
             position: 'fixed',
@@ -298,9 +298,9 @@ export class PlayerInteractionManager {
             backdropFilter: 'blur(10px)',
             boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
         });
-        
+
         document.body.appendChild(errorElement);
-        
+
         // Remove after delay
         setTimeout(() => {
             if (errorElement.parentNode) {
@@ -378,7 +378,7 @@ export class PlayerInteractionManager {
     reset() {
         // Use centralized client selection clearing from GameDisplayManager
         this.gameDisplayManager.clearClientSelections();
-        
+
         // Additional cleanup for elements that might have styling (keeping some host-side cleanup)
         document.querySelectorAll('[data-answer], .option-display').forEach(element => {
             element.classList.remove('selected', 'correct', 'incorrect');
@@ -386,12 +386,12 @@ export class PlayerInteractionManager {
             element.style.animation = 'none';
             element.style.filter = 'none';
         });
-        
+
         // Force a repaint to ensure styles are cleared
         if (typeof window !== 'undefined') {
             document.body.offsetHeight;
         }
-        
+
         logger.debug('Player interaction state reset via centralized method');
     }
 }
