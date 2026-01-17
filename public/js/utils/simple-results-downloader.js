@@ -4,7 +4,6 @@
  */
 
 import { translationManager, showErrorAlert, showSuccessAlert } from './translation-manager.js';
-import { unifiedErrorHandler as errorHandler } from './unified-error-handler.js';
 import { logger } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
@@ -149,7 +148,7 @@ export class SimpleResultsDownloader {
         const downloadButton = document.getElementById('download-selected');
 
         if (!dropdown || !dropdown.value) {
-            showErrorAlert('Please select a result to download');
+            showErrorAlert(translationManager.getTranslationSync('select_result_download') || 'Please select a result to download');
             return;
         }
 
@@ -188,7 +187,7 @@ export class SimpleResultsDownloader {
 
         } catch (error) {
             logger.error('❌ Download failed:', error);
-            showErrorAlert('Download failed. Please try again.');
+            showErrorAlert(translationManager.getTranslationSync('download_failed') || 'Download failed. Please try again.');
         } finally {
             if (downloadButton) {
                 downloadButton.disabled = false;
@@ -206,7 +205,7 @@ export class SimpleResultsDownloader {
         try {
             const date = new Date(dateString);
             return date.toLocaleString();
-        } catch (error) {
+        } catch (_error) {
             return dateString;
         }
     }
@@ -281,7 +280,7 @@ export class SimpleResultsDownloader {
 
         } catch (error) {
             logger.error('Failed to load results viewer:', error);
-            showErrorAlert('Could not open detailed results viewer');
+            showErrorAlert(translationManager.getTranslationSync('results_viewer_error') || 'Could not open detailed results viewer');
         }
     }
 

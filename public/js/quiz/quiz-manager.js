@@ -12,6 +12,7 @@ import { APIHelper } from '../utils/api-helper.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 import { getJSON, setJSON, removeItem } from '../utils/storage-utils.js';
+import { EventListenerManager } from '../utils/event-listener-manager.js';
 
 // Shared translation fallback map used for cleaning translation keys from loaded data
 const TRANSLATION_FALLBACKS = {
@@ -46,13 +47,11 @@ export class QuizManager {
         this.autoSaveTimeout = null;
         this.errorHandler = errorHandler; // Add ErrorHandler for future use
 
-        // Memory management tracking
-        this.eventListeners = new Map();
-        this.documentListeners = [];
+        // Memory management via EventListenerManager
+        this.listenerManager = new EventListenerManager('QuizManager');
 
-        // Bind cleanup methods
+        // Bind cleanup method
         this.cleanup = this.cleanup.bind(this);
-        this.addDocumentListenerTracked = this.addDocumentListenerTracked.bind(this);
     }
 
     /**
@@ -290,15 +289,38 @@ export class QuizManager {
                 if (quizzes && quizzes.length > 0) {
                     quizzes.forEach(quiz => {
                         const quizItem = document.createElement('div');
-                        quizItem.className = 'quiz-item clickable';
-                        quizItem.style.cursor = 'pointer';
-                        quizItem.onclick = () => window.game.loadQuiz(quiz.filename);
+                        quizItem.className = 'quiz-item';
                         quizItem.innerHTML = `
                             <div class="quiz-info">
                                 <h3>${this.escapeHtml(quiz.title)}</h3>
                                 <p>${quiz.questionCount} ${translationManager.getTranslationSync('questions')} • ${translationManager.getTranslationSync('created')}: ${new Date(quiz.created).toLocaleDateString()}</p>
                             </div>
+                            <div class="quiz-actions">
+                                <button class="quiz-action-btn load-btn" data-filename="${this.escapeHtml(quiz.filename)}" title="${translationManager.getTranslationSync('load')}">
+                                    <span class="btn-icon">📂</span>
+                                    <span class="btn-text">${translationManager.getTranslationSync('load')}</span>
+                                </button>
+                                <button class="quiz-action-btn practice-btn" data-filename="${this.escapeHtml(quiz.filename)}" title="${translationManager.getTranslationSync('practice')}">
+                                    <span class="btn-icon">🎯</span>
+                                    <span class="btn-text">${translationManager.getTranslationSync('practice')}</span>
+                                </button>
+                            </div>
                         `;
+
+                        // Wire up button handlers
+                        const loadBtn = quizItem.querySelector('.load-btn');
+                        const practiceBtn = quizItem.querySelector('.practice-btn');
+
+                        loadBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            window.game.loadQuiz(quiz.filename);
+                        });
+
+                        practiceBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            window.game.startPracticeMode(quiz.filename);
+                        });
+
                         fragment.appendChild(quizItem);
                     });
                 } else {
@@ -1202,7 +1224,7 @@ export class QuizManager {
      * @param {Object} questionData - Generated question data
      * @param {boolean} showAlerts - Whether to show success alerts
      */
-    addGeneratedQuestion(questionData, showAlerts = true) {
+    addGeneratedQuestion(questionData, _showAlerts = true) {
         logger.debug('🔧 AddGeneratedQuestion - Starting with question:', {
             type: questionData.type,
             question: questionData.question?.substring(0, 50) + '...'
@@ -1432,33 +1454,20 @@ export class QuizManager {
     }
 
     // ==================== MEMORY MANAGEMENT METHODS ====================
+    // Delegated to EventListenerManager for centralized tracking
 
     /**
      * Add document-level event listener with tracking
      */
     addDocumentListenerTracked(event, handler, options = {}) {
-        document.addEventListener(event, handler, options);
-        this.documentListeners.push({ event, handler, options });
-        logger.debug(`QuizManager: Tracked document listener: ${event}`);
+        this.listenerManager.addDocumentListener(event, handler, options);
     }
 
     /**
      * Add element event listener with tracking
      */
     addEventListenerTracked(element, event, handler, options = {}) {
-        if (!element || typeof element.addEventListener !== 'function') {
-            logger.warn('QuizManager: Invalid element passed to addEventListenerTracked:', element);
-            return;
-        }
-
-        element.addEventListener(event, handler, options);
-
-        if (!this.eventListeners.has(element)) {
-            this.eventListeners.set(element, []);
-        }
-        this.eventListeners.get(element).push({ event, handler, options });
-
-        logger.debug(`QuizManager: Tracked event listener: ${event} on`, element);
+        this.listenerManager.addEventListenerTracked(element, event, handler, options);
     }
 
     /**
@@ -1474,35 +1483,8 @@ export class QuizManager {
                 this.autoSaveTimeout = null;
             }
 
-            // Clear all document-level listeners
-            let docListenerCount = 0;
-            this.documentListeners.forEach(({ event, handler }) => {
-                this.errorHandler.safeExecute(
-                    () => {
-                        document.removeEventListener(event, handler);
-                        docListenerCount++;
-                    },
-                    { operation: 'removeDocumentListener', event }
-                );
-            });
-            this.documentListeners = [];
-            logger.debug(`QuizManager: Cleaned up ${docListenerCount} document listeners`);
-
-            // Clear element-level listeners
-            let elementListenerCount = 0;
-            this.eventListeners.forEach((listeners, element) => {
-                listeners.forEach(({ event, handler }) => {
-                    this.errorHandler.safeExecute(
-                        () => {
-                            element.removeEventListener(event, handler);
-                            elementListenerCount++;
-                        },
-                        { operation: 'removeElementListener', event }
-                    );
-                });
-            });
-            this.eventListeners.clear();
-            logger.debug(`QuizManager: Cleaned up ${elementListenerCount} element listeners`);
+            // Delegate to EventListenerManager for listener cleanup
+            this.listenerManager.cleanup();
 
             logger.debug('QuizManager cleanup completed successfully');
         }, { operation: 'cleanup' });

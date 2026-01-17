@@ -6,7 +6,7 @@
 
 import { translationManager, getTranslation, getTrueFalseText } from '../../utils/translation-manager.js';
 import { logger, TIMING } from '../../core/config.js';
-import { dom, escapeHtmlPreservingLatex } from '../../utils/dom.js';
+import { escapeHtmlPreservingLatex } from '../../utils/dom.js';
 
 export class QuestionRenderer {
     constructor(displayManager, stateManager, uiManager, gameManager) {

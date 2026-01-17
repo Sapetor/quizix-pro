@@ -546,7 +546,7 @@ export class PreviewRenderer {
     /**
      * Render ordering preview
      */
-    renderSplitOrderingPreview(options, correctOrder) {
+    renderSplitOrderingPreview(options, _correctOrder) {
         const container = document.getElementById('preview-ordering-split');
         if (!container) {
             logger.warn('Preview ordering container not found');
@@ -1031,7 +1031,7 @@ export class PreviewRenderer {
     /**
      * Render mobile ordering preview
      */
-    renderMobileOrderingPreview(options, correctOrder) {
+    renderMobileOrderingPreview(options, _correctOrder) {
         const container = document.querySelector('#mobile-preview-answer-area .preview-ordering');
         const orderingContainer = document.getElementById('mobile-preview-ordering');
 

@@ -5,7 +5,6 @@
  */
 
 import { logger } from '../core/config.js';
-import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 import { APIHelper } from '../utils/api-helper.js';
 
 export class ResultsManagerService {

@@ -504,11 +504,11 @@ class OnboardingTutorial {
         }
 
         // Apply position with viewport clamping
-        left = Math.max(margin, Math.min(pos.left, viewport.width - tooltipRect.width - margin));
-        top = Math.max(margin, Math.min(pos.top, viewport.height - tooltipRect.height - margin));
+        const finalLeft = Math.max(margin, Math.min(pos.left, viewport.width - tooltipRect.width - margin));
+        const finalTop = Math.max(margin, Math.min(pos.top, viewport.height - tooltipRect.height - margin));
 
-        this.tooltip.style.left = `${left}px`;
-        this.tooltip.style.top = `${top}px`;
+        this.tooltip.style.left = `${finalLeft}px`;
+        this.tooltip.style.top = `${finalTop}px`;
         this.tooltip.setAttribute('data-position', position);
     }
 

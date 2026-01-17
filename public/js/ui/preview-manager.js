@@ -7,11 +7,11 @@
 import { translationManager } from '../utils/translation-manager.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { simpleMathJaxService } from '../utils/simple-mathjax-service.js';
-import { contentDensityManager } from '../utils/content-density-manager.js';
 import { SplitLayoutManager } from './modules/split-layout-manager.js';
 import { PreviewRenderer } from './modules/preview-renderer.js';
-import { logger, TIMING, UI } from '../core/config.js';
+import { logger, TIMING } from '../core/config.js';
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
+import { EventListenerManager } from '../utils/event-listener-manager.js';
 
 export class PreviewManager {
     constructor(mathRenderer) {
@@ -25,8 +25,8 @@ export class PreviewManager {
         this.manualNavigationInProgress = false;
         this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), TIMING.ANIMATION_DURATION);
 
-        // Track all timers for proper cleanup
-        this.activeTimers = new Set();
+        // Memory management via EventListenerManager
+        this.listenerManager = new EventListenerManager('PreviewManager');
 
         // Store listener references for proper cleanup
         this.listeners = {
@@ -49,22 +49,14 @@ export class PreviewManager {
      * @returns {number} Timer ID
      */
     createTrackedTimeout(callback, delay) {
-        const timerId = setTimeout(() => {
-            this.activeTimers.delete(timerId);
-            callback();
-        }, delay);
-        this.activeTimers.add(timerId);
-        return timerId;
+        return this.listenerManager.createTimeout(callback, delay);
     }
 
     /**
      * Clear all tracked timers
      */
     clearAllTimers() {
-        for (const timerId of this.activeTimers) {
-            clearTimeout(timerId);
-        }
-        this.activeTimers.clear();
+        this.listenerManager.cleanup();
 
         // Also clear the autoScrollTimeout if it exists
         if (this.autoScrollTimeout) {

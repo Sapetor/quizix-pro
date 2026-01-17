@@ -21,7 +21,32 @@ export class UnifiedErrorHandler {
             DOM: 'dom',
             GAME_LOGIC: 'game_logic',
             USER_INPUT: 'user_input',
-            SYSTEM: 'system'
+            SYSTEM: 'system',
+            VALIDATION: 'validation',
+            SOCKET: 'socket',
+            AI: 'ai'
+        };
+
+        // User-friendly error messages by error code/type
+        this.errorMessages = {
+            // Network errors
+            'NETWORK_TIMEOUT': 'connectionTimeout',
+            'NETWORK_OFFLINE': 'noConnection',
+            'NETWORK_ERROR': 'networkError',
+            'FETCH_FAILED': 'networkError',
+            // Socket errors
+            'SOCKET_DISCONNECTED': 'connectionLost',
+            'SOCKET_TIMEOUT': 'connectionTimeout',
+            // Game errors
+            'GAME_NOT_FOUND': 'gameNotFound',
+            'GAME_ALREADY_STARTED': 'gameAlreadyStarted',
+            'INVALID_PIN': 'invalidPin',
+            // AI errors
+            'AI_GENERATION_FAILED': 'aiGenerationFailed',
+            'AI_RATE_LIMITED': 'aiRateLimited',
+            // Validation errors
+            'INVALID_INPUT': 'invalidInput',
+            'REQUIRED_FIELD': 'requiredField'
         };
 
         this.setupGlobalErrorHandlers();
@@ -245,6 +270,90 @@ export class UnifiedErrorHandler {
      */
     clearErrors() {
         this.errors = [];
+    }
+
+    /**
+     * Get user-friendly error message from error code
+     * @param {string} errorCode - Error code (e.g., 'NETWORK_TIMEOUT')
+     * @param {Object} params - Optional parameters for message formatting
+     * @returns {string} Translated user-friendly message
+     */
+    getUserMessage(errorCode, params = {}) {
+        const translationKey = this.errorMessages[errorCode];
+        if (translationKey && translationManager) {
+            return translationManager.get(translationKey, params);
+        }
+        // Fallback to generic message
+        return translationManager?.get('error') || 'An error occurred';
+    }
+
+    /**
+     * Handle error with optional user notification
+     * @param {Error|string} error - The error to handle
+     * @param {Object} options - Handling options
+     * @param {string} options.errorCode - Error code for user message
+     * @param {boolean} options.showToast - Whether to show toast notification
+     * @param {string} options.toastType - Toast type ('error', 'warning', 'info')
+     * @param {Object} options.context - Additional context for logging
+     * @returns {void}
+     */
+    handleError(error, options = {}) {
+        const {
+            errorCode = null,
+            showToast = false,
+            toastType = 'error',
+            context = {}
+        } = options;
+
+        // Log the error
+        this.log(error, context, 'error');
+
+        // Show toast notification if requested
+        if (showToast && typeof window !== 'undefined' && window.showToast) {
+            const message = errorCode
+                ? this.getUserMessage(errorCode)
+                : (typeof error === 'string' ? error : error.message);
+            window.showToast(message, toastType);
+        }
+    }
+
+    /**
+     * Create a standardized error with code
+     * @param {string} code - Error code
+     * @param {string} message - Technical error message
+     * @param {Object} details - Additional error details
+     * @returns {Error} Error object with code property
+     */
+    createError(code, message, details = {}) {
+        const error = new Error(message);
+        error.code = code;
+        error.details = details;
+        return error;
+    }
+
+    /**
+     * Check if error is of a specific type
+     * @param {Error} error - Error to check
+     * @param {string} type - Error type from errorTypes
+     * @returns {boolean}
+     */
+    isErrorType(error, type) {
+        return error?.code?.startsWith(type.toUpperCase()) || false;
+    }
+
+    /**
+     * Check if error is recoverable (can retry)
+     * @param {Error} error - Error to check
+     * @returns {boolean}
+     */
+    isRecoverable(error) {
+        const recoverableCodes = [
+            'NETWORK_TIMEOUT',
+            'NETWORK_ERROR',
+            'SOCKET_DISCONNECTED',
+            'AI_RATE_LIMITED'
+        ];
+        return recoverableCodes.includes(error?.code);
     }
 }
 

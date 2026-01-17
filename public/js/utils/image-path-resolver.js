@@ -73,7 +73,7 @@ export class ImagePathResolver {
             try {
                 const url = new URL(imagePath);
                 imagePath = url.pathname;
-            } catch (e) {
+            } catch (_e) {
                 logger.error('ImagePathResolver: Invalid URL', imagePath);
                 return '';
             }

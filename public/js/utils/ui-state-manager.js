@@ -5,7 +5,6 @@
  */
 
 import { logger } from '../core/config.js';
-import { dom } from './dom.js';
 
 export class UIStateManager {
     constructor() {
@@ -239,7 +238,7 @@ export class UIStateManager {
     /**
      * Enter playing state - immersive gameplay mode
      */
-    enterPlayingState(options = {}) {
+    enterPlayingState(_options = {}) {
         // Show floating controls after a delay
         setTimeout(() => {
             this.container.classList.add('show-floating-controls');
@@ -254,7 +253,7 @@ export class UIStateManager {
     /**
      * Enter lobby state - full UI visibility
      */
-    enterLobbyState(options = {}) {
+    enterLobbyState(_options = {}) {
         // Clear any auto-hide timers
         this.clearAutoHideTimers();
 
@@ -264,7 +263,7 @@ export class UIStateManager {
     /**
      * Enter editing state - enhanced UI for quiz creation
      */
-    enterEditingState(options = {}) {
+    enterEditingState(_options = {}) {
         // Clear any auto-hide timers
         this.clearAutoHideTimers();
 
@@ -274,7 +273,7 @@ export class UIStateManager {
     /**
      * Enter results state - celebration-optimized UI
      */
-    enterResultsState(options = {}) {
+    enterResultsState(_options = {}) {
         // Clear any auto-hide timers
         this.clearAutoHideTimers();
 

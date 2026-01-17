@@ -7,7 +7,6 @@
  */
 
 import { logger } from '../core/config.js';
-import { translationManager, getTrueFalseText } from './translation-manager.js';
 
 export class QuestionUtils {
     /**
@@ -238,7 +237,7 @@ export function addQuestion() {
 /**
  * Create a question element with given data
  */
-export function createQuestionElement(questionData) {
+export function createQuestionElement(_questionData) {
     const questionDiv = document.createElement('div');
     questionDiv.className = 'question-item';
 

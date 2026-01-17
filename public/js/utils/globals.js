@@ -15,6 +15,7 @@
 import { logger, LIMITS, UI } from '../core/config.js';
 import { translationManager } from './translation-manager.js';
 import { setItem, getJSON, setJSON } from './storage-utils.js';
+import { updateEditorQuestionCount } from './editor-question-count.js';
 
 // ============================================================================
 // Preview and Modal Functions
@@ -384,7 +385,7 @@ if (document.readyState === 'loading') {
 const globalFunctions = {
     // Language functions (from language-dropdown-manager)
     toggleLanguageDropdown: () => import('./language-dropdown-manager.js').then(m => m.toggleLanguageDropdown()),
-    selectLanguage: (langCode) => import('./language-dropdown-manager.js').then(m => m.selectLanguage(langCode, event)),
+    selectLanguage: (langCode) => import('./language-dropdown-manager.js').then(m => m.selectLanguage(langCode, window.event)),
     changeLanguage: (langCode) => translationManager.changeLanguage(langCode),
 
     // UI control functions

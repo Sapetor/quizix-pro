@@ -449,7 +449,7 @@ export class SocketManager {
     initializeLanguageListener() {
         // Listen for language change events to update personalized messages
         // Use AbortController signal for proper cleanup on disconnect
-        document.addEventListener('languageChanged', (event) => {
+        document.addEventListener('languageChanged', (_event) => {
             logger.debug('Language changed, updating personalized messages');
 
             // Update the player welcome message if we have a current player name

@@ -4,7 +4,7 @@
  * Extracted from game-manager.js for better separation of concerns
  */
 
-import { translationManager, getTranslation } from '../../utils/translation-manager.js';
+import { getTranslation } from '../../utils/translation-manager.js';
 import { logger } from '../../core/config.js';
 import { MathRenderer } from '../../utils/math-renderer.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
@@ -141,7 +141,7 @@ export class GameDisplayManager {
     /**
      * Render MathJax for question content with enhanced F5 handling
      */
-    async renderQuestionMath(element, delay = 0) {
+    async renderQuestionMath(element, _delay = 0) {
         if (!element) return;
 
         try {

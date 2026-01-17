@@ -44,7 +44,7 @@ export function formatDate(dateString) {
         const dateStr = date.toLocaleDateString();
         const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         return `${dateStr} ${timeStr}`;
-    } catch (error) {
+    } catch (_error) {
         return dateString;
     }
 }
@@ -58,7 +58,7 @@ export function formatTime(completedAt) {
     try {
         const date = new Date(completedAt);
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch (error) {
+    } catch (_error) {
         return 'N/A';
     }
 }

@@ -5,7 +5,6 @@
  */
 
 import { logger } from '../core/config.js';
-import { dom } from './dom.js';
 
 export class MobileLayoutManager {
     constructor() {

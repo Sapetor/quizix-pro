@@ -39,21 +39,43 @@ export const logger = {
     }
 };
 
-// Timing constants - simplified and consolidated
+// Timing constants - consolidated to eliminate magic numbers
 export const TIMING = {
-    // Core gameplay timing
-    DEFAULT_QUESTION_TIME: 20,
+    // Core gameplay timing (in ms unless noted)
+    DEFAULT_QUESTION_TIME: 20,        // seconds
     GAME_START_DELAY: 2000,
     LEADERBOARD_DISPLAY_TIME: 3000,
     RESULT_DISPLAY_DURATION: 4000,
 
-    // Standard delays for UI operations
-    ANIMATION_DURATION: 300,
+    // DOM readiness checks (polling intervals)
+    DOM_READY_CHECK: 50,              // Fast polling for DOM elements
+    DOM_UPDATE_DELAY: 100,            // Standard DOM update settling time
+    LAYOUT_SETTLE: 150,               // Layout/resize settling time
+
+    // UI transitions and animations
+    ANIMATION_DURATION: 300,          // Standard CSS transition
+    STEP_TRANSITION: 350,             // Multi-step wizard transitions
+    SHORT_DELAY: 200,                 // Brief pause between actions
+
+    // Debouncing and throttling
     DEBOUNCE_DELAY: 1000,
-    DOM_UPDATE_DELAY: 100,
+    DEBOUNCE_SHORT: 300,              // Typing debounce
     AUTO_SAVE_DELAY: 5000,
 
-    // MathJax rendering (simplified)
+    // Network and retry
+    API_TIMEOUT: 2000,                // API request timeout
+    RETRY_DELAY: 1000,                // Retry after failure
+    STREAMING_INDICATOR: 1500,        // Show streaming progress
+
+    // Leaderboard celebration timing
+    CONFETTI_DELAY: 100,              // Delay before confetti
+    ANIMATION_COMPLETE: 2000,         // Animation class removal
+    DOWNLOAD_TOOL_DELAY: 3000,        // Show download tool after game
+    PLACEMENT_SOUND_3RD: 300,         // Third place sound
+    PLACEMENT_SOUND_2ND: 800,         // Second place sound
+    PLACEMENT_SOUND_1ST: 1400,        // First place sound
+
+    // MathJax rendering
     MATHJAX_TIMEOUT: 100,
     MATHJAX_LOADING_TIMEOUT: 10000,
     RENDER_DELAY: (() => {

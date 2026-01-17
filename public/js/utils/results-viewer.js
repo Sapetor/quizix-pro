@@ -20,8 +20,6 @@ import {
     closeModal,
     bindOverlayClose,
     bindEscapeClose,
-    unbindOverlayClose,
-    unbindEscapeClose,
     getModal
 } from './modal-utils.js';
 

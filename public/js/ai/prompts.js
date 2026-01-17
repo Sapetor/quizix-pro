@@ -371,7 +371,7 @@ JSON array only:`;
  * @param {Array} selectedTypes - Selected question types (unused but kept for API consistency)
  * @returns {string} Excel conversion prompt
  */
-export function buildExcelConversionPrompt(content, selectedTypes) {
+export function buildExcelConversionPrompt(content, _selectedTypes) {
     return `CONVERT EXCEL QUESTIONS TO JSON - DO NOT MAKE UP NEW QUESTIONS
 
 You must convert ONLY the questions that are in this Excel data. Do not create any new questions.

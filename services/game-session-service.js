@@ -189,14 +189,18 @@ class GameSessionService {
     // Store timer ID for proper cleanup
         game.startTimer = setTimeout(() => {
             game.startTimer = null;
-            if (game.gameState === 'finished') {
-                return;
-            }
+            try {
+                if (game.gameState === 'finished') {
+                    return;
+                }
 
-            if (game.nextQuestion()) {
-                this.startQuestion(game, io);
-            } else {
-                this.endGame(game, io);
+                if (game.nextQuestion()) {
+                    this.startQuestion(game, io);
+                } else {
+                    this.endGame(game, io);
+                }
+            } catch (error) {
+                this.logger.error(`Error in autoAdvanceToFirstQuestion for game ${game.pin}:`, error);
             }
         }, this.config.TIMING.GAME_START_DELAY);
     }
@@ -232,7 +236,11 @@ class GameSessionService {
 
         // Set timer for automatic question timeout
         game.questionTimer = setTimeout(() => {
-            this.handleQuestionTimeout(game, io, question);
+            try {
+                this.handleQuestionTimeout(game, io, question);
+            } catch (error) {
+                this.logger.error(`Error in question timeout handler for game ${game.pin}:`, error);
+            }
         }, timeLimit * 1000);
     }
 
@@ -363,46 +371,56 @@ class GameSessionService {
         }
 
         game.advanceTimer = setTimeout(() => {
-            if (game.gameState === 'finished') {
-                game.isAdvancing = false;
-                return;
-            }
-
-            game.updateLeaderboard();
-
-            io.to(`game-${game.pin}`).emit('question-end', {
-                showStatistics: true
-            });
-
-            const hasMoreQuestions = (game.currentQuestion + 1) < game.quiz.questions.length;
-
-            if (game.manualAdvancement) {
-                // Show next button to host
-                io.to(game.hostId).emit('show-next-button', {
-                    isLastQuestion: !hasMoreQuestions
-                });
-                game.isAdvancing = false;
-            } else {
-                // Auto-advance mode: show leaderboard then continue
-                io.to(`game-${game.pin}`).emit('show-leaderboard', {
-                    leaderboard: game.leaderboard.slice(0, 5)
-                });
-
-                // Use separate leaderboardTimer to avoid overwriting advanceTimer
-                game.leaderboardTimer = setTimeout(() => {
-                    game.leaderboardTimer = null;
-                    if (game.gameState === 'finished') {
-                        game.isAdvancing = false;
-                        return;
-                    }
-
-                    if (game.nextQuestion()) {
-                        this.startQuestion(game, io);
-                    } else {
-                        this.endGame(game, io);
-                    }
+            try {
+                if (game.gameState === 'finished') {
                     game.isAdvancing = false;
-                }, 3000);
+                    return;
+                }
+
+                game.updateLeaderboard();
+
+                io.to(`game-${game.pin}`).emit('question-end', {
+                    showStatistics: true
+                });
+
+                const hasMoreQuestions = (game.currentQuestion + 1) < game.quiz.questions.length;
+
+                if (game.manualAdvancement) {
+                    // Show next button to host
+                    io.to(game.hostId).emit('show-next-button', {
+                        isLastQuestion: !hasMoreQuestions
+                    });
+                    game.isAdvancing = false;
+                } else {
+                    // Auto-advance mode: show leaderboard then continue
+                    io.to(`game-${game.pin}`).emit('show-leaderboard', {
+                        leaderboard: game.leaderboard.slice(0, 5)
+                    });
+
+                    // Use separate leaderboardTimer to avoid overwriting advanceTimer
+                    game.leaderboardTimer = setTimeout(() => {
+                        try {
+                            game.leaderboardTimer = null;
+                            if (game.gameState === 'finished') {
+                                game.isAdvancing = false;
+                                return;
+                            }
+
+                            if (game.nextQuestion()) {
+                                this.startQuestion(game, io);
+                            } else {
+                                this.endGame(game, io);
+                            }
+                            game.isAdvancing = false;
+                        } catch (error) {
+                            this.logger.error(`Error in leaderboard timer for game ${game.pin}:`, error);
+                            game.isAdvancing = false;
+                        }
+                    }, 3000);
+                }
+            } catch (error) {
+                this.logger.error(`Error in advanceToNextQuestion for game ${game.pin}:`, error);
+                game.isAdvancing = false;
             }
         }, this.config.TIMING.LEADERBOARD_DISPLAY_TIME);
     }
@@ -441,16 +459,21 @@ class GameSessionService {
 
         // Store timer ID for proper cleanup
         game.advanceTimer = setTimeout(() => {
-            game.advanceTimer = null;
-            const hasMoreQuestions = game.nextQuestion();
+            try {
+                game.advanceTimer = null;
+                const hasMoreQuestions = game.nextQuestion();
 
-            if (hasMoreQuestions) {
-                this.startQuestion(game, io);
-            } else {
-                this.endGame(game, io);
+                if (hasMoreQuestions) {
+                    this.startQuestion(game, io);
+                } else {
+                    this.endGame(game, io);
+                }
+
+                game.isAdvancing = false;
+            } catch (error) {
+                this.logger.error(`Error in manualAdvanceToNextQuestion for game ${game.pin}:`, error);
+                game.isAdvancing = false;
             }
-
-            game.isAdvancing = false;
         }, 3000);
     }
 

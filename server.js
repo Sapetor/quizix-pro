@@ -23,6 +23,8 @@ const { GameSessionService } = require('./services/game-session-service');
 const { PlayerManagementService } = require('./services/player-management-service');
 const { QuestionFlowService } = require('./services/question-flow-service');
 const { SocketBatchService } = require('./services/socket-batch-service');
+const { validateBody, saveQuizSchema, claudeGenerateSchema } = require('./services/validation-schemas');
+const { metricsService } = require('./services/metrics-service');
 
 // Detect production environment (Railway sets NODE_ENV automatically)
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
@@ -187,6 +189,11 @@ const socketBatchService = new SocketBatchService(io, logger, {
 });
 
 app.use(cors(corsValidator.getExpressCorsConfig()));
+
+// Add metrics middleware for Prometheus monitoring
+app.use(metricsService.metricsMiddleware);
+
+// Rate limiting removed - not needed for local classroom deployment
 
 // Add compression middleware for better mobile performance
 app.use(compression({
@@ -618,9 +625,9 @@ app.post('/api/extract-pdf', pdfUpload.single('pdf'), async (req, res) => {
 });
 
 // Save quiz endpoint
-app.post('/api/save-quiz', async (req, res) => {
+app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {
     try {
-        const { title, questions } = req.body;
+        const { title, questions } = req.validatedBody;
         const result = await quizService.saveQuiz(title, questions);
         res.json(result);
     } catch (error) {
@@ -870,14 +877,9 @@ setInterval(() => {
 // Supports two modes:
 // 1. Server-side key: Set CLAUDE_API_KEY env var (recommended for production)
 // 2. BYOK (Bring Your Own Key): Client provides key in request body
-app.post('/api/claude/generate', async (req, res) => {
+app.post('/api/claude/generate', validateBody(claudeGenerateSchema), async (req, res) => {
     try {
-        const { prompt, apiKey: clientApiKey, numQuestions, model } = req.body;
-
-        // More detailed validation
-        if (!prompt) {
-            return res.status(400).json({ error: 'Prompt is required' });
-        }
+        const { prompt, apiKey: clientApiKey, numQuestions, model } = req.validatedBody;
 
         // Use server-side API key if available, otherwise require client key
         const serverApiKey = process.env.CLAUDE_API_KEY;
@@ -1373,6 +1375,16 @@ if (process.platform === 'win32') {
 // Liveness probe - simple check if server is running
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Prometheus metrics endpoint
+app.get('/metrics', async (req, res) => {
+    try {
+        res.set('Content-Type', metricsService.register.contentType);
+        res.end(await metricsService.register.metrics());
+    } catch (error) {
+        res.status(500).end(error.message);
+    }
 });
 
 // Diagnostic endpoint to check BASE_PATH configuration

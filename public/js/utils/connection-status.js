@@ -179,7 +179,7 @@ export class ConnectionStatus {
                 this.isOnline = false;
                 this.connectionQuality = 'poor';
             }
-        } catch (error) {
+        } catch (_error) {
             // Fallback: try a simple connectivity check
             try {
                 const fallbackResponse = await fetch(window.location.origin, {

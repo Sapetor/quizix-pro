@@ -3,7 +3,7 @@
  * Replaces inline feedback with modal popups to prevent scrolling issues on mobile
  */
 
-import { logger, ANIMATION } from '../core/config.js';
+import { logger } from '../core/config.js';
 import { getTranslation } from './translation-manager.js';
 import { simpleMathJaxService } from './simple-mathjax-service.js';
 import {

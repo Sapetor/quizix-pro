@@ -113,7 +113,7 @@ export class SoundManager {
             // Setup mobile audio unlock listeners
             this.setupMobileAudioUnlock();
 
-        } catch (e) {
+        } catch (_e) {
             logger.debug('Web Audio API not supported');
             this.settings.soundsEnabled = false;
         }
@@ -750,7 +750,7 @@ export class SoundManager {
         this.activeOscillators.forEach(osc => {
             try {
                 osc.stop();
-            } catch (e) {
+            } catch (_e) {
                 // Already stopped
             }
         });

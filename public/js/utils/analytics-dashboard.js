@@ -296,7 +296,6 @@ export class AnalyticsDashboard {
             this.charts.get('score-distribution').destroy();
         }
 
-        const scores = results.map(p => p.score).sort((a, b) => a - b);
         const labels = results.map(p => p.name);
 
         const chart = new window.Chart(canvas, {
@@ -329,7 +328,7 @@ export class AnalyticsDashboard {
     /**
      * Render difficulty breakdown chart
      */
-    renderDifficultyChart(questions, results) {
+    renderDifficultyChart(questions, _results) {
         const canvas = document.getElementById('chart-difficulty');
         if (!canvas) return;
 

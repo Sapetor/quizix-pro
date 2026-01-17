@@ -201,7 +201,7 @@ export class SplitLayoutManager {
         };
 
         // Mouse up - end drag
-        this.listeners.dragEnd = (e) => {
+        this.listeners.dragEnd = (_e) => {
             if (!this.isDragging) return;
 
             this.isDragging = false;
