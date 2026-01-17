@@ -3,7 +3,7 @@
  * Coordinating class that manages all game modules and core functionality
  */
 
-import { TIMING, SCORING, LIMITS, logger } from './config.js';
+import { TIMING, LIMITS, logger } from './config.js';
 import { UIManager } from '../ui/ui-manager.js';
 import { PreviewManager } from '../ui/preview-manager.js';
 import { GameManager } from '../game/game-manager.js';
@@ -13,16 +13,17 @@ import { SettingsManager } from '../settings/settings-manager.js';
 import { SoundManager } from '../audio/sound-manager.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 // AI Generator will be lazy loaded when needed
-import { addQuestion, createQuestionElement, randomizeAnswers, shuffleArray } from '../utils/question-utils.js';
+import { addQuestion, randomizeAnswers, shuffleArray } from '../utils/question-utils.js';
 import { translationManager, showErrorAlert, createQuestionCounter } from '../utils/translation-manager.js';
 import { toastNotifications } from '../utils/toast-notifications.js';
 import { connectionStatus } from '../utils/connection-status.js';
 import { APIHelper } from '../utils/api-helper.js';
-import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
 import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
 import { bindElement } from '../utils/dom.js';
 import { getJSON, setJSON } from '../utils/storage-utils.js';
+import { PracticeModeManager } from '../practice/practice-mode-manager.js';
+import { SocketEventBus } from '../events/socket-event-bus.js';
 // Results viewer will be lazy loaded when needed
 
 export class QuizGame {
@@ -71,6 +72,12 @@ export class QuizGame {
 
         // Update GameManager with SocketManager reference
         this.gameManager.setSocketManager(this.socketManager);
+
+        // Create SocketEventBus adapter for multiplayer mode
+        this.socketEventBus = new SocketEventBus(this.socketManager, this.socket);
+
+        // Initialize practice mode manager
+        this.practiceModeManager = new PracticeModeManager(this.gameManager, this.uiManager);
 
         // Initialize connection status monitoring
         connectionStatus.setSocket(this.socket);
@@ -351,7 +358,7 @@ export class QuizGame {
     /**
      * Handle player game screen clicks
      */
-    handlePlayerGameClick(e) {
+    handlePlayerGameClick(_e) {
         // Client interactions are now handled by PlayerInteractionManager
         // This method kept for future non-client click handling if needed
         logger.debug('Player game click delegated to PlayerInteractionManager');
@@ -749,6 +756,26 @@ export class QuizGame {
      */
     loadQuiz(filename) {
         this.quizManager.loadQuiz(filename);
+    }
+
+    /**
+     * Start practice mode with a quiz
+     * @param {string} filename - Quiz filename to practice
+     */
+    async startPracticeMode(filename) {
+        logger.debug('Starting practice mode for:', filename);
+
+        // Close the load quiz modal
+        this.quizManager.hideLoadQuizModal();
+
+        // Start practice mode
+        const success = await this.practiceModeManager.startPracticeMode(filename);
+        if (!success) {
+            toastNotifications.show(
+                translationManager.getTranslationSync('failed_start_practice') || 'Failed to start practice mode',
+                'error'
+            );
+        }
     }
 
     /**

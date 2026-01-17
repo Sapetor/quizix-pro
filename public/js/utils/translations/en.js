@@ -392,6 +392,7 @@ export default {
     // Results management keys
     quiz_results: 'Quiz Results',
     search_results: 'Search by quiz title or PIN...',
+    sort_results: 'Sort results',
     all_dates: 'All Dates',
     today: 'Today',
     this_week: 'This Week',
@@ -527,5 +528,66 @@ export default {
     onboarding_skip: 'Skip Tour',
     onboarding_finish: 'Get Started!',
     onboarding_dont_show: "Don't show this again",
-    onboarding_step_of: 'Step {0} of {1}'
+    onboarding_step_of: 'Step {0} of {1}',
+
+    // AI Generator error messages
+    ollama_not_running: 'Ollama server not running. Please start Ollama and try again.',
+    ollama_connection_error: 'Cannot connect to Ollama. Make sure Ollama is running on localhost:11434',
+    ollama_not_available: 'Ollama not available',
+    ollama_loading_models: 'Loading models...',
+    ollama_no_models: 'No models found',
+    invalid_api_key: 'Invalid API key. Please check your credentials.',
+    rate_limit_exceeded: 'Rate limit exceeded. Please try again later.',
+    billing_issue: 'Billing issue. Please check your account balance and payment method.',
+    api_access_forbidden: 'API access forbidden. Please check your API key permissions.',
+    invalid_response_structure: 'Invalid API response structure',
+    content_blocked_safety: 'Content blocked by safety filters. Try rephrasing your prompt.',
+    code_model_warning: 'Code models are designed for code generation, not quiz creation. Please use a general model instead.',
+    no_provider_selected: 'No AI Provider Selected',
+    no_provider_selected_msg: 'Please select an AI provider before generating questions.',
+    no_content_provided: 'No Content Provided',
+    no_content_provided_msg: 'Please enter source content to generate questions from.',
+    no_question_types: 'No Question Types Selected',
+    no_question_types_msg: 'Please select at least one question type.',
+    generation_failed: 'Generation Failed',
+    no_questions_generated: 'No Questions Generated',
+    retry_attempt: 'Retry attempt {0} of {1}...',
+    processing_batch: 'Processing batch {0} of {1}...',
+
+    // Server error messages
+    pdf_size_limit: 'PDF file exceeds 10MB limit. Please use a smaller file or copy text manually.',
+    pdf_parsing_unavailable: 'Server does not have PDF parsing capability. Please copy and paste the text content manually.',
+    too_many_requests: 'Too many requests. Please wait {0} seconds.',
+    invalid_quiz_data: 'Invalid quiz data',
+    quiz_needs_questions: 'Quiz must have at least one question',
+    invalid_request_data: 'Invalid request data',
+    failed_create_game: 'Failed to create game',
+    failed_join_game: 'Failed to join game',
+    failed_start_game: 'Failed to start game',
+    invalid_pin_format: 'Invalid PIN format. Must be 6 digits.',
+
+    // Results viewer messages
+    failed_load_results: 'Failed to load quiz results',
+    no_analytics_data: 'No player response data available for analytics.',
+    analytics_generation_failed: 'Failed to generate analytics. Please check the console for details.',
+    select_result_download: 'Please select a result to download',
+    download_failed: 'Download failed. Please try again.',
+    results_viewer_error: 'Could not open detailed results viewer',
+
+    // Application error
+    app_init_error: 'Application Error',
+    app_init_error_msg: 'Failed to initialize Quizix Pro. Please refresh the page.',
+
+    // Practice Mode
+    practice_mode: 'Practice Mode',
+    practice: 'Practice',
+    practice_complete: 'Practice Complete!',
+    accuracy: 'Accuracy',
+    time: 'Time',
+    new_personal_best: 'New Personal Best!',
+    personal_best: 'Personal Best',
+    try_again: 'Try Again',
+    exit: 'Exit',
+    failed_start_practice: 'Failed to start practice mode',
+    load: 'Load'
 };

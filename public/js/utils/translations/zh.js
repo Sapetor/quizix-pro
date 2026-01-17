@@ -367,6 +367,7 @@ export default {
     // Results management keys
     quiz_results: '测验结果',
     search_results: '按测验标题或PIN搜索...',
+    sort_results: '排序结果',
     all_dates: '所有日期',
     today: '今天',
     this_week: '本周',
@@ -482,5 +483,18 @@ export default {
     onboarding_skip: '跳过教程',
     onboarding_finish: '开始！',
     onboarding_dont_show: '不再显示',
-    onboarding_step_of: '步骤 {0}/{1}'
+    onboarding_step_of: '步骤 {0}/{1}',
+
+    // Practice Mode
+    practice_mode: '练习模式',
+    practice: '练习',
+    practice_complete: '练习完成！',
+    accuracy: '准确率',
+    time: '时间',
+    new_personal_best: '新个人最佳！',
+    personal_best: '个人最佳',
+    try_again: '再试一次',
+    exit: '退出',
+    failed_start_practice: '无法启动练习模式',
+    load: '加载'
 };

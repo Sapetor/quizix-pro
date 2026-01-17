@@ -443,14 +443,14 @@
                     </div>
                     
                     <!-- Theme Toggle -->
-                    <button id="theme-toggle-mobile-header" class="mobile-control-btn mobile-header" data-translate-title="toggle_dark_mode_tooltip" data-translate-aria-label="toggle_dark_mode_tooltip">
-                        <span class="control-icon">☀️</span>
+                    <button id="theme-toggle-mobile-header" class="mobile-control-btn mobile-header" data-translate-title="toggle_dark_mode_tooltip" aria-label="Toggle dark mode" data-translate-aria-label="toggle_dark_mode_tooltip" aria-pressed="false">
+                        <span class="control-icon" aria-hidden="true">☀️</span>
                         <span class="control-label" data-translate="theme">theme</span>
                     </button>
 
                     <!-- Sound Toggle -->
-                    <button id="sound-toggle-mobile-header" class="mobile-control-btn mobile-header" data-translate-title="toggle_sound_tooltip" data-translate-aria-label="toggle_sound_tooltip">
-                        <span class="control-icon">🔊</span>
+                    <button id="sound-toggle-mobile-header" class="mobile-control-btn mobile-header" data-translate-title="toggle_sound_tooltip" aria-label="Toggle sound" data-translate-aria-label="toggle_sound_tooltip" aria-pressed="true">
+                        <span class="control-icon" aria-hidden="true">🔊</span>
                         <span class="control-label" data-translate="sound">sound</span>
                     </button>
                 </div>
@@ -508,43 +508,43 @@
                 <button id="start-hosting-header-small" class="btn primary small start-game-header" style="display: none;" data-translate-title="start_quiz_tooltip"><span data-translate="create_lobby">Create Lobby</span></button>
                 
                 <!-- Horizontal Toolbar (shown only in host editing mode) -->
-                <div class="horizontal-toolbar" id="horizontal-toolbar" style="display: none;">
-                    <div class="toolbar-group">
-                        <button class="toolbar-btn" id="toolbar-add-question" data-translate-title="add_question_tooltip" data-translate-aria-label="add_question_tooltip">
-                            <span class="toolbar-icon">➕</span>
+                <div class="horizontal-toolbar" id="horizontal-toolbar" style="display: none;" role="toolbar" aria-label="Quiz editing tools">
+                    <div class="toolbar-group" role="group" aria-label="Question management">
+                        <button class="toolbar-btn" id="toolbar-add-question" data-translate-title="add_question_tooltip" aria-label="Add question" data-translate-aria-label="add_question_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">➕</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip" data-translate-aria-label="save_quiz_tooltip">
-                            <span class="toolbar-icon">💾</span>
+                        <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip" aria-label="Save quiz" data-translate-aria-label="save_quiz_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">💾</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip" data-translate-aria-label="load_quiz_tooltip">
-                            <span class="toolbar-icon">📂</span>
-                        </button>
-                    </div>
-                    
-                    <div class="toolbar-group">
-                        <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip" data-translate-aria-label="ai_generator_tooltip">
-                            <span class="toolbar-icon">🤖</span>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-preview" data-translate-title="toggle_preview_tooltip" data-translate-aria-label="toggle_preview_tooltip">
-                            <span class="toolbar-icon">👁️</span>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_quiz_tooltip" data-translate-aria-label="import_quiz_tooltip">
-                            <span class="toolbar-icon">📥</span>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-export" data-translate-title="export_quiz_tooltip" data-translate-aria-label="export_quiz_tooltip">
-                            <span class="toolbar-icon">📤</span>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-results" data-translate-title="view_results_tooltip" data-translate-aria-label="view_results_tooltip">
-                            <span class="toolbar-icon">📊</span>
+                        <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip" aria-label="Load quiz" data-translate-aria-label="load_quiz_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">📂</span>
                         </button>
                     </div>
-                    
-                    <div class="toolbar-group">
-                        <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip" data-translate-aria-label="back_to_top_tooltip">
-                            <span class="toolbar-icon">⬆️</span>
+
+                    <div class="toolbar-group" role="group" aria-label="Tools">
+                        <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip" aria-label="AI question generator" data-translate-aria-label="ai_generator_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">🤖</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip" data-translate-aria-label="go_to_bottom_tooltip">
-                            <span class="toolbar-icon">⬇️</span>
+                        <button class="toolbar-btn" id="toolbar-preview" data-translate-title="toggle_preview_tooltip" aria-label="Toggle preview" data-translate-aria-label="toggle_preview_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">👁️</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_quiz_tooltip" aria-label="Import quiz" data-translate-aria-label="import_quiz_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">📥</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-export" data-translate-title="export_quiz_tooltip" aria-label="Export quiz" data-translate-aria-label="export_quiz_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">📤</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-results" data-translate-title="view_results_tooltip" aria-label="View results" data-translate-aria-label="view_results_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">📊</span>
+                        </button>
+                    </div>
+
+                    <div class="toolbar-group" role="group" aria-label="Navigation">
+                        <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip" aria-label="Back to top" data-translate-aria-label="back_to_top_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">⬆️</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip" aria-label="Go to bottom" data-translate-aria-label="go_to_bottom_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">⬇️</span>
                         </button>
                     </div>
                 </div>
@@ -552,17 +552,17 @@
                 <!-- Desktop Theme and Controls (hidden on mobile) -->
                 <!-- Global Font Size Control (hidden on mobile) -->
                 <div class="font-size-control">
-                    <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size_tooltip" data-translate-aria-label="adjust_font_size_tooltip" onclick="toggleGlobalFontSize();">
-                        <span id="font-size-icon">A</span>
+                    <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size_tooltip" aria-label="Adjust font size" data-translate-aria-label="adjust_font_size_tooltip" onclick="toggleGlobalFontSize();">
+                        <span id="font-size-icon" aria-hidden="true">A</span>
                     </button>
                 </div>
 
-                <button id="desktop-return-to-main" class="theme-toggle desktop-only" data-translate-title="return_to_main" data-translate-aria-label="return_to_main" onclick="returnToMainFromHeader()" style="display: none;">
-                    <span class="control-icon">🏠</span>
+                <button id="desktop-return-to-main" class="theme-toggle desktop-only" data-translate-title="return_to_main" aria-label="Return to main menu" data-translate-aria-label="return_to_main" onclick="returnToMainFromHeader()" style="display: none;">
+                    <span class="control-icon" aria-hidden="true">🏠</span>
                 </button>
-                <button id="fullscreen-toggle" class="theme-toggle" data-translate-title="toggle_fullscreen_tooltip" data-translate-aria-label="toggle_fullscreen_tooltip">⛶</button>
-                <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip" data-translate-aria-label="toggle_dark_mode_tooltip">☀️</button>
-                <button id="sound-toggle" class="sound-toggle" data-translate-title="toggle_sound_tooltip" data-translate-aria-label="toggle_sound_tooltip">🔊</button>
+                <button id="fullscreen-toggle" class="theme-toggle" data-translate-title="toggle_fullscreen_tooltip" aria-label="Toggle fullscreen" data-translate-aria-label="toggle_fullscreen_tooltip" aria-pressed="false"><span aria-hidden="true">⛶</span></button>
+                <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip" aria-label="Toggle dark mode" data-translate-aria-label="toggle_dark_mode_tooltip" aria-pressed="false"><span aria-hidden="true">☀️</span></button>
+                <button id="sound-toggle" class="sound-toggle" data-translate-title="toggle_sound_tooltip" aria-label="Toggle sound" data-translate-aria-label="toggle_sound_tooltip" aria-pressed="true"><span aria-hidden="true">🔊</span></button>
             </div>
         </header>
 
@@ -744,7 +744,7 @@
                     <h2 data-translate="create_quiz">Create Your Quiz</h2>
                     
                     <div class="quiz-builder">
-                    <input type="text" id="quiz-title" placeholder="Quiz Title" class="input-field" data-translate-placeholder="quiz_title">
+                    <input type="text" id="quiz-title" placeholder="Quiz Title" class="input-field" data-translate-placeholder="quiz_title" aria-label="Quiz title" data-translate-aria-label="quiz_title">
                     
                     <div class="quiz-settings">
                         <div class="general-options">
@@ -897,8 +897,8 @@
                     <input type="file" id="import-file-input" accept=".csv,.json" style="display: none;">
                     
                     <!-- Back to Top Button -->
-                    <button id="back-to-top" class="back-to-top-btn" onclick="scrollToTop()" style="display: none;" title="Back to Top">
-                        ⬆️
+                    <button id="back-to-top" class="back-to-top-btn" onclick="scrollToTop()" style="display: none;" title="Back to Top" aria-label="Back to top" data-translate-aria-label="back_to_top_tooltip">
+                        <span aria-hidden="true">⬆️</span>
                     </button>
                     </div>
                 </div>
@@ -998,8 +998,8 @@
             </div>
             
             <!-- Floating Back to Top Button -->
-            <button id="back-to-top-float" class="back-to-top-float" onclick="scrollToTop()" style="display: none;">
-                ⬆️
+            <button id="back-to-top-float" class="back-to-top-float" onclick="scrollToTop()" style="display: none;" aria-label="Back to top" data-translate-aria-label="back_to_top_tooltip">
+                <span aria-hidden="true">⬆️</span>
             </button>
             
             <!-- Mobile Quiz Management FAB -->
@@ -1010,11 +1010,11 @@
         </div>
 
         <!-- Preview Modal Overlay -->
-        <div id="preview-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="preview-modal-overlay" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="preview-modal-title">
             <div id="preview-modal" class="preview-modal">
                 <div class="preview-modal-header">
                     <div class="preview-title-section">
-                        <h2>📱 <span data-translate="question_preview">Question Preview</span></h2>
+                        <h2 id="preview-modal-title"><span aria-hidden="true">📱</span> <span data-translate="question_preview">Question Preview</span></h2>
                     </div>
                     <button id="close-preview" class="close-btn" onclick="closePreviewModal()" data-translate-aria-label="close">×</button>
                 </div>
@@ -1099,7 +1099,7 @@
                                 <h3 class="card-title" data-translate="players_joined">Players Joined</h3>
                             </div>
                             <div class="card-content">
-                                <div id="players-list" class="players-grid"></div>
+                                <div id="players-list" class="players-grid" aria-live="polite" aria-relevant="additions removals"></div>
                             </div>
                         </div>
                     </div>
@@ -1128,8 +1128,8 @@
                                 
                                 <!-- Start Game Section with Player Count -->
                                 <div class="action-section">
-                                    <div class="player-count-display">
-                                        <span class="player-icon">👥</span>
+                                    <div class="player-count-display" aria-live="polite">
+                                        <span class="player-icon" aria-hidden="true">👥</span>
                                         <span id="lobby-player-count" class="player-count-number">0</span>
                                         <span class="info-label" data-translate="players">players</span>
                                     </div>
@@ -1153,8 +1153,8 @@
             <div class="host-game-container">
                 <!-- Host-specific header with timer and counter -->
                 <div class="question-header">
-                    <span id="question-counter">Question 1 of 5</span>
-                    <div id="timer" class="timer">20</div>
+                    <span id="question-counter" aria-live="polite">Question 1 of 5</span>
+                    <div id="timer" class="timer" role="timer" aria-live="off" aria-label="Time remaining">20</div>
                 </div>
                 
                 <!-- Use client-style question display -->
@@ -1167,7 +1167,7 @@
                 
                     <!-- Real-time Answer Statistics -->
                     <!-- Moved above alternatives for better host visibility -->
-                    <div id="answer-statistics" class="answer-stats" style="display: none;">
+                    <div id="answer-statistics" class="answer-stats" style="display: none;" role="region" aria-label="Live answer statistics">
                         <div class="stats-header">
                             <h3 data-translate="live_answer_statistics">Live Answer Statistics</h3>
                             <!-- Game control buttons for statistics phase - moved to top for visibility -->
@@ -1220,7 +1220,7 @@
                                 <div class="stat-count" id="stat-count-5">0</div>
                             </div>
                         </div>
-                        <div class="response-summary" id="response-summary">
+                        <div class="response-summary" id="response-summary" aria-live="polite">
                             <span id="responses-count">0</span> <span data-translate="of">of</span> <span id="total-players">0</span> <span data-translate="players_have_answered">players have answered</span>
                         </div>
                     </div>
@@ -1243,8 +1243,8 @@
         <div id="join-screen" class="screen">
             <div class="join-container">
                 <h2 data-translate="join_game">Join Game</h2>
-                <input type="text" id="game-pin-input" placeholder="Enter Game PIN" class="input-field" data-translate-placeholder="enter_game_pin">
-                <input type="text" id="player-name" placeholder="Your Name" class="input-field" data-translate-placeholder="your_name">
+                <input type="text" id="game-pin-input" placeholder="Enter Game PIN" class="input-field" data-translate-placeholder="enter_game_pin" aria-label="Game PIN" data-translate-aria-label="game_pin" inputmode="numeric" pattern="[0-9]{6}" maxlength="6">
+                <input type="text" id="player-name" placeholder="Your Name" class="input-field" data-translate-placeholder="your_name" aria-label="Your name" data-translate-aria-label="your_name" autocomplete="nickname">
                 <button id="join-game" class="btn primary" data-translate="join_game">Join Game</button>
                 
                 <div class="join-divider">
@@ -1307,6 +1307,12 @@
         </div>
 
         <div id="player-game-screen" class="screen">
+            <!-- Practice Mode Indicator Badge -->
+            <div id="practice-mode-indicator" class="practice-mode-badge hidden">
+                <span class="badge-icon">🎯</span>
+                <span class="badge-text" data-translate="practice_mode">Practice Mode</span>
+            </div>
+
             <div class="player-game-container">
                 <div class="question-info">
                     <span id="player-question-counter">Question 1 of 5</span>
@@ -1328,7 +1334,7 @@
                     </div>
                 </div>
                 
-                <div id="player-multiple-correct" class="player-answer-type" style="display: none;">
+                <div id="player-multiple-correct" class="player-answer-type hidden">
                     <div class="player-checkbox-options">
                         <label class="checkbox-option" data-option="0">
                             <input type="checkbox" class="option-checkbox"> A
@@ -1345,22 +1351,22 @@
                     </div>
                     <button id="submit-multiple" class="btn primary" data-translate="submit_answer">Submit Answer</button>
                 </div>
-                
-                <div id="player-true-false" class="player-answer-type" style="display: none;">
+
+                <div id="player-true-false" class="player-answer-type hidden">
                     <div class="true-false-options">
                         <button class="tf-option" data-answer="true" data-translate="true">TRUE</button>
                         <button class="tf-option" data-answer="false" data-translate="false">FALSE</button>
                     </div>
                 </div>
-                
-                <div id="player-numeric" class="player-answer-type" style="display: none;">
+
+                <div id="player-numeric" class="player-answer-type hidden">
                     <div class="numeric-input-container">
-                        <input type="number" id="numeric-answer-input" placeholder="Enter your answer" step="any" data-translate-placeholder="enter_answer">
+                        <input type="number" id="numeric-answer-input" placeholder="Enter your answer" step="any" data-translate-placeholder="enter_answer" aria-label="Numeric answer" data-translate-aria-label="numeric_answer">
                         <button id="submit-numeric" class="btn primary" data-translate="submit_answer">Submit Answer</button>
                     </div>
                 </div>
 
-                <div id="player-ordering" class="player-answer-type" style="display: none;">
+                <div id="player-ordering" class="player-answer-type hidden">
                     <div class="ordering-container">
                         <!-- Ordering options will be dynamically generated here -->
                     </div>
@@ -1377,12 +1383,12 @@
         <div id="leaderboard-screen" class="screen">
             <div class="leaderboard-container">
                 <div class="leaderboard-header">
-                    <h2 data-translate="leaderboard_title">🏆 Leaderboard</h2>
+                    <h2 data-translate="leaderboard_title"><span aria-hidden="true">🏆</span> Leaderboard</h2>
                     <div class="leaderboard-controls">
                         <button id="next-question" class="btn primary" style="display: none;" data-translate="next_question">Next Question</button>
                     </div>
                 </div>
-                <div id="leaderboard-list" class="leaderboard"></div>
+                <div id="leaderboard-list" class="leaderboard" role="list" aria-live="polite" aria-label="Player rankings"></div>
                 <div id="final-results" class="final-results hidden">
                     <h3 data-translate="game_complete">🎉 Game Complete!</h3>
                     <div class="final-actions">
@@ -1401,24 +1407,29 @@
         
         <div id="player-final-screen" class="screen">
             <div class="player-final-container">
-                <h2 data-translate="quiz_complete">🎉 Quiz Complete!</h2>
-                <div id="player-final-rank" class="player-rank">
+                <h2 data-translate="quiz_complete"><span aria-hidden="true">🎉</span> Quiz Complete!</h2>
+                <div id="player-final-rank" class="player-rank" role="status" aria-live="polite">
                     <h3 data-translate="your_final_rank">Your Final Rank</h3>
                     <div id="final-position" class="final-position">#1</div>
                     <div id="final-score" class="final-score">0 <span data-translate="points">points</span></div>
                 </div>
                 <div id="top-players" class="top-players">
-                    <h3 data-translate="top_players">🏆 Top Players</h3>
-                    <div id="final-leaderboard" class="final-leaderboard"></div>
+                    <h3 data-translate="top_players"><span aria-hidden="true">🏆</span> Top Players</h3>
+                    <div id="final-leaderboard" class="final-leaderboard" role="list" aria-label="Top players"></div>
                 </div>
                 <button id="play-again" class="btn primary" data-translate="play_again">Play Again</button>
             </div>
         </div>
-        
+
+        <!-- Practice Mode Results Screen -->
+        <div id="practice-results" class="practice-results-overlay hidden">
+            <!-- Content dynamically populated by PracticeModeManager -->
+        </div>
+
         <!-- Load Quiz Modal -->
-        <div id="load-quiz-modal" class="modal" style="display: none;">
+        <div id="load-quiz-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="load-quiz-modal-title">
             <div class="modal-content">
-                <h3 data-translate="load_saved_quiz">Load Saved Quiz</h3>
+                <h3 id="load-quiz-modal-title" data-translate="load_saved_quiz">Load Saved Quiz</h3>
                 <div id="quiz-list" class="quiz-list"></div>
                 <div class="modal-actions">
                     <button id="cancel-load" class="btn secondary" data-translate="cancel">Cancel</button>
@@ -1427,9 +1438,9 @@
         </div>
         
         <!-- Quiz Preview Modal -->
-        <div id="quiz-preview-modal" class="modal" style="display: none;">
+        <div id="quiz-preview-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="quiz-preview-modal-title">
             <div class="modal-content large">
-                <h3 data-translate="preview_quiz">Quiz Preview</h3>
+                <h3 id="quiz-preview-modal-title" data-translate="preview_quiz">Quiz Preview</h3>
                 <div id="preview-content" class="preview-content"></div>
                 <div class="modal-actions">
                     <button id="cancel-preview" class="btn secondary" data-translate="close">Close</button>
@@ -1439,10 +1450,10 @@
         
 
         <!-- AI Question Generator Modal -->
-        <div id="ai-generator-modal" class="modal" style="display: none;">
+        <div id="ai-generator-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="ai-generator-modal-title">
             <div class="modal-content large">
                 <div class="modal-header">
-                    <h3>🤖 <span data-translate="ai_generator">AI Question Generator</span></h3>
+                    <h3 id="ai-generator-modal-title"><span aria-hidden="true">🤖</span> <span data-translate="ai_generator">AI Question Generator</span></h3>
                     <button id="close-ai-generator" class="close-btn" data-translate-aria-label="close">&times;</button>
                 </div>
                 
@@ -1601,10 +1612,10 @@
     </div>
 
     <!-- Question Preview Modal -->
-    <div id="question-preview-modal" class="modal" style="display: none;">
+    <div id="question-preview-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="question-preview-modal-title">
         <div class="modal-content large">
             <div class="modal-header">
-                <h3>📝 <span data-translate="preview_generated_questions">Preview Generated Questions</span></h3>
+                <h3 id="question-preview-modal-title"><span aria-hidden="true">📝</span> <span data-translate="preview_generated_questions">Preview Generated Questions</span></h3>
                 <button id="close-question-preview" class="close-btn" data-translate-aria-label="close">&times;</button>
             </div>
 
@@ -1639,10 +1650,10 @@
     </div>
 
     <!-- Results Viewing Modal -->
-    <div id="results-viewing-modal" class="modal" style="display: none;">
+    <div id="results-viewing-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="results-viewing-modal-title">
         <div class="modal-content large">
             <div class="modal-header">
-                <h3>📊 <span data-translate="view_quiz_results">Quiz Results History</span></h3>
+                <h3 id="results-viewing-modal-title"><span aria-hidden="true">📊</span> <span data-translate="view_quiz_results">Quiz Results History</span></h3>
                 <button id="close-results-viewer" class="close-btn" data-translate-aria-label="close">&times;</button>
             </div>
             
@@ -1666,8 +1677,8 @@
                 
                 <div class="results-filters">
                     <div class="filter-group">
-                        <input type="text" id="search-results" class="input-field" placeholder="Search by quiz title..." data-translate-placeholder="search_quiz_title">
-                        <select id="sort-results" class="input-field">
+                        <input type="text" id="search-results" class="input-field" placeholder="Search by quiz title..." data-translate-placeholder="search_quiz_title" aria-label="Search results" data-translate-aria-label="search_results">
+                        <select id="sort-results" class="input-field" aria-label="Sort results" data-translate-aria-label="sort_results">
                             <option value="date-desc" data-translate="sort_newest_first">Newest First</option>
                             <option value="date-asc" data-translate="sort_oldest_first">Oldest First</option>
                             <option value="title-asc" data-translate="sort_title_az">Title A-Z</option>
@@ -1693,7 +1704,7 @@
     </div>
 
     <!-- Results Detail Modal -->
-    <div id="result-detail-modal" class="modal" style="display: none;">
+    <div id="result-detail-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="result-detail-title">
         <div class="modal-content large">
             <div class="modal-header">
                 <h3 id="result-detail-title" data-translate="quiz_results_detail">Quiz Results Detail</h3>
@@ -1739,10 +1750,10 @@
     </div>
 
     <!-- Modal Feedback System -->
-    <div id="feedback-modal-overlay" class="feedback-modal-overlay">
+    <div id="feedback-modal-overlay" class="feedback-modal-overlay" role="alertdialog" aria-modal="true" aria-labelledby="modal-feedback-text" aria-live="assertive">
         <div id="feedback-modal" class="feedback-modal">
             <div class="feedback-message">
-                <span class="feedback-icon" id="feedback-icon"></span>
+                <span class="feedback-icon" id="feedback-icon" aria-hidden="true"></span>
                 <span id="modal-feedback-text"></span>
             </div>
             <div class="score-display" id="modal-score-display"></div>
@@ -1751,11 +1762,11 @@
     </div>
 
     <!-- Mobile Quiz Actions Bottom Sheet -->
-    <div id="mobile-quiz-sheet-overlay" class="mobile-quiz-sheet-overlay" onclick="hideMobileQuizSheet()">
+    <div id="mobile-quiz-sheet-overlay" class="mobile-quiz-sheet-overlay" onclick="hideMobileQuizSheet()" role="dialog" aria-modal="true" aria-labelledby="mobile-quiz-sheet-title">
         <div id="mobile-quiz-sheet" class="mobile-quiz-sheet" onclick="event.stopPropagation()">
             <div class="mobile-quiz-sheet-header">
-                <div class="mobile-quiz-sheet-handle" onclick="hideMobileQuizSheet()"></div>
-                <h3 class="mobile-quiz-sheet-title" data-translate="quiz_actions">Quiz Actions</h3>
+                <div class="mobile-quiz-sheet-handle" onclick="hideMobileQuizSheet()" role="button" aria-label="Close sheet" tabindex="0"></div>
+                <h3 id="mobile-quiz-sheet-title" class="mobile-quiz-sheet-title" data-translate="quiz_actions">Quiz Actions</h3>
                 <button class="mobile-quiz-sheet-close" onclick="hideMobileQuizSheet()" data-translate-aria-label="close">×</button>
             </div>
             

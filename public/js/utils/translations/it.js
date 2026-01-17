@@ -367,6 +367,7 @@ export default {
     // Results management keys
     quiz_results: 'Risultati del Quiz',
     search_results: 'Cerca per titolo quiz o PIN...',
+    sort_results: 'Ordina risultati',
     all_dates: 'Tutte le Date',
     today: 'Oggi',
     this_week: 'Questa Settimana',
@@ -492,5 +493,18 @@ export default {
     onboarding_skip: 'Salta Tour',
     onboarding_finish: 'Inizia!',
     onboarding_dont_show: 'Non mostrare più',
-    onboarding_step_of: 'Passo {0} di {1}'
+    onboarding_step_of: 'Passo {0} di {1}',
+
+    // Practice Mode
+    practice_mode: 'Modalità Pratica',
+    practice: 'Esercitati',
+    practice_complete: 'Pratica Completata!',
+    accuracy: 'Precisione',
+    time: 'Tempo',
+    new_personal_best: 'Nuovo Record Personale!',
+    personal_best: 'Record Personale',
+    try_again: 'Riprova',
+    exit: 'Esci',
+    failed_start_practice: 'Impossibile avviare la modalità pratica',
+    load: 'Carica'
 };

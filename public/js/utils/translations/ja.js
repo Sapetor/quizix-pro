@@ -372,6 +372,7 @@ export default {
     // Results management keys
     quiz_results: 'クイズ結果',
     search_results: 'クイズタイトルまたはPINで検索...',
+    sort_results: '結果を並べ替え',
     all_dates: 'すべての日付',
     today: '今日',
     this_week: '今週',
@@ -483,5 +484,18 @@ export default {
     onboarding_skip: 'スキップ',
     onboarding_finish: '開始！',
     onboarding_dont_show: '今後表示しない',
-    onboarding_step_of: 'ステップ {0}/{1}'
+    onboarding_step_of: 'ステップ {0}/{1}',
+
+    // Practice Mode
+    practice_mode: '練習モード',
+    practice: '練習する',
+    practice_complete: '練習完了！',
+    accuracy: '正答率',
+    time: '時間',
+    new_personal_best: '自己ベスト更新！',
+    personal_best: '自己ベスト',
+    try_again: 'もう一度',
+    exit: '終了',
+    failed_start_practice: '練習モードの開始に失敗しました',
+    load: '読み込む'
 };

@@ -13,6 +13,7 @@ export class PlayerInteractionManager {
         this.gameDisplayManager = gameDisplayManager;
         this.soundManager = soundManager;
         this.socketManager = socketManager;
+        this.eventBus = null; // Set by GameManager.setEventBus()
 
         // Bind methods to maintain context
         this.selectAnswer = this.selectAnswer.bind(this);
@@ -214,7 +215,7 @@ export class PlayerInteractionManager {
     }
 
     /**
-     * Submit answer to server
+     * Submit answer to server or local game session
      */
     submitAnswer(answer) {
         const gameState = this.gameStateManager.getGameState();
@@ -224,8 +225,9 @@ export class PlayerInteractionManager {
             return;
         }
 
-        if (!this.socketManager) {
-            logger.error('Socket manager not available for answer submission');
+        // Check for event bus first (practice mode), then socket manager (multiplayer)
+        if (!this.eventBus && !this.socketManager) {
+            logger.error('No event bus or socket manager available for answer submission');
             return;
         }
 
@@ -237,10 +239,13 @@ export class PlayerInteractionManager {
         // Store answer locally
         this.gameStateManager.storePlayerAnswer(gameState.playerName, answer);
 
-        // Send to server
-        this.socketManager.submitAnswer(answer);
-
-        // Feedback will be shown by the socket event response (original system)
+        // Send via event bus (works for both practice and multiplayer modes)
+        if (this.eventBus) {
+            this.eventBus.emit('submit-answer', { answer });
+        } else if (this.socketManager) {
+            // Fallback to direct socket manager (backward compatibility)
+            this.socketManager.submitAnswer(answer);
+        }
 
         // Play submission sound
         if (this.soundManager?.isSoundsEnabled()) {

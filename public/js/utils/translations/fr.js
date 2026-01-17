@@ -388,6 +388,7 @@ export default {
     // Results management keys
     quiz_results: 'Résultats du Quiz',
     search_results: 'Rechercher par titre de quiz ou PIN...',
+    sort_results: 'Trier les résultats',
     all_dates: 'Toutes les Dates',
     today: "Aujourd'hui",
     this_week: 'Cette Semaine',
@@ -511,5 +512,18 @@ export default {
     onboarding_skip: 'Passer',
     onboarding_finish: 'Commencer !',
     onboarding_dont_show: 'Ne plus afficher',
-    onboarding_step_of: 'Étape {0} sur {1}'
+    onboarding_step_of: 'Étape {0} sur {1}',
+
+    // Practice Mode
+    practice_mode: 'Mode Entraînement',
+    practice: "S'entraîner",
+    practice_complete: 'Entraînement Terminé !',
+    accuracy: 'Précision',
+    time: 'Temps',
+    new_personal_best: 'Nouveau Record Personnel !',
+    personal_best: 'Record Personnel',
+    try_again: 'Réessayer',
+    exit: 'Quitter',
+    failed_start_practice: "Échec du démarrage du mode entraînement",
+    load: 'Charger'
 };

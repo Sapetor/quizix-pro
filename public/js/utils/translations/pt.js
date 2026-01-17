@@ -373,6 +373,7 @@ export default {
     // Results management keys
     quiz_results: 'Resultados do Quiz',
     search_results: 'Pesquisar por título do quiz ou PIN...',
+    sort_results: 'Ordenar resultados',
     all_dates: 'Todas as Datas',
     today: 'Hoje',
     this_week: 'Esta Semana',
@@ -484,5 +485,18 @@ export default {
     onboarding_skip: 'Pular Tour',
     onboarding_finish: 'Começar!',
     onboarding_dont_show: 'Não mostrar novamente',
-    onboarding_step_of: 'Passo {0} de {1}'
+    onboarding_step_of: 'Passo {0} de {1}',
+
+    // Practice Mode
+    practice_mode: 'Modo Prática',
+    practice: 'Praticar',
+    practice_complete: 'Prática Concluída!',
+    accuracy: 'Precisão',
+    time: 'Tempo',
+    new_personal_best: 'Novo Recorde Pessoal!',
+    personal_best: 'Recorde Pessoal',
+    try_again: 'Tentar Novamente',
+    exit: 'Sair',
+    failed_start_practice: 'Falha ao iniciar o modo prática',
+    load: 'Carregar'
 };
