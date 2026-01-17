@@ -10,7 +10,7 @@
  * - Dependencies: translation-manager.js for translationManager.getTranslationSync()
  */
 
-import { logger, AI, TIMING } from '../core/config.js';
+import { logger, AI } from '../core/config.js';
 import { translationManager, showAlert } from '../utils/translation-manager.js';
 import { secureStorage } from '../services/secure-storage-service.js';
 import { APIHelper } from '../utils/api-helper.js';
@@ -23,16 +23,12 @@ import {
     closeModal,
     bindOverlayClose,
     bindEscapeClose,
-    unbindOverlayClose,
-    unbindEscapeClose,
     getModal
 } from '../utils/modal-utils.js';
 
 // Import prompt templates
 import {
-    LANGUAGE_NAMES,
     LANGUAGE_NATIVE_NAMES,
-    TYPE_EXAMPLES,
     buildSingleQuestionPrompt,
     buildMainPrompt,
     buildRetryPrompt,
@@ -44,16 +40,19 @@ import {
 
 // Import HTML templates
 import {
-    buildOptionHtml,
     buildOptionsHtml,
     buildQuestionCardHtml,
     buildQuestionEditHtml,
     buildOrderingEditHtml,
     buildChoiceEditHtml,
     buildNumericEditHtml,
-    buildEditActionsHtml,
-    buildViewActionsHtml
+    buildEditActionsHtml
 } from './generator-templates.js';
+
+// Import extracted services
+import { aiProviderService } from './ai-provider-service.js';
+import { aiQuestionValidator } from './ai-question-validator.js';
+import { excelQuestionParser } from './excel-question-parser.js';
 
 // Import XLSX library for Excel processing
 const XLSX = window.XLSX;
@@ -829,7 +828,7 @@ export class AIQuestionGenerator {
      * @param {string} type - Question type
      * @returns {Object} Generated question
      */
-    async regenerateWithClaude(prompt, type) {
+    async regenerateWithClaude(prompt, _type) {
         const apiKey = await secureStorage.getSecureItem('api_key_claude');
         const modelSelect = document.getElementById('claude-model');
         const selectedModel = modelSelect?.value || 'claude-sonnet-4-5';
@@ -874,7 +873,7 @@ export class AIQuestionGenerator {
      * @param {string} type - Question type
      * @returns {Object} Generated question
      */
-    async regenerateWithProvider(provider, prompt, type) {
+    async regenerateWithProvider(provider, prompt, _type) {
         // Store original count and set to 1
         const originalCount = this.requestedQuestionCount;
         this.requestedQuestionCount = 1;
@@ -907,7 +906,7 @@ export class AIQuestionGenerator {
     async confirmAddSelectedQuestions() {
         const selectedQuestions = this.previewQuestions
             .filter(q => q.selected)
-            .map(({ selected, index, ...q }) => q); // Remove selection metadata
+            .map(({ selected: _selected, index: _index, ...q }) => q); // Remove selection metadata
 
         if (selectedQuestions.length === 0) {
             toastNotifications.warning(translationManager.getTranslationSync('no_questions_selected') || 'No questions selected');
@@ -1384,167 +1383,32 @@ export class AIQuestionGenerator {
     }
 
     async generateWithOllama(prompt) {
-        return await errorHandler.safeNetworkOperation(async () => {
-            const model = getItem('ollama_selected_model') || AI.OLLAMA_DEFAULT_MODEL;
-            const randomSeed = Math.floor(Math.random() * 10000);
-
-            // Enhanced prompt specifically for Ollama - delegates to prompts.js
-            const enhancedPrompt = buildOllamaEnhancedPrompt(prompt);
-
-            const response = await fetch(AI.OLLAMA_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: model,
-                    prompt: enhancedPrompt,
-                    stream: false,
-                    options: {
-                        temperature: AI.DEFAULT_TEMPERATURE,
-                        seed: randomSeed
-                    }
-                })
-            });
-
-            if (!response.ok) {
-                if (response.status === 404) {
-                    throw new Error('Ollama server not running. Please start Ollama and try again.');
-                } else if (response.status === 0) {
-                    throw new Error('Cannot connect to Ollama. Make sure Ollama is running on localhost:11434');
-                } else {
-                    throw new Error(`Ollama error: ${response.status} - ${response.statusText}`);
-                }
-            }
-
-            const data = await response.json();
-            return this.parseAIResponse(data.response);
-        }, {
-            context: 'ollama-generation',
-            userMessage: 'Failed to generate questions with Ollama. Please ensure Ollama is running and try again.',
-            retryable: true
-        });
+        // Delegate to AIProviderService and AIQuestionValidator
+        const rawResponse = await aiProviderService.generateWithOllama(prompt);
+        return this.parseAIResponse(rawResponse);
     }
 
     async generateWithOpenAI(prompt) {
-        return await errorHandler.safeNetworkOperation(async () => {
-            const apiKey = await secureStorage.getSecureItem('api_key_openai');
-
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model: AI.OPENAI_MODEL,
-                    messages: [{
-                        role: 'user',
-                        content: prompt
-                    }],
-                    temperature: AI.DEFAULT_TEMPERATURE
-                })
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Invalid OpenAI API key. Please check your credentials.');
-                } else if (response.status === 429) {
-                    throw new Error('OpenAI rate limit exceeded. Please try again later.');
-                } else if (response.status === 402) {
-                    throw new Error('OpenAI billing issue. Please check your account balance and payment method.');
-                } else if (response.status === 403) {
-                    throw new Error('OpenAI API access forbidden. Please check your API key permissions.');
-                } else {
-                    const errorText = await response.text();
-                    throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
-                }
-            }
-
-            const data = await response.json();
-            return this.parseAIResponse(data.choices[0].message.content);
-        }, {
-            context: 'openai-generation',
-            userMessage: 'Failed to generate questions with OpenAI. Please check your API key and try again.',
-            retryable: true
-        });
+        // Delegate to AIProviderService and AIQuestionValidator
+        const rawResponse = await aiProviderService.generateWithOpenAI(prompt);
+        return this.parseAIResponse(rawResponse);
     }
 
     async generateWithClaude(prompt) {
         logger.debug('generateWithClaude called');
 
         try {
-            const apiKey = await secureStorage.getSecureItem('api_key_claude');
-            logger.debug('Claude API key retrieved:', !!apiKey);
-
-            // Get selected Claude model (using alias for auto-updates)
+            // Get selected Claude model from DOM
             const modelSelect = document.getElementById('claude-model');
             const selectedModel = modelSelect?.value || 'claude-sonnet-4-5';
-            logger.debug('Selected Claude model:', selectedModel);
 
-            const response = await fetch(APIHelper.getApiUrl('api/claude/generate'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    prompt: prompt,
-                    apiKey: apiKey,
-                    numQuestions: this.requestedQuestionCount || 5,
-                    model: selectedModel
-                })
+            // Delegate to AIProviderService
+            const rawResponse = await aiProviderService.generateWithClaude(prompt, {
+                model: selectedModel,
+                numQuestions: this.requestedQuestionCount || 5
             });
 
-            logger.debug('Claude API response status:', response.status);
-
-            if (!response.ok) {
-                let errorMessage = `Claude API error (${response.status})`;
-
-                if (response.status === 401) {
-                    errorMessage = 'Invalid Claude API key. Please check your credentials.';
-                } else if (response.status === 429) {
-                    errorMessage = 'Claude rate limit exceeded. Please try again later.';
-                } else if (response.status === 402) {
-                    errorMessage = 'Claude billing issue. Please check your account balance.';
-                } else if (response.status === 403) {
-                    errorMessage = 'Claude API access forbidden. Please check your API key permissions.';
-                } else {
-                    // Try to get error text, fallback to status code only
-                    const errorText = await errorHandler.safeExecute(
-                        async () => await response.text(),
-                        { operation: 'parse-claude-error-text' },
-                        () => ''
-                    );
-                    errorMessage = errorText
-                        ? `Claude API error (${response.status}): ${errorText}`
-                        : `Claude API error (${response.status})`;
-                }
-
-                logger.debug('Claude API error message:', errorMessage);
-                throw new Error(errorMessage);
-            }
-
-            const data = await response.json();
-            logger.debug('Claude API success, parsing response');
-
-            // Claude API returns content in data.content[0].text format
-            let content = '';
-            if (data.content && Array.isArray(data.content) && data.content.length > 0) {
-                content = data.content[0].text || data.content[0].content || '';
-            } else if (data.content) {
-                content = data.content;
-            } else {
-                throw new Error('Invalid Claude API response structure');
-            }
-
-            // Prepend '[' because we use prefill technique on the server
-            // The server starts Claude's response with '[' so the response continues from there
-            if (!content.trim().startsWith('[')) {
-                content = '[' + content;
-                logger.debug('Prepended [ to Claude response (prefill technique)');
-            }
-
-            return this.parseAIResponse(content);
+            return this.parseAIResponse(rawResponse);
 
         } catch (error) {
             logger.debug('Claude generation error caught:', error.message);
@@ -1558,337 +1422,26 @@ export class AIQuestionGenerator {
     }
 
     async generateWithGemini(prompt) {
-        return await errorHandler.safeNetworkOperation(async () => {
-            const apiKey = await secureStorage.getSecureItem('api_key_gemini');
-
-            // Import the Google Gen AI library dynamically
-            const { GoogleGenAI } = await import('https://esm.sh/@google/genai@0.21.0');
-
-            const ai = new GoogleGenAI({ apiKey: apiKey });
-
-            try {
-                const response = await ai.models.generateContent({
-                    model: AI.GEMINI_MODEL,
-                    contents: prompt,
-                    config: {
-                        temperature: AI.DEFAULT_TEMPERATURE,
-                        maxOutputTokens: AI.GEMINI_MAX_TOKENS,
-                        candidateCount: 1,
-                        responseMimeType: 'text/plain'
-                    }
-                });
-
-                if (!response || !response.text) {
-                    throw new Error('Invalid Gemini API response structure');
-                }
-
-                const content = response.text();
-                logger.debug('Gemini API response:', content);
-
-                return this.parseAIResponse(content);
-
-            } catch (error) {
-                if (error.message.includes('API key') || error.message.includes('invalid_api_key')) {
-                    throw new Error('Invalid Gemini API key. Please check your credentials.');
-                } else if (error.message.includes('quota') || error.message.includes('429') || error.message.includes('RATE_LIMIT_EXCEEDED')) {
-                    throw new Error('Gemini rate limit exceeded. Please try again later.');
-                } else if (error.message.includes('billing') || error.message.includes('QUOTA_EXCEEDED')) {
-                    throw new Error('Gemini quota exceeded. Please check your account billing and quotas.');
-                } else if (error.message.includes('safety') || error.message.includes('blocked') || error.message.includes('SAFETY')) {
-                    throw new Error('Content blocked by Gemini safety filters. Try rephrasing your prompt.');
-                } else if (error.message.includes('permission') || error.message.includes('forbidden') || error.message.includes('403')) {
-                    throw new Error('Gemini API access forbidden. Please check your API key permissions.');
-                } else {
-                    throw new Error(`Gemini API error: ${error.message}`);
-                }
-            }
-        }, {
-            context: 'gemini-generation',
-            userMessage: 'Failed to generate questions with Gemini. Please check your API key and try again.',
-            retryable: true
-        });
+        // Delegate to AIProviderService and AIQuestionValidator
+        const rawResponse = await aiProviderService.generateWithGemini(prompt);
+        return this.parseAIResponse(rawResponse);
     }
 
     parseAIResponse(responseText) {
-        logger.debug('🔍 ParseAIResponse - Raw response length:', responseText.length);
-        logger.debug('🔍 ParseAIResponse - Raw response preview:', responseText.substring(0, 200) + '...');
-
-        try {
-            // Clean up the response text
-            let cleanText = responseText.trim();
-
-            // Handle code models that might return comments or explanations
-            // Remove common code comments at the start of response
-            cleanText = cleanText.replace(/^\/\/[^\n]*\n?/gm, ''); // Remove // comments
-            cleanText = cleanText.replace(/^\/\*[\s\S]*?\*\/\n?/gm, ''); // Remove /* */ comments
-            cleanText = cleanText.replace(/^#[^\n]*\n?/gm, ''); // Remove # comments
-            cleanText = cleanText.replace(/^<!--[\s\S]*?-->\n?/gm, ''); // Remove HTML comments
-
-            // Remove explanation text before JSON (common with code models)
-            const explanationPatterns = [
-                /^Here's?\s+(?:the|a)\s+JSON.*?:\s*/i,
-                /^(?:Here\s+is|This\s+is)\s+.*?:\s*/i,
-                /^(?:Based\s+on|From)\s+.*?:\s*/i,
-                /^(?:The\s+)?(?:JSON|Array)\s+(?:response|output)\s*:?\s*/i,
-                /^(?:Generated\s+)?(?:Questions?|Quiz)\s*:?\s*/i
-            ];
-
-            for (const pattern of explanationPatterns) {
-                cleanText = cleanText.replace(pattern, '');
-            }
-
-            cleanText = cleanText.trim();
-
-            // Detect if response is primarily code (common with code-specialized models like CodeLlama)
-            const codePatterns = /^(from\s+\w+\s+import|import\s+\w+|def\s+\w+|class\s+\w+|function\s+\w+|var\s+\w+|const\s+\w+|let\s+\w+)/m;
-            if (codePatterns.test(cleanText) && !cleanText.includes('[') && !cleanText.includes('{')) {
-                throw new Error('Code models like CodeLlama are designed for code generation, not quiz creation. Please use Ollama with a general model like llama3.2 instead.');
-            }
-
-            // Extract JSON from markdown code blocks if present
-            const jsonMatch = cleanText.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
-            if (jsonMatch) {
-                cleanText = jsonMatch[1];
-                logger.debug('🔍 ParseAIResponse - Extracted from code block');
-            }
-
-            // Try to extract JSON array from text even if not in code blocks
-            const arrayMatch = cleanText.match(/\[[\s\S]*\]/);
-            if (arrayMatch && !jsonMatch) {
-                cleanText = arrayMatch[0];
-                logger.debug('🔍 ParseAIResponse - Extracted JSON array from text');
-            }
-
-            // Remove any text before the JSON array
-            const startBracket = cleanText.indexOf('[');
-            const endBracket = cleanText.lastIndexOf(']');
-            if (startBracket !== -1 && endBracket !== -1 && endBracket > startBracket) {
-                cleanText = cleanText.substring(startBracket, endBracket + 1);
-            }
-
-            // Try to fix common JSON issues for Claude/large models
-            cleanText = this.fixCommonJsonIssues(cleanText);
-
-            logger.debug('🔍 ParseAIResponse - Clean text for parsing:', cleanText.substring(0, 300) + '...');
-
-            // Try to parse as JSON
-            const parsed = JSON.parse(cleanText);
-            logger.debug('🔍 ParseAIResponse - JSON parsed successfully');
-
-            // Handle both single question object and array of questions
-            let questions = Array.isArray(parsed) ? parsed : [parsed];
-            logger.debug('🔍 ParseAIResponse - Questions after array handling:', questions.length);
-
-            // Limit to requested count (in case AI generates more than requested)
-            const requestedCount = this.requestedQuestionCount || 1;
-            logger.debug('🔍 ParseAIResponse - Requested count:', requestedCount);
-
-            if (questions.length > requestedCount) {
-                logger.debug('🔍 ParseAIResponse - Truncating from', questions.length, 'to', requestedCount);
-                questions = questions.slice(0, requestedCount);
-            }
-
-            logger.debug('🔍 ParseAIResponse - Final questions count:', questions.length);
-            questions.forEach((q, i) => {
-                logger.debug(`🔍 ParseAIResponse - Question ${i + 1}:`, {
-                    type: q.type,
-                    question: q.question?.substring(0, 50) + '...',
-                    hasOptions: !!q.options,
-                    optionsCount: q.options?.length,
-                    correctAnswer: q.correctAnswer,
-                    correctAnswers: q.correctAnswers
-                });
-            });
-
-            return questions;
-
-        } catch (error) {
-            logger.error('🔍 ParseAIResponse - JSON parsing failed:', error);
-            logger.error('🔍 ParseAIResponse - Failed text:', responseText.substring(0, 1000));
-
-            // Try to extract questions manually if JSON parsing fails
-            try {
-                const manualQuestions = this.extractQuestionsManually(responseText);
-                logger.debug('🔍 ParseAIResponse - Manual extraction succeeded, count:', manualQuestions.length);
-                return manualQuestions;
-            } catch (manualError) {
-                logger.error('🔍 ParseAIResponse - Manual extraction also failed:', manualError);
-                throw new Error(`Invalid JSON response from AI provider. Response: ${responseText.substring(0, 100)}...`);
-            }
-        }
+        // Sync requested count with validator before delegating
+        aiQuestionValidator.setRequestedCount(this.requestedQuestionCount || 1);
+        return aiQuestionValidator.parseAIResponse(responseText);
     }
 
     fixCommonJsonIssues(jsonText) {
-        let fixed = jsonText;
-
-        // Fix trailing commas before closing brackets/braces
-        fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
-
-        // Only replace single quotes used as JSON delimiters, not those inside strings
-        // Check if the JSON uses single quotes as delimiters (invalid JSON but some AI might produce)
-        // Pattern: single quote at start of value (after :, [, or ,) or at end of value (before ], }, or ,)
-        // Only apply if it looks like single quotes are used as JSON delimiters
-        const usesSingleQuoteDelimiters = /:\s*'[^']*'|,\s*'[^']*'|\[\s*'[^']*'/.test(fixed) &&
-                                           !/"[^"]*'[^"]*"/.test(fixed); // But not if single quotes are inside double-quoted strings
-
-        if (usesSingleQuoteDelimiters) {
-            // Replace single quotes used as string delimiters with double quotes
-            // Match: opening single quote after structural chars, or closing single quote before structural chars
-            fixed = fixed.replace(/:\s*'/g, ': "');
-            fixed = fixed.replace(/'\s*,/g, '",');
-            fixed = fixed.replace(/'\s*}/g, '"}');
-            fixed = fixed.replace(/'\s*]/g, '"]');
-            fixed = fixed.replace(/\[\s*'/g, '["');
-            fixed = fixed.replace(/,\s*'/g, ',"');
-            logger.debug('🔧 Fixed single-quote JSON delimiters');
-        }
-
-        // Fix missing quotes around property names
-        fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
-
-        // Fix incomplete JSON by finding complete question objects
-        if (fixed.includes('[') && !fixed.endsWith(']')) {
-            logger.debug('🔧 Detected incomplete JSON, attempting to fix');
-
-            // Count opening vs closing brackets
-            const openBrackets = (fixed.match(/\[/g) || []).length;
-            const closeBrackets = (fixed.match(/\]/g) || []).length;
-            const openBraces = (fixed.match(/\{/g) || []).length;
-            const closeBraces = (fixed.match(/\}/g) || []).length;
-
-            if (openBrackets > closeBrackets || openBraces > closeBraces) {
-                // Extract complete question objects using more reliable pattern matching
-                // Look for complete question objects that end with } or },
-                const completeObjectPattern = /\{[^}]*"question"[^}]*"type"[^}]*\}/g;
-                const completeObjects = fixed.match(completeObjectPattern) || [];
-
-                if (completeObjects.length > 0) {
-                    // Reconstruct the JSON array with only complete objects
-                    fixed = '[' + completeObjects.join(',') + ']';
-                    logger.debug(`🔧 Extracted ${completeObjects.length} complete question objects from truncated JSON`);
-                } else {
-                    // Fallback: Try to find the last complete property and close from there
-                    const lastCompleteProperty = Math.max(
-                        fixed.lastIndexOf('"}'),
-                        fixed.lastIndexOf('"]'),
-                        fixed.lastIndexOf('}')
-                    );
-
-                    if (lastCompleteProperty !== -1) {
-                        // Find how many closing braces/brackets we need
-                        const textBeforeEnd = fixed.substring(0, lastCompleteProperty + 2);
-                        const unclosedBraces = (textBeforeEnd.match(/\{/g) || []).length -
-                                              (textBeforeEnd.match(/\}/g) || []).length;
-                        const unclosedBrackets = (textBeforeEnd.match(/\[/g) || []).length -
-                                                (textBeforeEnd.match(/\]/g) || []).length;
-
-                        fixed = textBeforeEnd + '}'.repeat(Math.max(0, unclosedBraces)) +
-                                               ']'.repeat(Math.max(0, unclosedBrackets));
-                        logger.debug('🔧 Fixed incomplete JSON by closing unclosed braces and brackets');
-                    }
-                }
-            }
-        }
-
-        // Additional validation: Try to parse and see if we can improve further
-        errorHandler.safeExecute(
-            () => {
-                JSON.parse(fixed);
-                logger.debug('🔧 JSON fix successful - valid JSON produced');
-            },
-            { operation: 'validate-json-fix' },
-            () => logger.warn('🔧 Fixed JSON still invalid, but will attempt to parse anyway')
-        );
-
-        logger.debug('🔧 Applied JSON fixes, length changed from', jsonText.length, 'to', fixed.length);
-        return fixed;
+        // Delegate to AIQuestionValidator
+        return aiQuestionValidator.fixCommonJsonIssues(jsonText);
     }
 
     extractQuestionsManually(responseText) {
-        logger.debug('🔍 Manual extraction attempting to find questions in text');
-
-        // First, try to extract individual JSON objects even if the array is malformed
-        const jsonObjectPattern = /\{[\s\S]*?"question"\s*:\s*"[^"]*?"[\s\S]*?"type"\s*:\s*"[^"]*?"[\s\S]*?\}/g;
-        const jsonObjects = responseText.match(jsonObjectPattern);
-
-        if (jsonObjects && jsonObjects.length > 0) {
-            logger.debug(`🔍 Found ${jsonObjects.length} JSON-like objects, attempting to parse each`);
-            const questions = [];
-
-            for (const objText of jsonObjects) {
-                errorHandler.safeExecute(
-                    () => {
-                        // Try to fix and parse each object individually
-                        let fixedObj = objText;
-
-                        // Fix trailing commas
-                        fixedObj = fixedObj.replace(/,(\s*\})/g, '$1');
-
-                        // Fix single quotes
-                        fixedObj = fixedObj.replace(/'/g, '"');
-
-                        // Try to parse
-                        const parsed = JSON.parse(fixedObj);
-
-                        if (parsed.question && parsed.type) {
-                            questions.push(parsed);
-                            logger.debug('🔍 Successfully parsed JSON object:', parsed.question.substring(0, 50) + '...');
-                        }
-                    },
-                    { operation: 'parse-individual-json-object' }
-                );
-            }
-
-            if (questions.length > 0) {
-                const requestedCount = this.requestedQuestionCount || 1;
-                const limited = questions.slice(0, requestedCount);
-                logger.debug(`🔍 Manual extraction successful: found ${limited.length} valid questions`);
-                return limited;
-            }
-        }
-
-        // Fallback: Try to find question-like patterns in plain text
-        logger.debug('🔍 Attempting text pattern matching fallback');
-        const questionPattern = /(?:question|q\d+)[:\s]*(.+?)(?:options?|choices?)[:\s]*(.+?)(?:answer|correct)[:\s]*(.+?)(?=(?:question|q\d+|$))/gis;
-        const matches = [...responseText.matchAll(questionPattern)];
-
-        if (matches.length > 0) {
-            let questions = matches.map(match => {
-                const question = match[1].trim();
-                const optionsText = match[2].trim();
-                const answerText = match[3].trim();
-
-                // Extract options (A, B, C, D format)
-                const options = optionsText.split(/[ABCD][\):\.]?\s*/).filter(opt => opt.trim()).slice(0, 4);
-
-                // Try to determine correct answer
-                let correctAnswer = 0;
-                if (answerText.match(/^[A]$/i)) correctAnswer = 0;
-                else if (answerText.match(/^[B]$/i)) correctAnswer = 1;
-                else if (answerText.match(/^[C]$/i)) correctAnswer = 2;
-                else if (answerText.match(/^[D]$/i)) correctAnswer = 3;
-
-                return {
-                    question: question,
-                    options: options.length >= 4 ? options.slice(0, 4) : ['Option A', 'Option B', 'Option C', 'Option D'],
-                    correctAnswer: correctAnswer,
-                    type: 'multiple-choice',
-                    timeLimit: 30
-                };
-            });
-
-            // Limit to requested count
-            const requestedCount = this.requestedQuestionCount || 1;
-            if (questions.length > requestedCount) {
-                questions = questions.slice(0, requestedCount);
-            }
-
-            logger.debug(`🔍 Text pattern matching found ${questions.length} questions`);
-            return questions;
-        }
-
-        logger.error('🔍 All manual extraction methods failed');
-        throw new Error('Could not extract questions from response');
+        // Sync requested count and delegate to AIQuestionValidator
+        aiQuestionValidator.setRequestedCount(this.requestedQuestionCount || 1);
+        return aiQuestionValidator.extractQuestionsManually(responseText);
     }
 
     /**
@@ -2329,341 +1882,76 @@ export class AIQuestionGenerator {
         }
     }
 
-    handleExcelUpload(file) {
-        if (!XLSX) {
+    async handleExcelUpload(file) {
+        // Check if parser is available
+        if (!excelQuestionParser.isAvailable()) {
             logger.error('XLSX library not loaded');
             showAlert('Excel processing library not available', 'error');
             return;
         }
 
-        logger.debug('🗂️ Processing Excel file:', file.name);
+        logger.debug('Processing Excel file:', file.name);
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            errorHandler.safeExecute(
-                () => {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
+        try {
+            // Parse file using ExcelQuestionParser
+            const { data: jsonData } = await excelQuestionParser.parseFile(file);
 
-                    // Use the first sheet
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
+            // Get provider for batch sizing
+            const provider = document.getElementById('ai-provider')?.value || 'ollama';
 
-                    // Convert to array of objects
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            // Convert to structured text for AI
+            const structuredText = excelQuestionParser.convertToStructuredText(jsonData, file.name, provider);
 
-                    logger.debug('🗂️ Excel data parsed:', jsonData.length, 'rows');
+            if (structuredText) {
+                // Put the structured text in the content textarea
+                const contentTextarea = document.getElementById('source-content');
+                if (contentTextarea) {
+                    contentTextarea.value = structuredText;
+                    this.detectContentType(structuredText);
+                }
 
-                    // Convert Excel data to structured text for AI processing
-                    const structuredText = this.convertExcelToStructuredText(jsonData, file.name);
+                // Auto-fill question count from detected count
+                const questionCountField = document.getElementById('question-count');
+                const detectedCount = excelQuestionParser.getDetectedQuestionCount();
+                if (questionCountField && detectedCount) {
+                    questionCountField.value = detectedCount;
+                    this.detectedQuestionCount = detectedCount;
+                    logger.debug('Auto-filled question count to', detectedCount);
+                }
 
-                    if (structuredText) {
-                        // Put the structured text in the content textarea for AI processing
-                        const contentTextarea = document.getElementById('source-content');
-                        if (contentTextarea) {
-                            contentTextarea.value = structuredText;
-                            this.detectContentType(structuredText);
-                        }
+                // Sync batch info from parser
+                this.batchInfo = excelQuestionParser.getBatchInfo();
 
-                        // Auto-fill question count field with detected questions
-                        const questionCountField = document.getElementById('question-count');
-                        if (questionCountField && this.detectedQuestionCount) {
-                            const previousCount = questionCountField.value;
-                            questionCountField.value = this.detectedQuestionCount;
-                            logger.debug('🗂️ Auto-filled question count from', previousCount, 'to', this.detectedQuestionCount);
-                        }
-
-                        // Note: Batch processing alert will be shown by convertExcelToStructuredText if needed
-                        logger.debug('🗂️ Excel converted to structured text for AI');
-                    } else {
-                        throw new Error('No valid data found in Excel file');
-                    }
-                },
-                { operation: 'excel-file-processing', filename: file.name },
-                (error) => showAlert('Failed to process Excel file: ' + error.message, 'error')
-            );
-        };
-
-        reader.onerror = (error) => {
-            logger.error('🗂️ File reading failed:', error);
-            showAlert('Failed to read Excel file', 'error');
-        };
-
-        reader.readAsArrayBuffer(file);
+                logger.debug('Excel converted to structured text for AI');
+            } else {
+                throw new Error('No valid data found in Excel file');
+            }
+        } catch (error) {
+            logger.error('Excel processing failed:', error);
+            showAlert('Failed to process Excel file: ' + error.message, 'error');
+        }
     }
 
     convertExcelToStructuredText(jsonData, filename, batchStart = 0, batchSize = null) {
-        if (!jsonData || jsonData.length < 2) {
-            throw new Error('Excel file must contain at least a header row and one data row');
-        }
-
-        // Smart batching based on model capabilities
-        const totalRows = jsonData.length - 1; // Subtract header row
+        // Get provider for batch sizing and delegate to ExcelQuestionParser
         const provider = document.getElementById('ai-provider')?.value || 'ollama';
+        const result = excelQuestionParser.convertToStructuredText(jsonData, filename, provider, batchStart, batchSize);
 
-        // Dynamic batch sizes based on AI provider capabilities
-        const batchSizes = {
-            'ollama': 5,        // Small local models work better with fewer questions
-            'huggingface': 5,   // Free tier models are limited
-            'openai': 10,       // Powerful models can handle more
-            'claude': 10,       // Powerful models can handle more
-            'gemini': 10        // Powerful models can handle more
-        };
+        // Sync state from parser
+        this.batchInfo = excelQuestionParser.getBatchInfo();
+        this.detectedQuestionCount = excelQuestionParser.getDetectedQuestionCount();
 
-        const optimalBatchSize = batchSizes[provider] || 5;
-        const actualBatchSize = batchSize || optimalBatchSize;
-
-        // Determine if we need batching (only on initial call, not recursive)
-        if (totalRows > optimalBatchSize && batchSize === null && !this.batchInfo) {
-            // Store batch info for later processing
-            this.batchInfo = {
-                totalQuestions: totalRows,
-                batchSize: optimalBatchSize,
-                totalBatches: Math.ceil(totalRows / optimalBatchSize),
-                currentBatch: 1,
-                originalData: jsonData,
-                filename: filename
-            };
-
-            const modelName = provider === 'ollama' ?
-                getItem('ollama_selected_model') || 'Unknown Model' :
-                provider.charAt(0).toUpperCase() + provider.slice(1);
-
-            showAlert(`Excel file has ${totalRows} questions. Processing in ${this.batchInfo.totalBatches} batches of ${optimalBatchSize} questions each with ${modelName} for better accuracy.`, 'info');
-
-            // Process first batch
-            return this.convertExcelToStructuredText(jsonData, filename, 0, optimalBatchSize);
-        }
-
-        // Create batch-specific data with consistent header handling
-        let batchData = jsonData;
-        if (batchSize !== null) {
-            const hasHeaders = jsonData[0] && jsonData[0].some(cell =>
-                cell && typeof cell === 'string' &&
-                (cell.toLowerCase().includes('question') || cell.toLowerCase().includes('pregunta'))
-            );
-
-            const headerRows = hasHeaders ? 1 : 0;
-            const startRow = headerRows + batchStart;
-            const endRow = Math.min(startRow + batchSize, jsonData.length);
-
-            // ALWAYS include original headers for consistent format detection
-            // This ensures all batches see the same header structure
-            batchData = hasHeaders ?
-                [jsonData[0], ...jsonData.slice(startRow, endRow)] :
-                jsonData.slice(startRow, endRow);
-
-            logger.debug(`📦 Batch data: headers=${hasHeaders}, startRow=${startRow}, endRow=${endRow}, batchData.length=${batchData.length}`);
-        }
-
-        // Use enhanced format detection
-        const structuredText = this.formatExcelDataWithDetection(batchData, filename, batchStart, batchSize);
-
-        logger.debug('🗂️ Converted Excel batch to structured text:', structuredText.length, 'characters');
-
-        // Store the detected question count for auto-filling (only on first batch)
-        if (batchStart === 0) {
-            this.detectedQuestionCount = totalRows;
-        }
-
-        return structuredText;
+        return result;
     }
 
     detectExcelFormat(jsonData) {
-        if (!jsonData || jsonData.length < 2) {
-            return { questionCol: 0, answerCols: [1, 2, 3, 4], hasHeaders: false };
-        }
-
-        const headerRow = jsonData[0];
-        const dataRow = jsonData[1];
-
-        // Check if first row looks like headers
-        const hasHeaders = headerRow && headerRow.some(cell =>
-            cell && typeof cell === 'string' &&
-            (cell.toLowerCase().includes('question') ||
-             cell.toLowerCase().includes('pregunta') ||
-             cell.toLowerCase().includes('answer') ||
-             cell.toLowerCase().includes('respuesta') ||
-             cell.toLowerCase().includes('option') ||
-             cell.toLowerCase().includes('opción') ||
-             cell.toLowerCase().includes('correct') ||
-             cell.toLowerCase().includes('correcto'))
-        );
-
-        let questionCol = 0;
-        let answerCols = [];
-        let correctAnswerCol = -1;
-
-        if (hasHeaders) {
-            // Try to identify columns by headers
-            headerRow.forEach((header, index) => {
-                if (!header) return;
-
-                const headerLower = header.toString().toLowerCase();
-
-                // Question column
-                if (headerLower.includes('question') || headerLower.includes('pregunta')) {
-                    questionCol = index;
-                }
-                // Answer/option columns
-                else if (headerLower.includes('answer') || headerLower.includes('respuesta') ||
-                         headerLower.includes('option') || headerLower.includes('opción')) {
-                    answerCols.push(index);
-                }
-                // Correct answer column
-                else if (headerLower.includes('correct') || headerLower.includes('correcto')) {
-                    correctAnswerCol = index;
-                }
-            });
-
-            // If we didn't find specific answer columns, assume they follow the question
-            if (answerCols.length === 0) {
-                for (let i = questionCol + 1; i < headerRow.length && i < questionCol + 5; i++) {
-                    if (headerRow[i] && headerRow[i].toString().trim()) {
-                        answerCols.push(i);
-                    }
-                }
-            }
-        } else {
-            // No headers - use default assumption but try to be smarter
-            // Look at the data to infer structure
-            if (dataRow) {
-                // Find the column with the longest text (likely the question)
-                let longestTextCol = 0;
-                let longestLength = 0;
-
-                dataRow.forEach((cell, index) => {
-                    if (cell && cell.toString().length > longestLength) {
-                        longestLength = cell.toString().length;
-                        longestTextCol = index;
-                    }
-                });
-
-                questionCol = longestTextCol;
-
-                // Assume next 4 columns are answers
-                for (let i = 0; i < dataRow.length; i++) {
-                    if (i !== questionCol && dataRow[i] && dataRow[i].toString().trim()) {
-                        answerCols.push(i);
-                    }
-                }
-            }
-        }
-
-        // Ensure we have some answer columns
-        if (answerCols.length === 0) {
-            // Default fallback
-            answerCols = [1, 2, 3, 4].filter(col => col < (headerRow?.length || 5));
-        }
-
-        logger.debug('🔍 Excel format detected:', {
-            hasHeaders,
-            questionCol,
-            answerCols,
-            correctAnswerCol
-        });
-
-        // Debug: Show what columns we think contain what
-        logger.debug('🔍 Column interpretation:', {
-            questionColumn: `Column ${String.fromCharCode(65 + questionCol)}`,
-            answerColumns: answerCols.map(col => `Column ${String.fromCharCode(65 + col)}`),
-            correctAnswerColumn: correctAnswerCol !== -1 ? `Column ${String.fromCharCode(65 + correctAnswerCol)}` : 'Not detected'
-        });
-
-        return {
-            hasHeaders,
-            questionCol,
-            answerCols,
-            correctAnswerCol
-        };
+        // Delegate to ExcelQuestionParser
+        return excelQuestionParser.detectFormat(jsonData);
     }
 
     formatExcelDataWithDetection(jsonData, filename, batchStart = 0, batchSize = null) {
-        const format = this.detectExcelFormat(jsonData);
-        const totalRows = jsonData.length - (format.hasHeaders ? 1 : 0);
-
-        let structuredText = `# Quiz Questions from Excel File: ${filename}\n\n`;
-        structuredText += 'IMPORTANT: These are existing questions from an Excel file. Convert them exactly as written.\n\n';
-
-        // Add batch information if applicable
-        if (this.batchInfo && batchSize !== null) {
-            const batchEnd = Math.min(batchStart + batchSize, this.batchInfo.totalQuestions);
-            structuredText += `BATCH PROCESSING: Questions ${batchStart + 1} to ${batchEnd} (Batch ${this.batchInfo.currentBatch} of ${this.batchInfo.totalBatches})\n\n`;
-        }
-
-        if (format.hasHeaders) {
-            const headerRow = jsonData[0];
-            structuredText += 'Detected Format:\n';
-            structuredText += `- Question Column: ${headerRow[format.questionCol] || 'Column ' + String.fromCharCode(65 + format.questionCol)}\n`;
-            structuredText += `- Answer Columns: ${format.answerCols.map(col => headerRow[col] || 'Column ' + String.fromCharCode(65 + col)).join(', ')}\n\n`;
-        } else {
-            structuredText += `Detected Format: Question in Column ${String.fromCharCode(65 + format.questionCol)}, Answers in Columns ${format.answerCols.map(col => String.fromCharCode(65 + col)).join(', ')}\n\n`;
-        }
-
-        structuredText += 'EXCEL QUESTIONS TO CONVERT:\n\n';
-
-        // Process data rows
-        const startRow = format.hasHeaders ? 1 : 0;
-        let questionNumber = batchStart + 1; // Continue numbering from batch start
-
-        for (let i = startRow; i < jsonData.length; i++) {
-            const row = jsonData[i];
-
-            // Skip completely empty rows
-            if (!row || row.length === 0 || row.every(cell => !cell || cell.toString().trim() === '')) {
-                continue;
-            }
-
-            structuredText += `Question ${questionNumber}:\n`;
-
-            // Question text
-            if (row[format.questionCol]) {
-                structuredText += `  Question: ${row[format.questionCol].toString().trim()}\n`;
-            }
-
-            // Handle your specific Excel format: A=Question, B=Correct, C/D/E=Wrong
-            const allAnswers = [];
-            const correctAnswerText = row[1] ? row[1].toString().trim() : ''; // Column B
-            const wrongAnswers = [];
-
-            // Collect wrong answers from columns C, D, E (indices 2, 3, 4)
-            for (let i = 2; i <= 4; i++) {
-                if (row[i] && row[i].toString().trim()) {
-                    wrongAnswers.push(row[i].toString().trim());
-                }
-            }
-
-            // Arrange answers: Correct answer first, then wrong answers
-            if (correctAnswerText) {
-                allAnswers.push(correctAnswerText);
-                wrongAnswers.forEach(wrong => allAnswers.push(wrong));
-
-                // Output all options with correct answer first
-                allAnswers.forEach((answer, index) => {
-                    structuredText += `  Option ${index + 1}: ${answer}\n`;
-                });
-
-                // Correct answer is always first (index 0)
-                const correctAnswerIndex = 0;
-                structuredText += `  CORRECT_ANSWER_INDEX: ${correctAnswerIndex}\n`;
-                logger.debug(`📝 Question ${questionNumber}: Column B="${correctAnswerText}" placed at index ${correctAnswerIndex}, all answers=[${allAnswers.join(', ')}]`);
-            } else {
-                // Fallback if no correct answer found
-                structuredText += '  ERROR: No correct answer found in Column B\n';
-                logger.error(`📝 Question ${questionNumber}: No correct answer found in Column B`);
-            }
-
-            structuredText += '\n';
-            questionNumber++;
-        }
-
-        structuredText += '\nINSTRUCTIONS FOR AI:\n';
-        structuredText += '- Convert these existing questions to JSON format\n';
-        structuredText += '- Copy ALL text EXACTLY as written - do not change any words\n';
-        structuredText += '- Use CORRECT_ANSWER_INDEX number provided for each question\n';
-        structuredText += '- Do NOT translate or modify the language\n';
-
-        return structuredText;
+        // Delegate to ExcelQuestionParser
+        return excelQuestionParser.formatDataWithDetection(jsonData, filename, batchStart, batchSize);
     }
 
     async processGeneratedQuestions(questions, showAlerts = true) {
