@@ -24,35 +24,14 @@ class MainMenuCarousel extends BaseCarousel {
 
         if (this.slides.length === 0) return;
 
-        // Initialize base carousel functionality
+        // Initialize base carousel functionality (includes arrow navigation)
         if (!this.initBase()) return;
-
-        // Setup arrow navigation
-        this.setupArrowNavigation();
 
         // Start auto-play
         this.startAutoPlay();
 
         // Initialize first slide
         this.updateActiveStates();
-    }
-
-    setupArrowNavigation() {
-        if (this.prevBtn) {
-            this.prevBtn.addEventListener('click', () => {
-                this.pauseAutoPlay();
-                this.previousSlide();
-                this.scheduleAutoPlayResume();
-            });
-        }
-
-        if (this.nextBtn) {
-            this.nextBtn.addEventListener('click', () => {
-                this.pauseAutoPlay();
-                this.nextSlide();
-                this.scheduleAutoPlayResume();
-            });
-        }
     }
 }
 

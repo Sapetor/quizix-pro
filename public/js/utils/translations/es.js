@@ -22,6 +22,7 @@ export default {
     save_progress: 'Guardar progreso',
     test_questions: 'Probar preguntas',
     more_options: 'Más Opciones',
+    no_options: 'Sin opciones',
     scroll_to_top: 'Ir Arriba',
     to_bottom: 'Ir Abajo',
     create_quiz: 'Crea tu Quiz',
@@ -514,5 +515,17 @@ export default {
     try_again: 'Intentar de Nuevo',
     exit: 'Salir',
     failed_start_practice: 'Error al iniciar el modo práctica',
-    load: 'Cargar'
+    load: 'Cargar',
+
+    // Power-Ups
+    enable_power_ups: 'Activar Power-Ups (50-50, +10s, 2x Puntos)',
+    enable_power_ups_tooltip: 'Permitir a los jugadores usar power-ups durante el juego',
+    power_ups: 'Power-Ups',
+    fifty_fifty: '50-50',
+    fifty_fifty_tooltip: 'Eliminar la mitad de las respuestas incorrectas',
+    extend_time: '+10s',
+    extend_time_tooltip: 'Agregar 10 segundos al temporizador',
+    double_points: '2× Puntos',
+    double_points_tooltip: 'Duplicar tus puntos en la próxima respuesta correcta',
+    power_up_used: '¡Power-up usado!'
 };

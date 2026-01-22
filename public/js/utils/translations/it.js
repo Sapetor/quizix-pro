@@ -466,6 +466,7 @@ export default {
     save_progress: 'Salva progresso',
     test_questions: 'Testa domande',
     more_options: 'Altre Opzioni',
+    no_options: 'Nessuna opzione',
 
     // Sound settings
     toggle_sound_tooltip: 'Attiva/disattiva suono',
@@ -506,5 +507,17 @@ export default {
     try_again: 'Riprova',
     exit: 'Esci',
     failed_start_practice: 'Impossibile avviare la modalità pratica',
-    load: 'Carica'
+    load: 'Carica',
+
+    // Power-Ups
+    enable_power_ups: 'Attiva Power-Up (50-50, +10s, 2x Punti)',
+    enable_power_ups_tooltip: 'Consenti ai giocatori di usare i power-up durante il gioco',
+    power_ups: 'Power-Up',
+    fifty_fifty: '50-50',
+    fifty_fifty_tooltip: 'Rimuovi metà delle risposte sbagliate',
+    extend_time: '+10s',
+    extend_time_tooltip: 'Aggiungi 10 secondi al timer',
+    double_points: '2× Punti',
+    double_points_tooltip: 'Raddoppia i tuoi punti sulla prossima risposta corretta',
+    power_up_used: 'Power-up usato!'
 };

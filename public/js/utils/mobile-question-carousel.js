@@ -5,6 +5,7 @@
 
 import { getTranslation } from './translation-manager.js';
 import { logger } from '../core/config.js';
+import { isMobile } from './dom.js';
 
 class MobileQuestionCarousel {
     constructor() {
@@ -33,7 +34,7 @@ class MobileQuestionCarousel {
         if (this.initialized) return;
 
         // Only initialize on mobile
-        if (window.innerWidth > 768) return;
+        if (!isMobile()) return;
 
         this.createCarouselStructure();
         this.setupEventListeners();

@@ -7,7 +7,7 @@ import { translationManager, getTranslation, getTrueFalseText } from '../utils/t
 import { TIMING, logger, UI, ANIMATION } from '../core/config.js';
 // MathRenderer and mathJaxService now handled by GameDisplayManager
 import { simpleMathJaxService } from '../utils/simple-mathjax-service.js';
-import { dom } from '../utils/dom.js';
+import { dom, escapeHtml, escapeHtmlPreservingLatex } from '../utils/dom.js';
 import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
 import { modalFeedback } from '../utils/modal-feedback.js';
 import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
@@ -21,6 +21,7 @@ import QuestionTypeRegistry from '../utils/question-type-registry.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
 import { AnswerRevealManager } from './modules/answer-reveal-manager.js';
 import { LeaderboardManager } from './modules/leaderboard-manager.js';
+import { PowerUpManager } from './modules/power-up-manager.js';
 
 export class GameManager {
     constructor(socket, uiManager, soundManager, socketManager = null) {
@@ -36,6 +37,15 @@ export class GameManager {
         this.questionRenderer = new QuestionRenderer(this.displayManager, this.stateManager, uiManager, this);
         this.answerRevealManager = new AnswerRevealManager(this.stateManager, this.displayManager);
         this.leaderboardManager = new LeaderboardManager(this.stateManager, uiManager, soundManager);
+        this.powerUpManager = new PowerUpManager();
+
+        // Setup power-up callbacks
+        this.powerUpManager.setExtendTimeCallback((extraSeconds) => {
+            this.timerManager.extendTime(extraSeconds);
+        });
+        this.powerUpManager.setFiftyFiftyCallback(() => {
+            this.applyFiftyFifty();
+        });
 
         // Initialize DOM Manager with common game elements
         dom.initializeGameElements();
@@ -71,6 +81,10 @@ export class GameManager {
         if (this.interactionManager) {
             this.interactionManager.socketManager = socketManager;
         }
+        // Set socket on power-up manager for multiplayer mode
+        if (this.powerUpManager && socketManager?.socket) {
+            this.powerUpManager.setSocket(socketManager.socket);
+        }
     }
 
     /**
@@ -82,6 +96,9 @@ export class GameManager {
         this.eventBus = eventBus;
         if (this.interactionManager) {
             this.interactionManager.eventBus = eventBus;
+        }
+        if (this.powerUpManager) {
+            this.powerUpManager.setEventBus(eventBus);
         }
         logger.debug(`GameManager: Event bus set to ${eventBus?.getMode?.()} mode`);
     }
@@ -172,6 +189,9 @@ export class GameManager {
 
         // Reset player interaction state (clear highlighting, etc.)
         this.interactionManager.reset();
+
+        // Update power-ups for new question (reset hidden options, update availability)
+        this.updatePowerUpsForQuestion(data.type);
 
     }
 
@@ -340,6 +360,60 @@ export class GameManager {
     submitOrderingAnswer() {
         this.interactionManager.submitOrderingAnswer();
     }
+
+    // ==================== POWER-UP METHODS ====================
+
+    /**
+     * Initialize power-ups for a new game
+     * @param {boolean} enabled - Whether power-ups are enabled for this game
+     */
+    initializePowerUps(enabled) {
+        this.powerUpManager.initialize(enabled);
+        if (enabled) {
+            this.powerUpManager.bindEventListeners();
+        }
+    }
+
+    /**
+     * Apply 50-50 power-up to current question - hides half of the wrong answers
+     */
+    applyFiftyFifty() {
+        const currentQuestion = this.stateManager.getGameState().currentQuestion;
+        if (!currentQuestion || currentQuestion.correctAnswer === undefined) {
+            logger.warn('[GameManager] Cannot apply 50-50: no current question or correct answer');
+            return;
+        }
+
+        this.powerUpManager.applyFiftyFiftyToOptions(currentQuestion.correctAnswer);
+    }
+
+    /**
+     * Update power-up availability for new question
+     * @param {string} questionType - Type of current question
+     */
+    updatePowerUpsForQuestion(questionType) {
+        if (!this.powerUpManager.enabled) return;
+
+        this.powerUpManager.resetFiftyFiftyOptions();
+        this.powerUpManager.updateFiftyFiftyAvailability(questionType);
+    }
+
+    /** @returns {PowerUpManager} */
+    getPowerUpManager() {
+        return this.powerUpManager;
+    }
+
+    /** @returns {number} Points multiplier (1 or 2) */
+    getPointsMultiplier() {
+        return this.powerUpManager.getPointsMultiplier();
+    }
+
+    /** Consume double points after scoring */
+    consumeDoublePoints() {
+        this.powerUpManager.consumeDoublePoints();
+    }
+
+    // ==================== END POWER-UP METHODS ====================
 
     // Answer submission feedback now handled by GameDisplayManager
 
@@ -682,7 +756,7 @@ export class GameManager {
             textDiv.className = 'explanation-text';
             // Use textContent first for XSS safety, then replace with innerHTML for LaTeX
             // This is safe because the content comes from quiz data, not user input
-            textDiv.innerHTML = this.escapeHtmlPreservingLatex(explanation);
+            textDiv.innerHTML = escapeHtmlPreservingLatex(explanation);
 
             content.appendChild(icon);
             content.appendChild(textDiv);
@@ -696,29 +770,6 @@ export class GameManager {
         }
     }
 
-    /**
-     * Escape HTML but preserve LaTeX delimiters for MathJax
-     */
-    escapeHtmlPreservingLatex(text) {
-        if (!text) return '';
-        // Escape HTML entities but keep $ and \ for LaTeX
-        return text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    /**
-     * Escape HTML for safe display
-     */
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
 
     /**
      * Show numeric correct answer in top frame
@@ -1243,7 +1294,7 @@ export class GameManager {
             playerElement.className = 'player-item';
             playerElement.innerHTML = `
                 <div class="player-avatar">👤</div>
-                <div class="player-name">${this.escapeHtml(player.name)}</div>
+                <div class="player-name">${escapeHtml(player.name)}</div>
             `;
             playersListElement.appendChild(playerElement);
         });
@@ -1496,6 +1547,11 @@ export class GameManager {
             if (this.timer) {
                 clearInterval(this.timer);
                 this.timer = null;
+            }
+
+            // Clean up power-ups
+            if (this.powerUpManager) {
+                this.powerUpManager.cleanup();
             }
 
             // Remove page unload listeners

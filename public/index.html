@@ -768,6 +768,9 @@
                             <label class="manual-advancement-option" style="border: 2px solid #4299e1; border-radius: 8px; padding: 8px; background: rgba(66, 153, 225, 0.1);">
                                 <input type="checkbox" id="manual-advancement" checked data-translate-title="manual_advancement_tooltip"> <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
                             </label>
+                            <label class="power-ups-option" style="border: 2px solid #8b5cf6; border-radius: 8px; padding: 8px; background: rgba(139, 92, 246, 0.1); margin-top: 8px;">
+                                <input type="checkbox" id="enable-power-ups" data-translate-title="enable_power_ups_tooltip"> <strong>⚡ <span data-translate="enable_power_ups">Enable Power-Ups (50-50, +10s, 2x Points)</span></strong>
+                            </label>
                         </div>
                         
                         <div class="preview-settings">
@@ -1324,7 +1327,23 @@
                     </div>
                     <h3 id="player-question-text" data-translate="question_will_appear_here">Question will appear here</h3>
                 </div>
-                
+
+                <!-- Power-Ups Container (visible when enabled by host) -->
+                <div id="power-ups-container" class="power-ups-container hidden">
+                    <button id="power-up-fifty-fifty" class="power-up-btn" data-power-up="fifty-fifty" data-translate-title="fifty_fifty_tooltip">
+                        <span class="power-up-icon">½</span>
+                        <span class="power-up-label" data-translate="fifty_fifty">50-50</span>
+                    </button>
+                    <button id="power-up-extend-time" class="power-up-btn" data-power-up="extend-time" data-translate-title="extend_time_tooltip">
+                        <span class="power-up-icon">⏱️</span>
+                        <span class="power-up-label" data-translate="extend_time">+10s</span>
+                    </button>
+                    <button id="power-up-double-points" class="power-up-btn" data-power-up="double-points" data-translate-title="double_points_tooltip">
+                        <span class="power-up-icon">×2</span>
+                        <span class="power-up-label" data-translate="double_points">2× Points</span>
+                    </button>
+                </div>
+
                 <div id="player-multiple-choice" class="player-answer-type">
                     <div class="player-options">
                         <button class="player-option" data-option="0">A</button>

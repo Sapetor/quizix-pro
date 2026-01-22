@@ -12,6 +12,7 @@ import { PreviewRenderer } from './modules/preview-renderer.js';
 import { logger, TIMING } from '../core/config.js';
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
+import { isMobile, debounce } from '../utils/dom.js';
 
 export class PreviewManager {
     constructor(mathRenderer) {
@@ -23,7 +24,7 @@ export class PreviewManager {
         this.splitPreviewListenersSet = false;
         this.previewMode = false;
         this.manualNavigationInProgress = false;
-        this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), TIMING.ANIMATION_DURATION);
+        this.updatePreviewDebounced = debounce(() => this.updateSplitPreview(), TIMING.ANIMATION_DURATION);
 
         // Memory management via EventListenerManager
         this.listenerManager = new EventListenerManager('PreviewManager');
@@ -66,13 +67,6 @@ export class PreviewManager {
     }
 
     /**
-     * Check if device is mobile
-     */
-    isMobileDevice() {
-        return window.innerWidth <= 768;
-    }
-
-    /**
      * Toggle preview mode
      */
     togglePreviewMode() {
@@ -82,7 +76,7 @@ export class PreviewManager {
 
         if (this.previewMode) {
             // Check if mobile and handle exclusively
-            if (this.isMobileDevice()) {
+            if (isMobile()) {
                 // Mobile: Show full-screen overlay preview ONLY
                 this.showMobilePreview();
             } else {
@@ -107,7 +101,7 @@ export class PreviewManager {
             }
         } else {
             // Close preview mode - handle mobile vs desktop exclusively
-            if (this.isMobileDevice()) {
+            if (isMobile()) {
                 this.hideMobilePreview();
             } else {
                 const previewSection = document.querySelector('.quiz-preview-section');
@@ -522,7 +516,7 @@ export class PreviewManager {
 
         // Hide all answer areas
         document.querySelectorAll('#preview-answer-area-split .preview-answer-type').forEach(type => {
-            type.style.display = 'none';
+            type.classList.add('hidden');
         });
     }
 
@@ -573,13 +567,11 @@ export class PreviewManager {
                 inline: 'nearest'
             });
 
-            // Add a brief highlight effect
-            targetQuestion.style.background = 'rgba(255, 215, 0, 0.2)';
-            targetQuestion.style.transform = 'scale(1.02)';
+            // Add a brief highlight effect using CSS class
+            targetQuestion.classList.add('auto-scroll-highlight');
 
             setTimeout(() => {
-                targetQuestion.style.background = '';
-                targetQuestion.style.transform = '';
+                targetQuestion.classList.remove('auto-scroll-highlight');
             }, 1500);
         }
     }
@@ -699,30 +691,6 @@ export class PreviewManager {
         this.splitPreviewListenersSet = false;
 
         logger.debug('Preview listeners cleanup completed');
-    }
-
-    /**
-     * Debounce utility function with cancel support
-     */
-    debounce(func, wait) {
-        let timeout;
-        const executedFunction = (...args) => {
-            const later = () => {
-                clearTimeout(timeout);
-                timeout = null;
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-        // Add cancel method for cleanup
-        executedFunction.cancel = () => {
-            if (timeout) {
-                clearTimeout(timeout);
-                timeout = null;
-            }
-        };
-        return executedFunction;
     }
 
     /**
@@ -1407,7 +1375,7 @@ export class PreviewManager {
 
         // Hide all answer areas
         document.querySelectorAll('#mobile-preview-answer-area .preview-answer-type').forEach(type => {
-            type.style.display = 'none';
+            type.classList.add('hidden');
         });
     }
 

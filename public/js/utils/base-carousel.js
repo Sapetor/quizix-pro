@@ -17,6 +17,10 @@ export class BaseCarousel {
         this.autoPlayDelay = options.autoPlayDelay || 5000;
         this.minSwipeDistance = options.minSwipeDistance || 50;
 
+        // Arrow button references (set by subclass)
+        this.prevBtn = null;
+        this.nextBtn = null;
+
         // Touch/mouse state
         this.touchStartX = 0;
         this.touchStartY = 0;
@@ -41,7 +45,9 @@ export class BaseCarousel {
             focusout: null,
             windowBlur: null,
             windowFocus: null,
-            dotClicks: []
+            dotClicks: [],
+            prevClick: null,
+            nextClick: null
         };
     }
 
@@ -58,8 +64,33 @@ export class BaseCarousel {
         this.setupKeyboardEvents();
         this.setupTouchEvents();
         this.setupAutoPlayListeners();
+        this.setupArrowNavigation();
 
         return true;
+    }
+
+    /**
+     * Setup arrow button navigation (prev/next buttons)
+     * Subclasses should set this.prevBtn and this.nextBtn before calling initBase()
+     */
+    setupArrowNavigation() {
+        if (this.prevBtn) {
+            this._boundHandlers.prevClick = () => {
+                this.pauseAutoPlay();
+                this.previousSlide();
+                this.scheduleAutoPlayResume();
+            };
+            this.prevBtn.addEventListener('click', this._boundHandlers.prevClick);
+        }
+
+        if (this.nextBtn) {
+            this._boundHandlers.nextClick = () => {
+                this.pauseAutoPlay();
+                this.nextSlide();
+                this.scheduleAutoPlayResume();
+            };
+            this.nextBtn.addEventListener('click', this._boundHandlers.nextClick);
+        }
     }
 
     /**
@@ -313,43 +344,23 @@ export class BaseCarousel {
             this.autoPlayResumeTimer = null;
         }
 
+        // Container event types to remove
+        const containerEvents = [
+            'keydown', 'touchstart', 'touchmove', 'touchend',
+            'mousedown', 'mousemove', 'mouseup', 'mouseleave',
+            'mouseenter', 'focusin', 'focusout'
+        ];
+
         // Remove container event listeners
         if (this.container) {
-            if (this._boundHandlers.keydown) {
-                this.container.removeEventListener('keydown', this._boundHandlers.keydown);
-            }
-            if (this._boundHandlers.touchstart) {
-                this.container.removeEventListener('touchstart', this._boundHandlers.touchstart);
-            }
-            if (this._boundHandlers.touchmove) {
-                this.container.removeEventListener('touchmove', this._boundHandlers.touchmove);
-            }
-            if (this._boundHandlers.touchend) {
-                this.container.removeEventListener('touchend', this._boundHandlers.touchend);
-            }
-            if (this._boundHandlers.mousedown) {
-                this.container.removeEventListener('mousedown', this._boundHandlers.mousedown);
-            }
-            if (this._boundHandlers.mousemove) {
-                this.container.removeEventListener('mousemove', this._boundHandlers.mousemove);
-            }
-            if (this._boundHandlers.mouseup) {
-                this.container.removeEventListener('mouseup', this._boundHandlers.mouseup);
-            }
-            if (this._boundHandlers.mouseleave) {
-                this.container.removeEventListener('mouseleave', this._boundHandlers.mouseleave);
-            }
-            if (this._boundHandlers.mouseenter) {
-                this.container.removeEventListener('mouseenter', this._boundHandlers.mouseenter);
-            }
+            containerEvents.forEach(event => {
+                if (this._boundHandlers[event]) {
+                    this.container.removeEventListener(event, this._boundHandlers[event]);
+                }
+            });
+            // Handle containerMouseleave separately (also bound to 'mouseleave')
             if (this._boundHandlers.containerMouseleave) {
                 this.container.removeEventListener('mouseleave', this._boundHandlers.containerMouseleave);
-            }
-            if (this._boundHandlers.focusin) {
-                this.container.removeEventListener('focusin', this._boundHandlers.focusin);
-            }
-            if (this._boundHandlers.focusout) {
-                this.container.removeEventListener('focusout', this._boundHandlers.focusout);
             }
         }
 
@@ -368,12 +379,21 @@ export class BaseCarousel {
             });
         }
 
+        // Remove arrow button click listeners
+        if (this.prevBtn && this._boundHandlers.prevClick) {
+            this.prevBtn.removeEventListener('click', this._boundHandlers.prevClick);
+        }
+        if (this.nextBtn && this._boundHandlers.nextClick) {
+            this.nextBtn.removeEventListener('click', this._boundHandlers.nextClick);
+        }
+
         // Clear references
         this._boundHandlers = {
             keydown: null, touchstart: null, touchmove: null, touchend: null,
             mousedown: null, mousemove: null, mouseup: null, mouseleave: null,
             mouseenter: null, containerMouseleave: null, focusin: null, focusout: null,
-            windowBlur: null, windowFocus: null, dotClicks: []
+            windowBlur: null, windowFocus: null, dotClicks: [],
+            prevClick: null, nextClick: null
         };
 
         logger.debug('BaseCarousel destroyed and event listeners cleaned up');

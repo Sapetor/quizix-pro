@@ -5,7 +5,7 @@
  */
 
 import { translationManager, getTranslation, getTrueFalseText } from '../../utils/translation-manager.js';
-import { logger, TIMING } from '../../core/config.js';
+import { logger, TIMING, COLORS } from '../../core/config.js';
 import { escapeHtmlPreservingLatex } from '../../utils/dom.js';
 
 export class QuestionRenderer {
@@ -194,15 +194,8 @@ export class QuestionRenderer {
         // Shuffle the options for display (host sees them out of order)
         const shuffledIndices = this.shuffleArray(data.options.map((_, i) => i));
 
-        // Distinct colors for tracking items
-        const itemColors = [
-            'rgba(59, 130, 246, 0.15)',   // Blue
-            'rgba(16, 185, 129, 0.15)',   // Green
-            'rgba(245, 158, 11, 0.15)',   // Orange
-            'rgba(239, 68, 68, 0.15)',    // Red
-            'rgba(139, 92, 246, 0.15)',   // Purple
-            'rgba(236, 72, 153, 0.15)'    // Pink
-        ];
+        // Use centralized ordering item colors from config
+        const itemColors = COLORS.ORDERING_ITEM_COLORS;
 
         let html = '<div class="ordering-display">';
 
@@ -522,15 +515,8 @@ export class QuestionRenderer {
         // Shuffle the options for the player
         const shuffledIndices = this.shuffleArray(data.options.map((_, i) => i));
 
-        // Distinct colors for tracking items during swaps
-        const itemColors = [
-            'rgba(59, 130, 246, 0.15)',   // Blue
-            'rgba(16, 185, 129, 0.15)',   // Green
-            'rgba(245, 158, 11, 0.15)',   // Orange
-            'rgba(239, 68, 68, 0.15)',    // Red
-            'rgba(139, 92, 246, 0.15)',   // Purple
-            'rgba(236, 72, 153, 0.15)'    // Pink
-        ];
+        // Use centralized ordering item colors from config
+        const itemColors = COLORS.ORDERING_ITEM_COLORS;
 
         let html = `
             <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>

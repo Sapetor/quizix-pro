@@ -6,6 +6,7 @@
 import { logger } from '../core/config.js';
 import { getTranslation } from './translation-manager.js';
 import { simpleMathJaxService } from './simple-mathjax-service.js';
+import { escapeHtmlPreservingLatex } from './dom.js';
 import {
     openModal,
     closeModal,
@@ -149,7 +150,7 @@ export class ModalFeedback {
         if (this.explanationDisplay) {
             if (explanation && explanation.trim()) {
                 // Use escapeHtmlPreservingLatex to allow MathJax to render formulas
-                this.explanationDisplay.innerHTML = `<span class="explanation-label">💡</span><span class="explanation-text">${this.escapeHtmlPreservingLatex(explanation)}</span>`;
+                this.explanationDisplay.innerHTML = `<span class="explanation-label">💡</span><span class="explanation-text">${escapeHtmlPreservingLatex(explanation)}</span>`;
 
                 // Render MathJax for the explanation text
                 const textSpan = this.explanationDisplay.querySelector('.explanation-text');
@@ -162,32 +163,6 @@ export class ModalFeedback {
                 this.explanationDisplay.innerHTML = '';
             }
         }
-    }
-
-    /**
-     * Escape HTML but preserve LaTeX delimiters for MathJax
-     * @param {string} text - Text to escape
-     * @returns {string} Escaped text with LaTeX preserved
-     */
-    escapeHtmlPreservingLatex(text) {
-        if (!text) return '';
-        return text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    /**
-     * Escape HTML completely for safe display
-     * @param {string} text - Text to escape
-     * @returns {string} Escaped text
-     */
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 
     /**
@@ -410,7 +385,7 @@ export class ModalFeedback {
         // Set explanation display - CSS handles visibility via has-explanation class
         if (this.explanationDisplay) {
             if (explanation && explanation.trim()) {
-                this.explanationDisplay.innerHTML = `<span class="explanation-label">💡</span><span class="explanation-text">${this.escapeHtmlPreservingLatex(explanation)}</span>`;
+                this.explanationDisplay.innerHTML = `<span class="explanation-label">💡</span><span class="explanation-text">${escapeHtmlPreservingLatex(explanation)}</span>`;
 
                 const textSpan = this.explanationDisplay.querySelector('.explanation-text');
                 if (textSpan) {

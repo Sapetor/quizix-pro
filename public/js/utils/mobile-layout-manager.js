@@ -5,13 +5,14 @@
  */
 
 import { logger } from '../core/config.js';
+import { isMobile } from './dom.js';
 
 export class MobileLayoutManager {
     constructor() {
         this.currentContentType = 'short'; // 'short', 'tall', 'code', 'image'
         this.viewportHeight = window.innerHeight;
         this.contentHeightThreshold = window.innerHeight * 0.85; // 85% of viewport
-        this.enabled = window.innerWidth <= 768; // Mobile only
+        this.enabled = isMobile(); // Mobile only
 
         this.setupEventListeners();
         logger.debug('📱 Mobile Layout Manager initialized');
@@ -32,7 +33,7 @@ export class MobileLayoutManager {
         // Listen for window resize
         window.addEventListener('resize', () => {
             this.viewportHeight = window.innerHeight;
-            this.enabled = window.innerWidth <= 768;
+            this.enabled = isMobile();
             this.contentHeightThreshold = window.innerHeight * 0.85;
 
             if (this.enabled) {

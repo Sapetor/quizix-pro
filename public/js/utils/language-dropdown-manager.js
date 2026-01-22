@@ -5,6 +5,7 @@
 
 import { translationManager } from './translation-manager.js';
 import { logger, LANGUAGES } from '../core/config.js';
+import { isMobile } from './dom.js';
 
 /**
  * Update welcome text with proper translation for the selected language
@@ -132,7 +133,7 @@ function positionMobileDropdown(dropdown) {
  */
 export function toggleLanguageDropdown() {
     // Handle mobile-specific dropdowns
-    if (window.innerWidth <= 768) {
+    if (isMobile()) {
         const mobileHeaderDropdown = document.getElementById('mobile-language-selector-header');
         if (mobileHeaderDropdown) {
             mobileHeaderDropdown.classList.toggle('open');
@@ -154,7 +155,7 @@ export function toggleLanguageDropdown() {
     dropdown.classList.toggle('open');
 
     // Position for mobile if needed
-    if (isOpening && window.innerWidth <= 768) {
+    if (isOpening && isMobile()) {
         positionMobileDropdown(dropdown);
     }
 }
@@ -249,7 +250,7 @@ export function initializeDropdownListeners() {
         const dropdown = document.getElementById('language-selector');
         if (!dropdown || !dropdown.classList.contains('open')) return;
 
-        if (window.innerWidth <= 768) {
+        if (isMobile()) {
             setTimeout(() => positionMobileDropdown(dropdown), 100);
         } else {
             const dropdownOptions = dropdown.querySelector('.language-dropdown-options');
@@ -262,7 +263,7 @@ export function initializeDropdownListeners() {
     // Close on scroll (mobile)
     window.addEventListener('scroll', () => {
         const dropdown = document.getElementById('language-selector');
-        if (dropdown && dropdown.classList.contains('open') && window.innerWidth <= 768) {
+        if (dropdown && dropdown.classList.contains('open') && isMobile()) {
             dropdown.classList.remove('open');
             restoreDropdownToOriginalPosition(dropdown);
         }

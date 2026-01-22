@@ -22,6 +22,7 @@ export default {
     save_progress: 'Save progress',
     test_questions: 'Test questions',
     more_options: 'More Options',
+    no_options: 'No options',
     scroll_to_top: 'To Top',
     to_bottom: 'To Bottom',
     create_quiz: 'Create Your Quiz',
@@ -589,5 +590,17 @@ export default {
     try_again: 'Try Again',
     exit: 'Exit',
     failed_start_practice: 'Failed to start practice mode',
-    load: 'Load'
+    load: 'Load',
+
+    // Power-Ups
+    enable_power_ups: 'Enable Power-Ups (50-50, +10s, 2x Points)',
+    enable_power_ups_tooltip: 'Allow players to use power-ups during the game',
+    power_ups: 'Power-Ups',
+    fifty_fifty: '50-50',
+    fifty_fifty_tooltip: 'Remove half of the wrong answers',
+    extend_time: '+10s',
+    extend_time_tooltip: 'Add 10 seconds to the timer',
+    double_points: '2× Points',
+    double_points_tooltip: 'Double your points on the next correct answer',
+    power_up_used: 'Power-up used!'
 };

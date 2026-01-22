@@ -6,6 +6,7 @@
 import { logger } from '../core/config.js';
 import { translationManager } from './translation-manager.js';
 import { getJSON, setJSON, removeItem } from './storage-utils.js';
+import { isMobile } from './dom.js';
 
 const STORAGE_KEY = 'quiz_onboarding_complete';
 const TUTORIAL_VERSION = 1;
@@ -326,10 +327,10 @@ class OnboardingTutorial {
         const step = this.steps[this.currentStep];
         if (!step) return null;
 
-        const isMobile = window.innerWidth <= 768;
+        const isMobileDevice = isMobile();
 
         // Try mobile selector first on mobile devices
-        if (isMobile && step.mobileSelector) {
+        if (isMobileDevice && step.mobileSelector) {
             const mobileElement = document.querySelector(step.mobileSelector);
             if (mobileElement && this.isElementVisible(mobileElement)) {
                 return mobileElement;

@@ -457,6 +457,7 @@ export default {
     save_progress: '進捗を保存',
     test_questions: '問題をテスト',
     more_options: 'その他のオプション',
+    no_options: 'オプションなし',
 
     // Sound settings
     toggle_sound_tooltip: '音声を切り替える',
@@ -497,5 +498,17 @@ export default {
     try_again: 'もう一度',
     exit: '終了',
     failed_start_practice: '練習モードの開始に失敗しました',
-    load: '読み込む'
+    load: '読み込む',
+
+    // Power-Ups
+    enable_power_ups: 'パワーアップを有効にする（50-50、+10秒、2倍ポイント）',
+    enable_power_ups_tooltip: 'ゲーム中にプレイヤーがパワーアップを使用できるようにする',
+    power_ups: 'パワーアップ',
+    fifty_fifty: '50-50',
+    fifty_fifty_tooltip: '間違った回答の半分を削除',
+    extend_time: '+10秒',
+    extend_time_tooltip: 'タイマーに10秒追加',
+    double_points: '2倍ポイント',
+    double_points_tooltip: '次の正解でポイントを2倍にする',
+    power_up_used: 'パワーアップを使用しました！'
 };

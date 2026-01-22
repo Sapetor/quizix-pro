@@ -10,6 +10,7 @@ import { uiStateManager } from '../utils/ui-state-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { initializeAutoHideToolbar, disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
 import { updateMobileReturnButtonVisibility } from '../utils/globals.js';
+import { escapeHtml } from '../utils/dom.js';
 
 export class UIManager {
     constructor() {
@@ -374,12 +375,6 @@ export class UIManager {
         `;
 
         gamesContainer.appendChild(gameCard);
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 
     joinGameByPin(pin) {

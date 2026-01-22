@@ -33,7 +33,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - **Modular ES6** with proper imports/exports
 - **Service-oriented** architecture with dedicated services
 - **Manager pattern** with single responsibility principle
-- **Centralized configuration** in `public/js/core/config.js` (includes `COLORS` palette, `TIMING`, `SCORING` constants)
+- **Centralized configuration** in `public/js/core/config.js` (includes `COLORS` palette, `TIMING`, `SCORING`, `POWER_UPS` constants)
 - **Unified error handling** via `unified-error-handler.js`
 - **Encrypted security** layer for sensitive data
 
@@ -75,6 +75,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `public/js/game/modules/player-interaction-manager.js` - Player answer handling
 - `public/js/game/modules/timer-manager.js` - Question timer logic
 - `public/js/game/modules/question-renderer.js` - Dynamic question display
+- `public/js/game/modules/power-up-manager.js` - Power-up logic and UI management
 
 **UI and Preview:**
 - `public/js/ui/preview-manager.js` - Live preview modal with LaTeX rendering
@@ -107,7 +108,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `services/qr-service.js` - QR code generation with caching
 - `services/cors-validation-service.js` - CORS configuration for local/cloud
 - `services/question-type-service.js` - Question type validation
-- `services/game-session-service.js` - **Week 3**: Game lifecycle, PIN management, question timing
+- `services/game-session-service.js` - **Week 3**: Game lifecycle, PIN management, question timing, power-up state
 - `services/player-management-service.js` - **Week 3**: Player join/leave, disconnection handling
 - `services/question-flow-service.js` - **Week 3**: Answer submission, statistics, early question ending
 
@@ -332,6 +333,17 @@ quizix-pro/
 - Question quality validation and formatting
 - `/api/ai/config` endpoint for checking provider availability
 
+**Power-Ups (Optional):**
+- **Host-configurable**: Enable/disable via checkbox in game settings
+- **Three power-up types**:
+  - **50-50**: Eliminates half of wrong answers (multiple-choice only)
+  - **Extend Time**: Adds 10 seconds to question timer
+  - **Double Points**: 2x score multiplier on next correct answer
+- **Usage limits**: Each power-up can be used once per game
+- **Works in both modes**: Multiplayer (Socket.IO) and Practice (local event bus)
+- **Visual feedback**: Pulse animation for active state, disabled styling when used
+- **Server-side validation**: Prevents double-use in multiplayer mode
+
 ## Testing Infrastructure
 
 **Playwright Tests:**
@@ -499,6 +511,7 @@ quizix-pro/
 **Socket.IO Real-Time Communication:**
 - **100+ Event Handlers**: Comprehensive client-server event system
 - **Key Events**: `create-game`, `join-game`, `start-game`, `submit-answer`, `next-question`, `game-ended`
+- **Power-Up Events**: `use-power-up`, `power-up-result` for real-time power-up actions
 - **Player Management**: Real-time player join/leave notifications
 - **Answer Statistics**: Live answer distribution and player response tracking
 - **Automatic Advancement**: Optional auto-progression to next question
@@ -516,6 +529,7 @@ quizix-pro/
 - Verify LaTeX/MathJax rendering across different browsers
 - Test mobile gestures (swipe, tap) on actual mobile devices
 - Validate file uploads with different image types and sizes
+- Test power-ups in both multiplayer and practice modes (each usable once per game)
 
 ## Future Enhancements
 

@@ -8,7 +8,7 @@ import { getTranslation } from '../../utils/translation-manager.js';
 import { logger } from '../../core/config.js';
 import { modalFeedback } from '../../utils/modal-feedback.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
-import { dom } from '../../utils/dom.js';
+import { dom, escapeHtmlPreservingLatex } from '../../utils/dom.js';
 
 export class AnswerRevealManager {
     /**
@@ -263,7 +263,7 @@ export class AnswerRevealManager {
 
             const textDiv = document.createElement('div');
             textDiv.className = 'explanation-text';
-            textDiv.innerHTML = this.escapeHtmlPreservingLatex(explanation);
+            textDiv.innerHTML = escapeHtmlPreservingLatex(explanation);
 
             content.appendChild(icon);
             content.appendChild(textDiv);
@@ -276,18 +276,4 @@ export class AnswerRevealManager {
         }
     }
 
-    /**
-     * Escape HTML but preserve LaTeX delimiters
-     * @param {string} text - Text to escape
-     * @returns {string} Escaped text
-     */
-    escapeHtmlPreservingLatex(text) {
-        if (!text) return '';
-        return text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
 }

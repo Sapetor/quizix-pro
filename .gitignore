@@ -43,6 +43,7 @@ Desktop.ini
 # Backup directories
 .claude.backup-*/
 .serena.backup-*/
+.serena/cache/
 
 # Temporary files
 *.tmp

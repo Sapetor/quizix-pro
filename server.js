@@ -1244,6 +1244,40 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Handle power-up usage
+    socket.on('use-power-up', (data) => {
+        if (!checkRateLimit(socket.id, 'use-power-up', 3, socket)) return;
+        try {
+            if (!data || !data.type) {
+                socket.emit('power-up-result', { success: false, error: 'Invalid power-up data' });
+                return;
+            }
+
+            const { type } = data;
+            const playerData = playerManagementService.getPlayer(socket.id);
+            if (!playerData) {
+                socket.emit('power-up-result', { success: false, error: 'Player not found' });
+                return;
+            }
+
+            const game = gameSessionService.getGame(playerData.gamePin);
+            if (!game) {
+                socket.emit('power-up-result', { success: false, error: 'Game not found' });
+                return;
+            }
+
+            const result = game.usePowerUp(socket.id, type);
+            socket.emit('power-up-result', result);
+
+            if (result.success) {
+                logger.info(`Player ${playerData.name} used power-up: ${type} in game ${playerData.gamePin}`);
+            }
+        } catch (error) {
+            logger.error('Error in use-power-up handler:', error);
+            socket.emit('power-up-result', { success: false, error: 'Server error' });
+        }
+    });
+
     socket.on('next-question', () => {
         if (!checkRateLimit(socket.id, 'next-question', 5, socket)) return;
         try {

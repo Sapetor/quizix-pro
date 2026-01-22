@@ -9,10 +9,11 @@ import { MathRenderer } from '../utils/math-renderer.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
-import { imagePathResolver } from '../utils/image-path-resolver.js';
+import { imagePathResolver, loadImageWithRetry as sharedLoadImageWithRetry } from '../utils/image-path-resolver.js';
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 import { getJSON, setJSON, removeItem } from '../utils/storage-utils.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
+import { escapeHtml } from '../utils/dom.js';
 
 // Shared translation fallback map used for cleaning translation keys from loaded data
 const TRANSLATION_FALLBACKS = {
@@ -292,15 +293,15 @@ export class QuizManager {
                         quizItem.className = 'quiz-item';
                         quizItem.innerHTML = `
                             <div class="quiz-info">
-                                <h3>${this.escapeHtml(quiz.title)}</h3>
+                                <h3>${escapeHtml(quiz.title)}</h3>
                                 <p>${quiz.questionCount} ${translationManager.getTranslationSync('questions')} • ${translationManager.getTranslationSync('created')}: ${new Date(quiz.created).toLocaleDateString()}</p>
                             </div>
                             <div class="quiz-actions">
-                                <button class="quiz-action-btn load-btn" data-filename="${this.escapeHtml(quiz.filename)}" title="${translationManager.getTranslationSync('load')}">
+                                <button class="quiz-action-btn load-btn" data-filename="${escapeHtml(quiz.filename)}" title="${translationManager.getTranslationSync('load')}">
                                     <span class="btn-icon">📂</span>
                                     <span class="btn-text">${translationManager.getTranslationSync('load')}</span>
                                 </button>
-                                <button class="quiz-action-btn practice-btn" data-filename="${this.escapeHtml(quiz.filename)}" title="${translationManager.getTranslationSync('practice')}">
+                                <button class="quiz-action-btn practice-btn" data-filename="${escapeHtml(quiz.filename)}" title="${translationManager.getTranslationSync('practice')}">
                                     <span class="btn-icon">🎯</span>
                                     <span class="btn-text">${translationManager.getTranslationSync('practice')}</span>
                                 </button>
@@ -350,18 +351,18 @@ export class QuizManager {
 
         // Show modal with requestAnimationFrame for smooth transition
         requestAnimationFrame(() => {
-            modal.style.display = 'flex';
-            modal.style.visibility = 'visible'; // Reset visibility that might have been set to 'hidden'
+            modal.classList.remove('hidden');
+            modal.classList.add('visible-flex');
         });
     }
 
     /**
-     * Hide a modal element by setting display and visibility
+     * Hide a modal element using CSS classes
      */
     hideModalElement(modal) {
-        if (!modal?.style) return;
-        modal.style.display = 'none';
-        modal.style.visibility = 'hidden';
+        if (!modal) return;
+        modal.classList.remove('visible-flex');
+        modal.classList.add('hidden');
     }
 
     /**
@@ -1013,37 +1014,16 @@ export class QuizManager {
     }
 
     /**
-     * Load image with retry logic for WSL environments (similar to preview renderer)
-     * @param {HTMLImageElement} img - Image element
-     * @param {string} src - Image source URL
-     * @param {number} maxRetries - Maximum retry attempts
-     * @param {number} attempt - Current attempt number
-     * @param {HTMLElement} imagePreview - Image preview container for error handling
-     * @param {string} imageData - Original image data for error display
+     * Load image with retry logic for WSL environments (delegates to shared utility)
      */
-    loadImageWithRetry(img, src, maxRetries = 3, attempt = 1, imagePreview = null, imageData = '') {
-        img.onerror = () => {
-            if (attempt < maxRetries) {
-                logger.warn(`Quiz builder image load failed, retrying (${attempt}/${maxRetries}): ${src}`);
-                // Progressive delay: 100ms, 200ms, 300ms for WSL file system delays
-                setTimeout(() => {
-                    this.loadImageWithRetry(img, src, maxRetries, attempt + 1, imagePreview, imageData);
-                }, 100 * attempt);
-            } else {
-                logger.error(`Quiz builder image failed to load after ${maxRetries} attempts: ${src}`);
+    loadImageWithRetry(img, src, maxRetries = 3, _attempt = 1, imagePreview = null, imageData = '') {
+        sharedLoadImageWithRetry(img, src, {
+            maxRetries,
+            useCacheBuster: true,
+            onError: () => {
                 this.handleImageLoadError(img, imagePreview, imageData || src);
             }
-        };
-
-        // Set the source to trigger load/error event
-        if (attempt === 1) {
-            // Only set src on first attempt, subsequent attempts reuse existing src
-            img.src = src;
-        } else {
-            // Force reload by appending cache buster
-            const separator = src.includes('?') ? '&' : '?';
-            img.src = src + separator + '_retry=' + attempt + '&_t=' + Date.now();
-        }
+        });
     }
 
     /**
@@ -1442,15 +1422,6 @@ export class QuizManager {
                 this.scheduleAutoSave();
             }
         });
-    }
-
-    /**
-     * Escape HTML to prevent XSS
-     */
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 
     // ==================== MEMORY MANAGEMENT METHODS ====================

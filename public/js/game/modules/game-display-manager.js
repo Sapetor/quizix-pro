@@ -46,25 +46,31 @@ export class GameDisplayManager {
     }
 
     /**
-     * Update question counter display
+     * Update question counter display (generic method)
+     * @param {string} elementId - ID of the counter element
+     * @param {number} current - Current question number
+     * @param {number} total - Total questions
      */
-    updateQuestionCounter(current, total) {
-        const counterElement = document.getElementById('question-counter');
+    updateCounter(elementId, current, total) {
+        const counterElement = document.getElementById(elementId);
         if (counterElement) {
             counterElement.textContent = getTranslation('question_x_of_y', [current, total]);
-            logger.debug('Question counter updated:', current, 'of', total);
+            logger.debug(`Counter ${elementId} updated:`, current, 'of', total);
         }
+    }
+
+    /**
+     * Update host question counter display
+     */
+    updateQuestionCounter(current, total) {
+        this.updateCounter('question-counter', current, total);
     }
 
     /**
      * Update player question counter
      */
     updatePlayerQuestionCounter(current, total) {
-        const counterElement = document.getElementById('player-question-counter');
-        if (counterElement) {
-            counterElement.textContent = getTranslation('question_x_of_y', [current, total]);
-            logger.debug('Player question counter updated:', current, 'of', total);
-        }
+        this.updateCounter('player-question-counter', current, total);
     }
 
     /**

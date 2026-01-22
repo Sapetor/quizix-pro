@@ -61,11 +61,17 @@ export class PracticeModeManager {
             this.currentQuizFilename = quizFilename;
             this.isActive = true;
 
+            // Check if power-ups are enabled (from quiz settings or UI checkbox)
+            const powerUpsEnabled = quiz.powerUpsEnabled ||
+                document.getElementById('enable-power-ups')?.checked ||
+                false;
+
             // Create event bus and game session
             this.eventBus = new LocalEventBus({ debug: false });
             this.gameSession = new LocalGameSession(quiz, this.eventBus, {
                 playerName: getTranslation('player') || 'Player',
-                quizFilename: quizFilename
+                quizFilename: quizFilename,
+                powerUpsEnabled: powerUpsEnabled
             });
 
             // Wire up GameManager with event bus
@@ -120,6 +126,11 @@ export class PracticeModeManager {
             logger.debug('[PracticeModeManager] Game started:', data);
             // In practice mode, user plays as a player
             this.uiManager.showScreen('player-game-screen');
+
+            // Initialize power-ups if enabled
+            if (this.gameSession?.powerUpsEnabled) {
+                this.gameManager.initializePowerUps(true);
+            }
         };
         this.eventBus.on('game-started', this._boundHandlers.gameStarted);
 
@@ -187,6 +198,35 @@ export class PracticeModeManager {
             }
         };
         this.eventBus.on('next-question', this._boundHandlers.nextQuestion);
+
+        // Power-up usage request (from player UI)
+        this._boundHandlers.usePowerUp = (data) => {
+            logger.debug('[PracticeModeManager] Power-up request:', data);
+            if (this.gameSession) {
+                this.gameSession.usePowerUp(data.type);
+            }
+        };
+        this.eventBus.on('use-power-up', this._boundHandlers.usePowerUp);
+
+        // Power-up result (from game session)
+        this._boundHandlers.powerUpResult = (data) => {
+            logger.debug('[PracticeModeManager] Power-up result:', data);
+            if (data.success) {
+                const powerUpManager = this.gameManager.getPowerUpManager();
+                if (data.type === 'fifty-fifty' && data.hiddenOptions) {
+                    // Apply 50-50 effect
+                    const question = this.gameSession.getCurrentQuestion();
+                    if (question) {
+                        powerUpManager?.applyFiftyFiftyToOptions(question.correctAnswer);
+                    }
+                } else if (data.type === 'extend-time' && data.extraSeconds) {
+                    // Extend time
+                    this.gameManager.timerManager?.extendTime(data.extraSeconds);
+                }
+                // double-points is applied automatically in scoring
+            }
+        };
+        this.eventBus.on('power-up-result', this._boundHandlers.powerUpResult);
 
         logger.debug('[PracticeModeManager] Event handlers registered');
     }

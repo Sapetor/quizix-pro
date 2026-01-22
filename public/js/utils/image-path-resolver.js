@@ -193,3 +193,59 @@ export class ImagePathResolver {
 
 // Export singleton instance
 export const imagePathResolver = new ImagePathResolver();
+
+/**
+ * Load an image with retry logic for WSL environments
+ * Handles file system delays with progressive retry delays
+ *
+ * @param {HTMLImageElement} img - Image element to load
+ * @param {string} src - Image source URL
+ * @param {Object} options - Configuration options
+ * @param {number} [options.maxRetries=3] - Maximum retry attempts
+ * @param {Function} [options.onSuccess] - Called when image loads successfully
+ * @param {Function} [options.onError] - Called when all retries fail (receives src)
+ * @param {boolean} [options.useCacheBuster=false] - Append cache buster on retry
+ */
+export function loadImageWithRetry(img, src, options = {}) {
+    const {
+        maxRetries = 3,
+        onSuccess = null,
+        onError = null,
+        useCacheBuster = false
+    } = options;
+
+    let attempt = 1;
+
+    const tryLoad = () => {
+        img.onload = () => {
+            logger.debug(`Image loaded successfully on attempt ${attempt}: ${src}`);
+            if (onSuccess) onSuccess();
+        };
+
+        img.onerror = () => {
+            if (attempt < maxRetries) {
+                logger.warn(`Image load failed, retrying (${attempt}/${maxRetries}): ${src}`);
+                attempt++;
+                // Progressive delay: 100ms, 200ms, 300ms for WSL file system delays
+                setTimeout(() => {
+                    if (useCacheBuster) {
+                        // Force reload by appending cache buster
+                        const separator = src.includes('?') ? '&' : '?';
+                        img.src = src + separator + '_retry=' + attempt + '&_t=' + Date.now();
+                    } else {
+                        // Re-trigger load without cache buster
+                        img.src = '';
+                        img.src = src;
+                    }
+                }, 100 * (attempt - 1));
+            } else {
+                logger.error(`Image failed to load after ${maxRetries} attempts: ${src}`);
+                if (onError) onError(src);
+            }
+        };
+
+        img.src = src;
+    };
+
+    tryLoad();
+}

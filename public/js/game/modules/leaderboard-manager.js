@@ -5,8 +5,8 @@
  */
 
 import { getTranslation } from '../../utils/translation-manager.js';
-import { logger, ANIMATION, TIMING } from '../../core/config.js';
-import { dom } from '../../utils/dom.js';
+import { logger, ANIMATION, TIMING, COLORS } from '../../core/config.js';
+import { dom, escapeHtml } from '../../utils/dom.js';
 import { simpleResultsDownloader } from '../../utils/simple-results-downloader.js';
 
 export class LeaderboardManager {
@@ -178,7 +178,7 @@ export class LeaderboardManager {
             const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}.`;
 
             item.innerHTML = `
-                <span>${medal} ${this.escapeHtml(player.name)}</span>
+                <span>${medal} ${escapeHtml(player.name)}</span>
                 <span>${player.score} pts</span>
             `;
 
@@ -241,7 +241,7 @@ export class LeaderboardManager {
 
             item.innerHTML = `
                 <span class="medal">${medal}</span>
-                <span class="player-name">${this.escapeHtml(player.name)}</span>
+                <span class="player-name">${escapeHtml(player.name)}</span>
                 <span class="player-score">${player.score} pts</span>
             `;
 
@@ -266,7 +266,8 @@ export class LeaderboardManager {
 
         logger.debug('Confetti library loaded, starting celebration...');
 
-        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+        // Use centralized confetti colors from config
+        const colors = COLORS.CONFETTI_COLORS;
 
         try {
             // Initial big burst
@@ -313,15 +314,4 @@ export class LeaderboardManager {
         }
     }
 
-    /**
-     * Escape HTML for safe display
-     * @param {string} text - Text to escape
-     * @returns {string} Escaped text
-     */
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
 }

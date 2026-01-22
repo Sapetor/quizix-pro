@@ -5265,3 +5265,163 @@ html {
 }
 
 /* === END PRACTICE MODE STYLING === */
+
+/* === POWER-UPS SYSTEM === */
+
+/* Power-ups container */
+.power-ups-container {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin: 0.75rem 0;
+    padding: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Power-up button base */
+.power-up-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    min-width: 80px;
+    border: 2px solid var(--accent-color, #8b5cf6);
+    border-radius: var(--border-radius-small, 8px);
+    background: var(--card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--text-color, #fff);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.power-up-btn:hover:not(:disabled) {
+    background: var(--accent-color, #8b5cf6);
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.power-up-btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.power-up-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-color: var(--border-color, #374151);
+}
+
+/* Power-up used state */
+.power-up-btn.used {
+    opacity: 0.3;
+    border-style: dashed;
+}
+
+.power-up-btn.used .power-up-label {
+    text-decoration: line-through;
+}
+
+/* Power-up unavailable for current question type */
+.power-up-btn.unavailable {
+    opacity: 0.5;
+    border-color: var(--border-color, #374151);
+}
+
+/* Power-up icon */
+.power-up-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+    line-height: 1;
+}
+
+/* Power-up label */
+.power-up-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Double points active indicator */
+.power-up-btn.active {
+    animation: powerUpPulse 1s infinite;
+    border-color: var(--success-color, #10b981);
+    background: rgba(16, 185, 129, 0.15);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+@keyframes powerUpPulse {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+    }
+}
+
+/* Hidden options (from 50-50 power-up) */
+.player-option.power-up-hidden {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Individual power-up colors */
+.power-up-btn[data-power-up="fifty-fifty"] {
+    border-color: #f59e0b;
+}
+
+.power-up-btn[data-power-up="fifty-fifty"]:hover:not(:disabled) {
+    background: #f59e0b;
+}
+
+.power-up-btn[data-power-up="extend-time"] {
+    border-color: #3b82f6;
+}
+
+.power-up-btn[data-power-up="extend-time"]:hover:not(:disabled) {
+    background: #3b82f6;
+}
+
+.power-up-btn[data-power-up="double-points"] {
+    border-color: #10b981;
+}
+
+.power-up-btn[data-power-up="double-points"]:hover:not(:disabled) {
+    background: #10b981;
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .power-up-btn {
+    background: rgba(0, 0, 0, 0.03);
+    color: var(--text-color, #1f2937);
+}
+
+[data-theme="light"] .power-up-btn:hover:not(:disabled) {
+    color: white;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .power-ups-container {
+        gap: 0.5rem;
+        padding: 0.375rem;
+    }
+
+    .power-up-btn {
+        min-width: 70px;
+        padding: 0.375rem 0.75rem;
+    }
+
+    .power-up-icon {
+        font-size: 1.25rem;
+    }
+
+    .power-up-label {
+        font-size: 0.65rem;
+    }
+}
+
+/* === END POWER-UPS SYSTEM === */

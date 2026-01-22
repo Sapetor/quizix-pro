@@ -4,10 +4,10 @@
  */
 
 import { logger } from '../core/config.js';
+import { isMobile } from './dom.js';
 
 class MobileEnhancements {
     constructor() {
-        this.isMobile = window.innerWidth <= 768;
         this.isTouch = 'ontouchstart' in window;
         this.initialized = false;
 
@@ -140,7 +140,7 @@ class MobileEnhancements {
      * Utility Methods
      */
     isMobileDevice() {
-        return this.isMobile;
+        return isMobile();
     }
 
     isTouchDevice() {

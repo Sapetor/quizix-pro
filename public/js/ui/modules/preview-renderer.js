@@ -6,8 +6,9 @@
 
 import { translationManager } from '../../utils/translation-manager.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
-import { logger } from '../../core/config.js';
-import { imagePathResolver } from '../../utils/image-path-resolver.js';
+import { logger, COLORS } from '../../core/config.js';
+import { imagePathResolver, loadImageWithRetry } from '../../utils/image-path-resolver.js';
+import { escapeHtml, formatCodeBlocks as sharedFormatCodeBlocks } from '../../utils/dom.js';
 
 export class PreviewRenderer {
     constructor() {
@@ -169,44 +170,29 @@ export class PreviewRenderer {
     }
 
     /**
-     * Load image with retry logic for WSL environments
-     * @param {HTMLImageElement} img - Image element
-     * @param {string} src - Image source URL
-     * @param {number} maxRetries - Maximum retry attempts
-     * @param {number} attempt - Current attempt number
-     * @param {HTMLElement} imageDisplay - Image container for error handling
+     * Load image with retry logic for WSL environments (delegates to shared utility)
      */
-    loadImageWithRetry(img, src, maxRetries = 3, attempt = 1, imageDisplay = null) {
-        img.onload = () => {
-            logger.debug(`Preview image loaded successfully on attempt ${attempt}: ${src}`);
-            if (imageDisplay) {
-                imageDisplay.classList.remove('loading');
-                // Clear any previous error messages
-                const errorMsg = imageDisplay.querySelector('.image-error');
-                if (errorMsg) {
-                    errorMsg.remove();
+    loadImageWithRetry(img, src, maxRetries = 3, _attempt = 1, imageDisplay = null) {
+        loadImageWithRetry(img, src, {
+            maxRetries,
+            onSuccess: () => {
+                if (imageDisplay) {
+                    imageDisplay.classList.remove('loading');
+                    // Clear any previous error messages
+                    const errorMsg = imageDisplay.querySelector('.image-error');
+                    if (errorMsg) {
+                        errorMsg.remove();
+                    }
                 }
-            }
-        };
-
-        img.onerror = () => {
-            if (attempt < maxRetries) {
-                logger.warn(`Preview image load failed, retrying (${attempt}/${maxRetries}): ${src}`);
-                // Progressive delay: 100ms, 200ms, 300ms for WSL file system delays
-                setTimeout(() => {
-                    this.loadImageWithRetry(img, src, maxRetries, attempt + 1, imageDisplay);
-                }, 100 * attempt);
-            } else {
-                logger.error(`Preview image failed to load after ${maxRetries} attempts: ${src}`);
+            },
+            onError: () => {
                 if (imageDisplay) {
                     // Extract filename from src for error display
                     const filename = src.split('/').pop();
                     this.showSplitImageError(imageDisplay, filename);
                 }
             }
-        };
-
-        img.src = src;
+        });
     }
 
     /**
@@ -412,14 +398,7 @@ export class PreviewRenderer {
         optionsContainer.innerHTML = '';
 
         if (!options || options.length === 0) {
-            // Simple translation map for "No options"
-            const translations = {
-                es: 'Sin opciones', fr: 'Aucune option', de: 'Keine Optionen',
-                it: 'Nessuna opzione', pt: 'Sem opções', pl: 'Brak opcji',
-                ja: 'オプションなし', zh: '无选项'
-            };
-            const lang = translationManager.getCurrentLanguage();
-            const noOptionsText = translations[lang] || 'No options';
+            const noOptionsText = translationManager.getTranslationSync('no_options') || 'No options';
             optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
             return;
         }
@@ -463,14 +442,7 @@ export class PreviewRenderer {
         logger.debug('Multiple correct preview data:', { options, correctAnswers });
 
         if (!options || options.length === 0) {
-            // Simple translation map for "No options"
-            const translations = {
-                es: 'Sin opciones', fr: 'Aucune option', de: 'Keine Optionen',
-                it: 'Nessuna opzione', pt: 'Sem opções', pl: 'Brak opcji',
-                ja: 'オプションなし', zh: '无选项'
-            };
-            const lang = translationManager.getCurrentLanguage();
-            const noOptionsText = translations[lang] || 'No options';
+            const noOptionsText = translationManager.getTranslationSync('no_options') || 'No options';
             optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
             return;
         }
@@ -558,23 +530,13 @@ export class PreviewRenderer {
             return;
         }
 
-        // Distinct colors for tracking items
-        const itemColors = [
-            'rgba(59, 130, 246, 0.15)',   // Blue
-            'rgba(16, 185, 129, 0.15)',   // Green
-            'rgba(245, 158, 11, 0.15)',   // Orange
-            'rgba(239, 68, 68, 0.15)',    // Red
-            'rgba(139, 92, 246, 0.15)',   // Purple
-            'rgba(236, 72, 153, 0.15)'    // Pink
-        ];
-
         let html = `
             <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
             <div class="ordering-display">
         `;
 
         options.forEach((option, index) => {
-            const bgColor = itemColors[index % itemColors.length];
+            const bgColor = COLORS.ORDERING_ITEM_COLORS[index % COLORS.ORDERING_ITEM_COLORS.length];
             html += `
                 <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${index + 1}</div>
@@ -648,31 +610,10 @@ export class PreviewRenderer {
 
 
     /**
-     * Format code blocks in text - matches mathRenderer.formatCodeBlocks()
+     * Format code blocks in text (delegates to shared utility)
      */
     formatCodeBlocks(text) {
-        if (!text) return '';
-
-        // Convert code blocks (```language ... ```) - matches mathRenderer approach
-        text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, language, code) => {
-            const lang = language || 'text';
-            const trimmedCode = code.trim();
-            return `<pre><code class="language-${lang}">${this.escapeHtml(trimmedCode)}</code></pre>`;
-        });
-
-        // Convert inline code (`code`) - escape HTML to prevent XSS
-        text = text.replace(/`([^`]+)`/g, (_, code) => `<code>${this.escapeHtml(code)}</code>`);
-
-        return text;
-    }
-
-    /**
-     * Escape HTML entities in text - matches mathRenderer approach
-     */
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        return sharedFormatCodeBlocks(text);
     }
 
     /**
@@ -863,14 +804,7 @@ export class PreviewRenderer {
         optionsContainer.innerHTML = '';
 
         if (!options || options.length === 0) {
-            // Simple translation map for "No options"
-            const translations = {
-                es: 'Sin opciones', fr: 'Aucune option', de: 'Keine Optionen',
-                it: 'Nessuna opzione', pt: 'Sem opções', pl: 'Brak opcji',
-                ja: 'オプションなし', zh: '无选项'
-            };
-            const lang = translationManager.getCurrentLanguage();
-            const noOptionsText = translations[lang] || 'No options';
+            const noOptionsText = translationManager.getTranslationSync('no_options') || 'No options';
             optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
             return;
         }
@@ -913,14 +847,7 @@ export class PreviewRenderer {
         optionsContainer.innerHTML = '';
 
         if (!options || options.length === 0) {
-            // Simple translation map for "No options"
-            const translations = {
-                es: 'Sin opciones', fr: 'Aucune option', de: 'Keine Optionen',
-                it: 'Nessuna opzione', pt: 'Sem opções', pl: 'Brak opcji',
-                ja: 'オプションなし', zh: '无选项'
-            };
-            const lang = translationManager.getCurrentLanguage();
-            const noOptionsText = translations[lang] || 'No options';
+            const noOptionsText = translationManager.getTranslationSync('no_options') || 'No options';
             optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
             return;
         }
@@ -1047,23 +974,13 @@ export class PreviewRenderer {
             return;
         }
 
-        // Distinct colors for tracking items
-        const itemColors = [
-            'rgba(59, 130, 246, 0.15)',   // Blue
-            'rgba(16, 185, 129, 0.15)',   // Green
-            'rgba(245, 158, 11, 0.15)',   // Orange
-            'rgba(239, 68, 68, 0.15)',    // Red
-            'rgba(139, 92, 246, 0.15)',   // Purple
-            'rgba(236, 72, 153, 0.15)'    // Pink
-        ];
-
         let html = `
             <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
             <div class="ordering-display">
         `;
 
         options.forEach((option, index) => {
-            const bgColor = itemColors[index % itemColors.length];
+            const bgColor = COLORS.ORDERING_ITEM_COLORS[index % COLORS.ORDERING_ITEM_COLORS.length];
             html += `
                 <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${index + 1}</div>

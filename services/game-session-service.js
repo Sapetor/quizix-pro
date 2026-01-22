@@ -173,7 +173,8 @@ class GameSessionService {
         io.to(`game-${game.pin}`).emit('game-started', {
             gamePin: game.pin,
             questionCount: game.quiz.questions.length,
-            manualAdvancement: game.manualAdvancement
+            manualAdvancement: game.manualAdvancement,
+            powerUpsEnabled: game.powerUpsEnabled
         });
 
         // Auto-advance to first question after delay
@@ -416,7 +417,7 @@ class GameSessionService {
                             this.logger.error(`Error in leaderboard timer for game ${game.pin}:`, error);
                             game.isAdvancing = false;
                         }
-                    }, 3000);
+                    }, this.config.TIMING.LEADERBOARD_DISPLAY_TIME);
                 }
             } catch (error) {
                 this.logger.error(`Error in advanceToNextQuestion for game ${game.pin}:`, error);
@@ -474,7 +475,7 @@ class GameSessionService {
                 this.logger.error(`Error in manualAdvanceToNextQuestion for game ${game.pin}:`, error);
                 game.isAdvancing = false;
             }
-        }, 3000);
+        }, this.config.TIMING.LEADERBOARD_DISPLAY_TIME);
     }
 
     /**
@@ -550,6 +551,7 @@ class Game {
         this.endTime = null;
         this.createdAt = Date.now(); // Track game creation time for cleanup
         this.manualAdvancement = quiz.manualAdvancement || false;
+        this.powerUpsEnabled = quiz.powerUpsEnabled || false;
         this.logger = logger;
         this.config = config;
     }
@@ -567,12 +569,27 @@ class Game {
    * @param {string} playerName - Player's name
    */
     addPlayer(playerId, playerName) {
-        this.players.set(playerId, {
+        const playerData = {
             id: playerId,
             name: playerName,
             score: 0,
-            answers: []
-        });
+            answers: [],
+            ...(this.powerUpsEnabled && { powerUps: this.createInitialPowerUpState() })
+        };
+
+        this.players.set(playerId, playerData);
+    }
+
+    /**
+   * Create initial power-up state object
+   * @returns {Object} Fresh power-up state
+   */
+    createInitialPowerUpState() {
+        return {
+            'fifty-fifty': { available: true, used: false },
+            'extend-time': { available: true, used: false },
+            'double-points': { available: true, used: false, active: false }
+        };
     }
 
     /**
@@ -581,6 +598,80 @@ class Game {
    */
     removePlayer(playerId) {
         this.players.delete(playerId);
+    }
+
+    /**
+   * Use a power-up for a player
+   * @param {string} playerId - Socket ID of the player
+   * @param {string} powerUpType - Type of power-up ('fifty-fifty', 'extend-time', 'double-points')
+   * @returns {Object} Result with success and any additional data
+   */
+    usePowerUp(playerId, powerUpType) {
+        if (!this.powerUpsEnabled) {
+            return { success: false, error: 'Power-ups not enabled for this game' };
+        }
+
+        const player = this.players.get(playerId);
+        if (!player?.powerUps) {
+            return { success: false, error: 'Player not found or power-ups not initialized' };
+        }
+
+        const powerUp = player.powerUps[powerUpType];
+        if (!powerUp || powerUp.used) {
+            return { success: false, error: powerUp ? 'Power-up already used' : 'Unknown power-up type' };
+        }
+
+        powerUp.used = true;
+        powerUp.available = false;
+
+        const result = { success: true, type: powerUpType };
+
+        if (powerUpType === 'fifty-fifty') {
+            const question = this.quiz.questions[this.currentQuestion];
+            if (question?.type === 'multiple-choice') {
+                result.hiddenOptions = this.calculateHiddenOptions(question);
+            }
+        } else if (powerUpType === 'extend-time') {
+            result.extraSeconds = 10;
+        } else if (powerUpType === 'double-points') {
+            powerUp.active = true;
+        }
+
+        this.logger.debug(`Player ${playerId} used power-up: ${powerUpType}`);
+        return result;
+    }
+
+    /**
+   * Calculate which options to hide for 50-50 power-up
+   * @param {Object} question - Current question
+   * @returns {number[]} Indices to hide
+   */
+    calculateHiddenOptions(question) {
+        const correctAnswer = question.correctAnswer;
+        const optionsCount = question.options?.length || 4;
+        const wrongIndices = [];
+
+        for (let i = 0; i < optionsCount; i++) {
+            if (i !== correctAnswer) wrongIndices.push(i);
+        }
+
+        const numToHide = Math.ceil(wrongIndices.length / 2);
+        const shuffled = wrongIndices.sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, numToHide);
+    }
+
+    /**
+   * Check if a player has double points active and consume it
+   * @param {string} playerId - Socket ID of the player
+   * @returns {number} Multiplier (1 or 2)
+   */
+    getAndConsumeDoublePoints(playerId) {
+        const doublePoints = this.players.get(playerId)?.powerUps?.['double-points'];
+        if (doublePoints?.active) {
+            doublePoints.active = false;
+            return 2;
+        }
+        return 1;
     }
 
     /**
@@ -677,11 +768,16 @@ class Game {
             points = isCorrect ? basePoints + scaledTimeBonus : 0;
         }
 
+        // Apply double points power-up multiplier (if active)
+        const doublePointsMultiplier = this.getAndConsumeDoublePoints(playerId);
+        points = points * doublePointsMultiplier;
+
         const answerData = {
             answer,
             isCorrect,
             points,
-            timeMs: Date.now() - this.questionStartTime
+            timeMs: Date.now() - this.questionStartTime,
+            doublePointsUsed: doublePointsMultiplier > 1
         };
 
         // Add partialScore for ordering questions (enables "partially correct" feedback)
@@ -692,7 +788,7 @@ class Game {
         player.answers[this.currentQuestion] = answerData;
         player.score += points;
 
-        return { isCorrect, points };
+        return { isCorrect, points, doublePointsUsed: doublePointsMultiplier > 1 };
     }
 
     /**

@@ -4,6 +4,7 @@
  */
 
 import { logger } from '../core/config.js';
+import { isMobile, isTablet } from './dom.js';
 
 export class ContentDensityManager {
     constructor() {
@@ -120,8 +121,8 @@ export class ContentDensityManager {
 
             // Viewport analysis
             viewportWidth: window.innerWidth,
-            isMobile: window.innerWidth <= 768,
-            isTablet: window.innerWidth > 768 && window.innerWidth <= 1024,
+            isMobile: isMobile(),
+            isTablet: isTablet(),
             isDesktop: window.innerWidth > 1024,
 
             // Content density score (0-100)

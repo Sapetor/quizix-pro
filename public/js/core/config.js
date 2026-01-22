@@ -152,6 +152,19 @@ export const COLORS = {
         hard: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' }
     },
 
+    // Ordering question item colors (for drag-and-drop visual tracking)
+    ORDERING_ITEM_COLORS: [
+        'rgba(59, 130, 246, 0.15)',   // Blue
+        'rgba(16, 185, 129, 0.15)',   // Green
+        'rgba(245, 158, 11, 0.15)',   // Orange
+        'rgba(239, 68, 68, 0.15)',    // Red
+        'rgba(139, 92, 246, 0.15)',   // Purple
+        'rgba(236, 72, 153, 0.15)'    // Pink
+    ],
+
+    // Confetti celebration colors
+    CONFETTI_COLORS: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
+
     // With opacity variants (for backgrounds)
     withOpacity: (hex, opacity) => {
         const r = parseInt(hex.slice(1, 3), 16);
@@ -362,5 +375,26 @@ export const SOCKET_EVENTS = {
     SHOW_NEXT_BUTTON: 'show-next-button',
     HIDE_NEXT_BUTTON: 'hide-next-button',
     PLAYER_RESULT: 'player-result',
-    ERROR: 'error'
+    ERROR: 'error',
+    USE_POWER_UP: 'use-power-up',
+    POWER_UP_RESULT: 'power-up-result'
+};
+
+// Power-up configuration
+export const POWER_UPS = {
+    ENABLED_BY_DEFAULT: false,
+    FIFTY_FIFTY: {
+        id: 'fifty-fifty',
+        usesPerGame: 1
+    },
+    EXTEND_TIME: {
+        id: 'extend-time',
+        usesPerGame: 1,
+        extraSeconds: 10
+    },
+    DOUBLE_POINTS: {
+        id: 'double-points',
+        usesPerGame: 1,
+        multiplier: 2
+    }
 };

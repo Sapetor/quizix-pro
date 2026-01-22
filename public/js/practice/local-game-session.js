@@ -54,6 +54,10 @@ export class LocalGameSession {
             'hard': 2
         };
 
+        // Power-ups state
+        this.powerUpsEnabled = options.powerUpsEnabled || false;
+        this.powerUps = this.createInitialPowerUpState();
+
         // Load practice history from localStorage
         this.history = this.loadHistory();
     }
@@ -321,6 +325,8 @@ export class LocalGameSession {
      */
     calculatePoints(isCorrect, question, responseTime) {
         if (!isCorrect && typeof isCorrect !== 'number') {
+            // Still consume double points even on wrong answer
+            this.consumeDoublePoints();
             return 0;
         }
 
@@ -332,10 +338,114 @@ export class LocalGameSession {
         const timeBonus = Math.max(0, maxBonusTime - responseTime) / maxBonusTime;
 
         // Calculate total points
-        const points = Math.round(basePoints * difficultyMultiplier * (1 + timeBonus * 0.5));
+        let points = Math.round(basePoints * difficultyMultiplier * (1 + timeBonus * 0.5));
+
+        // Apply double points multiplier if active
+        const multiplier = this.getAndConsumeDoublePoints();
+        points = points * multiplier;
 
         return points;
     }
+
+    // ==================== POWER-UP METHODS ====================
+
+    /**
+     * Create initial power-up state object
+     * @returns {Object} Fresh power-up state
+     */
+    createInitialPowerUpState() {
+        return {
+            'fifty-fifty': { available: true, used: false },
+            'extend-time': { available: true, used: false },
+            'double-points': { available: true, used: false, active: false }
+        };
+    }
+
+    /**
+     * Use a power-up
+     * @param {string} type - Power-up type
+     * @returns {Object} Result with success and any additional data
+     */
+    usePowerUp(type) {
+        if (!this.powerUpsEnabled) {
+            return { success: false, error: 'Power-ups not enabled' };
+        }
+
+        const powerUp = this.powerUps[type];
+        if (!powerUp || powerUp.used) {
+            return { success: false, error: powerUp ? 'Power-up already used' : 'Unknown power-up type' };
+        }
+
+        powerUp.used = true;
+        powerUp.available = false;
+
+        const result = { success: true, type };
+
+        if (type === 'fifty-fifty') {
+            const question = this.getCurrentQuestion();
+            if (question?.type === 'multiple-choice') {
+                result.hiddenOptions = this.calculateHiddenOptions(question);
+            }
+        } else if (type === 'extend-time') {
+            result.extraSeconds = 10;
+        } else if (type === 'double-points') {
+            powerUp.active = true;
+        }
+
+        this.eventBus.emit('power-up-result', result);
+        logger.debug(`[LocalGameSession] Power-up used: ${type}`);
+        return result;
+    }
+
+    /**
+     * Calculate which options to hide for 50-50 power-up
+     * @param {Object} question - Current question
+     * @returns {number[]} Indices to hide
+     */
+    calculateHiddenOptions(question) {
+        const correctAnswer = question.correctAnswer;
+        const optionsCount = question.options?.length || 4;
+        const wrongIndices = [];
+
+        for (let i = 0; i < optionsCount; i++) {
+            if (i !== correctAnswer) wrongIndices.push(i);
+        }
+
+        const numToHide = Math.ceil(wrongIndices.length / 2);
+        const shuffled = wrongIndices.sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, numToHide);
+    }
+
+    /**
+     * Get and consume double points multiplier
+     * @returns {number} Multiplier (1 or 2)
+     */
+    getAndConsumeDoublePoints() {
+        const doublePoints = this.powerUps['double-points'];
+        if (doublePoints?.active) {
+            doublePoints.active = false;
+            return 2;
+        }
+        return 1;
+    }
+
+    /**
+     * Consume double points without returning multiplier
+     */
+    consumeDoublePoints() {
+        if (this.powerUps['double-points']) {
+            this.powerUps['double-points'].active = false;
+        }
+    }
+
+    /**
+     * Reset power-ups for new game
+     */
+    resetPowerUps() {
+        this.powerUps = this.createInitialPowerUpState();
+    }
+
+    // ==================== END POWER-UP METHODS ====================
 
     /**
      * End the game

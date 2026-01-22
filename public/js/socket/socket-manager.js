@@ -141,10 +141,35 @@ export class SocketManager {
             logger.debug('Game started:', data);
             const isHost = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
 
+            // Initialize power-ups for players (not host)
+            if (!isHost && data.powerUpsEnabled) {
+                this.gameManager.initializePowerUps(true);
+            }
+
             if (isHost) {
                 this.uiManager.showScreen('host-game-screen');
             } else {
                 this.uiManager.showScreen('player-game-screen');
+            }
+        });
+
+        // Power-up result handler
+        this.socket.on('power-up-result', (data) => {
+            logger.debug('Power-up result:', data);
+            if (data.success) {
+                // Handle specific power-up effects
+                if (data.type === 'fifty-fifty' && data.hiddenOptions) {
+                    // Apply 50-50 effect from server
+                    this.gameManager.getPowerUpManager()?.applyFiftyFiftyToOptions(
+                        this.gameManager.stateManager.getGameState().currentQuestion?.correctAnswer
+                    );
+                } else if (data.type === 'extend-time' && data.extraSeconds) {
+                    // Extend time effect is handled locally
+                    this.gameManager.timerManager?.extendTime(data.extraSeconds);
+                }
+                // double-points is handled automatically in scoring
+            } else {
+                logger.warn('Power-up failed:', data.error);
             }
         });
 

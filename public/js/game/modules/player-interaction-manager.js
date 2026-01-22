@@ -87,20 +87,15 @@ export class PlayerInteractionManager {
     highlightSelectedAnswer(answer) {
         logger.debug('Highlighting selected answer:', answer);
 
-        // Remove previous selections
+        // Remove previous selections (CSS handles the styling via .selected class)
         document.querySelectorAll('.player-option, .tf-option').forEach(option => {
             option.classList.remove('selected');
-            option.style.background = '';
-            option.style.border = '';
-            option.style.transform = '';
         });
 
-        // Highlight current selection with subtle border
+        // Highlight current selection (CSS .selected class handles border and styling)
         const selectedOption = document.querySelector(`[data-answer="${answer}"]`);
         if (selectedOption) {
             selectedOption.classList.add('selected');
-            selectedOption.style.border = '3px solid var(--color-primary-500)';
-            selectedOption.style.transition = 'all 0.2s ease';
 
             // Play selection sound
             if (this.soundManager?.isSoundsEnabled()) {
@@ -384,18 +379,19 @@ export class PlayerInteractionManager {
         // Use centralized client selection clearing from GameDisplayManager
         this.gameDisplayManager.clearClientSelections();
 
-        // Additional cleanup for elements that might have styling (keeping some host-side cleanup)
+        // Additional cleanup for elements that might have styling (using CSS class for reset)
         document.querySelectorAll('[data-answer], .option-display').forEach(element => {
             element.classList.remove('selected', 'correct', 'incorrect');
-            element.style.transform = 'none';
-            element.style.animation = 'none';
-            element.style.filter = 'none';
+            // Temporarily add style-reset class to clear any lingering inline styles
+            element.classList.add('style-reset');
         });
 
-        // Force a repaint to ensure styles are cleared
-        if (typeof window !== 'undefined') {
-            document.body.offsetHeight;
-        }
+        // Remove style-reset class after a frame to allow CSS to apply
+        requestAnimationFrame(() => {
+            document.querySelectorAll('.style-reset').forEach(element => {
+                element.classList.remove('style-reset');
+            });
+        });
 
         logger.debug('Player interaction state reset via centralized method');
     }

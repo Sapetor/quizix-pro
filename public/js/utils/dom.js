@@ -325,6 +325,31 @@ export function escapeHtmlPreservingLatex(text) {
 }
 
 /**
+ * Format code blocks in text content
+ * Converts markdown-style code blocks to HTML with proper escaping
+ * @param {string} text - Text containing code blocks
+ * @returns {string} - Formatted text with HTML code blocks
+ */
+export function formatCodeBlocks(text) {
+    if (!text) return text;
+
+    // Convert code blocks (```language ... ```)
+    text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, language, code) => {
+        // SECURITY: Sanitize language to prevent XSS via class attribute injection
+        // Only allow alphanumeric characters and common language names
+        const rawLang = language || 'text';
+        const lang = rawLang.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 30) || 'text';
+        const trimmedCode = code.trim();
+        return `<pre><code class="language-${lang}">${escapeHtml(trimmedCode)}</code></pre>`;
+    });
+
+    // Convert inline code (`code`) - escape HTML to prevent XSS
+    text = text.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
+
+    return text;
+}
+
+/**
  * Bind an event listener to an element by ID (safe - no error if element doesn't exist)
  * This is a convenience function for the common pattern of getElementById + addEventListener
  * @param {string} elementId - The ID of the element
@@ -340,6 +365,51 @@ export function bindElement(elementId, event, handler, options) {
         return true;
     }
     return false;
+}
+
+/**
+ * Check if the current device is mobile (viewport width <= 768px)
+ * This is a shared utility function to avoid duplicate implementations
+ * @returns {boolean} - True if viewport width is 768px or less
+ */
+export function isMobile() {
+    return window.innerWidth <= 768;
+}
+
+/**
+ * Check if the current device is a tablet (viewport width between 768px and 1024px)
+ * @returns {boolean} - True if viewport width is between 768px and 1024px
+ */
+export function isTablet() {
+    return window.innerWidth > 768 && window.innerWidth <= 1024;
+}
+
+/**
+ * Create a debounced function that delays invoking func until after wait milliseconds
+ * have elapsed since the last time the debounced function was invoked
+ * @param {Function} func - The function to debounce
+ * @param {number} wait - The number of milliseconds to delay
+ * @returns {Function} - The debounced function with a cancel() method for cleanup
+ */
+export function debounce(func, wait) {
+    let timeout;
+    const executedFunction = function(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            timeout = null;
+            func.apply(this, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+    // Add cancel method for cleanup
+    executedFunction.cancel = () => {
+        if (timeout) {
+            clearTimeout(timeout);
+            timeout = null;
+        }
+    };
+    return executedFunction;
 }
 
 // Export for direct use

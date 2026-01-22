@@ -456,6 +456,7 @@ export default {
     save_progress: '保存进度',
     test_questions: '测试问题',
     more_options: '更多选项',
+    no_options: '无选项',
 
     // Sound settings
     toggle_sound_tooltip: '切换声音',
@@ -496,5 +497,17 @@ export default {
     try_again: '再试一次',
     exit: '退出',
     failed_start_practice: '无法启动练习模式',
-    load: '加载'
+    load: '加载',
+
+    // Power-Ups
+    enable_power_ups: '启用道具（50-50、+10秒、2倍积分）',
+    enable_power_ups_tooltip: '允许玩家在游戏中使用道具',
+    power_ups: '道具',
+    fifty_fifty: '50-50',
+    fifty_fifty_tooltip: '移除一半错误答案',
+    extend_time: '+10秒',
+    extend_time_tooltip: '计时器增加10秒',
+    double_points: '2倍积分',
+    double_points_tooltip: '下次答对时获得双倍积分',
+    power_up_used: '道具已使用！'
 };

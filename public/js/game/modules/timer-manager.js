@@ -4,7 +4,7 @@
  * Extracted from game-manager.js for better separation of concerns
  */
 
-import { logger } from '../../core/config.js';
+import { logger, UI } from '../../core/config.js';
 import { unifiedErrorHandler as errorBoundary } from '../../utils/unified-error-handler.js';
 
 export class TimerManager {
@@ -22,8 +22,8 @@ export class TimerManager {
 
             // Validate duration
             if (!duration || isNaN(duration) || duration <= 0) {
-                logger.error('Invalid timer duration:', duration, '- using 30 second default');
-                duration = 30000; // Default to 30 seconds
+                logger.error('Invalid timer duration:', duration, '- using default');
+                duration = UI.DEFAULT_TIMER_SECONDS * 1000; // Convert seconds to ms
             }
 
             // Clear existing timer
@@ -104,13 +104,6 @@ export class TimerManager {
             } else {
                 timerElement.classList.remove('warning');
             }
-        } else {
-            // Fallback: set to 0 if element not found
-            // logger.debug('Timer set to 0 (fallback)');
-        }
-
-        if (!timerElement) {
-            // logger.debug('Timer element not found!');
         }
     }
 
@@ -150,6 +143,32 @@ export class TimerManager {
         }
 
         return 0;
+    }
+
+    /**
+     * Extend the timer by adding extra seconds
+     * Used by the Extend Time power-up
+     * @param {number} extraSeconds - Number of seconds to add
+     */
+    extendTime(extraSeconds) {
+        if (!this.timer) {
+            logger.debug('Cannot extend time - timer not running');
+            return;
+        }
+
+        const timerElement = document.getElementById('timer');
+        if (timerElement) {
+            const currentSeconds = parseInt(timerElement.textContent) || 0;
+            const newSeconds = currentSeconds + extraSeconds;
+            timerElement.textContent = newSeconds.toString();
+
+            // Remove warning class if we're back above 10 seconds
+            if (newSeconds > 10) {
+                timerElement.classList.remove('warning');
+            }
+
+            logger.debug(`Timer extended by ${extraSeconds}s. New time: ${newSeconds}s`);
+        }
     }
 
     /**

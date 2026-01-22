@@ -4,6 +4,7 @@
  */
 
 import { BaseCarousel } from './base-carousel.js';
+import { isMobile } from './dom.js';
 
 class MobileCarousel extends BaseCarousel {
     constructor(containerSelector) {
@@ -24,11 +25,8 @@ class MobileCarousel extends BaseCarousel {
     init() {
         if (!this.track || this.slides.length === 0) return;
 
-        // Initialize base carousel functionality
+        // Initialize base carousel functionality (includes arrow navigation)
         if (!this.initBase()) return;
-
-        // Setup arrow navigation
-        this.setupArrowNavigation();
 
         // Start auto-play
         this.startAutoPlay();
@@ -36,24 +34,6 @@ class MobileCarousel extends BaseCarousel {
         // Initialize first slide
         this.updateSlideDisplay();
         this.updateActiveStates();
-    }
-
-    setupArrowNavigation() {
-        if (this.prevBtn) {
-            this.prevBtn.addEventListener('click', () => {
-                this.pauseAutoPlay();
-                this.previousSlide();
-                this.scheduleAutoPlayResume();
-            });
-        }
-
-        if (this.nextBtn) {
-            this.nextBtn.addEventListener('click', () => {
-                this.pauseAutoPlay();
-                this.nextSlide();
-                this.scheduleAutoPlayResume();
-            });
-        }
     }
 
     /**
@@ -68,7 +48,7 @@ class MobileCarousel extends BaseCarousel {
 
 // Initialize carousel when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    if (window.innerWidth <= 768) {
+    if (isMobile()) {
         window.mobileCarousel = new MobileCarousel('.carousel-container');
     }
 });
@@ -78,9 +58,9 @@ let resizeTimeout;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-        if (window.innerWidth <= 768 && !window.mobileCarousel) {
+        if (isMobile() && !window.mobileCarousel) {
             window.mobileCarousel = new MobileCarousel('.carousel-container');
-        } else if (window.innerWidth > 768 && window.mobileCarousel) {
+        } else if (!isMobile() && window.mobileCarousel) {
             window.mobileCarousel.destroy();
             window.mobileCarousel = null;
         }

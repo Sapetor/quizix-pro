@@ -12,6 +12,7 @@
 
 import { TIMING, logger } from '../core/config.js';
 import { simpleMathJaxService } from './simple-mathjax-service.js';
+import { escapeHtml, formatCodeBlocks as sharedFormatCodeBlocks } from './dom.js';
 
 export class MathRenderer {
     constructor() {
@@ -149,38 +150,12 @@ export class MathRenderer {
     }
 
     /**
-     * Format code blocks in text content
+     * Format code blocks in text content (delegates to shared utility)
      * @param {string} text - Text containing code blocks
      * @returns {string} - Formatted text with HTML code blocks
      */
     formatCodeBlocks(text) {
-        if (!text) return text;
-
-        // Convert code blocks (```language ... ```)
-        text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, language, code) => {
-            // SECURITY: Sanitize language to prevent XSS via class attribute injection
-            // Only allow alphanumeric characters and common language names
-            const rawLang = language || 'text';
-            const lang = rawLang.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 30) || 'text';
-            const trimmedCode = code.trim();
-            return `<pre><code class="language-${lang}">${this.escapeHtml(trimmedCode)}</code></pre>`;
-        });
-
-        // Convert inline code (`code`) - escape HTML to prevent XSS
-        text = text.replace(/`([^`]+)`/g, (_, code) => `<code>${this.escapeHtml(code)}</code>`);
-
-        return text;
-    }
-
-    /**
-     * Escape HTML entities in text
-     * @param {string} text - Text to escape
-     * @returns {string} - HTML-escaped text
-     */
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        return sharedFormatCodeBlocks(text);
     }
 
     /**
