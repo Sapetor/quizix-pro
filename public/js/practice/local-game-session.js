@@ -119,6 +119,8 @@ export class LocalGameSession {
         }
 
         // Emit question start event (matching server format - questionNumber is 1-indexed)
+        // Support both 'time' and 'timeLimit' field names for compatibility
+        const questionTime = question.timeLimit || question.time || TIMING.DEFAULT_QUESTION_TIME;
         this.eventBus.emit('question-start', {
             questionNumber: this.currentQuestionIndex + 1,  // 1-indexed to match server
             totalQuestions: this.quiz.questions.length,
@@ -126,11 +128,11 @@ export class LocalGameSession {
             options: question.options || [],     // Options array
             type: question.type || 'multiple-choice',
             image: question.image || '',
-            timeLimit: question.time || TIMING.DEFAULT_QUESTION_TIME
+            timeLimit: questionTime
         });
 
         // Set up question timer
-        const timeLimit = (question.time || TIMING.DEFAULT_QUESTION_TIME) * 1000;
+        const timeLimit = questionTime * 1000;
         this.questionTimer = setTimeout(() => {
             this.handleQuestionTimeout();
         }, timeLimit);

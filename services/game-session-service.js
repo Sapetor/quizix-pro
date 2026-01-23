@@ -218,7 +218,7 @@ class GameSessionService {
         }
 
         const question = game.quiz.questions[game.currentQuestion];
-        const timeLimit = question.timeLimit || 20;
+        const timeLimit = question.timeLimit || question.time || 20;
 
         game.gameState = 'question';
         game.questionStartTime = Date.now();
