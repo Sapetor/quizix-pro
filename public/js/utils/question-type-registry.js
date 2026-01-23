@@ -99,6 +99,7 @@ const QUESTION_TYPES = {
             if (!optionsContainer) return;
 
             const optionInputs = optionsContainer.querySelectorAll('.option');
+            const correctAnswerSelect = optionsContainer.querySelector('.correct-answer');
 
             data.options.forEach((optionText, index) => {
                 if (optionInputs[index]) {
@@ -112,6 +113,12 @@ const QUESTION_TYPES = {
                     }
                 }
             });
+
+            // Set the correct-answer select dropdown to the correct index
+            if (correctAnswerSelect && data.correctIndex !== undefined) {
+                correctAnswerSelect.value = String(data.correctIndex);
+                logger.debug('Set correct-answer select to index:', data.correctIndex);
+            }
         },
 
         /**
