@@ -285,6 +285,8 @@ export default {
     select_ollama_model: 'Ollamaモデルを選択',
     choose_claude_model: 'Claudeモデルを選択',
     select_claude_model: '生成に使用するClaudeモデルを選択してください',
+    choose_gemini_model: 'Geminiモデルを選択',
+    select_gemini_model: '生成に使用するGeminiモデルを選択してください',
     loading_models_placeholder: 'モデルを読み込み中...',
     api_key: 'APIキー',
     api_key_stored_locally: 'APIキーがローカルに保存されました',

@@ -280,6 +280,8 @@ export default {
     select_ollama_model: '选择Ollama模型',
     choose_claude_model: '选择Claude模型',
     select_claude_model: '选择用于生成的Claude模型',
+    choose_gemini_model: '选择Gemini模型',
+    select_gemini_model: '选择用于生成的Gemini模型',
     loading_models_placeholder: '加载模型中...',
     api_key: 'API密钥',
     api_key_stored_locally: 'API密钥已本地存储',

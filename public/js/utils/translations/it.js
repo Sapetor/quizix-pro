@@ -280,6 +280,8 @@ export default {
     select_ollama_model: 'Seleziona Modello Ollama',
     choose_claude_model: 'Scegli Modello Claude',
     select_claude_model: 'Seleziona quale modello Claude usare per la generazione',
+    choose_gemini_model: 'Scegli Modello Gemini',
+    select_gemini_model: 'Seleziona quale modello Gemini usare per la generazione',
     loading_models_placeholder: 'Caricamento modelli...',
     api_key: 'Chiave API',
     api_key_stored_locally: 'Chiave API memorizzata localmente',

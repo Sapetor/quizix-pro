@@ -23,7 +23,7 @@ const { GameSessionService } = require('./services/game-session-service');
 const { PlayerManagementService } = require('./services/player-management-service');
 const { QuestionFlowService } = require('./services/question-flow-service');
 const { SocketBatchService } = require('./services/socket-batch-service');
-const { validateBody, saveQuizSchema, claudeGenerateSchema } = require('./services/validation-schemas');
+const { validateBody, saveQuizSchema, claudeGenerateSchema, geminiGenerateSchema } = require('./services/validation-schemas');
 const { metricsService } = require('./services/metrics-service');
 
 // Detect production environment (Railway sets NODE_ENV automatically)
@@ -82,6 +82,10 @@ function validateEnvironment() {
     // Check optional environment variables and warn if missing
     if (!process.env.CLAUDE_API_KEY) {
         warnings.push('CLAUDE_API_KEY not set - AI generation will require client-provided keys');
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+        warnings.push('GEMINI_API_KEY not set - Gemini generation will require client-provided keys');
     }
 
     if (process.env.BASE_PATH && !process.env.BASE_PATH.startsWith('/')) {
@@ -995,12 +999,130 @@ app.post('/api/claude/generate', validateBody(claudeGenerateSchema), async (req,
     }
 });
 
+// Gemini API proxy endpoint
+// Supports two modes:
+// 1. Server-side key: Set GEMINI_API_KEY env var (recommended for production)
+// 2. BYOK (Bring Your Own Key): Client provides key in request body
+app.post('/api/gemini/generate', validateBody(geminiGenerateSchema), async (req, res) => {
+    try {
+        const { prompt, apiKey: clientApiKey, numQuestions, model } = req.validatedBody;
+
+        // Use server-side API key if available, otherwise require client key
+        const serverApiKey = process.env.GEMINI_API_KEY;
+        const apiKey = serverApiKey || clientApiKey;
+
+        // Apply rate limiting for BYOK mode only (server key has no limit)
+        if (!serverApiKey && clientApiKey) {
+            const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+            const rateCheck = checkByokRateLimit(clientIP);
+
+            if (!rateCheck.allowed) {
+                logger.warn(`BYOK rate limit exceeded for IP: ${clientIP}`);
+                return res.status(429).json({
+                    error: 'Rate limit exceeded',
+                    message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
+                    retryAfter: rateCheck.retryAfter
+                });
+            }
+
+            // Add rate limit headers
+            res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
+        }
+
+        if (!apiKey) {
+            return res.status(400).json({
+                error: 'API key is required',
+                hint: serverApiKey ? undefined : 'Set GEMINI_API_KEY environment variable or provide key in request'
+            });
+        }
+
+        if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
+            return res.status(400).json({ error: 'Valid API key is required' });
+        }
+
+        // Log which mode is being used (without exposing key)
+        if (serverApiKey) {
+            logger.debug('Using server-side Gemini API key');
+        } else {
+            logger.debug('Using client-provided Gemini API key');
+        }
+
+        // Import node-fetch for HTTP requests
+        const { default: fetchFunction } = await import('node-fetch');
+
+        // Use model from request, fall back to env var, then default
+        const selectedModel = model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        logger.info(`Using Gemini model: ${selectedModel}`);
+
+        // Gemini API request format
+        const requestBody = {
+            contents: [
+                {
+                    parts: [
+                        {
+                            text: prompt
+                        }
+                    ]
+                }
+            ],
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: Math.max(4096, (numQuestions || 5) * 1000)
+            }
+        };
+
+        const response = await fetchFunction(
+            `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            logger.error('Gemini API error:', response.status);
+
+            let errorMessage = `Gemini API error: ${response.status}`;
+            if (response.status === 401) {
+                errorMessage = 'Invalid API key. Please check your Gemini API key and try again.';
+            } else if (response.status === 429) {
+                errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+            } else if (response.status === 400) {
+                errorMessage = 'Invalid request. Please check your input and try again.';
+            } else if (response.status === 403) {
+                errorMessage = 'Access forbidden. Please check your API key permissions or account quotas.';
+            } else if (response.status === 402) {
+                errorMessage = 'Quota exceeded. Please check your account billing and quotas.';
+            }
+
+            return res.status(response.status).json({
+                error: errorMessage,
+                details: isProduction ? undefined : errorText // Hide details in production
+            });
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        logger.error('Gemini proxy error:', error.message);
+        res.status(500).json({
+            error: 'Failed to connect to Gemini API',
+            details: isProduction ? undefined : error.message // Hide details in production
+        });
+    }
+});
+
 // Check if server has configured API keys (for client UI)
 app.get('/api/ai/config', (req, res) => {
     res.json({
         claudeKeyConfigured: !!process.env.CLAUDE_API_KEY,
+        geminiKeyConfigured: !!process.env.GEMINI_API_KEY,
         ollamaAvailable: true // Ollama doesn't require API key
-    // Don't expose actual keys, just whether they're configured
+        // Don't expose actual keys, just whether they're configured
     });
 });
 

@@ -1422,9 +1422,30 @@ export class AIQuestionGenerator {
     }
 
     async generateWithGemini(prompt) {
-        // Delegate to AIProviderService and AIQuestionValidator
-        const rawResponse = await aiProviderService.generateWithGemini(prompt);
-        return this.parseAIResponse(rawResponse);
+        logger.debug('generateWithGemini called');
+
+        try {
+            // Get selected Gemini model from DOM
+            const modelSelect = document.getElementById('gemini-model');
+            const selectedModel = modelSelect?.value || 'gemini-2.5-flash';
+
+            // Delegate to AIProviderService
+            const rawResponse = await aiProviderService.generateWithGemini(prompt, {
+                model: selectedModel,
+                numQuestions: this.requestedQuestionCount || 5
+            });
+
+            return this.parseAIResponse(rawResponse);
+
+        } catch (error) {
+            logger.debug('Gemini generation error caught:', error.message);
+
+            // Show error popup directly
+            this.showSimpleErrorPopup('Gemini Error', error.message, '❌');
+
+            // Re-throw to stop further processing
+            throw error;
+        }
     }
 
     parseAIResponse(responseText) {
@@ -1669,6 +1690,7 @@ export class AIQuestionGenerator {
                 const apiKeySection = document.getElementById('api-key-section');
                 const modelSelection = document.getElementById('model-selection');
                 const claudeModelSelection = document.getElementById('claude-model-selection');
+                const geminiModelSelection = document.getElementById('gemini-model-selection');
 
                 if (!apiKeySection || !modelSelection) return;
 
@@ -1688,15 +1710,23 @@ export class AIQuestionGenerator {
                     modelSelection.classList.remove('hidden');
                     modelSelection.style.display = 'block';
                     if (claudeModelSelection) claudeModelSelection.style.display = 'none';
+                    if (geminiModelSelection) geminiModelSelection.style.display = 'none';
                     await this.loadOllamaModels();
                 } else if (provider === 'claude') {
                     modelSelection.classList.add('hidden');
                     modelSelection.style.display = 'none';
                     if (claudeModelSelection) claudeModelSelection.style.display = 'block';
+                    if (geminiModelSelection) geminiModelSelection.style.display = 'none';
+                } else if (provider === 'gemini') {
+                    modelSelection.classList.add('hidden');
+                    modelSelection.style.display = 'none';
+                    if (claudeModelSelection) claudeModelSelection.style.display = 'none';
+                    if (geminiModelSelection) geminiModelSelection.style.display = 'block';
                 } else {
                     modelSelection.classList.add('hidden');
                     modelSelection.style.display = 'none';
                     if (claudeModelSelection) claudeModelSelection.style.display = 'none';
+                    if (geminiModelSelection) geminiModelSelection.style.display = 'none';
                 }
             } finally {
                 this.isChangingProvider = false;

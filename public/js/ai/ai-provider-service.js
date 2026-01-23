@@ -42,7 +42,13 @@ const PROVIDERS = {
         name: 'Google Gemini',
         apiKey: true,
         endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
-        models: [AI.GEMINI_MODEL, 'gemini-2.0-flash', 'gemini-1.5-pro']
+        models: [
+            { id: AI.GEMINI_MODEL, name: 'Gemini 2.5 Flash (Recommended)' },
+            { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Most Capable)' },
+            { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite (Fast & Cheap)' },
+            { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash (Preview - Latest)' },
+            { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro (Preview - Most Advanced)' }
+        ]
     }
 };
 
@@ -296,48 +302,59 @@ export class AIProviderService {
     async generateWithGemini(prompt, options = {}) {
         return await errorHandler.safeNetworkOperation(async () => {
             const apiKey = await secureStorage.getSecureItem('api_key_gemini');
+            const selectedModel = options.model || AI.GEMINI_MODEL || 'gemini-2.5-flash';
 
-            // Import the Google Gen AI library dynamically
-            const { GoogleGenAI } = await import('https://esm.sh/@google/genai@0.21.0');
+            logger.debug('Gemini API call starting');
 
-            const ai = new GoogleGenAI({ apiKey: apiKey });
+            const response = await fetch(APIHelper.getApiUrl('api/gemini/generate'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    apiKey: apiKey,
+                    numQuestions: options.numQuestions || 5,
+                    model: selectedModel
+                })
+            });
 
-            try {
-                const response = await ai.models.generateContent({
-                    model: options.model || AI.GEMINI_MODEL,
-                    contents: prompt,
-                    config: {
-                        temperature: options.temperature || AI.DEFAULT_TEMPERATURE,
-                        maxOutputTokens: AI.GEMINI_MAX_TOKENS,
-                        candidateCount: 1,
-                        responseMimeType: 'text/plain'
-                    }
-                });
+            if (!response.ok) {
+                const errorData = await response.json();
+                const errorMessage = errorData.error || `HTTP ${response.status}`;
+                logger.error('Gemini API error:', response.status, errorMessage);
 
-                if (!response || !response.text) {
-                    throw new Error('Invalid Gemini API response structure');
-                }
-
-                const content = response.text();
-                logger.debug('Gemini API response received');
-
-                return content;
-
-            } catch (error) {
-                if (error.message.includes('API key') || error.message.includes('invalid_api_key')) {
+                if (response.status === 401) {
                     throw new Error('Invalid Gemini API key. Please check your credentials.');
-                } else if (error.message.includes('quota') || error.message.includes('429') || error.message.includes('RATE_LIMIT_EXCEEDED')) {
+                } else if (response.status === 429) {
                     throw new Error('Gemini rate limit exceeded. Please try again later.');
-                } else if (error.message.includes('billing') || error.message.includes('QUOTA_EXCEEDED')) {
-                    throw new Error('Gemini quota exceeded. Please check your account billing and quotas.');
-                } else if (error.message.includes('safety') || error.message.includes('blocked') || error.message.includes('SAFETY')) {
-                    throw new Error('Content blocked by Gemini safety filters. Try rephrasing your prompt.');
-                } else if (error.message.includes('permission') || error.message.includes('forbidden') || error.message.includes('403')) {
+                } else if (response.status === 403) {
                     throw new Error('Gemini API access forbidden. Please check your API key permissions.');
+                } else if (response.status === 402) {
+                    throw new Error('Gemini quota exceeded. Please check your account billing and quotas.');
+                } else if (response.status === 400) {
+                    throw new Error(`Invalid request: ${errorMessage}`);
                 } else {
-                    throw new Error(`Gemini API error: ${error.message}`);
+                    throw new Error(errorMessage);
                 }
             }
+
+            const data = await response.json();
+            logger.debug('Gemini API response received');
+
+            // Parse Gemini response format
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                throw new Error('Invalid Gemini API response structure');
+            }
+
+            const content = data.candidates[0].content.parts[0].text;
+
+            if (!content) {
+                throw new Error('No content received from Gemini API');
+            }
+
+            return content;
+
         }, {
             context: 'gemini-generation',
             userMessage: 'Failed to generate questions with Gemini. Please check your API key and try again.',

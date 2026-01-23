@@ -101,6 +101,13 @@ const claudeGenerateSchema = z.object({
     model: z.string().optional().default('claude-sonnet-4-5')
 });
 
+const geminiGenerateSchema = z.object({
+    prompt: z.string().min(10, 'Prompt must be at least 10 characters'),
+    apiKey: z.string().optional(),
+    numQuestions: z.number().int().min(1).max(50).optional().default(5),
+    model: z.string().optional().default('gemini-2.5-flash')
+});
+
 // ============================================================================
 // Game Schemas
 // ============================================================================
@@ -405,6 +412,7 @@ module.exports = {
     questionSchema,
     saveQuizSchema,
     claudeGenerateSchema,
+    geminiGenerateSchema,
     joinGameSchema,
     submitAnswerSchema,
     quizFilenameSchema,

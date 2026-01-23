@@ -302,8 +302,8 @@ export const AI = {
     OLLAMA_TAGS_ENDPOINT: window.QUIZIX_CONFIG?.OLLAMA_TAGS_ENDPOINT || 'http://localhost:11434/api/tags',
     OLLAMA_DEFAULT_MODEL: 'llama3.2:latest',
     OPENAI_MODEL: 'gpt-4o-mini',
-    GEMINI_MODEL: 'gemini-2.0-flash-001',
-    GEMINI_MAX_TOKENS: 2048,
+    GEMINI_MODEL: 'gemini-2.5-flash',
+    GEMINI_MAX_TOKENS: 4096,
 
     // Content detection patterns - enhanced for smart formatting
     MATH_INDICATORS: /\$[^$]+\$|\\\(.*?\\\)|\\\[.*?\\\]|\\frac\{|\\sqrt\{|\\sum|\\int|\\lim|\\infty|\\alpha|\\beta|\\gamma|\\theta|\\pi|\\sigma|\\Delta|equation|formula|algebra|calculus|geometry|derivative|integral|matrix|vector|polynomial|logarithm|exponential|trigonometry|quadratic|linear equation|probability|statistics|mean|median|variance|standard deviation/i,
