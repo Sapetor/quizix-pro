@@ -360,7 +360,7 @@ export class UIManager {
         });
 
         gameCard.innerHTML = `
-            <div class="game-title">${this.escapeHtml(game.title)}</div>
+            <div class="game-title">${escapeHtml(game.title)}</div>
             <div class="game-info">
                 <div class="game-detail">
                     <span class="game-detail-icon">🎯</span>
