@@ -384,9 +384,9 @@ export class PracticeModeManager {
         // Update UI
         this.updateUIForPracticeMode(false);
 
-        // Return to main menu
+        // Return to main menu (correct screen ID is 'main-menu', not 'main')
         if (this.uiManager) {
-            this.uiManager.showScreen('main');
+            this.uiManager.showScreen('main-menu');
         }
     }
 
