@@ -48,8 +48,12 @@ export class UIManager {
                 if (headerStartBtn) headerStartBtn.style.display = 'block';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
 
-                // Translate toolbar tooltips after making it visible
-                setTimeout(() => {
+                // Translate toolbar tooltips and host screen content after making it visible
+                // Use async to ensure translations are loaded before translating
+                setTimeout(async () => {
+                    // Ensure current language translations are loaded
+                    await translationManager.ensureLanguageLoaded(translationManager.getCurrentLanguage());
+
                     if (horizontalToolbar) {
                         translationManager.translateContainer(horizontalToolbar);
                     }
@@ -57,6 +61,10 @@ export class UIManager {
                     const header = document.querySelector('header');
                     if (header) {
                         translationManager.translateContainer(header);
+                    }
+                    // Translate host screen content (quiz editor, advanced options, etc.)
+                    if (targetScreen) {
+                        translationManager.translateContainer(targetScreen);
                     }
                 }, 50);
 

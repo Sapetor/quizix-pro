@@ -295,8 +295,11 @@ class TranslationManager {
 
             if (translationKey) {
                 const translatedText = this.getTranslationSync(translationKey, parsedArgs);
-                element.textContent = translatedText;
-                // // logger.debug(`Translated "${translationKey}" to "${translatedText}"`);
+                // Only replace content if translation was found (not falling back to key)
+                // This preserves the HTML fallback text if translation fails
+                if (translatedText !== translationKey) {
+                    element.textContent = translatedText;
+                }
             }
         });
 
@@ -329,7 +332,10 @@ class TranslationManager {
         document.querySelectorAll('option[data-translate]').forEach(element => {
             const translationKey = element.getAttribute('data-translate');
             if (translationKey) {
-                element.textContent = this.getTranslationSync(translationKey);
+                const translatedText = this.getTranslationSync(translationKey);
+                if (translatedText !== translationKey) {
+                    element.textContent = translatedText;
+                }
             }
         });
     }
@@ -446,16 +452,19 @@ class TranslationManager {
             if (translationKey) {
                 const originalText = element.textContent;
                 const translatedText = this.getTranslationSync(translationKey, parsedArgs);
-                element.textContent = translatedText;
+
+                // Only replace content if translation was found (not falling back to key)
+                // This preserves the HTML fallback text if translation fails
+                if (translatedText !== translationKey) {
+                    element.textContent = translatedText;
+                }
 
                 // Debug all translations, especially problematic ones
-                if (['add_image', 'time_seconds', 'multiple_choice', 'question', 'remove', 'a_is_correct'].includes(translationKey)) {
+                if (['add_image', 'time_seconds', 'multiple_choice', 'question', 'remove', 'a_is_correct', 'enable_power_ups'].includes(translationKey)) {
                     logger.debug(`🔤 Translation ${index + 1}: "${translationKey}" -> "${translatedText}" (was: "${originalText}")`);
 
                     if (translatedText === translationKey) {
-                        logger.error(`❌ Translation FAILED for: ${translationKey}`);
-                        logger.error('Loaded translations:', this.loadedTranslations.has(this.currentLanguage) ? 'YES' : 'NO');
-                        logger.error('Current language:', this.currentLanguage);
+                        logger.warn(`⚠️ Translation not found for: ${translationKey}, keeping original text`);
                     }
                 }
             }
@@ -490,7 +499,10 @@ class TranslationManager {
         container.querySelectorAll('option[data-translate]').forEach(element => {
             const translationKey = element.getAttribute('data-translate');
             if (translationKey) {
-                element.textContent = this.getTranslationSync(translationKey);
+                const translatedText = this.getTranslationSync(translationKey);
+                if (translatedText !== translationKey) {
+                    element.textContent = translatedText;
+                }
             }
         });
     }
