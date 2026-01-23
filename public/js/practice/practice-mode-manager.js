@@ -8,6 +8,7 @@ import { LocalEventBus } from '../events/local-event-bus.js';
 import { LocalGameSession } from './local-game-session.js';
 import { logger } from '../core/config.js';
 import { getTranslation } from '../utils/translation-manager.js';
+import { APIHelper } from '../utils/api-helper.js';
 
 export class PracticeModeManager {
     /**
@@ -103,7 +104,7 @@ export class PracticeModeManager {
      */
     async loadQuiz(filename) {
         try {
-            const response = await fetch(`/api/quiz/${encodeURIComponent(filename)}`);
+            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${encodeURIComponent(filename)}`));
             if (!response.ok) {
                 throw new Error(`Failed to load quiz: ${response.statusText}`);
             }
