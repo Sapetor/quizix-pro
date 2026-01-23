@@ -8,13 +8,13 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Preload critical CSS -->
-    <link rel="preload" href="css/main.bundle.css?v=14" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=14"></noscript>
+    <link rel="preload" href="css/main.bundle.css?v=16" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=16"></noscript>
     
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=14" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=14" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=14" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=16" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=16" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=16" as="script" crossorigin="anonymous">
     
     <!-- Optimized font loading for mobile performance -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -1892,7 +1892,7 @@
             onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
     </script>
     <!-- Modular ES6 Structure -->
-<script type="module" src="js/main.js?v=14"></script>
+<script type="module" src="js/main.js?v=16"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         if ('serviceWorker' in navigator) {
@@ -1902,19 +1902,41 @@
                 const swPath = basePath + 'sw.js';
 
                 // Fetch and display app version
+                console.log('[App] Fetching version from:', swPath);
                 fetch(swPath)
-                    .then(response => response.text())
+                    .then(response => {
+                        console.log('[App] sw.js fetch response:', response.status, response.ok);
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.text();
+                    })
                     .then(swContent => {
+                        console.log('[App] sw.js content length:', swContent.length);
                         const versionMatch = swContent.match(/CACHE_VERSION = '([^']+)'/);
+                        console.log('[App] Version match:', versionMatch);
                         if (versionMatch) {
                             const version = versionMatch[1];
                             const versionText = document.getElementById('app-version-text');
                             if (versionText) {
                                 versionText.textContent = version;
+                                console.log('[App] Version displayed:', version);
+                            }
+                        } else {
+                            console.warn('[App] Could not find CACHE_VERSION in sw.js');
+                            const versionText = document.getElementById('app-version-text');
+                            if (versionText) {
+                                versionText.textContent = 'Unknown';
                             }
                         }
                     })
-                    .catch(err => console.warn('[App] Could not fetch version:', err));
+                    .catch(err => {
+                        console.error('[App] Could not fetch version:', err);
+                        const versionText = document.getElementById('app-version-text');
+                        if (versionText) {
+                            versionText.textContent = 'Error';
+                        }
+                    });
 
                 // updateViaCache: 'none' forces the browser to always check the network for sw.js updates
                 // This bypasses HTTP cache and ensures new deployments are detected immediately
