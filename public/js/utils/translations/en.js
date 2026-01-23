@@ -242,7 +242,14 @@ export default {
     question_number: 'Question Number',
     leaderboard_title: 'Leaderboard',
     cancel: 'Cancel',
+    save: 'Save',
+    edit: 'Edit',
     close: 'Close',
+
+    // Player name change
+    name_changed_success: 'Name updated!',
+    name_invalid_characters: 'Name contains invalid characters',
+    name_is_required: 'Name is required',
     bottom: 'Bottom',
     top: 'Top',
     normal: 'Normal',

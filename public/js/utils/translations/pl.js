@@ -210,7 +210,14 @@ export default {
     question_number: 'Numer Pytania',
     leaderboard_title: 'Ranking',
     cancel: 'Anuluj',
+    save: 'Zapisz',
+    edit: 'Edytuj',
     close: 'Zamknij',
+
+    // Player name change
+    name_changed_success: 'Nazwa zaktualizowana!',
+    name_invalid_characters: 'Nazwa zawiera nieprawidłowe znaki',
+    name_is_required: 'Nazwa jest wymagana',
     bottom: 'Dół',
     top: 'Góra',
     normal: 'Normalny',

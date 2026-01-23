@@ -221,7 +221,14 @@ export default {
     question_number: '質問番号',
     leaderboard_title: 'リーダーボード',
     cancel: 'キャンセル',
+    save: '保存',
+    edit: '編集',
     close: '閉じる',
+
+    // Player name change
+    name_changed_success: '名前が更新されました！',
+    name_invalid_characters: '名前に無効な文字が含まれています',
+    name_is_required: '名前は必須です',
     bottom: '下',
     top: '上',
     normal: '通常',

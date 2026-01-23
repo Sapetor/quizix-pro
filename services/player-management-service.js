@@ -185,6 +185,99 @@ class PlayerManagementService {
     }
 
     /**
+     * Handle player name change while in lobby
+     * @param {string} socketId - Socket ID of the player
+     * @param {string} newName - New player name
+     * @param {Object} game - Game instance
+     * @param {Object} socket - Socket instance
+     * @param {Object} io - Socket.IO instance
+     * @returns {Object} Result object with success status
+     */
+    handlePlayerNameChange(socketId, newName, game, socket, io) {
+        // Validate input
+        if (!newName || typeof newName !== 'string') {
+            return { success: false, error: 'Name is required' };
+        }
+
+        const trimmedName = newName.trim();
+
+        // Validate name length
+        if (trimmedName.length === 0 || trimmedName.length > this.config.LIMITS.MAX_PLAYER_NAME_LENGTH) {
+            return {
+                success: false,
+                error: `Name must be 1-${this.config.LIMITS.MAX_PLAYER_NAME_LENGTH} characters`
+            };
+        }
+
+        // Validate name content - allow alphanumeric, spaces, and common special chars
+        if (!/^[\p{L}\p{N}\s\-_'.!?]+$/u.test(trimmedName)) {
+            return { success: false, error: 'Name contains invalid characters' };
+        }
+
+        // Check if game exists
+        if (!game) {
+            return { success: false, error: 'Game not found' };
+        }
+
+        // Check if game is still in lobby
+        if (game.gameState !== 'lobby') {
+            return { success: false, error: 'Cannot change name after game has started' };
+        }
+
+        // Get current player data from registry
+        const playerData = this.players.get(socketId);
+        if (!playerData) {
+            return { success: false, error: 'Player not found' };
+        }
+
+        const oldName = playerData.name;
+
+        // Check if name is the same
+        if (oldName === trimmedName) {
+            return { success: true, oldName, newName: trimmedName };
+        }
+
+        // Check for duplicate names in the same game
+        const duplicatePlayer = Array.from(game.players.values()).find(
+            p => p.name.toLowerCase() === trimmedName.toLowerCase() && p.id !== socketId
+        );
+        if (duplicatePlayer) {
+            return { success: false, error: 'Name is already taken' };
+        }
+
+        // Update player name in game's players Map
+        const gamePlayer = game.players.get(socketId);
+        if (gamePlayer) {
+            gamePlayer.name = trimmedName;
+        }
+
+        // Update in global player registry
+        playerData.name = trimmedName;
+
+        // Get updated player list
+        const currentPlayers = Array.from(game.players.values()).map(p => ({
+            id: p.id,
+            name: p.name
+        }));
+
+        // Emit success to the player who changed their name
+        socket.emit('name-changed', {
+            success: true,
+            oldName: oldName,
+            newName: trimmedName
+        });
+
+        // Broadcast updated player list to all players in the game
+        io.to(`game-${playerData.gamePin}`).emit('player-list-update', {
+            players: currentPlayers
+        });
+
+        this.logger.info(`Player changed name from "${oldName}" to "${trimmedName}" in game ${playerData.gamePin}`);
+
+        return { success: true, oldName, newName: trimmedName };
+    }
+
+    /**
    * Get player data by socket ID
    * @param {string} socketId - Socket ID
    * @returns {Object|undefined} Player data or undefined

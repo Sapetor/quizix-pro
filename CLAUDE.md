@@ -87,6 +87,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `public/js/utils/translation-manager.js` - i18n with 9 languages
 - `public/js/utils/math-renderer.js` - LaTeX/MathJax rendering
 - `public/js/utils/image-path-resolver.js` - **Centralized image path handling for Kubernetes deployments**
+- `public/js/utils/api-helper.js` - **Centralized API URL handling for Kubernetes path-based routing** (`getApiUrl`, `fetchAPI`, `fetchAPIJSON`)
 - `public/js/utils/results-viewer.js` - Results viewing interface
 - `public/js/utils/simple-results-downloader.js` - CSV/JSON export
 - `public/js/utils/mobile-carousel.js` - Mobile quickstart carousel (6s intervals)
@@ -153,6 +154,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 10. **Test mobile carousels** - auto-play, pause/resume, gesture handling must work correctly
 11. **Use ImagePathResolver for all image paths** - Never manually construct image paths; always use `imagePathResolver.toStoragePath()` for saving and `imagePathResolver.toDisplayPath()` for display
 12. **Use theme-specific selectors for mobile CSS overrides** - Dark mode rules use `:not([data-theme="light"])` with `!important`, so mobile overrides must match this specificity pattern
+13. **Use APIHelper for all API calls** - Never hardcode API paths like `/api/...`; always use `APIHelper.getApiUrl('api/...')` for K8s path-based routing compatibility
 
 **Best Practices:**
 - Keep functions focused on single responsibilities
@@ -210,6 +212,31 @@ imageElement.src = absoluteUrl; // Display: http://host/quizmaster/uploads/file.
     }
 }
 ```
+
+**API URL Pattern (K8s Compatibility):**
+```javascript
+import { APIHelper } from '../utils/api-helper.js';
+
+// CORRECT - Uses APIHelper for K8s path-based routing
+const response = await fetch(APIHelper.getApiUrl('api/quiz/filename.json'));
+// In K8s: https://host/quizmaster/api/quiz/filename.json
+// Local:  https://host/api/quiz/filename.json
+
+// WRONG - Hardcoded path breaks K8s deployments
+const response = await fetch('/api/quiz/filename.json');
+// Always: https://host/api/quiz/filename.json (missing /quizmaster/ prefix)
+
+// APIHelper methods:
+APIHelper.getApiUrl('api/endpoint')     // Returns full URL with base path
+APIHelper.getBaseUrl()                   // Returns base URL from <base href> tag
+APIHelper.fetchAPI(endpoint, options)    // fetch() wrapper with logging
+APIHelper.fetchAPIJSON(endpoint, options) // fetch() + JSON parsing
+```
+
+**IMPORTANT:** All `fetch()` calls to our server's API endpoints MUST use `APIHelper.getApiUrl()`. The only exceptions are:
+- External APIs (Ollama, OpenAI, HuggingFace) - use their direct URLs
+- The `APIHelper` class itself
+- Fallback connectivity checks using `window.location.origin`
 
 ## Adding New Question Types
 

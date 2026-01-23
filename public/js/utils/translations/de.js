@@ -225,7 +225,14 @@ export default {
     question_number: 'Fragennummer',
     leaderboard_title: 'Bestenliste',
     cancel: 'Abbrechen',
+    save: 'Speichern',
+    edit: 'Bearbeiten',
     close: 'Schließen',
+
+    // Player name change
+    name_changed_success: 'Name aktualisiert!',
+    name_invalid_characters: 'Der Name enthält ungültige Zeichen',
+    name_is_required: 'Name ist erforderlich',
     bottom: 'Unten',
     top: 'Oben',
     normal: 'Normal',

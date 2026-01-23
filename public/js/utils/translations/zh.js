@@ -216,7 +216,14 @@ export default {
     question_number: '问题编号',
     leaderboard_title: '排行榜',
     cancel: '取消',
+    save: '保存',
+    edit: '编辑',
     close: '关闭',
+
+    // Player name change
+    name_changed_success: '名称已更新！',
+    name_invalid_characters: '名称包含无效字符',
+    name_is_required: '名称为必填项',
     bottom: '底部',
     top: '顶部',
     normal: '正常',

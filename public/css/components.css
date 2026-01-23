@@ -1907,8 +1907,109 @@ button:disabled:focus-visible {
     font-size: calc(1.4rem * var(--global-font-scale));
     font-weight: 500;
     color: var(--color-success-500);
-    margin: 0 0 40px 0;
+    margin: 0;
     opacity: 0.9;
+}
+
+/* === PLAYER NAME EDIT SECTION === */
+
+.player-name-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.player-name-section.hidden {
+    display: none;
+}
+
+/* Edit button - small, subtle */
+.edit-name-btn {
+    padding: 6px 12px !important;
+    font-size: 0.85rem !important;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.edit-name-btn:hover {
+    opacity: 1;
+}
+
+/* Edit input field */
+.edit-name-input {
+    width: 200px;
+    max-width: 100%;
+    padding: 10px 14px;
+    font-size: 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-small);
+    background: var(--glass-light);
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.edit-name-input:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Edit action buttons */
+.edit-name-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-sm {
+    padding: 8px 16px !important;
+    font-size: 0.9rem !important;
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .edit-name-input {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #1e293b;
+}
+
+[data-theme="light"] .edit-name-input:focus {
+    border-color: var(--color-primary-500);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .player-name-section {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .edit-name-input {
+        width: 100%;
+        max-width: 280px;
+        min-height: 44px;  /* Touch-friendly height */
+        font-size: 1rem;
+    }
+
+    .edit-name-actions {
+        width: 100%;
+        max-width: 280px;
+        justify-content: center;
+    }
+
+    /* Touch-friendly button sizes on mobile */
+    .player-name-section .btn-sm {
+        min-height: 44px !important;
+        min-width: 80px !important;
+        padding: 12px 20px !important;
+    }
+
+    .edit-name-btn {
+        min-height: 44px !important;
+        padding: 10px 16px !important;
+    }
 }
 
 /* Modern Loading Animation */

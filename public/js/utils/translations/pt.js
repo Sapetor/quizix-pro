@@ -222,7 +222,14 @@ export default {
     question_number: 'Número da Pergunta',
     leaderboard_title: 'Classificação',
     cancel: 'Cancelar',
+    save: 'Salvar',
+    edit: 'Editar',
     close: 'Fechar',
+
+    // Player name change
+    name_changed_success: 'Nome atualizado!',
+    name_invalid_characters: 'O nome contém caracteres inválidos',
+    name_is_required: 'O nome é obrigatório',
     bottom: 'Inferior',
     top: 'Superior',
     normal: 'Normal',

@@ -12,6 +12,7 @@
  */
 
 import { logger } from '../core/config.js';
+import { APIHelper } from '../utils/api-helper.js';
 
 const DB_NAME = 'quizix-offline';
 const DB_VERSION = 1;
@@ -355,7 +356,7 @@ class OfflineStorageService {
     async processQueueItem(item) {
         switch (item.action) {
             case 'save-quiz':
-                const response = await fetch('/api/save-quiz', {
+                const response = await fetch(APIHelper.getApiUrl('api/save-quiz'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

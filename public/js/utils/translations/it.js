@@ -216,7 +216,14 @@ export default {
     question_number: 'Numero Domanda',
     leaderboard_title: 'Classifica',
     cancel: 'Annulla',
+    save: 'Salva',
+    edit: 'Modifica',
     close: 'Chiudi',
+
+    // Player name change
+    name_changed_success: 'Nome aggiornato!',
+    name_invalid_characters: 'Il nome contiene caratteri non validi',
+    name_is_required: 'Il nome è obbligatorio',
     bottom: 'Basso',
     top: 'Alto',
     normal: 'Normale',

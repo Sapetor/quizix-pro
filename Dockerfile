@@ -3,7 +3,7 @@
 FROM node:18-alpine AS base
 
 # Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init git
 
 # Set working directory
 WORKDIR /app
@@ -11,11 +11,18 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Stage 2: Production dependencies
+# Stage 2: Build stage (CSS bundling + cache busting)
+FROM base AS builder
+RUN npm ci
+COPY . .
+# Run production build: CSS bundling + cache busting
+RUN npm run build:prod
+
+# Stage 3: Production dependencies only
 FROM base AS production-deps
 RUN npm ci --only=production
 
-# Stage 3: Final production image
+# Stage 4: Final production image
 FROM node:18-alpine AS production
 
 # Install dumb-init
@@ -30,10 +37,10 @@ WORKDIR /app
 # Copy dependencies from production-deps stage
 COPY --from=production-deps --chown=nodejs:nodejs /app/node_modules ./node_modules
 
-# Copy application code
-COPY --chown=nodejs:nodejs server.js ./
-COPY --chown=nodejs:nodejs public ./public/
-COPY --chown=nodejs:nodejs services ./services/
+# Copy application code from builder (with cache-busted versions)
+COPY --from=builder --chown=nodejs:nodejs /app/server.js ./
+COPY --from=builder --chown=nodejs:nodejs /app/public ./public/
+COPY --from=builder --chown=nodejs:nodejs /app/services ./services/
 
 # Create directories for persistent data with proper permissions
 RUN mkdir -p quizzes results public/uploads && \

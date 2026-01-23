@@ -8,13 +8,13 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Preload critical CSS -->
-    <link rel="preload" href="css/main.bundle.css?v=11.7" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=11.7"></noscript>
+    <link rel="preload" href="css/main.bundle.css?v=12" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=12"></noscript>
     
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=12" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=12" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=12" as="script" crossorigin="anonymous">
     
     <!-- Optimized font loading for mobile performance -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -1278,8 +1278,30 @@
         <div id="player-lobby" class="screen">
             <div class="player-lobby-container">
                 <h2 data-translate="waiting_for_game">Waiting for game to start...</h2>
-                <p id="player-info" data-translate="you_are_in">You're in!</p>
-                
+
+                <!-- Player Name Display (default state) -->
+                <div id="player-name-display" class="player-name-section">
+                    <p id="player-info" data-translate="you_are_in">You're in!</p>
+                    <button id="edit-name-btn" class="btn secondary btn-sm edit-name-btn" title="Edit your name">
+                        <span data-translate="edit">Edit</span>
+                    </button>
+                </div>
+
+                <!-- Player Name Edit (hidden by default) -->
+                <div id="player-name-edit" class="player-name-section hidden">
+                    <input type="text"
+                           id="edit-name-input"
+                           class="input-field edit-name-input"
+                           maxlength="20"
+                           placeholder="Your Name"
+                           data-translate-placeholder="your_name"
+                           autocomplete="nickname">
+                    <div class="edit-name-actions">
+                        <button id="save-name-btn" class="btn primary btn-sm" data-translate="save">Save</button>
+                        <button id="cancel-name-btn" class="btn secondary btn-sm" data-translate="cancel">Cancel</button>
+                    </div>
+                </div>
+
                 <div class="lobby-info" id="lobby-info" style="display: none;">
                     <div class="lobby-detail">
                         <span class="lobby-detail-label">
@@ -1853,7 +1875,7 @@
             onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
     </script>
     <!-- Modular ES6 Structure -->
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=12"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         if ('serviceWorker' in navigator) {
@@ -1861,7 +1883,9 @@
                 // Use base path for Kubernetes/cloud deployments
                 const basePath = document.querySelector('base')?.getAttribute('href') || '/';
                 const swPath = basePath + 'sw.js';
-                navigator.serviceWorker.register(swPath, { scope: basePath })
+                // updateViaCache: 'none' forces the browser to always check the network for sw.js updates
+                // This bypasses HTTP cache and ensures new deployments are detected immediately
+                navigator.serviceWorker.register(swPath, { scope: basePath, updateViaCache: 'none' })
                     .then((registration) => {
                         console.log('[App] Service Worker registered with scope:', registration.scope);
 

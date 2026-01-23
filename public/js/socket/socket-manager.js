@@ -136,6 +136,28 @@ export class SocketManager {
             this.uiManager.showScreen('player-lobby');
         });
 
+        // Handle player name change response
+        this.socket.on('name-changed', (data) => {
+            logger.debug('Name changed:', data);
+            if (data.success) {
+                // Update local state
+                this.currentPlayerName = data.newName;
+                this.gameManager.setPlayerInfo(data.newName, false);
+
+                // Update welcome message
+                this.updatePlayerWelcomeMessage(data.newName);
+
+                // Hide edit mode, show display mode
+                this.hideNameEditMode();
+
+                // Show success toast
+                if (window.toastNotifications) {
+                    const message = translationManager.getTranslationSync('name_changed_success') || 'Name updated!';
+                    window.toastNotifications.show(message, 'success', 2000);
+                }
+            }
+        });
+
         // Game flow events
         this.socket.on('game-started', (data) => {
             logger.debug('Game started:', data);
@@ -417,6 +439,15 @@ export class SocketManager {
     }
 
     /**
+     * Request to change player name while in lobby
+     * @param {string} newName - The new player name
+     */
+    changePlayerName(newName) {
+        logger.debug('Requesting name change to:', newName);
+        this.socket.emit('player-change-name', { newName });
+    }
+
+    /**
      * Update player lobby display with game information
      */
     updatePlayerLobbyDisplay(gamePin, players) {
@@ -466,6 +497,36 @@ export class SocketManager {
                 logger.debug('Used fallback player welcome message:', playerName);
             }
         }
+    }
+
+    /**
+     * Show the name edit UI and hide display mode
+     */
+    showNameEditMode() {
+        const displaySection = this._getElement('player-name-display');
+        const editSection = this._getElement('player-name-edit');
+        const editInput = this._getElement('edit-name-input');
+
+        if (displaySection) displaySection.classList.add('hidden');
+        if (editSection) editSection.classList.remove('hidden');
+
+        // Pre-fill with current name and focus
+        if (editInput && this.currentPlayerName) {
+            editInput.value = this.currentPlayerName;
+            editInput.focus();
+            editInput.select();
+        }
+    }
+
+    /**
+     * Hide the name edit UI and show display mode
+     */
+    hideNameEditMode() {
+        const displaySection = this._getElement('player-name-display');
+        const editSection = this._getElement('player-name-edit');
+
+        if (displaySection) displaySection.classList.remove('hidden');
+        if (editSection) editSection.classList.add('hidden');
     }
 
     /**

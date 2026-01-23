@@ -262,6 +262,26 @@ export class QuizGame {
         bindElement('browse-games', 'click', () => this.uiManager.showGameBrowser());
         bindElement('refresh-games', 'click', () => this.uiManager.refreshActiveGames());
         bindElement('back-to-join', 'click', () => this.uiManager.showScreen('join-screen'));
+
+        // Player lobby name edit buttons
+        bindElement('edit-name-btn', 'click', () => this.socketManager.showNameEditMode());
+        bindElement('save-name-btn', 'click', () => this.submitNameChange());
+        bindElement('cancel-name-btn', 'click', () => this.socketManager.hideNameEditMode());
+
+        // Handle keyboard shortcuts in name edit input
+        const editNameInput = document.getElementById('edit-name-input');
+        if (editNameInput) {
+            editNameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.submitNameChange();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.socketManager.hideNameEditMode();
+                }
+            });
+        }
+
         bindElement('return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
         bindElement('mobile-return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
         bindElement('desktop-return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
@@ -559,6 +579,35 @@ export class QuizGame {
         }
 
         this.socketManager.joinGame(pin, name);
+    }
+
+    /**
+     * Submit player name change from lobby
+     */
+    submitNameChange() {
+        const input = document.getElementById('edit-name-input');
+        if (!input) return;
+
+        const newName = input.value.trim();
+
+        // Validate name
+        if (!newName || newName.length === 0) {
+            showErrorAlert('name_is_required');
+            return;
+        }
+
+        if (newName.length > LIMITS.MAX_PLAYER_NAME_LENGTH) {
+            showErrorAlert('name_max_twenty_chars');
+            return;
+        }
+
+        // Validate name content (Unicode-aware)
+        if (!/^[\p{L}\p{N}\s\-_'.!?]+$/u.test(newName)) {
+            showErrorAlert('name_invalid_characters');
+            return;
+        }
+
+        this.socketManager.changePlayerName(newName);
     }
 
     /**

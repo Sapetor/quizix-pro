@@ -225,7 +225,14 @@ export default {
     question_number: 'Número de Pregunta',
     leaderboard_title: 'Tabla de Clasificación',
     cancel: 'Cancelar',
+    save: 'Guardar',
+    edit: 'Editar',
     close: 'Cerrar',
+
+    // Player name change
+    name_changed_success: '¡Nombre actualizado!',
+    name_invalid_characters: 'El nombre contiene caracteres no válidos',
+    name_is_required: 'El nombre es obligatorio',
     bottom: 'Abajo',
     top: 'Arriba',
     normal: 'Normal',

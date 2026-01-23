@@ -287,6 +287,13 @@ app.use(express.static('public', {
             res.setHeader('Vary', 'Accept-Encoding, User-Agent');
         }
 
+        // CRITICAL: Service worker must always be revalidated to detect updates
+        // Per Service Worker spec, sw.js should have max-age=0 or no-cache
+        if (path.endsWith('sw.js')) {
+            res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+            res.setHeader('Vary', 'Accept-Encoding');
+        }
+
         // Enable compression for text-based files
         if (path.match(/\.(js|css|html|json|svg|txt)$/i)) {
             res.setHeader('Vary', 'Accept-Encoding, User-Agent');
@@ -1199,6 +1206,41 @@ io.on('connection', (socket) => {
         } catch (error) {
             logger.error('Error in player-join handler:', error);
             socket.emit('error', { message: 'Failed to join game' });
+        }
+    });
+
+    socket.on('player-change-name', (data) => {
+        if (!checkRateLimit(socket.id, 'player-change-name', 5, socket)) return;
+        try {
+            if (!data || typeof data !== 'object') {
+                socket.emit('error', { message: 'Invalid request data' });
+                return;
+            }
+
+            const { newName } = data;
+            const playerData = playerManagementService.getPlayer(socket.id);
+
+            if (!playerData) {
+                socket.emit('error', { message: 'Player not found' });
+                return;
+            }
+
+            const game = gameSessionService.getGame(playerData.gamePin);
+
+            const result = playerManagementService.handlePlayerNameChange(
+                socket.id,
+                newName,
+                game,
+                socket,
+                io
+            );
+
+            if (!result.success) {
+                socket.emit('error', { message: result.error });
+            }
+        } catch (error) {
+            logger.error('Error in player-change-name handler:', error);
+            socket.emit('error', { message: 'Failed to change name' });
         }
     });
 
