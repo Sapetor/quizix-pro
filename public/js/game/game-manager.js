@@ -836,6 +836,7 @@ export class GameManager {
         const container = document.getElementById('answer-statistics');
         if (container) {
             container.classList.remove('hidden');
+            container.style.display = 'block';
         }
     }
 
@@ -864,6 +865,7 @@ export class GameManager {
         // Show statistics container
         if (statisticsContainer) {
             statisticsContainer.classList.remove('hidden');
+            statisticsContainer.style.display = 'block';
 
             // Update response counts
             dom.setContent('responses-count', data.answeredPlayers || 0);

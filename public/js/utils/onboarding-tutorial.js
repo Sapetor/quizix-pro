@@ -432,6 +432,11 @@ class OnboardingTutorial {
         const targetElement = this.getCurrentTargetElement();
         if (!targetElement) return;
 
+        // Check if onboarding was cleaned up during async operations
+        if (!this.spotlight || !this.tooltip || !this.isActive) {
+            return;
+        }
+
         const step = this.steps[this.currentStep];
         const rect = targetElement.getBoundingClientRect();
         const padding = 8;
