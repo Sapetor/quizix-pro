@@ -801,17 +801,14 @@ export class PreviewManager {
         container.id = 'mobile-preview-container';
         container.className = 'mobile-preview-container mobile-only';
 
-        // Redesigned layout with bottom navigation for better mobile UX
         container.innerHTML = `
             <div class="quiz-preview-section mobile-preview-modal">
-                <!-- Simplified Mobile Header -->
                 <div class="preview-modal-header mobile-header">
                     <div class="preview-title-section">
                         <h3><span data-translate="live_preview">Live Preview</span></h3>
                     </div>
                 </div>
-                
-                <!-- Preview Content Area - Now takes most of the screen -->
+
                 <div id="mobile-preview-viewport" class="preview-viewport mobile-viewport">
                     <div id="mobile-preview-content" class="preview-content mobile-content">
                         <div class="player-question-area mobile-question-area">
@@ -820,27 +817,20 @@ export class PreviewManager {
                             </div>
                             <div id="mobile-preview-question-text" class="preview-question-text mobile-question" data-translate="no_questions_to_preview">No questions to preview</div>
                         </div>
-                        
+
                         <div id="mobile-preview-answer-area" class="preview-answer-area mobile-answers">
-                            <!-- Answer content will be inserted here -->
                             <div class="preview-answer-type preview-multiple-choice" style="display: none;">
-                                <div class="preview-options mobile-options" id="mobile-preview-options">
-                                    <!-- Options will be inserted here -->
-                                </div>
+                                <div class="preview-options mobile-options" id="mobile-preview-options"></div>
                             </div>
-                            
+
                             <div class="preview-answer-type preview-multiple-correct" style="display: none;">
-                                <div class="preview-checkbox-options mobile-checkbox-options" id="mobile-preview-checkbox-options">
-                                    <!-- Checkbox options will be inserted here -->
-                                </div>
+                                <div class="preview-checkbox-options mobile-checkbox-options" id="mobile-preview-checkbox-options"></div>
                             </div>
-                            
+
                             <div class="preview-answer-type preview-true-false" style="display: none;">
-                                <div class="preview-tf-options mobile-tf-options" id="mobile-preview-tf-options">
-                                    <!-- True/False options will be inserted here -->
-                                </div>
+                                <div class="preview-tf-options mobile-tf-options" id="mobile-preview-tf-options"></div>
                             </div>
-                            
+
                             <div class="preview-answer-type preview-numeric" style="display: none;">
                                 <div class="preview-numeric-input mobile-numeric" id="mobile-preview-numeric">
                                     <input type="number" placeholder="Enter your answer" readonly>
@@ -848,15 +838,12 @@ export class PreviewManager {
                             </div>
 
                             <div class="preview-answer-type preview-ordering" style="display: none;">
-                                <div class="preview-ordering-display mobile-ordering" id="mobile-preview-ordering">
-                                    <!-- Ordering options will be inserted here -->
-                                </div>
+                                <div class="preview-ordering-display mobile-ordering" id="mobile-preview-ordering"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Bottom Navigation Bar - Easy thumb access -->
+
                 <div class="mobile-bottom-nav">
                     <button id="mobile-preview-prev" class="nav-btn mobile-nav-btn mobile-nav-prev">◀</button>
                     <button id="mobile-preview-close" class="close-btn mobile-close-btn" data-translate="close">Close</button>
@@ -865,13 +852,10 @@ export class PreviewManager {
             </div>
         `;
 
-        // Always append directly to body for true full-screen experience
         document.body.appendChild(container);
 
-        // Update translations for dynamically created elements
         setTimeout(() => {
             try {
-                // Translate the mobile preview container specifically
                 translationManager.translateContainer(container);
                 logger.debug('Mobile preview translations updated');
             } catch (error) {

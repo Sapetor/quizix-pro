@@ -59,7 +59,7 @@ export class PreviewRenderer {
     }
 
     /**
-     * Render text with LaTeX support and enhanced F5 handling
+     * Render text with LaTeX support
      */
     renderSplitTextWithLatex(element, text) {
         if (!element || !text) {
@@ -67,54 +67,26 @@ export class PreviewRenderer {
             return;
         }
 
-        // Clear previous content
-        element.innerHTML = '';
-        element.style.opacity = '0';
-        element.style.display = 'block';
-
-        // Format code blocks first
         const formattedContent = this.formatCodeBlocks(text);
-
-        // Set content first
         element.innerHTML = formattedContent;
-        element.style.opacity = '0';
         element.style.display = 'block';
-
-        // Check for LaTeX content
-        const hasLatex = this.mathJaxService.hasLatex(formattedContent);
-
-        // Always show content immediately - don't wait for MathJax
         element.style.opacity = '1';
 
+        const hasLatex = this.mathJaxService.hasLatex(formattedContent);
+
         if (hasLatex) {
-            logger.debug('LaTeX content detected in preview, rendering with enhanced MathJax service');
+            logger.debug('LaTeX content detected in preview');
             element.classList.add('tex2jax_process');
 
-            // Use enhanced MathJax service with queue and retry logic (non-blocking)
             this.mathJaxService.render([element]).then(() => {
-                logger.debug('Preview MathJax rendering completed successfully');
-                // Add visual feedback that LaTeX is rendered
+                logger.debug('Preview MathJax rendering completed');
                 element.classList.add('mathjax-rendered');
             }).catch(error => {
-                logger.warn('Preview MathJax rendering failed, content still visible:', error);
-                // Add class to indicate LaTeX failed but content is visible
+                logger.warn('Preview MathJax rendering failed:', error);
                 element.classList.add('mathjax-failed');
             });
-
         } else {
-            logger.debug('Plain text preview rendering completed');
             element.classList.add('plain-text-rendered');
-        }
-    }
-
-    /**
-     * Show fallback text when MathJax fails
-     */
-    showSplitFallbackText(element) {
-        if (element) {
-            element.innerHTML = element.innerHTML.replace(/\$\$([^$]+)\$\$/g, '[$1]').replace(/\$([^$]+)\$/g, '[$1]');
-            element.style.opacity = '1';
-            logger.debug('Fallback text displayed');
         }
     }
 
@@ -516,12 +488,20 @@ export class PreviewRenderer {
     }
 
     /**
-     * Render ordering preview
+     * Render ordering preview (desktop split view)
      */
-    renderSplitOrderingPreview(options, _correctOrder) {
-        const container = document.getElementById('preview-ordering-split');
+    renderSplitOrderingPreview(options, correctOrder) {
+        this.renderOrderingPreview('preview-ordering-split', options, correctOrder, 'split');
+    }
+
+    /**
+     * Render ordering preview into a target container
+     * Shared implementation for both desktop and mobile views
+     */
+    renderOrderingPreview(containerId, options, _correctOrder, context = 'preview') {
+        const container = document.getElementById(containerId);
         if (!container) {
-            logger.warn('Preview ordering container not found');
+            logger.warn(`${context} ordering container not found: ${containerId}`);
             return;
         }
 
@@ -530,44 +510,43 @@ export class PreviewRenderer {
             return;
         }
 
-        // Check if any options contain LaTeX or code
         const hasLatexContent = options.some(option => this.hasLatexContent(option));
 
-        let html = `
-            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
-            <div class="ordering-display">
-        `;
-
-        options.forEach((option, index) => {
+        const itemsHtml = options.map((option, index) => {
             const bgColor = COLORS.ORDERING_ITEM_COLORS[index % COLORS.ORDERING_ITEM_COLORS.length];
-            // Format code blocks in options
             const formattedContent = this.formatCodeBlocks(option);
-            html += `
+            return `
                 <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${index + 1}</div>
                     <div class="ordering-item-content">${formattedContent}</div>
                 </div>
             `;
-        });
+        }).join('');
 
-        html += '</div>';
-        container.innerHTML = html;
+        container.innerHTML = `
+            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
+            <div class="ordering-display">${itemsHtml}</div>
+        `;
 
-        // Translate the instruction
         translationManager.translateContainer(container);
 
-        // Render LaTeX if any options contain math expressions
         if (hasLatexContent) {
-            const displayContainer = container.querySelector('.ordering-display');
-            if (displayContainer) {
-                displayContainer.classList.add('tex2jax_process');
-                this.mathJaxService.render([displayContainer]).then(() => {
-                    logger.debug('Ordering preview MathJax rendering completed');
-                }).catch(error => {
-                    logger.warn('Ordering preview MathJax rendering failed:', error);
-                });
-            }
+            this.renderLatexInContainer(container.querySelector('.ordering-display'), context);
         }
+    }
+
+    /**
+     * Render LaTeX content in a container element
+     */
+    renderLatexInContainer(displayContainer, context = 'preview') {
+        if (!displayContainer) return;
+
+        displayContainer.classList.add('tex2jax_process');
+        this.mathJaxService.render([displayContainer]).then(() => {
+            logger.debug(`${context} MathJax rendering completed`);
+        }).catch(error => {
+            logger.warn(`${context} MathJax rendering failed:`, error);
+        });
     }
 
     /**
@@ -625,7 +604,6 @@ export class PreviewRenderer {
         optionDiv.style.opacity = '1';
         container.appendChild(optionDiv);
     }
-
 
     /**
      * Format code blocks in text (delegates to shared utility)
@@ -976,60 +954,15 @@ export class PreviewRenderer {
     /**
      * Render mobile ordering preview
      */
-    renderMobileOrderingPreview(options, _correctOrder) {
+    renderMobileOrderingPreview(options, correctOrder) {
         const container = document.querySelector('#mobile-preview-answer-area .preview-ordering');
-        const orderingContainer = document.getElementById('mobile-preview-ordering');
-
-        if (!container || !orderingContainer) {
-            logger.warn('Mobile ordering preview containers not found');
+        if (!container) {
+            logger.warn('Mobile ordering preview container not found');
             return;
         }
 
         container.style.display = 'block';
-
-        if (!options || options.length === 0) {
-            orderingContainer.innerHTML = '<p>No ordering options available</p>';
-            return;
-        }
-
-        // Check if any options contain LaTeX or code
-        const hasLatexContent = options.some(option => this.hasLatexContent(option));
-
-        let html = `
-            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
-            <div class="ordering-display">
-        `;
-
-        options.forEach((option, index) => {
-            const bgColor = COLORS.ORDERING_ITEM_COLORS[index % COLORS.ORDERING_ITEM_COLORS.length];
-            // Format code blocks in options
-            const formattedContent = this.formatCodeBlocks(option);
-            html += `
-                <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
-                    <div class="ordering-item-number">${index + 1}</div>
-                    <div class="ordering-item-content">${formattedContent}</div>
-                </div>
-            `;
-        });
-
-        html += '</div>';
-        orderingContainer.innerHTML = html;
-
-        // Translate the instruction
-        translationManager.translateContainer(orderingContainer);
-
-        // Render LaTeX if any options contain math expressions
-        if (hasLatexContent) {
-            const displayContainer = orderingContainer.querySelector('.ordering-display');
-            if (displayContainer) {
-                displayContainer.classList.add('tex2jax_process');
-                this.mathJaxService.render([displayContainer]).then(() => {
-                    logger.debug('Mobile ordering preview MathJax rendering completed');
-                }).catch(error => {
-                    logger.warn('Mobile ordering preview MathJax rendering failed:', error);
-                });
-            }
-        }
+        this.renderOrderingPreview('mobile-preview-ordering', options, correctOrder, 'mobile');
     }
 
     /**
