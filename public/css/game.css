@@ -956,6 +956,50 @@
     margin-top: 8px;
 }
 
+/* Host Score Breakdown Display */
+.host-score-breakdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-top: 0.5rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.15));
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    color: var(--text-color, #fff);
+}
+
+.host-score-breakdown .breakdown-label {
+    font-weight: 600;
+    color: var(--accent-color, #8b5cf6);
+}
+
+.host-score-breakdown .breakdown-content {
+    font-family: var(--font-mono, monospace);
+    color: var(--text-secondary, #9ca3af);
+}
+
+[data-theme="light"] .host-score-breakdown {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+    border-color: rgba(139, 92, 246, 0.25);
+    color: #1f2937;
+}
+
+[data-theme="light"] .host-score-breakdown .breakdown-content {
+    color: #4b5563;
+}
+
+@media (max-width: 768px) {
+    .host-score-breakdown {
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+}
+
 /* === TRUE/FALSE OPTIONS === */
 
 /* Host True/False Options */

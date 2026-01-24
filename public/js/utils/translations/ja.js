@@ -519,5 +519,20 @@ export default {
     extend_time_tooltip: 'タイマーに10秒追加',
     double_points: '2倍ポイント',
     double_points_tooltip: '次の正解でポイントを2倍にする',
-    power_up_used: 'パワーアップを使用しました！'
+    power_up_used: 'パワーアップを使用しました！',
+
+    // Scoring Settings
+    scoring_settings: '📊 スコア設定',
+    enable_time_bonus: 'タイムボーナスを有効にする（速い＝高得点）',
+    show_score_breakdown: 'スコア内訳を表示（ホスト画面）',
+    difficulty_multipliers: '難易度倍率:',
+    scoring: 'スコア:',
+    base: '基本',
+    time_bonus: 'タイムボーナス',
+    enabled: 'オン',
+    disabled: 'オフ',
+    time_bonus_threshold: '最大ポイントしきい値:',
+    time_bonus_threshold_hint: '(0 = 無効、しきい値内の回答は最大ボーナス)',
+    seconds_short: '秒',
+    max_within: '以内で最大'
 };

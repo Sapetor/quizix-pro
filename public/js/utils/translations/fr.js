@@ -547,5 +547,20 @@ export default {
     extend_time_tooltip: 'Ajouter 10 secondes au chronomètre',
     double_points: '2× Points',
     double_points_tooltip: 'Doubler vos points sur la prochaine bonne réponse',
-    power_up_used: 'Power-up utilisé !'
+    power_up_used: 'Power-up utilisé !',
+
+    // Scoring Settings
+    scoring_settings: '📊 Paramètres de Score',
+    enable_time_bonus: 'Activer le bonus de temps (plus rapide = plus de points)',
+    show_score_breakdown: 'Afficher le détail du score (vue hôte)',
+    difficulty_multipliers: 'Multiplicateurs de Difficulté :',
+    scoring: 'Score :',
+    base: 'Base',
+    time_bonus: 'Bonus de temps',
+    enabled: 'ON',
+    disabled: 'OFF',
+    time_bonus_threshold: 'Seuil de points max :',
+    time_bonus_threshold_hint: '(0 = désactivé, réponses dans le seuil obtiennent bonus max)',
+    seconds_short: 'sec',
+    max_within: 'max en'
 };

@@ -777,7 +777,49 @@
                                 <input type="checkbox" id="enable-power-ups" data-translate-title="enable_power_ups_tooltip"> <strong>⚡ <span data-translate="enable_power_ups">Enable Power-Ups (50-50, +10s, 2x Points)</span></strong>
                             </label>
                         </div>
-                        
+
+                        <!-- Scoring Settings (collapsible) -->
+                        <details class="scoring-settings-section">
+                            <summary class="scoring-settings-summary">
+                                <span data-translate="scoring_settings">📊 Scoring Settings</span>
+                            </summary>
+                            <div class="scoring-options">
+                                <label class="scoring-option">
+                                    <input type="checkbox" id="time-bonus-enabled" checked>
+                                    <span data-translate="enable_time_bonus">Enable time bonus (faster = more points)</span>
+                                </label>
+                                <div class="time-bonus-threshold-container">
+                                    <label class="threshold-label">
+                                        <span data-translate="time_bonus_threshold">Max points threshold:</span>
+                                        <input type="number" id="time-bonus-threshold" value="0" min="0" max="30" step="1">
+                                        <span class="threshold-unit" data-translate="seconds_short">sec</span>
+                                    </label>
+                                    <span class="threshold-hint" data-translate="time_bonus_threshold_hint">(0 = disabled, answers within threshold get max bonus)</span>
+                                </div>
+                                <label class="scoring-option host-breakdown-option">
+                                    <input type="checkbox" id="show-score-breakdown" checked>
+                                    <span data-translate="show_score_breakdown">Show score breakdown (host view)</span>
+                                </label>
+                                <div class="difficulty-multipliers">
+                                    <span class="multipliers-label" data-translate="difficulty_multipliers">Difficulty Multipliers:</span>
+                                    <div class="multiplier-inputs">
+                                        <label class="multiplier-input">
+                                            <span data-translate="easy">Easy</span>
+                                            <input type="number" id="easy-multiplier" value="1" min="0.5" max="5" step="0.5">
+                                        </label>
+                                        <label class="multiplier-input">
+                                            <span data-translate="medium">Medium</span>
+                                            <input type="number" id="medium-multiplier" value="2" min="0.5" max="5" step="0.5">
+                                        </label>
+                                        <label class="multiplier-input">
+                                            <span data-translate="hard">Hard</span>
+                                            <input type="number" id="hard-multiplier" value="3" min="0.5" max="5" step="0.5">
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+
                         <div class="preview-settings">
                         </div>
                     </div>
@@ -1231,8 +1273,13 @@
                         <div class="response-summary" id="response-summary" aria-live="polite">
                             <span id="responses-count">0</span> <span data-translate="of">of</span> <span id="total-players">0</span> <span data-translate="players_have_answered">players have answered</span>
                         </div>
+                        <!-- Score Breakdown (host-only display) -->
+                        <div class="host-score-breakdown" id="host-score-breakdown" style="display: none;">
+                            <span class="breakdown-label" data-translate="scoring">Scoring:</span>
+                            <span class="breakdown-content" id="breakdown-content"></span>
+                        </div>
                     </div>
-                
+
                 <!-- Use client-style options -->
                 <!-- Moved below statistics for better information hierarchy -->
                 <div id="host-multiple-choice" class="player-answer-type">
@@ -1895,48 +1942,56 @@
 <script type="module" src="js/main.js?v=16"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
+        // Fetch and display app version (always runs, even without service worker support)
+        window.addEventListener('load', () => {
+            // Use base path for Kubernetes/cloud deployments
+            const basePath = document.querySelector('base')?.getAttribute('href') || '/';
+            const swPath = basePath + 'sw.js';
+
+            // Fetch and display app version
+            console.log('[App] Fetching version from:', swPath);
+            fetch(swPath)
+                .then(response => {
+                    console.log('[App] sw.js fetch response:', response.status, response.ok);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(swContent => {
+                    console.log('[App] sw.js content length:', swContent.length);
+                    const versionMatch = swContent.match(/CACHE_VERSION = '([^']+)'/);
+                    console.log('[App] Version match:', versionMatch);
+                    if (versionMatch) {
+                        const version = versionMatch[1];
+                        const versionText = document.getElementById('app-version-text');
+                        if (versionText) {
+                            versionText.textContent = version;
+                            console.log('[App] Version displayed:', version);
+                        }
+                    } else {
+                        console.warn('[App] Could not find CACHE_VERSION in sw.js');
+                        const versionText = document.getElementById('app-version-text');
+                        if (versionText) {
+                            versionText.textContent = 'Unknown';
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('[App] Could not fetch version:', err);
+                    const versionText = document.getElementById('app-version-text');
+                    if (versionText) {
+                        versionText.textContent = 'Error';
+                    }
+                });
+        });
+
+        // Service Worker registration (only if supported)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Use base path for Kubernetes/cloud deployments
                 const basePath = document.querySelector('base')?.getAttribute('href') || '/';
                 const swPath = basePath + 'sw.js';
-
-                // Fetch and display app version
-                console.log('[App] Fetching version from:', swPath);
-                fetch(swPath)
-                    .then(response => {
-                        console.log('[App] sw.js fetch response:', response.status, response.ok);
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                        }
-                        return response.text();
-                    })
-                    .then(swContent => {
-                        console.log('[App] sw.js content length:', swContent.length);
-                        const versionMatch = swContent.match(/CACHE_VERSION = '([^']+)'/);
-                        console.log('[App] Version match:', versionMatch);
-                        if (versionMatch) {
-                            const version = versionMatch[1];
-                            const versionText = document.getElementById('app-version-text');
-                            if (versionText) {
-                                versionText.textContent = version;
-                                console.log('[App] Version displayed:', version);
-                            }
-                        } else {
-                            console.warn('[App] Could not find CACHE_VERSION in sw.js');
-                            const versionText = document.getElementById('app-version-text');
-                            if (versionText) {
-                                versionText.textContent = 'Unknown';
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        console.error('[App] Could not fetch version:', err);
-                        const versionText = document.getElementById('app-version-text');
-                        if (versionText) {
-                            versionText.textContent = 'Error';
-                        }
-                    });
 
                 // updateViaCache: 'none' forces the browser to always check the network for sw.js updates
                 // This bypasses HTTP cache and ensures new deployments are detected immediately

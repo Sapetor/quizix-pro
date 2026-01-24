@@ -47,12 +47,23 @@ export class LocalGameSession {
         /** @type {GamePhase} */
         this.phase = 'lobby';
 
-        // Difficulty multipliers (matches server)
-        this.difficultyMultipliers = {
+        // Scoring configuration (optional, per-game session)
+        // Falls back to server-matching defaults if not provided
+        const scoringConfig = options.scoringConfig || null;
+        this.scoringConfig = scoringConfig;
+
+        // Difficulty multipliers (matches server defaults: easy=1, medium=2, hard=3)
+        this.difficultyMultipliers = scoringConfig?.difficultyMultipliers || {
             'easy': 1,
-            'medium': 1.5,
-            'hard': 2
+            'medium': 2,
+            'hard': 3
         };
+
+        // Time bonus enabled (matches server default: true)
+        this.timeBonusEnabled = scoringConfig?.timeBonusEnabled ?? true;
+
+        // Time bonus threshold in milliseconds (0 = disabled, answers within get max bonus)
+        this.timeBonusThreshold = scoringConfig?.timeBonusThreshold ?? 0;
 
         // Power-ups state
         this.powerUpsEnabled = options.powerUpsEnabled || false;
@@ -204,31 +215,28 @@ export class LocalGameSession {
         const correctAnswer = this.getCorrectAnswer(question);
         const isCorrect = this.scoreAnswer(question.type, answer, correctAnswer, question);
 
-        // Calculate points
-        const points = this.calculatePoints(isCorrect, question, responseTime);
+        // Calculate points (returns object with points and breakdown)
+        const result = this.calculatePoints(isCorrect, question, responseTime);
+        const points = result.points;
 
         // Update score
-        if (typeof isCorrect === 'number') {
-            // Partial credit (ordering)
-            this.playerScore += Math.round(points * isCorrect);
-        } else if (isCorrect) {
-            this.playerScore += points;
-        }
+        this.playerScore += points;
 
-        // Record answer
+        // Record answer with breakdown
         this.playerAnswers.push({
             questionIndex: this.currentQuestionIndex,
             answer,
             isCorrect,
-            points: typeof isCorrect === 'number' ? Math.round(points * isCorrect) : (isCorrect ? points : 0),
-            responseTime
+            points: points,
+            responseTime,
+            breakdown: result.breakdown
         });
 
         // Emit answer submitted event
         this.eventBus.emit('answer-submitted', { answer });
 
-        // Reveal the answer
-        this.revealAnswer(answer, isCorrect, typeof isCorrect === 'number' ? Math.round(points * isCorrect) : (isCorrect ? points : 0));
+        // Reveal the answer with breakdown
+        this.revealAnswer(answer, isCorrect, points, result.breakdown);
     }
 
     /**
@@ -236,8 +244,9 @@ export class LocalGameSession {
      * @param {*} playerAnswer - Player's submitted answer
      * @param {boolean|number} isCorrect - Whether answer was correct (or partial credit)
      * @param {number} points - Points earned
+     * @param {Object} breakdown - Score breakdown object
      */
-    revealAnswer(playerAnswer, isCorrect, points) {
+    revealAnswer(playerAnswer, isCorrect, points, breakdown = null) {
         this.phase = 'revealing';
 
         const question = this.getCurrentQuestion();
@@ -251,7 +260,8 @@ export class LocalGameSession {
             totalScore: this.playerScore,
             correctAnswer,
             playerAnswer,
-            questionIndex: this.currentQuestionIndex
+            questionIndex: this.currentQuestionIndex,
+            breakdown: breakdown
         });
 
         // Emit question end event
@@ -262,6 +272,7 @@ export class LocalGameSession {
             isCorrect,
             points,
             totalScore: this.playerScore,
+            breakdown: breakdown,
             // Single-player leaderboard (just the player)
             leaderboard: [{
                 name: this.options.playerName,
@@ -319,34 +330,72 @@ export class LocalGameSession {
     }
 
     /**
-     * Calculate points for an answer
+     * Calculate points for an answer (matches server formula exactly)
+     * Server formula: basePoints = 100 × difficultyMultiplier, timeBonus = floor((max - time) × multiplier / 10)
      * @param {boolean|number} isCorrect - Whether correct (or partial credit)
      * @param {Object} question - Question data
      * @param {number} responseTime - Response time in ms
-     * @returns {number} Points earned
+     * @returns {Object} Points object with total and breakdown
      */
     calculatePoints(isCorrect, question, responseTime) {
+        const difficultyMultiplier = this.difficultyMultipliers[question.difficulty] || 2;
+        const doublePointsMultiplier = this.getAndConsumeDoublePoints();
+
         if (!isCorrect && typeof isCorrect !== 'number') {
-            // Still consume double points even on wrong answer
-            this.consumeDoublePoints();
-            return 0;
+            // Return 0 points with breakdown for wrong answers
+            return {
+                points: 0,
+                breakdown: {
+                    basePoints: 0,
+                    timeBonus: 0,
+                    difficultyMultiplier: difficultyMultiplier,
+                    doublePointsMultiplier: doublePointsMultiplier
+                }
+            };
         }
 
-        const basePoints = SCORING.BASE_POINTS;
-        const difficultyMultiplier = this.difficultyMultipliers[question.difficulty] || 1;
-
-        // Time bonus: faster answers get more points
+        // Match server formula exactly
         const maxBonusTime = SCORING.MAX_BONUS_TIME;
-        const timeBonus = Math.max(0, maxBonusTime - responseTime) / maxBonusTime;
+
+        // Calculate time bonus with optional threshold (prevents random quick guessing)
+        let timeBonus;
+        if (this.timeBonusThreshold > 0 && responseTime <= this.timeBonusThreshold) {
+            // Within threshold: award maximum time bonus
+            timeBonus = maxBonusTime;
+        } else {
+            // Beyond threshold or no threshold: linear decrease
+            timeBonus = Math.max(0, maxBonusTime - responseTime);
+        }
+
+        // basePoints = 100 * difficultyMultiplier
+        const basePoints = SCORING.BASE_POINTS * difficultyMultiplier;
+
+        // scaledTimeBonus = floor(timeBonus * difficultyMultiplier / 10)
+        // Only apply if time bonus is enabled
+        const scaledTimeBonus = this.timeBonusEnabled
+            ? Math.floor(timeBonus * difficultyMultiplier / 10)
+            : 0;
 
         // Calculate total points
-        let points = Math.round(basePoints * difficultyMultiplier * (1 + timeBonus * 0.5));
+        let points = basePoints + scaledTimeBonus;
+
+        // Handle partial credit for ordering questions
+        if (typeof isCorrect === 'number') {
+            points = Math.floor(points * isCorrect);
+        }
 
         // Apply double points multiplier if active
-        const multiplier = this.getAndConsumeDoublePoints();
-        points = points * multiplier;
+        points = points * doublePointsMultiplier;
 
-        return points;
+        return {
+            points: points,
+            breakdown: {
+                basePoints: basePoints,
+                timeBonus: scaledTimeBonus,
+                difficultyMultiplier: difficultyMultiplier,
+                doublePointsMultiplier: doublePointsMultiplier
+            }
+        };
     }
 
     // ==================== POWER-UP METHODS ====================

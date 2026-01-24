@@ -371,6 +371,16 @@ quizix-pro/
 - **Visual feedback**: Pulse animation for active state, disabled styling when used
 - **Server-side validation**: Prevents double-use in multiplayer mode
 
+**Scoring System:**
+- **📖 See: `/docs/SCORING_SYSTEM.md` for comprehensive documentation**
+- **Transparent**: Host sees score breakdown (base points, time bonus, difficulty)
+- **Configurable**: Per-game session settings (not saved to quiz file)
+- **Formula**: `basePoints = 100 × difficultyMultiplier`, `timeBonus = floor((10s - time) × multiplier / 10)`
+- **Difficulty multipliers**: Easy (1×), Medium (2×), Hard (3×) - customizable
+- **Time bonus toggle**: Enable/disable faster-answer bonus
+- **Host breakdown display**: Shows scoring formula in answer statistics area
+- **Practice mode alignment**: Uses identical formula to multiplayer
+
 ## Testing Infrastructure
 
 **Playwright Tests:**

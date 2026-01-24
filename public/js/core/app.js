@@ -510,6 +510,20 @@ export class QuizGame {
         const sameTimeForAll = document.getElementById('same-time-all')?.checked;
         const questionTime = parseInt(document.getElementById('default-time')?.value) || 30;
         const manualAdvancement = document.getElementById('manual-advancement')?.checked;
+        const powerUpsEnabled = document.getElementById('enable-power-ups')?.checked || false;
+
+        // Get scoring configuration (per-game session, not saved to quiz file)
+        // timeBonusThreshold: convert seconds to milliseconds (0 = disabled)
+        const thresholdSeconds = parseInt(document.getElementById('time-bonus-threshold')?.value) || 0;
+        const scoringConfig = {
+            timeBonusEnabled: document.getElementById('time-bonus-enabled')?.checked ?? true,
+            timeBonusThreshold: thresholdSeconds * 1000, // Convert to milliseconds
+            difficultyMultipliers: {
+                easy: parseFloat(document.getElementById('easy-multiplier')?.value) || 1,
+                medium: parseFloat(document.getElementById('medium-multiplier')?.value) || 2,
+                hard: parseFloat(document.getElementById('hard-multiplier')?.value) || 3
+            }
+        };
 
         // Process questions
         let processedQuestions = [...questions];
@@ -534,10 +548,12 @@ export class QuizGame {
                 title,
                 questions: processedQuestions,
                 manualAdvancement,
+                powerUpsEnabled,
                 randomizeQuestions,
                 randomizeAnswers: shouldRandomizeAnswers,
                 sameTimeForAll,
-                questionTime
+                questionTime,
+                scoringConfig
             }
         };
 

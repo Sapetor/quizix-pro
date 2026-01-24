@@ -554,6 +554,10 @@ class Game {
         this.powerUpsEnabled = quiz.powerUpsEnabled || false;
         this.logger = logger;
         this.config = config;
+
+        // Scoring configuration (optional, per-game session)
+        // Falls back to server defaults if not provided
+        this.scoringConfig = quiz.scoringConfig || null;
     }
 
     /**
@@ -747,11 +751,34 @@ class Game {
 
         const timeTaken = Date.now() - this.questionStartTime;
         const maxBonusTime = this.config.SCORING.MAX_BONUS_TIME;
-        const timeBonus = Math.max(0, maxBonusTime - timeTaken);
-        const difficultyMultiplier = this.config.SCORING.DIFFICULTY_MULTIPLIERS[question.difficulty] || 2;
+
+        // Use custom scoring config if provided, otherwise fall back to server defaults
+        const customMultipliers = this.scoringConfig?.difficultyMultipliers;
+        const defaultMultipliers = this.config.SCORING.DIFFICULTY_MULTIPLIERS;
+        const difficultyMultiplier = customMultipliers?.[question.difficulty]
+            ?? defaultMultipliers[question.difficulty]
+            ?? 2;
+
+        const timeBonusEnabled = this.scoringConfig?.timeBonusEnabled ?? true;
+
+        // Time bonus threshold: answers within this time get maximum bonus (prevents random quick guessing)
+        // Value in milliseconds, 0 means disabled (linear bonus)
+        const timeBonusThreshold = this.scoringConfig?.timeBonusThreshold ?? 0;
+
+        // Calculate time bonus with optional threshold
+        let timeBonus;
+        if (timeBonusThreshold > 0 && timeTaken <= timeBonusThreshold) {
+            // Within threshold: award maximum time bonus
+            timeBonus = maxBonusTime;
+        } else {
+            // Beyond threshold or no threshold: linear decrease
+            timeBonus = Math.max(0, maxBonusTime - timeTaken);
+        }
 
         const basePoints = this.config.SCORING.BASE_POINTS * difficultyMultiplier;
-        const scaledTimeBonus = Math.floor(timeBonus * difficultyMultiplier / this.config.SCORING.TIME_BONUS_DIVISOR);
+        const scaledTimeBonus = timeBonusEnabled
+            ? Math.floor(timeBonus * difficultyMultiplier / this.config.SCORING.TIME_BONUS_DIVISOR)
+            : 0;
 
         // Handle partial credit for ordering questions
         let points = 0;
@@ -772,12 +799,21 @@ class Game {
         const doublePointsMultiplier = this.getAndConsumeDoublePoints(playerId);
         points = points * doublePointsMultiplier;
 
+        // Build breakdown for score transparency (host view only)
+        const breakdown = {
+            basePoints: basePoints,
+            timeBonus: scaledTimeBonus,
+            difficultyMultiplier: difficultyMultiplier,
+            doublePointsMultiplier: doublePointsMultiplier
+        };
+
         const answerData = {
             answer,
             isCorrect,
             points,
             timeMs: Date.now() - this.questionStartTime,
-            doublePointsUsed: doublePointsMultiplier > 1
+            doublePointsUsed: doublePointsMultiplier > 1,
+            breakdown: breakdown
         };
 
         // Add partialScore for ordering questions (enables "partially correct" feedback)
@@ -788,7 +824,7 @@ class Game {
         player.answers[this.currentQuestion] = answerData;
         player.score += points;
 
-        return { isCorrect, points, doublePointsUsed: doublePointsMultiplier > 1 };
+        return { isCorrect, points, doublePointsUsed: doublePointsMultiplier > 1, breakdown };
     }
 
     /**
@@ -905,7 +941,35 @@ class Game {
         // Add option count for dynamic display
         stats.optionCount = question.options?.length || 4;
 
+        // Add scoring info for host breakdown display
+        stats.scoringInfo = this.getScoringInfoForQuestion(question);
+
         return stats;
+    }
+
+    /**
+   * Get scoring info for a question (for host breakdown display)
+   * @param {Object} question - Question object
+   * @returns {Object} Scoring info object
+   */
+    getScoringInfoForQuestion(question) {
+        const customMultipliers = this.scoringConfig?.difficultyMultipliers;
+        const defaultMultipliers = this.config.SCORING.DIFFICULTY_MULTIPLIERS;
+        const difficultyMultiplier = customMultipliers?.[question.difficulty]
+            ?? defaultMultipliers[question.difficulty]
+            ?? 2;
+
+        const timeBonusEnabled = this.scoringConfig?.timeBonusEnabled ?? true;
+        const timeBonusThreshold = this.scoringConfig?.timeBonusThreshold ?? 0;
+        const basePoints = this.config.SCORING.BASE_POINTS * difficultyMultiplier;
+
+        return {
+            basePoints: basePoints,
+            difficultyMultiplier: difficultyMultiplier,
+            difficulty: question.difficulty || 'medium',
+            timeBonusEnabled: timeBonusEnabled,
+            timeBonusThreshold: timeBonusThreshold
+        };
     }
 
     /**

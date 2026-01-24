@@ -518,5 +518,20 @@ export default {
     extend_time_tooltip: '计时器增加10秒',
     double_points: '2倍积分',
     double_points_tooltip: '下次答对时获得双倍积分',
-    power_up_used: '道具已使用！'
+    power_up_used: '道具已使用！',
+
+    // Scoring Settings
+    scoring_settings: '📊 计分设置',
+    enable_time_bonus: '启用时间奖励（越快越高分）',
+    show_score_breakdown: '显示分数明细（主持人视图）',
+    difficulty_multipliers: '难度倍数：',
+    scoring: '计分：',
+    base: '基础',
+    time_bonus: '时间奖励',
+    enabled: '开',
+    disabled: '关',
+    time_bonus_threshold: '满分阈值：',
+    time_bonus_threshold_hint: '（0 = 禁用，在阈值内作答可获得满分奖励）',
+    seconds_short: '秒',
+    max_within: '内满分'
 };

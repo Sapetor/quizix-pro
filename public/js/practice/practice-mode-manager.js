@@ -67,12 +67,26 @@ export class PracticeModeManager {
                 document.getElementById('enable-power-ups')?.checked ||
                 false;
 
+            // Get scoring configuration (per-game session, not saved to quiz file)
+            // timeBonusThreshold: convert seconds to milliseconds (0 = disabled)
+            const thresholdSeconds = parseInt(document.getElementById('time-bonus-threshold')?.value) || 0;
+            const scoringConfig = {
+                timeBonusEnabled: document.getElementById('time-bonus-enabled')?.checked ?? true,
+                timeBonusThreshold: thresholdSeconds * 1000, // Convert to milliseconds
+                difficultyMultipliers: {
+                    easy: parseFloat(document.getElementById('easy-multiplier')?.value) || 1,
+                    medium: parseFloat(document.getElementById('medium-multiplier')?.value) || 2,
+                    hard: parseFloat(document.getElementById('hard-multiplier')?.value) || 3
+                }
+            };
+
             // Create event bus and game session
             this.eventBus = new LocalEventBus({ debug: false });
             this.gameSession = new LocalGameSession(quiz, this.eventBus, {
                 playerName: getTranslation('player') || 'Player',
                 quizFilename: quizFilename,
-                powerUpsEnabled: powerUpsEnabled
+                powerUpsEnabled: powerUpsEnabled,
+                scoringConfig: scoringConfig
             });
 
             // Wire up GameManager with event bus

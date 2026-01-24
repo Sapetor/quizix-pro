@@ -535,5 +535,20 @@ export default {
     extend_time_tooltip: '10 Sekunden zum Timer hinzufügen',
     double_points: '2× Punkte',
     double_points_tooltip: 'Verdoppeln Sie Ihre Punkte bei der nächsten richtigen Antwort',
-    power_up_used: 'Power-up verwendet!'
+    power_up_used: 'Power-up verwendet!',
+
+    // Scoring Settings
+    scoring_settings: '📊 Punkteeinstellungen',
+    enable_time_bonus: 'Zeitbonus aktivieren (schneller = mehr Punkte)',
+    show_score_breakdown: 'Punkteaufschlüsselung anzeigen (Host-Ansicht)',
+    difficulty_multipliers: 'Schwierigkeitsmultiplikatoren:',
+    scoring: 'Punkte:',
+    base: 'Basis',
+    time_bonus: 'Zeitbonus',
+    enabled: 'AN',
+    disabled: 'AUS',
+    time_bonus_threshold: 'Maximalpunkte-Schwelle:',
+    time_bonus_threshold_hint: '(0 = deaktiviert, Antworten innerhalb der Schwelle erhalten max. Bonus)',
+    seconds_short: 'Sek',
+    max_within: 'max in'
 };

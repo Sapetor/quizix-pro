@@ -258,14 +258,16 @@ app.use(express.static('public', {
         // Critical fix: Proper MIME types for JavaScript modules
         if (path.endsWith('.js')) {
             res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            res.setHeader('Cache-Control', `public, max-age=${getAssetMaxAge()}`);
+            // Shorter cache + must-revalidate for better update detection without service workers
+            res.setHeader('Cache-Control', `public, max-age=${getAssetMaxAge()}, must-revalidate`);
             res.setHeader('Vary', 'Accept-Encoding, User-Agent');
         }
 
         // CSS files
         if (path.endsWith('.css')) {
             res.setHeader('Content-Type', 'text/css; charset=utf-8');
-            res.setHeader('Cache-Control', `public, max-age=${getAssetMaxAge()}`);
+            // Shorter cache + must-revalidate for better update detection without service workers
+            res.setHeader('Cache-Control', `public, max-age=${getAssetMaxAge()}, must-revalidate`);
             res.setHeader('Vary', 'Accept-Encoding, User-Agent');
         }
 
@@ -285,9 +287,11 @@ app.use(express.static('public', {
             res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
         }
 
-        // Special handling for index.html - shorter cache but with validation
+        // Special handling for index.html - NO cache, always revalidate for new deployments
         if (path.endsWith('index.html')) {
-            res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate'); // 5 minutes with validation
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
             res.setHeader('Vary', 'Accept-Encoding, User-Agent');
         }
 
@@ -349,7 +353,7 @@ app.get('/js/*', (req, res, next) => {
         // Set proper headers for JavaScript files
         res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
         res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-        res.setHeader('Cache-Control', isProduction ? 'public, max-age=86400' : 'no-cache');
+        res.setHeader('Cache-Control', isProduction ? 'public, max-age=86400, must-revalidate' : 'no-cache');
 
         // Read and send file directly to avoid express.static issues
         fs.readFile(filePath, 'utf8', (err, data) => {
@@ -404,8 +408,11 @@ const serveIndexHtml = (req, res) => {
 
         logger.debug(`Serving index.html with base path: ${BASE_PATH}`);
 
+        // Never cache index.html - always fetch fresh for new deployments
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.send(modifiedHtml);
     });
 };
@@ -947,6 +954,7 @@ app.post('/api/claude/generate', validateBody(claudeGenerateSchema), async (req,
         const requestBody = {
             model: selectedModel,
             max_tokens: calculatedMaxTokens,
+            system: 'You are a quiz question generator. CRITICAL FORMATTING RULES:\n\n1. MATHEMATICAL EXPRESSIONS: For ALL mathematical expressions, equations, formulas, or symbols, you MUST use LaTeX syntax wrapped in $ or $$ delimiters. Examples: inline math like $E = mc^2$ or $\\frac{x+1}{2}$, display math like $$\\int_0^\\infty e^{-x} dx = 1$$. NEVER output math as plain text.\n\n2. CODE SNIPPETS: For ALL code snippets, you MUST use markdown code blocks with language specification. Format: ```language\\ncode here\\n```. Examples: ```python\\nprint("hello")\\n```, ```javascript\\nconst x = 5;\\n```. Use inline code `like this` for variable names, function names, and keywords. NEVER output code as plain text.\n\n3. OUTPUT FORMAT: Always output valid JSON arrays starting with [ and ending with ].',
             messages: [
                 {
                     role: 'user',
@@ -1050,12 +1058,24 @@ app.post('/api/gemini/generate', validateBody(geminiGenerateSchema), async (req,
         // Import node-fetch for HTTP requests
         const { default: fetchFunction } = await import('node-fetch');
 
+        // Calculate max_tokens based on number of questions (matching Claude's allocation)
+        // ~2000 tokens per question to allow for LaTeX, explanations, and safety margin
+        const questionCount = Math.max(1, Math.min(numQuestions || 5, 20));
+        const calculatedMaxTokens = Math.max(8192, questionCount * 2000);
+
         // Use model from request, fall back to env var, then default
         const selectedModel = model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         logger.info(`Using Gemini model: ${selectedModel}`);
 
         // Gemini API request format
         const requestBody = {
+            systemInstruction: {
+                parts: [
+                    {
+                        text: 'You are a quiz question generator. CRITICAL FORMATTING RULES:\n\n1. MATHEMATICAL EXPRESSIONS: For ALL mathematical expressions, equations, formulas, or symbols, you MUST use LaTeX syntax wrapped in $ or $$ delimiters. Examples: inline math like $E = mc^2$ or $\\frac{x+1}{2}$, display math like $$\\int_0^\\infty e^{-x} dx = 1$$. NEVER output math as plain text.\n\n2. CODE SNIPPETS: For ALL code snippets, you MUST use markdown code blocks with language specification. Format: ```language\\ncode here\\n```. Examples: ```python\\nprint("hello")\\n```, ```javascript\\nconst x = 5;\\n```. Use inline code `like this` for variable names, function names, and keywords. NEVER output code as plain text.\n\n3. OUTPUT FORMAT: Always output valid JSON arrays starting with [ and ending with ].'
+                    }
+                ]
+            },
             contents: [
                 {
                     parts: [
@@ -1067,7 +1087,7 @@ app.post('/api/gemini/generate', validateBody(geminiGenerateSchema), async (req,
             ],
             generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: Math.max(4096, (numQuestions || 5) * 1000)
+                maxOutputTokens: calculatedMaxTokens
             }
         };
 

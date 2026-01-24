@@ -1041,3 +1041,34 @@ header {
 }
 
 /* When not in split-screen, center the editor - simplified without toolbar logic */
+/* App Version Display */
+.app-version {
+    position: fixed;
+    bottom: 8px;
+    right: 8px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: 'Courier New', monospace;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 0.3s ease;
+}
+
+.app-version:hover {
+    opacity: 1;
+}
+
+/* Hide on mobile to save space */
+@media (max-width: 768px) {
+    .app-version {
+        font-size: 0.65rem;
+        bottom: 4px;
+        right: 4px;
+        padding: 2px 6px;
+    }
+}

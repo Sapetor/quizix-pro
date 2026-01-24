@@ -895,7 +895,50 @@ export class GameManager {
             } else if (questionType === 'ordering') {
                 this.showOrderingStatistics(data.answerCounts);
             }
+
+            // Render score breakdown for host (if enabled)
+            if (data.scoringInfo) {
+                this.renderHostBreakdown(data.scoringInfo);
+            }
         }
+    }
+
+    /**
+     * Render score breakdown for host display
+     * Shows the scoring formula used for the current question
+     * @param {Object} scoringInfo - Scoring information object
+     */
+    renderHostBreakdown(scoringInfo) {
+        const showBreakdown = document.getElementById('show-score-breakdown')?.checked ?? true;
+        const container = document.getElementById('host-score-breakdown');
+        const contentSpan = document.getElementById('breakdown-content');
+
+        if (!showBreakdown || !scoringInfo || !container || !contentSpan) {
+            if (container) container.style.display = 'none';
+            return;
+        }
+
+        const parts = [];
+
+        // Base points with difficulty
+        const difficultyLabel = getTranslation(scoringInfo.difficulty) || scoringInfo.difficulty;
+        parts.push(`${getTranslation('base') || 'Base'}: ${scoringInfo.basePoints}pts (${difficultyLabel})`);
+
+        // Time bonus status with optional threshold
+        if (scoringInfo.timeBonusEnabled) {
+            let timeBonusText = `${getTranslation('time_bonus') || 'Time bonus'}: ${getTranslation('enabled') || 'ON'}`;
+            // Show threshold if set (convert from ms to seconds for display)
+            if (scoringInfo.timeBonusThreshold > 0) {
+                const thresholdSec = scoringInfo.timeBonusThreshold / 1000;
+                timeBonusText += ` (${getTranslation('max_within') || 'max within'} ${thresholdSec}s)`;
+            }
+            parts.push(timeBonusText);
+        } else {
+            parts.push(`${getTranslation('time_bonus') || 'Time bonus'}: ${getTranslation('disabled') || 'OFF'}`);
+        }
+
+        contentSpan.textContent = parts.join(' | ');
+        container.style.display = 'flex';
     }
 
 
