@@ -846,6 +846,12 @@ export class PreviewManager {
                                     <input type="number" placeholder="Enter your answer" readonly>
                                 </div>
                             </div>
+
+                            <div class="preview-answer-type preview-ordering" style="display: none;">
+                                <div class="preview-ordering-display mobile-ordering" id="mobile-preview-ordering">
+                                    <!-- Ordering options will be inserted here -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

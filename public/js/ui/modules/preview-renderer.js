@@ -530,6 +530,9 @@ export class PreviewRenderer {
             return;
         }
 
+        // Check if any options contain LaTeX or code
+        const hasLatexContent = options.some(option => this.hasLatexContent(option));
+
         let html = `
             <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
             <div class="ordering-display">
@@ -537,10 +540,12 @@ export class PreviewRenderer {
 
         options.forEach((option, index) => {
             const bgColor = COLORS.ORDERING_ITEM_COLORS[index % COLORS.ORDERING_ITEM_COLORS.length];
+            // Format code blocks in options
+            const formattedContent = this.formatCodeBlocks(option);
             html += `
                 <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${index + 1}</div>
-                    <div class="ordering-item-content">${option}</div>
+                    <div class="ordering-item-content">${formattedContent}</div>
                 </div>
             `;
         });
@@ -550,6 +555,19 @@ export class PreviewRenderer {
 
         // Translate the instruction
         translationManager.translateContainer(container);
+
+        // Render LaTeX if any options contain math expressions
+        if (hasLatexContent) {
+            const displayContainer = container.querySelector('.ordering-display');
+            if (displayContainer) {
+                displayContainer.classList.add('tex2jax_process');
+                this.mathJaxService.render([displayContainer]).then(() => {
+                    logger.debug('Ordering preview MathJax rendering completed');
+                }).catch(error => {
+                    logger.warn('Ordering preview MathJax rendering failed:', error);
+                });
+            }
+        }
     }
 
     /**
@@ -974,6 +992,9 @@ export class PreviewRenderer {
             return;
         }
 
+        // Check if any options contain LaTeX or code
+        const hasLatexContent = options.some(option => this.hasLatexContent(option));
+
         let html = `
             <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
             <div class="ordering-display">
@@ -981,10 +1002,12 @@ export class PreviewRenderer {
 
         options.forEach((option, index) => {
             const bgColor = COLORS.ORDERING_ITEM_COLORS[index % COLORS.ORDERING_ITEM_COLORS.length];
+            // Format code blocks in options
+            const formattedContent = this.formatCodeBlocks(option);
             html += `
                 <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${index + 1}</div>
-                    <div class="ordering-item-content">${option}</div>
+                    <div class="ordering-item-content">${formattedContent}</div>
                 </div>
             `;
         });
@@ -994,6 +1017,19 @@ export class PreviewRenderer {
 
         // Translate the instruction
         translationManager.translateContainer(orderingContainer);
+
+        // Render LaTeX if any options contain math expressions
+        if (hasLatexContent) {
+            const displayContainer = orderingContainer.querySelector('.ordering-display');
+            if (displayContainer) {
+                displayContainer.classList.add('tex2jax_process');
+                this.mathJaxService.render([displayContainer]).then(() => {
+                    logger.debug('Mobile ordering preview MathJax rendering completed');
+                }).catch(error => {
+                    logger.warn('Mobile ordering preview MathJax rendering failed:', error);
+                });
+            }
+        }
     }
 
     /**

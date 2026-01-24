@@ -2305,7 +2305,8 @@
     }
 
     /* Show FAB only when in host-screen (quiz editor) */
-    .container:has(#host-screen.screen.active) .mobile-quiz-fab {
+    /* FAB is now outside .container for proper position:fixed on mobile */
+    body:has(#host-screen.screen.active) .mobile-quiz-fab {
         display: flex !important;
     }
 
