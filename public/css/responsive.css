@@ -2278,9 +2278,9 @@
 /* Mobile Quiz Management FAB - Only visible in quiz editor on mobile */
 @media (max-width: 768px) {
     .mobile-quiz-fab {
-        position: fixed;
-        bottom: 30px;
-        right: 20px;
+        position: fixed !important;
+        bottom: 30px !important;
+        right: 20px !important;
         width: auto;
         min-width: 85px;
         height: 56px;
@@ -2293,7 +2293,7 @@
         justify-content: center;
         box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
         cursor: pointer;
-        z-index: 1000;
+        z-index: 99999 !important;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         color: white;
         font-size: 0.95rem;
@@ -2304,9 +2304,9 @@
         touch-action: manipulation; /* Improve touch response */
     }
 
-    /* Show FAB only when in host-screen (quiz editor) */
-    /* FAB is now outside .container for proper position:fixed on mobile */
-    body:has(#host-screen.screen.active) .mobile-quiz-fab {
+    /* Show FAB only when in host-screen (quiz editor) - use JavaScript fallback for Safari */
+    body:has(#host-screen.screen.active) .mobile-quiz-fab,
+    #host-screen.screen.active ~ .mobile-quiz-fab {
         display: flex !important;
     }
 

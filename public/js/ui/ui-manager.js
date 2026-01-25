@@ -42,11 +42,14 @@ export class UIManager {
             const headerStartBtn = document.getElementById('start-hosting-header-small');
             const horizontalToolbar = document.getElementById('horizontal-toolbar');
             const header = document.querySelector('header');
+            const mobileQuizFab = document.getElementById('mobile-quiz-fab');
 
             if (screenId === 'host-screen') {
                 // Show toolbar and start button for host screen
                 if (headerStartBtn) headerStartBtn.style.display = 'block';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
+                // Show mobile FAB on host screen (quiz editor)
+                if (mobileQuizFab) mobileQuizFab.style.display = 'flex';
 
                 // Translate toolbar tooltips and host screen content after making it visible
                 // Use async to ensure translations are loaded before translating
@@ -83,6 +86,8 @@ export class UIManager {
                 // Hide editing toolbar on lobby screen, but enable header auto-hide
                 if (headerStartBtn) headerStartBtn.style.display = 'none';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'none';
+                // Hide mobile FAB on lobby screen
+                if (mobileQuizFab) mobileQuizFab.style.display = 'none';
 
                 // Initialize auto-hide functionality for HEADER on lobby screen
                 setTimeout(() => {
@@ -94,6 +99,8 @@ export class UIManager {
                 // Hide toolbar and start button for other screens
                 if (headerStartBtn) headerStartBtn.style.display = 'none';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'none';
+                // Hide mobile FAB on all other screens
+                if (mobileQuizFab) mobileQuizFab.style.display = 'none';
 
                 // Disable auto-hide when leaving lobby/host screens
                 if (isAutoHideToolbarActive()) {
