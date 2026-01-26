@@ -492,16 +492,22 @@ export class FileManager {
         }
 
         // Check if authentication is required
+        let requiresAuth = false;
         try {
             const authResponse = await APIHelper.fetchAPI(`api/requires-auth/${type}/${id}`);
-            const authData = await authResponse.json();
-
-            if (!authData.requiresAuth) {
-                return true;
+            if (authResponse.ok) {
+                const authData = await authResponse.json();
+                requiresAuth = authData.requiresAuth;
             }
+            // If auth check fails (404, 500, etc.), assume no auth required
         } catch (error) {
-            logger.warn('Auth check failed:', error);
-            // Continue to prompt just in case
+            logger.warn('Auth check failed, assuming no auth required:', error);
+            return true; // Allow access if auth check fails
+        }
+
+        // If no auth required, allow access
+        if (!requiresAuth) {
+            return true;
         }
 
         // Prompt for password
