@@ -24,6 +24,9 @@
 /* Modal systems - All modal dialogs and overlays */
 @import './modals.css';
 
+/* File manager - Folder tree, context menu, password modal */
+@import './file-manager.css';
+
 /* Game screens - Lobby, gameplay, results */
 @import './game.css';
 

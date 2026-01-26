@@ -1523,8 +1523,12 @@
         <div id="load-quiz-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="load-quiz-modal-title">
             <div class="modal-content">
                 <h3 id="load-quiz-modal-title" data-translate="load_saved_quiz">Load Saved Quiz</h3>
-                <div id="quiz-list" class="quiz-list"></div>
+                <!-- Folder tree view (new) - used when available -->
+                <div id="quiz-tree-container" class="quiz-tree-container"></div>
+                <!-- Flat list view (legacy fallback) -->
+                <div id="quiz-list" class="quiz-list hidden"></div>
                 <div class="modal-actions">
+                    <button id="new-folder-btn" class="btn secondary" data-translate="new_folder" onclick="window.game?.quizManager?.createNewFolder()">New Folder</button>
                     <button id="cancel-load" class="btn secondary" data-translate="cancel">Cancel</button>
                 </div>
             </div>

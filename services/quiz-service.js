@@ -161,6 +161,36 @@ class QuizService {
         const data = JSON.parse(await fs.readFile(filePath, 'utf8'));
         return data;
     }
+
+    /**
+     * Delete a quiz file
+     */
+    async deleteQuiz(filename) {
+        // Validate filename to prevent path traversal
+        if (!this.validateFilename(filename)) {
+            throw new Error('Invalid filename');
+        }
+
+        if (!filename.endsWith('.json')) {
+            throw new Error('Invalid filename');
+        }
+
+        const filePath = path.join(this.quizzesDir, filename);
+
+        try {
+            await fs.access(filePath);
+        } catch {
+            throw new Error('Quiz not found');
+        }
+
+        await this.wslMonitor.trackFileOperation(
+            () => fs.unlink(filePath),
+            `Quiz delete: ${filename}`
+        );
+
+        this.logger.debug(`Quiz deleted successfully: ${filename}`);
+        return { success: true, filename };
+    }
 }
 
 module.exports = { QuizService };

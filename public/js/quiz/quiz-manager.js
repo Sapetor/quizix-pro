@@ -14,6 +14,7 @@ import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 import { getJSON, setJSON, removeItem } from '../utils/storage-utils.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
 import { escapeHtml } from '../utils/dom.js';
+import { getFileManager } from '../ui/file-manager.js';
 
 // Shared translation fallback map used for cleaning translation keys from loaded data
 const TRANSLATION_FALLBACKS = {
@@ -51,8 +52,30 @@ export class QuizManager {
         // Memory management via EventListenerManager
         this.listenerManager = new EventListenerManager('QuizManager');
 
+        // Initialize file manager for folder tree view
+        this.fileManager = getFileManager({
+            onLoadQuiz: (filename, data) => this.handleFileManagerLoad(filename, data),
+            onPracticeQuiz: (filename, data) => this.handleFileManagerPractice(filename, data)
+        });
+
         // Bind cleanup method
         this.cleanup = this.cleanup.bind(this);
+    }
+
+    /**
+     * Handle quiz load from file manager
+     */
+    handleFileManagerLoad(filename, data) {
+        this.hideLoadQuizModal();
+        window.game.loadQuiz(filename);
+    }
+
+    /**
+     * Handle practice mode from file manager
+     */
+    handleFileManagerPractice(filename, data) {
+        this.hideLoadQuizModal();
+        window.game.startPracticeMode(filename);
     }
 
     /**
@@ -269,6 +292,52 @@ export class QuizManager {
         // Set up modal event handlers
         this.setupLoadQuizModalHandlers(modal);
 
+        // Check if tree view container exists (new folder tree UI)
+        const treeContainer = document.getElementById('quiz-tree-container');
+        if (treeContainer) {
+            // Use new folder tree view
+            await this.showFolderTreeView(treeContainer, modal);
+        } else {
+            // Fall back to flat list view for backward compatibility
+            await this.showFlatListView(modal);
+        }
+
+        // Show modal with requestAnimationFrame for smooth transition
+        requestAnimationFrame(() => {
+            modal.classList.remove('hidden');
+            modal.classList.add('visible-flex');
+        });
+    }
+
+    /**
+     * Show folder tree view in load quiz modal
+     */
+    async showFolderTreeView(container, modal) {
+        // Initialize tree in container if not done yet
+        if (!this.fileManager.getTree()) {
+            this.fileManager.initTree(container);
+        }
+
+        // Load tree data
+        await this.errorHandler.wrapAsyncOperation(async () => {
+            await this.fileManager.loadTree();
+        }, {
+            errorType: this.errorHandler.errorTypes.NETWORK,
+            context: { operation: 'loadQuizTree' },
+            fallback: () => {
+                container.innerHTML = `
+                    <div class="no-quizzes">
+                        <p>${translationManager.getTranslationSync('failed_load_quizzes')}</p>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    /**
+     * Show flat list view in load quiz modal (backward compatibility)
+     */
+    async showFlatListView(modal) {
         // Cache quiz list element for better performance (validate it's still in DOM)
         if (!this.cachedQuizListElement || !document.contains(this.cachedQuizListElement)) {
             this.cachedQuizListElement = document.getElementById('quiz-list');
@@ -348,12 +417,13 @@ export class QuizManager {
                 }
             }
         });
+    }
 
-        // Show modal with requestAnimationFrame for smooth transition
-        requestAnimationFrame(() => {
-            modal.classList.remove('hidden');
-            modal.classList.add('visible-flex');
-        });
+    /**
+     * Create a new folder (triggered from modal button)
+     */
+    createNewFolder() {
+        this.fileManager.handleAction('new-folder', 'root', null, null);
     }
 
     /**

@@ -222,6 +222,42 @@ function validateQuery(schema) {
 }
 
 // ============================================================================
+// File Management Schemas
+// ============================================================================
+
+const createFolderSchema = z.object({
+    name: z.string().min(1, 'Folder name is required').max(100, 'Folder name must be less than 100 characters'),
+    parentId: z.string().uuid().nullable().optional().default(null)
+});
+
+const renameFolderSchema = z.object({
+    name: z.string().min(1, 'Folder name is required').max(100, 'Folder name must be less than 100 characters')
+});
+
+const moveFolderSchema = z.object({
+    parentId: z.string().uuid().nullable()
+});
+
+const setPasswordSchema = z.object({
+    password: z.string().min(4, 'Password must be at least 4 characters').max(100).nullable()
+});
+
+const updateQuizMetadataSchema = z.object({
+    displayName: z.string().min(1).max(200).optional(),
+    folderId: z.string().uuid().nullable().optional()
+});
+
+const unlockSchema = z.object({
+    itemId: z.string().min(1),
+    itemType: z.enum(['folder', 'quiz']),
+    password: z.string().min(1, 'Password is required')
+});
+
+const folderIdParamSchema = z.object({
+    id: z.string().uuid('Invalid folder ID')
+});
+
+// ============================================================================
 // Param Schemas
 // ============================================================================
 
@@ -419,6 +455,15 @@ module.exports = {
     resultFilenameSchema,
     pinSchema,
     exportFormatSchema,
+
+    // File management schemas
+    createFolderSchema,
+    renameFolderSchema,
+    moveFolderSchema,
+    setPasswordSchema,
+    updateQuizMetadataSchema,
+    unlockSchema,
+    folderIdParamSchema,
 
     // Socket event schemas
     hostJoinSchema,

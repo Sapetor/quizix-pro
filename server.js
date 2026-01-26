@@ -18,12 +18,26 @@ const { CORSValidationService } = require('./services/cors-validation-service');
 const { QuestionTypeService } = require('./services/question-type-service');
 const { QuizService } = require('./services/quiz-service');
 const { ResultsService } = require('./services/results-service');
+const { MetadataService } = require('./services/metadata-service');
 const { QRService } = require('./services/qr-service');
 const { GameSessionService } = require('./services/game-session-service');
 const { PlayerManagementService } = require('./services/player-management-service');
 const { QuestionFlowService } = require('./services/question-flow-service');
 const { SocketBatchService } = require('./services/socket-batch-service');
-const { validateBody, saveQuizSchema, claudeGenerateSchema, geminiGenerateSchema } = require('./services/validation-schemas');
+const {
+    validateBody,
+    validateParams,
+    saveQuizSchema,
+    claudeGenerateSchema,
+    geminiGenerateSchema,
+    createFolderSchema,
+    renameFolderSchema,
+    moveFolderSchema,
+    setPasswordSchema,
+    updateQuizMetadataSchema,
+    unlockSchema,
+    folderIdParamSchema
+} = require('./services/validation-schemas');
 const { metricsService } = require('./services/metrics-service');
 
 // Detect production environment (Railway sets NODE_ENV automatically)
@@ -170,6 +184,7 @@ corsValidator.logConfiguration();
 const quizService = new QuizService(logger, WSLMonitor, 'quizzes');
 const resultsService = new ResultsService(logger, 'results');
 const qrService = new QRService(logger, BASE_PATH);
+const metadataService = new MetadataService(logger, WSLMonitor, 'quizzes');
 
 // Initialize Socket.IO game services
 const gameSessionService = new GameSessionService(logger, CONFIG);
@@ -827,6 +842,228 @@ app.get('/api/qr/:pin', async (req, res) => {
     }
 });
 
+// ============================================================================
+// File Management API Endpoints
+// ============================================================================
+
+// Get quiz tree structure (folders and quizzes)
+app.get('/api/quiz-tree', async (req, res) => {
+    try {
+        const tree = metadataService.getTreeStructure();
+        res.json(tree);
+    } catch (error) {
+        logger.error('Get quiz tree error:', error);
+        res.status(500).json({ error: 'Failed to get quiz tree' });
+    }
+});
+
+// Create a new folder
+app.post('/api/folders', validateBody(createFolderSchema), async (req, res) => {
+    try {
+        const { name, parentId } = req.validatedBody;
+        const folder = await metadataService.createFolder(name, parentId);
+        res.status(201).json(folder);
+    } catch (error) {
+        logger.error('Create folder error:', error);
+        res.status(400).json({ error: error.message || 'Failed to create folder' });
+    }
+});
+
+// Rename a folder
+app.patch('/api/folders/:id/rename', validateParams(folderIdParamSchema), validateBody(renameFolderSchema), async (req, res) => {
+    try {
+        const { id } = req.validatedParams;
+        const { name } = req.validatedBody;
+        const folder = await metadataService.renameFolder(id, name);
+        res.json(folder);
+    } catch (error) {
+        logger.error('Rename folder error:', error);
+        const statusCode = error.message === 'Folder not found' ? 404 : 400;
+        res.status(statusCode).json({ error: error.message || 'Failed to rename folder' });
+    }
+});
+
+// Move a folder
+app.patch('/api/folders/:id/move', validateParams(folderIdParamSchema), validateBody(moveFolderSchema), async (req, res) => {
+    try {
+        const { id } = req.validatedParams;
+        const { parentId } = req.validatedBody;
+        const folder = await metadataService.moveFolder(id, parentId);
+        res.json(folder);
+    } catch (error) {
+        logger.error('Move folder error:', error);
+        const statusCode = error.message === 'Folder not found' ? 404 : 400;
+        res.status(statusCode).json({ error: error.message || 'Failed to move folder' });
+    }
+});
+
+// Set or remove folder password
+app.post('/api/folders/:id/password', validateParams(folderIdParamSchema), validateBody(setPasswordSchema), async (req, res) => {
+    try {
+        const { id } = req.validatedParams;
+        const { password } = req.validatedBody;
+        const result = await metadataService.setFolderPassword(id, password);
+        res.json(result);
+    } catch (error) {
+        logger.error('Set folder password error:', error);
+        const statusCode = error.message === 'Folder not found' ? 404 : 400;
+        res.status(statusCode).json({ error: error.message || 'Failed to set folder password' });
+    }
+});
+
+// Delete a folder
+app.delete('/api/folders/:id', validateParams(folderIdParamSchema), async (req, res) => {
+    try {
+        const { id } = req.validatedParams;
+        const deleteContents = req.query.deleteContents === 'true';
+        const result = await metadataService.deleteFolder(id, deleteContents);
+        res.json(result);
+    } catch (error) {
+        logger.error('Delete folder error:', error);
+        const statusCode = error.message === 'Folder not found' ? 404 : 400;
+        res.status(statusCode).json({ error: error.message || 'Failed to delete folder' });
+    }
+});
+
+// Update quiz metadata (display name and/or folder)
+app.patch('/api/quiz-metadata/:filename', validateBody(updateQuizMetadataSchema), async (req, res) => {
+    try {
+        const { filename } = req.params;
+
+        // Validate filename
+        if (!quizService.validateFilename(filename)) {
+            return res.status(400).json({ error: 'Invalid filename' });
+        }
+
+        const { displayName, folderId } = req.validatedBody;
+        let quiz = metadataService.getQuizMetadata(filename);
+
+        // If quiz not in metadata, try to register it
+        if (!quiz) {
+            try {
+                const quizData = await quizService.loadQuiz(filename);
+                quiz = await metadataService.registerQuiz(filename, quizData.title);
+            } catch {
+                return res.status(404).json({ error: 'Quiz not found' });
+            }
+        }
+
+        // Update display name if provided
+        if (displayName !== undefined) {
+            await metadataService.setQuizDisplayName(filename, displayName);
+        }
+
+        // Update folder if provided
+        if (folderId !== undefined) {
+            await metadataService.moveQuizToFolder(filename, folderId);
+        }
+
+        const updatedQuiz = metadataService.getQuizMetadata(filename);
+        res.json(updatedQuiz);
+    } catch (error) {
+        logger.error('Update quiz metadata error:', error);
+        res.status(400).json({ error: error.message || 'Failed to update quiz metadata' });
+    }
+});
+
+// Set or remove quiz password
+app.post('/api/quiz-metadata/:filename/password', validateBody(setPasswordSchema), async (req, res) => {
+    try {
+        const { filename } = req.params;
+
+        // Validate filename
+        if (!quizService.validateFilename(filename)) {
+            return res.status(400).json({ error: 'Invalid filename' });
+        }
+
+        const { password } = req.validatedBody;
+        const result = await metadataService.setQuizPassword(filename, password);
+        res.json(result);
+    } catch (error) {
+        logger.error('Set quiz password error:', error);
+        const statusCode = error.message.includes('not found') ? 404 : 400;
+        res.status(statusCode).json({ error: error.message || 'Failed to set quiz password' });
+    }
+});
+
+// Delete a quiz (file + metadata)
+app.delete('/api/quiz/:filename', async (req, res) => {
+    try {
+        const { filename } = req.params;
+
+        // Validate filename
+        if (!quizService.validateFilename(filename)) {
+            return res.status(400).json({ error: 'Invalid filename' });
+        }
+
+        // Require confirmation parameter
+        if (req.query.confirm !== 'true') {
+            return res.status(400).json({ error: 'Delete requires confirm=true parameter' });
+        }
+
+        // Delete the physical file
+        await quizService.deleteQuiz(filename);
+
+        // Delete metadata
+        try {
+            await metadataService.deleteQuizMetadata(filename);
+        } catch {
+            // Metadata might not exist, that's OK
+        }
+
+        logger.info(`Quiz deleted: ${filename} from ${req.ip}`);
+        res.json({ success: true, filename });
+    } catch (error) {
+        logger.error('Delete quiz error:', error);
+        const statusCode = error.message === 'Quiz not found' ? 404 : 400;
+        res.status(statusCode).json({ error: error.message || 'Failed to delete quiz' });
+    }
+});
+
+// Unlock a password-protected item
+app.post('/api/unlock', validateBody(unlockSchema), async (req, res) => {
+    try {
+        const { itemId, itemType, password } = req.validatedBody;
+        const ip = req.ip || req.connection.remoteAddress || 'unknown';
+        const result = await metadataService.unlock(itemId, itemType, password, ip);
+        res.json(result);
+    } catch (error) {
+        logger.error('Unlock error:', error);
+
+        // Rate limiting
+        if (error.message.includes('Too many')) {
+            return res.status(429).json({ error: error.message });
+        }
+
+        // Wrong password
+        if (error.message.includes('Incorrect password')) {
+            return res.status(401).json({ error: error.message });
+        }
+
+        res.status(400).json({ error: error.message || 'Failed to unlock' });
+    }
+});
+
+// Check if item requires authentication
+app.get('/api/requires-auth/:itemType/:itemId', (req, res) => {
+    try {
+        const { itemType, itemId } = req.params;
+
+        if (!['folder', 'quiz'].includes(itemType)) {
+            return res.status(400).json({ error: 'Invalid item type' });
+        }
+
+        const requiresAuth = metadataService.requiresAuth(itemId, itemType);
+        res.json({ requiresAuth });
+    } catch (error) {
+        logger.error('Check auth error:', error);
+        res.status(400).json({ error: error.message || 'Failed to check authentication' });
+    }
+});
+
+// ============================================================================
+// End File Management API Endpoints
+// ============================================================================
 
 // Fetch available Ollama models endpoint
 // Ollama endpoint is configurable via OLLAMA_URL env var for K8s deployments
@@ -1659,7 +1896,15 @@ app.get('/ready', (req, res) => {
 const PORT = process.env.PORT || 3000;
 const NETWORK_IP = process.env.NETWORK_IP;
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', async () => {
+    // Initialize metadata service (async)
+    try {
+        await metadataService.initialize();
+        logger.info('Metadata service initialized');
+    } catch (error) {
+        logger.error('Failed to initialize metadata service:', error);
+    }
+
     let localIP = 'localhost';
 
     if (NETWORK_IP) {
