@@ -577,5 +577,8 @@ export default {
     password_fair: '普通',
     password_good: '良い',
     password_strong: '強い',
-    right_click_hint: '右クリックでオプションを表示（名前変更、移動、パスワード、削除）'
+    optional_password: 'パスワード（任意）',
+    password_hint: '設定した場合、このクイズの読み込みまたは削除にパスワードが必要になります',
+    verify_to_remove_password: '保護を解除するには現在のパスワードを入力してください',
+    right_click_hint: '右クリックでオプションを表示（名前変更、移動、削除）'
 };

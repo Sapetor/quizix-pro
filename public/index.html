@@ -1534,7 +1534,29 @@
                 </div>
             </div>
         </div>
-        
+
+        <!-- Save Quiz Modal -->
+        <div id="save-quiz-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="save-quiz-modal-title">
+            <div class="modal-content">
+                <h3 id="save-quiz-modal-title" data-translate="save_quiz">Save Quiz</h3>
+                <div class="save-quiz-form">
+                    <div class="form-group">
+                        <label for="save-quiz-password" data-translate="optional_password">Password (optional)</label>
+                        <input type="password" id="save-quiz-password" class="input-field" placeholder="Leave empty for no protection" data-translate-placeholder="password_placeholder">
+                        <p class="form-hint" data-translate="password_hint">If set, password will be required to load, edit, or delete this quiz.</p>
+                    </div>
+                    <div class="form-group" id="save-quiz-confirm-group" style="display: none;">
+                        <label for="save-quiz-password-confirm" data-translate="confirm_password">Confirm Password</label>
+                        <input type="password" id="save-quiz-password-confirm" class="input-field" placeholder="Confirm password" data-translate-placeholder="confirm_password_placeholder">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="cancel-save" class="btn secondary" data-translate="cancel">Cancel</button>
+                    <button id="confirm-save" class="btn primary" data-translate="save">Save</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Quiz Preview Modal -->
         <div id="quiz-preview-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="quiz-preview-modal-title">
             <div class="modal-content large">

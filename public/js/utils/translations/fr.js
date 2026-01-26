@@ -605,5 +605,8 @@ export default {
     password_fair: 'Passable',
     password_good: 'Bon',
     password_strong: 'Fort',
-    right_click_hint: 'Clic droit sur les éléments pour plus d'options (renommer, déplacer, mot de passe, supprimer)'
+    optional_password: 'Mot de passe (optionnel)',
+    password_hint: 'Si défini, le mot de passe sera requis pour charger ou supprimer ce quiz',
+    verify_to_remove_password: 'Entrez le mot de passe actuel pour supprimer la protection',
+    right_click_hint: 'Clic droit sur les éléments pour plus d\'options (renommer, déplacer, supprimer)'
 };

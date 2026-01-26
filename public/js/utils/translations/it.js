@@ -586,5 +586,8 @@ export default {
     password_fair: 'Discreta',
     password_good: 'Buona',
     password_strong: 'Forte',
-    right_click_hint: 'Clic destro sugli elementi per più opzioni (rinomina, sposta, password, elimina)'
+    optional_password: 'Password (opzionale)',
+    password_hint: 'Se impostata, la password sarà richiesta per caricare o eliminare questo quiz',
+    verify_to_remove_password: 'Inserisci la password attuale per rimuovere la protezione',
+    right_click_hint: 'Clic destro sugli elementi per più opzioni (rinomina, sposta, elimina)'
 };

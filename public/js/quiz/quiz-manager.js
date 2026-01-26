@@ -230,29 +230,130 @@ export class QuizManager {
     }
 
     /**
-     * Save quiz to server
+     * Save quiz - shows modal for optional password
      */
     async saveQuiz() {
+        const title = document.getElementById('quiz-title')?.value?.trim();
+        if (!title) {
+            showErrorAlert('please_enter_quiz_title');
+            return;
+        }
+
+        const questions = this.collectQuestions();
+        if (questions.length === 0) {
+            showErrorAlert('please_add_one_question');
+            return;
+        }
+
+        // Validate questions
+        const validationErrors = this.validateQuestions(questions);
+        if (validationErrors.length > 0) {
+            translationManager.showAlert('error', validationErrors.join('\\n'));
+            return;
+        }
+
+        // Store for use in confirmSave
+        this.pendingSave = { title, questions };
+
+        // Show save modal for optional password
+        this.showSaveQuizModal();
+    }
+
+    /**
+     * Show save quiz modal
+     */
+    showSaveQuizModal() {
+        const modal = document.getElementById('save-quiz-modal');
+        if (!modal) {
+            // Fallback: save without password if modal doesn't exist
+            this.confirmSave('');
+            return;
+        }
+
+        // Reset password fields
+        const passwordInput = document.getElementById('save-quiz-password');
+        const confirmInput = document.getElementById('save-quiz-password-confirm');
+        const confirmGroup = document.getElementById('save-quiz-confirm-group');
+
+        if (passwordInput) passwordInput.value = '';
+        if (confirmInput) confirmInput.value = '';
+        if (confirmGroup) confirmGroup.style.display = 'none';
+
+        // Show confirm field when password is entered
+        if (passwordInput) {
+            passwordInput.oninput = () => {
+                if (confirmGroup) {
+                    confirmGroup.style.display = passwordInput.value ? 'block' : 'none';
+                }
+            };
+        }
+
+        // Setup button handlers
+        const cancelBtn = document.getElementById('cancel-save');
+        const confirmBtn = document.getElementById('confirm-save');
+
+        if (cancelBtn) {
+            cancelBtn.onclick = () => this.hideSaveQuizModal();
+        }
+
+        if (confirmBtn) {
+            confirmBtn.onclick = () => this.handleSaveConfirm();
+        }
+
+        // Show modal
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        modal.classList.add('visible-flex');
+    }
+
+    /**
+     * Hide save quiz modal
+     */
+    hideSaveQuizModal() {
+        const modal = document.getElementById('save-quiz-modal');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('visible-flex');
+            modal.classList.add('hidden');
+        }
+        this.pendingSave = null;
+    }
+
+    /**
+     * Handle save confirmation from modal
+     */
+    handleSaveConfirm() {
+        const passwordInput = document.getElementById('save-quiz-password');
+        const confirmInput = document.getElementById('save-quiz-password-confirm');
+
+        const password = passwordInput?.value || '';
+        const confirmPassword = confirmInput?.value || '';
+
+        // Validate password if provided
+        if (password) {
+            if (password.length < 4) {
+                translationManager.showAlert('error', translationManager.getTranslationSync('password_too_short'));
+                return;
+            }
+            if (password !== confirmPassword) {
+                translationManager.showAlert('error', translationManager.getTranslationSync('passwords_dont_match'));
+                return;
+            }
+        }
+
+        this.hideSaveQuizModal();
+        this.confirmSave(password);
+    }
+
+    /**
+     * Actually save the quiz to server
+     */
+    async confirmSave(password) {
+        if (!this.pendingSave) return;
+
+        const { title, questions } = this.pendingSave;
+
         return await errorHandler.safeNetworkOperation(async () => {
-            const title = document.getElementById('quiz-title')?.value?.trim();
-            if (!title) {
-                showErrorAlert('please_enter_quiz_title');
-                return;
-            }
-
-            const questions = this.collectQuestions();
-            if (questions.length === 0) {
-                showErrorAlert('please_add_one_question');
-                return;
-            }
-
-            // Validate questions
-            const validationErrors = this.validateQuestions(questions);
-            if (validationErrors.length > 0) {
-                translationManager.showAlert('error', validationErrors.join('\\n'));
-                return;
-            }
-
             const response = await fetch(APIHelper.getApiUrl('api/save-quiz'), {
                 method: 'POST',
                 headers: {
@@ -260,7 +361,8 @@ export class QuizManager {
                 },
                 body: JSON.stringify({
                     title: title,
-                    questions: questions
+                    questions: questions,
+                    password: password || null
                 })
             });
 
@@ -279,8 +381,11 @@ export class QuizManager {
             } else {
                 translationManager.showAlert('error', data.message || translationManager.getTranslationSync('failed_save_quiz'));
             }
+
+            this.pendingSave = null;
         }, 'quiz_save', () => {
             translationManager.showAlert('error', 'Failed to save quiz due to network error. Please try again.');
+            this.pendingSave = null;
         });
     }
 

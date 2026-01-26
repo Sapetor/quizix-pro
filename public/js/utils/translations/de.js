@@ -593,5 +593,8 @@ export default {
     password_fair: 'Mäßig',
     password_good: 'Gut',
     password_strong: 'Stark',
-    right_click_hint: 'Rechtsklick auf Elemente für mehr Optionen (Umbenennen, Verschieben, Passwort, Löschen)'
+    optional_password: 'Passwort (optional)',
+    password_hint: 'Falls gesetzt, wird das Passwort zum Laden oder Löschen dieses Quiz benötigt',
+    verify_to_remove_password: 'Aktuelles Passwort eingeben, um den Schutz zu entfernen',
+    right_click_hint: 'Rechtsklick auf Elemente für mehr Optionen (Umbenennen, Verschieben, Löschen)'
 };

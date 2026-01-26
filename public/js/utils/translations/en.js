@@ -671,5 +671,8 @@ export default {
     password_fair: 'Fair',
     password_good: 'Good',
     password_strong: 'Strong',
-    right_click_hint: 'Right-click items for more options (rename, move, password, delete)'
+    optional_password: 'Password (optional)',
+    password_hint: 'If set, password will be required to load or delete this quiz',
+    verify_to_remove_password: 'Enter current password to remove protection',
+    right_click_hint: 'Right-click items for more options (rename, move, delete)'
 };

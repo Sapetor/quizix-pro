@@ -580,5 +580,8 @@ export default {
     password_fair: 'Średnie',
     password_good: 'Dobre',
     password_strong: 'Silne',
-    right_click_hint: 'Kliknij prawym przyciskiem myszy na elementy, aby uzyskać więcej opcji (zmień nazwę, przenieś, hasło, usuń)'
+    optional_password: 'Hasło (opcjonalne)',
+    password_hint: 'Jeśli ustawione, hasło będzie wymagane do załadowania lub usunięcia tego quizu',
+    verify_to_remove_password: 'Wprowadź aktualne hasło, aby usunąć ochronę',
+    right_click_hint: 'Kliknij prawym przyciskiem myszy na elementy, aby uzyskać więcej opcji (zmień nazwę, przenieś, usuń)'
 };

@@ -594,5 +594,8 @@ export default {
     password_fair: 'Regular',
     password_good: 'Buena',
     password_strong: 'Fuerte',
-    right_click_hint: 'Clic derecho en elementos para más opciones (renombrar, mover, contraseña, eliminar)'
+    optional_password: 'Contraseña (opcional)',
+    password_hint: 'Si se establece, se requerirá la contraseña para cargar o eliminar este cuestionario',
+    verify_to_remove_password: 'Ingrese la contraseña actual para eliminar la protección',
+    right_click_hint: 'Clic derecho en elementos para más opciones (renombrar, mover, eliminar)'
 };

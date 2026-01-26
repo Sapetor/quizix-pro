@@ -97,13 +97,18 @@ export class ContextMenu {
                 { action: 'new-folder', label: t('new_folder') || 'New Folder', icon: '&#128193;' },
                 { type: 'separator' },
                 { action: 'rename', label: t('rename') || 'Rename', icon: '&#9998;' },
-                { action: 'move', label: t('move_to') || 'Move To...', icon: '&#128194;' },
-                { type: 'separator' },
-                {
-                    action: data.protected ? 'remove-password' : 'set-password',
-                    label: data.protected ? (t('remove_password') || 'Remove Password') : (t('set_password') || 'Set Password'),
-                    icon: data.protected ? '&#128275;' : '&#128274;'
-                },
+                { action: 'move', label: t('move_to') || 'Move To...', icon: '&#128194;' }
+            );
+
+            // Only show "Remove Password" for protected folders
+            if (data.protected) {
+                items.push(
+                    { type: 'separator' },
+                    { action: 'remove-password', label: t('remove_password') || 'Remove Password', icon: '&#128275;' }
+                );
+            }
+
+            items.push(
                 { type: 'separator' },
                 { action: 'delete', label: t('delete') || 'Delete', icon: '&#128465;', danger: true }
             );
@@ -113,13 +118,18 @@ export class ContextMenu {
                 { action: 'practice', label: t('practice') || 'Practice', icon: '&#127919;' },
                 { type: 'separator' },
                 { action: 'rename', label: t('rename') || 'Rename', icon: '&#9998;' },
-                { action: 'move', label: t('move_to') || 'Move To...', icon: '&#128194;' },
-                { type: 'separator' },
-                {
-                    action: data.protected ? 'remove-password' : 'set-password',
-                    label: data.protected ? (t('remove_password') || 'Remove Password') : (t('set_password') || 'Set Password'),
-                    icon: data.protected ? '&#128275;' : '&#128274;'
-                },
+                { action: 'move', label: t('move_to') || 'Move To...', icon: '&#128194;' }
+            );
+
+            // Only show "Remove Password" for protected quizzes
+            if (data.protected) {
+                items.push(
+                    { type: 'separator' },
+                    { action: 'remove-password', label: t('remove_password') || 'Remove Password', icon: '&#128275;' }
+                );
+            }
+
+            items.push(
                 { type: 'separator' },
                 { action: 'delete', label: t('delete') || 'Delete', icon: '&#128465;', danger: true }
             );

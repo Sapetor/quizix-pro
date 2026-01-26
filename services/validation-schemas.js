@@ -87,7 +87,8 @@ const quizSettingsSchema = z.object({
 const saveQuizSchema = z.object({
     title: z.string().min(1, 'Quiz title is required').max(200),
     questions: z.array(questionSchema).min(1, 'At least one question is required'),
-    settings: quizSettingsSchema
+    settings: quizSettingsSchema,
+    password: z.string().min(4).max(100).nullable().optional()
 });
 
 // ============================================================================

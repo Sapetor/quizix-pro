@@ -660,8 +660,17 @@ app.post('/api/extract-pdf', pdfUpload.single('pdf'), async (req, res) => {
 // Save quiz endpoint
 app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {
     try {
-        const { title, questions } = req.validatedBody;
+        const { title, questions, password } = req.validatedBody;
         const result = await quizService.saveQuiz(title, questions);
+
+        // Register quiz in metadata and optionally set password
+        if (result.filename) {
+            await metadataService.registerQuiz(result.filename, title);
+            if (password) {
+                await metadataService.setQuizPassword(result.filename, password);
+            }
+        }
+
         res.json(result);
     } catch (error) {
         logger.error('Save quiz error:', error);

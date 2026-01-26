@@ -385,14 +385,35 @@ export class FileManager {
     }
 
     /**
-     * Remove password from an item
+     * Remove password from an item (requires current password verification)
      */
     async removePassword(type, id) {
-        if (!confirm(t('confirm_remove_password') || 'Remove password protection?')) {
-            return;
-        }
-
         try {
+            // Prompt for current password to verify ownership
+            const name = type === 'folder' ? 'folder' : 'quiz';
+            const password = await this.passwordModal.promptPassword(t('verify_to_remove_password') || `Enter current password to remove protection`);
+
+            // Verify password first
+            const verifyResponse = await APIHelper.fetchAPI('api/unlock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    itemId: id,
+                    itemType: type,
+                    password
+                })
+            });
+
+            if (!verifyResponse.ok) {
+                const error = await verifyResponse.json();
+                if (verifyResponse.status === 401) {
+                    this.showToast(t('incorrect_password') || 'Incorrect password', 'error');
+                    return;
+                }
+                throw new Error(error.error || 'Verification failed');
+            }
+
+            // Password verified, now remove it
             const endpoint = type === 'folder'
                 ? `api/folders/${id}/password`
                 : `api/quiz-metadata/${id}/password`;
@@ -414,8 +435,10 @@ export class FileManager {
             await this.loadTree();
             this.showToast(t('password_removed') || 'Password removed', 'success');
         } catch (error) {
-            logger.error('Remove password failed:', error);
-            this.showToast(error.message, 'error');
+            if (error.message !== 'Cancelled') {
+                logger.error('Remove password failed:', error);
+                this.showToast(error.message, 'error');
+            }
         }
     }
 

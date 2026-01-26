@@ -578,5 +578,8 @@ export default {
     password_fair: 'Regular',
     password_good: 'Boa',
     password_strong: 'Forte',
-    right_click_hint: 'Clique direito nos itens para mais opções (renomear, mover, senha, excluir)'
+    optional_password: 'Senha (opcional)',
+    password_hint: 'Se definida, a senha será necessária para carregar ou excluir este quiz',
+    verify_to_remove_password: 'Digite a senha atual para remover a proteção',
+    right_click_hint: 'Clique direito nos itens para mais opções (renomear, mover, excluir)'
 };

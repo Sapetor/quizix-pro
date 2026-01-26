@@ -576,5 +576,8 @@ export default {
     password_fair: '一般',
     password_good: '良好',
     password_strong: '强',
-    right_click_hint: '右键点击项目以获取更多选项（重命名、移动、密码、删除）'
+    optional_password: '密码（可选）',
+    password_hint: '如果设置，加载或删除此测验时将需要密码',
+    verify_to_remove_password: '输入当前密码以移除保护',
+    right_click_hint: '右键点击项目以获取更多选项（重命名、移动、删除）'
 };
