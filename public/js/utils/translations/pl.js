@@ -579,5 +579,6 @@ export default {
     password_weak: 'Słabe',
     password_fair: 'Średnie',
     password_good: 'Dobre',
-    password_strong: 'Silne'
+    password_strong: 'Silne',
+    right_click_hint: 'Kliknij prawym przyciskiem myszy na elementy, aby uzyskać więcej opcji (zmień nazwę, przenieś, hasło, usuń)'
 };

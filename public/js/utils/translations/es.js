@@ -593,5 +593,6 @@ export default {
     password_weak: 'Débil',
     password_fair: 'Regular',
     password_good: 'Buena',
-    password_strong: 'Fuerte'
+    password_strong: 'Fuerte',
+    right_click_hint: 'Clic derecho en elementos para más opciones (renombrar, mover, contraseña, eliminar)'
 };

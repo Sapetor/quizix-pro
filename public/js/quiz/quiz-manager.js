@@ -269,6 +269,11 @@ export class QuizManager {
             if (response.ok) {
                 showSuccessAlert('quiz_saved_successfully');
 
+                // Register quiz in metadata for folder tree
+                if (data.filename) {
+                    await this.fileManager.registerNewQuiz(data.filename, title);
+                }
+
                 // Auto-save the current state
                 this.autoSaveQuiz();
             } else {

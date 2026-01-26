@@ -576,5 +576,6 @@ export default {
     password_weak: '弱い',
     password_fair: '普通',
     password_good: '良い',
-    password_strong: '強い'
+    password_strong: '強い',
+    right_click_hint: '右クリックでオプションを表示（名前変更、移動、パスワード、削除）'
 };

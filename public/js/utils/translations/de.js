@@ -592,5 +592,6 @@ export default {
     password_weak: 'Schwach',
     password_fair: 'Mäßig',
     password_good: 'Gut',
-    password_strong: 'Stark'
+    password_strong: 'Stark',
+    right_click_hint: 'Rechtsklick auf Elemente für mehr Optionen (Umbenennen, Verschieben, Passwort, Löschen)'
 };

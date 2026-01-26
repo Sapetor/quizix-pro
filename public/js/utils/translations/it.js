@@ -585,5 +585,6 @@ export default {
     password_weak: 'Debole',
     password_fair: 'Discreta',
     password_good: 'Buona',
-    password_strong: 'Forte'
+    password_strong: 'Forte',
+    right_click_hint: 'Clic destro sugli elementi per più opzioni (rinomina, sposta, password, elimina)'
 };

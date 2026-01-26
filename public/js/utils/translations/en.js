@@ -670,5 +670,6 @@ export default {
     password_weak: 'Weak',
     password_fair: 'Fair',
     password_good: 'Good',
-    password_strong: 'Strong'
+    password_strong: 'Strong',
+    right_click_hint: 'Right-click items for more options (rename, move, password, delete)'
 };

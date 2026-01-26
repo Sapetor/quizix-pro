@@ -22,6 +22,14 @@
     border-color: var(--border-color, #3a3a3a);
 }
 
+.tree-hint {
+    margin: 0.5rem 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary, #666);
+    font-style: italic;
+    text-align: center;
+}
+
 /* ============================================================================
    Folder Tree
    ============================================================================ */

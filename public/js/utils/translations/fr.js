@@ -604,5 +604,6 @@ export default {
     password_weak: 'Faible',
     password_fair: 'Passable',
     password_good: 'Bon',
-    password_strong: 'Fort'
+    password_strong: 'Fort',
+    right_click_hint: 'Clic droit sur les éléments pour plus d'options (renommer, déplacer, mot de passe, supprimer)'
 };

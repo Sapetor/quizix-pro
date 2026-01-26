@@ -577,5 +577,6 @@ export default {
     password_weak: 'Fraca',
     password_fair: 'Regular',
     password_good: 'Boa',
-    password_strong: 'Forte'
+    password_strong: 'Forte',
+    right_click_hint: 'Clique direito nos itens para mais opções (renomear, mover, senha, excluir)'
 };
