@@ -5,10 +5,13 @@
 
 import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
-import { t } from '../utils/translation-manager.js';
+import { translationManager } from '../utils/translation-manager.js';
 import { FolderTree } from './components/folder-tree.js';
 import { ContextMenu } from './components/context-menu.js';
 import { PasswordModal } from './components/password-modal.js';
+
+// Helper for shorter translation calls
+const t = (key) => translationManager.getTranslationSync(key);
 
 export class FileManager {
     constructor(options = {}) {
