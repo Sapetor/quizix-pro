@@ -354,7 +354,9 @@ export class QuizManager {
         const { title, questions } = this.pendingSave;
 
         return await errorHandler.safeNetworkOperation(async () => {
-            const response = await fetch(APIHelper.getApiUrl('api/save-quiz'), {
+            logger.info('Saving quiz:', title, 'with', questions.length, 'questions');
+
+            const response = await APIHelper.fetchAPI('api/save-quiz', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -367,6 +369,7 @@ export class QuizManager {
             });
 
             const data = await response.json();
+            logger.info('Save response:', response.status, data);
 
             if (response.ok) {
                 showSuccessAlert('quiz_saved_successfully');
@@ -379,7 +382,9 @@ export class QuizManager {
                 // Auto-save the current state
                 this.autoSaveQuiz();
             } else {
-                translationManager.showAlert('error', data.message || translationManager.getTranslationSync('failed_save_quiz'));
+                const errorMsg = data.error || data.message || translationManager.getTranslationSync('failed_save_quiz');
+                logger.error('Save quiz failed:', errorMsg);
+                translationManager.showAlert('error', errorMsg);
             }
 
             this.pendingSave = null;
