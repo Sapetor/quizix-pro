@@ -1905,51 +1905,61 @@ app.get('/ready', (req, res) => {
 const PORT = process.env.PORT || 3000;
 const NETWORK_IP = process.env.NETWORK_IP;
 
-server.listen(PORT, '0.0.0.0', async () => {
-    // Initialize metadata service (async)
+// Initialize services before starting server
+async function startServer() {
+    // Initialize metadata service BEFORE accepting requests
     try {
         await metadataService.initialize();
         logger.info('Metadata service initialized');
     } catch (error) {
         logger.error('Failed to initialize metadata service:', error);
+        // Continue anyway - basic functionality should still work
     }
 
-    let localIP = 'localhost';
+    server.listen(PORT, '0.0.0.0', () => {
+        let localIP = 'localhost';
 
-    if (NETWORK_IP) {
-        localIP = NETWORK_IP;
-        logger.info(`Using manual IP: ${localIP}`);
-    } else {
-        const networkInterfaces = os.networkInterfaces();
-        const interfaces = Object.values(networkInterfaces).flat();
+        if (NETWORK_IP) {
+            localIP = NETWORK_IP;
+            logger.info(`Using manual IP: ${localIP}`);
+        } else {
+            const networkInterfaces = os.networkInterfaces();
+            const interfaces = Object.values(networkInterfaces).flat();
 
-        localIP = interfaces.find(iface =>
-            iface.family === 'IPv4' &&
-      !iface.internal &&
-      iface.address.startsWith('192.168.')
-        )?.address ||
-    interfaces.find(iface =>
-        iface.family === 'IPv4' &&
-      !iface.internal &&
-      iface.address.startsWith('10.')
-    )?.address ||
-    interfaces.find(iface =>
-        iface.family === 'IPv4' &&
-      !iface.internal
-    )?.address || 'localhost';
-    }
+            localIP = interfaces.find(iface =>
+                iface.family === 'IPv4' &&
+                !iface.internal &&
+                iface.address.startsWith('192.168.')
+            )?.address ||
+            interfaces.find(iface =>
+                iface.family === 'IPv4' &&
+                !iface.internal &&
+                iface.address.startsWith('10.')
+            )?.address ||
+            interfaces.find(iface =>
+                iface.family === 'IPv4' &&
+                !iface.internal
+            )?.address || 'localhost';
+        }
 
-    logger.info(`Network access: http://${localIP}:${PORT}`);
-    logger.info(`Local access: http://localhost:${PORT}`);
-    logger.info(`Server running on port ${PORT}`);
+        logger.info(`Network access: http://${localIP}:${PORT}`);
+        logger.info(`Local access: http://localhost:${PORT}`);
+        logger.info(`Server running on port ${PORT}`);
 
-    if (localIP.startsWith('172.')) {
-        logger.info('');
-        logger.info('WSL DETECTED: If you can\'t connect from your phone:');
-        logger.info('1. Find your Windows IP: run "ipconfig" in Windows Command Prompt');
-        logger.info('2. Look for "Wireless LAN adapter Wi-Fi" or "Ethernet adapter"');
-        logger.info('3. Use that IP address instead of the one shown above');
-        logger.info('4. Or restart with: NETWORK_IP=your.windows.ip npm start');
-        logger.info('');
-    }
+        if (localIP.startsWith('172.')) {
+            logger.info('');
+            logger.info('WSL DETECTED: If you can\'t connect from your phone:');
+            logger.info('1. Find your Windows IP: run "ipconfig" in Windows Command Prompt');
+            logger.info('2. Look for "Wireless LAN adapter Wi-Fi" or "Ethernet adapter"');
+            logger.info('3. Use that IP address instead of the one shown above');
+            logger.info('4. Or restart with: NETWORK_IP=your.windows.ip npm start');
+            logger.info('');
+        }
+    });
+}
+
+// Start the server
+startServer().catch(error => {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
 });

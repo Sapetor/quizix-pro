@@ -293,7 +293,7 @@ export class QuizManager {
         const confirmBtn = document.getElementById('confirm-save');
 
         if (cancelBtn) {
-            cancelBtn.onclick = () => this.hideSaveQuizModal();
+            cancelBtn.onclick = () => this.hideSaveQuizModal(true); // Clear pending on cancel
         }
 
         if (confirmBtn) {
@@ -308,15 +308,19 @@ export class QuizManager {
 
     /**
      * Hide save quiz modal
+     * @param {boolean} clearPending - Whether to clear pending save data (default: false)
      */
-    hideSaveQuizModal() {
+    hideSaveQuizModal(clearPending = false) {
         const modal = document.getElementById('save-quiz-modal');
         if (modal) {
             modal.style.display = 'none';
             modal.classList.remove('visible-flex');
             modal.classList.add('hidden');
         }
-        this.pendingSave = null;
+        // Only clear pendingSave if explicitly requested (e.g., on cancel)
+        if (clearPending) {
+            this.pendingSave = null;
+        }
     }
 
     /**
