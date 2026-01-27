@@ -179,29 +179,28 @@ export class FileManager {
     }
 
     /**
-     * Load a quiz for editing
+     * Execute action on quiz after ensuring it's unlocked
      */
-    async loadQuiz(filename, data) {
-        // Check if password required
+    async executeQuizAction(filename, data, action) {
         if (data?.protected) {
             const unlocked = await this.ensureUnlocked('quiz', filename, data.displayName || filename);
             if (!unlocked) return;
         }
+        action(filename, data);
+    }
 
-        this.options.onLoadQuiz(filename, data);
+    /**
+     * Load a quiz for editing
+     */
+    async loadQuiz(filename, data) {
+        await this.executeQuizAction(filename, data, this.options.onLoadQuiz);
     }
 
     /**
      * Start practice mode for a quiz
      */
     async practiceQuiz(filename, data) {
-        // Check if password required
-        if (data?.protected) {
-            const unlocked = await this.ensureUnlocked('quiz', filename, data.displayName || filename);
-            if (!unlocked) return;
-        }
-
-        this.options.onPracticeQuiz(filename, data);
+        await this.executeQuizAction(filename, data, this.options.onPracticeQuiz);
     }
 
     /**

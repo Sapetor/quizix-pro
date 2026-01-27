@@ -50,7 +50,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 **Key API Endpoints:**
 - `POST /upload` - Secure image upload with cryptographic file naming
-- `POST /api/save-quiz` - Persist quiz to disk as JSON
+- `POST /api/save-quiz` - Persist quiz to disk as JSON (supports optional password)
 - `GET /api/quizzes` - List all available quizzes
 - `GET /api/quiz/:filename` - Load specific quiz data
 - `POST /api/save-results` - Archive game results with metadata
@@ -59,6 +59,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `POST /api/claude/generate` - AI question generation proxy (supports server-side API key)
 - `GET /api/ai/config` - Check AI provider configuration status
 - `GET /api/results/:filename/export/:format` - Export as CSV/JSON
+
+**File Management API Endpoints:**
+- `GET /api/quiz-tree` - Get full folder/quiz tree structure
+- `POST /api/folders` - Create new folder
+- `PATCH /api/folders/:id` - Rename folder
+- `PATCH /api/folders/:id/move` - Move folder to different parent
+- `DELETE /api/folders/:id` - Delete folder (with optional recursive delete)
+- `POST /api/folders/:id/password` - Set/remove folder password
+- `PATCH /api/quiz-metadata/:filename` - Update quiz display name or folder
+- `POST /api/quiz-metadata/:filename/password` - Set/remove quiz password
+- `DELETE /api/quiz/:filename` - Delete quiz file and metadata
+- `POST /api/unlock` - Verify password and get session token
+- `GET /api/requires-auth/:itemType/:itemId` - Check if item requires authentication
 
 **Frontend Core Managers:**
 - `public/js/core/app.js` - Application initialization (QuizGame class, 1193 lines)
@@ -103,6 +116,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `public/js/utils/storage-utils.js` - **SIMP-6**: Safe localStorage wrappers (`getItem`, `setItem`, `getJSON`, `setJSON`, etc.)
 - `public/js/utils/dom.js` - **SIMP-5**: Safe DOM manipulation with `escapeHtml()`, `escapeHtmlPreservingLatex()`, and `bindElement()` helper
 
+**File Management UI Components:**
+- `public/js/ui/file-manager.js` - Coordinator for folder tree, context menu, and password modals
+- `public/js/ui/components/folder-tree.js` - Expandable tree view with folder/quiz hierarchy
+- `public/js/ui/components/context-menu.js` - Right-click menu for file operations
+- `public/js/ui/components/password-modal.js` - Password entry and creation dialogs
+
 **Backend Services (Node.js):**
 - `services/quiz-service.js` - Quiz CRUD operations (save, list, load)
 - `services/results-service.js` - Results management with CSV/JSON export
@@ -112,6 +131,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `services/game-session-service.js` - **Week 3**: Game lifecycle, PIN management, question timing, power-up state
 - `services/player-management-service.js` - **Week 3**: Player join/leave, disconnection handling
 - `services/question-flow-service.js` - **Week 3**: Answer submission, statistics, early question ending
+- `services/metadata-service.js` - **File Management**: Folder structure, quiz metadata, password protection
 
 **Frontend Services:**
 - `public/js/services/results-manager-service.js` - Results data management
@@ -136,6 +156,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - `public/css/preview.css` - Live preview modal
 - `public/css/toasts.css` - Toast notification styles
 - `public/css/analytics.css` - Results viewer and analytics
+- `public/css/file-manager.css` - File tree, context menu, and password modal styles
 - `public/css/components/syntax-highlighting.css` - Code syntax highlighting
 - `public/css/components/code-blocks.css` - LaTeX/code rendering
 
@@ -321,6 +342,23 @@ quizix-pro/
 - Question randomization and answer shuffling
 - Global or per-question time settings
 - AI question generation (Claude, Ollama, HuggingFace)
+
+**File Management:**
+- Virtual folder organization (metadata-based, no database required)
+- Tree view with expandable folders in Load Quiz modal
+- Right-click context menu for file operations (rename, move, delete)
+- Optional password protection at quiz creation time
+- Password-protected items show lock icon
+- Session tokens for unlocked items (1hr expiry)
+- Drag-and-drop organization (folders and quizzes)
+
+**Password Protection Security:**
+- PBKDF2 hashing with SHA-512 (100,000 iterations)
+- 32-byte cryptographically random salt per password
+- Timing-safe comparison to prevent timing attacks
+- Rate limiting: 5 unlock attempts per minute per IP
+- Passwords can only be set at quiz creation (not retroactively)
+- Removing password requires current password verification
 
 **Game Flow:**
 1. Host creates quiz and enters lobby

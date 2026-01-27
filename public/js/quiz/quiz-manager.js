@@ -357,45 +357,36 @@ export class QuizManager {
 
         const { title, questions } = this.pendingSave;
 
-        return await errorHandler.safeNetworkOperation(async () => {
-            logger.info('Saving quiz:', title, 'with', questions.length, 'questions');
+        try {
+            return await errorHandler.safeNetworkOperation(async () => {
+                logger.info('Saving quiz:', title, 'with', questions.length, 'questions');
 
-            const response = await APIHelper.fetchAPI('api/save-quiz', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    title: title,
-                    questions: questions,
-                    password: password || null
-                })
-            });
+                const response = await APIHelper.fetchAPI('api/save-quiz', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, questions, password: password || null })
+                });
 
-            const data = await response.json();
-            logger.info('Save response:', response.status, data);
+                const data = await response.json();
+                logger.info('Save response:', response.status, data);
 
-            if (response.ok) {
-                showSuccessAlert('quiz_saved_successfully');
-
-                // Register quiz in metadata for folder tree
-                if (data.filename) {
-                    await this.fileManager.registerNewQuiz(data.filename, title);
+                if (response.ok) {
+                    showSuccessAlert('quiz_saved_successfully');
+                    if (data.filename) {
+                        await this.fileManager.registerNewQuiz(data.filename, title);
+                    }
+                    this.autoSaveQuiz();
+                } else {
+                    const errorMsg = data.error || data.message || translationManager.getTranslationSync('failed_save_quiz');
+                    logger.error('Save quiz failed:', errorMsg);
+                    translationManager.showAlert('error', errorMsg);
                 }
-
-                // Auto-save the current state
-                this.autoSaveQuiz();
-            } else {
-                const errorMsg = data.error || data.message || translationManager.getTranslationSync('failed_save_quiz');
-                logger.error('Save quiz failed:', errorMsg);
-                translationManager.showAlert('error', errorMsg);
-            }
-
+            }, 'quiz_save', () => {
+                translationManager.showAlert('error', 'Failed to save quiz due to network error. Please try again.');
+            });
+        } finally {
             this.pendingSave = null;
-        }, 'quiz_save', () => {
-            translationManager.showAlert('error', 'Failed to save quiz due to network error. Please try again.');
-            this.pendingSave = null;
-        });
+        }
     }
 
     /**

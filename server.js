@@ -1905,6 +1905,25 @@ app.get('/ready', (req, res) => {
 const PORT = process.env.PORT || 3000;
 const NETWORK_IP = process.env.NETWORK_IP;
 
+/**
+ * Detect local network IP address
+ * Prioritizes 192.168.x.x (home networks), then 10.x.x.x (corporate), then any non-internal IPv4
+ */
+function detectLocalIP() {
+    const interfaces = Object.values(os.networkInterfaces()).flat();
+    const isIPv4External = (iface) => iface.family === 'IPv4' && !iface.internal;
+
+    // Priority order: 192.168.x.x > 10.x.x.x > any external IPv4
+    const prefixes = ['192.168.', '10.', ''];
+    for (const prefix of prefixes) {
+        const match = interfaces.find(iface =>
+            isIPv4External(iface) && (prefix === '' || iface.address.startsWith(prefix))
+        );
+        if (match) return match.address;
+    }
+    return 'localhost';
+}
+
 // Initialize services before starting server
 async function startServer() {
     // Initialize metadata service BEFORE accepting requests
@@ -1923,23 +1942,7 @@ async function startServer() {
             localIP = NETWORK_IP;
             logger.info(`Using manual IP: ${localIP}`);
         } else {
-            const networkInterfaces = os.networkInterfaces();
-            const interfaces = Object.values(networkInterfaces).flat();
-
-            localIP = interfaces.find(iface =>
-                iface.family === 'IPv4' &&
-                !iface.internal &&
-                iface.address.startsWith('192.168.')
-            )?.address ||
-            interfaces.find(iface =>
-                iface.family === 'IPv4' &&
-                !iface.internal &&
-                iface.address.startsWith('10.')
-            )?.address ||
-            interfaces.find(iface =>
-                iface.family === 'IPv4' &&
-                !iface.internal
-            )?.address || 'localhost';
+            localIP = detectLocalIP();
         }
 
         logger.info(`Network access: http://${localIP}:${PORT}`);

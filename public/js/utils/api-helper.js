@@ -24,27 +24,20 @@ export class APIHelper {
     static async fetchAPI(endpoint, options = {}) {
         const url = this.getApiUrl(endpoint);
         const method = options.method || 'GET';
-        logger.info(`🌐 API Request: ${method} ${url} (host: ${window.location.host})`);
+        logger.debug(`API Request: ${method} ${url}`);
 
         try {
             const response = await fetch(url, options);
 
-            // Log response for debugging
             if (!response.ok) {
-                logger.error(`❌ API Error: ${response.status} ${response.statusText} for ${url}`);
-                logger.error('❌ Response headers:', Object.fromEntries(response.headers.entries()));
+                logger.error(`API Error: ${response.status} ${response.statusText} for ${url}`);
             } else {
-                logger.info(`✅ API Success: ${response.status} for ${url}`);
+                logger.debug(`API Success: ${response.status} for ${url}`);
             }
 
             return response;
         } catch (error) {
-            logger.error(`❌ Network Error for ${url}:`, error);
-            logger.error('❌ Error details:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack
-            });
+            logger.error(`Network Error for ${url}:`, error.message);
             throw error;
         }
     }
