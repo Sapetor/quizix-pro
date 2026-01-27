@@ -23,7 +23,8 @@ export class APIHelper {
 
     static async fetchAPI(endpoint, options = {}) {
         const url = this.getApiUrl(endpoint);
-        logger.info(`🌐 API Request: ${url} (host: ${window.location.host})`);
+        const method = options.method || 'GET';
+        logger.info(`🌐 API Request: ${method} ${url} (host: ${window.location.host})`);
 
         try {
             const response = await fetch(url, options);
