@@ -727,7 +727,7 @@ export class QuizGame {
                 <div class="preview-question-text">${this.mathRenderer.formatCodeBlocks(question.question)}</div>
                 <div class="preview-question-meta">
                     <span>${translationManager.getTranslationSync('type')}: ${translationManager.getTranslationSync(question.type)}</span>
-                    <span>${translationManager.getTranslationSync('time')}: ${question.time}s</span>
+                    <span>${translationManager.getTranslationSync('time')}: ${question.timeLimit || question.time || 30}s</span>
                 </div>
             `;
 

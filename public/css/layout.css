@@ -193,37 +193,62 @@ header {
     -webkit-backdrop-filter: none;
 }
 
-/* Resizable Split Divider */
+/* Resizable Split Divider - Premium Design */
 .split-resize-handle {
     position: absolute;
     top: 0;
     bottom: 0;
     left: 50%; /* Start at center, will be updated by JavaScript */
-    width: 8px;
+    width: 12px; /* Wider for better grab target */
     cursor: col-resize;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
+    background: transparent;
+    border: none;
     transition: left 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     z-index: 10;
     transform: translateX(-50%);
 }
 
-.split-resize-handle:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: scaleX(1.2);
+/* Visual indicator bar */
+.split-resize-handle::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 48px;
+    border-radius: 2px;
+    background: var(--color-primary-500, #6366f1);
+    opacity: 0.3;
+    transition: opacity var(--duration-fast, 150ms), height var(--duration-fast, 150ms), width var(--duration-fast, 150ms);
 }
 
-.split-resize-handle.dragging {
-    background: rgba(59, 130, 246, 0.3);
-    border-color: rgba(59, 130, 246, 0.5);
-    transform: scaleX(1.5);
+.split-resize-handle:hover::before {
+    opacity: 0.6;
+    height: 72px;
+    width: 5px;
+}
+
+.split-resize-handle:focus-visible {
+    outline: none;
+}
+
+.split-resize-handle:focus-visible::before {
+    opacity: 0.8;
+    height: 72px;
+    width: 5px;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+}
+
+.split-resize-handle.dragging::before {
+    background: var(--color-primary-400, #818cf8);
+    opacity: 0.9;
+    height: 100px;
+    width: 6px;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
 }
 
 .resize-grip {

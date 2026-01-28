@@ -359,6 +359,9 @@ quizix-pro/
 - Rate limiting: 5 unlock attempts per minute per IP
 - Passwords can only be set at quiz creation (not retroactively)
 - Removing password requires current password verification
+- **Fail-closed authentication**: If auth verification fails (network/server error), access is denied (security-first approach)
+- **Automatic token refresh**: Expired tokens trigger re-authentication seamlessly during operations
+- Session tokens: 1-hour expiry with cryptographically random 32-byte values
 
 **Game Flow:**
 1. Host creates quiz and enters lobby

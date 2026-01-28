@@ -925,6 +925,21 @@ app.delete('/api/folders/:id', validateParams(folderIdParamSchema), async (req, 
     try {
         const { id } = req.validatedParams;
         const deleteContents = req.query.deleteContents === 'true';
+
+        // Check if folder requires authentication
+        if (metadataService.requiresAuth(id, 'folder')) {
+            // Extract token from Authorization header
+            const authHeader = req.headers['authorization'];
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return res.status(401).json({ error: 'Authentication required' });
+            }
+
+            const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+            if (!metadataService.verifyToken(token, id, 'folder')) {
+                return res.status(403).json({ error: 'Invalid or expired authentication token' });
+            }
+        }
+
         const result = await metadataService.deleteFolder(id, deleteContents);
         res.json(result);
     } catch (error) {
@@ -1008,6 +1023,20 @@ app.delete('/api/quiz/:filename', async (req, res) => {
         // Require confirmation parameter
         if (req.query.confirm !== 'true') {
             return res.status(400).json({ error: 'Delete requires confirm=true parameter' });
+        }
+
+        // Check if quiz requires authentication
+        if (metadataService.requiresAuth(filename, 'quiz')) {
+            // Extract token from Authorization header
+            const authHeader = req.headers['authorization'];
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return res.status(401).json({ error: 'Authentication required' });
+            }
+
+            const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+            if (!metadataService.verifyToken(token, filename, 'quiz')) {
+                return res.status(403).json({ error: 'Invalid or expired authentication token' });
+            }
         }
 
         // Delete the physical file

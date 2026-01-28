@@ -158,7 +158,7 @@ export class LocalGameSession {
         const sanitized = {
             question: question.question,
             type: question.type,
-            time: question.time,
+            timeLimit: question.timeLimit || question.time, // Support both property names
             difficulty: question.difficulty,
             image: question.image
         };

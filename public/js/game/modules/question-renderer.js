@@ -201,11 +201,12 @@ export class QuestionRenderer {
 
         shuffledIndices.forEach((originalIndex, displayIndex) => {
             const option = data.options[originalIndex];
+            const safeOption = escapeHtmlPreservingLatex(option || '');
             const bgColor = itemColors[originalIndex % itemColors.length];
             html += `
                 <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${displayIndex + 1}</div>
-                    <div class="ordering-item-content">${this.displayManager.mathRenderer.formatCodeBlocks(option)}</div>
+                    <div class="ordering-item-content">${this.displayManager.mathRenderer.formatCodeBlocks(safeOption)}</div>
                 </div>
             `;
         });
@@ -525,11 +526,12 @@ export class QuestionRenderer {
 
         shuffledIndices.forEach((originalIndex, displayIndex) => {
             const option = data.options[originalIndex];
+            const safeOption = escapeHtmlPreservingLatex(option || '');
             const bgColor = itemColors[originalIndex % itemColors.length];
             html += `
                 <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${displayIndex + 1}</div>
-                    <div class="ordering-item-content">${this.displayManager.mathRenderer.formatCodeBlocks(option)}</div>
+                    <div class="ordering-item-content">${this.displayManager.mathRenderer.formatCodeBlocks(safeOption)}</div>
                 </div>
             `;
         });

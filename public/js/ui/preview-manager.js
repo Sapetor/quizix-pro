@@ -10,6 +10,9 @@ import { simpleMathJaxService } from '../utils/simple-mathjax-service.js';
 import { SplitLayoutManager } from './modules/split-layout-manager.js';
 import { PreviewRenderer } from './modules/preview-renderer.js';
 import { logger, TIMING } from '../core/config.js';
+
+// Use faster debounce for preview responsiveness
+const PREVIEW_DEBOUNCE_TIME = TIMING.PREVIEW_DEBOUNCE || 150;
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
 import { isMobile, debounce } from '../utils/dom.js';
@@ -24,7 +27,7 @@ export class PreviewManager {
         this.splitPreviewListenersSet = false;
         this.previewMode = false;
         this.manualNavigationInProgress = false;
-        this.updatePreviewDebounced = debounce(() => this.updateSplitPreview(), TIMING.ANIMATION_DURATION);
+        this.updatePreviewDebounced = debounce(() => this.updateSplitPreview(), PREVIEW_DEBOUNCE_TIME);
 
         // Memory management via EventListenerManager
         this.listenerManager = new EventListenerManager('PreviewManager');

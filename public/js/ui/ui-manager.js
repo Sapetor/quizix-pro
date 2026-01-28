@@ -45,6 +45,16 @@ export class UIManager {
             const mobileQuizFab = document.getElementById('mobile-quiz-fab');
 
             if (screenId === 'host-screen') {
+                // Restore header visibility (may be hidden from player-game-screen)
+                if (header) {
+                    header.style.transform = '';
+                    header.style.opacity = '';
+                    header.style.pointerEvents = '';
+                    header.style.position = '';
+                    header.style.top = '';
+                    header.style.zIndex = '';
+                    header.style.transition = '';
+                }
                 // Show toolbar and start button for host screen
                 if (headerStartBtn) headerStartBtn.style.display = 'block';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
@@ -120,6 +130,16 @@ export class UIManager {
             switch (screenId) {
                 case 'main-menu':
                     uiStateManager.setState('lobby');
+                    // Restore header visibility (may be hidden from player-game-screen)
+                    if (header) {
+                        header.style.transform = '';
+                        header.style.opacity = '';
+                        header.style.pointerEvents = '';
+                        header.style.position = '';
+                        header.style.top = '';
+                        header.style.zIndex = '';
+                        header.style.transition = '';
+                    }
                     // Force retranslation of main menu to ensure Quick Start Guide is translated
                     setTimeout(() => {
                         const mainMenuScreen = document.getElementById('main-menu');

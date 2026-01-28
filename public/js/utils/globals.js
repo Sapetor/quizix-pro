@@ -77,6 +77,7 @@ export function toggleGlobalTime() {
     logger.debug('Global time toggle function called');
     const globalTimeContainer = document.getElementById('global-time-container');
     const useGlobalTime = document.getElementById('use-global-time');
+    const globalTimeLimit = document.getElementById('global-time-limit');
 
     if (!globalTimeContainer || !useGlobalTime) {
         logger.debug('Global time elements not found');
@@ -93,7 +94,41 @@ export function toggleGlobalTime() {
         if (container) {
             container.style.display = isEnabled ? 'none' : 'block';
         }
+
+        // If enabling global time, sync all question times to the global value
+        if (isEnabled && globalTimeLimit) {
+            const globalValue = parseInt(globalTimeLimit.value);
+            // Validate bounds before applying to all questions
+            if (!isNaN(globalValue) && globalValue >= LIMITS.MIN_TIME_LIMIT && globalValue <= LIMITS.MAX_TIME_LIMIT) {
+                input.value = globalValue;
+            }
+        }
     });
+
+    logger.debug('Global time enabled:', isEnabled, 'Value:', globalTimeLimit?.value);
+}
+
+export function updateGlobalTime(inputElement) {
+    logger.debug('Global time value changed:', inputElement.value);
+    const value = parseInt(inputElement.value);
+
+    // Enforce limits
+    if (value < LIMITS.MIN_TIME_LIMIT) inputElement.value = LIMITS.MIN_TIME_LIMIT;
+    if (value > LIMITS.MAX_TIME_LIMIT) inputElement.value = LIMITS.MAX_TIME_LIMIT;
+
+    const useGlobalTime = document.getElementById('use-global-time');
+
+    // If global time is enabled, update all question time inputs to match
+    if (useGlobalTime?.checked) {
+        const finalValue = parseInt(inputElement.value);
+        // Only update if value is valid and within bounds
+        if (!isNaN(finalValue) && finalValue >= LIMITS.MIN_TIME_LIMIT && finalValue <= LIMITS.MAX_TIME_LIMIT) {
+            document.querySelectorAll('.question-time-limit').forEach(input => {
+                input.value = finalValue;
+            });
+            logger.debug('Updated all question times to:', finalValue);
+        }
+    }
 }
 
 // ============================================================================
@@ -414,7 +449,8 @@ const globalFunctions = {
     openAIGeneratorModal,
 
     // Time functions
-    toggleGlobalTime
+    toggleGlobalTime,
+    updateGlobalTime
 };
 
 // Single global dispatcher function
@@ -439,6 +475,7 @@ window.togglePreviewMode = togglePreviewMode;
 window.scrollToCurrentQuestion = scrollToCurrentQuestion;
 window.updateQuestionType = updateQuestionType;
 window.updateTimeLimit = updateTimeLimit;
+window.updateGlobalTime = updateGlobalTime;
 window.returnToMainFromHeader = returnToMainFromHeader;
 
 // Cross-module communication

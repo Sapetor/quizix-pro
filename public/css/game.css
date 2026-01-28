@@ -40,11 +40,12 @@
 }
 
 .game-pin {
+    font-family: var(--font-mono);
     font-size: calc(48px * var(--global-font-scale));
     font-weight: 700;
     color: var(--accent-primary);
     margin: 20px 0;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
 }
 
 .qr-code-container {
@@ -343,12 +344,12 @@
     color: white;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* Changed from center to allow multi-line content */
     justify-content: flex-start;
     min-height: 70px;
     cursor: default;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* Changed from hidden to allow full content display */
     width: 100%;
     max-width: 100%;
 }

@@ -148,10 +148,22 @@ export class QuizManager {
         const questionType = questionElement.querySelector('.question-type')?.value;
         if (!questionText || !questionType) return null;
 
+        // Check if global time is enabled
+        const useGlobalTime = document.getElementById('use-global-time')?.checked;
+        const globalTimeLimit = parseInt(document.getElementById('global-time-limit')?.value);
+
+        // Use global time if enabled, otherwise use per-question time
+        let timeLimit;
+        if (useGlobalTime && !isNaN(globalTimeLimit)) {
+            timeLimit = globalTimeLimit;
+        } else {
+            timeLimit = parseInt(questionElement.querySelector('.question-time-limit')?.value) || 30;
+        }
+
         const questionData = {
             question: questionText,
             type: questionType,
-            time: parseInt(questionElement.querySelector('.question-time-limit')?.value) || 30,
+            timeLimit: timeLimit,
             difficulty: questionElement.querySelector('.question-difficulty')?.value || 'medium'
         };
 
@@ -1093,7 +1105,8 @@ export class QuizManager {
         // Match the selector used in extractQuestionData: .question-time-limit
         const questionTime = questionElement.querySelector('.question-time-limit');
         if (questionTime) {
-            const timeValue = parseInt(questionData.time, 10);
+            // Support both 'timeLimit' (new) and 'time' (old) for backward compatibility
+            const timeValue = parseInt(questionData.timeLimit || questionData.time, 10);
             questionTime.value = !isNaN(timeValue) && timeValue > 0 ? timeValue : 30;
         }
 

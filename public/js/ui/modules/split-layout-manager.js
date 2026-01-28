@@ -10,6 +10,11 @@ import { getItem, setItem } from '../../utils/storage-utils.js';
 // Mobile breakpoint - matches CSS media query in responsive.css
 const MOBILE_BREAKPOINT = 1000;
 
+// Expanded ratio limits for better flexibility (was 25-75)
+const MIN_RATIO = 20;
+const MAX_RATIO = 85;
+const RATIO_STEP = 5; // Keyboard resize step
+
 export class SplitLayoutManager {
     constructor() {
         // Drag functionality state
@@ -183,9 +188,9 @@ export class SplitLayoutManager {
             const containerWidth = containerRect.width;
             const mouseX = e.clientX - containerRect.left;
 
-            // Calculate new ratio (25% to 75% range)
+            // Calculate new ratio (expanded range for flexibility)
             let newRatio = (mouseX / containerWidth) * 100;
-            newRatio = Math.max(25, Math.min(75, newRatio));
+            newRatio = Math.max(MIN_RATIO, Math.min(MAX_RATIO, newRatio));
 
             // Update CSS custom properties
             hostContainer.style.setProperty('--split-left', `${newRatio}fr`);
@@ -231,6 +236,17 @@ export class SplitLayoutManager {
         document.addEventListener('mousemove', this.listeners.dragMove);
         document.addEventListener('mouseup', this.listeners.dragEnd);
 
+        // Keyboard resize support - make handle focusable and listen for arrow keys
+        resizeHandle.setAttribute('tabindex', '0');
+        resizeHandle.setAttribute('role', 'separator');
+        resizeHandle.setAttribute('aria-valuenow', '70');
+        resizeHandle.setAttribute('aria-valuemin', String(MIN_RATIO));
+        resizeHandle.setAttribute('aria-valuemax', String(MAX_RATIO));
+        resizeHandle.setAttribute('aria-label', 'Resize split view. Use left and right arrow keys to adjust.');
+
+        this.listeners.keyboardResize = (e) => this.handleKeyboardResize(e);
+        resizeHandle.addEventListener('keydown', this.listeners.keyboardResize);
+
         // Mark as initialized for viewport resize tracking
         this.dragFunctionalityInitialized = true;
 
@@ -258,7 +274,7 @@ export class SplitLayoutManager {
         const savedRatio = getItem('splitRatio');
         if (savedRatio) {
             const ratio = parseFloat(savedRatio);
-            if (!isNaN(ratio) && ratio >= 25 && ratio <= 75) {
+            if (!isNaN(ratio) && ratio >= MIN_RATIO && ratio <= MAX_RATIO) {
                 const hostContainer = document.querySelector('.host-container');
                 if (hostContainer) {
                     hostContainer.style.setProperty('--split-left', `${ratio}fr`);
@@ -268,6 +284,35 @@ export class SplitLayoutManager {
                 }
             }
         }
+    }
+
+    /**
+     * Handle keyboard resize (arrow keys)
+     * @param {KeyboardEvent} e - The keyboard event
+     */
+    handleKeyboardResize(e) {
+        if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+
+        const hostContainer = document.querySelector('.host-container');
+        if (!hostContainer) return;
+
+        const computedStyle = getComputedStyle(hostContainer);
+        const leftValue = computedStyle.getPropertyValue('--split-left').trim();
+        let currentRatio = parseFloat(leftValue.slice(0, -2)) || 70;
+
+        if (e.key === 'ArrowLeft') {
+            currentRatio = Math.max(MIN_RATIO, currentRatio - RATIO_STEP);
+        } else if (e.key === 'ArrowRight') {
+            currentRatio = Math.min(MAX_RATIO, currentRatio + RATIO_STEP);
+        }
+
+        hostContainer.style.setProperty('--split-left', `${currentRatio}fr`);
+        hostContainer.style.setProperty('--split-right', `${100 - currentRatio}fr`);
+        this.updateDragHandlePosition(currentRatio);
+
+        // Save the new ratio
+        setItem('splitRatio', currentRatio.toString());
+        logger.debug('Keyboard resize', { newRatio: currentRatio });
     }
 
     /**
@@ -333,6 +378,11 @@ export class SplitLayoutManager {
 
         if (this.listeners.dragEnd) {
             document.removeEventListener('mouseup', this.listeners.dragEnd);
+        }
+
+        // Clean up keyboard resize listener
+        if (resizeHandle && this.listeners.keyboardResize) {
+            resizeHandle.removeEventListener('keydown', this.listeners.keyboardResize);
         }
 
         // Reset drag state

@@ -573,11 +573,101 @@ HTTP Status Codes:
 
 ## Authentication
 
-Quizix Pro is designed for trusted local networks and does not implement authentication. For multi-tenant deployments, consider:
+Quizix Pro implements **optional password protection** for quizzes and folders.
 
-1. Adding JWT authentication
+### Password Protection Features
+
+- **Quiz-level passwords**: Set at creation time via `/api/save-quiz` endpoint
+- **Folder-level passwords**: Set via `/api/folders/:id/password` endpoint
+- **Session tokens**: 1-hour expiring tokens after successful unlock
+- **Security model**: PBKDF2-SHA512 hashing with 100,000 iterations
+- **Rate limiting**: 5 unlock attempts per minute per IP address
+
+### Authentication Endpoints
+
+#### Check if Item Requires Authentication
+```
+GET /api/requires-auth/:itemType/:itemId
+```
+
+**Parameters:**
+- `itemType`: `folder` or `quiz`
+- `itemId`: Folder ID or quiz filename
+
+**Response:**
+```json
+{
+  "requiresAuth": true
+}
+```
+
+#### Unlock Password-Protected Item
+```
+POST /api/unlock
+```
+
+**Request Body:**
+```json
+{
+  "itemId": "quiz-filename.json",
+  "itemType": "quiz",
+  "password": "user-password"
+}
+```
+
+**Response:**
+```json
+{
+  "token": "a1b2c3d4...",
+  "expiresIn": 3600000
+}
+```
+
+**Error Responses:**
+- `429`: Too many unlock attempts (rate limit exceeded)
+- `401`: Incorrect password
+- `404`: Item not found
+
+### Authentication Flow
+
+1. Client checks if item requires auth: `GET /api/requires-auth/:itemType/:itemId`
+2. If `requiresAuth: true`, client prompts for password
+3. Client unlocks item: `POST /api/unlock` with credentials
+4. Server returns session token (1hr expiry)
+5. Client includes token in subsequent requests: `Authorization: Bearer <token>`
+
+### Protected Operations
+
+The following endpoints require authentication for password-protected items:
+
+- `DELETE /api/quiz/:filename` - Delete quiz file
+- `DELETE /api/folders/:id` - Delete folder
+
+**Example with Authentication:**
+```javascript
+const response = await fetch('/api/quiz/my-quiz.json?confirm=true', {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer a1b2c3d4...'
+  }
+});
+```
+
+### Security Guarantees
+
+- **Fail-closed policy**: If authentication verification fails (network error, server error), access is **denied** for security
+- **Automatic token refresh**: Expired tokens trigger seamless re-authentication
+- **Password hashing**: All passwords use PBKDF2-SHA512 (100,000 iterations) - never stored in plaintext
+- **Timing-safe comparison**: Prevents timing attack vulnerabilities
+- **Session tokens**: Cryptographically random 32-byte tokens
+
+### Additional Security Considerations
+
+For multi-tenant deployments beyond password protection, consider:
+
+1. Adding JWT authentication for user sessions
 2. Implementing game-specific access tokens
-3. Using a reverse proxy with authentication
+3. Using a reverse proxy with authentication (e.g., nginx with basic auth)
 
 ---
 

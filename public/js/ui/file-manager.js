@@ -6,6 +6,7 @@
 import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { translationManager } from '../utils/translation-manager.js';
+import { unifiedErrorHandler } from '../utils/unified-error-handler.js';
 import { FolderTree } from './components/folder-tree.js';
 import { ContextMenu } from './components/context-menu.js';
 import { PasswordModal } from './components/password-modal.js';
@@ -454,30 +455,70 @@ export class FileManager {
             return;
         }
 
-        try {
-            let response;
-
-            if (type === 'folder') {
-                response = await APIHelper.fetchAPI(`api/folders/${id}?deleteContents=true`, {
-                    method: 'DELETE'
-                });
-            } else {
-                response = await APIHelper.fetchAPI(`api/quiz/${id}?confirm=true`, {
-                    method: 'DELETE'
-                });
+        // Ensure item is unlocked if password-protected
+        if (data?.protected) {
+            const unlocked = await this.ensureUnlocked(type, id, name);
+            if (!unlocked) {
+                return;
             }
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to delete');
-            }
-
-            await this.loadTree();
-            this.showToast(t('deleted_successfully') || 'Deleted successfully', 'success');
-        } catch (error) {
-            logger.error('Delete failed:', error);
-            this.showToast(error.message, 'error');
         }
+
+        // Wrap network operation with unified error handler
+        await unifiedErrorHandler.wrapAsyncOperation(
+            async () => {
+                const headers = {};
+
+                // Add session token if available and valid
+                const cached = this.sessionTokens.get(id);
+                if (cached) {
+                    if (Date.now() < cached.expiresAt) {
+                        // Token is still valid
+                        headers['Authorization'] = `Bearer ${cached.token}`;
+                    } else if (data?.protected) {
+                        // Token expired, re-authenticate for protected items
+                        logger.debug('Token expired, re-authenticating...');
+                        this.sessionTokens.delete(id);
+                        const unlocked = await this.ensureUnlocked(type, id, name);
+                        if (!unlocked) {
+                            throw new Error('Authentication required');
+                        }
+                        // Get the fresh token
+                        const refreshed = this.sessionTokens.get(id);
+                        if (refreshed) {
+                            headers['Authorization'] = `Bearer ${refreshed.token}`;
+                        }
+                    }
+                }
+
+                let response;
+                if (type === 'folder') {
+                    response = await APIHelper.fetchAPI(`api/folders/${id}?deleteContents=true`, {
+                        method: 'DELETE',
+                        headers
+                    });
+                } else {
+                    response = await APIHelper.fetchAPI(`api/quiz/${id}?confirm=true`, {
+                        method: 'DELETE',
+                        headers
+                    });
+                }
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete');
+                }
+
+                // Clear cached token after successful deletion
+                this.sessionTokens.delete(id);
+
+                await this.loadTree();
+                this.showToast(t('deleted_successfully') || 'Deleted successfully', 'success');
+            },
+            'file_delete',
+            (error) => {
+                this.showToast(error.message || t('delete_failed') || 'Failed to delete', 'error');
+            }
+        );
     }
 
     /**
@@ -497,11 +538,16 @@ export class FileManager {
             if (authResponse.ok) {
                 const authData = await authResponse.json();
                 requiresAuth = authData.requiresAuth;
+            } else {
+                // Server returned error - fail closed for security
+                logger.error('Auth check returned error status:', authResponse.status);
+                return false;
             }
-            // If auth check fails (404, 500, etc.), assume no auth required
         } catch (error) {
-            logger.warn('Auth check failed, assuming no auth required:', error);
-            return true; // Allow access if auth check fails
+            // Network or other error - fail closed for security
+            logger.error('Auth check failed, denying access for safety:', error);
+            this.showToast(t('auth_check_failed') || 'Unable to verify permissions. Please try again.', 'error');
+            return false;
         }
 
         // If no auth required, allow access

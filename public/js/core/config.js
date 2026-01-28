@@ -60,6 +60,7 @@ export const TIMING = {
     // Debouncing and throttling
     DEBOUNCE_DELAY: 1000,
     DEBOUNCE_SHORT: 300,              // Typing debounce
+    PREVIEW_DEBOUNCE: 150,            // Reduced debounce for live preview responsiveness
     AUTO_SAVE_DELAY: 5000,
 
     // Network and retry

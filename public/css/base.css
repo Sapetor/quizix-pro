@@ -12,7 +12,7 @@
 
 /* Base Body Styles */
 body {
-    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-body);
     background: var(--bg-primary);
     background-attachment: fixed;
     min-height: 100dvh;
@@ -22,6 +22,8 @@ body {
     line-height: 1.6;
     letter-spacing: -0.01em;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* FOUC Prevention - Enhanced smooth loading */
@@ -135,35 +137,62 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    /* Removed problematic pink gradients that caused red flash during loading */
     background: transparent;
     pointer-events: none;
     z-index: -1;
 }
 
-/* === MODERN TYPOGRAPHY SYSTEM === */
+/* Premium Dark Mode Background Mesh */
+[data-theme="dark"] body::before {
+    background:
+        radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+    opacity: 0.8;
+}
+
+/* Premium Dark Mode Glow Effects */
+[data-theme="dark"] .btn.primary:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 2px var(--bg-dark-primary, #0f0f14),
+        0 0 0 4px var(--color-primary-500, #6366f1),
+        0 0 30px rgba(99, 102, 241, 0.4);
+}
+
+/* Premium card glow on hover in dark mode */
+[data-theme="dark"] .card:hover {
+    box-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(99, 102, 241, 0.25),
+        0 0 40px -10px rgba(99, 102, 241, 0.2);
+}
+
+/* === PREMIUM TYPOGRAPHY SYSTEM === */
 h1, h2, h3, h4, h5, h6 {
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-weight: 700;
     letter-spacing: -0.025em;
     line-height: var(--leading-tight);
     margin-bottom: 0.5em;
-    font-family: Inter, sans-serif;
 }
 
 h1 {
     font-size: var(--text-4xl);
     font-weight: 800;
     line-height: var(--leading-tight);
+    letter-spacing: -0.03em;
     background: linear-gradient(135deg, var(--text-primary) 0%, var(--color-primary-500) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 /* Override for header title - no font scaling for consistent toolbar */
 header h1 {
     font-size: 2.25rem !important; /* Fixed size equivalent to --text-4xl base */
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
 }
 
 h2 {
@@ -314,16 +343,16 @@ em {
     font-style: italic;
 }
 
-/* Code Typography (monospace) */
-code, pre, .code {
-    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+/* Code Typography (monospace) - Premium JetBrains Mono */
+code, pre, .code, .monospace {
+    font-family: var(--font-mono);
 }
 
 code {
     background: rgba(0, 0, 0, 0.3);
     color: #FFD700;
     padding: 3px 6px;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 0.85em;
     font-weight: 500;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -332,13 +361,13 @@ code {
 pre {
     background: rgba(0, 0, 0, 0.4);
     color: #f8f8f2;
-    padding: 15px;
-    border-radius: 8px;
+    padding: 16px;
+    border-radius: 12px;
     overflow-x: auto;
-    margin: 10px 0;
-    font-size: 0.8em;
-    line-height: 1.5;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin: 12px 0;
+    font-size: 0.85em;
+    line-height: 1.6;
+    border: 1px solid rgba(255, 255, 255, 0.15);
     white-space: pre;
     text-align: left;
     tab-size: 4;
@@ -352,6 +381,18 @@ pre code {
     border-radius: 0;
     font-size: inherit;
     border: none;
+}
+
+/* Premium monospace for scores, timers, PINs */
+.game-pin,
+.timer-display,
+.score-display,
+.pin-display,
+.countdown,
+.numeric-value {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    letter-spacing: 0.05em;
 }
 
 /* Small Text */

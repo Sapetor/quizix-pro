@@ -8,16 +8,17 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Preload critical CSS -->
-    <link rel="preload" href="css/main.bundle.css?v=16" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=16"></noscript>
+    <link rel="preload" href="css/main.bundle.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=17"></noscript>
     
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=16" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=16" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=16" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=17" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=17" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=17" as="script" crossorigin="anonymous">
     
     <!-- Optimized font loading for mobile performance -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Fallback fonts while Inter loads */
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
@@ -765,7 +766,7 @@
                             <div id="global-time-container" class="time-setting-container" style="display: none;">
                                 <label class="time-input-label">
                                     <span data-translate="global_time_limit">Global time limit (seconds):</span>
-                                    <input type="number" id="global-time-limit" min="5" max="300" value="20" class="time-input">
+                                    <input type="number" id="global-time-limit" min="5" max="300" value="20" class="time-input" onchange="updateGlobalTime(this)">
                                 </label>
                             </div>
                         </div>
@@ -1966,7 +1967,7 @@
             onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
     </script>
     <!-- Modular ES6 Structure -->
-<script type="module" src="js/main.js?v=16"></script>
+<script type="module" src="js/main.js?v=17"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // Fetch and display app version (always runs, even without service worker support)

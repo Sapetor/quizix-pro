@@ -13,6 +13,53 @@
 .tex2jax_process {
     transition: opacity 0.2s ease-in-out;
 }
+
+/* === PREMIUM PREVIEW LOADING SKELETON === */
+.preview-loading .preview-question-text,
+.preview-loading #preview-question-text-split {
+    background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.03) 0%,
+        rgba(255,255,255,0.08) 50%,
+        rgba(255,255,255,0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: previewShimmer 1.5s infinite;
+    min-height: 60px;
+    border-radius: 8px;
+    color: transparent !important;
+}
+
+.preview-loading .player-option,
+.preview-loading .checkbox-option,
+.preview-loading .tf-option {
+    background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.03) 0%,
+        rgba(255,255,255,0.06) 50%,
+        rgba(255,255,255,0.03) 100%
+    ) !important;
+    background-size: 200% 100%;
+    animation: previewShimmer 1.5s infinite;
+    color: transparent !important;
+    border-color: transparent !important;
+}
+
+@keyframes previewShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* MathJax rendered state */
+.mathjax-rendered {
+    animation: previewFadeIn 0.3s ease-out;
+}
+
+@keyframes previewFadeIn {
+    from { opacity: 0.7; }
+    to { opacity: 1; }
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
