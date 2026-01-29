@@ -24,7 +24,7 @@ export class QuestionUtils {
                     <span class="collapsed-difficulty-badge">M</span>
                 </div>
                 <div class="question-header-actions">
-                    <button type="button" class="btn-icon btn-remove" onclick="event.stopPropagation(); removeQuestion(this)" title="Remove question">✕</button>
+                    <button type="button" class="btn-icon btn-remove" onclick="event.stopPropagation(); removeQuestion(this)" title="Remove question" data-translate-title="remove_question_tooltip">✕</button>
                 </div>
             </div>
             <div class="question-body">

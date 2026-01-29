@@ -1440,6 +1440,8 @@ export class QuizManager {
             this.cleanTranslationKeysInElement(targetElement);
             this.populateQuestionElement(targetElement, questionData);
             translationManager.translateContainer(targetElement);
+            // Update preview after populating (programmatic value changes don't fire input events)
+            this.updatePreviewSafely();
         } else {
             // Add a new question
             logger.debug('🔧 AddGeneratedQuestion - Creating new question element');
@@ -1463,6 +1465,8 @@ export class QuizManager {
                         this.cleanTranslationKeysInElement(targetElement);
                         this.populateQuestionElement(targetElement, questionData);
                         translationManager.translateContainer(targetElement);
+                        // Update preview after populating (programmatic value changes don't fire input events)
+                        this.updatePreviewSafely();
                     } else if (retryCount < maxRetries) {
                         retryCount++;
                         setTimeout(findAndPopulate, retryDelay);

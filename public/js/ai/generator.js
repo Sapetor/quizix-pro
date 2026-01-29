@@ -1486,6 +1486,13 @@ export class AIQuestionGenerator {
                     wordCount: content.split(/\s+/).filter(w => w.length > 0).length
                 };
 
+                // Validate patterns are loaded
+                if (!AI.MATH_INDICATORS || !AI.PROGRAMMING_INDICATORS) {
+                    logger.warn('AI content detection patterns not loaded');
+                    this.updateContentAnalysisUI(result);
+                    return result;
+                }
+
                 // Content type detection - order matters (more specific patterns first)
                 const contentTypeChecks = [
                     { pattern: AI.MATH_INDICATORS, type: 'mathematics', needsLatex: true },
@@ -1522,8 +1529,32 @@ export class AIQuestionGenerator {
                 return result;
             },
             { operation: 'content-type-detection' },
-            () => ({ type: 'general', language: null, hasExistingQuestions: false })
+            () => {
+                const fallbackResult = { type: 'general', language: null, hasExistingQuestions: false };
+                this.updateContentAnalysisUI(fallbackResult);
+                return fallbackResult;
+            }
         );
+    }
+
+    /**
+     * Debug helper for testing content detection from browser console.
+     * Usage: window.app.aiGenerator.debugDetectContent('algebra equation')
+     * @param {string} content - Content to test
+     * @returns {Object} Detection result
+     */
+    debugDetectContent(content) {
+        console.group('Content Detection Debug');
+        console.log('Input:', content?.substring(0, 100));
+        console.log('AI config loaded:', !!AI);
+        console.log('MATH_INDICATORS:', AI?.MATH_INDICATORS);
+        console.log('MATH test:', AI?.MATH_INDICATORS?.test(content));
+        console.log('PROGRAMMING test:', AI?.PROGRAMMING_INDICATORS?.test(content));
+        console.log('PHYSICS test:', AI?.PHYSICS_INDICATORS?.test(content));
+        const result = this.detectContentType(content);
+        console.log('Result:', result);
+        console.groupEnd();
+        return result;
     }
 
     /**
@@ -1727,6 +1758,11 @@ export class AIQuestionGenerator {
                     modelSelection.style.display = 'none';
                     if (claudeModelSelection) claudeModelSelection.style.display = 'none';
                     if (geminiModelSelection) geminiModelSelection.style.display = 'none';
+                }
+                // Re-trigger content detection for existing content
+                const contentTextarea = document.getElementById('source-content');
+                if (contentTextarea?.value?.trim()) {
+                    this.detectContentType(contentTextarea.value);
                 }
             } finally {
                 this.isChangingProvider = false;

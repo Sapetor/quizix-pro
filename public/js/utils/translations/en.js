@@ -207,6 +207,7 @@ export default {
     adjust_font_size_tooltip: 'Adjust font size',
     manual_advancement_tooltip: 'Manual advancement is now the default. Uncheck for automatic timer-based advancement',
     add_question_tooltip: 'Add a new question',
+    remove_question_tooltip: 'Remove question',
     save_quiz_tooltip: 'Save the current quiz',
     load_quiz_tooltip: 'Load a saved quiz',
     ai_generator_tooltip: 'Generate questions with AI',

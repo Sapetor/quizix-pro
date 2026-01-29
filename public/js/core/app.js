@@ -1114,11 +1114,7 @@ export class QuizGame {
                 const { AIQuestionGenerator } = await import('../ai/generator.js');
                 this.aiGenerator = new AIQuestionGenerator();
 
-                // Initialize event listeners after creation
-                if (this.aiGenerator.initializeEventListeners) {
-                    this.aiGenerator.initializeEventListeners();
-                    logger.debug('AI Generator lazy loaded and initialized');
-                }
+                logger.debug('AI Generator lazy loaded and initialized');
             } catch (error) {
                 logger.error('Failed to lazy load AI Generator:', error);
                 // Show fallback modal if available

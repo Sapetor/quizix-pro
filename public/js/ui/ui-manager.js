@@ -21,81 +21,39 @@ export class UIManager {
     showScreen(screenId) {
         logger.debug('Switching to screen:', screenId);
 
-        // Hide all screens
+        const targetScreen = document.getElementById(screenId);
+        if (!targetScreen) {
+            logger.error('Screen not found:', screenId);
+            const availableScreens = Array.from(document.querySelectorAll('.screen')).map(s => s.id);
+            logger.debug('Available screens:', availableScreens);
+            return;
+        }
+
+        // Special handling for host-screen: prepare-then-fade pattern
+        if (screenId === 'host-screen') {
+            this.showHostScreen(targetScreen);
+            return;
+        }
+
+        // Standard transition for other screens
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
         });
 
-        // Show target screen
-        const targetScreen = document.getElementById(screenId);
-        if (targetScreen) {
-            targetScreen.classList.add('active');
-            this.currentScreen = screenId;
-            logger.debug('Successfully switched to screen:', screenId);
+        targetScreen.classList.add('active');
+        this.currentScreen = screenId;
+        logger.debug('Successfully switched to screen:', screenId);
 
-            // Update mobile return button visibility
-            updateMobileReturnButtonVisibility(screenId);
+        // Update mobile return button visibility
+        updateMobileReturnButtonVisibility(screenId);
 
-            // Container layout handled automatically
+        // Show/hide header elements based on screen
+        const headerStartBtn = document.getElementById('start-hosting-header-small');
+        const horizontalToolbar = document.getElementById('horizontal-toolbar');
+        const header = document.querySelector('header');
+        const mobileQuizFab = document.getElementById('mobile-quiz-fab');
 
-            // Show/hide header elements based on screen
-            const headerStartBtn = document.getElementById('start-hosting-header-small');
-            const horizontalToolbar = document.getElementById('horizontal-toolbar');
-            const header = document.querySelector('header');
-            const mobileQuizFab = document.getElementById('mobile-quiz-fab');
-
-            if (screenId === 'host-screen') {
-                // Restore header visibility (may be hidden from player-game-screen)
-                if (header) {
-                    header.style.transform = '';
-                    header.style.opacity = '';
-                    header.style.pointerEvents = '';
-                    header.style.position = '';
-                    header.style.top = '';
-                    header.style.zIndex = '';
-                    header.style.transition = '';
-                }
-                // Show toolbar and start button for host screen
-                if (headerStartBtn) headerStartBtn.style.display = 'block';
-                if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
-                // Show mobile FAB on host screen (quiz editor)
-                if (mobileQuizFab) mobileQuizFab.style.display = 'flex';
-
-                // Translate toolbar tooltips and host screen content after making it visible
-                // Use async to ensure translations are loaded before translating
-                setTimeout(async () => {
-                    // Ensure current language translations are loaded
-                    await translationManager.ensureLanguageLoaded(translationManager.getCurrentLanguage());
-
-                    if (horizontalToolbar) {
-                        translationManager.translateContainer(horizontalToolbar);
-                    }
-                    // Also translate header controls that become visible
-                    const header = document.querySelector('header');
-                    if (header) {
-                        translationManager.translateContainer(header);
-                    }
-                    // Translate host screen content (quiz editor, advanced options, etc.)
-                    if (targetScreen) {
-                        translationManager.translateContainer(targetScreen);
-                    }
-                }, 50);
-
-                // Remove any transition classes when returning to host screen
-                const container = document.querySelector('.container');
-                if (container) {
-                    container.classList.remove('game-state-transition-host');
-                }
-
-                // Set editing state for quiz creation
-                uiStateManager.setState('editing');
-
-                // Initialize first question if questions container is empty
-                this.initializeQuizEditor();
-
-                // Initialize always-on preview for desktop (min-width: 769px)
-                this.initializeAlwaysPreview();
-            } else if (screenId === 'game-lobby') {
+        if (screenId === 'game-lobby') {
                 // Hide editing toolbar on lobby screen, but enable header auto-hide
                 if (headerStartBtn) headerStartBtn.style.display = 'none';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'none';
@@ -206,16 +164,10 @@ export class UIManager {
                     break;
             }
 
-            // Translate the new screen
-            setTimeout(() => {
-                translationManager.translatePage();
-            }, TIMING.DOM_UPDATE_DELAY);
-        } else {
-            logger.error('Screen not found:', screenId);
-            // List available screens for debugging
-            const availableScreens = Array.from(document.querySelectorAll('.screen')).map(s => s.id);
-            logger.debug('Available screens:', availableScreens);
-        }
+        // Translate the new screen
+        setTimeout(() => {
+            translationManager.translatePage();
+        }, TIMING.DOM_UPDATE_DELAY);
     }
 
     /**
@@ -292,6 +244,127 @@ export class UIManager {
                 window.initializeQuestionPagination();
             }
         }, 200);
+    }
+
+    /**
+     * Show host screen with smooth prepare-then-fade transition
+     * Prepares layout and content BEFORE fading in to prevent visual jumps
+     */
+    async showHostScreen(targetScreen) {
+        logger.debug('Showing host screen with prepare-then-fade pattern');
+
+        // Step 1: Prepare layout BEFORE showing (prevents layout jump)
+        this.prepareHostScreenLayout();
+
+        // Step 2: Pre-translate content while still invisible
+        await translationManager.ensureLanguageLoaded(translationManager.getCurrentLanguage());
+        translationManager.translateContainer(targetScreen);
+
+        // Also translate toolbar and header
+        const horizontalToolbar = document.getElementById('horizontal-toolbar');
+        const header = document.querySelector('header');
+        if (horizontalToolbar) {
+            translationManager.translateContainer(horizontalToolbar);
+        }
+        if (header) {
+            translationManager.translateContainer(header);
+        }
+
+        // Step 3: Initialize quiz editor (creates first question if needed)
+        this.initializeQuizEditor();
+
+        // Step 4: Now perform the actual screen transition
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        targetScreen.classList.add('active');
+        this.currentScreen = 'host-screen';
+        logger.debug('Successfully switched to host-screen');
+
+        // Step 5: Post-transition tasks (non-blocking)
+        this.postHostScreenSetup();
+    }
+
+    /**
+     * Prepare host screen layout BEFORE making it visible
+     * Sets up split layout classes and visibility to prevent layout jump
+     */
+    prepareHostScreenLayout() {
+        // Skip split layout on mobile
+        if (window.innerWidth < 769) {
+            logger.debug('Mobile detected, skipping split layout preparation');
+            return;
+        }
+
+        const hostContainer = document.getElementById('host-container');
+        const previewSection = document.getElementById('quiz-preview-section');
+        const resizeHandle = document.getElementById('split-resize-handle');
+
+        // Set up split layout BEFORE screen is visible
+        if (hostContainer) {
+            hostContainer.classList.add('always-preview');
+        }
+        if (previewSection) {
+            previewSection.style.display = 'flex';
+        }
+        if (resizeHandle) {
+            resizeHandle.style.display = 'flex';
+        }
+
+        logger.debug('Host screen layout prepared');
+    }
+
+    /**
+     * Post-transition setup tasks that can run after the screen is visible
+     * Non-critical tasks that don't affect the initial visual appearance
+     */
+    postHostScreenSetup() {
+        const headerStartBtn = document.getElementById('start-hosting-header-small');
+        const horizontalToolbar = document.getElementById('horizontal-toolbar');
+        const mobileQuizFab = document.getElementById('mobile-quiz-fab');
+        const header = document.querySelector('header');
+
+        // Restore header visibility (may be hidden from player-game-screen)
+        if (header) {
+            header.style.transform = '';
+            header.style.opacity = '';
+            header.style.pointerEvents = '';
+            header.style.position = '';
+            header.style.top = '';
+            header.style.zIndex = '';
+            header.style.transition = '';
+        }
+
+        // Show toolbar elements
+        if (headerStartBtn) headerStartBtn.style.display = 'block';
+        if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
+        if (mobileQuizFab) mobileQuizFab.style.display = 'flex';
+
+        // Remove any transition classes
+        const container = document.querySelector('.container');
+        if (container) {
+            container.classList.remove('game-state-transition-host');
+        }
+
+        // Update mobile return button visibility
+        updateMobileReturnButtonVisibility('host-screen');
+
+        // Set editing state
+        uiStateManager.setState('editing');
+
+        // Delayed preview manager initialization (OK to be after fade-in)
+        setTimeout(() => {
+            if (window.innerWidth >= 769 && window.game?.previewManager) {
+                window.game.previewManager.previewMode = true;
+                window.game.previewManager.splitLayoutManager?.initializeSplitLayout?.();
+                window.game.previewManager.setupSplitPreviewEventListeners();
+                window.game.previewManager.updateSplitPreview();
+                logger.debug('Preview manager initialized post-transition');
+            }
+            if (window.initializeQuestionPagination) {
+                window.initializeQuestionPagination();
+            }
+        }, 100);
     }
 
     updateGamePin(gamePin) {

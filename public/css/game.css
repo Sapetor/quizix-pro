@@ -666,21 +666,23 @@
 }
 
 /* Player Option Hover Effects - Enhanced for Colorful Design */
+/* NOTE: No scale() - causes blurry text. Use translateY for lift effect only. */
 .player-option:hover {
-    transform: translateY(-3px) scale(1.02);
+    transform: translateY(-3px);
     filter: brightness(1.1);
 }
 
 /* Player option hover colors now consolidated in variables.css */
 
 .player-option:active {
-    transform: translateY(-1px) scale(1.01);
+    transform: translateY(-1px);
 }
 
 /* Selected state - keep original color but add emphasis */
+/* NOTE: No scale() - causes blurry text */
 .player-option.selected,
 .tf-option.selected {
-    transform: translateY(-4px) scale(1.05);
+    transform: translateY(-4px);
     filter: brightness(1.2) saturate(1.2);
     box-shadow: 0 16px 50px rgba(0, 0, 0, 0.3);
     border: 3px solid var(--color-primary-500);

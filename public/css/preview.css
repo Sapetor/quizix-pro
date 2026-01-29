@@ -917,6 +917,42 @@ pre code {
     font-size: 0.7rem;
 }
 
+/* ===== SPLIT-SCREEN PREVIEW: MINIMAL OVERRIDES ===== */
+/*
+ * Philosophy: The preview should use the SAME CSS as the host game view.
+ * Only override what's absolutely necessary for the narrow panel context.
+ *
+ * The base .player-option CSS in game.css already handles:
+ * - max-width: min(500px, 85vw) - limits width appropriately
+ * - overflow: visible - doesn't clip content
+ * - word wrapping via flex layout
+ *
+ * We only need to ensure the preview container doesn't add conflicting styles.
+ */
+
+/* Remove any transforms or special sizing - use natural flow */
+.preview-content-split {
+    /* No transform, no special scaling - render naturally */
+}
+
+/* Ensure options container doesn't restrict width unnecessarily */
+.preview-content-split .player-options,
+.preview-content-split .player-checkbox-options {
+    max-width: 100%;
+    width: 100%;
+    align-items: center;
+}
+
+/* Options: inherit base styles from game.css, only add wrapping for long content */
+.preview-content-split .player-option,
+.preview-content-split .checkbox-option,
+.preview-content-split .tf-option {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    /* DO NOT override font-size, padding, min-height - use base styles */
+}
+
 /* ===== UI IMPROVEMENTS FOR BETTER PREVIEW AND DARK MODE ===== */
 
 /* Enhanced Preview Content Background - Maximized space for content */
@@ -962,16 +998,17 @@ pre code {
     transition: all 0.3s ease;
     margin: 8px 0;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    min-height: 55px;
+    min-height: auto; /* Let content determine height */
     width: 100%;
-    max-width: 95%; /* Use maximum available width for optimal space usage */
+    max-width: 95%;
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* Top-align for multi-line content */
     justify-content: flex-start;
     text-align: left;
     line-height: 1.4;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* CRITICAL: Don't clip content - matches game.css */
+    word-break: break-word; /* Allow long words to wrap */
 }
 
 /* === COLORFUL PREVIEW OPTIONS === */
@@ -1173,6 +1210,7 @@ pre code {
 
 /* GREEN HALO approach for multiple-choice correct answers */
 /* Maintains colorful backgrounds while adding distinctive green border/glow */
+/* NOTE: No transform:scale - it causes blurry text due to sub-pixel rendering */
 .preview-content .player-option.correct,
 .preview-content-split .player-option.correct {
     border: 4px solid #22c55e !important;
@@ -1181,7 +1219,7 @@ pre code {
     outline: 2px solid rgba(34, 197, 94, 0.6);
     outline-offset: 2px;
     font-weight: 700 !important;
-    transform: scale(1.02) !important;
+    /* transform: scale removed - causes blurry text */
 }
 
 /* GREEN HALO for multiple-correct checkbox options - HIGH SPECIFICITY */
@@ -1194,7 +1232,7 @@ pre code {
     outline: 2px solid rgba(34, 197, 94, 0.6);
     outline-offset: 2px;
     font-weight: 700 !important;
-    transform: scale(1.02) !important;
+    /* transform: scale removed - causes blurry text */
 }
 
 /* Specific overrides for each nth-child to ensure green halo wins */
@@ -1216,7 +1254,7 @@ pre code {
     outline: 2px solid rgba(34, 197, 94, 0.6);
     outline-offset: 2px;
     font-weight: 700 !important;
-    transform: scale(1.02) !important;
+    /* transform: scale removed - causes blurry text */
 }
 
 /* Dark theme variants for correct answers */
@@ -1229,6 +1267,7 @@ pre code {
 }
 
 /* Hover states for correct answers - enhanced green glow */
+/* NOTE: No transform:scale on hover either - prevents blurry text */
 .preview-content .player-option.correct:hover,
 .preview-content-split .player-option.correct:hover,
 .preview-content .player-checkbox-options .checkbox-option.correct-preview:hover,
@@ -1237,7 +1276,7 @@ pre code {
     box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.4),
                 0 6px 24px rgba(34, 197, 94, 0.6) !important;
     outline-color: rgba(34, 197, 94, 0.8);
-    transform: scale(1.04) !important;
+    /* transform: scale removed - causes blurry text */
 }
 
 /* ======================================================================== */
