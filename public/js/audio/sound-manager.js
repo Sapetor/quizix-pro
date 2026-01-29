@@ -89,14 +89,51 @@ export class SoundManager {
         this.audioContext = null;
         this.audioContextClass = null;
 
-        // Define sound file paths
-        this.soundFiles = {
-            correctAnswer: 'sounds/smw_power-up.wav',
-            wrongAnswer: 'sounds/smb2_bonus_chance_lose.wav',
-            gameStart: 'sounds/smb2_bonus_chance_start.wav',
-            questionStart: 'sounds/smb3_nspade_match.wav',
-            gameComplete: 'sounds/smw_castle_clear.wav'
+        // Define sound file pools - each event can have multiple sounds for variety
+        // Add more files to each array to get random selection
+        this.soundPools = {
+            correctAnswer: [
+                'sounds/smw_power-up.wav'
+                // Add more correct answer sounds here, e.g.:
+                // 'sounds/correct-1.wav',
+                // 'sounds/correct-2.wav',
+            ],
+            wrongAnswer: [
+                'sounds/smb2_bonus_chance_lose.wav'
+                // Add more wrong answer sounds here, e.g.:
+                // 'sounds/wrong-1.wav',
+                // 'sounds/wrong-2.wav',
+            ],
+            gameStart: [
+                'sounds/smb2_bonus_chance_start.wav'
+            ],
+            questionStart: [
+                'sounds/smb3_nspade_match.wav'
+            ],
+            gameComplete: [
+                'sounds/smw_castle_clear.wav'
+            ],
+            playerJoin: [
+                // Add player join sounds here
+            ],
+            playerLeave: [
+                // Add player leave sounds here
+            ],
+            timerTick: [
+                // Add timer tick sounds here
+            ],
+            timerExpired: [
+                // Add timer expired sounds here
+            ]
         };
+
+        // Legacy compatibility - maps to first sound in each pool
+        this.soundFiles = {};
+        for (const [key, pool] of Object.entries(this.soundPools)) {
+            if (pool.length > 0) {
+                this.soundFiles[key] = pool[0];
+            }
+        }
 
         try {
             // Check if Web Audio API is supported without creating context
@@ -179,14 +216,22 @@ export class SoundManager {
     }
 
     /**
-     * Preload all sound files for instant playback
+     * Preload all sound files from all pools for instant playback
      */
     async preloadSounds() {
         if (this.isPreloaded) return;
 
-        logger.debug('Preloading sound files...');
+        logger.debug('Preloading sound files from all pools...');
 
-        const loadPromises = Object.values(this.soundFiles).map(url =>
+        // Collect all unique URLs from all pools
+        const allUrls = new Set();
+        for (const pool of Object.values(this.soundPools)) {
+            for (const url of pool) {
+                allUrls.add(url);
+            }
+        }
+
+        const loadPromises = Array.from(allUrls).map(url =>
             this.loadAudioFile(url).catch(e => {
                 logger.debug(`Failed to preload ${url}:`, e);
                 return null;
@@ -196,7 +241,7 @@ export class SoundManager {
         await Promise.all(loadPromises);
         this.isPreloaded = true;
 
-        logger.debug(`Preloaded ${this.audioCache.size} sound files`);
+        logger.debug(`Preloaded ${this.audioCache.size} sound files from ${allUrls.size} total`);
     }
 
     async loadAudioFile(url) {
@@ -241,12 +286,67 @@ export class SoundManager {
         return baseVolume * this.settings.masterVolume;
     }
 
+    /**
+     * Get a random sound URL from a pool
+     * @param {string} soundKey - The sound event key
+     * @returns {string|null} - Random sound URL from pool, or null if pool is empty
+     */
+    getRandomSoundFromPool(soundKey) {
+        const pool = this.soundPools[soundKey];
+        if (!pool || pool.length === 0) {
+            return null;
+        }
+        const randomIndex = Math.floor(Math.random() * pool.length);
+        return pool[randomIndex];
+    }
+
+    /**
+     * Add a sound file to a pool
+     * @param {string} soundKey - The sound event key
+     * @param {string} soundUrl - The sound file URL to add
+     */
+    addSoundToPool(soundKey, soundUrl) {
+        if (!this.soundPools[soundKey]) {
+            this.soundPools[soundKey] = [];
+        }
+        if (!this.soundPools[soundKey].includes(soundUrl)) {
+            this.soundPools[soundKey].push(soundUrl);
+            logger.debug(`Added ${soundUrl} to ${soundKey} pool`);
+        }
+    }
+
+    /**
+     * Remove a sound file from a pool
+     * @param {string} soundKey - The sound event key
+     * @param {string} soundUrl - The sound file URL to remove
+     */
+    removeSoundFromPool(soundKey, soundUrl) {
+        const pool = this.soundPools[soundKey];
+        if (pool) {
+            const index = pool.indexOf(soundUrl);
+            if (index > -1) {
+                pool.splice(index, 1);
+                logger.debug(`Removed ${soundUrl} from ${soundKey} pool`);
+            }
+        }
+    }
+
+    /**
+     * Get all sounds in a pool
+     * @param {string} soundKey - The sound event key
+     * @returns {string[]} - Array of sound URLs in the pool
+     */
+    getSoundPool(soundKey) {
+        return this.soundPools[soundKey] || [];
+    }
+
     async playAudioFile(soundKey, volume = 0.1) {
         if (!this.settings.soundsEnabled) return;
 
-        const soundUrl = this.soundFiles[soundKey];
+        // Get random sound from pool, or fall back to legacy soundFiles
+        const soundUrl = this.getRandomSoundFromPool(soundKey) || this.soundFiles[soundKey];
         if (!soundUrl) {
-            logger.debug('Unknown sound key:', soundKey);
+            logger.debug('No sounds available for:', soundKey);
             return;
         }
 

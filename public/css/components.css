@@ -326,11 +326,7 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
     border-color: var(--color-primary-500);
     background: var(--glass-medium);
-    box-shadow:
-        0 0 0 3px rgba(99, 102, 241, 0.15),
-        0 0 20px -5px rgba(99, 102, 241, 0.3),
-        var(--shadow-md);
-    transform: translateY(-1px);
+    box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.3), var(--shadow-sm);
 }
 
 /* Theme-aware placeholder colors */
@@ -3851,11 +3847,10 @@ button:disabled:focus-visible {
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15), 0 8px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Input field focus animations */
+/* Input field focus animations - no scale to prevent widening/clipping */
 input:focus,
-textarea:focus,
-select:focus {
-    transform: scale(1.02);
+select:focus,
+textarea:focus {
     transition: var(--theme-transition-smooth);
 }
 

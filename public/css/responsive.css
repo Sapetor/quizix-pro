@@ -459,7 +459,6 @@
         border-color: var(--accent-primary) !important;
         background: rgba(59, 130, 246, 0.05) !important;
         box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
-        transform: scale(1.02) !important;
     }
     
     /* Mobile dropdown improvements for better text visibility */
@@ -898,13 +897,12 @@
         font-weight: 600 !important;
     }
     
-    /* Mobile input focus improvements */
+    /* Mobile input focus improvements - no outline-offset to prevent clipping */
     .quiz-editor-section input:focus,
     .quiz-editor-section textarea:focus,
     .quiz-editor-section select:focus {
-        outline: 2px solid var(--accent-primary) !important;
-        outline-offset: 2px !important;
         border-color: var(--accent-primary) !important;
+        box-shadow: inset 0 0 0 1px var(--accent-primary) !important;
     }
     
     /* Mobile button improvements in quiz editor */
