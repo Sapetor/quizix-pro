@@ -579,5 +579,26 @@ export default {
     optional_password: '密码（可选）',
     password_hint: '如果设置，加载或删除此测验时将需要密码',
     verify_to_remove_password: '输入当前密码以移除保护',
-    right_click_hint: '右键点击项目以获取更多选项（重命名、移动、删除）'
+    right_click_hint: '右键点击项目以获取更多选项（重命名、移动、删除）',
+
+    // Missing keys found during audit
+    answer_not_submitted: '无法提交答案',
+    correct: '正确',
+    enter_fullscreen: '进入全屏',
+    exit_fullscreen: '退出全屏',
+    enter_your_answer: '输入你的答案',
+    error: '错误',
+    failed_generate_qr_code: '生成二维码失败',
+    failed_load_quizzes: '加载测验失败',
+    false_display: '假',
+    incorrect_answer: '错误！',
+    info: '信息',
+    invalid_quiz_questions: '无效的测验问题',
+    no_saved_quizzes: '没有找到已保存的测验',
+    player: '玩家',
+    success: '成功',
+    switch_dark_mode: '切换到深色模式',
+    switch_light_mode: '切换到浅色模式',
+    true_display: '真',
+    type: '类型'
 };

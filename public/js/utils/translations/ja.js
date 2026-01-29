@@ -580,5 +580,26 @@ export default {
     optional_password: 'パスワード（任意）',
     password_hint: '設定した場合、このクイズの読み込みまたは削除にパスワードが必要になります',
     verify_to_remove_password: '保護を解除するには現在のパスワードを入力してください',
-    right_click_hint: '右クリックでオプションを表示（名前変更、移動、削除）'
+    right_click_hint: '右クリックでオプションを表示（名前変更、移動、削除）',
+
+    // Missing keys found during audit
+    answer_not_submitted: '回答を送信できませんでした',
+    correct: '正解',
+    enter_fullscreen: '全画面表示',
+    exit_fullscreen: '全画面終了',
+    enter_your_answer: '答えを入力してください',
+    error: 'エラー',
+    failed_generate_qr_code: 'QRコードの生成に失敗しました',
+    failed_load_quizzes: 'クイズの読み込みに失敗しました',
+    false_display: '偽',
+    incorrect_answer: '不正解！',
+    info: '情報',
+    invalid_quiz_questions: '無効なクイズの質問',
+    no_saved_quizzes: '保存されたクイズがありません',
+    player: 'プレイヤー',
+    success: '成功',
+    switch_dark_mode: 'ダークモードに切り替え',
+    switch_light_mode: 'ライトモードに切り替え',
+    true_display: '真',
+    type: 'タイプ'
 };

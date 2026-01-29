@@ -581,5 +581,26 @@ export default {
     optional_password: 'Senha (opcional)',
     password_hint: 'Se definida, a senha será necessária para carregar ou excluir este quiz',
     verify_to_remove_password: 'Digite a senha atual para remover a proteção',
-    right_click_hint: 'Clique direito nos itens para mais opções (renomear, mover, excluir)'
+    right_click_hint: 'Clique direito nos itens para mais opções (renomear, mover, excluir)',
+
+    // Missing keys found during audit
+    answer_not_submitted: 'Não foi possível enviar a resposta',
+    correct: 'Correto',
+    enter_fullscreen: 'Entrar em tela cheia',
+    exit_fullscreen: 'Sair da tela cheia',
+    enter_your_answer: 'Digite sua resposta',
+    error: 'Erro',
+    failed_generate_qr_code: 'Falha ao gerar código QR',
+    failed_load_quizzes: 'Falha ao carregar questionários',
+    false_display: 'Falso',
+    incorrect_answer: 'Incorreto!',
+    info: 'Info',
+    invalid_quiz_questions: 'Perguntas de questionário inválidas',
+    no_saved_quizzes: 'Nenhum questionário salvo encontrado',
+    player: 'Jogador',
+    success: 'Sucesso',
+    switch_dark_mode: 'Mudar para modo escuro',
+    switch_light_mode: 'Mudar para modo claro',
+    true_display: 'Verdadeiro',
+    type: 'Tipo'
 };

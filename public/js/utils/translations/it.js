@@ -589,5 +589,26 @@ export default {
     optional_password: 'Password (opzionale)',
     password_hint: 'Se impostata, la password sarà richiesta per caricare o eliminare questo quiz',
     verify_to_remove_password: 'Inserisci la password attuale per rimuovere la protezione',
-    right_click_hint: 'Clic destro sugli elementi per più opzioni (rinomina, sposta, elimina)'
+    right_click_hint: 'Clic destro sugli elementi per più opzioni (rinomina, sposta, elimina)',
+
+    // Missing keys found during audit
+    answer_not_submitted: 'Impossibile inviare la risposta',
+    correct: 'Corretto',
+    enter_fullscreen: 'Attiva schermo intero',
+    exit_fullscreen: 'Esci da schermo intero',
+    enter_your_answer: 'Inserisci la tua risposta',
+    error: 'Errore',
+    failed_generate_qr_code: 'Impossibile generare il codice QR',
+    failed_load_quizzes: 'Impossibile caricare i quiz',
+    false_display: 'Falso',
+    incorrect_answer: 'Sbagliato!',
+    info: 'Info',
+    invalid_quiz_questions: 'Domande quiz non valide',
+    no_saved_quizzes: 'Nessun quiz salvato trovato',
+    player: 'Giocatore',
+    success: 'Successo',
+    switch_dark_mode: 'Passa alla modalità scura',
+    switch_light_mode: 'Passa alla modalità chiara',
+    true_display: 'Vero',
+    type: 'Tipo'
 };

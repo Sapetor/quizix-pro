@@ -597,5 +597,26 @@ export default {
     optional_password: 'Contraseña (opcional)',
     password_hint: 'Si se establece, se requerirá la contraseña para cargar o eliminar este cuestionario',
     verify_to_remove_password: 'Ingrese la contraseña actual para eliminar la protección',
-    right_click_hint: 'Clic derecho en elementos para más opciones (renombrar, mover, eliminar)'
+    right_click_hint: 'Clic derecho en elementos para más opciones (renombrar, mover, eliminar)',
+
+    // Missing keys found during audit
+    answer_not_submitted: 'No se pudo enviar la respuesta',
+    correct: 'Correcto',
+    enter_fullscreen: 'Entrar en pantalla completa',
+    exit_fullscreen: 'Salir de pantalla completa',
+    enter_your_answer: 'Ingresa tu respuesta',
+    error: 'Error',
+    failed_generate_qr_code: 'Error al generar código QR',
+    failed_load_quizzes: 'Error al cargar cuestionarios',
+    false_display: 'Falso',
+    incorrect_answer: '¡Incorrecto!',
+    info: 'Información',
+    invalid_quiz_questions: 'Preguntas de cuestionario inválidas',
+    no_saved_quizzes: 'No hay cuestionarios guardados',
+    player: 'Jugador',
+    success: 'Éxito',
+    switch_dark_mode: 'Cambiar a modo oscuro',
+    switch_light_mode: 'Cambiar a modo claro',
+    true_display: 'Verdadero',
+    type: 'Tipo'
 };

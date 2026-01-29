@@ -680,5 +680,26 @@ export default {
     quiz_settings: 'Quiz Settings',
     quiz_settings_tooltip: 'Open quiz settings',
     general_options: 'General Options',
-    advanced_options: 'Advanced Options'
+    advanced_options: 'Advanced Options',
+
+    // Missing keys found during audit
+    answer_not_submitted: 'Answer could not be submitted',
+    correct: 'Correct',
+    enter_fullscreen: 'Enter fullscreen',
+    exit_fullscreen: 'Exit fullscreen',
+    enter_your_answer: 'Enter your answer',
+    error: 'Error',
+    failed_generate_qr_code: 'Failed to generate QR code',
+    failed_load_quizzes: 'Failed to load quizzes',
+    false_display: 'False',
+    incorrect_answer: 'Incorrect!',
+    info: 'Info',
+    invalid_quiz_questions: 'Invalid quiz questions',
+    no_saved_quizzes: 'No saved quizzes found',
+    player: 'Player',
+    success: 'Success',
+    switch_dark_mode: 'Switch to dark mode',
+    switch_light_mode: 'Switch to light mode',
+    true_display: 'True',
+    type: 'Type'
 };
