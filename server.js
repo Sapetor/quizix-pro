@@ -1676,6 +1676,47 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Handle rematch - reset game with same PIN, keep players, allow new joins
+    socket.on('rematch-game', () => {
+        if (!checkRateLimit(socket.id, 'rematch-game', 3, socket)) return;
+        try {
+            const game = gameSessionService.findGameByHost(socket.id);
+            if (!game) {
+                socket.emit('error', { message: 'Game not found' });
+                return;
+            }
+
+            // Only allow rematch if game has finished
+            if (game.gameState !== 'finished') {
+                socket.emit('error', { message: 'Can only rematch after game ends' });
+                return;
+            }
+
+            // Reset the game
+            game.reset();
+
+            // Get current player list for the lobby
+            const playerList = Array.from(game.players.values()).map(p => ({
+                id: p.id,
+                name: p.name
+            }));
+
+            // Notify all clients in the game room that game has been reset
+            io.to(`game-${game.pin}`).emit('game-reset', {
+                pin: game.pin,
+                title: game.quiz.title,
+                players: playerList,
+                questionCount: game.quiz.questions.length,
+                hostSocketId: socket.id
+            });
+
+            logger.info(`Game ${game.pin} reset for rematch by host`);
+        } catch (error) {
+            logger.error('Error in rematch-game handler:', error);
+            socket.emit('error', { message: 'Failed to start rematch' });
+        }
+    });
+
     socket.on('submit-answer', (data) => {
         if (!checkRateLimit(socket.id, 'submit-answer', 3, socket)) return; // Strict limit: 3 per second
         try {

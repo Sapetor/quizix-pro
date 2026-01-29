@@ -307,6 +307,47 @@ export class SocketManager {
             this.gameManager.showFinalResults(data.finalLeaderboard);
         });
 
+        // Handle game reset for rematch
+        this.socket.on('game-reset', (data) => {
+            logger.debug('Game reset for rematch:', data);
+
+            // Stop any running timers
+            this.gameManager.stopTimer();
+
+            // Reset game state (clears timers, answers, etc.)
+            if (this.gameManager.resetGameState) {
+                this.gameManager.resetGameState();
+            }
+
+            // Determine if this client is the host by comparing socket IDs
+            const isHost = data.hostSocketId && this.socket.id === data.hostSocketId;
+
+            if (isHost) {
+                // Host: return to host lobby
+                if (window.uiStateManager?.setState) {
+                    window.uiStateManager.setState('hostLobby');
+                }
+                // Restore the isHost flag in stateManager
+                if (this.gameManager.stateManager?.updateState) {
+                    this.gameManager.stateManager.updateState({ isHost: true });
+                }
+                this.uiManager.updateQuizTitle(data.title);
+                this.gameManager.updatePlayersList(data.players);
+                this._lastPlayerCount = data.players?.length || 0;
+                this.uiManager.showScreen('game-lobby');
+            } else {
+                // Player: return to player waiting screen
+                if (window.uiStateManager?.setState) {
+                    window.uiStateManager.setState('playerWaiting');
+                }
+                this.updatePlayerLobbyDisplay(data.pin, data.players);
+                this.gameManager.updatePlayersList(data.players);
+                this.uiManager.showScreen('player-lobby');
+            }
+
+            logger.info(`Game reset - returning to lobby for rematch (isHost: ${isHost})`);
+        });
+
         // Player-specific events
         this.socket.on('player-result', errorBoundary.safeSocketHandler((data) => {
             logger.debug('Player result received:', data);

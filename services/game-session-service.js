@@ -11,6 +11,26 @@
 const { v4: uuidv4 } = require('uuid');
 const { QuestionTypeService } = require('./question-type-service');
 
+/**
+ * Fisher-Yates shuffle - returns shuffled copy and index mapping
+ * @param {Array} array - Array to shuffle
+ * @returns {{shuffled: Array, mapping: number[]}} Shuffled array and original index mapping
+ */
+function shuffleWithMapping(array) {
+    const indices = array.map((_, i) => i);
+    const shuffled = [...array];
+
+    // Fisher-Yates shuffle
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+
+    // mapping[shuffledIndex] = originalIndex
+    return { shuffled, mapping: indices };
+}
+
 class GameSessionService {
     constructor(logger, config) {
         this.logger = logger;
@@ -219,21 +239,58 @@ class GameSessionService {
 
         const question = game.quiz.questions[game.currentQuestion];
         const timeLimit = question.timeLimit || question.time || 20;
+        const questionType = question.type || 'multiple-choice';
 
         game.gameState = 'question';
         game.questionStartTime = Date.now();
 
-        const questionData = {
+        // Clear previous question's answer mappings
+        game.answerMappings = new Map();
+
+        // Determine if this question type should have shuffled answers
+        const shouldShuffle = game.quiz.randomizeAnswers &&
+            (questionType === 'multiple-choice' || questionType === 'multiple-correct') &&
+            question.options && question.options.length > 1;
+
+        // Base question data (without options - will be customized per player)
+        const baseQuestionData = {
             questionNumber: game.currentQuestion + 1,
             totalQuestions: game.quiz.questions.length,
             question: question.question,
-            options: question.options,
-            type: question.type || 'multiple-choice',
+            type: questionType,
             image: question.image || '',
             timeLimit: timeLimit
         };
 
-        io.to(`game-${game.pin}`).emit('question-start', questionData);
+        if (shouldShuffle) {
+            // Send per-player shuffled options
+            game.players.forEach((player, playerId) => {
+                const { shuffled, mapping } = shuffleWithMapping(question.options);
+
+                // Store mapping for answer validation: mapping[shuffledIndex] = originalIndex
+                game.answerMappings.set(playerId, mapping);
+
+                const playerQuestionData = {
+                    ...baseQuestionData,
+                    options: shuffled
+                };
+
+                io.to(playerId).emit('question-start', playerQuestionData);
+            });
+
+            // Send unshuffled to host (so they see the "canonical" order)
+            io.to(game.hostId).emit('question-start', {
+                ...baseQuestionData,
+                options: question.options
+            });
+        } else {
+            // No shuffling - broadcast same data to everyone
+            const questionData = {
+                ...baseQuestionData,
+                options: question.options
+            };
+            io.to(`game-${game.pin}`).emit('question-start', questionData);
+        }
 
         // Set timer for automatic question timeout
         game.questionTimer = setTimeout(() => {
@@ -558,6 +615,10 @@ class Game {
         // Scoring configuration (optional, per-game session)
         // Falls back to server defaults if not provided
         this.scoringConfig = quiz.scoringConfig || null;
+
+        // Per-player answer option mapping for shuffled answers
+        // Maps playerId -> array where mapping[shuffledIndex] = originalIndex
+        this.answerMappings = new Map();
     }
 
     /**
@@ -737,6 +798,20 @@ class Game {
         const question = this.quiz.questions[this.currentQuestion];
         const questionType = question.type || 'multiple-choice';
 
+        // Translate shuffled answer indices back to original indices
+        let translatedAnswer = answer;
+        const mapping = this.answerMappings?.get(playerId);
+
+        if (mapping && (questionType === 'multiple-choice' || questionType === 'multiple-correct')) {
+            if (questionType === 'multiple-choice' && typeof answer === 'number') {
+                // Single answer: translate shuffled index to original
+                translatedAnswer = mapping[answer];
+            } else if (questionType === 'multiple-correct' && Array.isArray(answer)) {
+                // Multiple answers: translate each shuffled index to original
+                translatedAnswer = answer.map(idx => mapping[idx]);
+            }
+        }
+
         // Use QuestionTypeService for centralized scoring logic
         const correctAnswerKey = this.getCorrectAnswerKey(question);
         const defaultTolerance = this.config.SCORING?.DEFAULT_NUMERIC_TOLERANCE || 0.1;
@@ -744,7 +819,7 @@ class Game {
 
         let isCorrect = QuestionTypeService.scoreAnswer(
             questionType,
-            answer,
+            translatedAnswer,
             correctAnswerKey,
             options
         );
@@ -1046,6 +1121,40 @@ class Game {
             clearTimeout(this.leaderboardTimer);
             this.leaderboardTimer = null;
         }
+    }
+
+    /**
+   * Reset game for rematch - keeps PIN, quiz, and players but resets scores
+   * Players remain in the game room, new players can join
+   */
+    reset() {
+        this.logger.debug(`Resetting game ${this.pin} for rematch`);
+
+        // Clear all timers
+        this.clearTimers();
+
+        // Reset game progress
+        this.currentQuestion = -1;
+        this.gameState = 'lobby';
+        this.questionStartTime = null;
+        this.leaderboard = [];
+        this.isAdvancing = false;
+        this.endingQuestionEarly = false;
+        this.startTime = null;
+        this.endTime = null;
+        this.answerMappings.clear();
+
+        // Reset each player's score and answers but keep them in the game
+        this.players.forEach((player) => {
+            player.score = 0;
+            player.answers = [];
+            // Reset power-ups if enabled
+            if (this.powerUpsEnabled && player.powerUps) {
+                player.powerUps = this.createInitialPowerUpState();
+            }
+        });
+
+        this.logger.info(`Game ${this.pin} reset for rematch with ${this.players.size} players`);
     }
 
     /**

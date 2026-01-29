@@ -397,9 +397,25 @@ export class QuizGame {
             logger.debug('New Game button clicked!');
             this.newGame();
         });
+        bindElement('rematch-game', 'click', () => {
+            logger.debug('Rematch button clicked!');
+            if (this.socketManager?.socket) {
+                logger.info('Host triggering rematch');
+                this.socketManager.socket.emit('rematch-game');
+            }
+        });
         bindElement('play-again', 'click', () => {
             logger.debug('Play Again button clicked!');
-            this.newGame();
+            const isHost = this.gameManager?.stateManager?.getGameState()?.isHost ?? false;
+
+            if (isHost && this.socketManager?.socket) {
+                // Host triggers rematch - same PIN, same quiz, reset scores
+                logger.info('Host triggering rematch');
+                this.socketManager.socket.emit('rematch-game');
+            } else {
+                // Player exits to main menu
+                this.newGame();
+            }
         });
         bindElement('exit-to-main', 'click', () => this.exitToMainMenu());
 
