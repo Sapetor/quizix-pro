@@ -9,7 +9,7 @@ import { getJSON, setJSON, removeItem } from './storage-utils.js';
 import { isMobile } from './dom.js';
 
 const STORAGE_KEY = 'quiz_onboarding_complete';
-const TUTORIAL_VERSION = 1;
+const TUTORIAL_VERSION = 2;
 
 class OnboardingTutorial {
     constructor() {
@@ -33,9 +33,11 @@ class OnboardingTutorial {
 
     /**
      * Define all tutorial steps with target elements and content
+     * Version 2: Rewritten flow with image drag-drop and streamlined editor tour
      */
     initializeSteps() {
         this.steps = [
+            // Step 1: Enter the editor
             {
                 id: 'host-btn',
                 targetSelector: '#host-btn',
@@ -43,63 +45,80 @@ class OnboardingTutorial {
                 requiredScreen: 'main-menu',
                 titleKey: 'onboarding_step1_title',
                 contentKey: 'onboarding_step1_content',
-                icon: '1',
+                icon: '🎯',
                 position: 'right'
             },
+            // Step 2: Quiz title
             {
-                id: 'toolbar-add-question',
-                targetSelector: '#toolbar-add-question',
+                id: 'quiz-title',
+                targetSelector: '#quiz-title',
                 requiredScreen: 'host-screen',
                 titleKey: 'onboarding_step2_title',
                 contentKey: 'onboarding_step2_content',
-                icon: '2',
+                icon: '✏️',
                 position: 'bottom'
             },
+            // Step 3: Question types
+            {
+                id: 'question-type',
+                targetSelector: '.question-type',
+                requiredScreen: 'host-screen',
+                titleKey: 'onboarding_step3_title',
+                contentKey: 'onboarding_step3_content',
+                icon: '📝',
+                position: 'right'
+            },
+            // Step 4: Image drag-drop
+            {
+                id: 'image-upload',
+                targetSelector: '.image-upload',
+                requiredScreen: 'host-screen',
+                titleKey: 'onboarding_step4_title',
+                contentKey: 'onboarding_step4_content',
+                icon: '🖼️',
+                position: 'top'
+            },
+            // Step 5: AI Generator
+            {
+                id: 'toolbar-ai-gen',
+                targetSelector: '#toolbar-ai-gen',
+                mobileSelector: '#mobile-quiz-fab',
+                requiredScreen: 'host-screen',
+                titleKey: 'onboarding_step5_title',
+                contentKey: 'onboarding_step5_content',
+                icon: '🤖',
+                position: 'bottom'
+            },
+            // Step 6: Save & Load
             {
                 id: 'toolbar-save',
                 targetSelector: '#toolbar-save',
                 requiredScreen: 'host-screen',
-                titleKey: 'onboarding_step3_title',
-                contentKey: 'onboarding_step3_content',
-                icon: '3',
+                titleKey: 'onboarding_step6_title',
+                contentKey: 'onboarding_step6_content',
+                icon: '💾',
                 position: 'bottom'
             },
-            {
-                id: 'toolbar-ai-gen',
-                targetSelector: '#toolbar-ai-gen',
-                requiredScreen: 'host-screen',
-                titleKey: 'onboarding_step4_title',
-                contentKey: 'onboarding_step4_content',
-                icon: '4',
-                position: 'bottom'
-            },
-            {
-                id: 'toolbar-preview',
-                targetSelector: '#toolbar-preview',
-                requiredScreen: 'host-screen',
-                titleKey: 'onboarding_step5_title',
-                contentKey: 'onboarding_step5_content',
-                icon: '5',
-                position: 'bottom'
-            },
+            // Step 7: Start the game
             {
                 id: 'start-hosting-header-small',
                 targetSelector: '#start-hosting-header-small',
                 requiredScreen: 'host-screen',
-                titleKey: 'onboarding_step6_title',
-                contentKey: 'onboarding_step6_content',
-                icon: '6',
+                titleKey: 'onboarding_step7_title',
+                contentKey: 'onboarding_step7_content',
+                icon: '🚀',
                 position: 'bottom',
                 skipIfHidden: true
             },
+            // Step 8: Join as player (back to main menu)
             {
                 id: 'join-btn',
                 targetSelector: '#join-btn',
                 mobileSelector: '#join-btn-mobile',
                 requiredScreen: 'main-menu',
-                titleKey: 'onboarding_step7_title',
-                contentKey: 'onboarding_step7_content',
-                icon: '7',
+                titleKey: 'onboarding_step8_title',
+                contentKey: 'onboarding_step8_content',
+                icon: '🎮',
                 position: 'left'
             }
         ];
