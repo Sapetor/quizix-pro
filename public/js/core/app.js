@@ -397,26 +397,8 @@ export class QuizGame {
             logger.debug('New Game button clicked!');
             this.newGame();
         });
-        bindElement('rematch-game', 'click', () => {
-            logger.debug('Rematch button clicked!');
-            if (this.socketManager?.socket) {
-                logger.info('Host triggering rematch');
-                this.socketManager.socket.emit('rematch-game');
-            }
-        });
-        bindElement('play-again', 'click', () => {
-            logger.debug('Play Again button clicked!');
-            const isHost = this.gameManager?.stateManager?.getGameState()?.isHost ?? false;
-
-            if (isHost && this.socketManager?.socket) {
-                // Host triggers rematch - same PIN, same quiz, reset scores
-                logger.info('Host triggering rematch');
-                this.socketManager.socket.emit('rematch-game');
-            } else {
-                // Player exits to main menu
-                this.newGame();
-            }
-        });
+        bindElement('rematch-game', 'click', () => this.triggerRematch());
+        bindElement('play-again', 'click', () => this.handlePlayAgain());
         bindElement('exit-to-main', 'click', () => this.exitToMainMenu());
 
         // Statistics phase control buttons
@@ -802,6 +784,28 @@ export class QuizGame {
     exitToMainMenu() {
         this.resetAndReturnToMenu();
         logger.debug('Exited game and returned to main menu');
+    }
+
+    /**
+     * Trigger rematch (host only) - emits socket event
+     */
+    triggerRematch() {
+        logger.debug('Rematch triggered');
+        if (this.socketManager?.socket) {
+            this.socketManager.socket.emit('rematch-game');
+        }
+    }
+
+    /**
+     * Handle play again button - rematch for host, exit for players
+     */
+    handlePlayAgain() {
+        const isHost = this.gameManager?.stateManager?.getGameState()?.isHost ?? false;
+        if (isHost) {
+            this.triggerRematch();
+        } else {
+            this.newGame();
+        }
     }
 
     /**

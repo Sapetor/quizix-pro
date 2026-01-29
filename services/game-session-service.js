@@ -799,18 +799,7 @@ class Game {
         const questionType = question.type || 'multiple-choice';
 
         // Translate shuffled answer indices back to original indices
-        let translatedAnswer = answer;
-        const mapping = this.answerMappings?.get(playerId);
-
-        if (mapping && (questionType === 'multiple-choice' || questionType === 'multiple-correct')) {
-            if (questionType === 'multiple-choice' && typeof answer === 'number') {
-                // Single answer: translate shuffled index to original
-                translatedAnswer = mapping[answer];
-            } else if (questionType === 'multiple-correct' && Array.isArray(answer)) {
-                // Multiple answers: translate each shuffled index to original
-                translatedAnswer = answer.map(idx => mapping[idx]);
-            }
-        }
+        const translatedAnswer = this.translateShuffledAnswer(playerId, answer, questionType);
 
         // Use QuestionTypeService for centralized scoring logic
         const correctAnswerKey = this.getCorrectAnswerKey(question);
@@ -924,6 +913,26 @@ class Game {
                 this.logger.warn(`Unknown question type '${type}', using default correctAnswer field`);
                 return question.correctAnswer;
         }
+    }
+
+    /**
+   * Translate shuffled answer indices back to original indices
+   * @param {string} playerId - Player's socket ID
+   * @param {*} answer - The player's answer (may be shuffled index)
+   * @param {string} questionType - Type of question
+   * @returns {*} Translated answer with original indices
+   */
+    translateShuffledAnswer(playerId, answer, questionType) {
+        const mapping = this.answerMappings?.get(playerId);
+        if (!mapping) return answer;
+
+        if (questionType === 'multiple-choice' && typeof answer === 'number') {
+            return mapping[answer];
+        }
+        if (questionType === 'multiple-correct' && Array.isArray(answer)) {
+            return answer.map(idx => mapping[idx]);
+        }
+        return answer;
     }
 
     /**
