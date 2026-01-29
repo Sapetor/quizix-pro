@@ -165,7 +165,8 @@ async function cacheFirst(request) {
     const networkResponse = await fetch(request);
 
     // Cache successful responses (clone since response can only be consumed once)
-    if (networkResponse.ok) {
+    // Skip 206 partial responses - Cache API doesn't support them
+    if (networkResponse.ok && networkResponse.status !== 206) {
         cache.put(request, networkResponse.clone());
     }
 
@@ -182,8 +183,8 @@ async function networkFirst(request) {
     try {
         const networkResponse = await fetch(request);
 
-        // Cache successful responses
-        if (networkResponse.ok) {
+        // Cache successful responses (skip 206 partial responses)
+        if (networkResponse.ok && networkResponse.status !== 206) {
             cache.put(request, networkResponse.clone());
         }
 

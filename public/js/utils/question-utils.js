@@ -16,8 +16,18 @@ export class QuestionUtils {
      */
     generateQuestionHTML(questionCount) {
         return `
-            <h3><span data-translate="question">Question</span> ${questionCount + 1}</h3>
-            
+            <div class="question-header" onclick="toggleQuestionCollapse(this.parentElement)">
+                <span class="collapse-indicator"></span>
+                <h3><span data-translate="question">Question</span> ${questionCount + 1}</h3>
+                <div class="collapsed-meta">
+                    <span class="collapsed-type-badge">Multiple</span>
+                    <span class="collapsed-difficulty-badge">M</span>
+                </div>
+                <div class="question-header-actions">
+                    <button type="button" class="btn-icon btn-remove" onclick="event.stopPropagation(); removeQuestion(this)" title="Remove question">✕</button>
+                </div>
+            </div>
+            <div class="question-body">
             <div class="question-meta">
                 <select class="question-type" onchange="updateQuestionType(this)">
                     <option value="multiple-choice" data-translate="multiple_choice">Multiple Choice</option>
@@ -124,8 +134,7 @@ export class QuestionUtils {
                     <textarea class="question-explanation" placeholder="Explain why the correct answer is correct..." data-translate-placeholder="explanation_placeholder"></textarea>
                 </details>
             </div>
-
-            <button class="btn secondary remove-question" onclick="removeQuestion(this)" data-translate="remove">Remove</button>
+            </div>
         `;
     }
 
@@ -230,6 +239,11 @@ export function addQuestion() {
         detail: { questionCount: newQuestionCount }
     });
     document.dispatchEvent(event);
+
+    // Navigate to the new question (desktop only)
+    if (window.innerWidth >= 769 && window.navigateToNewQuestion) {
+        window.navigateToNewQuestion();
+    }
 
     return questionDiv;
 }

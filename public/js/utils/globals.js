@@ -192,6 +192,337 @@ export function scrollToCurrentQuestion() {
 }
 
 // ============================================================================
+// Question Collapse/Expand
+// ============================================================================
+
+export function toggleQuestionCollapse(questionItem) {
+    // Disable collapse in always-preview mode (desktop) - questions are paginated instead
+    const hostContainer = document.getElementById('host-container');
+    if (hostContainer?.classList.contains('always-preview')) {
+        return; // No collapse in pagination mode
+    }
+
+    questionItem.classList.toggle('collapsed');
+    updateCollapsedMeta(questionItem);
+}
+
+function updateCollapsedMeta(questionItem) {
+    const typeSelect = questionItem.querySelector('.question-type');
+    const diffSelect = questionItem.querySelector('.question-difficulty');
+    const typeBadge = questionItem.querySelector('.collapsed-type-badge');
+    const diffBadge = questionItem.querySelector('.collapsed-difficulty-badge');
+
+    if (typeBadge && typeSelect) {
+        const typeText = typeSelect.options[typeSelect.selectedIndex]?.text || '';
+        // Abbreviate: "Multiple Choice" -> "Multiple", "True/False" -> "T/F"
+        const abbrev = typeText.includes('/') ? 'T/F' : typeText.split(' ')[0].substring(0, 8);
+        typeBadge.textContent = abbrev;
+    }
+    if (diffBadge && diffSelect) {
+        // Show first letter: Easy->E, Medium->M, Hard->H
+        diffBadge.textContent = diffSelect.value?.charAt(0).toUpperCase() || 'M';
+    }
+}
+
+// ============================================================================
+// Question Pagination (Desktop Editor)
+// ============================================================================
+
+let currentEditingQuestion = 0;
+
+export function goToPreviousQuestion() {
+    const questionsContainer = document.getElementById('questions-container');
+    if (!questionsContainer) return;
+
+    const questionItems = questionsContainer.querySelectorAll('.question-item');
+    if (currentEditingQuestion > 0) {
+        currentEditingQuestion--;
+        showQuestion(currentEditingQuestion);
+    }
+}
+
+export function goToNextQuestion() {
+    const questionsContainer = document.getElementById('questions-container');
+    if (!questionsContainer) return;
+
+    const questionItems = questionsContainer.querySelectorAll('.question-item');
+    const total = questionItems.length;
+    if (currentEditingQuestion < total - 1) {
+        currentEditingQuestion++;
+        showQuestion(currentEditingQuestion);
+    }
+}
+
+export function showQuestion(index) {
+    const questionsContainer = document.getElementById('questions-container');
+    if (!questionsContainer) return;
+
+    const questionItems = questionsContainer.querySelectorAll('.question-item');
+    const total = questionItems.length;
+
+    // Clamp index to valid range
+    index = Math.max(0, Math.min(index, total - 1));
+    currentEditingQuestion = index;
+
+    // Hide all questions, show only current
+    questionItems.forEach((q, i) => {
+        if (i === index) {
+            q.classList.add('active-question');
+        } else {
+            q.classList.remove('active-question');
+        }
+    });
+
+    // Update pagination UI
+    updatePaginationUI(index, total);
+
+    // Sync preview to same question
+    if (window.game?.previewManager) {
+        window.game.previewManager.currentPreviewQuestion = index;
+        window.game.previewManager.updateSplitPreview?.();
+    }
+
+    logger.debug(`Showing question ${index + 1} of ${total}`);
+}
+
+export function updatePaginationUI(index, total) {
+    const prevBtn = document.getElementById('prev-question-btn');
+    const nextBtn = document.getElementById('next-question-btn');
+    const currentNum = document.getElementById('current-question-num');
+    const totalNum = document.getElementById('total-question-num');
+
+    if (prevBtn) prevBtn.disabled = index <= 0;
+    if (nextBtn) nextBtn.disabled = index >= total - 1;
+    if (currentNum) currentNum.textContent = index + 1;
+    if (totalNum) totalNum.textContent = total;
+}
+
+/**
+ * Navigate to newly added question
+ */
+export function navigateToNewQuestion() {
+    const questionsContainer = document.getElementById('questions-container');
+    if (!questionsContainer) return;
+
+    const questionItems = questionsContainer.querySelectorAll('.question-item');
+    const newIndex = questionItems.length - 1;
+    if (newIndex >= 0) {
+        showQuestion(newIndex);
+    }
+}
+
+/**
+ * Handle question removal - adjust pagination
+ */
+export function handleQuestionRemoved() {
+    const questionsContainer = document.getElementById('questions-container');
+    if (!questionsContainer) return;
+
+    const questionItems = questionsContainer.querySelectorAll('.question-item');
+    const total = questionItems.length;
+
+    // If current question was removed, adjust index
+    if (currentEditingQuestion >= total) {
+        currentEditingQuestion = Math.max(0, total - 1);
+    }
+
+    // Show the adjusted question
+    if (total > 0) {
+        showQuestion(currentEditingQuestion);
+    } else {
+        updatePaginationUI(0, 0);
+    }
+}
+
+/**
+ * Get current editing question index
+ */
+export function getCurrentEditingQuestion() {
+    return currentEditingQuestion;
+}
+
+/**
+ * Initialize pagination on host screen (desktop only)
+ */
+export function initializeQuestionPagination() {
+    const hostContainer = document.getElementById('host-container');
+    const questionsContainer = document.getElementById('questions-container');
+
+    if (!hostContainer || !questionsContainer) return;
+
+    // Check if desktop (min-width: 769px)
+    if (window.innerWidth < 769) return;
+
+    const questionItems = questionsContainer.querySelectorAll('.question-item');
+    const total = questionItems.length;
+
+    if (total > 0) {
+        // Show first question
+        showQuestion(0);
+    }
+
+    // Add keyboard navigation (arrow keys)
+    setupPaginationKeyboardNav();
+
+    logger.debug('Question pagination initialized');
+}
+
+/**
+ * Setup keyboard navigation for question pagination
+ */
+function setupPaginationKeyboardNav() {
+    document.addEventListener('keydown', handlePaginationKeyNav);
+}
+
+function handlePaginationKeyNav(e) {
+    // Only handle when on host screen and not in an input/textarea
+    const hostScreen = document.getElementById('host-screen');
+    if (!hostScreen?.classList.contains('active')) return;
+
+    const activeElement = document.activeElement;
+    const isTyping = activeElement?.tagName === 'INPUT' ||
+                     activeElement?.tagName === 'TEXTAREA' ||
+                     activeElement?.isContentEditable;
+
+    if (isTyping) return;
+
+    // Check for settings modal open
+    const settingsModal = document.getElementById('quiz-settings-modal');
+    if (settingsModal?.classList.contains('visible')) return;
+
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        goToPreviousQuestion();
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        goToNextQuestion();
+    }
+}
+
+// ============================================================================
+// Quiz Settings Modal Functions
+// ============================================================================
+
+export function openQuizSettingsModal() {
+    const modal = document.getElementById('quiz-settings-modal');
+    if (!modal) return;
+
+    // Sync modal values from inline settings
+    syncSettingsToModal();
+
+    modal.classList.add('visible');
+
+    // Close on Escape key
+    document.addEventListener('keydown', handleSettingsModalEscape);
+
+    // Close on overlay click
+    modal.addEventListener('click', handleSettingsModalOverlayClick);
+}
+
+export function closeQuizSettingsModal() {
+    const modal = document.getElementById('quiz-settings-modal');
+    if (!modal) return;
+
+    // Sync modal values back to inline settings
+    syncSettingsFromModal();
+
+    modal.classList.remove('visible');
+
+    // Remove event listeners
+    document.removeEventListener('keydown', handleSettingsModalEscape);
+    modal.removeEventListener('click', handleSettingsModalOverlayClick);
+}
+
+function handleSettingsModalEscape(e) {
+    if (e.key === 'Escape') {
+        closeQuizSettingsModal();
+    }
+}
+
+function handleSettingsModalOverlayClick(e) {
+    if (e.target.id === 'quiz-settings-modal') {
+        closeQuizSettingsModal();
+    }
+}
+
+export function toggleGlobalTimeModal() {
+    const useGlobalTime = document.getElementById('modal-use-global-time');
+    const globalTimeContainer = document.getElementById('modal-global-time-container');
+
+    if (!useGlobalTime || !globalTimeContainer) return;
+
+    globalTimeContainer.style.display = useGlobalTime.checked ? 'block' : 'none';
+}
+
+function syncSettingsToModal() {
+    // General options
+    syncCheckbox('randomize-questions', 'modal-randomize-questions');
+    syncCheckbox('randomize-answers', 'modal-randomize-answers');
+    syncCheckbox('use-global-time', 'modal-use-global-time');
+    syncInput('global-time-limit', 'modal-global-time-limit');
+
+    // Update global time container visibility
+    const useGlobalTime = document.getElementById('modal-use-global-time');
+    const globalTimeContainer = document.getElementById('modal-global-time-container');
+    if (useGlobalTime && globalTimeContainer) {
+        globalTimeContainer.style.display = useGlobalTime.checked ? 'block' : 'none';
+    }
+
+    // Advanced options
+    syncCheckbox('manual-advancement', 'modal-manual-advancement');
+    syncCheckbox('enable-power-ups', 'modal-enable-power-ups');
+
+    // Scoring options
+    syncCheckbox('time-bonus-enabled', 'modal-time-bonus-enabled');
+    syncCheckbox('show-score-breakdown', 'modal-show-score-breakdown');
+    syncInput('easy-multiplier', 'modal-easy-multiplier');
+    syncInput('medium-multiplier', 'modal-medium-multiplier');
+    syncInput('hard-multiplier', 'modal-hard-multiplier');
+}
+
+function syncSettingsFromModal() {
+    // General options
+    syncCheckbox('modal-randomize-questions', 'randomize-questions');
+    syncCheckbox('modal-randomize-answers', 'randomize-answers');
+    syncCheckbox('modal-use-global-time', 'use-global-time');
+    syncInput('modal-global-time-limit', 'global-time-limit');
+
+    // Trigger global time toggle on inline settings
+    const useGlobalTime = document.getElementById('use-global-time');
+    if (useGlobalTime) {
+        const event = new Event('change');
+        useGlobalTime.dispatchEvent(event);
+    }
+
+    // Advanced options
+    syncCheckbox('modal-manual-advancement', 'manual-advancement');
+    syncCheckbox('modal-enable-power-ups', 'enable-power-ups');
+
+    // Scoring options
+    syncCheckbox('modal-time-bonus-enabled', 'time-bonus-enabled');
+    syncCheckbox('modal-show-score-breakdown', 'show-score-breakdown');
+    syncInput('modal-easy-multiplier', 'easy-multiplier');
+    syncInput('modal-medium-multiplier', 'medium-multiplier');
+    syncInput('modal-hard-multiplier', 'hard-multiplier');
+}
+
+function syncCheckbox(fromId, toId) {
+    const from = document.getElementById(fromId);
+    const to = document.getElementById(toId);
+    if (from && to) {
+        to.checked = from.checked;
+    }
+}
+
+function syncInput(fromId, toId) {
+    const from = document.getElementById(fromId);
+    const to = document.getElementById(toId);
+    if (from && to) {
+        to.value = from.value;
+    }
+}
+
+// ============================================================================
 // Image and Question Management
 // ============================================================================
 
@@ -235,6 +566,11 @@ export function removeQuestion(buttonElement) {
     document.dispatchEvent(new CustomEvent('questionRemoved', {
         detail: { questionCount: newCount }
     }));
+
+    // Handle pagination after removal (desktop only)
+    if (window.innerWidth >= 769) {
+        handleQuestionRemoved();
+    }
 }
 
 // ============================================================================
@@ -438,8 +774,17 @@ const globalFunctions = {
     uploadImage,
     removeImage,
     removeQuestion,
+    toggleQuestionCollapse,
     updateEditorQuestionCount,
     initializeEditorQuestionCount,
+
+    // Question pagination (desktop editor)
+    goToPreviousQuestion,
+    goToNextQuestion,
+    showQuestion,
+    initializeQuestionPagination,
+    navigateToNewQuestion,
+    handleQuestionRemoved,
 
     // Navigation functions
     scrollToCurrentQuestion,
@@ -447,10 +792,13 @@ const globalFunctions = {
 
     // Modal functions
     openAIGeneratorModal,
+    openQuizSettingsModal,
+    closeQuizSettingsModal,
 
     // Time functions
     toggleGlobalTime,
-    updateGlobalTime
+    updateGlobalTime,
+    toggleGlobalTimeModal
 };
 
 // Single global dispatcher function
@@ -478,6 +826,19 @@ window.updateTimeLimit = updateTimeLimit;
 window.updateGlobalTime = updateGlobalTime;
 window.returnToMainFromHeader = returnToMainFromHeader;
 
+// Question pagination (desktop editor)
+window.goToPreviousQuestion = goToPreviousQuestion;
+window.goToNextQuestion = goToNextQuestion;
+window.showQuestion = showQuestion;
+window.initializeQuestionPagination = initializeQuestionPagination;
+window.navigateToNewQuestion = navigateToNewQuestion;
+window.handleQuestionRemoved = handleQuestionRemoved;
+
+// Quiz settings modal
+window.openQuizSettingsModal = openQuizSettingsModal;
+window.closeQuizSettingsModal = closeQuizSettingsModal;
+window.toggleGlobalTimeModal = toggleGlobalTimeModal;
+
 // Cross-module communication
 window.setGlobalFontSize = setGlobalFontSize;
 
@@ -485,3 +846,4 @@ window.setGlobalFontSize = setGlobalFontSize;
 window.openAIGeneratorModal = openAIGeneratorModal;
 window.uploadImage = uploadImage;
 window.removeQuestion = removeQuestion;
+window.toggleQuestionCollapse = toggleQuestionCollapse;

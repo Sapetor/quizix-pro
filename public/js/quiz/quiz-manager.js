@@ -614,6 +614,30 @@ export class QuizManager {
             this.errorHandler.safeExecute(() => {
                 logger.debug('Attempting safe preview update');
 
+                // Check for always-preview mode (desktop editor with split view)
+                const hostContainer = document.getElementById('host-container');
+                const isAlwaysPreview = hostContainer?.classList.contains('always-preview');
+
+                if (isAlwaysPreview) {
+                    logger.debug('Always-preview mode active, updating split preview and pagination');
+
+                    // Initialize pagination to show first question
+                    if (window.showQuestion) {
+                        window.showQuestion(0);
+                    }
+
+                    // Update split preview
+                    if (window.game?.previewManager) {
+                        window.game.previewManager.currentPreviewQuestion = 0;
+                        if (typeof window.game.previewManager.updateSplitPreview === 'function') {
+                            window.game.previewManager.updateSplitPreview();
+                            logger.debug('Split preview updated successfully');
+                        }
+                    }
+                    return;
+                }
+
+                // Legacy: Check for modal preview mode
                 if (window.previewManager &&
                     typeof window.previewManager.isPreviewMode === 'function' &&
                     window.previewManager.isPreviewMode()) {

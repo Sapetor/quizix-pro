@@ -32,15 +32,19 @@
     transform: none !important;
 }
 
-/* Header Layout - Sticky positioning that blends with UI */
+/* Header Layout */
 header {
     position: sticky;
     top: 0;
-    backdrop-filter: blur(12px);
     z-index: 100;
-    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 8px 16px;
+    backdrop-filter: blur(12px);
     transition: var(--transition-smooth);
-    /* Theme-specific backgrounds defined below */
 }
 
 [data-theme="dark"] header {
@@ -58,15 +62,15 @@ header {
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     flex-wrap: wrap;
-    padding: 8px 0;
-    background: transparent; /* Ensure no background interference */
+    padding: 4px 0;
     transition: var(--transition-smooth);
 }
 
-/* Prevent wrapping on desktop - keep controls horizontal */
+/* Desktop: prevent header wrapping for single-line layout */
 @media (min-width: 769px) {
+    header,
     .header-controls {
         flex-wrap: nowrap;
     }
@@ -86,7 +90,7 @@ header {
     display: flex;
     justify-content: center;
     padding: 25px; /* Increased from 15px for better outer spacing */
-    min-height: calc(100dvh - 65px); /* Account for sticky header */
+    min-height: calc(100dvh - 50px); /* Account for compact sticky header */
 }
 
 .host-container:not(.split-screen) .quiz-editor-section {
@@ -123,9 +127,9 @@ header {
     display: grid;
     grid-template-columns: var(--split-left, 50fr) var(--split-right, 50fr);
     gap: 12px;
-    max-width: none;
+    max-width: 100vw;
     width: 100%;
-    height: calc(100dvh - 65px);
+    height: calc(100dvh - 50px);
     padding: 0;
     margin: 0;
     overflow: hidden;
@@ -139,13 +143,6 @@ header {
 
 .host-container.split-screen > .quiz-preview-section {
     grid-column: 2;
-}
-
-/* Split-screen mode now uses full width */
-.host-container.split-screen {
-    margin-left: 0;
-    width: 100%;
-    max-width: 100vw;
 }
 
 /* Quiz Editor Section */
@@ -1051,21 +1048,800 @@ header {
 
 /* Toolbar is now in header - no need for grid layout adjustments */
 
-/* Split Screen Layout - Enhanced */
-.host-container.split-screen {
-    display: grid;
-    grid-template-columns: var(--split-left, 50fr) var(--split-right, 50fr);
-    gap: 12px;
-    max-width: none;
-    width: 100%;
-    height: calc(100dvh - 65px);
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
-    position: relative;
+/* =============================================================================
+   ALWAYS-ON PREVIEW EDITOR LAYOUT (Desktop only)
+   The preview is always visible on desktop in a 65/35 split
+   ============================================================================= */
+
+/* Desktop: Always show preview in split-screen mode */
+@media (min-width: 769px) {
+    /* Force split-screen layout on host-container when in editor */
+    /* 4-column grid: toolbar (48px) | editor | resize (16px) | preview */
+    .host-container.always-preview {
+        display: grid !important;
+        /* Use CSS custom properties for resizable split - defaults to 65/35 */
+        /* The split ratio applies to the editor/preview area, toolbar is fixed 48px */
+        grid-template-columns: 48px var(--split-left, 65fr) 16px var(--split-right, 35fr);
+        gap: 0;
+        max-width: none;
+        width: 100%;
+        height: calc(100dvh - 50px); /* Reduced header height (was 65px) */
+        padding: 0;
+        margin: 0;
+        overflow: hidden !important;
+        position: relative;
+        box-sizing: border-box;
+    }
+
+    /* Grid column assignments for 4-column layout */
+    .host-container.always-preview .editor-toolbar {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .host-container.always-preview .quiz-editor-section {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .host-container.always-preview .split-resize-handle {
+        grid-column: 3;
+        grid-row: 1;
+    }
+
+    .host-container.always-preview .quiz-preview-section {
+        grid-column: 4;
+        grid-row: 1;
+    }
+
+    /* Resize handle - positioned in grid column 3 */
+    .host-container.always-preview .split-resize-handle {
+        position: relative !important;
+        width: 16px !important;
+        height: 100%;
+        z-index: 1000 !important;
+        cursor: col-resize;
+        background: transparent;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Editor section - fixed height, internal scroll only */
+    .host-container.always-preview .quiz-editor-section {
+        height: 100%;
+        overflow: hidden !important;
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    /* Hide "Create Your Quiz" heading - context is obvious in always-preview mode */
+    .host-container.always-preview .quiz-editor-section > h2 {
+        display: none;
+    }
+
+    /* Quiz builder wrapper - flex container */
+    .host-container.always-preview .quiz-builder {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden !important;
+    }
+
+    /* Quiz title - compact */
+    .host-container.always-preview #quiz-title {
+        flex-shrink: 0;
+        margin-bottom: 8px;
+        padding: 10px 14px; /* Slightly reduced */
+    }
+
+    /* Quiz settings - collapsed by default in always-preview mode */
+    .host-container.always-preview .quiz-settings {
+        flex-shrink: 0;
+        margin-bottom: 8px;
+    }
+
+    /* Hide quiz settings details in always-preview - use settings modal instead */
+    .host-container.always-preview .quiz-settings .general-options,
+    .host-container.always-preview .quiz-settings .advanced-options,
+    .host-container.always-preview .quiz-settings .scoring-settings-section {
+        display: none;
+    }
+
+    /* Pagination controls - compact */
+    .host-container.always-preview .question-pagination {
+        flex-shrink: 0;
+        margin-bottom: 8px;
+        padding: 6px 12px;
+    }
+
+    /* Questions container - fill remaining space */
+    .host-container.always-preview #questions-container {
+        flex: 1;
+        overflow: hidden !important;
+        position: relative;
+        min-height: 0; /* Important for flex overflow */
+    }
+
+    /* Individual question items - fill container, compact padding */
+    .host-container.always-preview .question-item {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden !important; /* No scroll on container */
+        display: none; /* Hidden by default, shown via pagination */
+        flex-direction: column;
+        padding: 12px; /* Compact padding (was 24px default) */
+        margin-bottom: 0;
+    }
+
+    .host-container.always-preview .question-item.active-question {
+        display: flex;
+    }
+
+    /* Question header - compact styling */
+    .host-container.always-preview .question-item .question-header {
+        flex-shrink: 0;
+        cursor: default; /* Remove pointer cursor since collapse is disabled */
+        overflow: hidden !important;
+        margin: -12px -12px 10px -12px; /* Match reduced padding */
+        padding: 6px 10px; /* Compact header padding */
+    }
+
+    /* Question body - ONLY this should scroll */
+    .host-container.always-preview .question-item .question-body {
+        flex: 1;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        padding: 8px; /* Reduced from 16px */
+        min-height: 0; /* Important for flex overflow */
+    }
+
+    /* Multiple correct options - align checkbox with text input */
+    .host-container.always-preview .options-checkboxes {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .host-container.always-preview .options-checkboxes label {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px;
+        padding: 4px 8px !important;
+        margin: 0 !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Light theme adjustment */
+    [data-theme="light"] .host-container.always-preview .options-checkboxes label {
+        background: rgba(0, 0, 0, 0.02) !important;
+        border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .host-container.always-preview .options-checkboxes input[type="checkbox"] {
+        flex-shrink: 0;
+        margin: 0 !important;
+    }
+
+    .host-container.always-preview .options-checkboxes input[type="text"] {
+        flex: 1;
+        margin: 0 !important;
+        padding: 8px 10px;
+    }
+
+    /* Question content - side by side layout for textarea and image drop zone */
+    .host-container.always-preview .question-content {
+        display: flex;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .host-container.always-preview .question-content .question-text {
+        flex: 1;
+        min-height: 80px;
+        resize: vertical;
+    }
+
+    /* Image upload - drop zone style */
+    .host-container.always-preview .question-content .image-upload {
+        flex-shrink: 0;
+        width: 100px;
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 2px dashed rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .host-container.always-preview .question-content .image-upload:hover,
+    .host-container.always-preview .question-content .image-upload.drag-over {
+        background: rgba(99, 102, 241, 0.1);
+        border-color: var(--accent-primary);
+    }
+
+    .host-container.always-preview .question-content .image-upload.drag-over {
+        transform: scale(1.02);
+    }
+
+    /* Hide the label */
+    .host-container.always-preview .question-content .image-upload > label {
+        display: none !important;
+    }
+
+    /* Style file input as invisible overlay */
+    .host-container.always-preview .question-content .image-upload input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 2;
+    }
+
+    /* Drop zone content - icon and text */
+    .host-container.always-preview .question-content .image-upload::before {
+        content: '📷';
+        font-size: 1.5rem;
+        opacity: 0.7;
+    }
+
+    .host-container.always-preview .question-content .image-upload::after {
+        content: 'Drop image';
+        font-size: 0.65rem;
+        opacity: 0.5;
+        text-align: center;
+    }
+
+    /* When image is uploaded - show checkmark */
+    .host-container.always-preview .question-content .image-upload:has(.image-preview[style*="block"])::before {
+        content: '✅';
+        font-size: 1.3rem;
+        opacity: 1;
+    }
+
+    .host-container.always-preview .question-content .image-upload:has(.image-preview[style*="block"])::after {
+        content: 'Image added';
+        opacity: 0.7;
+    }
+
+    /* Hide the image preview - rely on live preview */
+    .host-container.always-preview .question-content .image-preview {
+        display: none !important;
+    }
+
+    /* Remove button when image exists */
+    .host-container.always-preview .question-content .image-upload:has(.image-preview[style*="block"]) .remove-image {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        font-size: 12px;
+        line-height: 18px;
+        border-radius: 50%;
+        background: #ef4444;
+        color: white;
+        border: none;
+        cursor: pointer;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .host-container.always-preview .question-content .image-upload:has(.image-preview[style*="block"]) .remove-image:hover {
+        background: #dc2626;
+        transform: scale(1.1);
+    }
+
+    /* Hide remove button when no image */
+    .host-container.always-preview .question-content .image-upload .remove-image {
+        display: none;
+    }
+
+    /* Light theme */
+    [data-theme="light"] .host-container.always-preview .question-content .image-upload {
+        background: rgba(0, 0, 0, 0.02);
+        border-color: rgba(0, 0, 0, 0.15);
+    }
+
+    [data-theme="light"] .host-container.always-preview .question-content .image-upload:hover,
+    [data-theme="light"] .host-container.always-preview .question-content .image-upload.drag-over {
+        background: rgba(99, 102, 241, 0.08);
+    }
+
+    /* Preview section - always visible, compact padding */
+    .host-container.always-preview .quiz-preview-section {
+        display: flex !important;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden !important;
+        padding: 8px; /* Reduced from 12px */
+        box-sizing: border-box;
+    }
+
+    /* Preview header - fixed, no scroll */
+    .host-container.always-preview .quiz-preview-section .preview-header,
+    .host-container.always-preview .quiz-preview-section .preview-navigation-bar {
+        flex-shrink: 0;
+        overflow: hidden !important;
+    }
+
+    /* Preview viewport - ONLY this should scroll */
+    .host-container.always-preview .quiz-preview-section .preview-viewport-split {
+        flex: 1;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        min-height: 0;
+    }
+
+    /* Preview content inside viewport - no extra scroll */
+    .host-container.always-preview .quiz-preview-section .preview-content-split {
+        overflow: visible;
+    }
+
+    /* Show resize handle in always-preview mode */
+    .host-container.always-preview .split-resize-handle {
+        display: flex !important;
+        z-index: 100;
+    }
+
+    /* Hide inline quiz settings on desktop - users use the modal instead */
+    .host-container.always-preview .quiz-settings {
+        display: none !important;
+    }
+
+    /* Hide the "Create Your Quiz" heading on desktop in always-preview */
+    .host-container.always-preview .quiz-editor-section > h2 {
+        display: none;
+    }
+
+    /* Hide misc elements that add height */
+    .host-container.always-preview .back-to-top-btn,
+    .host-container.always-preview #import-file-input,
+    .host-container.always-preview .editor-question-count {
+        display: none !important;
+    }
+
+    /* Prevent body/main scroll when always-preview is active */
+    body:has(.host-container.always-preview) {
+        overflow: hidden !important;
+    }
+
+    body:has(.host-container.always-preview) main {
+        overflow: hidden !important;
+    }
+
+    body:has(.host-container.always-preview) #host-screen {
+        overflow: hidden !important;
+        height: calc(100dvh - 50px); /* Reduced header height (was 65px) */
+    }
 }
 
-/* When not in split-screen, center the editor - simplified without toolbar logic */
+/* =============================================================================
+   QUESTION PAGINATION CONTROLS
+   ============================================================================= */
+
+.question-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 12px 16px;
+    background: var(--glass-light);
+    border-radius: var(--border-radius-small);
+    border: 1px solid var(--glass-border);
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+
+.question-pagination .pagination-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    background: var(--glass-medium);
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.question-pagination .pagination-btn:hover:not(:disabled) {
+    background: var(--color-primary-500);
+    color: white;
+    border-color: var(--color-primary-500);
+    transform: scale(1.05);
+}
+
+.question-pagination .pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.question-pagination .question-indicator {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 120px;
+    text-align: center;
+}
+
+/* Empty state placeholder */
+.question-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+}
+
+.question-empty-state .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.question-empty-state .empty-text {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+}
+
+.question-empty-state .btn {
+    margin-top: 8px;
+}
+
+/* =============================================================================
+   QUIZ SETTINGS MODAL
+   ============================================================================= */
+
+.settings-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.settings-modal-overlay.visible {
+    display: flex;
+}
+
+.settings-modal {
+    background: #1a1f26;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 0;
+    max-width: 440px;
+    width: 100%;
+    max-height: 85vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+}
+
+.settings-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(139, 92, 246, 0.1));
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-modal-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-modal-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.settings-modal-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    transform: scale(1.05);
+}
+
+.settings-modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 16px;
+    max-height: calc(85vh - 80px);
+    overflow-y: auto;
+}
+
+/* Settings sections */
+.settings-modal-content .settings-section {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.settings-modal-content .settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.settings-modal-content .settings-section h4 {
+    margin: 0 0 12px 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.settings-modal-content label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+    margin: 0 -4px;
+}
+
+.settings-modal-content label:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.settings-modal-content label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    min-height: auto;
+    margin-top: 1px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.settings-modal-content label span,
+.settings-modal-content label strong {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+/* Difficulty multipliers section */
+.settings-modal-content .difficulty-multipliers {
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.settings-modal-content .multipliers-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.settings-modal-content .multiplier-inputs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.settings-modal-content .multiplier-input {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 0;
+}
+
+.settings-modal-content .multiplier-input:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.settings-modal-content .multiplier-input span {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.settings-modal-content .multiplier-input input[type="number"] {
+    width: 60px;
+    padding: 8px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-primary);
+}
+
+.settings-modal-content .multiplier-input input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* Time setting container */
+.settings-modal-content .time-setting-container {
+    margin: 8px 0 0 30px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent-primary);
+}
+
+.settings-modal-content .time-input-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+}
+
+.settings-modal-content .time-input-label:hover {
+    background: transparent;
+}
+
+.settings-modal-content .time-input {
+    width: 70px;
+    padding: 8px 12px;
+    text-align: center;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+/* Custom scrollbar for modal content */
+.settings-modal-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.settings-modal-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.settings-modal-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+.settings-modal-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .settings-modal {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .settings-modal-header {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(139, 92, 246, 0.05));
+    border-bottom-color: #e2e8f0;
+}
+
+[data-theme="light"] .settings-modal-header h3 {
+    color: #1a202c;
+}
+
+[data-theme="light"] .settings-modal-close {
+    background: rgba(0, 0, 0, 0.05);
+    color: #4a5568;
+}
+
+[data-theme="light"] .settings-modal-close:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+[data-theme="light"] .settings-modal-content .settings-section {
+    background: #f7fafc;
+    border-color: #e2e8f0;
+}
+
+[data-theme="light"] .settings-modal-content .settings-section h4 {
+    color: #4a5568;
+}
+
+[data-theme="light"] .settings-modal-content label span,
+[data-theme="light"] .settings-modal-content label strong {
+    color: #1a202c;
+}
+
+[data-theme="light"] .settings-modal-content label:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .settings-modal-content .multiplier-input {
+    background: #ffffff;
+    border-color: #e2e8f0;
+}
+
+[data-theme="light"] .settings-modal-content .multiplier-input:hover {
+    background: #f7fafc;
+}
+
+[data-theme="light"] .settings-modal-content .multiplier-input span {
+    color: #4a5568;
+}
+
+[data-theme="light"] .settings-modal-content .multiplier-input input[type="number"],
+[data-theme="light"] .settings-modal-content .time-input {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    color: #1a202c;
+}
+
+[data-theme="light"] .settings-modal-content .multipliers-label {
+    color: #4a5568;
+}
+
+[data-theme="light"] .settings-modal-content .difficulty-multipliers {
+    border-top-color: #e2e8f0;
+}
+
+/* Hide settings on mobile - they use the existing inline layout */
+@media (max-width: 768px) {
+    .question-pagination {
+        display: none;
+    }
+}
+
 /* App Version Display */
 .app-version {
     position: fixed;

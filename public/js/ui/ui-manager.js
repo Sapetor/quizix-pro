@@ -92,6 +92,9 @@ export class UIManager {
 
                 // Initialize first question if questions container is empty
                 this.initializeQuizEditor();
+
+                // Initialize always-on preview for desktop (min-width: 769px)
+                this.initializeAlwaysPreview();
             } else if (screenId === 'game-lobby') {
                 // Hide editing toolbar on lobby screen, but enable header auto-hide
                 if (headerStartBtn) headerStartBtn.style.display = 'none';
@@ -235,6 +238,60 @@ export class UIManager {
                 }, 100);
             }
         }
+    }
+
+    /**
+     * Initialize always-on preview mode for desktop
+     * On desktop (min-width: 769px), the preview is always visible
+     */
+    initializeAlwaysPreview() {
+        // Only initialize for desktop (min-width: 769px)
+        if (window.innerWidth < 769) {
+            logger.debug('Mobile detected, skipping always-preview initialization');
+            return;
+        }
+
+        const hostContainer = document.getElementById('host-container');
+        const previewSection = document.getElementById('quiz-preview-section');
+        const resizeHandle = document.getElementById('split-resize-handle');
+
+        if (!hostContainer || !previewSection) {
+            logger.warn('Host container or preview section not found');
+            return;
+        }
+
+        // Add always-preview class to enable split layout with vertical toolbar
+        hostContainer.classList.add('always-preview');
+
+        // Show the preview section and resize handle
+        previewSection.style.display = 'flex';
+        if (resizeHandle) {
+            resizeHandle.style.display = 'flex';
+        }
+
+        // Initialize the preview manager if available
+        setTimeout(() => {
+            if (window.game?.previewManager) {
+                // Set preview mode flag (so preview updates work)
+                window.game.previewManager.previewMode = true;
+
+                // Initialize the split layout manager for resizing
+                window.game.previewManager.splitLayoutManager?.initializeSplitLayout?.();
+
+                // Setup preview event listeners
+                window.game.previewManager.setupSplitPreviewEventListeners();
+
+                // Initial preview update
+                window.game.previewManager.updateSplitPreview();
+
+                logger.debug('Always-on preview initialized');
+            }
+
+            // Initialize question pagination
+            if (window.initializeQuestionPagination) {
+                window.initializeQuestionPagination();
+            }
+        }, 200);
     }
 
     updateGamePin(gamePin) {

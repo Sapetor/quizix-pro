@@ -2326,6 +2326,103 @@ button:disabled:focus-visible {
     box-shadow: var(--shadow-md);
 }
 
+/* Question header row - clickable for collapse */
+.question-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin: -24px -24px 16px -24px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px 12px 0 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.question-header h3 {
+    margin: 0;
+    flex: 1;
+    font-size: 1rem;
+}
+
+/* Collapse indicator arrow */
+.collapse-indicator {
+    font-size: 10px;
+    color: var(--text-secondary);
+    transition: transform 0.2s;
+    width: 12px;
+    text-align: center;
+}
+
+.collapse-indicator::before {
+    content: '▼';
+}
+
+.question-item.collapsed .collapse-indicator::before {
+    content: '▶';
+}
+
+/* Question body - hidden when collapsed */
+.question-body {
+    display: block;
+}
+
+.question-item.collapsed .question-body {
+    display: none;
+}
+
+.question-item.collapsed .question-header {
+    margin-bottom: 0;
+    border-radius: 12px;
+}
+
+/* Type/difficulty badges shown when collapsed */
+.collapsed-meta {
+    display: none;
+    gap: 6px;
+    align-items: center;
+}
+
+.question-item.collapsed .collapsed-meta {
+    display: flex;
+}
+
+.collapsed-type-badge,
+.collapsed-difficulty-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+}
+
+/* Header action buttons */
+.question-header-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-icon.btn-remove {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--color-error-500, #ef4444);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-icon.btn-remove:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: currentColor;
+}
+
 /* Question meta section - horizontal layout for type and difficulty */
 .question-meta {
     display: grid;

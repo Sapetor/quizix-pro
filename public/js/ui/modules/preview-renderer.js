@@ -59,7 +59,7 @@ export class PreviewRenderer {
     }
 
     /**
-     * Render text with LaTeX support
+     * Render text with LaTeX and syntax highlighting support
      */
     renderSplitTextWithLatex(element, text) {
         if (!element || !text) {
@@ -71,6 +71,9 @@ export class PreviewRenderer {
         element.innerHTML = formattedContent;
         element.style.display = 'block';
         element.style.opacity = '1';
+
+        // Apply syntax highlighting for code blocks
+        this.applySyntaxHighlighting(element);
 
         const hasLatex = this.mathJaxService.hasLatex(formattedContent);
 
@@ -585,6 +588,9 @@ export class PreviewRenderer {
         optionDiv.classList.add('tex2jax_process');
         container.appendChild(optionDiv);
 
+        // Apply syntax highlighting for code blocks
+        this.applySyntaxHighlighting(optionDiv);
+
         // Always show option content immediately
         optionDiv.style.opacity = '1';
 
@@ -601,6 +607,7 @@ export class PreviewRenderer {
      */
     renderPlainOption(optionDiv, formattedContent, container) {
         optionDiv.innerHTML = formattedContent;
+        this.applySyntaxHighlighting(optionDiv);
         optionDiv.style.opacity = '1';
         container.appendChild(optionDiv);
     }
@@ -701,7 +708,7 @@ export class PreviewRenderer {
         }
 
         // Apply syntax highlighting for code blocks
-        this.applyMobileCodeHighlighting(previewElement);
+        this.applySyntaxHighlighting(previewElement);
     }
 
     /**
@@ -723,38 +730,23 @@ export class PreviewRenderer {
     }
 
     /**
-     * Apply syntax highlighting for code blocks in mobile preview
+     * Apply syntax highlighting for code blocks in preview
      */
-    applyMobileCodeHighlighting(element) {
+    applySyntaxHighlighting(element) {
         const codeBlocks = element.querySelectorAll('pre code');
 
         if (codeBlocks.length > 0) {
-            // Try to apply Highlight.js if available (like in-game)
             if (window.hljs && window.hljs.highlightElement) {
                 codeBlocks.forEach(codeBlock => {
-                    // Add proper classes and apply Highlight.js
                     if (!codeBlock.classList.contains('hljs')) {
                         window.hljs.highlightElement(codeBlock);
-
-                        // Mark parent pre as having syntax highlighting
                         const preElement = codeBlock.closest('pre');
                         if (preElement) {
                             preElement.classList.add('has-syntax-highlighting');
                         }
                     }
                 });
-                logger.debug('Mobile Highlight.js applied to', codeBlocks.length, 'blocks');
-            } else {
-                // Fallback: Use existing CSS classes that match the game styling
-                codeBlocks.forEach(codeBlock => {
-                    // Ensure proper CSS classes are applied (will inherit from code-blocks.css)
-                    const preElement = codeBlock.closest('pre');
-                    if (preElement && !preElement.classList.contains('has-syntax-highlighting')) {
-                        // CSS will handle the dark background and proper styling
-                        // No custom styling needed - let the CSS do the work
-                    }
-                });
-                logger.debug('Mobile code styling applied via CSS classes to', codeBlocks.length, 'blocks');
+                logger.debug('Highlight.js applied to', codeBlocks.length, 'code blocks');
             }
         }
     }
@@ -882,7 +874,7 @@ export class PreviewRenderer {
             }
 
             // Apply syntax highlighting for code blocks
-            this.applyMobileCodeHighlighting(optionDiv);
+            this.applySyntaxHighlighting(optionDiv);
 
             optionsContainer.appendChild(optionDiv);
         });

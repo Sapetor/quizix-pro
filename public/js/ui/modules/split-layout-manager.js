@@ -15,6 +15,10 @@ const MIN_RATIO = 20;
 const MAX_RATIO = 85;
 const RATIO_STEP = 5; // Keyboard resize step
 
+// Fixed widths for the new 4-column grid layout
+const TOOLBAR_WIDTH = 48; // Vertical toolbar width in pixels
+const HANDLE_WIDTH = 16;  // Resize handle width in pixels
+
 export class SplitLayoutManager {
     constructor() {
         // Drag functionality state
@@ -135,9 +139,6 @@ export class SplitLayoutManager {
             hostContainer.style.setProperty('--split-left', '70fr');
             hostContainer.style.setProperty('--split-right', '30fr');
             logger.debug('Set default 70/30 split ratio on preview activation');
-
-            // Position the drag handle at 70%
-            this.updateDragHandlePosition(70);
         }
     }
 
@@ -186,23 +187,25 @@ export class SplitLayoutManager {
             const hostContainer = document.querySelector('.host-container');
             const containerRect = hostContainer.getBoundingClientRect();
             const containerWidth = containerRect.width;
-            const mouseX = e.clientX - containerRect.left;
 
-            // Calculate new ratio (expanded range for flexibility)
-            let newRatio = (mouseX / containerWidth) * 100;
+            // Calculate mouse position relative to the editor start (after toolbar)
+            const mouseX = e.clientX - containerRect.left - TOOLBAR_WIDTH;
+
+            // Available width for editor + preview (excluding toolbar and handle)
+            const availableWidth = containerWidth - TOOLBAR_WIDTH - HANDLE_WIDTH;
+
+            // Calculate new ratio based on available space
+            let newRatio = (mouseX / availableWidth) * 100;
             newRatio = Math.max(MIN_RATIO, Math.min(MAX_RATIO, newRatio));
 
-            // Update CSS custom properties
+            // Update CSS custom properties (these control the fr units in grid)
             hostContainer.style.setProperty('--split-left', `${newRatio}fr`);
             hostContainer.style.setProperty('--split-right', `${100 - newRatio}fr`);
-
-            // Update drag handle position
-            this.updateDragHandlePosition(newRatio);
 
             // Update tooltip position and content
             this.updateDragTooltip(e.clientX, newRatio);
 
-            logger.debug('Dragging', { newRatio, mouseX, containerWidth });
+            logger.debug('Dragging', { newRatio, mouseX, availableWidth });
         };
 
         // Mouse up - end drag
@@ -256,15 +259,12 @@ export class SplitLayoutManager {
 
     /**
      * Update the drag handle position based on the split ratio
+     * Note: In the new 4-column grid layout, the handle is in a fixed grid column,
+     * so this method is now a no-op. The ratio is controlled via --split-left/--split-right CSS vars.
      */
-    updateDragHandlePosition(ratio) {
-        const resizeHandle = document.getElementById('split-resize-handle');
-        if (!resizeHandle) return;
-
-        // Position the handle at the split ratio percentage
-        resizeHandle.style.left = `${ratio}%`;
-
-        logger.debug('Updated drag handle position', { ratio });
+    updateDragHandlePosition(_ratio) {
+        // No-op: Handle is now in a fixed grid column (column 3)
+        // The split ratio is controlled by CSS custom properties
     }
 
     /**

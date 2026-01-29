@@ -185,16 +185,14 @@
 
 /* Question counter in navigation bar - Compact design */
 #preview-question-counter-split {
-    /* font-size handled by variables.css utility class for global scaling */
     font-weight: 700;
     color: var(--text-primary);
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px; /* Reduced border radius for compact design */
-    padding: 4px 12px; /* Reduced padding for better space efficiency */
+    border-radius: 12px;
+    padding: 4px 12px;
     backdrop-filter: blur(8px);
-    font-size: 0.75rem; /* Smaller font size to save space */
-    white-space: nowrap; /* Prevent text wrapping */
+    font-size: 0.75rem;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
     min-width: 180px;
     max-width: 220px;
@@ -370,12 +368,15 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--preview-spacing);
-    margin: 0;
+    margin: 0 auto;
+    max-width: 95%;
+    width: 100%;
 }
 
 .mobile-viewport #preview-true-false-split:not([style*="display: none"]) .true-false-options {
     grid-template-columns: 1fr;
     max-width: 300px;
+    margin: 0 auto;
     gap: 15px;
 }
 
@@ -666,6 +667,44 @@ pre code {
 /* Compact Preview Styles */
 /* Duplicate removed - see main definition above */
 
+
+/* =============================================================================
+   HIDE PREVIEW HEADER AND NAVIGATION IN ALWAYS-PREVIEW MODE
+   Preview shows only content in the simplified layout
+   ============================================================================= */
+
+@media (min-width: 769px) {
+    .host-container.always-preview .preview-header,
+    .host-container.always-preview .preview-navigation-bar {
+        display: none !important;
+    }
+
+    /* Preview viewport - compact, full height */
+    .host-container.always-preview .preview-viewport-split {
+        height: 100%;
+        border-radius: 12px;
+        flex: 1;
+        padding: 16px; /* Reduced from 40px desktop default */
+    }
+
+    /* Preview content - compact padding */
+    .host-container.always-preview .preview-content-split {
+        padding: 20px; /* Reduced from 40px */
+        height: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Compact question area in preview */
+    .host-container.always-preview .preview-content-split .player-question-area {
+        padding: 12px 16px; /* Reduced padding */
+        margin-bottom: 16px; /* Reduced gap */
+    }
+
+    /* Compact answer options spacing */
+    .host-container.always-preview .preview-content-split .player-options {
+        gap: 10px; /* Tighter spacing between options */
+    }
+}
 
 .preview-header {
     display: flex;
@@ -1583,22 +1622,21 @@ pre code {
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.3);
     color: white;
-    padding: 4px 8px; /* Ultra compact padding to prevent overflow */
-    border-radius: 4px; /* Smaller radius for compact design */
+    padding: 4px 8px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.75rem; /* Smaller font to fit more content */
+    font-size: 0.75rem;
     font-weight: 600;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 2px; /* Minimal gap for compact layout */
-    white-space: nowrap; /* Prevent text wrapping */
-    overflow: hidden; /* Prevent content overflow */
-    text-overflow: ellipsis; /* Add ellipsis if text is too long */
-    min-width: 0; /* Allow flex shrinking */
-    flex-shrink: 1; /* Allow buttons to shrink if needed */
+    gap: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex-shrink: 1;
     box-shadow: 0 2px 8px var(--shadow-light);
-    white-space: nowrap; /* Prevent text wrapping */
 }
 
 [data-theme="dark"] .nav-btn {

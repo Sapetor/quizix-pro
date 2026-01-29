@@ -86,6 +86,7 @@ export class QuizGame {
         // Initialize core functionality
         this.initializeEventListeners();
         this.initializeToolbar();
+        this.initializeImageDragDrop();
 
         // Make preview manager globally accessible for onclick handlers
         window.game = this;
@@ -231,7 +232,85 @@ export class QuizGame {
             imageUploadDiv.style.opacity = '1';
         }
 
+        // Trigger live preview update immediately
+        if (this.previewManager) {
+            setTimeout(() => {
+                this.previewManager.updateSplitPreview();
+            }, 100);
+        }
+
         logger.debug('Image preview updated - Storage:', storagePath, 'WebP:', webpStoragePath, 'Display:', actualDisplayPath);
+    }
+
+    /**
+     * Initialize drag and drop for image upload zones
+     */
+    initializeImageDragDrop() {
+        // Use event delegation on the host container
+        const hostContainer = document.getElementById('host-container');
+        if (!hostContainer) return;
+
+        // Prevent default drag behaviors on document
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        // Handle drag events on image-upload zones
+        hostContainer.addEventListener('dragenter', (e) => {
+            const uploadZone = e.target.closest('.image-upload');
+            if (uploadZone) {
+                uploadZone.classList.add('drag-over');
+            }
+        });
+
+        hostContainer.addEventListener('dragleave', (e) => {
+            const uploadZone = e.target.closest('.image-upload');
+            if (uploadZone && !uploadZone.contains(e.relatedTarget)) {
+                uploadZone.classList.remove('drag-over');
+            }
+        });
+
+        hostContainer.addEventListener('dragover', (e) => {
+            const uploadZone = e.target.closest('.image-upload');
+            if (uploadZone) {
+                e.preventDefault();
+                uploadZone.classList.add('drag-over');
+            }
+        });
+
+        hostContainer.addEventListener('drop', async (e) => {
+            const uploadZone = e.target.closest('.image-upload');
+            if (!uploadZone) return;
+
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+
+            const files = e.dataTransfer?.files;
+            if (!files || files.length === 0) return;
+
+            const file = files[0];
+            if (!file.type.startsWith('image/')) {
+                translationManager.showAlert('please_select_image');
+                return;
+            }
+
+            // Find the file input and trigger upload
+            const fileInput = uploadZone.querySelector('input[type="file"]');
+            if (fileInput) {
+                // Create a DataTransfer to set the files
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+
+                // Trigger the upload
+                this.uploadImage(fileInput);
+            }
+        });
+
+        logger.debug('Image drag-drop initialized');
     }
 
     /**
@@ -440,34 +519,42 @@ export class QuizGame {
     }
 
     /**
-     * Add a new question and scroll to it
+     * Add a new question and navigate to it
      */
     addQuestionAndScrollToIt() {
         this.addQuestion();
 
-        // Wait for the DOM to update, then scroll to the new question
+        // Wait for the DOM to update, then navigate to the new question
         setTimeout(() => {
-            const questionItems = document.querySelectorAll('.question-item');
-            if (questionItems.length > 0) {
-                const lastQuestion = questionItems[questionItems.length - 1];
+            const hostContainer = document.getElementById('host-container');
+            const isAlwaysPreview = hostContainer?.classList.contains('always-preview');
 
-                // Use gentle scrolling that's less jarring
-                lastQuestion.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start',
-                    inline: 'nearest'
-                });
+            if (isAlwaysPreview) {
+                // In always-preview mode, use pagination navigation
+                window.navigateToNewQuestion?.();
+            } else {
+                // In normal mode, scroll to the new question
+                const questionItems = document.querySelectorAll('.question-item');
+                if (questionItems.length > 0) {
+                    const lastQuestion = questionItems[questionItems.length - 1];
 
-                // Add subtle highlight effect
-                lastQuestion.style.transition = 'background-color 0.5s ease';
-                lastQuestion.style.backgroundColor = 'rgba(37, 99, 235, 0.05)';
+                    lastQuestion.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start',
+                        inline: 'nearest'
+                    });
 
-                setTimeout(() => {
-                    lastQuestion.style.backgroundColor = '';
+                    // Add subtle highlight effect
+                    lastQuestion.style.transition = 'background-color 0.5s ease';
+                    lastQuestion.style.backgroundColor = 'rgba(37, 99, 235, 0.05)';
+
                     setTimeout(() => {
-                        lastQuestion.style.transition = '';
-                    }, 500);
-                }, 1000);
+                        lastQuestion.style.backgroundColor = '';
+                        setTimeout(() => {
+                            lastQuestion.style.transition = '';
+                        }, 500);
+                    }, 1000);
+                }
             }
         }, TIMING.DOM_UPDATE_DELAY);
     }
@@ -782,9 +869,10 @@ export class QuizGame {
     }
 
     /**
-     * Initialize toolbar
+     * Initialize toolbar (both horizontal and vertical)
      */
     initializeToolbar() {
+        // Horizontal toolbar buttons (in header)
         const toolbarButtons = [
             { id: 'toolbar-add-question', handler: () => this.addQuestionAndScrollToIt() },
             { id: 'toolbar-save', handler: () => this.quizManager.saveQuiz() },
@@ -798,13 +886,24 @@ export class QuizGame {
             { id: 'toolbar-bottom', handler: () => this.scrollToBottom() }
         ];
 
-        toolbarButtons.forEach(({ id, handler }) => {
+        // Vertical toolbar buttons (in left sidebar for always-preview mode)
+        const verticalToolbarButtons = [
+            { id: 'vtoolbar-add-question', handler: () => this.addQuestionAndScrollToIt() },
+            { id: 'vtoolbar-save', handler: () => this.quizManager.saveQuiz() },
+            { id: 'vtoolbar-load', handler: () => this.quizManager.showLoadQuizModal() },
+            { id: 'vtoolbar-ai-gen', handler: () => this.openAIGeneratorModal() },
+            { id: 'vtoolbar-settings', handler: () => window.openQuizSettingsModal?.() },
+            { id: 'vtoolbar-import', handler: () => this.quizManager.importQuiz() },
+            { id: 'vtoolbar-export', handler: () => this.quizManager.exportQuiz() },
+            { id: 'vtoolbar-results', handler: () => this.openResultsViewer() }
+        ];
+
+        // Connect all toolbar buttons
+        [...toolbarButtons, ...verticalToolbarButtons].forEach(({ id, handler }) => {
             const button = document.getElementById(id);
             if (button) {
                 button.addEventListener('click', handler);
                 logger.debug(`Connected toolbar button: ${id}`);
-            } else {
-                logger.warn(`Toolbar button not found: ${id}`);
             }
         });
     }

@@ -172,13 +172,13 @@ export default {
     hard: 'Hard',
 
     // Question editor keys
-    enter_question: 'Enter your question (supports LaTeX: $x^2 + y^2 = z^2$)',
+    enter_question: 'Enter your question (supports LaTeX: $x^2$ and code: ```python```)',
     time_seconds: 'Time (s)',
     correct_answer: 'Correct Answer',
     tolerance: 'Tolerance (+/-)',
     explanation_optional: 'Explanation (optional)',
     explanation_placeholder: 'Explain why the correct answer is correct...',
-    enter_question_with_latex: 'Enter your question (supports LaTeX)',
+    enter_question_with_latex: 'Enter your question (supports LaTeX and code blocks)',
     option_a: 'Option A',
     option_b: 'Option B',
     option_c: 'Option C',
@@ -674,5 +674,11 @@ export default {
     optional_password: 'Password (optional)',
     password_hint: 'If set, password will be required to load or delete this quiz',
     verify_to_remove_password: 'Enter current password to remove protection',
-    right_click_hint: 'Right-click items for more options (rename, move, delete)'
+    right_click_hint: 'Right-click items for more options (rename, move, delete)',
+
+    // Quiz Settings Modal
+    quiz_settings: 'Quiz Settings',
+    quiz_settings_tooltip: 'Open quiz settings',
+    general_options: 'General Options',
+    advanced_options: 'Advanced Options'
 };

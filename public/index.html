@@ -8,8 +8,8 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Preload critical CSS -->
-    <link rel="preload" href="css/main.bundle.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=17"></noscript>
+    <link rel="preload" href="css/main.bundle.css?v=33" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=33"></noscript>
     
     <!-- Preload critical JavaScript -->
     <link rel="preload" href="js/main.js?v=17" as="script" crossorigin="anonymous">
@@ -526,8 +526,8 @@
                         <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip" aria-label="AI question generator" data-translate-aria-label="ai_generator_tooltip">
                             <span class="toolbar-icon" aria-hidden="true">🤖</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-preview" data-translate-title="toggle_preview_tooltip" aria-label="Toggle preview" data-translate-aria-label="toggle_preview_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">👁️</span>
+                        <button class="toolbar-btn" id="toolbar-settings" data-translate-title="quiz_settings_tooltip" aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip" onclick="openQuizSettingsModal()">
+                            <span class="toolbar-icon" aria-hidden="true">⚙️</span>
                         </button>
                         <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_quiz_tooltip" aria-label="Import quiz" data-translate-aria-label="import_quiz_tooltip">
                             <span class="toolbar-icon" aria-hidden="true">📥</span>
@@ -746,6 +746,35 @@
             <!-- Old vertical toolbar removed - now using horizontal toolbar in header -->
             
             <div class="host-container" id="host-container">
+                <!-- Vertical Editor Toolbar (Desktop always-preview mode) -->
+                <aside class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="Quiz editing tools">
+                    <button class="toolbar-btn" id="vtoolbar-add-question" data-translate-title="add_question_tooltip" aria-label="Add question">
+                        <span class="toolbar-icon" aria-hidden="true">➕</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-save" data-translate-title="save_quiz_tooltip" aria-label="Save quiz">
+                        <span class="toolbar-icon" aria-hidden="true">💾</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-load" data-translate-title="load_quiz_tooltip" aria-label="Load quiz">
+                        <span class="toolbar-icon" aria-hidden="true">📂</span>
+                    </button>
+                    <div class="toolbar-divider"></div>
+                    <button class="toolbar-btn" id="vtoolbar-ai-gen" data-translate-title="ai_generator_tooltip" aria-label="AI question generator">
+                        <span class="toolbar-icon" aria-hidden="true">🤖</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-settings" data-translate-title="quiz_settings_tooltip" aria-label="Quiz settings">
+                        <span class="toolbar-icon" aria-hidden="true">⚙️</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-import" data-translate-title="import_quiz_tooltip" aria-label="Import quiz">
+                        <span class="toolbar-icon" aria-hidden="true">📥</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-export" data-translate-title="export_quiz_tooltip" aria-label="Export quiz">
+                        <span class="toolbar-icon" aria-hidden="true">📤</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-results" data-translate-title="view_results_tooltip" aria-label="View results">
+                        <span class="toolbar-icon" aria-hidden="true">📊</span>
+                    </button>
+                </aside>
+
                 <div class="quiz-editor-section" id="quiz-editor-section">
                     <h2 data-translate="create_quiz">Create Your Quiz</h2>
                     
@@ -825,16 +854,39 @@
                         </div>
                     </div>
 
-                    <!-- Question count indicator -->
-                    <div class="editor-question-count" id="editor-question-count">
+                    <!-- Question Pagination Controls (Desktop only) -->
+                    <div class="question-pagination desktop-only" id="question-pagination">
+                        <button class="pagination-btn" id="prev-question-btn" onclick="goToPreviousQuestion()" disabled aria-label="Previous question" data-translate-aria-label="previous">
+                            ←
+                        </button>
+                        <span class="question-indicator" id="question-indicator">
+                            <span data-translate="question">Question</span> <span id="current-question-num">1</span> <span data-translate="of">of</span> <span id="total-question-num">1</span>
+                        </span>
+                        <button class="pagination-btn" id="next-question-btn" onclick="goToNextQuestion()" disabled aria-label="Next question" data-translate-aria-label="next">
+                            →
+                        </button>
+                    </div>
+
+                    <!-- Question count indicator (mobile only) -->
+                    <div class="editor-question-count mobile-only" id="editor-question-count">
                         <span class="question-count-number" id="editor-question-count-number">1</span>
                         <span class="question-count-label" data-translate="questions_total">Questions</span>
                     </div>
 
                     <div id="questions-container">
                         <div class="question-item" data-question="0">
-                            <h3><span data-translate="question">Question</span> 1</h3>
-                            
+                            <div class="question-header" onclick="toggleQuestionCollapse(this.parentElement)">
+                                <span class="collapse-indicator"></span>
+                                <h3><span data-translate="question">Question</span> 1</h3>
+                                <div class="collapsed-meta">
+                                    <span class="collapsed-type-badge">Multiple</span>
+                                    <span class="collapsed-difficulty-badge">M</span>
+                                </div>
+                                <div class="question-header-actions">
+                                    <button type="button" class="btn-icon btn-remove" onclick="event.stopPropagation(); removeQuestion(this)" title="Remove question">✕</button>
+                                </div>
+                            </div>
+                            <div class="question-body">
                             <div class="question-meta">
                                 <select class="question-type" onchange="updateQuestionType(this)">
                                     <option value="multiple-choice" data-translate="multiple_choice">Multiple Choice</option>
@@ -859,7 +911,7 @@
                             </div>
                             
                             <div class="question-content">
-                                <textarea class="question-text" placeholder="Enter your question (supports LaTeX: $x^2 + y^2 = z^2$)" data-translate-placeholder="enter_question"></textarea>
+                                <textarea class="question-text" placeholder="Enter your question (supports LaTeX: $x^2$ and code: ```python```)" data-translate-placeholder="enter_question"></textarea>
                                 
                                 <div class="image-upload">
                                     <label data-translate="add_image">Add Image (optional):</label>
@@ -940,6 +992,7 @@
                                     <summary data-translate="explanation_optional">Explanation (optional)</summary>
                                     <textarea class="question-explanation" placeholder="Explain why the correct answer is correct..." data-translate-placeholder="explanation_placeholder"></textarea>
                                 </details>
+                            </div>
                             </div>
                         </div>
                     </div>
@@ -1132,6 +1185,83 @@
                                     <input type="number" id="preview-numeric-input" placeholder="Enter your answer" disabled data-translate-placeholder="enter_answer">
                                     <button class="btn primary" disabled data-translate="submit">Submit</button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Settings Modal (Desktop) -->
+        <div id="quiz-settings-modal" class="settings-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+            <div class="settings-modal">
+                <div class="settings-modal-header">
+                    <h3 id="settings-modal-title"><span aria-hidden="true">⚙️</span> <span data-translate="quiz_settings">Quiz Settings</span></h3>
+                    <button class="settings-modal-close" onclick="closeQuizSettingsModal()" aria-label="Close" data-translate-aria-label="close">&times;</button>
+                </div>
+                <div class="settings-modal-content">
+                    <!-- General Options -->
+                    <div class="settings-section">
+                        <h4 data-translate="general_options">General Options</h4>
+                        <label>
+                            <input type="checkbox" id="modal-randomize-questions">
+                            <span data-translate="randomize_questions">Randomize question order</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="modal-randomize-answers">
+                            <span data-translate="randomize_answers">Randomize answer positions</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="modal-use-global-time" onchange="toggleGlobalTimeModal()">
+                            <span data-translate="use_same_time">Use same time for all questions</span>
+                        </label>
+                        <div id="modal-global-time-container" class="time-setting-container" style="display: none;">
+                            <label class="time-input-label">
+                                <span data-translate="global_time_limit">Global time limit (seconds):</span>
+                                <input type="number" id="modal-global-time-limit" min="5" max="300" value="20" class="time-input">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <div class="settings-section">
+                        <h4 data-translate="advanced_options">Advanced Options</h4>
+                        <label class="manual-advancement-option">
+                            <input type="checkbox" id="modal-manual-advancement">
+                            <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
+                        </label>
+                        <label class="power-ups-option">
+                            <input type="checkbox" id="modal-enable-power-ups">
+                            <strong>⚡ <span data-translate="enable_power_ups">Enable Power-Ups (50-50, +10s, 2x Points)</span></strong>
+                        </label>
+                    </div>
+
+                    <!-- Scoring Options -->
+                    <div class="settings-section">
+                        <h4 data-translate="scoring_settings">Scoring Settings</h4>
+                        <label>
+                            <input type="checkbox" id="modal-time-bonus-enabled" checked>
+                            <span data-translate="enable_time_bonus">Enable time bonus (faster = more points)</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="modal-show-score-breakdown" checked>
+                            <span data-translate="show_score_breakdown">Show score breakdown (host view)</span>
+                        </label>
+                        <div class="difficulty-multipliers">
+                            <span class="multipliers-label" data-translate="difficulty_multipliers">Difficulty Multipliers:</span>
+                            <div class="multiplier-inputs">
+                                <label class="multiplier-input">
+                                    <span data-translate="easy">Easy</span>
+                                    <input type="number" id="modal-easy-multiplier" value="1" min="0.5" max="5" step="0.5">
+                                </label>
+                                <label class="multiplier-input">
+                                    <span data-translate="medium">Medium</span>
+                                    <input type="number" id="modal-medium-multiplier" value="2" min="0.5" max="5" step="0.5">
+                                </label>
+                                <label class="multiplier-input">
+                                    <span data-translate="hard">Hard</span>
+                                    <input type="number" id="modal-hard-multiplier" value="3" min="0.5" max="5" step="0.5">
+                                </label>
                             </div>
                         </div>
                     </div>
