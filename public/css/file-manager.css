@@ -333,12 +333,15 @@
 }
 
 [data-theme="light"] .folder-tree-row.selected {
-    background-color: #6366f1;
-    color: white;
+    background-color: #6366f1 !important;
+    color: white !important;
 }
 
-[data-theme="light"] .folder-tree-row.selected * {
-    color: white;
+[data-theme="light"] .folder-tree-row.selected .folder-tree-name,
+[data-theme="light"] .folder-tree-row.selected .folder-tree-icon,
+[data-theme="light"] .folder-tree-row.selected .folder-tree-lock,
+[data-theme="light"] .folder-tree-row.selected .folder-tree-toggle {
+    color: white !important;
 }
 
 [data-theme="light"] .context-menu-item:hover,
