@@ -33,6 +33,15 @@ A sophisticated quiz platform that runs locally on your network, featuring LaTeX
 - **HuggingFace**: Additional AI provider options
 - **Smart Formatting**: Auto-detect LaTeX and code content
 
+### Results & Analytics
+- **PDF Reports**: Generate formatted PDF summaries with per-question analysis
+- **Excel Export**: Export to XLSX with multiple sheets (Summary, Questions, Players, Wrong Answers)
+- **Session Comparison**: Compare results across multiple games of the same quiz
+- **Question Drill-down**: Click any question for detailed answer/time distribution
+- **Distribution Charts**: Histograms for numeric answers, bar charts for multiple-correct
+- **Print Styles**: Print-friendly CSS for analytics views
+- **CSV Export**: Simple and analytics-enhanced CSV formats
+
 ### Multi-Language Support
 - **9 Languages**: English, Spanish, French, German, Italian, Portuguese, Polish, Japanese, Chinese
 - **Dynamic Switching**: Change language on-the-fly without reload

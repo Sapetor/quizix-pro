@@ -9,6 +9,46 @@ import { showErrorAlert, showSuccessAlert } from '../translation-manager.js';
 import { createFormatSelectionModal } from './results-renderer.js';
 import { calculateQuestionAnalytics, getQuizSummaryStats } from './results-analytics.js';
 
+// jsPDF CDN URL for lazy loading
+const JSPDF_CDN_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+
+// Cache the loading promise to avoid duplicate loads
+let jsPDFLoadPromise = null;
+
+/**
+ * Lazy-load jsPDF library on demand
+ * @returns {Promise<Object>} jsPDF constructor
+ */
+async function loadJsPDF() {
+    // Already loaded
+    if (typeof window.jspdf !== 'undefined') {
+        return window.jspdf;
+    }
+
+    // Loading in progress
+    if (jsPDFLoadPromise) {
+        return jsPDFLoadPromise;
+    }
+
+    // Start loading
+    jsPDFLoadPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = JSPDF_CDN_URL;
+        script.async = true;
+        script.onload = () => {
+            logger.debug('jsPDF loaded successfully');
+            resolve(window.jspdf);
+        };
+        script.onerror = () => {
+            jsPDFLoadPromise = null;
+            reject(new Error('Failed to load jsPDF library'));
+        };
+        document.head.appendChild(script);
+    });
+
+    return jsPDFLoadPromise;
+}
+
 export class ResultsExporter {
     constructor() {
         this.currentExportFormat = 'analytics';
@@ -130,13 +170,9 @@ export class ResultsExporter {
      */
     async exportToPDF(resultData, options = {}) {
         try {
-            // Check if jsPDF is available
-            if (typeof window.jspdf === 'undefined') {
-                showErrorAlert('PDF export library not loaded. Please refresh and try again.');
-                return;
-            }
-
-            const { jsPDF } = window.jspdf;
+            // Lazy-load jsPDF
+            const jspdfLib = await loadJsPDF();
+            const { jsPDF } = jspdfLib;
             const doc = new jsPDF();
 
             const quizTitle = resultData.quizTitle || 'Untitled Quiz';
@@ -497,12 +533,9 @@ export class ResultsExporter {
      */
     async exportComparisonToPDF(comparisonData, quizTitle) {
         try {
-            if (typeof window.jspdf === 'undefined') {
-                showErrorAlert('PDF export library not loaded. Please refresh and try again.');
-                return;
-            }
-
-            const { jsPDF } = window.jspdf;
+            // Lazy-load jsPDF
+            const jspdfLib = await loadJsPDF();
+            const { jsPDF } = jspdfLib;
             const doc = new jsPDF();
 
             const pageWidth = doc.internal.pageSize.getWidth();
