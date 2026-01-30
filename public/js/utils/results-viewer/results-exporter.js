@@ -346,6 +346,150 @@ export class ResultsExporter {
     }
 
     /**
+     * Export results to Excel (XLSX) format
+     * @param {Object} resultData - Full result data object
+     * @returns {Promise<void>}
+     */
+    async exportToExcel(resultData) {
+        try {
+            // Check if SheetJS is available
+            if (typeof XLSX === 'undefined') {
+                showErrorAlert('Excel export library not loaded. Please refresh and try again.');
+                return;
+            }
+
+            const quizTitle = resultData.quizTitle || 'Untitled Quiz';
+            const gamePin = resultData.gamePin || 'Unknown';
+            const savedDate = resultData.saved ? new Date(resultData.saved).toLocaleDateString() : 'Unknown';
+
+            // Calculate analytics
+            const questionAnalytics = calculateQuestionAnalytics(resultData);
+            const summary = getQuizSummaryStats(questionAnalytics);
+
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+
+            // === Sheet 1: Summary ===
+            const summaryData = [
+                ['Quiz Results Report'],
+                [],
+                ['Quiz Title', quizTitle],
+                ['Game PIN', gamePin],
+                ['Date', savedDate],
+                ['Participants', resultData.results?.length || 0],
+                [],
+                ['Summary Statistics'],
+                ['Average Success Rate', `${(summary.avgSuccessRate || 0).toFixed(1)}%`],
+                ['Average Response Time', `${(summary.avgTime || 0).toFixed(1)} seconds`],
+                ['Total Questions', summary.totalQuestions || questionAnalytics.length],
+                ['Questions Needing Review', summary.problematicCount || 0],
+                [],
+                ['Hardest Question', summary.hardestQuestion ? `Q${summary.hardestQuestion.number}: ${summary.hardestQuestion.successRate.toFixed(1)}%` : 'N/A'],
+                ['Easiest Question', summary.easiestQuestion ? `Q${summary.easiestQuestion.number}: ${summary.easiestQuestion.successRate.toFixed(1)}%` : 'N/A']
+            ];
+            const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+            summarySheet['!cols'] = [{ wch: 25 }, { wch: 50 }];
+            XLSX.utils.book_append_sheet(wb, summarySheet, 'Summary');
+
+            // === Sheet 2: Question Analysis ===
+            const questionHeaders = ['Question #', 'Question Text', 'Type', 'Success Rate', 'Avg Time (s)', 'Responses', 'Avg Points', 'Problematic', 'Issues'];
+            const questionRows = questionAnalytics.map(q => [
+                q.questionNumber,
+                this._sanitizeExcelText(q.text || ''),
+                q.type || 'multiple-choice',
+                `${q.successRate.toFixed(1)}%`,
+                q.averageTime.toFixed(1),
+                q.totalResponses,
+                q.averagePoints.toFixed(0),
+                q.isPotentiallyProblematic ? 'Yes' : 'No',
+                q.problemFlags?.map(f => f.message).join('; ') || ''
+            ]);
+            const questionData = [questionHeaders, ...questionRows];
+            const questionSheet = XLSX.utils.aoa_to_sheet(questionData);
+            questionSheet['!cols'] = [
+                { wch: 12 }, { wch: 50 }, { wch: 15 }, { wch: 12 },
+                { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 40 }
+            ];
+            XLSX.utils.book_append_sheet(wb, questionSheet, 'Questions');
+
+            // === Sheet 3: Player Results ===
+            if (resultData.results && resultData.results.length > 0) {
+                const playerHeaders = ['Rank', 'Player', 'Score', 'Correct Answers', 'Total Questions', 'Success Rate', 'Completed At'];
+                const sortedPlayers = [...resultData.results].sort((a, b) => (b.score || 0) - (a.score || 0));
+                const playerRows = sortedPlayers.map((player, idx) => {
+                    const totalQ = player.answers?.length || 0;
+                    const correctQ = player.answers?.filter(a => a?.isCorrect).length || 0;
+                    const rate = totalQ > 0 ? ((correctQ / totalQ) * 100).toFixed(1) : '0';
+                    return [
+                        idx + 1,
+                        player.name || 'Anonymous',
+                        player.score || 0,
+                        correctQ,
+                        totalQ,
+                        `${rate}%`,
+                        player.completedAt ? new Date(player.completedAt).toLocaleTimeString() : 'N/A'
+                    ];
+                });
+                const playerData = [playerHeaders, ...playerRows];
+                const playerSheet = XLSX.utils.aoa_to_sheet(playerData);
+                playerSheet['!cols'] = [
+                    { wch: 6 }, { wch: 20 }, { wch: 10 }, { wch: 15 },
+                    { wch: 15 }, { wch: 12 }, { wch: 15 }
+                ];
+                XLSX.utils.book_append_sheet(wb, playerSheet, 'Players');
+            }
+
+            // === Sheet 4: Common Wrong Answers ===
+            const wrongAnswerHeaders = ['Question #', 'Question Text', 'Wrong Answer', 'Count'];
+            const wrongAnswerRows = [];
+            questionAnalytics.forEach(q => {
+                const entries = Object.entries(q.commonWrongAnswers || {});
+                entries.sort((a, b) => b[1] - a[1]);
+                entries.slice(0, 5).forEach(([answer, count]) => {
+                    wrongAnswerRows.push([
+                        q.questionNumber,
+                        this._sanitizeExcelText((q.text || '').substring(0, 50)),
+                        this._sanitizeExcelText(answer),
+                        count
+                    ]);
+                });
+            });
+            if (wrongAnswerRows.length > 0) {
+                const wrongAnswerData = [wrongAnswerHeaders, ...wrongAnswerRows];
+                const wrongAnswerSheet = XLSX.utils.aoa_to_sheet(wrongAnswerData);
+                wrongAnswerSheet['!cols'] = [{ wch: 12 }, { wch: 40 }, { wch: 30 }, { wch: 8 }];
+                XLSX.utils.book_append_sheet(wb, wrongAnswerSheet, 'Wrong Answers');
+            }
+
+            // Generate filename and save
+            const safeTitle = quizTitle.replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30);
+            const filename = `${safeTitle}-results-${gamePin}.xlsx`;
+            XLSX.writeFile(wb, filename);
+
+            logger.info('Excel report generated:', filename);
+            showSuccessAlert(`Excel report downloaded: ${filename}`);
+
+        } catch (error) {
+            logger.error('Failed to generate Excel:', error);
+            showErrorAlert('Failed to generate Excel report');
+        }
+    }
+
+    /**
+     * Sanitize text for Excel output
+     * @param {string} text - Text to sanitize
+     * @returns {string} Sanitized text
+     */
+    _sanitizeExcelText(text) {
+        if (!text) return '';
+        return text
+            .replace(/\$[^$]*\$/g, '[math]')
+            .replace(/\\[a-zA-Z]+/g, '')
+            .replace(/[\x00-\x1F]/g, '')
+            .trim();
+    }
+
+    /**
      * Export comparison results to PDF
      * @param {Object} comparisonData - Comparative analysis data
      * @param {string} quizTitle - Title of the quiz being compared

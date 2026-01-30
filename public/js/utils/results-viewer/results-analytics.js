@@ -341,9 +341,10 @@ export function createAnalyticsModal(result, analytics, summary) {
             </div>
 
             <div class="tab-content" id="questions-tab">
+                <p class="click-hint">Click a question for detailed breakdown</p>
                 <div class="questions-analytics-list">
-                    ${analytics.map(q => `
-                        <div class="question-analytics-item ${q.isPotentiallyProblematic ? 'problematic' : ''}">
+                    ${analytics.map((q, idx) => `
+                        <div class="question-analytics-item clickable ${q.isPotentiallyProblematic ? 'problematic' : ''}" data-question-index="${idx}">
                             <div class="question-header">
                                 <span class="question-number">Q${q.questionNumber}</span>
                                 <span class="success-rate ${getSuccessRateClass(q.successRate)}">${q.successRate.toFixed(1)}%</span>
@@ -399,6 +400,7 @@ export function createAnalyticsModal(result, analytics, summary) {
 
             <div class="modal-footer">
                 <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                <button class="btn secondary" data-action="export-excel" data-filename="${safeFilename}">Export Excel</button>
                 <button class="btn secondary" data-action="export-pdf" data-filename="${safeFilename}">Export PDF</button>
                 <button class="btn primary" data-action="export-analytics" data-filename="${safeFilename}">Export CSV</button>
             </div>
@@ -547,6 +549,182 @@ export function switchAnalyticsTab(event, tabName) {
     if (tabContent) {
         tabContent.classList.add('active');
     }
+}
+
+/**
+ * Create question drill-down modal for detailed answer breakdown
+ * @param {Object} questionAnalysis - Analytics data for the specific question
+ * @param {Object} question - Original question data (if available)
+ * @param {Array} playerAnswers - Array of player answer data for this question
+ * @returns {HTMLElement} Drill-down modal element
+ */
+export function createQuestionDrilldownModal(questionAnalysis, question, playerAnswers) {
+    const existingModal = document.getElementById('question-drilldown-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'question-drilldown-modal';
+    modal.className = 'modal-overlay';
+    modal.style.zIndex = '1060';
+
+    const qNum = questionAnalysis.questionNumber;
+    const qText = questionAnalysis.text || `Question ${qNum}`;
+    const qType = questionAnalysis.type || 'multiple-choice';
+
+    // Build answer distribution data
+    const answerCounts = {};
+    const timeBuckets = { '0-5s': 0, '5-10s': 0, '10-15s': 0, '15-20s': 0, '20s+': 0 };
+    let correctCount = 0;
+    let incorrectCount = 0;
+
+    playerAnswers.forEach(pa => {
+        if (!pa) return;
+
+        // Count answers
+        const answerKey = Array.isArray(pa.answer) ? pa.answer.join(', ') : String(pa.answer ?? 'No answer');
+        answerCounts[answerKey] = (answerCounts[answerKey] || 0) + 1;
+
+        // Count correct/incorrect
+        if (pa.isCorrect) {
+            correctCount++;
+        } else {
+            incorrectCount++;
+        }
+
+        // Time buckets
+        const timeSec = (pa.timeMs || 0) / 1000;
+        if (timeSec <= 5) timeBuckets['0-5s']++;
+        else if (timeSec <= 10) timeBuckets['5-10s']++;
+        else if (timeSec <= 15) timeBuckets['10-15s']++;
+        else if (timeSec <= 20) timeBuckets['15-20s']++;
+        else timeBuckets['20s+']++;
+    });
+
+    // Sort answers by count (descending)
+    const sortedAnswers = Object.entries(answerCounts)
+        .sort((a, b) => b[1] - a[1]);
+
+    // Build answer distribution HTML
+    const answerDistHtml = sortedAnswers.map(([answer, count]) => {
+        const percentage = ((count / questionAnalysis.totalResponses) * 100).toFixed(1);
+        const isCorrect = answer === String(questionAnalysis.correctAnswer) ||
+            (Array.isArray(questionAnalysis.correctAnswer) && answer === questionAnalysis.correctAnswer.join(', '));
+        const barColor = isCorrect ? '#10b981' : '#ef4444';
+
+        return `
+            <div class="answer-dist-row">
+                <div class="answer-text ${isCorrect ? 'correct' : ''}">${escapeHtml(answer.substring(0, 50))}${answer.length > 50 ? '...' : ''}</div>
+                <div class="answer-bar-container">
+                    <div class="answer-bar" style="width: ${percentage}%; background: ${barColor};"></div>
+                </div>
+                <div class="answer-count">${count} (${percentage}%)</div>
+            </div>
+        `;
+    }).join('');
+
+    // Build time distribution HTML
+    const maxTimeCount = Math.max(...Object.values(timeBuckets), 1);
+    const timeDistHtml = Object.entries(timeBuckets).map(([bucket, count]) => {
+        const percentage = (count / maxTimeCount) * 100;
+        return `
+            <div class="time-dist-row">
+                <div class="time-label">${bucket}</div>
+                <div class="time-bar-container">
+                    <div class="time-bar" style="width: ${percentage}%;"></div>
+                </div>
+                <div class="time-count">${count}</div>
+            </div>
+        `;
+    }).join('');
+
+    // Common wrong answers (top 5)
+    const wrongAnswers = Object.entries(questionAnalysis.commonWrongAnswers || {})
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+    const wrongAnswersHtml = wrongAnswers.length > 0
+        ? wrongAnswers.map(([answer, count]) => `
+            <div class="wrong-answer-item">
+                <span class="wrong-answer-text">${escapeHtml(answer.substring(0, 40))}${answer.length > 40 ? '...' : ''}</span>
+                <span class="wrong-answer-count">${count} students</span>
+            </div>
+        `).join('')
+        : '<p class="no-wrong-answers">All answers were correct!</p>';
+
+    modal.innerHTML = `
+        <div class="modal-content drilldown-modal-content">
+            <div class="modal-header">
+                <h2>Question ${qNum} Details</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+            </div>
+
+            <div class="drilldown-body">
+                <div class="drilldown-question-text">
+                    <span class="question-type-badge">${qType}</span>
+                    ${escapeHtml(qText)}
+                </div>
+
+                <div class="drilldown-stats">
+                    <div class="drilldown-stat">
+                        <div class="stat-value ${questionAnalysis.successRate >= 60 ? 'good' : 'poor'}">${questionAnalysis.successRate.toFixed(1)}%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                    <div class="drilldown-stat">
+                        <div class="stat-value">${questionAnalysis.averageTime.toFixed(1)}s</div>
+                        <div class="stat-label">Avg Time</div>
+                    </div>
+                    <div class="drilldown-stat">
+                        <div class="stat-value correct">${correctCount}</div>
+                        <div class="stat-label">Correct</div>
+                    </div>
+                    <div class="drilldown-stat">
+                        <div class="stat-value incorrect">${incorrectCount}</div>
+                        <div class="stat-label">Incorrect</div>
+                    </div>
+                </div>
+
+                <div class="drilldown-section">
+                    <h4>Answer Distribution</h4>
+                    <div class="answer-distribution">
+                        ${answerDistHtml}
+                    </div>
+                </div>
+
+                <div class="drilldown-section">
+                    <h4>Response Time Distribution</h4>
+                    <div class="time-distribution">
+                        ${timeDistHtml}
+                    </div>
+                </div>
+
+                <div class="drilldown-section">
+                    <h4>Most Common Wrong Answers</h4>
+                    <div class="wrong-answers-list">
+                        ${wrongAnswersHtml}
+                    </div>
+                </div>
+
+                ${questionAnalysis.problemFlags && questionAnalysis.problemFlags.length > 0 ? `
+                    <div class="drilldown-section">
+                        <h4>Issues Detected</h4>
+                        <div class="problem-flags">
+                            ${questionAnalysis.problemFlags.map(flag =>
+        `<span class="flag ${flag.severity}">${escapeHtml(flag.message)}</span>`
+    ).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+            </div>
+        </div>
+    `;
+
+    return modal;
 }
 
 /**
@@ -1008,6 +1186,7 @@ export default {
     createSuccessRateChart,
     createTimeVsSuccessChart,
     switchAnalyticsTab,
+    createQuestionDrilldownModal,
     createNumericDistributionChart,
     createMultipleCorrectChart,
     createComparisonChart,

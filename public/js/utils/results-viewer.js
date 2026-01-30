@@ -48,6 +48,7 @@ import {
     createSuccessRateChart,
     createTimeVsSuccessChart,
     switchAnalyticsTab,
+    createQuestionDrilldownModal,
     createComparisonChart,
     calculateComparativeMetrics
 } from './results-viewer/results-analytics.js';
@@ -540,11 +541,26 @@ export class ResultsViewer {
         const modal = createAnalyticsModal(result, analytics, summary);
         document.body.appendChild(modal);
 
+        // Store data for drill-down access
+        this.currentAnalyticsData = {
+            result,
+            analytics,
+            summary
+        };
+
         // Attach tab switching handlers
         modal.querySelectorAll('.analytics-tabs .tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tabName = btn.dataset.tab;
                 switchAnalyticsTab(e, tabName);
+            });
+        });
+
+        // Attach question drill-down handlers
+        modal.querySelectorAll('.question-analytics-item.clickable').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const questionIndex = parseInt(item.dataset.questionIndex, 10);
+                this.showQuestionDrilldown(questionIndex);
             });
         });
 
@@ -563,11 +579,53 @@ export class ResultsViewer {
             });
         }
 
+        const exportExcelBtn = modal.querySelector('[data-action="export-excel"]');
+        if (exportExcelBtn) {
+            exportExcelBtn.addEventListener('click', () => {
+                this.exportCurrentToExcel(exportExcelBtn.dataset.filename);
+            });
+        }
+
         // Create charts after modal is in DOM
         setTimeout(() => {
             createSuccessRateChart(analytics);
             createTimeVsSuccessChart(analytics);
         }, 100);
+    }
+
+    /**
+     * Show drill-down modal for a specific question
+     * @param {number} questionIndex - Index of the question in analytics array
+     */
+    showQuestionDrilldown(questionIndex) {
+        if (!this.currentAnalyticsData) {
+            logger.warn('No analytics data available for drill-down');
+            return;
+        }
+
+        const { result, analytics } = this.currentAnalyticsData;
+        const questionAnalysis = analytics[questionIndex];
+
+        if (!questionAnalysis) {
+            logger.warn('Question not found at index:', questionIndex);
+            return;
+        }
+
+        // Get player answers for this question
+        const playerAnswers = [];
+        if (result.results) {
+            result.results.forEach(player => {
+                if (player.answers && player.answers[questionIndex]) {
+                    playerAnswers.push(player.answers[questionIndex]);
+                }
+            });
+        }
+
+        // Get original question data if available
+        const question = result.questions?.[questionIndex] || null;
+
+        const drilldownModal = createQuestionDrilldownModal(questionAnalysis, question, playerAnswers);
+        document.body.appendChild(drilldownModal);
     }
 
     showAnalyticsUnavailableModal(result) {
@@ -641,6 +699,46 @@ export class ResultsViewer {
             logger.error('Error exporting to PDF:', error);
             this.hideLoading();
             showErrorAlert('Failed to export PDF');
+        }
+    }
+
+    /**
+     * Export current analytics view to Excel
+     * Fetches full data if needed
+     * @param {string} filename - Result filename
+     */
+    async exportCurrentToExcel(filename) {
+        try {
+            this.showLoading();
+
+            const result = this.filteredResults?.find(r => r.filename === filename);
+            if (!result) {
+                showErrorAlert('Result not found');
+                this.hideLoading();
+                return;
+            }
+
+            // Fetch full data if needed
+            let fullResult = result;
+            if (!result.questions && result.filename) {
+                try {
+                    const response = await fetch(APIHelper.getApiUrl(`api/results/${result.filename}`));
+                    if (response.ok) {
+                        fullResult = await response.json();
+                        fullResult.filename = result.filename;
+                    }
+                } catch (error) {
+                    logger.error('Error fetching full results for Excel:', error);
+                }
+            }
+
+            this.hideLoading();
+            await resultsExporter.exportToExcel(fullResult);
+
+        } catch (error) {
+            logger.error('Error exporting to Excel:', error);
+            this.hideLoading();
+            showErrorAlert('Failed to export Excel');
         }
     }
 

@@ -542,3 +542,471 @@
         width: 100%;
     }
 }
+
+/* ===================================
+   Question Drill-down Modal Styles
+   =================================== */
+
+/* Clickable question hint */
+.click-hint {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+    font-style: italic;
+}
+
+/* Make questions visually clickable */
+.question-analytics-item.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.question-analytics-item.clickable:hover {
+    transform: translateX(4px);
+    border-left: 4px solid var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.question-analytics-item.clickable::after {
+    content: '→';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.question-analytics-item.clickable:hover::after {
+    opacity: 1;
+}
+
+.question-analytics-item {
+    position: relative;
+}
+
+/* Drill-down modal content */
+.drilldown-modal-content {
+    max-width: 700px;
+    width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.drilldown-body {
+    padding: 20px;
+}
+
+.drilldown-question-text {
+    background: var(--bg-secondary);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    line-height: 1.5;
+    border-left: 4px solid var(--primary-color);
+}
+
+.question-type-badge {
+    display: inline-block;
+    background: var(--primary-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+/* Drill-down stats row */
+.drilldown-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.drilldown-stat {
+    background: var(--bg-secondary);
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.drilldown-stat .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.drilldown-stat .stat-value.good {
+    color: var(--success-color);
+}
+
+.drilldown-stat .stat-value.poor {
+    color: var(--danger-color);
+}
+
+.drilldown-stat .stat-value.correct {
+    color: var(--success-color);
+}
+
+.drilldown-stat .stat-value.incorrect {
+    color: var(--danger-color);
+}
+
+.drilldown-stat .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+/* Drill-down sections */
+.drilldown-section {
+    margin-bottom: 24px;
+}
+
+.drilldown-section h4 {
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Answer distribution */
+.answer-distribution {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.answer-dist-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 80px;
+    gap: 12px;
+    align-items: center;
+}
+
+.answer-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.answer-text.correct {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.answer-bar-container {
+    height: 24px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.answer-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.answer-count {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+/* Time distribution */
+.time-distribution {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.time-dist-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 40px;
+    gap: 12px;
+    align-items: center;
+}
+
+.time-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.time-bar-container {
+    height: 20px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.time-bar {
+    height: 100%;
+    background: var(--info-color);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.time-count {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+/* Wrong answers list */
+.wrong-answers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.wrong-answer-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--danger-bg, rgba(239, 68, 68, 0.1));
+    border: 1px solid var(--danger-color);
+    border-radius: 6px;
+}
+
+.wrong-answer-text {
+    color: var(--danger-color);
+    font-weight: 500;
+}
+
+.wrong-answer-count {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.no-wrong-answers {
+    color: var(--success-color);
+    text-align: center;
+    padding: 16px;
+    background: var(--success-bg, rgba(16, 185, 129, 0.1));
+    border-radius: 8px;
+    margin: 0;
+}
+
+/* Responsive drill-down */
+@media (max-width: 768px) {
+    .drilldown-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .answer-dist-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .answer-dist-row .answer-bar-container {
+        order: 2;
+    }
+
+    .answer-dist-row .answer-count {
+        order: 3;
+        text-align: left;
+    }
+
+    .time-dist-row {
+        grid-template-columns: 50px 1fr 30px;
+        gap: 8px;
+    }
+}
+
+/* ===================================
+   Print Styles for Analytics
+   =================================== */
+@media print {
+    /* Hide non-essential elements */
+    .modal-close,
+    .modal-footer,
+    .analytics-tabs,
+    .click-hint,
+    #compare-sessions-btn,
+    #refresh-results,
+    .result-actions,
+    .swipe-delete-action,
+    .swipe-hint {
+        display: none !important;
+    }
+
+    /* Reset modal positioning for print */
+    .modal-overlay,
+    .analytics-modal-overlay {
+        position: static !important;
+        background: none !important;
+        overflow: visible !important;
+        height: auto !important;
+    }
+
+    .modal-content,
+    .analytics-modal-content,
+    .drilldown-modal-content {
+        max-width: 100% !important;
+        width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Show all tab content for printing */
+    .tab-content {
+        display: block !important;
+        page-break-inside: avoid;
+        margin-bottom: 30px;
+    }
+
+    .tab-content::before {
+        content: attr(id);
+        display: block;
+        font-size: 1.2rem;
+        font-weight: bold;
+        text-transform: capitalize;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #333;
+    }
+
+    #overview-tab::before { content: "Overview"; }
+    #questions-tab::before { content: "Question Analysis"; }
+    #insights-tab::before { content: "Insights & Recommendations"; }
+
+    /* Print-friendly colors */
+    .stat-card,
+    .question-analytics-item,
+    .drilldown-stat,
+    .drilldown-section {
+        background: #f9f9f9 !important;
+        border: 1px solid #ccc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Ensure charts print */
+    .chart-container {
+        page-break-inside: avoid;
+        height: auto !important;
+        min-height: 250px;
+    }
+
+    canvas {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    /* Question list formatting */
+    .questions-analytics-list {
+        page-break-before: always;
+    }
+
+    .question-analytics-item {
+        page-break-inside: avoid;
+        margin-bottom: 15px;
+    }
+
+    .question-analytics-item.clickable:hover {
+        transform: none !important;
+        border-left: none !important;
+        box-shadow: none !important;
+    }
+
+    .question-analytics-item.clickable::after {
+        display: none !important;
+    }
+
+    /* Success rate badges - print with colors */
+    .success-rate.excellent { background: #10b981 !important; }
+    .success-rate.good { background: #3b82f6 !important; }
+    .success-rate.fair { background: #f59e0b !important; }
+    .success-rate.poor { background: #ef4444 !important; }
+
+    .success-rate {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Problem flags */
+    .flag {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .flag.high {
+        background: #fee2e2 !important;
+        border-left-color: #ef4444 !important;
+    }
+
+    .flag.medium {
+        background: #fef3c7 !important;
+        border-left-color: #f59e0b !important;
+    }
+
+    /* Distribution bars for print */
+    .answer-bar,
+    .time-bar {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Page breaks */
+    .drilldown-section {
+        page-break-inside: avoid;
+    }
+
+    .insights-section {
+        page-break-before: always;
+    }
+
+    /* Summary stats grid */
+    .summary-stats {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+
+    .stat-card {
+        flex: 1 1 150px !important;
+        min-width: 150px !important;
+    }
+
+    /* Header styling for print */
+    .modal-header h2,
+    .modal-header h3 {
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #333;
+    }
+
+    /* Footer for printed pages */
+    @page {
+        margin: 1.5cm;
+    }
+
+    /* Add printed date */
+    .analytics-modal-content::after {
+        content: "Printed on " attr(data-print-date);
+        display: block;
+        text-align: center;
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 30px;
+        padding-top: 15px;
+        border-top: 1px solid #ccc;
+    }
+}
