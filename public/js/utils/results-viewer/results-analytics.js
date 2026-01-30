@@ -399,7 +399,8 @@ export function createAnalyticsModal(result, analytics, summary) {
 
             <div class="modal-footer">
                 <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
-                <button class="btn primary" data-action="export-analytics" data-filename="${safeFilename}">Export Report</button>
+                <button class="btn secondary" data-action="export-pdf" data-filename="${safeFilename}">Export PDF</button>
+                <button class="btn primary" data-action="export-analytics" data-filename="${safeFilename}">Export CSV</button>
             </div>
         </div>
     `;
@@ -548,6 +549,457 @@ export function switchAnalyticsTab(event, tabName) {
     }
 }
 
+/**
+ * Create numeric answer distribution histogram
+ * Shows how numeric answers were distributed with correct answer highlighted
+ * @param {string} canvasId - Canvas element ID
+ * @param {Object} questionData - Question analytics data including answer distribution
+ * @param {number} correctAnswer - The correct numeric answer
+ */
+export function createNumericDistributionChart(canvasId, questionData, correctAnswer) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx || typeof Chart === 'undefined') {
+        return null;
+    }
+
+    const answers = questionData.answers || [];
+    if (answers.length === 0) {
+        return null;
+    }
+
+    // Extract numeric values
+    const numericAnswers = answers
+        .map(a => parseFloat(a.value))
+        .filter(v => !isNaN(v));
+
+    if (numericAnswers.length === 0) {
+        return null;
+    }
+
+    // Calculate bucket ranges
+    const min = Math.min(...numericAnswers);
+    const max = Math.max(...numericAnswers);
+    const range = max - min || 1;
+    const bucketCount = Math.min(10, Math.max(5, Math.ceil(numericAnswers.length / 3)));
+    const bucketSize = range / bucketCount;
+
+    // Create buckets
+    const buckets = Array(bucketCount).fill(0);
+    const bucketLabels = [];
+
+    for (let i = 0; i < bucketCount; i++) {
+        const bucketMin = min + (i * bucketSize);
+        const bucketMax = min + ((i + 1) * bucketSize);
+        bucketLabels.push(`${bucketMin.toFixed(1)}-${bucketMax.toFixed(1)}`);
+    }
+
+    // Fill buckets
+    numericAnswers.forEach(value => {
+        let bucketIndex = Math.floor((value - min) / bucketSize);
+        if (bucketIndex >= bucketCount) bucketIndex = bucketCount - 1;
+        if (bucketIndex < 0) bucketIndex = 0;
+        buckets[bucketIndex]++;
+    });
+
+    // Find which bucket contains the correct answer
+    let correctBucketIndex = -1;
+    if (correctAnswer !== null && correctAnswer !== undefined) {
+        const correctNum = parseFloat(correctAnswer);
+        if (!isNaN(correctNum)) {
+            correctBucketIndex = Math.floor((correctNum - min) / bucketSize);
+            if (correctBucketIndex >= bucketCount) correctBucketIndex = bucketCount - 1;
+            if (correctBucketIndex < 0) correctBucketIndex = 0;
+        }
+    }
+
+    // Calculate mean and median
+    const mean = numericAnswers.reduce((a, b) => a + b, 0) / numericAnswers.length;
+    const sorted = [...numericAnswers].sort((a, b) => a - b);
+    const median = sorted.length % 2 === 0
+        ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+        : sorted[Math.floor(sorted.length / 2)];
+
+    return new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: bucketLabels,
+            datasets: [{
+                label: 'Answer Count',
+                data: buckets,
+                backgroundColor: buckets.map((_, i) =>
+                    i === correctBucketIndex ? '#10b981' : '#3b82f6'
+                ),
+                borderColor: '#374151',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Numeric Answer Distribution'
+                },
+                legend: {
+                    display: false
+                },
+                annotation: {
+                    annotations: {
+                        meanLine: {
+                            type: 'line',
+                            xMin: (mean - min) / bucketSize,
+                            xMax: (mean - min) / bucketSize,
+                            borderColor: '#f59e0b',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            label: {
+                                display: true,
+                                content: `Mean: ${mean.toFixed(2)}`,
+                                position: 'start'
+                            }
+                        },
+                        medianLine: {
+                            type: 'line',
+                            xMin: (median - min) / bucketSize,
+                            xMax: (median - min) / bucketSize,
+                            borderColor: '#8b5cf6',
+                            borderWidth: 2,
+                            borderDash: [3, 3],
+                            label: {
+                                display: true,
+                                content: `Median: ${median.toFixed(2)}`,
+                                position: 'end'
+                            }
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const idx = context.dataIndex;
+                            if (idx === correctBucketIndex) {
+                                return '(Contains correct answer)';
+                            }
+                            return '';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Answers'
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Answer Range'
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Create horizontal bar chart for multiple-correct questions
+ * Shows selection count per option with correct options highlighted
+ * @param {string} canvasId - Canvas element ID
+ * @param {Object} questionData - Question analytics data
+ * @param {Array} options - Array of option objects with text and isCorrect
+ */
+export function createMultipleCorrectChart(canvasId, questionData, options) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx || typeof Chart === 'undefined') {
+        return null;
+    }
+
+    if (!options || options.length === 0) {
+        return null;
+    }
+
+    // Count selections per option
+    const selectionCounts = options.map(() => 0);
+    const totalResponses = questionData.totalResponses || 1;
+
+    if (questionData.optionSelections) {
+        questionData.optionSelections.forEach((count, idx) => {
+            if (idx < selectionCounts.length) {
+                selectionCounts[idx] = count;
+            }
+        });
+    }
+
+    // Calculate percentages
+    const percentages = selectionCounts.map(count =>
+        Math.round((count / totalResponses) * 100)
+    );
+
+    // Truncate long option text
+    const labels = options.map((opt, idx) => {
+        const text = opt.text || opt.label || `Option ${idx + 1}`;
+        return text.length > 30 ? text.substring(0, 27) + '...' : text;
+    });
+
+    // Colors: green for correct, red for incorrect
+    const backgroundColors = options.map(opt =>
+        opt.isCorrect ? '#10b981' : '#ef4444'
+    );
+
+    return new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Selection %',
+                data: percentages,
+                backgroundColor: backgroundColors,
+                borderColor: '#374151',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Option Selection Distribution'
+                },
+                legend: {
+                    display: true,
+                    labels: {
+                        generateLabels: function() {
+                            return [
+                                { text: 'Correct Option', fillStyle: '#10b981', strokeStyle: '#374151' },
+                                { text: 'Incorrect Option', fillStyle: '#ef4444', strokeStyle: '#374151' }
+                            ];
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const idx = context.dataIndex;
+                            const count = selectionCounts[idx];
+                            const pct = percentages[idx];
+                            return `${count} selections (${pct}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Selection Rate (%)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Create comparison line chart for multiple game sessions
+ * Shows success rate trends over time per question
+ * @param {string} canvasId - Canvas element ID
+ * @param {Array} sessionsData - Array of session analytics objects
+ */
+export function createComparisonChart(canvasId, sessionsData) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx || typeof Chart === 'undefined') {
+        return null;
+    }
+
+    if (!sessionsData || sessionsData.length < 2) {
+        return null;
+    }
+
+    // X-axis: session dates
+    const labels = sessionsData.map(s => {
+        const date = new Date(s.date);
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    });
+
+    // Find common question count
+    const questionCounts = sessionsData.map(s => s.questionAnalytics?.length || 0);
+    const minQuestions = Math.min(...questionCounts);
+
+    // Create datasets for each question
+    const datasets = [];
+    const colors = [
+        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+        '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
+    ];
+
+    // Overall average dataset (always shown)
+    const avgData = sessionsData.map(s => {
+        const analytics = s.questionAnalytics || [];
+        if (analytics.length === 0) return 0;
+        return analytics.reduce((sum, q) => sum + q.successRate, 0) / analytics.length;
+    });
+
+    datasets.push({
+        label: 'Overall Average',
+        data: avgData,
+        borderColor: '#1f2937',
+        backgroundColor: '#1f293720',
+        borderWidth: 3,
+        tension: 0.3,
+        fill: false
+    });
+
+    // Per-question datasets (up to 5 for clarity)
+    for (let i = 0; i < Math.min(minQuestions, 5); i++) {
+        const questionData = sessionsData.map(s => {
+            const analytics = s.questionAnalytics || [];
+            return analytics[i]?.successRate || 0;
+        });
+
+        datasets.push({
+            label: `Q${i + 1}`,
+            data: questionData,
+            borderColor: colors[i % colors.length],
+            backgroundColor: colors[i % colors.length] + '20',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: false
+        });
+    }
+
+    return new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Success Rate Comparison Across Sessions'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Success Rate (%)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Session Date'
+                    }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        }
+    });
+}
+
+/**
+ * Calculate comparative metrics across multiple game sessions
+ * @param {Array} resultsArray - Array of full result objects for same quiz
+ * @returns {Object} Comparative metrics object
+ */
+export function calculateComparativeMetrics(resultsArray) {
+    if (!resultsArray || resultsArray.length < 2) {
+        return null;
+    }
+
+    const sessions = resultsArray.map(result => {
+        const analytics = calculateQuestionAnalytics(result);
+        const summary = getQuizSummaryStats(analytics);
+
+        return {
+            date: result.saved,
+            filename: result.filename,
+            participantCount: result.results?.length || 0,
+            questionAnalytics: analytics,
+            summary: summary,
+            overallSuccessRate: summary.avgSuccessRate || 0
+        };
+    });
+
+    // Sort by date
+    sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Calculate trends
+    const firstSession = sessions[0];
+    const lastSession = sessions[sessions.length - 1];
+    const overallTrend = lastSession.overallSuccessRate - firstSession.overallSuccessRate;
+
+    // Per-question trends
+    const questionCount = Math.min(
+        ...sessions.map(s => s.questionAnalytics?.length || 0)
+    );
+
+    const questionTrends = [];
+    for (let i = 0; i < questionCount; i++) {
+        const firstRate = firstSession.questionAnalytics[i]?.successRate || 0;
+        const lastRate = lastSession.questionAnalytics[i]?.successRate || 0;
+        questionTrends.push({
+            questionNumber: i + 1,
+            trend: lastRate - firstRate,
+            firstRate,
+            lastRate
+        });
+    }
+
+    // Find most improved and most declined questions
+    const sortedByTrend = [...questionTrends].sort((a, b) => b.trend - a.trend);
+    const mostImproved = sortedByTrend[0];
+    const mostDeclined = sortedByTrend[sortedByTrend.length - 1];
+
+    return {
+        sessions,
+        sessionCount: sessions.length,
+        overallTrend,
+        trendDirection: overallTrend > 2 ? 'improving' : overallTrend < -2 ? 'declining' : 'stable',
+        questionTrends,
+        mostImproved: mostImproved?.trend > 0 ? mostImproved : null,
+        mostDeclined: mostDeclined?.trend < 0 ? mostDeclined : null,
+        averageParticipants: Math.round(
+            sessions.reduce((sum, s) => sum + s.participantCount, 0) / sessions.length
+        )
+    };
+}
+
 export default {
     calculateQuestionAnalytics,
     getQuizSummaryStats,
@@ -555,5 +1007,9 @@ export default {
     createAnalyticsModal,
     createSuccessRateChart,
     createTimeVsSuccessChart,
-    switchAnalyticsTab
+    switchAnalyticsTab,
+    createNumericDistributionChart,
+    createMultipleCorrectChart,
+    createComparisonChart,
+    calculateComparativeMetrics
 };

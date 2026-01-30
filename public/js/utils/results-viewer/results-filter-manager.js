@@ -146,6 +146,54 @@ export function filterAndSortResults(results, searchTerm, sortBy) {
     return sortResults(filtered, sortBy);
 }
 
+/**
+ * Group results by quiz title for comparative analysis
+ * @param {Array} results - Array of result objects
+ * @returns {Object} Object with quiz titles as keys, arrays of results as values
+ */
+export function getResultsGroupedByQuiz(results) {
+    if (!results || results.length === 0) {
+        return {};
+    }
+
+    const grouped = {};
+
+    results.forEach(result => {
+        const title = result.quizTitle || 'Untitled Quiz';
+        if (!grouped[title]) {
+            grouped[title] = [];
+        }
+        grouped[title].push(result);
+    });
+
+    // Sort each group by date (newest first)
+    Object.keys(grouped).forEach(title => {
+        grouped[title].sort((a, b) => new Date(b.saved || 0) - new Date(a.saved || 0));
+    });
+
+    return grouped;
+}
+
+/**
+ * Get quizzes that have multiple sessions (for comparison)
+ * @param {Array} results - Array of result objects
+ * @returns {Array} Array of {title, sessions: [...]} objects with 2+ sessions
+ */
+export function getQuizzesWithMultipleSessions(results) {
+    const grouped = getResultsGroupedByQuiz(results);
+
+    return Object.entries(grouped)
+        .filter(([_, sessions]) => sessions.length >= 2)
+        .map(([title, sessions]) => ({
+            title,
+            sessions,
+            sessionCount: sessions.length,
+            latestDate: sessions[0]?.saved,
+            totalParticipants: sessions.reduce((sum, s) => sum + (s.results?.length || 0), 0)
+        }))
+        .sort((a, b) => new Date(b.latestDate || 0) - new Date(a.latestDate || 0));
+}
+
 export default {
     calculateAverageScore,
     formatDate,
@@ -154,5 +202,7 @@ export default {
     getSuccessRateClass,
     filterBySearch,
     sortResults,
-    filterAndSortResults
+    filterAndSortResults,
+    getResultsGroupedByQuiz,
+    getQuizzesWithMultipleSessions
 };

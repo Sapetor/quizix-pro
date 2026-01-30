@@ -34,7 +34,8 @@ import {
     calculateAverageScore,
     formatDate,
     formatTime,
-    getScoreClass
+    getScoreClass,
+    getQuizzesWithMultipleSessions
 } from './results-viewer/results-filter-manager.js';
 
 import { resultsExporter } from './results-viewer/results-exporter.js';
@@ -46,7 +47,9 @@ import {
     createAnalyticsModal,
     createSuccessRateChart,
     createTimeVsSuccessChart,
-    switchAnalyticsTab
+    switchAnalyticsTab,
+    createComparisonChart,
+    calculateComparativeMetrics
 } from './results-viewer/results-analytics.js';
 
 export class ResultsViewer {
@@ -545,11 +548,18 @@ export class ResultsViewer {
             });
         });
 
-        // Attach export handler
-        const exportBtn = modal.querySelector('[data-action="export-analytics"]');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                this.exportAnalyticsReport(exportBtn.dataset.filename);
+        // Attach export handlers
+        const exportCsvBtn = modal.querySelector('[data-action="export-analytics"]');
+        if (exportCsvBtn) {
+            exportCsvBtn.addEventListener('click', () => {
+                this.exportAnalyticsReport(exportCsvBtn.dataset.filename);
+            });
+        }
+
+        const exportPdfBtn = modal.querySelector('[data-action="export-pdf"]');
+        if (exportPdfBtn) {
+            exportPdfBtn.addEventListener('click', () => {
+                this.exportCurrentToPDF(exportPdfBtn.dataset.filename);
             });
         }
 
@@ -580,6 +590,342 @@ export class ResultsViewer {
 
     async exportAnalyticsReport(filename) {
         await resultsExporter.exportAnalyticsReport(filename);
+    }
+
+    // ========================================
+    // PDF Export
+    // ========================================
+
+    /**
+     * Export current result to PDF
+     * @param {Object} resultData - Full result data object
+     */
+    async exportToPDF(resultData) {
+        await resultsExporter.exportToPDF(resultData);
+    }
+
+    /**
+     * Export current analytics view to PDF
+     * Fetches full data if needed
+     * @param {string} filename - Result filename
+     */
+    async exportCurrentToPDF(filename) {
+        try {
+            this.showLoading();
+
+            const result = this.filteredResults?.find(r => r.filename === filename);
+            if (!result) {
+                showErrorAlert('Result not found');
+                this.hideLoading();
+                return;
+            }
+
+            // Fetch full data if needed
+            let fullResult = result;
+            if (!result.questions && result.filename) {
+                try {
+                    const response = await fetch(APIHelper.getApiUrl(`api/results/${result.filename}`));
+                    if (response.ok) {
+                        fullResult = await response.json();
+                        fullResult.filename = result.filename;
+                    }
+                } catch (error) {
+                    logger.error('Error fetching full results for PDF:', error);
+                }
+            }
+
+            this.hideLoading();
+            await resultsExporter.exportToPDF(fullResult);
+
+        } catch (error) {
+            logger.error('Error exporting to PDF:', error);
+            this.hideLoading();
+            showErrorAlert('Failed to export PDF');
+        }
+    }
+
+    // ========================================
+    // Comparative Analysis
+    // ========================================
+
+    /**
+     * Show comparison modal for quizzes with multiple sessions
+     */
+    showComparisonSelector() {
+        const allResults = Array.from(resultsManagerService.resultsCache.values());
+        const quizzesWithSessions = getQuizzesWithMultipleSessions(allResults);
+
+        if (quizzesWithSessions.length === 0) {
+            showErrorAlert('No quizzes with multiple sessions found. Run a quiz multiple times to compare results.');
+            return;
+        }
+
+        this.displayComparisonSelectorModal(quizzesWithSessions);
+    }
+
+    /**
+     * Display the comparison selector modal
+     * @param {Array} quizzesWithSessions - Array of quizzes that have multiple sessions
+     */
+    displayComparisonSelectorModal(quizzesWithSessions) {
+        const existingModal = document.getElementById('comparison-selector-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'comparison-selector-modal';
+        modal.className = 'modal-overlay';
+        modal.style.zIndex = '1050';
+
+        const quizListHtml = quizzesWithSessions.map(quiz => `
+            <div class="comparison-quiz-item" data-quiz-title="${quiz.title.replace(/"/g, '&quot;')}">
+                <div class="quiz-info">
+                    <div class="quiz-title">${quiz.title}</div>
+                    <div class="quiz-meta">${quiz.sessionCount} sessions | ${quiz.totalParticipants} total participants</div>
+                </div>
+                <button class="btn primary compare-btn">Compare</button>
+            </div>
+        `).join('');
+
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2>Compare Quiz Sessions</h2>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                </div>
+                <div class="modal-body" style="padding: 20px; max-height: 400px; overflow-y: auto;">
+                    <p style="margin-bottom: 16px; color: #6b7280;">
+                        Select a quiz to compare results across multiple sessions.
+                    </p>
+                    <div class="comparison-quiz-list">
+                        ${quizListHtml}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Attach handlers
+        modal.querySelectorAll('.compare-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const quizTitle = e.target.closest('.comparison-quiz-item').dataset.quizTitle;
+                modal.remove();
+                this.showSessionSelector(quizTitle, quizzesWithSessions);
+            });
+        });
+    }
+
+    /**
+     * Show session selector for a specific quiz
+     * @param {string} quizTitle - Title of the quiz
+     * @param {Array} quizzesWithSessions - Full quiz list for lookup
+     */
+    showSessionSelector(quizTitle, quizzesWithSessions) {
+        const quiz = quizzesWithSessions.find(q => q.title === quizTitle);
+        if (!quiz) return;
+
+        const existingModal = document.getElementById('session-selector-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'session-selector-modal';
+        modal.className = 'modal-overlay';
+        modal.style.zIndex = '1050';
+
+        const sessionListHtml = quiz.sessions.map((session, idx) => {
+            const date = new Date(session.saved).toLocaleDateString();
+            const participants = session.results?.length || 0;
+            return `
+                <label class="session-checkbox-item">
+                    <input type="checkbox" value="${session.filename}" ${idx < 3 ? 'checked' : ''}>
+                    <span class="session-info">
+                        <span class="session-date">${date}</span>
+                        <span class="session-meta">PIN: ${session.gamePin} | ${participants} participants</span>
+                    </span>
+                </label>
+            `;
+        }).join('');
+
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>Select Sessions to Compare</h2>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    <p style="margin-bottom: 8px;"><strong>${quizTitle}</strong></p>
+                    <p style="margin-bottom: 16px; color: #6b7280; font-size: 0.9rem;">
+                        Select 2-5 sessions to compare. Results will show performance trends over time.
+                    </p>
+                    <div class="session-checkbox-list" style="max-height: 300px; overflow-y: auto;">
+                        ${sessionListHtml}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                    <button class="btn primary" id="run-comparison-btn">Compare Selected</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Attach compare handler
+        modal.querySelector('#run-comparison-btn').addEventListener('click', async () => {
+            const selectedFilenames = Array.from(modal.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(cb => cb.value);
+
+            if (selectedFilenames.length < 2) {
+                showErrorAlert('Please select at least 2 sessions to compare');
+                return;
+            }
+
+            if (selectedFilenames.length > 5) {
+                showErrorAlert('Please select no more than 5 sessions for clarity');
+                return;
+            }
+
+            modal.remove();
+            await this.runComparison(quizTitle, selectedFilenames);
+        });
+    }
+
+    /**
+     * Run comparison analysis on selected sessions
+     * @param {string} quizTitle - Title of the quiz
+     * @param {Array} filenames - Array of result filenames to compare
+     */
+    async runComparison(quizTitle, filenames) {
+        try {
+            this.showLoading();
+
+            // Fetch full data for each session
+            const resultsPromises = filenames.map(async (filename) => {
+                try {
+                    const response = await fetch(APIHelper.getApiUrl(`api/results/${filename}`));
+                    if (response.ok) {
+                        const data = await response.json();
+                        data.filename = filename;
+                        return data;
+                    }
+                } catch (error) {
+                    logger.error(`Error fetching ${filename}:`, error);
+                }
+                return null;
+            });
+
+            const results = (await Promise.all(resultsPromises)).filter(r => r !== null);
+
+            if (results.length < 2) {
+                this.hideLoading();
+                showErrorAlert('Could not load enough session data for comparison');
+                return;
+            }
+
+            // Calculate comparative metrics
+            const comparisonData = calculateComparativeMetrics(results);
+
+            this.hideLoading();
+
+            if (!comparisonData) {
+                showErrorAlert('Could not generate comparison data');
+                return;
+            }
+
+            this.displayComparisonResults(quizTitle, comparisonData);
+
+        } catch (error) {
+            logger.error('Error running comparison:', error);
+            this.hideLoading();
+            showErrorAlert('Failed to generate comparison');
+        }
+    }
+
+    /**
+     * Display comparison results modal
+     * @param {string} quizTitle - Title of the quiz
+     * @param {Object} comparisonData - Calculated comparison metrics
+     */
+    displayComparisonResults(quizTitle, comparisonData) {
+        const existingModal = document.getElementById('comparison-results-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'comparison-results-modal';
+        modal.className = 'modal-overlay';
+        modal.style.zIndex = '1050';
+
+        const trendIcon = comparisonData.trendDirection === 'improving' ? '📈' :
+            comparisonData.trendDirection === 'declining' ? '📉' : '➡️';
+        const trendColor = comparisonData.trendDirection === 'improving' ? '#10b981' :
+            comparisonData.trendDirection === 'declining' ? '#ef4444' : '#6b7280';
+
+        let insightsHtml = '';
+        if (comparisonData.mostImproved) {
+            insightsHtml += `<p style="color: #10b981;"><strong>Most Improved:</strong> Q${comparisonData.mostImproved.questionNumber} (+${comparisonData.mostImproved.trend.toFixed(1)}%)</p>`;
+        }
+        if (comparisonData.mostDeclined) {
+            insightsHtml += `<p style="color: #ef4444;"><strong>Needs Attention:</strong> Q${comparisonData.mostDeclined.questionNumber} (${comparisonData.mostDeclined.trend.toFixed(1)}%)</p>`;
+        }
+
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h2>Session Comparison: ${quizTitle}</h2>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    <div class="comparison-summary" style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div class="stat-card" style="flex: 1; background: #f3f4f6; padding: 16px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 2rem;">${comparisonData.sessionCount}</div>
+                            <div style="color: #6b7280;">Sessions</div>
+                        </div>
+                        <div class="stat-card" style="flex: 1; background: #f3f4f6; padding: 16px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 2rem;">${comparisonData.averageParticipants}</div>
+                            <div style="color: #6b7280;">Avg Participants</div>
+                        </div>
+                        <div class="stat-card" style="flex: 1; background: ${trendColor}15; padding: 16px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 2rem;">${trendIcon}</div>
+                            <div style="color: ${trendColor};">${comparisonData.trendDirection.charAt(0).toUpperCase() + comparisonData.trendDirection.slice(1)} (${comparisonData.overallTrend > 0 ? '+' : ''}${comparisonData.overallTrend.toFixed(1)}%)</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container" style="height: 300px; margin-bottom: 20px;">
+                        <canvas id="comparison-chart"></canvas>
+                    </div>
+
+                    <div class="comparison-insights" style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+                        <h4 style="margin: 0 0 12px 0;">Key Insights</h4>
+                        ${insightsHtml || '<p style="color: #6b7280;">Performance has remained stable across sessions.</p>'}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                    <button class="btn primary" id="export-comparison-pdf">Export PDF</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Create chart after modal is in DOM
+        setTimeout(() => {
+            createComparisonChart('comparison-chart', comparisonData.sessions);
+        }, 100);
+
+        // Attach PDF export handler
+        modal.querySelector('#export-comparison-pdf').addEventListener('click', async () => {
+            await resultsExporter.exportComparisonToPDF(comparisonData, quizTitle);
+        });
     }
 }
 
