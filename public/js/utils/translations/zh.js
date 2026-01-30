@@ -344,6 +344,29 @@ export default {
     pdf_no_text: 'PDF中未找到文本内容',
     pdf_extraction_failed: 'PDF提取失败',
 
+    // DOCX extraction
+    extracting_docx: '正在从Word文档提取文本...',
+    docx_extracted: 'Word文档提取完成',
+    docx_no_text: '文档中未找到文本内容',
+
+    // PPTX extraction
+    extracting_pptx: '正在从幻灯片提取文本...',
+    pptx_extracted: '幻灯片提取完成: {count}张',
+    pptx_no_text: '演示文稿中未找到文本内容',
+
+    // URL extraction
+    enter_url: '或输入URL:',
+    fetch_content: '获取',
+    url_hint: '网页将被转换为文本',
+    url_placeholder: 'https://...',
+    fetching_url: '正在获取内容...',
+    url_fetched: '已从URL提取内容',
+    url_blocked: '无法访问此URL',
+    url_no_text: 'URL中未找到文本内容',
+    url_minimal_text: '仅提取了{count}个字 - 页面可能使用JavaScript渲染',
+    invalid_url: '请输入有效的URL',
+    words: '字',
+
     // Question preview modal
     preview_generated_questions: '预览生成的问题',
     preview_instructions: '请查看以下生成的问题。点击选择要添加到测验的问题。',
@@ -509,6 +532,8 @@ export default {
     try_again: '再试一次',
     exit: '退出',
     failed_start_practice: '无法启动练习模式',
+    confirm_exit_practice: '退出练习并返回主页？',
+    exit_to_home: '返回主页',
     load: '加载',
 
     // Power-Ups
@@ -581,6 +606,8 @@ export default {
     password_strong: '强',
     optional_password: '密码（可选）',
     password_hint: '如果设置，加载或删除此测验时将需要密码',
+    password_placeholder: '输入密码...',
+    confirm_password_placeholder: '确认密码...',
     verify_to_remove_password: '输入当前密码以移除保护',
     right_click_hint: '右键点击项目以获取更多选项（重命名、移动、删除）',
 

@@ -365,6 +365,29 @@ export default {
     pdf_no_text: 'Aucun contenu textuel trouvé dans le PDF',
     pdf_extraction_failed: "Échec de l'extraction du PDF",
 
+    // DOCX extraction
+    extracting_docx: 'Extraction du texte du document Word...',
+    docx_extracted: 'Document Word extrait',
+    docx_no_text: 'Aucun contenu textuel trouvé dans le document',
+
+    // PPTX extraction
+    extracting_pptx: 'Extraction du texte des diapositives...',
+    pptx_extracted: 'Diapositives extraites: {count} diapositives',
+    pptx_no_text: 'Aucun contenu textuel trouvé dans la présentation',
+
+    // URL extraction
+    enter_url: 'Ou entrez une URL:',
+    fetch_content: 'Récupérer',
+    url_hint: 'Les pages web seront converties en texte',
+    url_placeholder: 'https://...',
+    fetching_url: 'Récupération du contenu...',
+    url_fetched: "Contenu extrait de l'URL",
+    url_blocked: "Impossible d'accéder à cette URL",
+    url_no_text: "Aucun contenu textuel trouvé à l'URL",
+    url_minimal_text: 'Seulement {count} mots extraits - la page utilise peut-être JavaScript',
+    invalid_url: 'Veuillez entrer une URL valide',
+    words: 'mots',
+
     // Question preview modal
     preview_generated_questions: 'Aperçu des Questions Générées',
     preview_instructions: 'Examinez les questions générées ci-dessous. Cliquez pour sélectionner celles à ajouter à votre quiz.',
@@ -538,6 +561,8 @@ export default {
     try_again: 'Réessayer',
     exit: 'Quitter',
     failed_start_practice: "Échec du démarrage du mode entraînement",
+    confirm_exit_practice: "Quitter l'entraînement et retourner à l'accueil ?",
+    exit_to_home: "Retour à l'accueil",
     load: 'Charger',
 
     // Power-Ups
@@ -610,6 +635,8 @@ export default {
     password_strong: 'Fort',
     optional_password: 'Mot de passe (optionnel)',
     password_hint: 'Si défini, le mot de passe sera requis pour charger ou supprimer ce quiz',
+    password_placeholder: 'Entrez le mot de passe...',
+    confirm_password_placeholder: 'Confirmez le mot de passe...',
     verify_to_remove_password: 'Entrez le mot de passe actuel pour supprimer la protection',
     right_click_hint: 'Clic droit sur les éléments pour plus d\'options (renommer, déplacer, supprimer)',
 

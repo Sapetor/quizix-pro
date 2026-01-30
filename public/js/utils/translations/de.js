@@ -353,6 +353,29 @@ export default {
     pdf_no_text: 'Kein Textinhalt im PDF gefunden',
     pdf_extraction_failed: 'PDF-Extraktion fehlgeschlagen',
 
+    // DOCX extraction
+    extracting_docx: 'Text aus Word-Dokument extrahieren...',
+    docx_extracted: 'Word-Dokument extrahiert',
+    docx_no_text: 'Kein Textinhalt im Dokument gefunden',
+
+    // PPTX extraction
+    extracting_pptx: 'Text aus Folien extrahieren...',
+    pptx_extracted: 'Folien extrahiert: {count} Folien',
+    pptx_no_text: 'Kein Textinhalt in der Präsentation gefunden',
+
+    // URL extraction
+    enter_url: 'Oder URL eingeben:',
+    fetch_content: 'Abrufen',
+    url_hint: 'Webseiten werden in Text konvertiert',
+    url_placeholder: 'https://...',
+    fetching_url: 'Inhalt wird abgerufen...',
+    url_fetched: 'Inhalt von URL extrahiert',
+    url_blocked: 'Auf diese URL kann nicht zugegriffen werden',
+    url_no_text: 'Kein Textinhalt unter der URL gefunden',
+    url_minimal_text: 'Nur {count} Wörter extrahiert - Seite verwendet möglicherweise JavaScript',
+    invalid_url: 'Bitte geben Sie eine gültige URL ein',
+    words: 'Wörter',
+
     // Question preview modal
     preview_generated_questions: 'Vorschau der generierten Fragen',
     preview_instructions: 'Überprüfen Sie die generierten Fragen unten. Klicken Sie, um auszuwählen, welche zu Ihrem Quiz hinzugefügt werden sollen.',
@@ -526,6 +549,8 @@ export default {
     try_again: 'Erneut Versuchen',
     exit: 'Beenden',
     failed_start_practice: 'Übungsmodus konnte nicht gestartet werden',
+    confirm_exit_practice: 'Übung beenden und zur Startseite zurückkehren?',
+    exit_to_home: 'Zur Startseite',
     load: 'Laden',
 
     // Power-Ups
@@ -598,6 +623,8 @@ export default {
     password_strong: 'Stark',
     optional_password: 'Passwort (optional)',
     password_hint: 'Falls gesetzt, wird das Passwort zum Laden oder Löschen dieses Quiz benötigt',
+    password_placeholder: 'Passwort eingeben...',
+    confirm_password_placeholder: 'Passwort bestätigen...',
     verify_to_remove_password: 'Aktuelles Passwort eingeben, um den Schutz zu entfernen',
     right_click_hint: 'Rechtsklick auf Elemente für mehr Optionen (Umbenennen, Verschieben, Löschen)',
 

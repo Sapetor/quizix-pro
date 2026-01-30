@@ -344,6 +344,29 @@ export default {
     pdf_no_text: 'Nessun contenuto testuale trovato nel PDF',
     pdf_extraction_failed: 'Estrazione PDF fallita',
 
+    // DOCX extraction
+    extracting_docx: 'Estrazione testo dal documento Word...',
+    docx_extracted: 'Documento Word estratto',
+    docx_no_text: 'Nessun contenuto testuale trovato nel documento',
+
+    // PPTX extraction
+    extracting_pptx: 'Estrazione testo dalle diapositive...',
+    pptx_extracted: 'Diapositive estratte: {count} diapositive',
+    pptx_no_text: 'Nessun contenuto testuale trovato nella presentazione',
+
+    // URL extraction
+    enter_url: 'O inserisci un URL:',
+    fetch_content: 'Recupera',
+    url_hint: 'Le pagine web saranno convertite in testo',
+    url_placeholder: 'https://...',
+    fetching_url: 'Recupero contenuto...',
+    url_fetched: "Contenuto estratto dall'URL",
+    url_blocked: 'Impossibile accedere a questo URL',
+    url_no_text: "Nessun contenuto testuale trovato all'URL",
+    url_minimal_text: 'Solo {count} parole estratte - la pagina potrebbe usare JavaScript',
+    invalid_url: 'Inserisci un URL valido',
+    words: 'parole',
+
     // Question preview modal
     preview_generated_questions: 'Anteprima Domande Generate',
     preview_instructions: 'Rivedi le domande generate qui sotto. Clicca per selezionare quali aggiungere al tuo quiz.',
@@ -519,6 +542,8 @@ export default {
     try_again: 'Riprova',
     exit: 'Esci',
     failed_start_practice: 'Impossibile avviare la modalità pratica',
+    confirm_exit_practice: 'Uscire dalla pratica e tornare alla home?',
+    exit_to_home: 'Torna alla home',
     load: 'Carica',
 
     // Power-Ups
@@ -591,6 +616,8 @@ export default {
     password_strong: 'Forte',
     optional_password: 'Password (opzionale)',
     password_hint: 'Se impostata, la password sarà richiesta per caricare o eliminare questo quiz',
+    password_placeholder: 'Inserisci la password...',
+    confirm_password_placeholder: 'Conferma la password...',
     verify_to_remove_password: 'Inserisci la password attuale per rimuovere la protezione',
     right_click_hint: 'Clic destro sugli elementi per più opzioni (rinomina, sposta, elimina)',
 

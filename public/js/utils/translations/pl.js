@@ -337,6 +337,29 @@ export default {
     pdf_no_text: 'Nie znaleziono treści tekstowej w PDF',
     pdf_extraction_failed: 'Wyodrębnianie PDF nie powiodło się',
 
+    // DOCX extraction
+    extracting_docx: 'Wyodrębnianie tekstu z dokumentu Word...',
+    docx_extracted: 'Dokument Word wyodrębniony',
+    docx_no_text: 'Nie znaleziono treści tekstowej w dokumencie',
+
+    // PPTX extraction
+    extracting_pptx: 'Wyodrębnianie tekstu ze slajdów...',
+    pptx_extracted: 'Slajdy wyodrębnione: {count} slajdów',
+    pptx_no_text: 'Nie znaleziono treści tekstowej w prezentacji',
+
+    // URL extraction
+    enter_url: 'Lub wprowadź URL:',
+    fetch_content: 'Pobierz',
+    url_hint: 'Strony internetowe zostaną przekonwertowane na tekst',
+    url_placeholder: 'https://...',
+    fetching_url: 'Pobieranie zawartości...',
+    url_fetched: 'Zawartość pobrana z URL',
+    url_blocked: 'Nie można uzyskać dostępu do tego URL',
+    url_no_text: 'Nie znaleziono treści tekstowej pod tym URL',
+    url_minimal_text: 'Wyodrębniono tylko {count} słów - strona może używać JavaScript',
+    invalid_url: 'Wprowadź prawidłowy URL',
+    words: 'słów',
+
     // Question preview modal
     preview_generated_questions: 'Podgląd Wygenerowanych Pytań',
     preview_instructions: 'Przejrzyj wygenerowane pytania poniżej. Kliknij, aby wybrać które dodać do quizu.',
@@ -513,6 +536,8 @@ export default {
     try_again: 'Spróbuj Ponownie',
     exit: 'Wyjdź',
     failed_start_practice: 'Nie udało się uruchomić trybu ćwiczeń',
+    confirm_exit_practice: 'Zakończyć ćwiczenie i wrócić do strony głównej?',
+    exit_to_home: 'Wróć do strony głównej',
     load: 'Załaduj',
 
     // Power-Ups
@@ -585,6 +610,8 @@ export default {
     password_strong: 'Silne',
     optional_password: 'Hasło (opcjonalne)',
     password_hint: 'Jeśli ustawione, hasło będzie wymagane do załadowania lub usunięcia tego quizu',
+    password_placeholder: 'Wprowadź hasło...',
+    confirm_password_placeholder: 'Potwierdź hasło...',
     verify_to_remove_password: 'Wprowadź aktualne hasło, aby usunąć ochronę',
     right_click_hint: 'Kliknij prawym przyciskiem myszy na elementy, aby uzyskać więcej opcji (zmień nazwę, przenieś, usuń)',
 

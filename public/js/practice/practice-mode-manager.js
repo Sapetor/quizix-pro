@@ -415,10 +415,34 @@ export class PracticeModeManager {
             indicator.classList.toggle('hidden', !isPractice);
         }
 
+        // Wire up home button
+        const homeBtn = document.getElementById('practice-home-btn');
+        if (homeBtn) {
+            if (isPractice) {
+                // Add click handler
+                this._boundHandlers.homeClick = () => this.confirmExit();
+                homeBtn.addEventListener('click', this._boundHandlers.homeClick);
+            } else if (this._boundHandlers.homeClick) {
+                // Remove click handler
+                homeBtn.removeEventListener('click', this._boundHandlers.homeClick);
+                delete this._boundHandlers.homeClick;
+            }
+        }
+
         // Update any other UI elements as needed
         document.body.classList.toggle('practice-mode', isPractice);
 
         logger.debug(`[PracticeModeManager] UI updated for practice mode: ${isPractice}`);
+    }
+
+    /**
+     * Show confirmation dialog before exiting practice mode
+     */
+    confirmExit() {
+        const message = getTranslation('confirm_exit_practice') || 'Exit practice and return to home?';
+        if (confirm(message)) {
+            this.exitPracticeMode();
+        }
     }
 
     /**

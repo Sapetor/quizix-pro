@@ -200,6 +200,10 @@ export class AIQuestionGenerator {
             });
         };
 
+        this.eventHandlers.fetchUrlClick = () => {
+            this.handleUrlFetch();
+        };
+
         // Close button listener (modal click and keydown are handled by modal-utils)
         if (closeButton) {
             closeButton.addEventListener('click', this.eventHandlers.closeButtonClick);
@@ -245,6 +249,12 @@ export class AIQuestionGenerator {
         const apiKeyInput = document.getElementById('ai-api-key');
         if (apiKeyInput) {
             apiKeyInput.addEventListener('blur', this.eventHandlers.apiKeyBlur);
+        }
+
+        // URL fetch button
+        const fetchUrlBtn = document.getElementById('fetch-url-btn');
+        if (fetchUrlBtn) {
+            fetchUrlBtn.addEventListener('click', this.eventHandlers.fetchUrlClick);
         }
     }
 
@@ -301,6 +311,11 @@ export class AIQuestionGenerator {
 
         if (apiKeyInput && this.eventHandlers.apiKeyBlur) {
             apiKeyInput.removeEventListener('blur', this.eventHandlers.apiKeyBlur);
+        }
+
+        const fetchUrlBtn = document.getElementById('fetch-url-btn');
+        if (fetchUrlBtn && this.eventHandlers.fetchUrlClick) {
+            fetchUrlBtn.removeEventListener('click', this.eventHandlers.fetchUrlClick);
         }
 
         // Clean up preview modal event listeners
@@ -1887,6 +1902,18 @@ export class AIQuestionGenerator {
             return;
         }
 
+        // Check if file is Word document
+        if (fileExtension === 'docx') {
+            this.handleDocxUpload(file);
+            return;
+        }
+
+        // Check if file is PowerPoint
+        if (fileExtension === 'pptx' || fileExtension === 'ppt') {
+            this.handlePptxUpload(file);
+            return;
+        }
+
         // Handle text-based files as before
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -1945,6 +1972,192 @@ export class AIQuestionGenerator {
             toastNotifications.error(error.message);
         } finally {
             contentTextarea.disabled = false;
+        }
+    }
+
+    async handleDocxUpload(file) {
+        const contentTextarea = document.getElementById('source-content');
+        if (!contentTextarea) return;
+
+        // Show loading state
+        contentTextarea.value = translationManager.getTranslationSync('extracting_docx') || 'Extracting text from Word document...';
+        contentTextarea.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('docx', file);
+
+            const response = await fetch(APIHelper.getApiUrl('api/extract-docx'), {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || data.error || 'DOCX extraction failed');
+            }
+
+            if (!data.text || data.text.trim().length === 0) {
+                throw new Error(translationManager.getTranslationSync('docx_no_text') || 'No text content found in document');
+            }
+
+            contentTextarea.value = data.text;
+            this.detectContentType(data.text);
+
+            logger.debug(`📄 DOCX extracted: ${data.wordCount} words`);
+
+            // Show success notification
+            const message = translationManager.getTranslationSync('docx_extracted') || 'Word document extracted';
+            toastNotifications.success(message);
+
+        } catch (error) {
+            logger.error('📄 DOCX extraction failed:', error);
+            contentTextarea.value = '';
+            toastNotifications.error(error.message);
+        } finally {
+            contentTextarea.disabled = false;
+        }
+    }
+
+    async handlePptxUpload(file) {
+        const contentTextarea = document.getElementById('source-content');
+        if (!contentTextarea) return;
+
+        // Show loading state
+        contentTextarea.value = translationManager.getTranslationSync('extracting_pptx') || 'Extracting text from slides...';
+        contentTextarea.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('pptx', file);
+
+            const response = await fetch(APIHelper.getApiUrl('api/extract-pptx'), {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || data.error || 'PowerPoint extraction failed');
+            }
+
+            if (!data.text || data.text.trim().length === 0) {
+                throw new Error(translationManager.getTranslationSync('pptx_no_text') || 'No text content found in presentation');
+            }
+
+            contentTextarea.value = data.text;
+            this.detectContentType(data.text);
+
+            logger.debug(`📊 PPTX extracted: ~${data.slideCount} slides, ${data.text.length} chars`);
+
+            // Show success notification
+            const message = (translationManager.getTranslationSync('pptx_extracted') || 'Slides extracted: {count} slides')
+                .replace('{count}', data.slideCount);
+            toastNotifications.success(message);
+
+        } catch (error) {
+            logger.error('📊 PPTX extraction failed:', error);
+            contentTextarea.value = '';
+            toastNotifications.error(error.message);
+        } finally {
+            contentTextarea.disabled = false;
+        }
+    }
+
+    async handleUrlFetch() {
+        const urlInput = document.getElementById('source-url');
+        const contentTextarea = document.getElementById('source-content');
+        const fetchBtn = document.getElementById('fetch-url-btn');
+
+        if (!urlInput || !contentTextarea) return;
+
+        const url = urlInput.value.trim();
+
+        // Validate URL
+        if (!url) {
+            toastNotifications.error(translationManager.getTranslationSync('invalid_url') || 'Please enter a valid URL');
+            return;
+        }
+
+        // Basic URL validation
+        try {
+            new URL(url);
+        } catch {
+            toastNotifications.error(translationManager.getTranslationSync('invalid_url') || 'Please enter a valid URL');
+            return;
+        }
+
+        // Show loading state
+        contentTextarea.value = translationManager.getTranslationSync('fetching_url') || 'Fetching content...';
+        contentTextarea.disabled = true;
+        if (fetchBtn) {
+            fetchBtn.disabled = true;
+            fetchBtn.textContent = '...';
+        }
+
+        try {
+            const response = await fetch(APIHelper.getApiUrl('api/extract-url'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Handle specific error cases
+                if (response.status === 429) {
+                    throw new Error(data.message || 'Rate limit exceeded. Please wait before trying again.');
+                }
+                if (response.status === 403) {
+                    throw new Error(translationManager.getTranslationSync('url_blocked') || 'This URL cannot be accessed');
+                }
+                throw new Error(data.message || data.error || 'Failed to fetch URL');
+            }
+
+            if (!data.text || data.text.trim().length < 50) {
+                // If we got very little text, still show it but warn the user
+                if (data.text && data.text.trim().length > 0) {
+                    logger.warn(`🌐 URL extraction returned minimal content: ${data.wordCount} words`);
+                    contentTextarea.value = data.text;
+                    this.detectContentType(data.text);
+                    toastNotifications.warning(
+                        (translationManager.getTranslationSync('url_minimal_text') || 'Only {count} words extracted - page may use JavaScript rendering')
+                            .replace('{count}', data.wordCount)
+                    );
+                    urlInput.value = '';
+                    return;
+                }
+                throw new Error(translationManager.getTranslationSync('url_no_text') || 'No text content found at URL');
+            }
+
+            contentTextarea.value = data.text;
+            this.detectContentType(data.text);
+
+            logger.debug(`🌐 URL extracted: ${data.title}, ${data.wordCount} words`);
+
+            // Show success notification with word count
+            const message = (translationManager.getTranslationSync('url_fetched') || 'Content extracted')
+                + ` (${data.wordCount} ${translationManager.getTranslationSync('words') || 'words'})`;
+            toastNotifications.success(message);
+
+            // Clear the URL input
+            urlInput.value = '';
+
+        } catch (error) {
+            logger.error('🌐 URL extraction failed:', error);
+            contentTextarea.value = '';
+            toastNotifications.error(error.message);
+        } finally {
+            contentTextarea.disabled = false;
+            if (fetchBtn) {
+                fetchBtn.disabled = false;
+                fetchBtn.textContent = translationManager.getTranslationSync('fetch_content') || 'Fetch';
+            }
         }
     }
 

@@ -349,6 +349,29 @@ export default {
     pdf_no_text: 'PDFにテキストコンテンツが見つかりません',
     pdf_extraction_failed: 'PDF抽出に失敗しました',
 
+    // DOCX extraction
+    extracting_docx: 'Word文書からテキストを抽出中...',
+    docx_extracted: 'Word文書を抽出しました',
+    docx_no_text: '文書にテキストコンテンツが見つかりません',
+
+    // PPTX extraction
+    extracting_pptx: 'スライドからテキストを抽出中...',
+    pptx_extracted: 'スライド抽出完了: {count}スライド',
+    pptx_no_text: 'プレゼンテーションにテキストコンテンツが見つかりません',
+
+    // URL extraction
+    enter_url: 'またはURLを入力:',
+    fetch_content: '取得',
+    url_hint: 'ウェブページはテキストに変換されます',
+    url_placeholder: 'https://...',
+    fetching_url: 'コンテンツを取得中...',
+    url_fetched: 'URLからコンテンツを抽出しました',
+    url_blocked: 'このURLにはアクセスできません',
+    url_no_text: 'URLにテキストコンテンツが見つかりません',
+    url_minimal_text: '{count}語のみ抽出されました - ページはJavaScriptを使用している可能性があります',
+    invalid_url: '有効なURLを入力してください',
+    words: '語',
+
     // Question preview modal
     preview_generated_questions: '生成された問題のプレビュー',
     preview_instructions: '以下の生成された問題を確認してください。クリックしてクイズに追加する問題を選択してください。',
@@ -510,6 +533,8 @@ export default {
     try_again: 'もう一度',
     exit: '終了',
     failed_start_practice: '練習モードの開始に失敗しました',
+    confirm_exit_practice: '練習を終了してホームに戻りますか？',
+    exit_to_home: 'ホームに戻る',
     load: '読み込む',
 
     // Power-Ups
@@ -582,6 +607,8 @@ export default {
     password_strong: '強い',
     optional_password: 'パスワード（任意）',
     password_hint: '設定した場合、このクイズの読み込みまたは削除にパスワードが必要になります',
+    password_placeholder: 'パスワードを入力...',
+    confirm_password_placeholder: 'パスワードを確認...',
     verify_to_remove_password: '保護を解除するには現在のパスワードを入力してください',
     right_click_hint: '右クリックでオプションを表示（名前変更、移動、削除）',
 

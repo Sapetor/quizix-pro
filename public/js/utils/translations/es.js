@@ -353,6 +353,29 @@ export default {
     pdf_no_text: 'No se encontró contenido de texto en el PDF',
     pdf_extraction_failed: 'Error al extraer el PDF',
 
+    // DOCX extraction
+    extracting_docx: 'Extrayendo texto del documento Word...',
+    docx_extracted: 'Documento Word extraído',
+    docx_no_text: 'No se encontró contenido de texto en el documento',
+
+    // PPTX extraction
+    extracting_pptx: 'Extrayendo texto de las diapositivas...',
+    pptx_extracted: 'Diapositivas extraídas: {count} diapositivas',
+    pptx_no_text: 'No se encontró contenido de texto en la presentación',
+
+    // URL extraction
+    enter_url: 'O ingresa una URL:',
+    fetch_content: 'Obtener',
+    url_hint: 'Las páginas web se convertirán a texto',
+    url_placeholder: 'https://...',
+    fetching_url: 'Obteniendo contenido...',
+    url_fetched: 'Contenido extraído de la URL',
+    url_blocked: 'No se puede acceder a esta URL',
+    url_no_text: 'No se encontró contenido de texto en la URL',
+    url_minimal_text: 'Solo se extrajeron {count} palabras - la página puede usar JavaScript',
+    invalid_url: 'Por favor ingresa una URL válida',
+    words: 'palabras',
+
     // Question preview modal
     preview_generated_questions: 'Vista Previa de Preguntas Generadas',
     preview_instructions: 'Revisa las preguntas generadas a continuación. Haz clic para seleccionar cuáles añadir a tu quiz.',
@@ -527,6 +550,8 @@ export default {
     try_again: 'Intentar de Nuevo',
     exit: 'Salir',
     failed_start_practice: 'Error al iniciar el modo práctica',
+    confirm_exit_practice: '¿Salir del modo práctica y volver al inicio?',
+    exit_to_home: 'Salir al inicio',
     load: 'Cargar',
 
     // Power-Ups
@@ -599,6 +624,8 @@ export default {
     password_strong: 'Fuerte',
     optional_password: 'Contraseña (opcional)',
     password_hint: 'Si se establece, se requerirá la contraseña para cargar o eliminar este cuestionario',
+    password_placeholder: 'Ingresa la contraseña...',
+    confirm_password_placeholder: 'Confirma la contraseña...',
     verify_to_remove_password: 'Ingrese la contraseña actual para eliminar la protección',
     right_click_hint: 'Clic derecho en elementos para más opciones (renombrar, mover, eliminar)',
 

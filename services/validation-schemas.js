@@ -109,6 +109,16 @@ const geminiGenerateSchema = z.object({
     model: z.string().optional().default('gemini-2.5-flash')
 });
 
+// URL extraction schema
+const extractUrlSchema = z.object({
+    url: z.string()
+        .url('Invalid URL format')
+        .refine(url => {
+            // Only allow http and https protocols
+            return url.startsWith('http://') || url.startsWith('https://');
+        }, 'Only HTTP and HTTPS URLs are allowed')
+});
+
 // ============================================================================
 // Game Schemas
 // ============================================================================
@@ -450,6 +460,7 @@ module.exports = {
     saveQuizSchema,
     claudeGenerateSchema,
     geminiGenerateSchema,
+    extractUrlSchema,
     joinGameSchema,
     submitAnswerSchema,
     quizFilenameSchema,

@@ -249,6 +249,41 @@
     font-size: 0.85rem;
 }
 
+.url-input-section {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.url-input-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.url-input-wrapper {
+    display: flex;
+    gap: 10px;
+}
+
+.url-input-wrapper input {
+    flex: 1;
+}
+
+.url-input-wrapper .btn {
+    flex-shrink: 0;
+    min-width: 80px;
+}
+
+.url-input-section small {
+    display: block;
+    margin-top: 5px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
 .generation-options {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

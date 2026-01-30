@@ -1520,6 +1520,12 @@
             <div id="practice-mode-indicator" class="practice-mode-badge hidden">
                 <span class="badge-icon">🎯</span>
                 <span class="badge-text" data-translate="practice_mode">Practice Mode</span>
+                <button id="practice-home-btn" class="practice-home-btn" title="Exit to Home" data-translate-title="exit_to_home">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                </button>
             </div>
 
             <div class="player-game-container">
@@ -1791,8 +1797,17 @@
                     
                     <div class="file-upload-section">
                         <label for="content-file" data-translate="or_upload_file">Or upload a file:</label>
-                        <input type="file" id="content-file" accept=".txt,.pdf,.docx,.md,.xlsx,.xls" class="input-field">
-                        <small data-translate="supported_formats">Supported formats: TXT, PDF, DOCX, Markdown, Excel</small>
+                        <input type="file" id="content-file" accept=".txt,.pdf,.docx,.md,.xlsx,.xls,.pptx,.ppt" class="input-field">
+                        <small data-translate="supported_formats">Supported formats: TXT, PDF, DOCX, PPTX, Markdown, Excel</small>
+                    </div>
+
+                    <div class="url-input-section">
+                        <label for="source-url" data-translate="enter_url">Or enter a URL:</label>
+                        <div class="url-input-wrapper">
+                            <input type="url" id="source-url" class="input-field" placeholder="https://..." data-translate-placeholder="url_placeholder">
+                            <button id="fetch-url-btn" class="btn btn-secondary" data-translate="fetch_content">Fetch</button>
+                        </div>
+                        <small data-translate="url_hint">Web pages will be converted to text</small>
                     </div>
                 </div>
                 

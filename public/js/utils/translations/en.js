@@ -372,6 +372,29 @@ export default {
     pdf_no_text: 'No text content found in PDF',
     pdf_extraction_failed: 'PDF extraction failed',
 
+    // DOCX extraction
+    extracting_docx: 'Extracting text from Word document...',
+    docx_extracted: 'Word document extracted',
+    docx_no_text: 'No text content found in document',
+
+    // PPTX extraction
+    extracting_pptx: 'Extracting text from slides...',
+    pptx_extracted: 'Slides extracted: {count} slides',
+    pptx_no_text: 'No text content found in presentation',
+
+    // URL extraction
+    enter_url: 'Or enter a URL:',
+    fetch_content: 'Fetch',
+    url_hint: 'Web pages will be converted to text',
+    url_placeholder: 'https://...',
+    fetching_url: 'Fetching content...',
+    url_fetched: 'Content extracted from URL',
+    url_blocked: 'This URL cannot be accessed',
+    url_no_text: 'No text content found at URL',
+    url_minimal_text: 'Only {count} words extracted - page may use JavaScript rendering',
+    invalid_url: 'Please enter a valid URL',
+    words: 'words',
+
     // Question preview modal
     preview_generated_questions: 'Preview Generated Questions',
     preview_instructions: 'Review the generated questions below. Click to select which ones to add to your quiz.',
@@ -602,6 +625,8 @@ export default {
     try_again: 'Try Again',
     exit: 'Exit',
     failed_start_practice: 'Failed to start practice mode',
+    confirm_exit_practice: 'Exit practice and return to home?',
+    exit_to_home: 'Exit to Home',
     load: 'Load',
 
     // Power-Ups
@@ -676,6 +701,8 @@ export default {
     password_strong: 'Strong',
     optional_password: 'Password (optional)',
     password_hint: 'If set, password will be required to load or delete this quiz',
+    password_placeholder: 'Enter password...',
+    confirm_password_placeholder: 'Confirm password...',
     verify_to_remove_password: 'Enter current password to remove protection',
     right_click_hint: 'Right-click items for more options (rename, move, delete)',
 

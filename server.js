@@ -30,6 +30,7 @@ const {
     saveQuizSchema,
     claudeGenerateSchema,
     geminiGenerateSchema,
+    extractUrlSchema,
     createFolderSchema,
     renameFolderSchema,
     moveFolderSchema,
@@ -654,6 +655,355 @@ app.post('/api/extract-pdf', pdfUpload.single('pdf'), async (req, res) => {
         }
 
         res.status(500).json({ error: 'Failed to extract text from PDF: ' + error.message });
+    }
+});
+
+// ============================================================================
+// Document & URL Extraction Endpoints
+// ============================================================================
+
+// DOCX text extraction endpoint
+const docxUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+        const validMimes = [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
+        cb(null, validMimes.includes(file.mimetype));
+    }
+});
+
+app.post('/api/extract-docx', docxUpload.single('docx'), async (req, res) => {
+    const DOCX_PARSE_TIMEOUT_MS = 30000;
+
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No DOCX file uploaded' });
+        }
+
+        // Dynamic import of mammoth
+        let mammoth;
+        try {
+            mammoth = require('mammoth');
+        } catch (err) {
+            logger.warn('mammoth not installed. Run: npm install mammoth');
+            return res.status(501).json({
+                error: 'DOCX extraction not available',
+                message: 'Server does not have DOCX parsing capability.'
+            });
+        }
+
+        // Parse with timeout
+        const result = await withTimeout(
+            mammoth.extractRawText({ buffer: req.file.buffer }),
+            DOCX_PARSE_TIMEOUT_MS,
+            'DOCX parsing timed out. The file may be too complex.'
+        );
+
+        const text = result.value || '';
+        const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
+
+        logger.info(`DOCX extracted: ${req.file.originalname}, ${wordCount} words`);
+
+        res.json({
+            text: text,
+            wordCount: wordCount
+        });
+    } catch (error) {
+        logger.error('DOCX extraction error:', error);
+
+        if (error.message.includes('timed out')) {
+            return res.status(408).json({ error: error.message });
+        }
+
+        res.status(500).json({ error: 'Failed to extract text from DOCX: ' + error.message });
+    }
+});
+
+// PPTX text extraction endpoint
+const pptxUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit (slides can have images)
+    fileFilter: (req, file, cb) => {
+        const validMimes = [
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'application/vnd.ms-powerpoint'
+        ];
+        cb(null, validMimes.includes(file.mimetype));
+    }
+});
+
+app.post('/api/extract-pptx', pptxUpload.single('pptx'), async (req, res) => {
+    const PPTX_PARSE_TIMEOUT_MS = 60000; // Longer timeout for large presentations
+
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No PowerPoint file uploaded' });
+        }
+
+        // Dynamic import of officeparser
+        let officeparser;
+        try {
+            officeparser = require('officeparser');
+        } catch (err) {
+            logger.warn('officeparser not installed. Run: npm install officeparser');
+            return res.status(501).json({
+                error: 'PowerPoint extraction not available',
+                message: 'Server does not have PowerPoint parsing capability.'
+            });
+        }
+
+        // Parse with timeout
+        const text = await withTimeout(
+            officeparser.parseOfficeAsync(req.file.buffer),
+            PPTX_PARSE_TIMEOUT_MS,
+            'PowerPoint parsing timed out. The file may be too complex.'
+        );
+
+        // Estimate slide count from content structure (rough approximation)
+        const slideCount = Math.max(1, Math.floor(text.length / 500));
+
+        logger.info(`PPTX extracted: ${req.file.originalname}, ~${slideCount} slides, ${text.length} chars`);
+
+        res.json({
+            text: text,
+            slideCount: slideCount
+        });
+    } catch (error) {
+        logger.error('PPTX extraction error:', error);
+
+        if (error.message.includes('timed out')) {
+            return res.status(408).json({ error: error.message });
+        }
+
+        res.status(500).json({ error: 'Failed to extract text from PowerPoint: ' + error.message });
+    }
+});
+
+// URL content extraction endpoint with security controls
+// Rate limiting for URL fetching (more restrictive than general BYOK)
+const urlRateLimits = new Map();
+const URL_MAX_REQUESTS_PER_MINUTE = 5;
+
+function checkUrlRateLimit(ip) {
+    const now = Date.now();
+    const limit = urlRateLimits.get(ip);
+
+    if (!limit || now > limit.resetTime) {
+        urlRateLimits.set(ip, { count: 1, resetTime: now + 60000 });
+        return { allowed: true, remaining: URL_MAX_REQUESTS_PER_MINUTE - 1 };
+    }
+
+    if (limit.count >= URL_MAX_REQUESTS_PER_MINUTE) {
+        const retryAfter = Math.ceil((limit.resetTime - now) / 1000);
+        return { allowed: false, retryAfter, remaining: 0 };
+    }
+
+    limit.count++;
+    return { allowed: true, remaining: URL_MAX_REQUESTS_PER_MINUTE - limit.count };
+}
+
+// Cleanup old URL rate limit entries every 5 minutes
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, limit] of urlRateLimits.entries()) {
+        if (now > limit.resetTime + 60000) {
+            urlRateLimits.delete(ip);
+        }
+    }
+}, 5 * 60 * 1000);
+
+// Check if an IP address is private (SSRF protection)
+function isPrivateIP(hostname) {
+    // Block localhost
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+        return true;
+    }
+
+    // Parse IPv4 addresses
+    const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (ipv4Match) {
+        const [, a, b, c] = ipv4Match.map(Number);
+
+        // 10.0.0.0/8
+        if (a === 10) return true;
+
+        // 172.16.0.0/12
+        if (a === 172 && b >= 16 && b <= 31) return true;
+
+        // 192.168.0.0/16
+        if (a === 192 && b === 168) return true;
+
+        // 127.0.0.0/8 (loopback)
+        if (a === 127) return true;
+
+        // 169.254.0.0/16 (link-local)
+        if (a === 169 && b === 254) return true;
+
+        // 0.0.0.0/8 (current network)
+        if (a === 0) return true;
+    }
+
+    return false;
+}
+
+app.post('/api/extract-url', validateBody(extractUrlSchema), async (req, res) => {
+    const URL_FETCH_TIMEOUT_MS = 10000;
+    const MAX_RESPONSE_SIZE = 5 * 1024 * 1024; // 5MB
+
+    try {
+        const { url } = req.validatedBody;
+
+        // Rate limiting
+        const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+        const rateCheck = checkUrlRateLimit(clientIP);
+
+        if (!rateCheck.allowed) {
+            logger.warn(`URL rate limit exceeded for IP: ${clientIP}`);
+            return res.status(429).json({
+                error: 'Rate limit exceeded',
+                message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
+                retryAfter: rateCheck.retryAfter
+            });
+        }
+
+        res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
+
+        // Parse and validate URL
+        let parsedUrl;
+        try {
+            parsedUrl = new URL(url);
+        } catch {
+            return res.status(400).json({ error: 'Invalid URL format' });
+        }
+
+        // SSRF protection: Block private IPs
+        if (isPrivateIP(parsedUrl.hostname)) {
+            logger.warn(`Blocked private IP URL request: ${url}`);
+            return res.status(403).json({
+                error: 'URL blocked',
+                message: 'This URL cannot be accessed for security reasons.'
+            });
+        }
+
+        // Dynamic import of dependencies
+        let fetchFunction, cheerio;
+        try {
+            const nodeFetch = await import('node-fetch');
+            fetchFunction = nodeFetch.default;
+            cheerio = require('cheerio');
+        } catch (err) {
+            logger.warn('Required packages not installed for URL extraction');
+            return res.status(501).json({
+                error: 'URL extraction not available',
+                message: 'Server does not have URL fetching capability.'
+            });
+        }
+
+        // Fetch the URL with timeout and redirect limits
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), URL_FETCH_TIMEOUT_MS);
+
+        try {
+            const response = await fetchFunction(url, {
+                signal: controller.signal,
+                redirect: 'follow',
+                follow: 3, // Max 3 redirects
+                size: MAX_RESPONSE_SIZE,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (compatible; QuizixBot/1.0; +https://quizix.pro)',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5'
+                }
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                return res.status(response.status).json({
+                    error: 'Failed to fetch URL',
+                    message: `Server returned status ${response.status}`
+                });
+            }
+
+            // Check content type
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('text/html') && !contentType.includes('text/plain') && !contentType.includes('application/xhtml')) {
+                return res.status(400).json({
+                    error: 'Unsupported content type',
+                    message: 'URL must point to an HTML or text document.'
+                });
+            }
+
+            const html = await response.text();
+
+            // Parse HTML and extract text
+            const $ = cheerio.load(html);
+
+            // Get the page title BEFORE removing elements
+            const title = $('title').first().text().trim() ||
+                         $('h1').first().text().trim() ||
+                         'Untitled';
+
+            // Remove script, style, nav, footer, and other non-content elements
+            $('script, style, nav, footer, header, aside, noscript, iframe, svg, form, button, input, select, textarea').remove();
+            $('.sidebar, .menu, .navigation, .nav, .comments, .advertisement, .ad, .ads, .share, .social, .related, .cookie, .popup, .modal').remove();
+
+            // Try to find the main content area
+            let mainContent = $('main, article, [role="main"], .content, .post, .entry, .article, #content, #main, #article').first();
+            if (mainContent.length === 0 || mainContent.text().trim().length < 100) {
+                // Fall back to body if main content is too short
+                mainContent = $('body');
+            }
+
+            // Extract text with better paragraph handling
+            // Replace block elements with newlines for better formatting
+            mainContent.find('p, div, h1, h2, h3, h4, h5, h6, li, br, tr').each((i, el) => {
+                $(el).append('\n');
+            });
+
+            let text = mainContent.text();
+
+            // Clean up whitespace while preserving paragraph breaks
+            text = text
+                .replace(/[ \t]+/g, ' ')           // Collapse horizontal whitespace
+                .replace(/\n[ \t]+/g, '\n')        // Remove leading whitespace on lines
+                .replace(/[ \t]+\n/g, '\n')        // Remove trailing whitespace on lines
+                .replace(/\n{3,}/g, '\n\n')        // Max 2 consecutive newlines
+                .trim();
+
+            const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
+
+            logger.info(`URL extracted: ${url}, ${wordCount} words, ${text.length} chars`);
+
+            // Debug: log first 200 chars if extraction seems to have failed
+            if (wordCount < 10) {
+                logger.debug(`URL extraction low word count. First 200 chars: ${text.substring(0, 200)}`);
+                logger.debug(`HTML length: ${html.length}, Body text length: ${$('body').text().length}`);
+            }
+
+            res.json({
+                text: text,
+                title: title,
+                wordCount: wordCount,
+                sourceUrl: url
+            });
+        } catch (fetchError) {
+            clearTimeout(timeoutId);
+
+            if (fetchError.name === 'AbortError') {
+                return res.status(408).json({
+                    error: 'Request timeout',
+                    message: 'The URL took too long to respond.'
+                });
+            }
+
+            throw fetchError;
+        }
+    } catch (error) {
+        logger.error('URL extraction error:', error);
+        res.status(500).json({ error: 'Failed to extract content from URL: ' + error.message });
     }
 });
 

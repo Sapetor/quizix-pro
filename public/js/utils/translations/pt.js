@@ -350,6 +350,29 @@ export default {
     pdf_no_text: 'Nenhum conteúdo de texto encontrado no PDF',
     pdf_extraction_failed: 'Falha na extração do PDF',
 
+    // DOCX extraction
+    extracting_docx: 'Extraindo texto do documento Word...',
+    docx_extracted: 'Documento Word extraído',
+    docx_no_text: 'Nenhum conteúdo de texto encontrado no documento',
+
+    // PPTX extraction
+    extracting_pptx: 'Extraindo texto dos slides...',
+    pptx_extracted: 'Slides extraídos: {count} slides',
+    pptx_no_text: 'Nenhum conteúdo de texto encontrado na apresentação',
+
+    // URL extraction
+    enter_url: 'Ou insira uma URL:',
+    fetch_content: 'Buscar',
+    url_hint: 'Páginas web serão convertidas em texto',
+    url_placeholder: 'https://...',
+    fetching_url: 'Buscando conteúdo...',
+    url_fetched: 'Conteúdo extraído da URL',
+    url_blocked: 'Não foi possível acessar esta URL',
+    url_no_text: 'Nenhum conteúdo de texto encontrado na URL',
+    url_minimal_text: 'Apenas {count} palavras extraídas - a página pode usar JavaScript',
+    invalid_url: 'Por favor insira uma URL válida',
+    words: 'palavras',
+
     // Question preview modal
     preview_generated_questions: 'Pré-visualizar Perguntas Geradas',
     preview_instructions: 'Revise as perguntas geradas abaixo. Clique para selecionar quais adicionar ao seu quiz.',
@@ -511,6 +534,8 @@ export default {
     try_again: 'Tentar Novamente',
     exit: 'Sair',
     failed_start_practice: 'Falha ao iniciar o modo prática',
+    confirm_exit_practice: 'Sair da prática e voltar ao início?',
+    exit_to_home: 'Voltar ao início',
     load: 'Carregar',
 
     // Power-Ups
@@ -583,6 +608,8 @@ export default {
     password_strong: 'Forte',
     optional_password: 'Senha (opcional)',
     password_hint: 'Se definida, a senha será necessária para carregar ou excluir este quiz',
+    password_placeholder: 'Digite a senha...',
+    confirm_password_placeholder: 'Confirme a senha...',
     verify_to_remove_password: 'Digite a senha atual para remover a proteção',
     right_click_hint: 'Clique direito nos itens para mais opções (renomear, mover, excluir)',
 
