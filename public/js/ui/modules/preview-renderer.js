@@ -8,7 +8,7 @@ import { translationManager } from '../../utils/translation-manager.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
 import { logger, COLORS } from '../../core/config.js';
 import { imagePathResolver, loadImageWithRetry } from '../../utils/image-path-resolver.js';
-import { escapeHtml, formatCodeBlocks as sharedFormatCodeBlocks } from '../../utils/dom.js';
+import { escapeHtml, formatCodeBlocks as sharedFormatCodeBlocks, dom } from '../../utils/dom.js';
 import { QuestionTypeRegistry } from '../../utils/question-type-registry.js';
 
 export class PreviewRenderer {
@@ -45,7 +45,7 @@ export class PreviewRenderer {
      * Render question text with LaTeX support
      */
     renderSplitQuestionText(questionText) {
-        const previewElement = document.getElementById('preview-question-text-split');
+        const previewElement = dom.get('preview-question-text-split');
 
         if (!previewElement) {
             logger.warn('Preview question text element not found');
@@ -98,7 +98,7 @@ export class PreviewRenderer {
      * Handle question image display
      */
     handleSplitQuestionImage(imageData) {
-        const imageDisplay = document.getElementById('preview-question-image-split');
+        const imageDisplay = dom.get('preview-question-image-split');
         const img = imageDisplay?.querySelector('img');
 
         if (imageData && imageDisplay && img) {
@@ -225,7 +225,7 @@ export class PreviewRenderer {
      * Clear and hide question image
      */
     clearSplitQuestionImage() {
-        const imageDisplay = document.getElementById('preview-question-image-split');
+        const imageDisplay = dom.get('preview-question-image-split');
         const img = imageDisplay?.querySelector('img');
 
         if (imageDisplay) {
@@ -253,7 +253,7 @@ export class PreviewRenderer {
      */
     hideSplitAnswerContainers(containerIds) {
         containerIds.forEach(id => {
-            const container = document.getElementById(id);
+            const container = dom.get(id);
             if (container) {
                 container.style.display = 'none';
             }
@@ -296,7 +296,7 @@ export class PreviewRenderer {
      * Reset true/false button states
      */
     resetSplitTrueFalseButtons(type) {
-        const tfContainer = document.getElementById(`preview-${type}-split`);
+        const tfContainer = dom.get(`preview-${type}-split`);
         if (tfContainer) {
             const buttons = tfContainer.querySelectorAll('.tf-option');
             buttons.forEach(button => {
@@ -339,7 +339,7 @@ export class PreviewRenderer {
             return;
         }
 
-        const container = document.getElementById(containerId);
+        const container = dom.get(containerId);
         if (container) {
             container.style.display = 'block';
         }
@@ -368,7 +368,7 @@ export class PreviewRenderer {
      * Render multiple choice options preview
      */
     renderSplitMultipleChoicePreview(options, correctAnswer) {
-        const container = document.getElementById('preview-multiple-choice-split');
+        const container = dom.get('preview-multiple-choice-split');
         const optionsContainer = container?.querySelector('.player-options');
 
         if (!container || !optionsContainer) {
@@ -410,7 +410,7 @@ export class PreviewRenderer {
      * Render multiple correct options preview
      */
     renderSplitMultipleCorrectPreview(options, correctAnswers) {
-        const container = document.getElementById('preview-multiple-correct-split');
+        const container = dom.get('preview-multiple-correct-split');
         const optionsContainer = container?.querySelector('.player-checkbox-options');
 
         if (!container || !optionsContainer) {
@@ -456,7 +456,7 @@ export class PreviewRenderer {
      * Render true/false preview
      */
     renderSplitTrueFalsePreview(correctAnswer) {
-        const container = document.getElementById('preview-true-false-split');
+        const container = dom.get('preview-true-false-split');
         const tfContainer = container?.querySelector('.true-false-options');
 
         if (!container || !tfContainer) {
@@ -487,7 +487,7 @@ export class PreviewRenderer {
      * Render numeric input preview
      */
     renderSplitNumericPreview() {
-        const container = document.getElementById('preview-numeric-split');
+        const container = dom.get('preview-numeric-split');
         const input = container?.querySelector('input');
 
         if (input) {
@@ -508,7 +508,7 @@ export class PreviewRenderer {
      * Shared implementation for both desktop and mobile views
      */
     renderOrderingPreview(containerId, options, _correctOrder, context = 'preview') {
-        const container = document.getElementById(containerId);
+        const container = dom.get(containerId);
         if (!container) {
             logger.warn(`${context} ordering container not found: ${containerId}`);
             return;
@@ -562,7 +562,7 @@ export class PreviewRenderer {
      * Update question counter display
      */
     updateSplitQuestionCounter(questionNumber, totalQuestions) {
-        const counterDisplay = document.getElementById('preview-question-counter-split');
+        const counterDisplay = dom.get('preview-question-counter-split');
         if (counterDisplay) {
             counterDisplay.textContent = `${questionNumber}/${totalQuestions}`;
         }
@@ -694,7 +694,7 @@ export class PreviewRenderer {
      * Render mobile question text
      */
     renderMobileQuestionText(questionText) {
-        const previewElement = document.getElementById('mobile-preview-question-text');
+        const previewElement = dom.get('mobile-preview-question-text');
 
         if (!previewElement) {
             logger.warn('Mobile preview question text element not found');
@@ -782,7 +782,7 @@ export class PreviewRenderer {
      */
     renderMobileMultipleChoicePreview(options, correctAnswer) {
         const container = document.querySelector('#mobile-preview-answer-area .preview-multiple-choice');
-        const optionsContainer = document.getElementById('mobile-preview-options');
+        const optionsContainer = dom.get('mobile-preview-options');
 
         if (!container || !optionsContainer) {
             logger.warn('Mobile multiple choice preview containers not found');
@@ -825,7 +825,7 @@ export class PreviewRenderer {
      */
     renderMobileMultipleCorrectPreview(options, correctAnswers) {
         const container = document.querySelector('#mobile-preview-answer-area .preview-multiple-correct');
-        const optionsContainer = document.getElementById('mobile-preview-checkbox-options');
+        const optionsContainer = dom.get('mobile-preview-checkbox-options');
 
         if (!container || !optionsContainer) {
             logger.warn('Mobile multiple correct preview containers not found');
@@ -889,7 +889,7 @@ export class PreviewRenderer {
      */
     renderMobileTrueFalsePreview(correctAnswer) {
         const container = document.querySelector('#mobile-preview-answer-area .preview-true-false');
-        const optionsContainer = document.getElementById('mobile-preview-tf-options');
+        const optionsContainer = dom.get('mobile-preview-tf-options');
 
         if (!container || !optionsContainer) {
             logger.warn('Mobile true/false preview containers not found');
@@ -926,7 +926,7 @@ export class PreviewRenderer {
      */
     renderMobileNumericPreview(correctAnswer) {
         const container = document.querySelector('#mobile-preview-answer-area .preview-numeric');
-        const inputContainer = document.getElementById('mobile-preview-numeric');
+        const inputContainer = dom.get('mobile-preview-numeric');
 
         if (!container || !inputContainer) {
             logger.warn('Mobile numeric preview containers not found');

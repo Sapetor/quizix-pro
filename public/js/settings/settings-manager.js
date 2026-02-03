@@ -6,6 +6,7 @@
 import { translationManager, getThemeToggleTitles } from '../utils/translation-manager.js';
 import { logger } from '../core/config.js';
 import { getJSON, setJSON } from '../utils/storage-utils.js';
+import { dom } from '../utils/dom.js';
 
 export class SettingsManager {
     constructor() {
@@ -88,10 +89,10 @@ export class SettingsManager {
 
         // Get all theme toggle buttons (desktop, mobile header, mobile bottom)
         const themeToggleButtons = [
-            document.getElementById('theme-toggle'),
-            document.getElementById('theme-toggle-mobile-header'),
-            document.getElementById('theme-toggle-mobile'), // fallback if still exists
-            document.getElementById('mobile-theme-toggle')  // fallback if still exists
+            dom.get('theme-toggle'),
+            dom.get('theme-toggle-mobile-header'),
+            dom.get('theme-toggle-mobile'), // fallback if still exists
+            dom.get('mobile-theme-toggle')  // fallback if still exists
         ].filter(button => button !== null); // Remove null elements
 
         if (theme === 'dark') {
@@ -276,7 +277,7 @@ export class SettingsManager {
      * Update fullscreen button appearance
      */
     updateFullscreenButton() {
-        const fullscreenToggle = document.getElementById('fullscreen-toggle');
+        const fullscreenToggle = dom.get('fullscreen-toggle');
         if (fullscreenToggle) {
             if (this.settings.fullscreenMode) {
                 fullscreenToggle.textContent = '🔲';
@@ -340,14 +341,14 @@ export class SettingsManager {
             (translationManager.getTranslationSync('unmute_sound') || 'Unmute sound');
 
         // Desktop button
-        const desktopBtn = document.getElementById('sound-toggle');
+        const desktopBtn = dom.get('sound-toggle');
         if (desktopBtn) {
             desktopBtn.textContent = icon;
             desktopBtn.title = tooltip;
         }
 
         // Mobile button
-        const mobileBtn = document.getElementById('sound-toggle-mobile-header');
+        const mobileBtn = dom.get('sound-toggle-mobile-header');
         if (mobileBtn) {
             const iconSpan = mobileBtn.querySelector('.control-icon');
             if (iconSpan) {
@@ -451,10 +452,10 @@ export class SettingsManager {
     updateSettingsUI() {
         // Update all theme toggle buttons (desktop and mobile)
         const themeToggleButtons = [
-            document.getElementById('theme-toggle'),
-            document.getElementById('theme-toggle-mobile-header'),
-            document.getElementById('theme-toggle-mobile'),
-            document.getElementById('mobile-theme-toggle')
+            dom.get('theme-toggle'),
+            dom.get('theme-toggle-mobile-header'),
+            dom.get('theme-toggle-mobile'),
+            dom.get('mobile-theme-toggle')
         ].filter(button => button !== null);
 
         themeToggleButtons.forEach(themeToggle => {
@@ -498,13 +499,13 @@ export class SettingsManager {
         });
 
         // Update auto-save toggle
-        const autoSaveToggle = document.getElementById('auto-save-toggle');
+        const autoSaveToggle = dom.get('auto-save-toggle');
         if (autoSaveToggle) {
             autoSaveToggle.checked = this.settings.autoSave;
         }
 
         // Update animations toggle
-        const animationsToggle = document.getElementById('animations-toggle');
+        const animationsToggle = dom.get('animations-toggle');
         if (animationsToggle) {
             animationsToggle.checked = this.settings.animations;
         }
@@ -516,8 +517,8 @@ export class SettingsManager {
     initializeEventListeners() {
         // Theme toggle (desktop and mobile)
         const themeToggleButtons = [
-            document.getElementById('theme-toggle'),
-            document.getElementById('theme-toggle-mobile-header')
+            dom.get('theme-toggle'),
+            dom.get('theme-toggle-mobile-header')
         ].filter(button => button !== null);
 
         themeToggleButtons.forEach(themeToggle => {
@@ -528,8 +529,8 @@ export class SettingsManager {
 
         // Sound toggle (desktop and mobile)
         const soundToggleButtons = [
-            document.getElementById('sound-toggle'),
-            document.getElementById('sound-toggle-mobile-header')
+            dom.get('sound-toggle'),
+            dom.get('sound-toggle-mobile-header')
         ].filter(button => button !== null);
 
         soundToggleButtons.forEach(soundToggle => {
@@ -542,13 +543,13 @@ export class SettingsManager {
         this.updateSoundToggleButtons();
 
         // Fullscreen toggle
-        const fullscreenToggle = document.getElementById('fullscreen-toggle');
+        const fullscreenToggle = dom.get('fullscreen-toggle');
         if (fullscreenToggle) {
             fullscreenToggle.addEventListener('click', () => this.toggleFullscreen());
         }
 
         // Auto-save toggle
-        const autoSaveToggle = document.getElementById('auto-save-toggle');
+        const autoSaveToggle = dom.get('auto-save-toggle');
         if (autoSaveToggle) {
             autoSaveToggle.addEventListener('change', (e) => {
                 this.setAutoSave(e.target.checked);
@@ -556,7 +557,7 @@ export class SettingsManager {
         }
 
         // Animations toggle
-        const animationsToggle = document.getElementById('animations-toggle');
+        const animationsToggle = dom.get('animations-toggle');
         if (animationsToggle) {
             animationsToggle.addEventListener('change', (e) => {
                 this.applyAnimations(e.target.checked);

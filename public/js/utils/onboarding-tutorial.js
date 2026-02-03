@@ -26,9 +26,29 @@ class OnboardingTutorial {
         this._resizeHandler = null;
         this._clickHandler = null;
 
+        // Dependency injection for UIManager
+        this._uiManager = null;
+
         this.initializeSteps();
 
         logger.debug('OnboardingTutorial initialized');
+    }
+
+    /**
+     * Set UIManager instance for dependency injection
+     * @param {UIManager} uiManager - The UIManager instance
+     */
+    setUIManager(uiManager) {
+        this._uiManager = uiManager;
+        logger.debug('OnboardingTutorial: UIManager injected');
+    }
+
+    /**
+     * Get UIManager instance with fallback to window.game
+     * @returns {UIManager|null}
+     */
+    _getUIManager() {
+        return this._uiManager || window.game?.uiManager;
     }
 
     /**
@@ -328,8 +348,9 @@ class OnboardingTutorial {
             return true;
         }
 
-        if (window.game && window.game.showScreen) {
-            window.game.showScreen(screenId);
+        const uiManager = this._getUIManager();
+        if (uiManager?.showScreen) {
+            uiManager.showScreen(screenId);
             // Wait for screen transition
             await new Promise(resolve => setTimeout(resolve, 350));
             return true;

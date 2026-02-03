@@ -15,7 +15,7 @@ import { logger, TIMING } from '../core/config.js';
 const PREVIEW_DEBOUNCE_TIME = TIMING.PREVIEW_DEBOUNCE || 150;
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
-import { isMobile, debounce } from '../utils/dom.js';
+import { isMobile, debounce, dom } from '../utils/dom.js';
 
 export class PreviewManager {
     constructor(mathRenderer) {
@@ -73,7 +73,7 @@ export class PreviewManager {
      * Toggle preview mode
      */
     togglePreviewMode() {
-        const toggleBtn = document.getElementById('toggle-preview');
+        const toggleBtn = dom.get('toggle-preview');
 
         this.previewMode = !this.previewMode;
 
@@ -130,7 +130,7 @@ export class PreviewManager {
      */
     showDesktopSplitPreview(previewSection, hostContainer) {
         // Show preview
-        previewSection.style.display = 'block';
+        previewSection.classList.remove('hidden');
         hostContainer.classList.add('split-screen');
 
         // Initialize split layout (handles resize handle, drag functionality, and ratios)
@@ -170,13 +170,13 @@ export class PreviewManager {
         hostContainer.offsetHeight;
 
         // Hide preview and remove split-screen class simultaneously
-        previewSection.style.display = 'none';
+        previewSection.classList.add('hidden');
         hostContainer.classList.remove('split-screen');
 
         // Hide resize handle
-        const resizeHandle = document.getElementById('split-resize-handle');
+        const resizeHandle = dom.get('split-resize-handle');
         if (resizeHandle) {
-            resizeHandle.style.display = 'none';
+            resizeHandle.classList.add('hidden');
         }
 
         // Re-enable transitions after layout changes are complete
@@ -233,9 +233,9 @@ export class PreviewManager {
         this.splitPreviewListenersSet = true;
 
         // Navigation buttons for split screen
-        const prevBtn = document.getElementById('preview-prev-split');
-        const nextBtn = document.getElementById('preview-next-split');
-        const scrollBtn = document.getElementById('scroll-to-question');
+        const prevBtn = dom.get('preview-prev-split');
+        const nextBtn = dom.get('preview-next-split');
+        const scrollBtn = dom.get('scroll-to-question');
 
         logger.debug('🔘 Preview navigation buttons found:', {
             prevBtn: !!prevBtn,
@@ -718,12 +718,12 @@ export class PreviewManager {
 
         elementsToHide.forEach((element, index) => {
             if (element && !element.contains(document.getElementById('mobile-preview-container'))) {
-                // Store original display value for restoration
+                // Store original classes for restoration
                 this.hiddenElements[index] = {
                     element: element,
-                    originalDisplay: element.style.display || ''
+                    hadHiddenClass: element.classList.contains('hidden')
                 };
-                element.style.display = 'none';
+                element.classList.add('hidden');
                 logger.debug('Hidden element:', element.className || element.tagName);
             }
         });
@@ -731,7 +731,7 @@ export class PreviewManager {
         // Also hide any desktop preview elements
         const desktopPreviews = document.querySelectorAll('.quiz-preview-section:not(#mobile-preview-container .quiz-preview-section)');
         desktopPreviews.forEach(preview => {
-            preview.style.display = 'none';
+            preview.classList.add('hidden');
         });
 
         // Store original body styles to restore later
@@ -762,7 +762,9 @@ export class PreviewManager {
         if (this.hiddenElements) {
             this.hiddenElements.forEach(hiddenElement => {
                 if (hiddenElement && hiddenElement.element) {
-                    hiddenElement.element.style.display = hiddenElement.originalDisplay;
+                    if (!hiddenElement.hadHiddenClass) {
+                        hiddenElement.element.classList.remove('hidden');
+                    }
                     logger.debug('Restored element:', hiddenElement.element.className || hiddenElement.element.tagName);
                 }
             });

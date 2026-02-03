@@ -564,7 +564,7 @@ export class QuizManager {
     async showFlatListView(modal) {
         // Cache quiz list element for better performance (validate it's still in DOM)
         if (!this.cachedQuizListElement || !document.contains(this.cachedQuizListElement)) {
-            this.cachedQuizListElement = document.getElementById('quiz-list');
+            this.cachedQuizListElement = dom.get('quiz-list');
         }
         const quizList = this.cachedQuizListElement;
 

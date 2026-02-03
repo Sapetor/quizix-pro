@@ -14,7 +14,7 @@ import { logger, COLORS, TIMING } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
 import { SwipeToDelete } from './swipe-to-delete.js';
-import { bindElement } from './dom.js';
+import { bindElement, dom } from './dom.js';
 import {
     openModal,
     closeModal,
@@ -142,7 +142,7 @@ export class ResultsViewer {
         bindElement('download-result-csv', 'click', () => this.downloadCurrentResult());
         bindElement('delete-result', 'click', () => this.deleteCurrentResult());
 
-        const formatSelect = document.getElementById('export-format-select');
+        const formatSelect = dom.get('export-format-select');
         if (formatSelect) {
             formatSelect.addEventListener('change', (e) => {
                 resultsExporter.setExportFormat(e.target.value);
@@ -244,21 +244,21 @@ export class ResultsViewer {
     // ========================================
 
     showLoading() {
-        const loadingEl = document.getElementById('results-loading');
+        const loadingEl = dom.get('results-loading');
         if (loadingEl) {
             loadingEl.style.display = 'flex';
         }
     }
 
     hideLoading() {
-        const loadingEl = document.getElementById('results-loading');
+        const loadingEl = dom.get('results-loading');
         if (loadingEl) {
             loadingEl.style.display = 'none';
         }
     }
 
     showError(message) {
-        const resultsList = document.getElementById('results-list');
+        const resultsList = dom.get('results-list');
         if (resultsList) {
             resultsList.innerHTML = `
                 <div class="empty-results empty-state">
@@ -289,7 +289,7 @@ export class ResultsViewer {
     }
 
     updateStatElement(id, value) {
-        const el = document.getElementById(id);
+        const el = dom.get(id);
         if (el) {
             el.textContent = value;
         }
@@ -303,15 +303,15 @@ export class ResultsViewer {
         const allResults = Array.from(resultsManagerService.resultsCache.values());
         if (!allResults.length) return;
 
-        const searchTerm = document.getElementById('search-results')?.value.toLowerCase() || '';
-        const sortBy = document.getElementById('sort-results')?.value || 'date-desc';
+        const searchTerm = dom.get('search-results')?.value.toLowerCase() || '';
+        const sortBy = dom.get('sort-results')?.value || 'date-desc';
 
         this.filteredResults = resultsManagerService.filterResults(allResults, searchTerm, sortBy);
         this.renderResults();
     }
 
     renderResults() {
-        const resultsList = document.getElementById('results-list');
+        const resultsList = dom.get('results-list');
         if (!resultsList) return;
 
         resultsList.innerHTML = renderResultsList(
@@ -374,7 +374,7 @@ export class ResultsViewer {
     }
 
     initSwipeToDelete() {
-        const resultsList = document.getElementById('results-list');
+        const resultsList = dom.get('results-list');
         if (resultsList) {
             this.swipeToDelete.init(resultsList, '.result-item');
         }
@@ -401,14 +401,14 @@ export class ResultsViewer {
         const untitledQuiz = translationManager.getTranslationSync('untitled_quiz') || 'Untitled Quiz';
         const unknown = translationManager.getTranslationSync('unknown') || 'Unknown';
 
-        document.getElementById('result-detail-title').textContent = `${fullResult.quizTitle || untitledQuiz} - Results`;
-        document.getElementById('detail-quiz-title').textContent = fullResult.quizTitle || untitledQuiz;
-        document.getElementById('detail-game-pin').textContent = fullResult.gamePin || unknown;
-        document.getElementById('detail-date').textContent = formatDate(fullResult.saved);
-        document.getElementById('detail-participants').textContent = fullResult.results?.length || 0;
-        document.getElementById('detail-avg-score').textContent = `${calculateAverageScore(fullResult)}%`;
+        dom.get('result-detail-title').textContent = `${fullResult.quizTitle || untitledQuiz} - Results`;
+        dom.get('detail-quiz-title').textContent = fullResult.quizTitle || untitledQuiz;
+        dom.get('detail-game-pin').textContent = fullResult.gamePin || unknown;
+        dom.get('detail-date').textContent = formatDate(fullResult.saved);
+        dom.get('detail-participants').textContent = fullResult.results?.length || 0;
+        dom.get('detail-avg-score').textContent = `${calculateAverageScore(fullResult)}%`;
 
-        const participantResults = document.getElementById('participant-results');
+        const participantResults = dom.get('participant-results');
         if (!participantResults) return;
 
         participantResults.innerHTML = renderParticipantsList(
@@ -787,7 +787,7 @@ export class ResultsViewer {
      * @param {Array} quizzesWithSessions - Array of quizzes that have multiple sessions
      */
     displayComparisonSelectorModal(quizzesWithSessions) {
-        const existingModal = document.getElementById('comparison-selector-modal');
+        const existingModal = dom.get('comparison-selector-modal');
         if (existingModal) {
             existingModal.remove();
         }
@@ -848,7 +848,7 @@ export class ResultsViewer {
         const quiz = quizzesWithSessions.find(q => q.title === quizTitle);
         if (!quiz) return;
 
-        const existingModal = document.getElementById('session-selector-modal');
+        const existingModal = dom.get('session-selector-modal');
         if (existingModal) {
             existingModal.remove();
         }
@@ -973,7 +973,7 @@ export class ResultsViewer {
      * @param {Object} comparisonData - Calculated comparison metrics
      */
     displayComparisonResults(quizTitle, comparisonData) {
-        const existingModal = document.getElementById('comparison-results-modal');
+        const existingModal = dom.get('comparison-results-modal');
         if (existingModal) {
             existingModal.remove();
         }

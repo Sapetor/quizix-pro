@@ -44,6 +44,62 @@ body {
     display: flex !important;
 }
 
+.visible-inline {
+    display: inline-block !important;
+}
+
+.invisible {
+    visibility: hidden !important;
+}
+
+/* Opacity utilities */
+.opacity-0 {
+    opacity: 0 !important;
+}
+
+.opacity-50 {
+    opacity: 0.5 !important;
+}
+
+.opacity-100 {
+    opacity: 1 !important;
+}
+
+/* Overflow utilities */
+.overflow-hidden {
+    overflow: hidden !important;
+}
+
+.overflow-auto {
+    overflow: auto !important;
+}
+
+/* Pointer event utilities */
+.pointer-events-none {
+    pointer-events: none !important;
+}
+
+.pointer-events-auto {
+    pointer-events: auto !important;
+}
+
+/* Cursor utilities */
+.cursor-pointer {
+    cursor: pointer !important;
+}
+
+.cursor-default {
+    cursor: default !important;
+}
+
+.cursor-grab {
+    cursor: grab !important;
+}
+
+.cursor-col-resize {
+    cursor: col-resize !important;
+}
+
 /* Correct answer highlighting for player side */
 .correct-answer-highlight {
     border: 3px solid var(--success-green) !important;

@@ -10,7 +10,7 @@ import { uiStateManager } from '../utils/ui-state-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { initializeAutoHideToolbar, disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
 import { updateMobileReturnButtonVisibility } from '../utils/globals.js';
-import { escapeHtml } from '../utils/dom.js';
+import { escapeHtml, dom } from '../utils/dom.js';
 
 export class UIManager {
     constructor() {
@@ -52,7 +52,7 @@ export class UIManager {
     showScreen(screenId) {
         logger.debug('Switching to screen:', screenId);
 
-        const targetScreen = document.getElementById(screenId);
+        const targetScreen = dom.get(screenId);
         if (!targetScreen) {
             logger.error('Screen not found:', screenId);
             const availableScreens = Array.from(document.querySelectorAll('.screen')).map(s => s.id);
@@ -79,17 +79,17 @@ export class UIManager {
         updateMobileReturnButtonVisibility(screenId);
 
         // Show/hide header elements based on screen
-        const headerStartBtn = document.getElementById('start-hosting-header-small');
-        const horizontalToolbar = document.getElementById('horizontal-toolbar');
+        const headerStartBtn = dom.get('start-hosting-header-small');
+        const horizontalToolbar = dom.get('horizontal-toolbar');
         const header = document.querySelector('header');
-        const mobileQuizFab = document.getElementById('mobile-quiz-fab');
+        const mobileQuizFab = dom.get('mobile-quiz-fab');
 
         if (screenId === 'game-lobby') {
                 // Hide editing toolbar on lobby screen, but enable header auto-hide
-                if (headerStartBtn) headerStartBtn.style.display = 'none';
-                if (horizontalToolbar) horizontalToolbar.style.display = 'none';
+                if (headerStartBtn) headerStartBtn.classList.add('hidden');
+                if (horizontalToolbar) horizontalToolbar.classList.add('hidden');
                 // Hide mobile FAB on lobby screen
-                if (mobileQuizFab) mobileQuizFab.style.display = 'none';
+                if (mobileQuizFab) mobileQuizFab.classList.add('hidden');
 
                 // Initialize auto-hide functionality for HEADER on lobby screen
                 setTimeout(() => {
@@ -99,10 +99,10 @@ export class UIManager {
                 }, 100); // Small delay to ensure DOM is ready
             } else {
                 // Hide toolbar and start button for other screens
-                if (headerStartBtn) headerStartBtn.style.display = 'none';
-                if (horizontalToolbar) horizontalToolbar.style.display = 'none';
+                if (headerStartBtn) headerStartBtn.classList.add('hidden');
+                if (horizontalToolbar) horizontalToolbar.classList.add('hidden');
                 // Hide mobile FAB on all other screens
-                if (mobileQuizFab) mobileQuizFab.style.display = 'none';
+                if (mobileQuizFab) mobileQuizFab.classList.add('hidden');
 
                 // Disable auto-hide when leaving lobby/host screens
                 if (isAutoHideToolbarActive()) {
@@ -134,7 +134,7 @@ export class UIManager {
                     }
                     // Force retranslation of main menu to ensure Quick Start Guide is translated
                     setTimeout(() => {
-                        const mainMenuScreen = document.getElementById('main-menu');
+                        const mainMenuScreen = dom.get('main-menu');
                         if (mainMenuScreen) {
                             translationManager.translateContainer(mainMenuScreen);
                             logger.debug('🔄 Force translated main menu screen');
@@ -205,7 +205,7 @@ export class UIManager {
      * Initialize quiz editor with first question if empty
      */
     initializeQuizEditor() {
-        const questionsContainer = document.getElementById('questions-container');
+        const questionsContainer = dom.get('questions-container');
         if (questionsContainer && questionsContainer.children.length === 0) {
             // Add first question only if container is empty
             const addQuestion = this._getAddQuestion();
@@ -236,9 +236,9 @@ export class UIManager {
             return;
         }
 
-        const hostContainer = document.getElementById('host-container');
-        const previewSection = document.getElementById('quiz-preview-section');
-        const resizeHandle = document.getElementById('split-resize-handle');
+        const hostContainer = dom.get('host-container');
+        const previewSection = dom.get('quiz-preview-section');
+        const resizeHandle = dom.get('split-resize-handle');
 
         if (!hostContainer || !previewSection) {
             logger.warn('Host container or preview section not found');
@@ -249,9 +249,11 @@ export class UIManager {
         hostContainer.classList.add('always-preview');
 
         // Show the preview section and resize handle
-        previewSection.style.display = 'flex';
+        previewSection.classList.remove('hidden');
+        previewSection.classList.add('visible-flex');
         if (resizeHandle) {
-            resizeHandle.style.display = 'flex';
+            resizeHandle.classList.remove('hidden');
+            resizeHandle.classList.add('visible-flex');
         }
 
         // Initialize the preview manager if available
@@ -295,7 +297,7 @@ export class UIManager {
         translationManager.translateContainer(targetScreen);
 
         // Also translate toolbar and header
-        const horizontalToolbar = document.getElementById('horizontal-toolbar');
+        const horizontalToolbar = dom.get('horizontal-toolbar');
         const header = document.querySelector('header');
         if (horizontalToolbar) {
             translationManager.translateContainer(horizontalToolbar);
@@ -330,19 +332,21 @@ export class UIManager {
             return;
         }
 
-        const hostContainer = document.getElementById('host-container');
-        const previewSection = document.getElementById('quiz-preview-section');
-        const resizeHandle = document.getElementById('split-resize-handle');
+        const hostContainer = dom.get('host-container');
+        const previewSection = dom.get('quiz-preview-section');
+        const resizeHandle = dom.get('split-resize-handle');
 
         // Set up split layout BEFORE screen is visible
         if (hostContainer) {
             hostContainer.classList.add('always-preview');
         }
         if (previewSection) {
-            previewSection.style.display = 'flex';
+            previewSection.classList.remove('hidden');
+            previewSection.classList.add('visible-flex');
         }
         if (resizeHandle) {
-            resizeHandle.style.display = 'flex';
+            resizeHandle.classList.remove('hidden');
+            resizeHandle.classList.add('visible-flex');
         }
 
         logger.debug('Host screen layout prepared');
@@ -353,9 +357,9 @@ export class UIManager {
      * Non-critical tasks that don't affect the initial visual appearance
      */
     postHostScreenSetup() {
-        const headerStartBtn = document.getElementById('start-hosting-header-small');
-        const horizontalToolbar = document.getElementById('horizontal-toolbar');
-        const mobileQuizFab = document.getElementById('mobile-quiz-fab');
+        const headerStartBtn = dom.get('start-hosting-header-small');
+        const horizontalToolbar = dom.get('horizontal-toolbar');
+        const mobileQuizFab = dom.get('mobile-quiz-fab');
         const header = document.querySelector('header');
 
         // Restore header visibility (may be hidden from player-game-screen)
@@ -370,9 +374,15 @@ export class UIManager {
         }
 
         // Show toolbar elements
-        if (headerStartBtn) headerStartBtn.style.display = 'block';
-        if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
-        if (mobileQuizFab) mobileQuizFab.style.display = 'flex';
+        if (headerStartBtn) headerStartBtn.classList.remove('hidden');
+        if (horizontalToolbar) {
+            horizontalToolbar.classList.remove('hidden');
+            horizontalToolbar.classList.add('visible-flex');
+        }
+        if (mobileQuizFab) {
+            mobileQuizFab.classList.remove('hidden');
+            mobileQuizFab.classList.add('visible-flex');
+        }
 
         // Remove any transition classes
         const container = document.querySelector('.container');
@@ -403,7 +413,7 @@ export class UIManager {
     }
 
     updateGamePin(gamePin) {
-        const pinElement = document.getElementById('game-pin');
+        const pinElement = dom.get('game-pin');
         if (pinElement && gamePin) {
             const pinDigitsElement = pinElement.querySelector('.pin-digits');
             if (pinDigitsElement) {
@@ -416,7 +426,7 @@ export class UIManager {
     }
 
     updateQuizTitle(title) {
-        const titleElement = document.getElementById('lobby-quiz-title');
+        const titleElement = dom.get('lobby-quiz-title');
         logger.debug('updateQuizTitle called with:', title);
         logger.debug('Title element found:', !!titleElement);
         if (titleElement && title) {
@@ -435,15 +445,15 @@ export class UIManager {
             const data = await APIHelper.fetchAPIJSON(`api/qr/${pin}`);
 
             if (data.qrCode) {
-                const qrImage = document.getElementById('qr-code-image');
+                const qrImage = dom.get('qr-code-image');
                 const qrLoading = document.querySelector('.qr-loading');
-                const gameUrl = document.getElementById('game-url');
+                const gameUrl = dom.get('game-url');
 
                 if (qrImage) {
                     qrImage.src = data.qrCode;
-                    qrImage.style.display = 'block';
+                    qrImage.classList.remove('hidden');
                 }
-                if (qrLoading) qrLoading.style.display = 'none';
+                if (qrLoading) qrLoading.classList.add('hidden');
                 if (gameUrl) gameUrl.textContent = data.gameUrl;
             }
         } catch (error) {
@@ -462,7 +472,7 @@ export class UIManager {
     }
 
     async refreshActiveGames() {
-        const gamesContainer = document.getElementById('games-list');
+        const gamesContainer = dom.get('games-list');
         if (!gamesContainer) return;
 
         gamesContainer.innerHTML = `<div class="loading-games">${translationManager.getTranslationSync('loading_games')}</div>`;
@@ -539,7 +549,7 @@ export class UIManager {
     }
 
     createGameCard(game) {
-        const gamesContainer = document.getElementById('games-list');
+        const gamesContainer = dom.get('games-list');
         const gameCard = document.createElement('div');
         gameCard.className = 'game-card';
 
@@ -581,8 +591,8 @@ export class UIManager {
     }
 
     joinGameByPin(pin) {
-        const pinInput = document.getElementById('game-pin-input');
-        const nameInput = document.getElementById('player-name');
+        const pinInput = dom.get('game-pin-input');
+        const nameInput = dom.get('player-name');
 
         if (pinInput) {
             pinInput.value = pin;

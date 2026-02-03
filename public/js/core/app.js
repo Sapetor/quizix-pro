@@ -20,7 +20,7 @@ import { connectionStatus } from '../utils/connection-status.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
-import { bindElement } from '../utils/dom.js';
+import { bindElement, dom } from '../utils/dom.js';
 import { getJSON, setJSON } from '../utils/storage-utils.js';
 import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
@@ -92,6 +92,9 @@ export class QuizGame {
 
         // Make preview manager globally accessible for onclick handlers
         window.game = this;
+        
+        // Expose QuizManager globally for inline onclick handlers
+        window.QM = this.quizManager;
 
         // Register managers with GameContext for dependency injection
         gameContext.register('settingsManager', this.settingsManager);
@@ -269,7 +272,7 @@ export class QuizGame {
      */
     initializeImageDragDrop() {
         // Use event delegation on the host container
-        const hostContainer = document.getElementById('host-container');
+        const hostContainer = dom.get('host-container');
         if (!hostContainer) return;
 
         // Prevent default drag behaviors on document
@@ -343,7 +346,7 @@ export class QuizGame {
         bindElement('host-btn', 'click', () => {
             this.uiManager.showScreen('host-screen');
             // Show horizontal toolbar when entering host mode
-            const horizontalToolbar = document.getElementById('horizontal-toolbar');
+            const horizontalToolbar = dom.get('horizontal-toolbar');
             if (horizontalToolbar) {
                 horizontalToolbar.style.display = 'flex';
             }
@@ -354,7 +357,7 @@ export class QuizGame {
         bindElement('host-btn-mobile', 'click', () => {
             this.uiManager.showScreen('host-screen');
             // Show horizontal toolbar when entering host mode
-            const horizontalToolbar = document.getElementById('horizontal-toolbar');
+            const horizontalToolbar = dom.get('horizontal-toolbar');
             if (horizontalToolbar) {
                 horizontalToolbar.style.display = 'flex';
             }
@@ -370,7 +373,7 @@ export class QuizGame {
         bindElement('cancel-name-btn', 'click', () => this.socketManager.hideNameEditMode());
 
         // Handle keyboard shortcuts in name edit input
-        const editNameInput = document.getElementById('edit-name-input');
+        const editNameInput = dom.get('edit-name-input');
         if (editNameInput) {
             editNameInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
@@ -546,7 +549,7 @@ export class QuizGame {
 
         // Wait for the DOM to update, then navigate to the new question
         setTimeout(() => {
-            const hostContainer = document.getElementById('host-container');
+            const hostContainer = dom.get('host-container');
             const isAlwaysPreview = hostContainer?.classList.contains('always-preview');
 
             if (isAlwaysPreview) {
@@ -596,7 +599,7 @@ export class QuizGame {
         }, TIMING.LEADERBOARD_DISPLAY_TIME);
 
         logger.info('startHosting called');
-        const title = document.getElementById('quiz-title')?.value?.trim();
+        const title = dom.get('quiz-title')?.value?.trim();
         logger.debug('Quiz title from input field:', title);
         if (!title) {
             showErrorAlert('please_enter_quiz_title');
@@ -612,23 +615,23 @@ export class QuizGame {
 
 
         // Get quiz settings
-        const randomizeQuestions = document.getElementById('randomize-questions')?.checked;
-        const shouldRandomizeAnswers = document.getElementById('randomize-answers')?.checked;
-        const sameTimeForAll = document.getElementById('same-time-all')?.checked;
-        const questionTime = parseInt(document.getElementById('default-time')?.value) || 30;
-        const manualAdvancement = document.getElementById('manual-advancement')?.checked;
-        const powerUpsEnabled = document.getElementById('enable-power-ups')?.checked || false;
+        const randomizeQuestions = dom.get('randomize-questions')?.checked;
+        const shouldRandomizeAnswers = dom.get('randomize-answers')?.checked;
+        const sameTimeForAll = dom.get('same-time-all')?.checked;
+        const questionTime = parseInt(dom.get('default-time')?.value) || 30;
+        const manualAdvancement = dom.get('manual-advancement')?.checked;
+        const powerUpsEnabled = dom.get('enable-power-ups')?.checked || false;
 
         // Get scoring configuration (per-game session, not saved to quiz file)
         // timeBonusThreshold: convert seconds to milliseconds (0 = disabled)
-        const thresholdSeconds = parseInt(document.getElementById('time-bonus-threshold')?.value) || 0;
+        const thresholdSeconds = parseInt(dom.get('time-bonus-threshold')?.value) || 0;
         const scoringConfig = {
-            timeBonusEnabled: document.getElementById('time-bonus-enabled')?.checked ?? true,
+            timeBonusEnabled: dom.get('time-bonus-enabled')?.checked ?? true,
             timeBonusThreshold: thresholdSeconds * 1000, // Convert to milliseconds
             difficultyMultipliers: {
-                easy: parseFloat(document.getElementById('easy-multiplier')?.value) || 1,
-                medium: parseFloat(document.getElementById('medium-multiplier')?.value) || 2,
-                hard: parseFloat(document.getElementById('hard-multiplier')?.value) || 3
+                easy: parseFloat(dom.get('easy-multiplier')?.value) || 1,
+                medium: parseFloat(dom.get('medium-multiplier')?.value) || 2,
+                hard: parseFloat(dom.get('hard-multiplier')?.value) || 3
             }
         };
 
@@ -678,8 +681,8 @@ export class QuizGame {
      * Join a game
      */
     joinGame() {
-        const pin = document.getElementById('game-pin-input')?.value?.trim();
-        const name = document.getElementById('player-name')?.value?.trim();
+        const pin = dom.get('game-pin-input')?.value?.trim();
+        const name = dom.get('player-name')?.value?.trim();
 
         if (!pin || !name) {
             showErrorAlert('please_enter_pin_and_name');
@@ -708,7 +711,7 @@ export class QuizGame {
      * Submit player name change from lobby
      */
     submitNameChange() {
-        const input = document.getElementById('edit-name-input');
+        const input = dom.get('edit-name-input');
         if (!input) return;
 
         const newName = input.value.trim();
@@ -840,8 +843,8 @@ export class QuizGame {
             return;
         }
 
-        const modal = document.getElementById('preview-modal');
-        const previewContainer = document.getElementById('quiz-preview-container');
+        const modal = dom.get('preview-modal');
+        const previewContainer = dom.get('quiz-preview-container');
 
         if (!modal || !previewContainer) return;
 
@@ -904,7 +907,7 @@ export class QuizGame {
      * Hide quiz preview modal
      */
     hideQuizPreview() {
-        const modal = document.getElementById('preview-modal');
+        const modal = dom.get('preview-modal');
         if (modal) {
             closeModal(modal);
         }
@@ -1044,9 +1047,9 @@ export class QuizGame {
             logger.error('🐛 DEBUG: Error in loadLastQuiz:', error);
 
             // Show user-friendly error
-            const errorModal = document.getElementById('error-modal');
+            const errorModal = dom.get('error-modal');
             if (errorModal) {
-                const errorMessage = document.getElementById('error-message');
+                const errorMessage = dom.get('error-message');
                 if (errorMessage) {
                     errorMessage.textContent = `Debug function failed: ${error.message}. Please check the console for details.`;
                 }
@@ -1235,7 +1238,7 @@ export class QuizGame {
             .forEach(updateQuestionCounter);
 
         // Update player info if visible
-        const playerInfo = document.getElementById('player-info');
+        const playerInfo = dom.get('player-info');
         if (playerInfo && this.gameManager.playerName) {
             playerInfo.textContent = `${translationManager.getTranslationSync('welcome')}, ${this.gameManager.playerName}!`;
         }
@@ -1259,7 +1262,7 @@ export class QuizGame {
     toggleTheme() {
         logger.info('Fallback theme toggle called');
         const body = document.body;
-        const themeToggle = document.getElementById('theme-toggle');
+        const themeToggle = dom.get('theme-toggle');
 
         const currentTheme = body.getAttribute('data-theme') || 'light';
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -1356,7 +1359,7 @@ export class QuizGame {
      * Set default player name
      */
     setDefaultPlayerName() {
-        const playerNameInput = document.getElementById('player-name');
+        const playerNameInput = dom.get('player-name');
         if (playerNameInput && !playerNameInput.value) {
             // Generate a random player number between 1-999
             const playerNumber = Math.floor(Math.random() * LIMITS.MAX_PLAYER_NUMBER) + 1;

@@ -4,6 +4,7 @@
  */
 
 import { logger } from '../core/config.js';
+import { dom } from './dom.js';
 
 // Mobile quiz sheet state management
 let mobileQuizSheetVisible = false;
@@ -19,9 +20,9 @@ function showMobileQuizSheet() {
         return;
     }
 
-    const overlay = document.getElementById('mobile-quiz-sheet-overlay');
-    const sheet = document.getElementById('mobile-quiz-sheet');
-    const fab = document.getElementById('mobile-quiz-fab');
+    const overlay = dom.get('mobile-quiz-sheet-overlay');
+    const sheet = dom.get('mobile-quiz-sheet');
+    const fab = dom.get('mobile-quiz-fab');
 
     if (!overlay || !sheet) {
         logger.warn('Mobile quiz sheet elements not found');
@@ -68,9 +69,9 @@ function showMobileQuizSheet() {
  * Hide the mobile quiz actions bottom sheet
  */
 function hideMobileQuizSheet() {
-    const overlay = document.getElementById('mobile-quiz-sheet-overlay');
-    const sheet = document.getElementById('mobile-quiz-sheet');
-    const fab = document.getElementById('mobile-quiz-fab');
+    const overlay = dom.get('mobile-quiz-sheet-overlay');
+    const sheet = dom.get('mobile-quiz-sheet');
+    const fab = dom.get('mobile-quiz-fab');
 
     if (!overlay || !sheet) return;
 
@@ -134,9 +135,9 @@ function handleMobileLoadQuiz() {
         // Use existing load quiz functionality
         if (typeof showLoadQuizModal === 'function') {
             showLoadQuizModal();
-        } else if (document.getElementById('toolbar-load')) {
+        } else if (dom.get('toolbar-load')) {
             // Trigger the existing load button click
-            document.getElementById('toolbar-load').click();
+            dom.get('toolbar-load').click();
         } else {
             logger.warn('Load quiz functionality not available');
         }
@@ -153,9 +154,9 @@ function handleMobileSaveQuiz() {
     // Use existing save quiz functionality
     if (typeof saveQuiz === 'function') {
         saveQuiz();
-    } else if (document.getElementById('toolbar-save')) {
+    } else if (dom.get('toolbar-save')) {
         // Trigger the existing save button click
-        document.getElementById('toolbar-save').click();
+        dom.get('toolbar-save').click();
     } else {
         logger.warn('Save quiz functionality not available');
     }
@@ -176,7 +177,7 @@ function handleMobileStartGame() {
     }
 
     // Check if quiz has a title
-    const quizTitle = document.getElementById('quiz-title');
+    const quizTitle = dom.get('quiz-title');
     if (quizTitle && !quizTitle.value.trim()) {
         if (!confirm(translationManager.getTranslationSync('confirm_start_without_title') || 'Your quiz doesn\'t have a title. Start anyway?')) {
             return;
@@ -186,9 +187,9 @@ function handleMobileStartGame() {
     // Use existing start game functionality
     if (typeof startHosting === 'function') {
         startHosting();
-    } else if (document.getElementById('start-hosting-header-small')) {
+    } else if (dom.get('start-hosting-header-small')) {
         // Trigger the existing start game button
-        document.getElementById('start-hosting-header-small').click();
+        dom.get('start-hosting-header-small').click();
     } else {
         // Look for any start game button
         const startButton = document.querySelector('[data-translate="create_lobby"], [onclick*="startHosting"], .start-game-header');
@@ -210,8 +211,8 @@ function handleMobilePreview() {
     // Use existing preview functionality
     if (typeof togglePreviewMode === 'function') {
         togglePreviewMode();
-    } else if (document.getElementById('toolbar-preview')) {
-        document.getElementById('toolbar-preview').click();
+    } else if (dom.get('toolbar-preview')) {
+        dom.get('toolbar-preview').click();
     } else {
         logger.warn('Preview functionality not available');
     }
@@ -225,8 +226,8 @@ function handleMobileAI() {
     hideMobileQuizSheet();
 
     // Use existing AI generator functionality
-    if (document.getElementById('toolbar-ai-gen')) {
-        document.getElementById('toolbar-ai-gen').click();
+    if (dom.get('toolbar-ai-gen')) {
+        dom.get('toolbar-ai-gen').click();
     } else {
         logger.warn('AI generator not available');
     }
@@ -240,10 +241,10 @@ function handleMobileImport() {
     hideMobileQuizSheet();
 
     // Use existing import functionality
-    if (document.getElementById('toolbar-import')) {
-        document.getElementById('toolbar-import').click();
-    } else if (document.getElementById('import-file-input')) {
-        document.getElementById('import-file-input').click();
+    if (dom.get('toolbar-import')) {
+        dom.get('toolbar-import').click();
+    } else if (dom.get('import-file-input')) {
+        dom.get('import-file-input').click();
     } else {
         logger.warn('Import functionality not available');
     }
@@ -257,8 +258,8 @@ function handleMobileExport() {
     hideMobileQuizSheet();
 
     // Use existing export functionality
-    if (document.getElementById('toolbar-export')) {
-        document.getElementById('toolbar-export').click();
+    if (dom.get('toolbar-export')) {
+        dom.get('toolbar-export').click();
     } else {
         logger.warn('Export functionality not available');
     }
@@ -272,8 +273,8 @@ function handleMobileResults() {
     hideMobileQuizSheet();
 
     // Use existing results functionality
-    if (document.getElementById('toolbar-results')) {
-        document.getElementById('toolbar-results').click();
+    if (dom.get('toolbar-results')) {
+        dom.get('toolbar-results').click();
     } else {
         logger.warn('Results functionality not available');
     }
@@ -298,7 +299,7 @@ function scrollToBottom() {
  */
 function initializeMobileQuizControls() {
     // Add event listeners for swipe to close on the sheet
-    const sheet = document.getElementById('mobile-quiz-sheet');
+    const sheet = dom.get('mobile-quiz-sheet');
     if (sheet) {
         let startY = 0;
         let currentY = 0;
