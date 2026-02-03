@@ -281,6 +281,71 @@ export const MOBILE_CONFIG = {
 - **Remote Management**: Manage mobile servers from web interface
 - **Scalability**: Automatic failover to cloud when mobile limits reached
 
+## 🎓 Engineering Education Features (Future Ideas)
+
+These innovative features are designed specifically for engineering faculty students, focusing on deeper conceptual understanding rather than rote memorization.
+
+### 1. Concept Dependency Heatmap ⭐ HIGH PRIORITY
+**Status**: ✅ IMPLEMENTED (January 2026)
+
+Visual analytics showing students their knowledge gaps and concept dependencies:
+- After quizzes, display a graph showing topic relationships
+- Highlight weak areas and their prerequisite concepts
+- Example: "You struggle with thermodynamics entropy questions because your probability fundamentals are weak"
+- Actionable insights, not just scores
+- Heat map visualization of mastery levels across topic trees
+
+**Implementation Details:**
+- Concept tags on questions (max 5 per question, AI-generated or manual)
+- "Concepts" tab in analytics modal with horizontal bar chart
+- Color-coded mastery levels (green >80%, yellow 60-79%, orange 40-59%, red <40%)
+- Toggleable "Study Suggestions" with focus areas and strong areas
+- Player-facing concept mastery display at game end
+
+### 2. "Find the Bug" Mode
+Present worked solutions with deliberate errors for students to identify:
+- Sign flips, unit mismatches, wrong formula applications
+- Students must identify *where* and *why* the solution fails
+- Mirrors real engineering peer review processes
+- Teaches critical analysis skills—catching mistakes is harder than solving from scratch
+
+### 3. Order-of-Magnitude Estimation (Fermi Problems)
+Engineering judgment training through estimation challenges:
+- "Estimate the power consumption of this building" with partial data
+- No calculator allowed—pure reasoning and intuition
+- Develop practical engineering sense for sanity-checking results
+- Valuable skill rarely tested in traditional education
+
+### 4. Parameter Sensitivity Questions
+Test intuition about mathematical relationships:
+- "If we double the beam thickness, what happens to deflection?"
+- Focus on understanding *why* formulas work, not calculation
+- Options: linear, quadratic, inverse, no effect, etc.
+- Builds engineering intuition that outperforms memorization
+
+### 5. Collaborative Debugging Sessions
+Real-time group problem-solving mode:
+- Multiple students see the same problem simultaneously
+- Chat/voting system to collectively identify issues
+- Simulates design review meetings in industry
+- Teaches communication and collaborative problem-solving
+
+### 6. "Explain Your Reasoning" with AI Feedback
+Natural language explanation assessment:
+- Student writes 2-3 sentences explaining their answer
+- AI evaluates conceptual accuracy of the explanation
+- Exposes memorization vs. genuine understanding
+- Provides feedback on reasoning quality, not just correctness
+
+### 7. Industry Case Study Mode
+Real-world engineering failure analysis:
+- Partner with companies to submit sanitized problems
+- "Our pump system failed—what went wrong?"
+- Students engage with authentic engineering scenarios
+- Bridges gap between academic learning and professional practice
+
+---
+
 ## 🎯 Success Metrics
 
 ### Performance Targets

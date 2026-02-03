@@ -140,7 +140,7 @@ describe('PlayerManagementService - Validation', () => {
         const mockGame = {
             players: new Map(),
             gameState: 'lobby',
-            addPlayer: () => {}
+            addPlayer: () => ({ success: true })
         };
 
         // Should reject script tags - use handlePlayerJoin
@@ -157,7 +157,7 @@ describe('PlayerManagementService - Validation', () => {
             players: new Map(),
             gameState: 'lobby',
             pin: 'PIN123',
-            addPlayer: () => {}
+            addPlayer: () => ({ success: true })
         };
         const mockSocket = { join: () => {}, emit: () => {} };
         const mockIo = { to: () => ({ emit: () => {} }) };

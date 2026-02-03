@@ -2419,10 +2419,10 @@ button:disabled:focus-visible {
     border-color: currentColor;
 }
 
-/* Question meta section - horizontal layout for type and difficulty */
+/* Question meta section - horizontal layout for type, difficulty, concepts, time */
 .question-meta {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: 1fr 1fr minmax(180px, 1.5fr) auto;
     gap: 16px;
     align-items: end;
     margin-bottom: 20px;
@@ -2466,6 +2466,120 @@ button:disabled:focus-visible {
     padding: 4px 8px !important;
     font-size: 13px !important;
     text-align: center;
+}
+
+/* Concept Tags Input */
+.concept-tags-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 180px;
+}
+
+.concept-tags-container > label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.concept-tags-input {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    min-height: 36px;
+    padding: 6px 10px;
+    background: var(--glass-medium);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    transition: border-color 0.2s ease;
+}
+
+.concept-tags-input:focus-within {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.concept-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.concept-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: var(--color-primary-500);
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 12px;
+    animation: tagAppear 0.2s ease-out;
+}
+
+@keyframes tagAppear {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.concept-tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    margin-left: 2px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.concept-tag-remove:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.concept-input {
+    flex: 1;
+    min-width: 80px;
+    max-width: 150px;
+    padding: 2px 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 12px;
+    outline: none;
+}
+
+.concept-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.concept-hint {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+/* Light mode concept tag styling */
+[data-theme="light"] .concept-tag {
+    background: var(--color-primary-600);
+}
+
+[data-theme="light"] .concept-input {
+    color: var(--text-primary);
 }
 
 /* Question content section - larger and more prominent */
@@ -5909,3 +6023,711 @@ html {
 }
 
 /* === END SCORING SETTINGS SYSTEM === */
+
+/* === CONSENSUS MODE SYSTEM === */
+
+/* --- Proposal Distribution Bars (Player View) --- */
+#player-consensus-view,
+#host-consensus-view {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+#proposal-distribution {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 16px 0;
+}
+
+.proposal-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--glass-light, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius, 8px);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.proposal-bar:hover {
+    background: var(--glass-medium, rgba(255, 255, 255, 0.1));
+    border-color: var(--color-primary-500, #3b82f6);
+}
+
+.proposal-bar.my-proposal {
+    border-color: var(--color-primary-500, #3b82f6);
+    background: rgba(59, 130, 246, 0.15);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.proposal-option-label {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-primary-400, #60a5fa);
+    min-width: 24px;
+    text-align: center;
+}
+
+.proposal-bar-container {
+    flex: 1;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.proposal-bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary-500, #3b82f6), var(--color-primary-400, #60a5fa));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.proposal-bar-text {
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    color: var(--text-primary, #fff);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100% - 20px);
+    z-index: 1;
+}
+
+.proposal-count {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #9ca3af);
+    min-width: 24px;
+    text-align: right;
+}
+
+/* --- Consensus Progress Bar --- */
+.consensus-progress {
+    margin: 16px 0;
+    padding: 12px;
+    background: var(--glass-light, rgba(255, 255, 255, 0.05));
+    border-radius: var(--border-radius, 8px);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+}
+
+.consensus-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.consensus-progress-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #9ca3af);
+}
+
+.consensus-threshold-display,
+#host-consensus-threshold {
+    font-size: 0.8rem;
+    color: var(--text-muted, #6b7280);
+}
+
+#consensus-percent,
+#host-consensus-percent {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--color-primary-400, #60a5fa);
+}
+
+.consensus-bar-container {
+    height: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+#consensus-bar,
+#host-consensus-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary-600, #2563eb), var(--color-primary-400, #60a5fa));
+    border-radius: 6px;
+    transition: width 0.4s ease, background 0.3s ease;
+}
+
+#consensus-bar.threshold-met,
+#host-consensus-bar.threshold-met {
+    background: linear-gradient(90deg, var(--color-success-500, #22c55e), var(--color-success-400, #4ade80));
+}
+
+/* Threshold marker */
+.consensus-bar-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-warning-400, #fbbf24);
+    left: 66%; /* Default threshold - updated via JS if needed */
+}
+
+/* --- Quick Response Buttons --- */
+.quick-responses {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.quick-response-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--glass-light, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+    border-radius: 20px;
+    color: var(--text-primary, #fff);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quick-response-btn:hover {
+    background: var(--glass-medium, rgba(255, 255, 255, 0.1));
+    border-color: var(--color-primary-400, #60a5fa);
+    transform: translateY(-1px);
+}
+
+.quick-response-btn:active {
+    transform: translateY(0);
+}
+
+.quick-response-btn .icon {
+    font-size: 1rem;
+}
+
+/* --- Discussion Feed --- */
+#discussion-feed,
+#host-discussion-feed {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 12px;
+    background: var(--glass-light, rgba(255, 255, 255, 0.03));
+    border-radius: var(--border-radius, 8px);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+    margin: 12px 0;
+}
+
+.discussion-message {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    animation: messageSlideIn 0.3s ease;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.discussion-message:last-child {
+    margin-bottom: 0;
+}
+
+.quick-message {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 3px solid var(--color-primary-500, #3b82f6);
+}
+
+.chat-message {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid var(--glass-border, rgba(255, 255, 255, 0.2));
+}
+
+.message-player {
+    font-weight: 600;
+    color: var(--color-primary-400, #60a5fa);
+}
+
+.message-text {
+    color: var(--text-primary, #fff);
+}
+
+.quick-response-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-primary, #fff);
+    font-style: italic;
+}
+
+/* --- Chat Input --- */
+#chat-input-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+#chat-input {
+    flex: 1;
+    padding: 10px 14px;
+    background: var(--input-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius, 8px);
+    color: var(--text-primary, #fff);
+    font-size: 0.9rem;
+}
+
+#chat-input:focus {
+    outline: none;
+    border-color: var(--color-primary-500, #3b82f6);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+#send-chat-btn {
+    padding: 10px 16px;
+    background: var(--color-primary-500, #3b82f6);
+    border: none;
+    border-radius: var(--border-radius, 8px);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#send-chat-btn:hover {
+    background: var(--color-primary-600, #2563eb);
+}
+
+/* --- Host Proposal Grid --- */
+#host-proposal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.host-proposal-item {
+    padding: 14px;
+    background: var(--glass-light, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius, 8px);
+    transition: all 0.2s ease;
+}
+
+.host-proposal-item.leading {
+    border-color: var(--color-primary-500, #3b82f6);
+    background: rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.host-proposal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.host-proposal-option {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--color-primary-400, #60a5fa);
+}
+
+.host-proposal-count {
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 4px 10px;
+    background: var(--color-primary-500, #3b82f6);
+    color: white;
+    border-radius: 12px;
+}
+
+.host-proposal-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #9ca3af);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.host-proposal-players {
+    font-size: 0.8rem;
+    color: var(--text-muted, #6b7280);
+    font-style: italic;
+}
+
+/* --- Lock Consensus Button --- */
+#lock-consensus-btn {
+    width: 100%;
+    padding: 14px 24px;
+    margin-top: 16px;
+    background: linear-gradient(135deg, var(--color-success-500, #22c55e), var(--color-success-600, #16a34a));
+    border: none;
+    border-radius: var(--border-radius, 8px);
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#lock-consensus-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+#lock-consensus-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--glass-medium, rgba(255, 255, 255, 0.1));
+}
+
+/* --- Team Score Banner --- */
+.team-score-banner {
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(59, 130, 246, 0.15));
+    border: 2px solid var(--color-success-500, #22c55e);
+    border-radius: var(--border-radius-large, 16px);
+    animation: teamScorePulse 2s ease-in-out infinite;
+}
+
+@keyframes teamScorePulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 20px 0 rgba(34, 197, 94, 0.2);
+    }
+}
+
+.team-score-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.team-icon {
+    font-size: 2rem;
+}
+
+.team-label {
+    font-size: 1rem;
+    color: var(--text-secondary, #9ca3af);
+}
+
+.team-score-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--color-success-400, #4ade80), var(--color-primary-400, #60a5fa));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.team-points-label {
+    font-size: 1rem;
+    color: var(--text-secondary, #9ca3af);
+}
+
+/* --- Team Score Display (Player/Host inline) --- */
+.team-score-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--glass-light, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--color-success-500, #22c55e);
+    border-radius: 20px;
+    margin: 8px 0;
+}
+
+.team-score-display .team-icon {
+    font-size: 1.2rem;
+}
+
+#player-team-score,
+#host-team-score {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--color-success-400, #4ade80);
+}
+
+/* --- Player Concept Mastery (Final Screen) --- */
+#player-concept-mastery {
+    width: 100%;
+    max-width: 400px;
+    margin: 20px auto;
+    padding: 16px;
+    background: var(--glass-light, rgba(255, 255, 255, 0.05));
+    border-radius: var(--border-radius, 8px);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+}
+
+#player-concept-mastery h3 {
+    font-size: 1rem;
+    color: var(--text-secondary, #9ca3af);
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.concept-mastery-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.concept-mastery-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.concept-mastery-row .concept-name {
+    min-width: 100px;
+    font-size: 0.85rem;
+    color: var(--text-primary, #fff);
+    text-align: right;
+}
+
+.concept-mastery-row .concept-bar-container {
+    flex: 1;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.concept-mastery-row .concept-bar {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.5s ease;
+}
+
+.concept-mastery-row .concept-bar.mastery-excellent {
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+.concept-mastery-row .concept-bar.mastery-good {
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+.concept-mastery-row .concept-bar.mastery-fair {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.concept-mastery-row .concept-bar.mastery-needs-work {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.concept-mastery-row .concept-percent {
+    min-width: 40px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary, #9ca3af);
+    text-align: left;
+}
+
+/* --- Consensus Settings in Quiz Editor --- */
+.consensus-settings {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--glass-light, rgba(255, 255, 255, 0.03));
+    border-radius: var(--border-radius, 8px);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+}
+
+.consensus-settings .form-group {
+    margin-bottom: 12px;
+}
+
+.consensus-settings .form-group:last-child {
+    margin-bottom: 0;
+}
+
+.consensus-settings label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #9ca3af);
+}
+
+.consensus-settings select {
+    padding: 8px 12px;
+    background: var(--input-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-small, 6px);
+    color: var(--text-primary, #fff);
+    font-size: 0.9rem;
+}
+
+/* --- Light Theme Adjustments --- */
+[data-theme="light"] .proposal-bar {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .proposal-bar:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .proposal-bar.my-proposal {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+[data-theme="light"] .proposal-bar-container {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .proposal-bar-text {
+    color: #1f2937;
+}
+
+[data-theme="light"] .quick-response-btn {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #1f2937;
+}
+
+[data-theme="light"] .quick-response-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] #discussion-feed,
+[data-theme="light"] #host-discussion-feed {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .quick-message {
+    background: rgba(59, 130, 246, 0.08);
+}
+
+[data-theme="light"] .chat-message {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .message-text {
+    color: #1f2937;
+}
+
+[data-theme="light"] #chat-input {
+    background: white;
+    color: #1f2937;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .host-proposal-item {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .host-proposal-item.leading {
+    background: rgba(59, 130, 246, 0.08);
+}
+
+[data-theme="light"] .team-score-banner {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+}
+
+[data-theme="light"] .team-score-display {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] #player-concept-mastery {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .concept-mastery-row .concept-name {
+    color: #1f2937;
+}
+
+[data-theme="light"] .concept-mastery-row .concept-bar-container {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .consensus-settings {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .consensus-settings select {
+    background: white;
+    color: #1f2937;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* --- Mobile Responsive --- */
+@media (max-width: 768px) {
+    #player-consensus-view,
+    #host-consensus-view {
+        max-width: 100%;
+        padding: 0 8px;
+    }
+
+    .proposal-bar {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .proposal-bar-text {
+        font-size: 0.8rem;
+    }
+
+    .quick-responses {
+        justify-content: center;
+    }
+
+    .quick-response-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    #host-proposal-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .team-score-content {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .team-score-value {
+        font-size: 2rem;
+    }
+
+    #player-concept-mastery {
+        padding: 12px;
+    }
+
+    .concept-mastery-row .concept-name {
+        min-width: 80px;
+        font-size: 0.8rem;
+    }
+
+    .concept-mastery-row .concept-percent {
+        min-width: 36px;
+        font-size: 0.8rem;
+    }
+}
+
+/* === END CONSENSUS MODE SYSTEM === */

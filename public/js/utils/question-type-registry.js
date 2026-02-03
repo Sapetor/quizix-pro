@@ -11,15 +11,31 @@
  * - Question population into editor
  * - Validation rules
  * - Answer scoring logic
+ * - Rendering methods for host/player/preview contexts (NEW)
+ * - Answer extraction from player input (NEW)
  *
  * Benefits:
- * - Adding new question type: 8 hours → 1 hour
+ * - Adding new question type: 8 hours → 30 minutes
  * - Single place to update question logic
  * - Eliminates ~500 lines of duplicate code
  * - Consistent behavior across all contexts
  */
 
 import { logger } from '../core/config.js';
+
+/**
+ * Fisher-Yates shuffle algorithm for randomizing arrays
+ * @param {Array} array - Array to shuffle
+ * @returns {Array} New shuffled array
+ */
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
 
 /**
  * Question type definitions
@@ -50,9 +66,9 @@ const QUESTION_TYPES = {
         },
 
         /**
-     * Extract question data from quiz editor DOM
-     * Used by: QuizManager, PreviewManager
-     */
+         * Extract question data from quiz editor DOM
+         * Used by: QuizManager, PreviewManager
+         */
         extractData: (questionElement) => {
             const optionsContainer = questionElement.querySelector('.multiple-choice-options');
             if (!optionsContainer) {
@@ -91,9 +107,9 @@ const QUESTION_TYPES = {
         },
 
         /**
-     * Populate question into quiz editor DOM
-     * Used by: QuizManager when loading quiz
-     */
+         * Populate question into quiz editor DOM
+         * Used by: QuizManager when loading quiz
+         */
         populateQuestion: (questionElement, data) => {
             const optionsContainer = questionElement.querySelector('.multiple-choice-options');
             if (!optionsContainer) return;
@@ -122,9 +138,9 @@ const QUESTION_TYPES = {
         },
 
         /**
-     * Validate question data
-     * Used by: QuizManager, server.js
-     */
+         * Validate question data
+         * Used by: QuizManager, server.js
+         */
         validate: (data) => {
             if (!data.options || !Array.isArray(data.options)) {
                 return { valid: false, error: 'Options must be an array' };
@@ -142,11 +158,94 @@ const QUESTION_TYPES = {
         },
 
         /**
-     * Score player answer
-     * Used by: server.js Game class
-     */
+         * Score player answer
+         * Used by: server.js Game class
+         */
         scoreAnswer: (playerAnswer, correctAnswer) => {
             return playerAnswer === correctAnswer;
+        },
+
+        /**
+         * Render options for host display
+         * @param {Object} data - Question data with options array
+         * @param {HTMLElement} container - Container element to render into
+         * @param {Object} helpers - Helper functions { escapeHtml, formatCodeBlocks, translationManager, COLORS }
+         */
+        renderHostOptions: (data, container, helpers) => {
+            const { escapeHtml, formatCodeBlocks, translationManager } = helpers;
+            container.innerHTML = `
+                <div class="option-display" data-option="0"></div>
+                <div class="option-display" data-option="1"></div>
+                <div class="option-display" data-option="2"></div>
+                <div class="option-display" data-option="3"></div>
+            `;
+            container.style.display = 'grid';
+            const options = container.querySelectorAll('.option-display');
+
+            if (data.options) {
+                data.options.forEach((option, index) => {
+                    if (options[index]) {
+                        const optionText = option != null ? option : '';
+                        const safeOptionText = escapeHtml(optionText);
+                        options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
+                        options[index].classList.add('tex2jax_process');
+                        options[index].style.display = 'block';
+                    }
+                });
+                // Hide unused options
+                for (let i = data.options.length; i < 4; i++) {
+                    if (options[i]) options[i].style.display = 'none';
+                }
+            }
+        },
+
+        /**
+         * Render options for player interaction
+         * @param {Object} data - Question data with options array
+         * @param {HTMLElement} container - Container element to render into
+         * @param {Object} helpers - Helper functions
+         */
+        renderPlayerOptions: (data, container, helpers) => {
+            const { escapeHtml, formatCodeBlocks, translationManager } = helpers;
+            let existingButtons = container.querySelectorAll('.player-option');
+
+            // If no existing buttons found, create them dynamically (fixes mobile DOM issues)
+            if (existingButtons.length === 0 && data.options) {
+                container.innerHTML = '';
+                for (let i = 0; i < Math.max(data.options.length, 4); i++) {
+                    const button = document.createElement('button');
+                    button.className = 'player-option';
+                    button.setAttribute('data-option', i.toString());
+                    button.style.display = i < data.options.length ? 'block' : 'none';
+                    container.appendChild(button);
+                }
+                existingButtons = container.querySelectorAll('.player-option');
+            }
+
+            if (data.options) {
+                existingButtons.forEach((button, index) => {
+                    if (index < data.options.length) {
+                        const safeOption = escapeHtml(data.options[index] || '');
+                        button.innerHTML = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${formatCodeBlocks(safeOption)}`;
+                        button.setAttribute('data-answer', index.toString());
+                        button.classList.remove('selected', 'disabled');
+                        button.classList.add('tex2jax_process');
+                        button.style.display = 'block';
+                    } else {
+                        button.style.display = 'none';
+                    }
+                });
+            }
+        },
+
+        /**
+         * Extract player's answer from the container
+         * @param {HTMLElement} container - Container with player's selection
+         * @returns {number|null} Selected answer index or null
+         */
+        extractAnswer: (container) => {
+            const selected = container.querySelector('.player-option.selected');
+            return selected ? parseInt(selected.dataset.answer) : null;
         }
     },
 
@@ -270,6 +369,58 @@ const QUESTION_TYPES = {
             }
 
             return sortedPlayer.every((val, index) => val === sortedCorrect[index]);
+        },
+
+        renderHostOptions: (data, container, helpers) => {
+            const { escapeHtml, formatCodeBlocks, translationManager } = helpers;
+            container.innerHTML = `
+                <div class="option-display" data-option="0" data-multiple="true"></div>
+                <div class="option-display" data-option="1" data-multiple="true"></div>
+                <div class="option-display" data-option="2" data-multiple="true"></div>
+                <div class="option-display" data-option="3" data-multiple="true"></div>
+            `;
+            container.style.display = 'grid';
+            const options = container.querySelectorAll('.option-display');
+
+            if (data.options) {
+                data.options.forEach((option, index) => {
+                    if (options[index]) {
+                        const optionText = option != null ? option : '';
+                        const safeOptionText = escapeHtml(optionText);
+                        options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
+                        options[index].classList.add('tex2jax_process');
+                        options[index].style.display = 'block';
+                    }
+                });
+                for (let i = data.options.length; i < 4; i++) {
+                    if (options[i]) options[i].style.display = 'none';
+                }
+            }
+        },
+
+        renderPlayerOptions: (data, container, helpers) => {
+            const { escapeHtml, formatCodeBlocks, translationManager } = helpers;
+            const checkboxLabels = container.querySelectorAll('.checkbox-option');
+
+            checkboxLabels.forEach((label, index) => {
+                if (data.options && data.options[index]) {
+                    const safeOption = escapeHtml(data.options[index]);
+                    const formattedOption = formatCodeBlocks(safeOption);
+                    label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${translationManager.getOptionLetter(index)}: ${formattedOption}`;
+                    label.setAttribute('data-option', index);
+                    label.style.display = 'block';
+                } else {
+                    label.style.display = 'none';
+                }
+            });
+        },
+
+        extractAnswer: (container) => {
+            const selectedCheckboxes = container.querySelectorAll('.option-checkbox:checked');
+            return Array.from(selectedCheckboxes).map(cb => {
+                const parentLabel = cb.closest('.checkbox-option');
+                return parseInt(parentLabel.getAttribute('data-option'));
+            });
         }
     },
 
@@ -324,6 +475,35 @@ const QUESTION_TYPES = {
 
         scoreAnswer: (playerAnswer, correctAnswer) => {
             return playerAnswer === correctAnswer;
+        },
+
+        renderHostOptions: (data, container, helpers) => {
+            const { translationManager } = helpers;
+            // Use getTrueFalseText if available, otherwise fall back to sync method
+            const tfText = typeof translationManager.getTrueFalseText === 'function'
+                ? translationManager.getTrueFalseText()
+                : { true: translationManager.getTranslationSync?.('true') || 'True', false: translationManager.getTranslationSync?.('false') || 'False' };
+            container.innerHTML = `
+                <div class="true-false-options">
+                    <div class="tf-option true-btn" data-answer="true">${tfText.true}</div>
+                    <div class="tf-option false-btn" data-answer="false">${tfText.false}</div>
+                </div>
+            `;
+            container.style.display = 'block';
+        },
+
+        renderPlayerOptions: (data, container, helpers) => {
+            // True/false uses existing DOM structure, just reset states
+            const buttons = container.querySelectorAll('.tf-option');
+            buttons.forEach(button => {
+                button.classList.remove('selected', 'disabled');
+            });
+        },
+
+        extractAnswer: (container) => {
+            const selected = container.querySelector('.tf-option.selected');
+            if (!selected) return null;
+            return selected.dataset.answer === 'true';
         }
     },
 
@@ -401,6 +581,37 @@ const QUESTION_TYPES = {
 
             const diff = Math.abs(playerNum - correctNum);
             return diff <= tolerance;
+        },
+
+        renderHostOptions: (data, container, _helpers) => {
+            // Numeric questions have no host options to display
+            container.style.display = 'none';
+        },
+
+        renderPlayerOptions: (data, container, helpers) => {
+            const { translationManager } = helpers;
+            const input = container.querySelector('#numeric-answer-input');
+            const submitButton = container.querySelector('#submit-numeric');
+
+            if (input) {
+                input.value = '';
+                input.disabled = false;
+                const translation = translationManager.getTranslationSync
+                    ? translationManager.getTranslationSync('enter_numeric_answer')
+                    : 'Enter your answer';
+                input.placeholder = translation || 'Enter your answer';
+            }
+
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+        },
+
+        extractAnswer: (container) => {
+            const input = container.querySelector('#numeric-answer-input');
+            if (!input) return null;
+            const value = parseFloat(input.value);
+            return isNaN(value) ? null : value;
         }
     },
 
@@ -484,6 +695,97 @@ const QUESTION_TYPES = {
             }
 
             return playerOrder.every((val, index) => val === correctOrder[index]);
+        },
+
+        renderHostOptions: (data, container, helpers) => {
+            const { escapeHtml, formatCodeBlocks, COLORS } = helpers;
+            if (!data.options || data.options.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            // Shuffle indices for display
+            const shuffledIndices = shuffleArray(data.options.map((_, i) => i));
+            const itemColors = COLORS?.ORDERING_ITEM_COLORS || [
+                'rgba(59, 130, 246, 0.15)',
+                'rgba(16, 185, 129, 0.15)',
+                'rgba(245, 158, 11, 0.15)',
+                'rgba(239, 68, 68, 0.15)',
+                'rgba(139, 92, 246, 0.15)',
+                'rgba(236, 72, 153, 0.15)'
+            ];
+
+            let html = '<div class="ordering-display">';
+            shuffledIndices.forEach((originalIndex, displayIndex) => {
+                const option = data.options[originalIndex];
+                const safeOption = escapeHtml(option || '');
+                const bgColor = itemColors[originalIndex % itemColors.length];
+                html += `
+                    <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
+                        <div class="ordering-item-number">${displayIndex + 1}</div>
+                        <div class="ordering-item-content">${formatCodeBlocks(safeOption)}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+            container.style.display = 'block';
+        },
+
+        renderPlayerOptions: (data, container, helpers) => {
+            const { escapeHtml, formatCodeBlocks, translationManager, COLORS } = helpers;
+            if (!data.options || data.options.length === 0) {
+                return;
+            }
+
+            const shuffledIndices = shuffleArray(data.options.map((_, i) => i));
+            const itemColors = COLORS?.ORDERING_ITEM_COLORS || [
+                'rgba(59, 130, 246, 0.15)',
+                'rgba(16, 185, 129, 0.15)',
+                'rgba(245, 158, 11, 0.15)',
+                'rgba(239, 68, 68, 0.15)',
+                'rgba(139, 92, 246, 0.15)',
+                'rgba(236, 72, 153, 0.15)'
+            ];
+
+            let html = `
+                <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
+                <div class="ordering-display" id="player-ordering-container">
+            `;
+
+            shuffledIndices.forEach((originalIndex, displayIndex) => {
+                const option = data.options[originalIndex];
+                const safeOption = escapeHtml(option || '');
+                const bgColor = itemColors[originalIndex % itemColors.length];
+                html += `
+                    <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
+                        <div class="ordering-item-number">${displayIndex + 1}</div>
+                        <div class="ordering-item-content">${formatCodeBlocks(safeOption)}</div>
+                    </div>
+                `;
+            });
+
+            html += `
+                </div>
+                <button class="ordering-submit-button btn primary" id="submit-ordering" data-translate="submit_answer"></button>
+            `;
+
+            container.innerHTML = html;
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.alignItems = 'center';
+
+            // Translate dynamic content
+            if (translationManager?.translateContainer) {
+                translationManager.translateContainer(container);
+            }
+        },
+
+        extractAnswer: (container) => {
+            const orderingContainer = container.querySelector('#player-ordering-container');
+            if (!orderingContainer) return null;
+            const items = orderingContainer.querySelectorAll('.ordering-display-item');
+            return Array.from(items).map(item => parseInt(item.dataset.originalIndex));
         }
     }
 };
@@ -497,8 +799,10 @@ const QUESTION_TYPES = {
 export class QuestionTypeRegistry {
 
     /**
-   * Get question type definition by ID
-   */
+     * Get question type definition by ID
+     * @param {string} typeId - Question type ID
+     * @returns {Object} Question type definition
+     */
     static getType(typeId) {
         const type = QUESTION_TYPES[typeId];
         if (!type) {
@@ -509,48 +813,56 @@ export class QuestionTypeRegistry {
     }
 
     /**
-   * Get all question type definitions
-   */
+     * Get all question type definitions
+     * @returns {Array} Array of question type definitions
+     */
     static getAllTypes() {
         return Object.values(QUESTION_TYPES);
     }
 
     /**
-   * Get all question type IDs
-   */
+     * Get all question type IDs
+     * @returns {Array} Array of question type ID strings
+     */
     static getTypeIds() {
         return Object.keys(QUESTION_TYPES);
     }
 
     /**
-   * Check if question type exists
-   */
+     * Check if question type exists
+     * @param {string} typeId - Question type ID
+     * @returns {boolean} True if type exists
+     */
     static isValidType(typeId) {
         return typeId in QUESTION_TYPES;
     }
 
     /**
-   * Get container ID for specific context
-   * @param {string} typeId - Question type ID
-   * @param {string} context - Context: 'player', 'host', or 'preview'
-   */
+     * Get container ID for specific context
+     * @param {string} typeId - Question type ID
+     * @param {string} context - Context: 'player', 'host', or 'preview'
+     * @returns {string} Container ID
+     */
     static getContainerId(typeId, context = 'player') {
         const type = this.getType(typeId);
         return type.containerIds[context] || type.containerIds.player;
     }
 
     /**
-   * Get selectors for question type
-   */
+     * Get selectors for question type
+     * @param {string} typeId - Question type ID
+     * @returns {Object} Selectors object
+     */
     static getSelectors(typeId) {
         return this.getType(typeId).selectors;
     }
 
     /**
-   * Extract question data from DOM element
-   * @param {string} typeId - Question type ID
-   * @param {HTMLElement} element - Question DOM element
-   */
+     * Extract question data from DOM element
+     * @param {string} typeId - Question type ID
+     * @param {HTMLElement} element - Question DOM element
+     * @returns {Object} Extracted question data
+     */
     static extractData(typeId, element) {
         try {
             return this.getType(typeId).extractData(element);
@@ -561,11 +873,11 @@ export class QuestionTypeRegistry {
     }
 
     /**
-   * Populate question into DOM element
-   * @param {string} typeId - Question type ID
-   * @param {HTMLElement} element - Question DOM element
-   * @param {Object} data - Question data
-   */
+     * Populate question into DOM element
+     * @param {string} typeId - Question type ID
+     * @param {HTMLElement} element - Question DOM element
+     * @param {Object} data - Question data
+     */
     static populateQuestion(typeId, element, data) {
         try {
             this.getType(typeId).populateQuestion(element, data);
@@ -575,11 +887,11 @@ export class QuestionTypeRegistry {
     }
 
     /**
-   * Validate question data
-   * @param {string} typeId - Question type ID
-   * @param {Object} data - Question data to validate
-   * @returns {Object} { valid: boolean, error?: string }
-   */
+     * Validate question data
+     * @param {string} typeId - Question type ID
+     * @param {Object} data - Question data to validate
+     * @returns {Object} { valid: boolean, error?: string }
+     */
     static validate(typeId, data) {
         try {
             return this.getType(typeId).validate(data);
@@ -590,13 +902,13 @@ export class QuestionTypeRegistry {
     }
 
     /**
-   * Score player answer
-   * @param {string} typeId - Question type ID
-   * @param {*} playerAnswer - Player's answer
-   * @param {*} correctAnswer - Correct answer
-   * @param {Object} options - Additional options (e.g., tolerance for numeric)
-   * @returns {boolean} True if answer is correct
-   */
+     * Score player answer
+     * @param {string} typeId - Question type ID
+     * @param {*} playerAnswer - Player's answer
+     * @param {*} correctAnswer - Correct answer
+     * @param {Object} options - Additional options (e.g., tolerance for numeric)
+     * @returns {boolean} True if answer is correct
+     */
     static scoreAnswer(typeId, playerAnswer, correctAnswer, options = {}) {
         try {
             const type = this.getType(typeId);
@@ -614,18 +926,20 @@ export class QuestionTypeRegistry {
     }
 
     /**
-   * Get label for question type (for UI display)
-   */
+     * Get label for question type (for UI display)
+     * @param {string} typeId - Question type ID
+     * @returns {string} Human-readable label
+     */
     static getLabel(typeId) {
         return this.getType(typeId).label;
     }
 
     /**
-   * Get player container configuration for gameplay
-   * Returns { containerId, optionsSelector } for setting up player UI
-   * @param {string} typeId - Question type ID
-   * @returns {Object} Container configuration
-   */
+     * Get player container configuration for gameplay
+     * Returns { containerId, optionsSelector } for setting up player UI
+     * @param {string} typeId - Question type ID
+     * @returns {Object} Container configuration
+     */
     static getPlayerContainerConfig(typeId) {
         try {
             const type = this.getType(typeId);
@@ -637,6 +951,81 @@ export class QuestionTypeRegistry {
             logger.error(`Error getting player container config for type ${typeId}:`, error);
             return null;
         }
+    }
+
+    /**
+     * Render host options using the registry
+     * @param {string} typeId - Question type ID
+     * @param {Object} data - Question data
+     * @param {HTMLElement} container - Container to render into
+     * @param {Object} helpers - Helper functions { escapeHtml, formatCodeBlocks, translationManager, COLORS }
+     */
+    static renderHostOptions(typeId, data, container, helpers) {
+        try {
+            const type = this.getType(typeId);
+            if (type.renderHostOptions) {
+                type.renderHostOptions(data, container, helpers);
+            } else {
+                logger.warn(`No renderHostOptions defined for type ${typeId}`);
+            }
+        } catch (error) {
+            logger.error(`Error rendering host options for type ${typeId}:`, error);
+        }
+    }
+
+    /**
+     * Render player options using the registry
+     * @param {string} typeId - Question type ID
+     * @param {Object} data - Question data
+     * @param {HTMLElement} container - Container to render into
+     * @param {Object} helpers - Helper functions { escapeHtml, formatCodeBlocks, translationManager, COLORS }
+     */
+    static renderPlayerOptions(typeId, data, container, helpers) {
+        try {
+            const type = this.getType(typeId);
+            if (type.renderPlayerOptions) {
+                type.renderPlayerOptions(data, container, helpers);
+            } else {
+                logger.warn(`No renderPlayerOptions defined for type ${typeId}`);
+            }
+        } catch (error) {
+            logger.error(`Error rendering player options for type ${typeId}:`, error);
+        }
+    }
+
+    /**
+     * Extract player's answer from container using the registry
+     * @param {string} typeId - Question type ID
+     * @param {HTMLElement} container - Container with player's selection
+     * @returns {*} Extracted answer (type depends on question type)
+     */
+    static extractAnswer(typeId, container) {
+        try {
+            const type = this.getType(typeId);
+            if (type.extractAnswer) {
+                return type.extractAnswer(container);
+            } else {
+                logger.warn(`No extractAnswer defined for type ${typeId}`);
+                return null;
+            }
+        } catch (error) {
+            logger.error(`Error extracting answer for type ${typeId}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Get rendering methods for a question type
+     * @param {string} typeId - Question type ID
+     * @returns {Object} { renderHostOptions, renderPlayerOptions, extractAnswer }
+     */
+    static getRenderingMethods(typeId) {
+        const type = this.getType(typeId);
+        return {
+            renderHostOptions: type.renderHostOptions,
+            renderPlayerOptions: type.renderPlayerOptions,
+            extractAnswer: type.extractAnswer
+        };
     }
 }
 

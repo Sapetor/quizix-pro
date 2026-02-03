@@ -22,6 +22,8 @@ import { EventListenerManager } from '../utils/event-listener-manager.js';
 import { AnswerRevealManager } from './modules/answer-reveal-manager.js';
 import { LeaderboardManager } from './modules/leaderboard-manager.js';
 import { PowerUpManager } from './modules/power-up-manager.js';
+import { ConsensusManager } from './modules/consensus-manager.js';
+import { DiscussionManager } from './modules/discussion-manager.js';
 
 export class GameManager {
     constructor(socket, uiManager, soundManager, socketManager = null) {
@@ -38,6 +40,8 @@ export class GameManager {
         this.answerRevealManager = new AnswerRevealManager(this.stateManager, this.displayManager);
         this.leaderboardManager = new LeaderboardManager(this.stateManager, uiManager, soundManager);
         this.powerUpManager = new PowerUpManager();
+        this.consensusManager = new ConsensusManager(this.stateManager, socketManager);
+        this.discussionManager = new DiscussionManager(this.stateManager, socketManager);
 
         // Setup power-up callbacks
         this.powerUpManager.setExtendTimeCallback((extraSeconds) => {
@@ -192,6 +196,9 @@ export class GameManager {
 
         // Update power-ups for new question (reset hidden options, update availability)
         this.updatePowerUpsForQuestion(data.type);
+
+        // Reset consensus mode for new question
+        this.resetConsensusForQuestion();
 
     }
 
@@ -414,6 +421,59 @@ export class GameManager {
     }
 
     // ==================== END POWER-UP METHODS ====================
+
+    // ==================== CONSENSUS MODE METHODS ====================
+
+    /**
+     * Initialize consensus mode for a new game
+     * @param {Object} config - Consensus configuration from game settings
+     */
+    initializeConsensusMode(config) {
+        if (!config || !config.enabled) {
+            this.consensusManager.reset();
+            this.discussionManager.reset();
+            return;
+        }
+
+        this.consensusManager.initialize({
+            threshold: config.threshold,
+            allowChat: config.allowChat
+        });
+        this.discussionManager.initialize(config.allowChat);
+
+        // Bind event listeners
+        this.consensusManager.bindEventListeners();
+
+        logger.debug('Consensus mode initialized', config);
+    }
+
+    /**
+     * Reset consensus for new question
+     */
+    resetConsensusForQuestion() {
+        if (this.consensusManager.enabled) {
+            this.consensusManager.resetForQuestion();
+            this.discussionManager.resetForQuestion();
+        }
+    }
+
+    /**
+     * Get consensus manager instance
+     * @returns {ConsensusManager}
+     */
+    getConsensusManager() {
+        return this.consensusManager;
+    }
+
+    /**
+     * Get discussion manager instance
+     * @returns {DiscussionManager}
+     */
+    getDiscussionManager() {
+        return this.discussionManager;
+    }
+
+    // ==================== END CONSENSUS MODE METHODS ====================
 
     // Answer submission feedback now handled by GameDisplayManager
 
@@ -1269,13 +1329,16 @@ export class GameManager {
 
     /**
      * Show final results
+     * @param {Array} leaderboard - Final leaderboard data
+     * @param {Object} [conceptMastery] - Optional personal concept mastery data for players
      */
-    showFinalResults(leaderboard) {
+    showFinalResults(leaderboard, conceptMastery = null) {
         // Delegate to LeaderboardManager with callback for saving results
         this.leaderboardManager.showFinalResults(
             leaderboard,
             this.socket,
-            (lb) => this.saveGameResults(lb)
+            (lb) => this.saveGameResults(lb),
+            conceptMastery
         );
     }
 
@@ -1448,6 +1511,14 @@ export class GameManager {
         // Reset fanfare played flag for new games
         this.fanfarePlayed = false;
 
+        // Reset consensus mode state
+        if (this.consensusManager) {
+            this.consensusManager.reset();
+        }
+        if (this.discussionManager) {
+            this.discussionManager.reset();
+        }
+
         // Hide the CSV download tool from previous game
         simpleResultsDownloader.hideDownloadTool();
 
@@ -1597,6 +1668,14 @@ export class GameManager {
             // Clean up power-ups
             if (this.powerUpManager) {
                 this.powerUpManager.cleanup();
+            }
+
+            // Clean up consensus mode
+            if (this.consensusManager) {
+                this.consensusManager.cleanup();
+            }
+            if (this.discussionManager) {
+                this.discussionManager.cleanup();
             }
 
             // Remove page unload listeners

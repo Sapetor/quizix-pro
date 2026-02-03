@@ -38,6 +38,7 @@
  * @property {number[]} [correctOrder] - Correct ordering indices
  * @property {string} [image] - Optional question image URL
  * @property {string} [explanation] - Optional explanation for the answer
+ * @property {string[]} [concepts] - Optional concept tags for analytics (max 5)
  */
 
 // ============================================================================

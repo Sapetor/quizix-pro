@@ -6,6 +6,7 @@
 
 import { translationManager, getTranslation, getTrueFalseText } from '../../utils/translation-manager.js';
 import { logger } from '../../core/config.js';
+import { QuestionTypeRegistry } from '../../utils/question-type-registry.js';
 
 export class PlayerInteractionManager {
     constructor(gameStateManager, gameDisplayManager, soundManager, socketManager) {
@@ -114,42 +115,75 @@ export class PlayerInteractionManager {
     }
 
     /**
-     * Submit answer by type - consolidated method
-     * @param {string} type - Answer type: 'multiple-correct', 'numeric', or 'direct'
+     * Submit answer by type - consolidated method using registry
+     * @param {string} type - Answer type: 'multiple-correct', 'numeric', 'ordering', or 'direct'
      * @param {*} directAnswer - Direct answer value for 'direct' type
      */
     submitAnswerByType(type, directAnswer = null) {
-        switch (type) {
-            case 'multiple-correct':
-                return this.submitMultipleCorrectAnswerInternal();
-            case 'numeric':
-                return this.submitNumericAnswerInternal();
-            case 'ordering':
-                return this.submitOrderingAnswerInternal();
-            case 'direct':
-                return this.submitAnswer(directAnswer);
-            default:
-                logger.error('Unknown answer submission type:', type);
-        }
-    }
+        const gameState = this.gameStateManager.getGameState();
+        const currentQuestion = gameState.currentQuestion;
 
-    /**
-     * Submit multiple correct answers - internal implementation
-     */
-    submitMultipleCorrectAnswerInternal() {
-        const selectedCheckboxes = document.querySelectorAll('.option-checkbox:checked');
-        const selectedAnswers = Array.from(selectedCheckboxes).map(cb => {
-            const parentLabel = cb.closest('.checkbox-option');
-            return parseInt(parentLabel.getAttribute('data-option'));
-        });
-
-        if (selectedAnswers.length === 0) {
-            this.showError(getTranslation('please_select_at_least_one'));
+        if (!currentQuestion) {
+            logger.error('No current question available');
             return;
         }
 
-        logger.debug('Submitting multiple correct answers:', selectedAnswers);
-        this.submitAnswer(selectedAnswers);
+        switch (type) {
+            case 'multiple-correct': {
+                const container = document.getElementById('player-multiple-correct');
+                if (!container) {
+                    this.showError(getTranslation('please_select_at_least_one'));
+                    return;
+                }
+                const answer = QuestionTypeRegistry.extractAnswer('multiple-correct', container);
+                if (!answer || answer.length === 0) {
+                    this.showError(getTranslation('please_select_at_least_one'));
+                    return;
+                }
+                logger.debug('Submitting multiple correct answers:', answer);
+                this.submitAnswer(answer);
+                break;
+            }
+
+            case 'numeric': {
+                const container = document.getElementById('player-numeric');
+                if (!container) {
+                    this.showError(getTranslation('please_enter_valid_number'));
+                    return;
+                }
+                const answer = QuestionTypeRegistry.extractAnswer('numeric', container);
+                if (answer === null || isNaN(answer)) {
+                    this.showError(getTranslation('please_enter_valid_number'));
+                    return;
+                }
+                logger.debug('Submitting numeric answer:', answer);
+                this.submitAnswer(answer);
+                break;
+            }
+
+            case 'ordering': {
+                const container = document.getElementById('player-ordering');
+                if (!container) {
+                    this.showError(getTranslation('please_arrange_items'));
+                    return;
+                }
+                const answer = QuestionTypeRegistry.extractAnswer('ordering', container);
+                if (!answer || answer.length === 0) {
+                    this.showError(getTranslation('please_arrange_items'));
+                    return;
+                }
+                logger.debug('Submitting ordering answer:', answer);
+                this.submitAnswer(answer);
+                break;
+            }
+
+            case 'direct':
+                this.submitAnswer(directAnswer);
+                break;
+
+            default:
+                logger.error('Unknown answer submission type:', type);
+        }
     }
 
     /**
@@ -160,53 +194,10 @@ export class PlayerInteractionManager {
     }
 
     /**
-     * Submit numeric answer - internal implementation
-     */
-    submitNumericAnswerInternal() {
-        const numericInput = document.getElementById('numeric-answer-input');
-        if (!numericInput) {
-            logger.error('Numeric input not found');
-            return;
-        }
-
-        const answer = parseFloat(numericInput.value);
-        if (isNaN(answer)) {
-            this.showError(getTranslation('please_enter_valid_number'));
-            return;
-        }
-
-        logger.debug('Submitting numeric answer:', answer);
-        this.submitAnswer(answer);
-    }
-
-    /**
      * Submit ordering answer
      */
     submitOrderingAnswer() {
         return this.submitAnswerByType('ordering');
-    }
-
-    /**
-     * Submit ordering answer - internal implementation
-     */
-    submitOrderingAnswerInternal() {
-        const container = document.getElementById('player-ordering-container');
-        if (!container) {
-            logger.error('Ordering container not found');
-            return;
-        }
-
-        // Get the current order of items
-        const items = container.querySelectorAll('.ordering-display-item');
-        const answer = Array.from(items).map(item => parseInt(item.dataset.originalIndex));
-
-        if (answer.length === 0) {
-            this.showError(getTranslation('please_arrange_items'));
-            return;
-        }
-
-        logger.debug('Submitting ordering answer:', answer);
-        this.submitAnswer(answer);
     }
 
     /**

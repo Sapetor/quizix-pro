@@ -234,7 +234,6 @@ export function goToPreviousQuestion() {
     const questionsContainer = document.getElementById('questions-container');
     if (!questionsContainer) return;
 
-    const questionItems = questionsContainer.querySelectorAll('.question-item');
     if (currentEditingQuestion > 0) {
         currentEditingQuestion--;
         showQuestion(currentEditingQuestion);
@@ -445,6 +444,15 @@ function handleSettingsModalOverlayClick(e) {
     }
 }
 
+export function toggleConsensusModeModal() {
+    const consensusMode = document.getElementById('modal-consensus-mode');
+    const consensusSettings = document.getElementById('modal-consensus-settings');
+
+    if (!consensusMode || !consensusSettings) return;
+
+    consensusSettings.classList.toggle('hidden', !consensusMode.checked);
+}
+
 export function toggleGlobalTimeModal() {
     const useGlobalTime = document.getElementById('modal-use-global-time');
     const globalTimeContainer = document.getElementById('modal-global-time-container');
@@ -471,6 +479,17 @@ function syncSettingsToModal() {
     // Advanced options
     syncCheckbox('manual-advancement', 'modal-manual-advancement');
     syncCheckbox('enable-power-ups', 'modal-enable-power-ups');
+    syncCheckbox('consensus-mode', 'modal-consensus-mode');
+    syncInput('consensus-threshold', 'modal-consensus-threshold');
+    syncInput('discussion-time', 'modal-discussion-time');
+    syncCheckbox('allow-chat', 'modal-allow-chat');
+
+    // Update consensus settings visibility
+    const consensusMode = document.getElementById('modal-consensus-mode');
+    const consensusSettings = document.getElementById('modal-consensus-settings');
+    if (consensusMode && consensusSettings) {
+        consensusSettings.classList.toggle('hidden', !consensusMode.checked);
+    }
 
     // Scoring options
     syncCheckbox('time-bonus-enabled', 'modal-time-bonus-enabled');
@@ -497,6 +516,10 @@ function syncSettingsFromModal() {
     // Advanced options
     syncCheckbox('modal-manual-advancement', 'manual-advancement');
     syncCheckbox('modal-enable-power-ups', 'enable-power-ups');
+    syncCheckbox('modal-consensus-mode', 'consensus-mode');
+    syncInput('modal-consensus-threshold', 'consensus-threshold');
+    syncInput('modal-discussion-time', 'discussion-time');
+    syncCheckbox('modal-allow-chat', 'allow-chat');
 
     // Scoring options
     syncCheckbox('modal-time-bonus-enabled', 'time-bonus-enabled');
@@ -838,6 +861,7 @@ window.handleQuestionRemoved = handleQuestionRemoved;
 window.openQuizSettingsModal = openQuizSettingsModal;
 window.closeQuizSettingsModal = closeQuizSettingsModal;
 window.toggleGlobalTimeModal = toggleGlobalTimeModal;
+window.toggleConsensusModeModal = toggleConsensusModeModal;
 
 // Cross-module communication
 window.setGlobalFontSize = setGlobalFontSize;

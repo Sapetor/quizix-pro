@@ -17,7 +17,8 @@ const multipleChoiceQuestionSchema = z.object({
     difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
-    image: z.string().optional()
+    image: z.string().optional(),
+    concepts: z.array(z.string()).max(5).optional().default([])
 });
 
 const multipleCorrectQuestionSchema = z.object({
@@ -28,7 +29,8 @@ const multipleCorrectQuestionSchema = z.object({
     difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
-    image: z.string().optional()
+    image: z.string().optional(),
+    concepts: z.array(z.string()).max(5).optional().default([])
 });
 
 const trueFalseQuestionSchema = z.object({
@@ -38,7 +40,8 @@ const trueFalseQuestionSchema = z.object({
     difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
-    image: z.string().optional()
+    image: z.string().optional(),
+    concepts: z.array(z.string()).max(5).optional().default([])
 });
 
 const numericQuestionSchema = z.object({
@@ -49,7 +52,8 @@ const numericQuestionSchema = z.object({
     difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
-    image: z.string().optional()
+    image: z.string().optional(),
+    concepts: z.array(z.string()).max(5).optional().default([])
 });
 
 const orderingQuestionSchema = z.object({
@@ -60,7 +64,8 @@ const orderingQuestionSchema = z.object({
     difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
-    image: z.string().optional()
+    image: z.string().optional(),
+    concepts: z.array(z.string()).max(5).optional().default([])
 });
 
 // Union of all question types
@@ -81,7 +86,12 @@ const quizSettingsSchema = z.object({
     randomizeAnswers: z.boolean().optional().default(false),
     useGlobalTime: z.boolean().optional().default(false),
     globalTimeLimit: z.number().int().min(5).max(300).optional().default(20),
-    manualAdvance: z.boolean().optional().default(true)
+    manualAdvance: z.boolean().optional().default(true),
+    // Consensus mode settings
+    consensusMode: z.boolean().optional().default(false),
+    consensusThreshold: z.enum(['50', '66', '75', '100']).optional().default('66'),
+    discussionTime: z.number().int().min(10).max(300).optional().default(30),
+    allowChat: z.boolean().optional().default(false)
 }).optional();
 
 const saveQuizSchema = z.object({
@@ -301,7 +311,12 @@ const hostJoinSchema = z.object({
         manualAdvancement: z.boolean().optional(),
         randomizeQuestions: z.boolean().optional(),
         randomizeAnswers: z.boolean().optional(),
-        questionTime: z.number().int().min(5).max(300).optional()
+        questionTime: z.number().int().min(5).max(300).optional(),
+        // Consensus mode settings
+        consensusMode: z.boolean().optional().default(false),
+        consensusThreshold: z.enum(['50', '66', '75', '100']).optional().default('66'),
+        discussionTime: z.number().int().min(10).max(300).optional().default(30),
+        allowChat: z.boolean().optional().default(false)
     })
 });
 
@@ -336,6 +351,20 @@ const socketSubmitAnswerSchema = z.object({
 const kickPlayerSchema = z.object({
     pin: z.string().regex(/^\d{6}$/),
     playerId: z.string().min(1)
+});
+
+// Consensus mode socket event schemas
+const proposeAnswerSchema = z.object({
+    answer: z.number().int().min(0)
+});
+
+const sendQuickResponseSchema = z.object({
+    type: z.enum(['propose', 'agree', 'unsure', 'discuss', 'ready']),
+    targetPlayer: z.string().optional()
+});
+
+const sendChatMessageSchema = z.object({
+    text: z.string().min(1).max(200)
 });
 
 // Server to client event data schemas
@@ -425,6 +454,10 @@ function validateSocketEvent(eventName, data) {
         'end-question-early': endQuestionEarlySchema,
         'submit-answer': socketSubmitAnswerSchema,
         'kick-player': kickPlayerSchema,
+        // Consensus mode events
+        'propose-answer': proposeAnswerSchema,
+        'send-quick-response': sendQuickResponseSchema,
+        'send-chat-message': sendChatMessageSchema,
         // Server to client
         'game-created': gameCreatedEventSchema,
         'player-joined': playerJoinedEventSchema,
@@ -485,6 +518,10 @@ module.exports = {
     endQuestionEarlySchema,
     socketSubmitAnswerSchema,
     kickPlayerSchema,
+    // Consensus mode schemas
+    proposeAnswerSchema,
+    sendQuickResponseSchema,
+    sendChatMessageSchema,
     gameCreatedEventSchema,
     playerJoinedEventSchema,
     questionStartEventSchema,

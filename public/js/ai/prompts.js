@@ -23,13 +23,14 @@ export const LANGUAGE_NATIVE_NAMES = Object.fromEntries(
 
 /**
  * JSON structure examples for each question type
+ * Note: concepts array identifies the knowledge areas tested (max 5)
  */
 export const TYPE_EXAMPLES = {
-    'multiple-choice': '{"question": "Question text?", "type": "multiple-choice", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "timeLimit": 30, "explanation": "Why A is correct", "difficulty": "medium"}',
-    'true-false': '{"question": "Statement to verify.", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20, "explanation": "Why true", "difficulty": "easy"}',
-    'multiple-correct': '{"question": "Select all that apply:", "type": "multiple-correct", "options": ["A", "B", "C", "D"], "correctAnswers": [0, 2], "timeLimit": 35, "explanation": "A and C are correct", "difficulty": "medium"}',
-    'numeric': '{"question": "Calculate the value:", "type": "numeric", "correctAnswer": 42, "tolerance": 0, "timeLimit": 25, "explanation": "The answer is 42", "difficulty": "medium"}',
-    'ordering': '{"question": "Arrange in order:", "type": "ordering", "options": ["First", "Second", "Third"], "correctOrder": [0, 1, 2], "timeLimit": 40, "explanation": "Correct sequence", "difficulty": "medium"}'
+    'multiple-choice': '{"question": "Question text?", "type": "multiple-choice", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "timeLimit": 30, "explanation": "Why A is correct", "difficulty": "medium", "concepts": ["topic1", "topic2"]}',
+    'true-false': '{"question": "Statement to verify.", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20, "explanation": "Why true", "difficulty": "easy", "concepts": ["topic1"]}',
+    'multiple-correct': '{"question": "Select all that apply:", "type": "multiple-correct", "options": ["A", "B", "C", "D"], "correctAnswers": [0, 2], "timeLimit": 35, "explanation": "A and C are correct", "difficulty": "medium", "concepts": ["topic1", "topic2"]}',
+    'numeric': '{"question": "Calculate the value:", "type": "numeric", "correctAnswer": 42, "tolerance": 0, "timeLimit": 25, "explanation": "The answer is 42", "difficulty": "medium", "concepts": ["calculation", "topic1"]}',
+    'ordering': '{"question": "Arrange in order:", "type": "ordering", "options": ["First", "Second", "Third"], "correctOrder": [0, 1, 2], "timeLimit": 40, "explanation": "Correct sequence", "difficulty": "medium", "concepts": ["sequencing", "topic1"]}'
 };
 
 /**
@@ -306,16 +307,17 @@ STRICT RULES:
 1. Output ONLY the JSON array - start with [ and end with ]
 2. Generate ALL ${questionCount} questions - do not stop early
 3. All questions in ${targetLanguage} language
-4. Each question MUST have: question, type, options (except numeric), correctAnswer/correctAnswers, timeLimit, explanation, difficulty
-5. JSON structures by type:
+4. Each question MUST have: question, type, options (except numeric), correctAnswer/correctAnswers, timeLimit, explanation, difficulty, concepts
+5. concepts: Array of 1-3 short topic/skill tags this question tests (e.g., ["algebra", "equations"] or ["photosynthesis", "biology"])
+6. JSON structures by type:
    - multiple-choice: "correctAnswer": 0-3 (integer index), "options": [4 items]
    - true-false: "options": ["True", "False"], "correctAnswer": "true" or "false" (string)
    - multiple-correct: "correctAnswers": [0, 2, 3] (array of indices), "options": [array]
    - numeric: "correctAnswer": number, "tolerance": number, NO options field
    - ordering: "options": [items], "correctOrder": [indices for correct sequence]
-6. Escape special characters in strings (quotes, backslashes, newlines)
-7. No trailing commas in JSON
-8. Complete EVERY question object before starting the next
+7. Escape special characters in strings (quotes, backslashes, newlines)
+8. No trailing commas in JSON
+9. Complete EVERY question object before starting the next
 
 ${isFormattingExistingQuestions ? 'PRESERVE original question text and answers.' : 'Base questions on the provided content.'}
 
@@ -368,10 +370,9 @@ JSON array only:`;
 /**
  * Build prompt for converting Excel questions to JSON
  * @param {string} content - Excel content
- * @param {Array} selectedTypes - Selected question types (unused but kept for API consistency)
  * @returns {string} Excel conversion prompt
  */
-export function buildExcelConversionPrompt(content, _selectedTypes) {
+export function buildExcelConversionPrompt(content) {
     return `CONVERT EXCEL QUESTIONS TO JSON - DO NOT MAKE UP NEW QUESTIONS
 
 You must convert ONLY the questions that are in this Excel data. Do not create any new questions.

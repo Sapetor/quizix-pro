@@ -283,6 +283,7 @@ export default {
     game_complete: 'Game Complete',
     your_final_rank: 'Your Final Rank',
     top_players: 'Top Players',
+    your_concept_mastery: 'Your Concept Mastery',
     live_answer_statistics: 'Live Answer Statistics',
     player_answers: 'Player Answers',
     no_answers_yet: 'No answers yet',
@@ -731,5 +732,48 @@ export default {
     switch_dark_mode: 'Switch to dark mode',
     switch_light_mode: 'Switch to light mode',
     true_display: 'True',
-    type: 'Type'
+    type: 'Type',
+
+    // Concept tags
+    concepts: 'Concepts',
+    add_concept: 'Add concept...',
+    concept_hint: 'Press Enter to add (max 5)',
+
+    // Consensus Mode
+    consensus_mode: 'Consensus Mode',
+    consensus_mode_tooltip: 'Team collaboration mode where players vote together',
+    consensus_threshold: 'Consensus Threshold',
+    threshold_50: '50% - Simple majority',
+    threshold_66: '66% - Two-thirds majority',
+    threshold_75: '75% - Strong consensus',
+    threshold_100: '100% - Unanimous',
+    discussion_time: 'Discussion Time',
+    allow_chat: 'Allow free-form chat',
+    allow_chat_hint: 'Players can type messages in addition to quick responses',
+    team_score: 'Team Score',
+    team_points: 'team points',
+    team_achievement: 'Team Achievement',
+    propose_answer: 'Propose Answer',
+    consensus_reached: 'Consensus Reached!',
+    consensus_correct: 'Correct!',
+    consensus_incorrect: 'Incorrect',
+    waiting_consensus: 'Waiting for consensus...',
+    lock_consensus: 'Lock Consensus',
+    lock_consensus_tooltip: 'Lock in the current consensus answer',
+    proposals: 'Proposals',
+    discussion: 'Discussion',
+    quick_responses: 'Quick Responses',
+
+    // Quick response types
+    i_think_its: 'I think it\'s...',
+    i_agree: 'I agree',
+    i_agree_with: 'I agree with {player}',
+    not_sure: 'Not sure',
+    lets_discuss: 'Let\'s discuss',
+    ready_to_lock: 'Ready to lock in',
+
+    // Consensus progress
+    consensus_progress: 'Consensus Progress',
+    threshold_needed: 'Threshold needed',
+    current_consensus: 'Current consensus'
 };

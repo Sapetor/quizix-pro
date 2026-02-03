@@ -21,6 +21,26 @@ export class LeaderboardManager {
         this.uiManager = uiManager;
         this.soundManager = soundManager;
         this.fanfarePlayed = false;
+        this.isConsensusMode = false;
+        this.teamScore = 0;
+    }
+
+    /**
+     * Set consensus mode for team score display
+     * @param {boolean} enabled - Whether consensus mode is enabled
+     * @param {number} teamScore - Current team score
+     */
+    setConsensusMode(enabled, teamScore = 0) {
+        this.isConsensusMode = enabled;
+        this.teamScore = teamScore;
+    }
+
+    /**
+     * Update team score
+     * @param {number} score - New team score
+     */
+    updateTeamScore(score) {
+        this.teamScore = score;
     }
 
     /**
@@ -46,8 +66,9 @@ export class LeaderboardManager {
      * @param {Array} leaderboard - Final leaderboard
      * @param {Object} socket - Socket for player identification
      * @param {Function} saveResultsCallback - Callback to save results
+     * @param {Object|null} conceptMastery - Personal concept mastery data for player
      */
-    showFinalResults(leaderboard, socket, saveResultsCallback) {
+    showFinalResults(leaderboard, socket, saveResultsCallback, conceptMastery = null) {
         logger.debug('showFinalResults called with leaderboard:', leaderboard);
 
         if (this.fanfarePlayed) {
@@ -63,7 +84,7 @@ export class LeaderboardManager {
         if (gameState.isHost) {
             this.showHostFinalResults(leaderboard, saveResultsCallback);
         } else {
-            this.showPlayerFinalResults(leaderboard, socket);
+            this.showPlayerFinalResults(leaderboard, socket, conceptMastery);
         }
 
         this.stateManager.endGame();
@@ -86,6 +107,11 @@ export class LeaderboardManager {
             setTimeout(() => {
                 finalResults.classList.remove('game-complete-animation');
             }, TIMING.ANIMATION_COMPLETE);
+        }
+
+        // Show team score for consensus mode
+        if (this.isConsensusMode) {
+            this.renderTeamScore(this.teamScore);
         }
 
         this.uiManager.showScreen('leaderboard-screen');
@@ -113,12 +139,13 @@ export class LeaderboardManager {
      * Show player final screen
      * @param {Array} leaderboard - Final leaderboard
      * @param {Object} socket - Socket for player identification
+     * @param {Object|null} conceptMastery - Personal concept mastery data
      */
-    showPlayerFinalResults(leaderboard, socket) {
+    showPlayerFinalResults(leaderboard, socket, conceptMastery = null) {
         logger.debug('PLAYER: Showing player final screen with confetti');
 
         this.playGameEndingFanfare();
-        this.showPlayerFinalScreen(leaderboard, socket);
+        this.showPlayerFinalScreen(leaderboard, socket, conceptMastery);
     }
 
     /**
@@ -190,8 +217,9 @@ export class LeaderboardManager {
      * Show player final screen
      * @param {Array} leaderboard - Final leaderboard
      * @param {Object} socket - Socket for player ID
+     * @param {Object|null} conceptMastery - Personal concept mastery data
      */
-    showPlayerFinalScreen(leaderboard, socket) {
+    showPlayerFinalScreen(leaderboard, socket, conceptMastery = null) {
         logger.debug('showPlayerFinalScreen called with:', leaderboard);
 
         let playerPosition = -1;
@@ -216,10 +244,96 @@ export class LeaderboardManager {
         dom.setContent('final-score', `${playerScore} ${getTranslation('points')}`);
 
         this.updateFinalLeaderboard(leaderboard.slice(0, 3));
+        this.displayConceptMastery(conceptMastery);
         this.showGameCompleteConfetti();
 
         logger.debug('Switching to player-final-screen');
         this.uiManager.showScreen('player-final-screen');
+    }
+
+    /**
+     * Display personal concept mastery on player final screen
+     * @param {Object|null} conceptMastery - Concept mastery data
+     */
+    displayConceptMastery(conceptMastery) {
+        const container = document.getElementById('player-concept-mastery');
+        if (!container) return;
+
+        // Hide if no concept data
+        if (!conceptMastery?.hasConcepts || !conceptMastery.concepts?.length) {
+            container.classList.add('hidden');
+            return;
+        }
+
+        container.classList.remove('hidden');
+
+        // Sort concepts by mastery (weakest first for actionable feedback)
+        const sortedConcepts = [...conceptMastery.concepts].sort((a, b) => a.mastery - b.mastery);
+
+        // Build mastery bars
+        const barsHtml = sortedConcepts.map(concept => {
+            const masteryPercent = Math.round(concept.mastery);
+            const colorClass = this.getMasteryColorClass(masteryPercent);
+
+            return `
+                <div class="concept-mastery-row">
+                    <span class="concept-name">${escapeHtml(concept.name)}</span>
+                    <div class="concept-bar-container">
+                        <div class="concept-bar ${colorClass}" style="width: ${masteryPercent}%"></div>
+                    </div>
+                    <span class="concept-percent">${masteryPercent}%</span>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = `
+            <h3 data-translate="your_concept_mastery">${getTranslation('your_concept_mastery') || 'Your Concept Mastery'}</h3>
+            <div class="concept-mastery-bars">
+                ${barsHtml}
+            </div>
+        `;
+    }
+
+    /**
+     * Get CSS color class for mastery percentage
+     * @param {number} percent - Mastery percentage
+     * @returns {string} CSS class name
+     */
+    getMasteryColorClass(percent) {
+        if (percent >= 80) return 'mastery-excellent';
+        if (percent >= 60) return 'mastery-good';
+        if (percent >= 40) return 'mastery-fair';
+        return 'mastery-needs-work';
+    }
+
+    /**
+     * Render team score for consensus mode final results
+     * @param {number} score - Team score to display
+     */
+    renderTeamScore(score) {
+        // Add team score banner to leaderboard screen
+        const leaderboardContainer = document.querySelector('.leaderboard-container');
+        if (!leaderboardContainer) return;
+
+        // Check if team score already exists
+        let teamScoreBanner = document.getElementById('team-score-banner');
+        if (!teamScoreBanner) {
+            teamScoreBanner = document.createElement('div');
+            teamScoreBanner.id = 'team-score-banner';
+            teamScoreBanner.className = 'team-score-banner';
+            leaderboardContainer.insertBefore(teamScoreBanner, leaderboardContainer.firstChild);
+        }
+
+        teamScoreBanner.innerHTML = `
+            <div class="team-score-content">
+                <span class="team-icon">🤝</span>
+                <span class="team-label">${getTranslation('team_achievement') || 'Team Achievement'}</span>
+                <span class="team-score-value">${score}</span>
+                <span class="team-points-label">${getTranslation('team_points') || 'team points'}</span>
+            </div>
+        `;
+
+        logger.debug('Team score rendered', { score });
     }
 
     /**

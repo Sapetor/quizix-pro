@@ -826,6 +826,331 @@
 }
 
 /* ===================================
+   Concepts Tab Styles
+   =================================== */
+
+/* Concepts section layout */
+.concepts-section {
+    padding: 10px 0;
+}
+
+.concepts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.concepts-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.3rem;
+}
+
+/* Legend */
+.concepts-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.8rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.legend-item.mastered .legend-color { background: #10b981; }
+.legend-item.proficient .legend-color { background: #f59e0b; }
+.legend-item.developing .legend-color { background: #f97316; }
+.legend-item.needs-work .legend-color { background: #ef4444; }
+
+/* Concept chart container */
+.concept-chart-container {
+    min-height: 250px;
+    margin-bottom: 24px;
+}
+
+/* Concept mastery list */
+.concept-mastery-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.concept-mastery-item {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) 2fr 60px;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.concept-mastery-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.concept-mastery-item.mastered {
+    border-left: 4px solid #10b981;
+}
+
+.concept-mastery-item.proficient {
+    border-left: 4px solid #f59e0b;
+}
+
+.concept-mastery-item.developing {
+    border-left: 4px solid #f97316;
+}
+
+.concept-mastery-item.needs-work {
+    border-left: 4px solid #ef4444;
+}
+
+.concept-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.concept-level-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.concept-mastery-item.mastered .concept-level-icon {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.concept-mastery-item.proficient .concept-level-icon {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.concept-mastery-item.developing .concept-level-icon {
+    background: rgba(249, 115, 22, 0.2);
+    color: #f97316;
+}
+
+.concept-mastery-item.needs-work .concept-level-icon {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.concept-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.concept-question-count {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.concept-bar-container {
+    height: 20px;
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.concept-bar {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease-out;
+}
+
+.concept-mastery-item.mastered .concept-bar { background: #10b981; }
+.concept-mastery-item.proficient .concept-bar { background: #f59e0b; }
+.concept-mastery-item.developing .concept-bar { background: #f97316; }
+.concept-mastery-item.needs-work .concept-bar { background: #ef4444; }
+
+.concept-percentage {
+    font-weight: 600;
+    text-align: right;
+    color: var(--text-primary);
+}
+
+/* Concept insights section */
+.concept-insights-section {
+    margin-top: 24px;
+}
+
+.insights-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.insights-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+/* Toggle switch */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    display: none;
+}
+
+.toggle-slider {
+    width: 40px;
+    height: 22px;
+    background: var(--bg-tertiary);
+    border-radius: 11px;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--primary-color);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(18px);
+}
+
+.toggle-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Concept insights content */
+.concept-insights-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.concept-insight-card {
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.concept-insight-card.high {
+    border-left: 4px solid #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.concept-insight-card.medium {
+    border-left: 4px solid #f59e0b;
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.concept-insight-card.success {
+    border-left: 4px solid #10b981;
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.insight-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.insight-message {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.insight-concepts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.insight-concept-tag {
+    padding: 3px 10px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Responsive concept styles */
+@media (max-width: 768px) {
+    .concepts-header {
+        flex-direction: column;
+    }
+
+    .concepts-legend {
+        justify-content: flex-start;
+    }
+
+    .concept-mastery-item {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .concept-info {
+        order: 1;
+    }
+
+    .concept-bar-container {
+        order: 2;
+    }
+
+    .concept-percentage {
+        order: 3;
+        text-align: left;
+    }
+
+    .insights-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}
+
+/* ===================================
    Print Styles for Analytics
    =================================== */
 @media print {

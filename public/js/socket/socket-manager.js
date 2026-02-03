@@ -304,7 +304,7 @@ export class SocketManager {
 
             // Clear any remaining timers and show final results
             this.gameManager.stopTimer();
-            this.gameManager.showFinalResults(data.finalLeaderboard);
+            this.gameManager.showFinalResults(data.finalLeaderboard, data.conceptMastery);
         });
 
         // Handle game reset for rematch
@@ -395,6 +395,56 @@ export class SocketManager {
                 }
             }
         });
+
+        // ==================== CONSENSUS MODE EVENTS ====================
+
+        // Proposal distribution update
+        this.socket.on('proposal-update', (data) => {
+            logger.debug('Proposal update received:', data);
+            if (this.gameManager.consensusManager) {
+                this.gameManager.consensusManager.handleProposalUpdate(data);
+            }
+        });
+
+        // Consensus threshold met notification
+        this.socket.on('consensus-threshold-met', (data) => {
+            logger.debug('Consensus threshold met:', data);
+            // Visual feedback that threshold is met
+        });
+
+        // Consensus reached and locked
+        this.socket.on('consensus-reached', (data) => {
+            logger.debug('Consensus reached:', data);
+            if (this.gameManager.consensusManager) {
+                this.gameManager.consensusManager.showConsensusReached(data);
+            }
+        });
+
+        // Quick response from another player
+        this.socket.on('quick-response', (data) => {
+            logger.debug('Quick response received:', data);
+            if (this.gameManager.discussionManager) {
+                this.gameManager.discussionManager.handleQuickResponse(data);
+            }
+        });
+
+        // Chat message from another player
+        this.socket.on('chat-message', (data) => {
+            logger.debug('Chat message received:', data);
+            if (this.gameManager.discussionManager) {
+                this.gameManager.discussionManager.handleChatMessage(data);
+            }
+        });
+
+        // Team score update
+        this.socket.on('team-score-update', (data) => {
+            logger.debug('Team score update:', data);
+            if (this.gameManager.consensusManager) {
+                this.gameManager.consensusManager.handleTeamScoreUpdate(data);
+            }
+        });
+
+        // ==================== END CONSENSUS MODE EVENTS ====================
 
         // Error handling
         this.socket.on('error', (data) => {
@@ -564,7 +614,7 @@ export class SocketManager {
     initializeLanguageListener() {
         // Listen for language change events to update personalized messages
         // Use AbortController signal for proper cleanup on disconnect
-        document.addEventListener('languageChanged', (_event) => {
+        document.addEventListener('languageChanged', () => {
             logger.debug('Language changed, updating personalized messages');
 
             // Update the player welcome message if we have a current player name

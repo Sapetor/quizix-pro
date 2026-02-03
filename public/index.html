@@ -807,6 +807,29 @@
                             <label class="power-ups-option" style="border: 2px solid #8b5cf6; border-radius: 8px; padding: 8px; background: rgba(139, 92, 246, 0.1); margin-top: 8px;">
                                 <input type="checkbox" id="enable-power-ups" data-translate-title="enable_power_ups_tooltip"> <strong>⚡ <span data-translate="enable_power_ups">Enable Power-Ups (50-50, +10s, 2x Points)</span></strong>
                             </label>
+                            <label class="consensus-mode-option" style="border: 2px solid #10b981; border-radius: 8px; padding: 8px; background: rgba(16, 185, 129, 0.1); margin-top: 8px;">
+                                <input type="checkbox" id="consensus-mode" data-translate-title="consensus_mode_tooltip"> <strong>🤝 <span data-translate="consensus_mode">Consensus Mode (Team Collaboration)</span></strong>
+                            </label>
+                            <div class="consensus-settings hidden" id="consensus-settings">
+                                <div class="consensus-threshold-setting">
+                                    <label data-translate="consensus_threshold">Consensus Threshold:</label>
+                                    <select id="consensus-threshold">
+                                        <option value="50">50%</option>
+                                        <option value="66" selected>66%</option>
+                                        <option value="75">75%</option>
+                                        <option value="100" data-translate="unanimous">100% (Unanimous)</option>
+                                    </select>
+                                </div>
+                                <div class="discussion-time-setting">
+                                    <label data-translate="discussion_time">Discussion Time:</label>
+                                    <input type="number" id="discussion-time" value="30" min="10" max="300" step="5">
+                                    <span data-translate="seconds_short">sec</span>
+                                </div>
+                                <label class="allow-chat-option">
+                                    <input type="checkbox" id="allow-chat">
+                                    <span data-translate="allow_free_chat">Allow free-form chat (for trusted groups)</span>
+                                </label>
+                            </div>
                         </div>
 
                         <!-- Scoring Settings (collapsible) -->
@@ -902,7 +925,16 @@
                                     <option value="medium" selected data-translate="medium">Medium (200 pts)</option>
                                     <option value="hard" data-translate="hard">Hard (300 pts)</option>
                                 </select>
-                                
+
+                                <div class="concept-tags-container">
+                                    <label data-translate="concepts">Concepts</label>
+                                    <div class="concept-tags-input">
+                                        <div class="concept-tags-list"></div>
+                                        <input type="text" class="concept-input" placeholder="Add concept..." data-translate-placeholder="add_concept" maxlength="30">
+                                    </div>
+                                    <div class="concept-hint" data-translate="concept_hint">Press Enter to add (max 5)</div>
+                                </div>
+
                                 <div class="time-limit-container">
                                     <label>
                                         <span data-translate="time_seconds">Time (sec):</span>
@@ -1235,6 +1267,32 @@
                             <input type="checkbox" id="modal-enable-power-ups">
                             <strong>⚡ <span data-translate="enable_power_ups">Enable Power-Ups (50-50, +10s, 2x Points)</span></strong>
                         </label>
+                        <label class="consensus-mode-option" style="border: 2px solid #10b981; border-radius: 8px; padding: 8px; background: rgba(16, 185, 129, 0.1); margin-top: 8px;">
+                            <input type="checkbox" id="modal-consensus-mode" data-translate-title="consensus_mode_tooltip" onchange="toggleConsensusModeModal()">
+                            <strong>🤝 <span data-translate="consensus_mode">Consensus Mode (Team Collaboration)</span></strong>
+                        </label>
+                        <div class="consensus-settings hidden" id="modal-consensus-settings">
+                            <div class="form-group">
+                                <label data-translate="consensus_threshold">Consensus Threshold</label>
+                                <select id="modal-consensus-threshold">
+                                    <option value="50" data-translate="threshold_50">50% - Simple majority</option>
+                                    <option value="66" selected data-translate="threshold_66">66% - Two-thirds majority</option>
+                                    <option value="75" data-translate="threshold_75">75% - Strong consensus</option>
+                                    <option value="100" data-translate="threshold_100">100% - Unanimous</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label data-translate="discussion_time">Discussion Time (seconds)</label>
+                                <input type="number" id="modal-discussion-time" value="30" min="10" max="120" step="5">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="modal-allow-chat">
+                                    <span data-translate="allow_chat">Allow free-form chat</span>
+                                </label>
+                                <small data-translate="allow_chat_hint">Players can type messages in addition to quick responses</small>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Scoring Options -->
@@ -1412,6 +1470,41 @@
                         </div>
                     </div>
 
+                <!-- Host Consensus Mode View (visible when consensus mode is enabled) -->
+                <div id="host-consensus-view" class="host-consensus-view hidden">
+                    <div class="host-consensus-header">
+                        <h3 data-translate="consensus_mode">Consensus Mode</h3>
+                        <div class="host-team-score">
+                            <span data-translate="team_score">Team Score:</span>
+                            <span id="host-team-score" class="team-score-value">0</span>
+                        </div>
+                    </div>
+                    <div class="host-proposal-view">
+                        <h4 data-translate="current_proposals">Current Proposals</h4>
+                        <div class="host-proposal-grid" id="host-proposal-grid">
+                            <!-- Proposal items with player names will be rendered here -->
+                        </div>
+                    </div>
+                    <div class="host-consensus-status">
+                        <div class="consensus-status-bar">
+                            <div class="consensus-progress-container">
+                                <div class="consensus-progress-bar" id="host-consensus-bar"></div>
+                            </div>
+                            <span id="host-consensus-percent">0%</span>
+                            <span class="consensus-threshold-label">
+                                / <span id="host-consensus-threshold">66%</span> <span data-translate="threshold">threshold</span>
+                            </span>
+                        </div>
+                        <button id="lock-consensus-btn" class="btn primary lock-consensus-btn" disabled data-translate="lock_consensus">Lock Consensus</button>
+                    </div>
+                    <div class="host-discussion-monitor" id="host-discussion-monitor">
+                        <h4 data-translate="discussion_activity">Discussion Activity</h4>
+                        <div class="discussion-activity-feed" id="host-discussion-feed">
+                            <!-- Discussion activity will appear here -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Use client-style options -->
                 <!-- Moved below statistics for better information hierarchy -->
                 <div id="host-multiple-choice" class="player-answer-type">
@@ -1556,6 +1649,49 @@
                     </button>
                 </div>
 
+                <!-- Consensus Mode View (visible when consensus mode is enabled) -->
+                <div id="player-consensus-view" class="consensus-view hidden">
+                    <div class="consensus-header">
+                        <h4 data-translate="team_discussion">Team Discussion</h4>
+                        <div class="team-score-display">
+                            <span data-translate="team_score">Team Score:</span>
+                            <span id="player-team-score">0</span>
+                        </div>
+                    </div>
+                    <div class="proposal-distribution" id="proposal-distribution">
+                        <!-- Proposal bars will be rendered here dynamically -->
+                    </div>
+                    <div class="consensus-indicator" id="consensus-indicator">
+                        <div class="consensus-progress">
+                            <div class="consensus-bar" id="consensus-bar"></div>
+                        </div>
+                        <span id="consensus-percent">0%</span>
+                        <span data-translate="consensus_of">of</span>
+                        <span id="consensus-threshold-display">66%</span>
+                    </div>
+                    <div id="discussion-panel" class="discussion-panel">
+                        <div class="quick-responses">
+                            <button class="quick-response-btn" data-type="propose" data-translate="i_think_its">I think it's...</button>
+                            <button class="quick-response-btn" data-type="agree" data-translate="i_agree">I agree</button>
+                            <button class="quick-response-btn" data-type="unsure" data-translate="not_sure">Not sure</button>
+                            <button class="quick-response-btn" data-type="discuss" data-translate="lets_discuss">Let's discuss</button>
+                            <button class="quick-response-btn" data-type="ready" data-translate="ready_to_lock">Ready!</button>
+                        </div>
+                        <div class="discussion-feed" id="discussion-feed">
+                            <!-- Discussion messages will appear here -->
+                        </div>
+                        <div class="chat-input-container hidden" id="chat-input-container">
+                            <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200" data-translate-placeholder="type_message">
+                            <button id="send-chat-btn" class="btn-icon" data-translate-title="send_message">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="player-multiple-choice" class="player-answer-type">
                     <div class="player-options">
                         <button class="player-option" data-option="0">A</button>
@@ -1648,6 +1784,9 @@
                 <div id="top-players" class="top-players">
                     <h3 data-translate="top_players"><span aria-hidden="true">🏆</span> Top Players</h3>
                     <div id="final-leaderboard" class="final-leaderboard" role="list" aria-label="Top players"></div>
+                </div>
+                <div id="player-concept-mastery" class="player-concept-mastery hidden" role="region" aria-label="Your concept mastery">
+                    <!-- Dynamically populated by LeaderboardManager -->
                 </div>
                 <button id="play-again" class="btn primary" data-translate="play_again">Play Again</button>
             </div>

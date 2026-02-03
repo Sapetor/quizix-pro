@@ -39,6 +39,7 @@ const createMockGame = (state = 'lobby') => ({
     players: new Map(),
     addPlayer: jest.fn(function(id, name) {
         this.players.set(id, { id, name, score: 0, answers: {} });
+        return { success: true, player: { id, name, score: 0, answers: {} } };
     }),
     removePlayer: jest.fn(function(id) {
         this.players.delete(id);

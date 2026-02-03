@@ -2169,6 +2169,85 @@
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Player Concept Mastery Section */
+.player-concept-mastery {
+    width: 100%;
+    max-width: 600px;
+    background: var(--glass-strong);
+    backdrop-filter: var(--blur-strong);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-large);
+    padding: 24px;
+    margin-top: 8px;
+}
+
+.player-concept-mastery.hidden {
+    display: none;
+}
+
+.player-concept-mastery h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.concept-mastery-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.concept-mastery-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 50px;
+    align-items: center;
+    gap: 12px;
+}
+
+.concept-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.concept-bar-container {
+    height: 20px;
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.concept-bar {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.8s ease-out;
+}
+
+.mastery-excellent { background: linear-gradient(90deg, #10b981, #34d399); }
+.mastery-good { background: linear-gradient(90deg, #eab308, #facc15); }
+.mastery-fair { background: linear-gradient(90deg, #f97316, #fb923c); }
+.mastery-needs-work { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+.concept-percent {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: left;
+}
+
+@media (max-width: 480px) {
+    .player-concept-mastery { padding: 16px; }
+    .concept-mastery-row { grid-template-columns: 80px 1fr 40px; gap: 8px; }
+    .concept-name, .concept-percent { font-size: 0.8rem; }
+    .concept-bar-container { height: 16px; }
+}
+
 /* Result Feedback */
 /* === MODERN ANSWER FEEDBACK SYSTEM === */
 

@@ -10,6 +10,7 @@
 
 const { v4: uuidv4 } = require('uuid');
 const { QuestionTypeService } = require('./question-type-service');
+const { getLimits, isMobileMode } = require('../config/limits');
 
 /**
  * Fisher-Yates shuffle - returns shuffled copy and index mapping
@@ -37,9 +38,24 @@ class GameSessionService {
         this.config = config;
         this.games = new Map();
         this.cleanupInterval = null;
+        this.socketBatchService = null; // Injected via setSocketBatchService()
+
+        // Load environment-based limits
+        this.limits = getLimits();
+        if (isMobileMode()) {
+            this.logger.info('Running in mobile mode with reduced limits');
+        }
 
         // Start periodic cleanup every 30 minutes instead of per-game-creation
         this.startPeriodicCleanup();
+    }
+
+    /**
+     * Inject SocketBatchService for room cleanup
+     * @param {SocketBatchService} socketBatchService - The socket batch service instance
+     */
+    setSocketBatchService(socketBatchService) {
+        this.socketBatchService = socketBatchService;
     }
 
     /**
@@ -117,12 +133,19 @@ class GameSessionService {
    * Create a new game session
    * @param {string} hostId - Socket ID of the host
    * @param {Object} quiz - Quiz data
-   * @returns {Object} Game instance
+   * @returns {Object} Game instance or throws error if limit reached
    */
     createGame(hostId, quiz) {
-        const game = new Game(hostId, quiz, this.logger, this.config);
+        // Enforce concurrent game limit
+        if (this.games.size >= this.limits.MAX_CONCURRENT_GAMES) {
+            const error = new Error(`Maximum concurrent games limit reached (${this.limits.MAX_CONCURRENT_GAMES})`);
+            error.code = 'GAME_LIMIT_REACHED';
+            throw error;
+        }
+
+        const game = new Game(hostId, quiz, this.logger, this.config, this.limits);
         this.games.set(game.pin, game);
-        this.logger.info(`Game created with PIN: ${game.pin}`);
+        this.logger.info(`Game created with PIN: ${game.pin} (${this.games.size}/${this.limits.MAX_CONCURRENT_GAMES} games)`);
         return game;
     }
 
@@ -160,6 +183,12 @@ class GameSessionService {
         const game = this.games.get(pin);
         if (game) {
             game.cleanup();
+
+            // Clean up socket batch service room to prevent memory leaks
+            if (this.socketBatchService) {
+                this.socketBatchService.cleanupRoom(`game-${pin}`);
+            }
+
             this.games.delete(pin);
             this.logger.info(`Game ${pin} deleted`);
         }
@@ -574,9 +603,20 @@ class GameSessionService {
         // Emit game-end event after brief delay
         setTimeout(() => {
             if (game.gameState === 'finished') {
-                io.to(`game-${game.pin}`).emit('game-end', {
+                // Send to host (broadcast leaderboard)
+                io.to(game.hostId).emit('game-end', {
                     finalLeaderboard: game.leaderboard
                 });
+
+                // Send to each player with their personal concept mastery
+                game.players.forEach((player, playerId) => {
+                    const conceptMastery = game.calculatePlayerConceptMastery(playerId);
+                    io.to(playerId).emit('game-end', {
+                        finalLeaderboard: game.leaderboard,
+                        conceptMastery: conceptMastery
+                    });
+                });
+
                 this.logger.debug(`Game ${game.pin} ended with ${game.players.size} players`);
             }
         }, 1000);
@@ -587,7 +627,7 @@ class GameSessionService {
  * Game class representing a single game session
  */
 class Game {
-    constructor(hostId, quiz, logger, config) {
+    constructor(hostId, quiz, logger, config, limits = null) {
         this.id = uuidv4();
         this.pin = this.generatePin();
         this.hostId = hostId;
@@ -611,6 +651,7 @@ class Game {
         this.powerUpsEnabled = quiz.powerUpsEnabled || false;
         this.logger = logger;
         this.config = config;
+        this.limits = limits || getLimits(); // Use injected limits or get from config
 
         // Scoring configuration (optional, per-game session)
         // Falls back to server defaults if not provided
@@ -619,6 +660,21 @@ class Game {
         // Per-player answer option mapping for shuffled answers
         // Maps playerId -> array where mapping[shuffledIndex] = originalIndex
         this.answerMappings = new Map();
+
+        // Consensus mode properties
+        this.isConsensusMode = quiz.consensusMode || false;
+        this.consensusConfig = {
+            threshold: parseInt(quiz.consensusThreshold || '66', 10),
+            discussionTime: quiz.discussionTime || 30,
+            allowChat: quiz.allowChat || false
+        };
+        this.teamScore = 0;
+        // Proposals for current question: Map<playerId, answerIndex>
+        this.proposals = new Map();
+        // Discussion messages for current question
+        this.discussionMessages = [];
+        // Tracks whether consensus was locked for current question
+        this.consensusLocked = false;
     }
 
     /**
@@ -632,8 +688,17 @@ class Game {
    * Add a player to the game
    * @param {string} playerId - Socket ID of the player
    * @param {string} playerName - Player's name
+   * @returns {Object} Result with success status and player data or error
    */
     addPlayer(playerId, playerName) {
+        // Enforce player limit
+        if (this.players.size >= this.limits.MAX_PLAYERS_PER_GAME) {
+            return {
+                success: false,
+                error: `Game is full (max ${this.limits.MAX_PLAYERS_PER_GAME} players)`
+            };
+        }
+
         const playerData = {
             id: playerId,
             name: playerName,
@@ -643,6 +708,7 @@ class Game {
         };
 
         this.players.set(playerId, playerData);
+        return { success: true, player: playerData };
     }
 
     /**
@@ -891,6 +957,196 @@ class Game {
         return { isCorrect, points, doublePointsUsed: doublePointsMultiplier > 1, breakdown };
     }
 
+    // ==================== CONSENSUS MODE METHODS ====================
+
+    /**
+     * Submit or update a proposal for the current question
+     * @param {string} playerId - Player's socket ID
+     * @param {number} answer - Proposed answer index
+     * @returns {Object} Updated proposal distribution
+     */
+    submitProposal(playerId, answer) {
+        if (!this.isConsensusMode || this.consensusLocked) {
+            return null;
+        }
+
+        this.proposals.set(playerId, answer);
+        return this.getProposalDistribution();
+    }
+
+    /**
+     * Get the current proposal distribution
+     * @returns {Object} Distribution with counts, players, percentage, and leading answer
+     */
+    getProposalDistribution() {
+        const distribution = {};
+        const playersByAnswer = {};
+        let totalProposals = 0;
+
+        // Count proposals and track players per answer
+        for (const [playerId, answer] of this.proposals) {
+            if (!distribution[answer]) {
+                distribution[answer] = 0;
+                playersByAnswer[answer] = [];
+            }
+            distribution[answer]++;
+            totalProposals++;
+
+            const player = this.players.get(playerId);
+            if (player) {
+                playersByAnswer[answer].push(player.name);
+            }
+        }
+
+        // Find leading answer
+        let leadingAnswer = null;
+        let maxCount = 0;
+        for (const [answer, count] of Object.entries(distribution)) {
+            if (count > maxCount) {
+                maxCount = count;
+                leadingAnswer = parseInt(answer, 10);
+            }
+        }
+
+        // Calculate consensus percentage for leading answer
+        const totalPlayers = this.players.size;
+        const consensusPercent = totalPlayers > 0
+            ? Math.round((maxCount / totalPlayers) * 100)
+            : 0;
+
+        return {
+            proposals: Object.fromEntries(
+                Object.entries(distribution).map(([answer, count]) => [
+                    answer,
+                    { count, players: playersByAnswer[answer] || [] }
+                ])
+            ),
+            consensusPercent,
+            leadingAnswer,
+            totalProposals,
+            totalPlayers
+        };
+    }
+
+    /**
+     * Check if consensus threshold has been reached
+     * @returns {Object|null} Consensus result or null if not reached
+     */
+    checkConsensus() {
+        if (!this.isConsensusMode) return null;
+
+        const distribution = this.getProposalDistribution();
+        const threshold = this.consensusConfig.threshold;
+
+        if (distribution.consensusPercent >= threshold) {
+            return {
+                reached: true,
+                answer: distribution.leadingAnswer,
+                percentage: distribution.consensusPercent
+            };
+        }
+
+        return { reached: false };
+    }
+
+    /**
+     * Lock in the current consensus and calculate team points
+     * @returns {Object} Consensus result with team points
+     */
+    lockConsensus() {
+        if (!this.isConsensusMode || this.consensusLocked) {
+            return null;
+        }
+
+        this.consensusLocked = true;
+        const consensus = this.checkConsensus();
+        const question = this.quiz.questions[this.currentQuestion];
+
+        if (!consensus || !consensus.reached) {
+            // No consensus reached - no points
+            return {
+                answer: null,
+                percentage: 0,
+                isCorrect: false,
+                teamPoints: 0
+            };
+        }
+
+        // Check if consensus answer is correct
+        const correctAnswer = this.getCorrectAnswerKey(question);
+        const isCorrect = consensus.answer === correctAnswer;
+
+        // Calculate team points with consensus bonus
+        let teamPoints = 0;
+        if (isCorrect) {
+            const difficultyMultiplier = this.config.SCORING.DIFFICULTY_MULTIPLIERS[question.difficulty] || 2;
+            const basePoints = this.config.SCORING.BASE_POINTS * difficultyMultiplier;
+
+            // Consensus bonus multiplier
+            let consensusBonus = 1.0;
+            if (consensus.percentage === 100) {
+                consensusBonus = 1.5; // Unanimous
+            } else if (consensus.percentage >= 75) {
+                consensusBonus = 1.2; // Strong consensus
+            }
+
+            teamPoints = Math.floor(basePoints * consensusBonus);
+        }
+
+        this.teamScore += teamPoints;
+
+        return {
+            answer: consensus.answer,
+            percentage: consensus.percentage,
+            isCorrect,
+            teamPoints,
+            totalTeamScore: this.teamScore
+        };
+    }
+
+    /**
+     * Reset consensus state for new question
+     */
+    resetConsensusForQuestion() {
+        this.proposals.clear();
+        this.discussionMessages = [];
+        this.consensusLocked = false;
+    }
+
+    /**
+     * Add a discussion message (quick response or chat)
+     * @param {string} playerId - Player's socket ID
+     * @param {string} type - Message type ('quick' or 'chat')
+     * @param {string} content - Message content or quick response type
+     * @param {string} targetPlayer - Optional target player for "agree" responses
+     * @returns {Object} The created message
+     */
+    addDiscussionMessage(playerId, type, content, targetPlayer = null) {
+        const player = this.players.get(playerId);
+        if (!player) return null;
+
+        const message = {
+            id: Date.now().toString(),
+            playerId,
+            playerName: player.name,
+            type,
+            content,
+            targetPlayer,
+            timestamp: Date.now()
+        };
+
+        this.discussionMessages.push(message);
+
+        // Keep only last 50 messages to prevent memory issues
+        if (this.discussionMessages.length > 50) {
+            this.discussionMessages.shift();
+        }
+
+        return message;
+    }
+
+    // ==================== END CONSENSUS MODE METHODS ====================
+
     /**
    * Get the correct answer key for a question based on its type
    * @param {Object} question - Question data
@@ -1093,7 +1349,8 @@ class Game {
                     correctAnswers: q.correctAnswers,
                     correctOrder: q.correctOrder,
                     difficulty: q.difficulty || 'medium',
-                    timeLimit: q.timeLimit || q.time
+                    timeLimit: q.timeLimit || q.time,
+                    concepts: q.concepts || []
                 }))
             };
 
@@ -1103,6 +1360,56 @@ class Game {
         } catch (error) {
             this.logger.error('Error saving game results:', error);
         }
+    }
+
+    /**
+     * Calculate personal concept mastery for a specific player
+     * @param {string} playerId - Socket ID of the player
+     * @returns {Object} Concept mastery data for this player
+     */
+    calculatePlayerConceptMastery(playerId) {
+        const player = this.players.get(playerId);
+        if (!player || !player.answers) {
+            return { concepts: [], hasConcepts: false };
+        }
+
+        const conceptStats = {};
+
+        // Analyze each question's concepts and player's performance
+        this.quiz.questions.forEach((question, qIndex) => {
+            const concepts = question.concepts || [];
+            if (concepts.length === 0) return;
+
+            const answer = player.answers[qIndex];
+            const isCorrect = answer?.isCorrect || false;
+
+            concepts.forEach(concept => {
+                if (!conceptStats[concept]) {
+                    conceptStats[concept] = {
+                        name: concept,
+                        total: 0,
+                        correct: 0
+                    };
+                }
+                conceptStats[concept].total++;
+                if (isCorrect) conceptStats[concept].correct++;
+            });
+        });
+
+        // Calculate mastery percentages and sort
+        const conceptList = Object.values(conceptStats)
+            .map(c => ({
+                name: c.name,
+                mastery: c.total > 0 ? Math.round((c.correct / c.total) * 100) : 0,
+                correct: c.correct,
+                total: c.total
+            }))
+            .sort((a, b) => a.mastery - b.mastery); // Weakest first
+
+        return {
+            concepts: conceptList,
+            hasConcepts: conceptList.length > 0
+        };
     }
 
     /**
@@ -1162,6 +1469,14 @@ class Game {
                 player.powerUps = this.createInitialPowerUpState();
             }
         });
+
+        // Reset consensus mode state
+        if (this.isConsensusMode) {
+            this.teamScore = 0;
+            this.proposals.clear();
+            this.discussionMessages = [];
+            this.consensusLocked = false;
+        }
 
         this.logger.info(`Game ${this.pin} reset for rematch with ${this.players.size} players`);
     }

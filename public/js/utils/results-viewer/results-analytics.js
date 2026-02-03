@@ -272,9 +272,10 @@ function inferCorrectAnswer(results, questionIndex) {
  * @param {Object} result - Quiz result data
  * @param {Array} analytics - Question analytics array
  * @param {Object} summary - Summary statistics
+ * @param {Object} [conceptData] - Optional concept mastery data
  * @returns {HTMLElement} Analytics modal element
  */
-export function createAnalyticsModal(result, analytics, summary) {
+export function createAnalyticsModal(result, analytics, summary, conceptData = null) {
     const existingModal = document.getElementById('analytics-modal');
     if (existingModal) {
         existingModal.remove();
@@ -309,6 +310,7 @@ export function createAnalyticsModal(result, analytics, summary) {
                 <button class="tab-btn active" data-tab="overview">Overview</button>
                 <button class="tab-btn" data-tab="questions">Questions</button>
                 <button class="tab-btn" data-tab="insights">Insights</button>
+                ${conceptData?.hasConcepts ? '<button class="tab-btn" data-tab="concepts">Concepts</button>' : ''}
             </div>
 
             <div class="tab-content active" id="overview-tab">
@@ -398,6 +400,8 @@ export function createAnalyticsModal(result, analytics, summary) {
                 </div>
             </div>
 
+            ${conceptData?.hasConcepts ? buildConceptsTabContent(conceptData, result) : ''}
+
             <div class="modal-footer">
                 <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
                 <button class="btn secondary" data-action="export-excel" data-filename="${safeFilename}">Export Excel</button>
@@ -408,6 +412,92 @@ export function createAnalyticsModal(result, analytics, summary) {
     `;
 
     return modal;
+}
+
+/**
+ * Build HTML content for the Concepts tab
+ * @param {Object} conceptData - Concept mastery data
+ * @param {Object} result - Original quiz result
+ * @returns {string} HTML string for concepts tab
+ */
+function buildConceptsTabContent(conceptData, result) {
+    const { concepts } = conceptData;
+    const sortedConcepts = Object.values(concepts)
+        .sort((a, b) => a.masteryRate - b.masteryRate);
+
+    // Generate dependencies and insights
+    const dependencies = inferConceptDependencies(conceptData, result);
+    const insights = generateConceptInsights(conceptData, dependencies);
+
+    // Build concept list HTML
+    const conceptListHtml = sortedConcepts.map(concept => {
+        const levelIcon = getMasteryIcon(concept.masteryRate);
+
+        return `
+            <div class="concept-mastery-item ${concept.masteryLevel}">
+                <div class="concept-info">
+                    <span class="concept-level-icon">${levelIcon}</span>
+                    <span class="concept-name">${escapeHtml(concept.name)}</span>
+                    <span class="concept-question-count">${concept.questionCount} Q</span>
+                </div>
+                <div class="concept-bar-container">
+                    <div class="concept-bar" style="width: ${concept.masteryRate}%;"></div>
+                </div>
+                <div class="concept-percentage">${concept.masteryRate.toFixed(0)}%</div>
+            </div>
+        `;
+    }).join('');
+
+    // Build insights HTML
+    const insightsHtml = insights.length > 0 ? insights.map(insight => `
+        <div class="concept-insight-card ${insight.severity}">
+            <div class="insight-title">${escapeHtml(insight.title)}</div>
+            <div class="insight-message">${escapeHtml(insight.message)}</div>
+            ${insight.concepts ? `
+                <div class="insight-concepts">
+                    ${insight.concepts.map(c => `<span class="insight-concept-tag">${escapeHtml(c)}</span>`).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `).join('') : '<p class="no-issues">All concepts are performing well!</p>';
+
+    return `
+        <div class="tab-content" id="concepts-tab">
+            <div class="concepts-section">
+                <div class="concepts-header">
+                    <h3>Concept Mastery</h3>
+                    <div class="concepts-legend">
+                        <span class="legend-item mastered"><span class="legend-color"></span> Mastered (80%+)</span>
+                        <span class="legend-item proficient"><span class="legend-color"></span> Proficient (60-79%)</span>
+                        <span class="legend-item developing"><span class="legend-color"></span> Developing (40-59%)</span>
+                        <span class="legend-item needs-work"><span class="legend-color"></span> Needs Work (&lt;40%)</span>
+                    </div>
+                </div>
+
+                <div class="chart-container concept-chart-container">
+                    <canvas id="concept-mastery-chart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="concept-mastery-list">
+                    ${conceptListHtml}
+                </div>
+
+                <div class="concept-insights-section">
+                    <div class="insights-header">
+                        <h3>Study Suggestions</h3>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="show-study-suggestions">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Show suggestions</span>
+                        </label>
+                    </div>
+                    <div class="concept-insights-content" id="concept-insights-content" style="display: none;">
+                        ${insightsHtml}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 /**
@@ -1178,6 +1268,325 @@ export function calculateComparativeMetrics(resultsArray) {
     };
 }
 
+// ============================================================================
+// Concept Mastery Analytics
+// ============================================================================
+
+/**
+ * Calculate per-concept mastery levels from quiz results
+ * @param {Object} result - Quiz result data with questions and player answers
+ * @returns {Object} Concept mastery data with per-concept stats
+ */
+export function calculateConceptMastery(result) {
+    if (!result.questions || !result.results) {
+        return { concepts: {}, hasConcepts: false };
+    }
+
+    const conceptStats = {};
+
+    // Analyze each question's performance by concept
+    result.questions.forEach((question, qIndex) => {
+        const concepts = question.concepts || [];
+        if (concepts.length === 0) return;
+
+        // Get performance data for this question
+        let correct = 0;
+        let total = 0;
+        let totalTime = 0;
+
+        result.results.forEach(player => {
+            const answer = player.answers && player.answers[qIndex];
+            if (answer) {
+                total++;
+                if (answer.isCorrect) correct++;
+                totalTime += (answer.timeMs || 0) / 1000;
+            }
+        });
+
+        // Attribute to each concept
+        concepts.forEach(concept => {
+            if (!conceptStats[concept]) {
+                conceptStats[concept] = {
+                    name: concept,
+                    questionCount: 0,
+                    totalResponses: 0,
+                    correctResponses: 0,
+                    totalTime: 0,
+                    questionIndices: []
+                };
+            }
+
+            conceptStats[concept].questionCount++;
+            conceptStats[concept].totalResponses += total;
+            conceptStats[concept].correctResponses += correct;
+            conceptStats[concept].totalTime += totalTime;
+            conceptStats[concept].questionIndices.push(qIndex);
+        });
+    });
+
+    // Calculate derived metrics for each concept
+    Object.values(conceptStats).forEach(concept => {
+        concept.masteryRate = concept.totalResponses > 0
+            ? (concept.correctResponses / concept.totalResponses) * 100
+            : 0;
+        concept.averageTime = concept.totalResponses > 0
+            ? concept.totalTime / concept.totalResponses
+            : 0;
+        concept.masteryLevel = getMasteryLevel(concept.masteryRate);
+    });
+
+    return {
+        concepts: conceptStats,
+        hasConcepts: Object.keys(conceptStats).length > 0
+    };
+}
+
+/**
+ * Get mastery level category from percentage
+ * @param {number} rate - Mastery percentage
+ * @returns {string} Mastery level category
+ */
+function getMasteryLevel(rate) {
+    if (rate >= 80) return 'mastered';
+    if (rate >= 60) return 'proficient';
+    if (rate >= 40) return 'developing';
+    return 'needs-work';
+}
+
+/**
+ * Get icon for mastery level display
+ * @param {number} rate - Mastery percentage
+ * @returns {string} Icon character
+ */
+function getMasteryIcon(rate) {
+    if (rate >= 80) return '✓';
+    if (rate >= 60) return '○';
+    if (rate >= 40) return '△';
+    return '!';
+}
+
+/**
+ * Infer concept dependencies based on co-occurrence patterns
+ * Uses correlation between concept performance to suggest dependencies
+ * @param {Object} conceptMastery - Concept mastery data
+ * @param {Object} result - Original quiz result
+ * @returns {Array} Array of dependency insights
+ */
+export function inferConceptDependencies(conceptMastery, result) {
+    const { concepts } = conceptMastery;
+    const conceptNames = Object.keys(concepts);
+    const dependencies = [];
+
+    if (conceptNames.length < 2) return dependencies;
+
+    // Build per-player performance matrix for each concept
+    const playerConceptPerformance = {};
+
+    result.results.forEach((player, playerIdx) => {
+        playerConceptPerformance[playerIdx] = {};
+
+        conceptNames.forEach(concept => {
+            const conceptData = concepts[concept];
+            let correct = 0;
+            let total = 0;
+
+            conceptData.questionIndices.forEach(qIdx => {
+                const answer = player.answers && player.answers[qIdx];
+                if (answer) {
+                    total++;
+                    if (answer.isCorrect) correct++;
+                }
+            });
+
+            playerConceptPerformance[playerIdx][concept] = total > 0 ? correct / total : null;
+        });
+    });
+
+    // Find correlations between concept pairs
+    for (let i = 0; i < conceptNames.length; i++) {
+        for (let j = i + 1; j < conceptNames.length; j++) {
+            const conceptA = conceptNames[i];
+            const conceptB = conceptNames[j];
+            const statsA = concepts[conceptA];
+            const statsB = concepts[conceptB];
+
+            // Skip if both are well-mastered or both are weak
+            if ((statsA.masteryRate >= 70 && statsB.masteryRate >= 70) ||
+                (statsA.masteryRate < 40 && statsB.masteryRate < 40)) {
+                continue;
+            }
+
+            // Check correlation: when one is weak, is the other also weak?
+            let bothWeak = 0;
+            let oneStrongOneWeak = 0;
+            let validPairs = 0;
+
+            Object.values(playerConceptPerformance).forEach(playerPerf => {
+                const perfA = playerPerf[conceptA];
+                const perfB = playerPerf[conceptB];
+
+                if (perfA !== null && perfB !== null) {
+                    validPairs++;
+                    if (perfA < 0.5 && perfB < 0.5) bothWeak++;
+                    if ((perfA >= 0.7 && perfB < 0.5) || (perfB >= 0.7 && perfA < 0.5)) {
+                        oneStrongOneWeak++;
+                    }
+                }
+            });
+
+            // If significant correlation found
+            if (validPairs >= 3 && bothWeak / validPairs > 0.4) {
+                // Determine which is likely foundational (lower mastery often = foundational gap)
+                const weaker = statsA.masteryRate < statsB.masteryRate ? conceptA : conceptB;
+                const stronger = weaker === conceptA ? conceptB : conceptA;
+
+                dependencies.push({
+                    type: 'correlation',
+                    foundational: weaker,
+                    dependent: stronger,
+                    confidence: (bothWeak / validPairs * 100).toFixed(0),
+                    message: `Strengthen "${weaker}" to improve "${stronger}"`,
+                    severity: statsA.masteryRate < 50 || statsB.masteryRate < 50 ? 'high' : 'medium'
+                });
+            }
+        }
+    }
+
+    return dependencies;
+}
+
+/**
+ * Generate study insights based on concept mastery data
+ * @param {Object} conceptMastery - Concept mastery data
+ * @param {Array} dependencies - Inferred dependencies
+ * @returns {Array} Array of insight objects
+ */
+export function generateConceptInsights(conceptMastery, dependencies) {
+    const { concepts } = conceptMastery;
+    const insights = [];
+
+    // Sort concepts by mastery rate
+    const sortedConcepts = Object.values(concepts)
+        .sort((a, b) => a.masteryRate - b.masteryRate);
+
+    // Identify concepts needing work
+    const needsWork = sortedConcepts.filter(c => c.masteryRate < 60);
+    if (needsWork.length > 0) {
+        insights.push({
+            type: 'focus-areas',
+            title: 'Focus Areas',
+            message: `${needsWork.length} concept${needsWork.length > 1 ? 's' : ''} need${needsWork.length === 1 ? 's' : ''} improvement`,
+            concepts: needsWork.map(c => c.name),
+            severity: needsWork.some(c => c.masteryRate < 40) ? 'high' : 'medium'
+        });
+    }
+
+    // Identify strengths
+    const strengths = sortedConcepts.filter(c => c.masteryRate >= 80);
+    if (strengths.length > 0) {
+        insights.push({
+            type: 'strengths',
+            title: 'Strong Areas',
+            message: `${strengths.length} concept${strengths.length > 1 ? 's' : ''} mastered`,
+            concepts: strengths.map(c => c.name),
+            severity: 'success'
+        });
+    }
+
+    // Add dependency insights
+    dependencies.forEach(dep => {
+        insights.push({
+            type: 'dependency',
+            title: 'Study Suggestion',
+            message: dep.message,
+            severity: dep.severity
+        });
+    });
+
+    return insights;
+}
+
+/**
+ * Create horizontal bar chart for concept mastery visualization
+ * @param {string} canvasId - Canvas element ID
+ * @param {Object} conceptMastery - Concept mastery data
+ */
+export function createConceptMasteryChart(canvasId, conceptMastery) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx || typeof Chart === 'undefined') {
+        return null;
+    }
+
+    const { concepts } = conceptMastery;
+    if (!concepts || Object.keys(concepts).length === 0) {
+        return null;
+    }
+
+    // Sort by mastery rate descending
+    const sortedConcepts = Object.values(concepts)
+        .sort((a, b) => b.masteryRate - a.masteryRate);
+
+    const labels = sortedConcepts.map(c => c.name.length > 25 ? c.name.substring(0, 22) + '...' : c.name);
+    const data = sortedConcepts.map(c => c.masteryRate);
+    const colors = sortedConcepts.map(c => {
+        if (c.masteryRate >= 80) return '#10b981'; // green
+        if (c.masteryRate >= 60) return '#f59e0b'; // yellow
+        if (c.masteryRate >= 40) return '#f97316'; // orange
+        return '#ef4444'; // red
+    });
+
+    return new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Mastery %',
+                data: data,
+                backgroundColor: colors,
+                borderColor: '#374151',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Concept Mastery Levels'
+                },
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const concept = sortedConcepts[context.dataIndex];
+                            return [
+                                `Questions: ${concept.questionCount}`,
+                                `Responses: ${concept.totalResponses}`,
+                                `Avg Time: ${concept.averageTime.toFixed(1)}s`
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
 export default {
     calculateQuestionAnalytics,
     getQuizSummaryStats,
@@ -1190,5 +1599,9 @@ export default {
     createNumericDistributionChart,
     createMultipleCorrectChart,
     createComparisonChart,
-    calculateComparativeMetrics
+    calculateComparativeMetrics,
+    calculateConceptMastery,
+    inferConceptDependencies,
+    generateConceptInsights,
+    createConceptMasteryChart
 };

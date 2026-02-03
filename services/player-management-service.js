@@ -67,8 +67,14 @@ class PlayerManagementService {
             };
         }
 
-        // Add player to game
-        game.addPlayer(socketId, name);
+        // Add player to game (returns result object with success/error)
+        const addResult = game.addPlayer(socketId, name);
+        if (!addResult.success) {
+            return {
+                success: false,
+                error: addResult.error
+            };
+        }
         this.players.set(socketId, { gamePin: pin, name });
 
         // Join socket room

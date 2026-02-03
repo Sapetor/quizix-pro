@@ -112,6 +112,21 @@ export class QuizManager {
     }
 
     /**
+     * Extract concept tags from question element
+     * @param {HTMLElement} questionElement - The question DOM element
+     * @returns {string[]} Array of concept strings
+     */
+    extractConceptTags(questionElement) {
+        const tagsList = questionElement.querySelector('.concept-tags-list');
+        if (!tagsList) return [];
+
+        const tags = tagsList.querySelectorAll('.concept-tag');
+        return Array.from(tags)
+            .map(tag => tag.dataset.concept || tag.textContent.replace('×', '').trim())
+            .filter(Boolean);
+    }
+
+    /**
      * Extract and process image data from question element
      */
     extractQuestionImageData(questionElement, questionData) {
@@ -171,6 +186,12 @@ export class QuizManager {
         const explanation = questionElement.querySelector('.question-explanation')?.value?.trim();
         if (explanation) {
             questionData.explanation = explanation;
+        }
+
+        // Extract concept tags
+        const concepts = this.extractConceptTags(questionElement);
+        if (concepts.length > 0) {
+            questionData.concepts = concepts;
         }
 
         // Use QuestionTypeRegistry for type-specific data extraction
@@ -1146,6 +1167,93 @@ export class QuizManager {
             questionExplanation.value = questionData.explanation;
             logger.debug('Set explanation:', questionData.explanation.substring(0, 50) + '...');
         }
+
+        // Ensure concept container exists (for backward compatibility with old questions)
+        // and populate concept tags if present
+        this.ensureConceptTagsContainer(questionElement);
+        if (questionData.concepts && Array.isArray(questionData.concepts)) {
+            this.populateConceptTags(questionElement, questionData.concepts);
+        }
+    }
+
+    /**
+     * Ensure concept tags container exists in question element
+     * @param {HTMLElement} questionElement - The question DOM element
+     * @returns {HTMLElement|null} The concept-tags-list element
+     */
+    ensureConceptTagsContainer(questionElement) {
+        let tagsList = questionElement.querySelector('.concept-tags-list');
+        if (tagsList) return tagsList;
+
+        // Container doesn't exist - inject it (for backward compatibility with old questions)
+        const questionMeta = questionElement.querySelector('.question-meta');
+        if (!questionMeta) return null;
+
+        const container = document.createElement('div');
+        container.className = 'concept-tags-container';
+        container.innerHTML = `
+            <label data-translate="concepts">Concepts</label>
+            <div class="concept-tags-input">
+                <div class="concept-tags-list"></div>
+                <input type="text" class="concept-input" placeholder="Add concept..." data-translate-placeholder="add_concept" maxlength="30">
+            </div>
+            <div class="concept-hint" data-translate="concept_hint">Press Enter to add (max 5)</div>
+        `;
+
+        // Insert before time-limit-container
+        const timeContainer = questionMeta.querySelector('.time-limit-container');
+        if (timeContainer) {
+            questionMeta.insertBefore(container, timeContainer);
+        } else {
+            questionMeta.appendChild(container);
+        }
+
+        // Note: Event handling uses document-level delegation (see setupEventDelegation)
+        // so no specific listener setup needed for the new input
+
+        logger.debug('Injected concept-tags-container for backward compatibility');
+        return container.querySelector('.concept-tags-list');
+    }
+
+    /**
+     * Populate concept tags in question element
+     * @param {HTMLElement} questionElement - The question DOM element
+     * @param {string[]} concepts - Array of concept strings
+     */
+    populateConceptTags(questionElement, concepts) {
+        const tagsList = this.ensureConceptTagsContainer(questionElement);
+        if (!tagsList) return;
+
+        tagsList.innerHTML = '';
+        concepts.slice(0, 5).forEach(concept => {
+            this.createConceptTag(tagsList, concept, false);
+        });
+        logger.debug('Populated concept tags:', concepts);
+    }
+
+    /**
+     * Create a concept tag element and append to container
+     * @param {HTMLElement} tagsList - The container for tags
+     * @param {string} concept - The concept text
+     * @param {boolean} triggerAutoSave - Whether to trigger auto-save on removal
+     * @returns {HTMLElement} The created tag element
+     */
+    createConceptTag(tagsList, concept, triggerAutoSave = true) {
+        const tag = document.createElement('span');
+        tag.className = 'concept-tag';
+        tag.dataset.concept = concept;
+        tag.innerHTML = `${escapeHtml(concept)}<button type="button" class="concept-tag-remove" aria-label="Remove">×</button>`;
+
+        tag.querySelector('.concept-tag-remove').addEventListener('click', (e) => {
+            e.stopPropagation();
+            tag.remove();
+            if (triggerAutoSave) {
+                this.scheduleAutoSave();
+            }
+        });
+
+        tagsList.appendChild(tag);
+        return tag;
     }
 
     /**
@@ -1643,6 +1751,63 @@ export class QuizManager {
                 this.scheduleAutoSave();
             }
         });
+
+        // Setup concept tag input handlers
+        this.setupConceptTagHandlers();
+    }
+
+    /**
+     * Setup event handlers for concept tag inputs
+     * Uses event delegation for dynamically added questions
+     */
+    setupConceptTagHandlers() {
+        // Handle Enter key to add concept tags
+        this.addDocumentListenerTracked('keydown', (event) => {
+            if (event.key === 'Enter' && event.target.classList.contains('concept-input')) {
+                event.preventDefault();
+                this.handleConceptTagInput(event.target);
+            }
+        });
+
+        // Handle blur to add concept tag (if user clicks away after typing)
+        this.addDocumentListenerTracked('blur', (event) => {
+            if (event.target.classList.contains('concept-input')) {
+                this.handleConceptTagInput(event.target);
+            }
+        }, { capture: true });
+    }
+
+    /**
+     * Handle adding a concept tag from input
+     * @param {HTMLInputElement} input - The concept input element
+     */
+    handleConceptTagInput(input) {
+        const concept = input.value.trim();
+        if (!concept) return;
+
+        const container = input.closest('.concept-tags-container');
+        const tagsList = container?.querySelector('.concept-tags-list');
+        if (!tagsList) return;
+
+        // Check max 5 tags limit
+        const existingTags = tagsList.querySelectorAll('.concept-tag');
+        if (existingTags.length >= 5) {
+            input.value = '';
+            return;
+        }
+
+        // Check for duplicates
+        const isDuplicate = Array.from(existingTags).some(
+            tag => (tag.dataset.concept || '').toLowerCase() === concept.toLowerCase()
+        );
+        if (isDuplicate) {
+            input.value = '';
+            return;
+        }
+
+        this.createConceptTag(tagsList, concept, true);
+        input.value = '';
+        this.scheduleAutoSave();
     }
 
     // ==================== MEMORY MANAGEMENT METHODS ====================

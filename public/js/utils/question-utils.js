@@ -42,7 +42,16 @@ export class QuestionUtils {
                     <option value="medium" selected data-translate="medium">Medium</option>
                     <option value="hard" data-translate="hard">Hard</option>
                 </select>
-                
+
+                <div class="concept-tags-container">
+                    <label data-translate="concepts">Concepts</label>
+                    <div class="concept-tags-input">
+                        <div class="concept-tags-list"></div>
+                        <input type="text" class="concept-input" placeholder="Add concept..." data-translate-placeholder="add_concept" maxlength="30">
+                    </div>
+                    <div class="concept-hint" data-translate="concept_hint">Press Enter to add (max 5)</div>
+                </div>
+
                 <div class="time-limit-container">
                     <label>
                         <span data-translate="time_seconds">Time (sec)</span>
@@ -250,8 +259,9 @@ export function addQuestion() {
 
 /**
  * Create a question element with given data
+ * Note: questionData parameter reserved for future use when populating from data
  */
-export function createQuestionElement(_questionData) {
+export function createQuestionElement() {
     const questionDiv = document.createElement('div');
     questionDiv.className = 'question-item';
 

@@ -6,7 +6,8 @@
 
 import { translationManager, getTranslation, getTrueFalseText } from '../../utils/translation-manager.js';
 import { logger, TIMING, COLORS } from '../../core/config.js';
-import { escapeHtmlPreservingLatex } from '../../utils/dom.js';
+import { escapeHtmlPreservingLatex, escapeHtml, formatCodeBlocks } from '../../utils/dom.js';
+import { QuestionTypeRegistry } from '../../utils/question-type-registry.js';
 
 export class QuestionRenderer {
     constructor(displayManager, stateManager, uiManager, gameManager) {
@@ -93,12 +94,6 @@ export class QuestionRenderer {
             if (hostMultipleChoice) {
                 hostMultipleChoice.classList.add('numeric-question-type');
             }
-        } else if (data.type === 'ordering') {
-            hostOptionsContainer.style.display = 'block';
-            if (hostMultipleChoice) {
-                hostMultipleChoice.classList.remove('numeric-question-type');
-            }
-            this.setupHostOrderingOptions(data, hostOptionsContainer);
         } else {
             hostOptionsContainer.style.display = 'block';
             // Remove the numeric-question-type class for non-numeric questions
@@ -106,11 +101,14 @@ export class QuestionRenderer {
                 hostMultipleChoice.classList.remove('numeric-question-type');
             }
 
-            if (data.type === 'true-false') {
-                this.setupHostTrueFalseOptions(hostOptionsContainer);
-            } else {
-                this.setupHostMultipleChoiceOptions(data, hostOptionsContainer);
-            }
+            // Use registry to render host options
+            const helpers = {
+                escapeHtml,
+                formatCodeBlocks,
+                translationManager,
+                COLORS
+            };
+            QuestionTypeRegistry.renderHostOptions(data.type, data, hostOptionsContainer, helpers);
         }
 
         // Translate any dynamic content in the options container
@@ -120,103 +118,6 @@ export class QuestionRenderer {
         this.displayManager.renderQuestionMath(hostOptionsContainer, 350);
     }
 
-    /**
-     * Setup host true/false options display
-     */
-    setupHostTrueFalseOptions(hostOptionsContainer) {
-        hostOptionsContainer.innerHTML = `
-            <div class="true-false-options">
-                <div class="tf-option true-btn" data-answer="true">${getTrueFalseText().true}</div>
-                <div class="tf-option false-btn" data-answer="false">${getTrueFalseText().false}</div>
-            </div>
-        `;
-        hostOptionsContainer.style.display = 'block';
-        logger.debug('Host true/false options set up');
-    }
-
-    /**
-     * Setup host multiple choice options display
-     */
-    setupHostMultipleChoiceOptions(data, hostOptionsContainer) {
-        hostOptionsContainer.innerHTML = `
-            <div class="option-display" data-option="0"></div>
-            <div class="option-display" data-option="1"></div>
-            <div class="option-display" data-option="2"></div>
-            <div class="option-display" data-option="3"></div>
-        `;
-        hostOptionsContainer.style.display = 'grid';
-        const options = hostOptionsContainer.querySelectorAll('.option-display');
-
-        // Reset all option styles from previous questions
-        this.resetButtonStyles(options);
-
-        // Populate options with content
-        if (data.type === 'multiple-choice' || data.type === 'multiple-correct') {
-            data.options.forEach((option, index) => {
-                if (options[index]) {
-                    // Handle null/undefined options gracefully and escape to prevent XSS
-                    const optionText = option != null ? option : '';
-                    const safeOptionText = escapeHtmlPreservingLatex(optionText);
-                    options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${this.displayManager.mathRenderer.formatCodeBlocks(safeOptionText)}`;
-                    options[index].classList.add('tex2jax_process'); // Add MathJax processing class
-                    options[index].style.display = 'block';
-                    // Add data-multiple attribute for multiple-correct questions to get special styling
-                    if (data.type === 'multiple-correct') {
-                        options[index].setAttribute('data-multiple', 'true');
-                    } else {
-                        options[index].removeAttribute('data-multiple');
-                    }
-
-                    // Apply syntax highlighting to code blocks in this option
-                    this.displayManager.mathRenderer.applySyntaxHighlighting(options[index]);
-                }
-            });
-            // Hide unused options
-            for (let i = data.options.length; i < 4; i++) {
-                if (options[i]) {
-                    options[i].style.display = 'none';
-                }
-            }
-        }
-
-        logger.debug('Host multiple choice options set up');
-    }
-
-    /**
-     * Setup host ordering options display
-     */
-    setupHostOrderingOptions(data, hostOptionsContainer) {
-        if (!data.options || data.options.length === 0) {
-            logger.warn('No ordering options to display');
-            return;
-        }
-
-        // Shuffle the options for display (host sees them out of order)
-        const shuffledIndices = this.shuffleArray(data.options.map((_, i) => i));
-
-        // Use centralized ordering item colors from config
-        const itemColors = COLORS.ORDERING_ITEM_COLORS;
-
-        let html = '<div class="ordering-display">';
-
-        shuffledIndices.forEach((originalIndex, displayIndex) => {
-            const option = data.options[originalIndex];
-            const safeOption = escapeHtmlPreservingLatex(option || '');
-            const bgColor = itemColors[originalIndex % itemColors.length];
-            html += `
-                <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
-                    <div class="ordering-item-number">${displayIndex + 1}</div>
-                    <div class="ordering-item-content">${this.displayManager.mathRenderer.formatCodeBlocks(safeOption)}</div>
-                </div>
-            `;
-        });
-
-        html += '</div>';
-        hostOptionsContainer.innerHTML = html;
-        hostOptionsContainer.style.display = 'block';
-
-        logger.debug('Host ordering options set up');
-    }
 
     /**
      * Shuffle array using Fisher-Yates algorithm
@@ -316,256 +217,27 @@ export class QuestionRenderer {
         logger.debug('Setting up player options for type:', data.type);
         logger.debug('Options container element:', optionsContainer.tagName, optionsContainer.id, optionsContainer.className);
 
-        if (data.type === 'multiple-choice') {
-            this.setupPlayerMultipleChoiceOptions(data, optionsContainer);
-        } else if (data.type === 'multiple-correct') {
-            this.setupPlayerMultipleCorrectOptions(data, optionsContainer);
-        } else if (data.type === 'true-false') {
-            this.setupPlayerTrueFalseOptions(data, optionsContainer);
-        } else if (data.type === 'numeric') {
-            this.setupPlayerNumericOptions(data, optionsContainer);
-        } else if (data.type === 'ordering') {
-            this.setupPlayerOrderingOptions(data, optionsContainer);
+        // Use registry to render player options
+        const helpers = {
+            escapeHtml,
+            formatCodeBlocks,
+            translationManager,
+            COLORS
+        };
+        QuestionTypeRegistry.renderPlayerOptions(data.type, data, optionsContainer, helpers);
+
+        // Special handling for ordering after rendering
+        if (data.type === 'ordering') {
+            // Initialize drag-and-drop after a short delay to ensure DOM is ready
+            setTimeout(() => {
+                this.initializePlayerOrderingDragDrop();
+            }, 100);
         }
 
         // Use GameDisplayManager for MathJax rendering after options are set up
         this.displayManager.renderQuestionMath(optionsContainer, TIMING.RENDER_DELAY);
     }
 
-    /**
-     * Create missing player option elements dynamically (mobile compatibility fix)
-     */
-    createPlayerOptionElements(data, optionsContainer) {
-        logger.debug('Creating player option elements dynamically');
-
-        // Clear existing content to avoid conflicts
-        optionsContainer.innerHTML = '';
-
-        // Create the required number of option buttons
-        const numOptions = Math.max(data.options.length, 4); // Ensure at least 4 options (A, B, C, D)
-
-        for (let i = 0; i < numOptions; i++) {
-            const button = document.createElement('button');
-            button.className = 'player-option';
-            button.setAttribute('data-option', i.toString());
-            button.style.display = i < data.options.length ? 'block' : 'none';
-
-            // Add basic styling to match existing buttons
-            button.style.margin = '8px 0';
-            button.style.padding = '12px 16px';
-            button.style.border = '2px solid rgba(255, 255, 255, 0.2)';
-            button.style.borderRadius = '8px';
-            button.style.background = 'rgba(255, 255, 255, 0.05)';
-            button.style.color = 'inherit';
-            button.style.cursor = 'pointer';
-            button.style.width = '100%';
-            button.style.textAlign = 'left';
-            button.style.fontSize = 'inherit';
-
-            optionsContainer.appendChild(button);
-        }
-
-        logger.debug(`Created ${numOptions} player option elements`);
-    }
-
-    /**
-     * Setup player multiple choice options
-     */
-    setupPlayerMultipleChoiceOptions(data, optionsContainer) {
-        let existingButtons = optionsContainer.querySelectorAll('.player-option');
-
-        // Debug Android DOM issues
-        logger.debug(`Found ${existingButtons.length} player option buttons, need ${data.options.length}`);
-
-        // If no existing buttons found, create them (fixes mobile DOM issues)
-        if (existingButtons.length === 0) {
-            logger.warn('No .player-option elements found - creating them dynamically for mobile compatibility');
-            this.createPlayerOptionElements(data, optionsContainer);
-            existingButtons = optionsContainer.querySelectorAll('.player-option');
-
-            if (existingButtons.length === 0) {
-                logger.error('Failed to create .player-option elements - critical DOM issue!');
-                return;
-            }
-        }
-
-        existingButtons.forEach((button, index) => {
-            if (index < data.options.length) {
-                // Ensure button exists and is valid DOM element
-                if (!button || button.innerHTML === undefined) {
-                    logger.error(`Button ${index} is invalid:`, button);
-                    return;
-                }
-
-                const safeOption = escapeHtmlPreservingLatex(data.options[index] || '');
-                button.innerHTML = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${this.displayManager.mathRenderer.formatCodeBlocks(safeOption)}`;
-                button.setAttribute('data-answer', index.toString());
-                button.classList.remove('selected', 'disabled');
-                button.classList.add('tex2jax_process'); // Add MathJax processing class
-                button.style.display = 'block';
-
-                // Apply syntax highlighting to code blocks in this option
-                this.displayManager.mathRenderer.applySyntaxHighlighting(button);
-
-                // Use tracked event listeners from GameManager
-                this.gameManager.addEventListenerTracked(button, 'click', () => {
-                    logger.debug('Button clicked:', index);
-                    this.gameManager.selectAnswer(index);
-                });
-            } else {
-                button.style.display = 'none';
-            }
-        });
-
-        logger.debug('Player multiple choice options set up');
-    }
-
-    /**
-     * Setup player multiple correct options (checkboxes)
-     */
-    setupPlayerMultipleCorrectOptions(data, optionsContainer) {
-        const checkboxes = optionsContainer.querySelectorAll('.option-checkbox');
-        const checkboxLabels = optionsContainer.querySelectorAll('.checkbox-option');
-
-        checkboxes.forEach(cb => cb.checked = false);
-        checkboxLabels.forEach((label, index) => {
-            if (data.options && data.options[index]) {
-                const safeOption = escapeHtmlPreservingLatex(data.options[index]);
-                const formattedOption = this.displayManager.mathRenderer.formatCodeBlocks(safeOption);
-                label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${translationManager.getOptionLetter(index)}: ${formattedOption}`;
-                label.setAttribute('data-option', index);
-
-                // Apply syntax highlighting to code blocks in this option
-                this.displayManager.mathRenderer.applySyntaxHighlighting(label);
-            } else {
-                label.style.display = 'none';
-            }
-        });
-
-        logger.debug('Player multiple correct options set up');
-    }
-
-    /**
-     * Setup player true/false options
-     */
-    setupPlayerTrueFalseOptions(data, optionsContainer) {
-        const buttons = optionsContainer.querySelectorAll('.tf-option');
-        buttons.forEach((button, index) => {
-            button.classList.remove('selected', 'disabled');
-            button.setAttribute('data-answer', index.toString());
-
-            // Use tracked event listeners from GameManager
-            this.gameManager.addEventListenerTracked(button, 'click', () => {
-                logger.debug('True/False button clicked:', index);
-                // Convert index to boolean: 0 = true, 1 = false
-                const booleanAnswer = index === 0;
-                logger.debug('Converting T/F index', index, 'to boolean:', booleanAnswer);
-                this.gameManager.selectAnswer(booleanAnswer);
-            });
-        });
-
-        logger.debug('Player true/false options set up');
-    }
-
-    /**
-     * Setup player numeric input options
-     */
-    setupPlayerNumericOptions(data, optionsContainer) {
-        const input = optionsContainer.querySelector('#numeric-answer-input');
-        const submitButton = optionsContainer.querySelector('#submit-numeric');
-
-        if (input) {
-            input.value = '';
-            input.disabled = false;
-            input.placeholder = getTranslation('enter_numeric_answer');
-
-            // Remove old listeners and add new ones
-            input.replaceWith(input.cloneNode(true));
-            const newInput = optionsContainer.querySelector('#numeric-answer-input');
-            newInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.gameManager.submitNumericAnswer();
-                }
-            });
-        }
-
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.textContent = getTranslation('submit');
-
-            // Use tracked event listeners from GameManager
-            this.gameManager.addEventListenerTracked(submitButton, 'click', () => {
-                this.gameManager.submitNumericAnswer();
-            });
-        }
-
-        logger.debug('Player numeric options set up');
-    }
-
-    /**
-     * Setup player ordering options
-     */
-    setupPlayerOrderingOptions(data, optionsContainer) {
-        if (!data.options || data.options.length === 0) {
-            logger.warn('No ordering options to display');
-            return;
-        }
-
-        logger.debug('Setting up player ordering options');
-
-        // Shuffle the options for the player
-        const shuffledIndices = this.shuffleArray(data.options.map((_, i) => i));
-
-        // Use centralized ordering item colors from config
-        const itemColors = COLORS.ORDERING_ITEM_COLORS;
-
-        let html = `
-            <div class="ordering-player-instruction" data-translate="ordering_player_instruction"></div>
-            <div class="ordering-display" id="player-ordering-container">
-        `;
-
-        shuffledIndices.forEach((originalIndex, displayIndex) => {
-            const option = data.options[originalIndex];
-            const safeOption = escapeHtmlPreservingLatex(option || '');
-            const bgColor = itemColors[originalIndex % itemColors.length];
-            html += `
-                <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
-                    <div class="ordering-item-number">${displayIndex + 1}</div>
-                    <div class="ordering-item-content">${this.displayManager.mathRenderer.formatCodeBlocks(safeOption)}</div>
-                </div>
-            `;
-        });
-
-        html += `
-            </div>
-            <button class="ordering-submit-button btn primary" id="submit-ordering" data-translate="submit_answer"></button>
-        `;
-
-        optionsContainer.innerHTML = html;
-        optionsContainer.style.display = 'flex';
-        optionsContainer.style.flexDirection = 'column';
-        optionsContainer.style.alignItems = 'center';
-
-        // Translate all text in the container
-        translationManager.translateContainer(optionsContainer);
-
-        // Wire up submit button
-        const submitButton = document.getElementById('submit-ordering');
-        if (submitButton) {
-            submitButton.disabled = false;
-            // Use tracked event listeners from GameManager
-            this.gameManager.addEventListenerTracked(submitButton, 'click', () => {
-                this.gameManager.submitOrderingAnswer();
-            });
-        }
-
-        // Initialize drag-and-drop after a short delay to ensure DOM is ready
-        setTimeout(() => {
-            this.initializePlayerOrderingDragDrop();
-        }, 100);
-
-        logger.debug('Player ordering options set up');
-    }
 
     /**
      * Initialize drag-and-drop for player ordering

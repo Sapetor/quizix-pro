@@ -50,7 +50,9 @@ import {
     switchAnalyticsTab,
     createQuestionDrilldownModal,
     createComparisonChart,
-    calculateComparativeMetrics
+    calculateComparativeMetrics,
+    calculateConceptMastery,
+    createConceptMasteryChart
 } from './results-viewer/results-analytics.js';
 
 export class ResultsViewer {
@@ -482,7 +484,8 @@ export class ResultsViewer {
             this.showLoading();
 
             let fullResult = result;
-            if (!result.results && result.filename) {
+            // Fetch full data if missing results OR questions (list API may only include partial data)
+            if ((!result.results || !result.questions) && result.filename) {
                 try {
                     const response = await fetch(APIHelper.getApiUrl(`api/results/${result.filename}`));
                     if (response.ok) {
@@ -538,14 +541,18 @@ export class ResultsViewer {
     }
 
     displayAnalyticsModal(result, analytics, summary) {
-        const modal = createAnalyticsModal(result, analytics, summary);
+        // Calculate concept mastery data
+        const conceptData = calculateConceptMastery(result);
+
+        const modal = createAnalyticsModal(result, analytics, summary, conceptData);
         document.body.appendChild(modal);
 
         // Store data for drill-down access
         this.currentAnalyticsData = {
             result,
             analytics,
-            summary
+            summary,
+            conceptData
         };
 
         // Attach tab switching handlers
@@ -590,6 +597,20 @@ export class ResultsViewer {
         setTimeout(() => {
             createSuccessRateChart(analytics);
             createTimeVsSuccessChart(analytics);
+
+            // Create concept mastery chart if concepts data exists
+            if (conceptData?.hasConcepts) {
+                createConceptMasteryChart('concept-mastery-chart', conceptData);
+
+                // Setup toggle for study suggestions
+                const toggle = modal.querySelector('#show-study-suggestions');
+                const content = modal.querySelector('#concept-insights-content');
+                if (toggle && content) {
+                    toggle.addEventListener('change', () => {
+                        content.style.display = toggle.checked ? 'flex' : 'none';
+                    });
+                }
+            }
         }, 100);
     }
 

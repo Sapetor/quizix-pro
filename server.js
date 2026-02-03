@@ -23,6 +23,7 @@ const { QRService } = require('./services/qr-service');
 const { GameSessionService } = require('./services/game-session-service');
 const { PlayerManagementService } = require('./services/player-management-service');
 const { QuestionFlowService } = require('./services/question-flow-service');
+const { ConsensusFlowService } = require('./services/consensus-flow-service');
 const { SocketBatchService } = require('./services/socket-batch-service');
 const {
     validateBody,
@@ -191,6 +192,7 @@ const metadataService = new MetadataService(logger, WSLMonitor, 'quizzes');
 const gameSessionService = new GameSessionService(logger, CONFIG);
 const playerManagementService = new PlayerManagementService(logger, CONFIG);
 const questionFlowService = new QuestionFlowService(logger, gameSessionService);
+const consensusFlowService = new ConsensusFlowService(logger, gameSessionService);
 
 const io = socketIo(server, {
     cors: corsValidator.getSocketIOCorsConfig(),
@@ -207,6 +209,9 @@ const socketBatchService = new SocketBatchService(io, logger, {
     maxBatchSize: 50,    // Or when 50 events are queued
     enabled: true        // Enable batching in production
 });
+
+// Inject SocketBatchService into GameSessionService for room cleanup
+gameSessionService.setSocketBatchService(socketBatchService);
 
 app.use(cors(corsValidator.getExpressCorsConfig()));
 
@@ -393,17 +398,21 @@ app.use('/debug', express.static('debug', {
     cacheControl: false
 }));
 
-// Ensure directories exist
-if (!fs.existsSync('quizzes')) {
-    fs.mkdirSync('quizzes');
-}
-if (!fs.existsSync('results')) {
-    fs.mkdirSync('results');
-}
-if (!fs.existsSync('public/uploads')) {
-    fs.mkdirSync('public/uploads', { recursive: true });
-    logger.info('Created uploads directory: public/uploads');
-}
+// Ensure directories exist (async startup)
+(async () => {
+    const dirsToCreate = ['quizzes', 'results', 'public/uploads'];
+    for (const dir of dirsToCreate) {
+        try {
+            await fs.promises.mkdir(dir, { recursive: true });
+        } catch (err) {
+            // Ignore EEXIST errors (directory already exists)
+            if (err.code !== 'EEXIST') {
+                logger.error(`Failed to create directory ${dir}:`, err.message);
+            }
+        }
+    }
+    logger.debug('Required directories verified');
+})();
 
 // Dynamic index.html serving with environment-specific base path
 // This route serves index.html with the correct <base> tag for the environment
@@ -481,99 +490,98 @@ app.post('/upload', upload.single('image'), async (req, res) => {
             path: req.file.path
         });
 
-        // Verify the file was actually written correctly
-        if (fs.existsSync(req.file.path)) {
-            const stats = fs.statSync(req.file.path);
-            logger.debug(`File verification: ${stats.size} bytes on disk`);
-
-            if (stats.size === 0) {
-                logger.error('WARNING: Uploaded file is empty (0 bytes)!');
-                fs.unlinkSync(req.file.path); // Clean up empty file
-                return res.status(500).json({ error: 'File upload failed - empty file' });
-            }
-
-            if (stats.size !== req.file.size) {
-                logger.warn(`File size mismatch: expected ${req.file.size}, got ${stats.size}`);
-            }
-
-            // Verify actual file content matches claimed type (magic byte check)
-            // Use try/finally to ensure file descriptor is always closed
-            let fd = null;
-            const buffer = Buffer.alloc(12);
-            try {
-                fd = fs.openSync(req.file.path, 'r');
-                fs.readSync(fd, buffer, 0, 12, 0);
-            } finally {
-                if (fd !== null) {
-                    fs.closeSync(fd);
-                }
-            }
-
-            // Detect image type from magic bytes
-            const isJPEG = buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
-            const isPNG = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47;
-            const isGIF = buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38;
-            const isWebP = buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
-                     buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
-            const isBMP = buffer[0] === 0x42 && buffer[1] === 0x4D;
-
-            const isValidImage = isJPEG || isPNG || isGIF || isWebP || isBMP;
-
-            if (!isValidImage) {
-                logger.warn(`File content doesn't match image signature: ${req.file.filename}`);
-                fs.unlinkSync(req.file.path); // Delete suspicious file
-                return res.status(400).json({ error: 'Invalid image file content' });
-            }
-
-            // Convert to WebP for better compression (skip if already WebP or animated GIF)
-            let webpUrl = null;
-            let webpFilename = null;
-            const originalUrl = `/uploads/${req.file.filename}`;
-
-            // Skip WebP conversion for already-WebP files and GIFs (to preserve animations)
-            if (!isWebP && !isGIF) {
-                try {
-                    // Generate WebP filename (replace extension with .webp)
-                    const baseName = req.file.filename.replace(/\.[^.]+$/, '');
-                    webpFilename = `${baseName}.webp`;
-                    const webpPath = path.join(req.file.destination, webpFilename);
-
-                    // Convert to WebP with quality setting (80 is a good balance)
-                    await sharp(req.file.path)
-                        .webp({ quality: 80 })
-                        .toFile(webpPath);
-
-                    const webpStats = fs.statSync(webpPath);
-                    const originalSize = stats.size;
-                    const webpSize = webpStats.size;
-                    const savings = ((originalSize - webpSize) / originalSize * 100).toFixed(1);
-
-                    logger.info(`WebP conversion: ${req.file.filename} -> ${webpFilename} (${savings}% smaller)`);
-                    webpUrl = `/uploads/${webpFilename}`;
-                } catch (conversionError) {
-                    // Log but don't fail - original file is still valid
-                    logger.warn(`WebP conversion failed for ${req.file.filename}:`, conversionError.message);
-                }
-            } else if (isWebP) {
-                // File is already WebP, use it directly
-                webpUrl = originalUrl;
-                webpFilename = req.file.filename;
-                logger.debug(`File already WebP: ${req.file.filename}`);
-            } else {
-                logger.debug(`Skipping WebP conversion for GIF: ${req.file.filename}`);
-            }
-
-            // Return both URLs - client can choose which to use
-            res.json({
-                filename: req.file.filename,
-                url: originalUrl,
-                webpFilename: webpFilename,
-                webpUrl: webpUrl
-            });
-        } else {
+        // Verify the file was actually written correctly (async)
+        let stats;
+        try {
+            stats = await fs.promises.stat(req.file.path);
+        } catch (statError) {
             logger.error(`File not found after upload: ${req.file.path}`);
             return res.status(500).json({ error: 'File upload failed - file not saved' });
         }
+
+        logger.debug(`File verification: ${stats.size} bytes on disk`);
+
+        if (stats.size === 0) {
+            logger.error('WARNING: Uploaded file is empty (0 bytes)!');
+            await fs.promises.unlink(req.file.path); // Clean up empty file
+            return res.status(500).json({ error: 'File upload failed - empty file' });
+        }
+
+        if (stats.size !== req.file.size) {
+            logger.warn(`File size mismatch: expected ${req.file.size}, got ${stats.size}`);
+        }
+
+        // Verify actual file content matches claimed type (magic byte check)
+        // Use async file handle for non-blocking I/O
+        const buffer = Buffer.alloc(12);
+        const fileHandle = await fs.promises.open(req.file.path, 'r');
+        try {
+            await fileHandle.read(buffer, 0, 12, 0);
+        } finally {
+            await fileHandle.close();
+        }
+
+        // Detect image type from magic bytes
+        const isJPEG = buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
+        const isPNG = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47;
+        const isGIF = buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38;
+        const isWebP = buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+                 buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
+        const isBMP = buffer[0] === 0x42 && buffer[1] === 0x4D;
+
+        const isValidImage = isJPEG || isPNG || isGIF || isWebP || isBMP;
+
+        if (!isValidImage) {
+            logger.warn(`File content doesn't match image signature: ${req.file.filename}`);
+            await fs.promises.unlink(req.file.path); // Delete suspicious file
+            return res.status(400).json({ error: 'Invalid image file content' });
+        }
+
+        // Convert to WebP for better compression (skip if already WebP or animated GIF)
+        let webpUrl = null;
+        let webpFilename = null;
+        const originalUrl = `/uploads/${req.file.filename}`;
+
+        // Skip WebP conversion for already-WebP files and GIFs (to preserve animations)
+        if (!isWebP && !isGIF) {
+            try {
+                // Generate WebP filename (replace extension with .webp)
+                const baseName = req.file.filename.replace(/\.[^.]+$/, '');
+                webpFilename = `${baseName}.webp`;
+                const webpPath = path.join(req.file.destination, webpFilename);
+
+                // Convert to WebP with quality setting (80 is a good balance)
+                await sharp(req.file.path)
+                    .webp({ quality: 80 })
+                    .toFile(webpPath);
+
+                const webpStats = await fs.promises.stat(webpPath);
+                const originalSize = stats.size;
+                const webpSize = webpStats.size;
+                const savings = ((originalSize - webpSize) / originalSize * 100).toFixed(1);
+
+                logger.info(`WebP conversion: ${req.file.filename} -> ${webpFilename} (${savings}% smaller)`);
+                webpUrl = `/uploads/${webpFilename}`;
+            } catch (conversionError) {
+                // Log but don't fail - original file is still valid
+                logger.warn(`WebP conversion failed for ${req.file.filename}:`, conversionError.message);
+            }
+        } else if (isWebP) {
+            // File is already WebP, use it directly
+            webpUrl = originalUrl;
+            webpFilename = req.file.filename;
+            logger.debug(`File already WebP: ${req.file.filename}`);
+        } else {
+            logger.debug(`Skipping WebP conversion for GIF: ${req.file.filename}`);
+        }
+
+        // Return both URLs - client can choose which to use
+        res.json({
+            filename: req.file.filename,
+            url: originalUrl,
+            webpFilename: webpFilename,
+            webpUrl: webpUrl
+        });
     } catch (error) {
         logger.error('Upload error:', error);
         res.status(500).json({ error: 'Upload failed' });
@@ -2128,6 +2136,151 @@ io.on('connection', (socket) => {
         }
     });
 
+    // ==================== CONSENSUS MODE EVENTS ====================
+
+    // Handle proposal submission (consensus mode)
+    socket.on('propose-answer', (data) => {
+        if (!checkRateLimit(socket.id, 'propose-answer', 5, socket)) return;
+        try {
+            if (!data || data.answer === undefined) {
+                socket.emit('error', { message: 'Invalid proposal data' });
+                return;
+            }
+
+            const playerData = playerManagementService.getPlayer(socket.id);
+            if (!playerData) {
+                socket.emit('error', { message: 'Player not found' });
+                return;
+            }
+
+            const game = gameSessionService.getGame(playerData.gamePin);
+            if (!game) {
+                socket.emit('error', { message: 'Game not found' });
+                return;
+            }
+
+            const result = consensusFlowService.handleProposalSubmission(
+                socket.id,
+                data.answer,
+                game,
+                socket,
+                io
+            );
+
+            if (!result.success) {
+                socket.emit('error', { message: result.error });
+            }
+        } catch (error) {
+            logger.error('Error in propose-answer handler:', error);
+            socket.emit('error', { message: 'Failed to submit proposal' });
+        }
+    });
+
+    // Handle quick response (consensus mode discussion)
+    socket.on('send-quick-response', (data) => {
+        if (!checkRateLimit(socket.id, 'send-quick-response', 10, socket)) return;
+        try {
+            if (!data || !data.type) {
+                socket.emit('error', { message: 'Invalid quick response data' });
+                return;
+            }
+
+            const playerData = playerManagementService.getPlayer(socket.id);
+            if (!playerData) {
+                socket.emit('error', { message: 'Player not found' });
+                return;
+            }
+
+            const game = gameSessionService.getGame(playerData.gamePin);
+            if (!game) {
+                socket.emit('error', { message: 'Game not found' });
+                return;
+            }
+
+            const result = consensusFlowService.handleQuickResponse(
+                socket.id,
+                data.type,
+                data.targetPlayer || null,
+                game,
+                socket,
+                io
+            );
+
+            if (!result.success) {
+                socket.emit('error', { message: result.error });
+            }
+        } catch (error) {
+            logger.error('Error in send-quick-response handler:', error);
+            socket.emit('error', { message: 'Failed to send quick response' });
+        }
+    });
+
+    // Handle chat message (consensus mode, if enabled)
+    socket.on('send-chat-message', (data) => {
+        if (!checkRateLimit(socket.id, 'send-chat-message', 5, socket)) return;
+        try {
+            if (!data || !data.text) {
+                socket.emit('error', { message: 'Invalid chat message' });
+                return;
+            }
+
+            const playerData = playerManagementService.getPlayer(socket.id);
+            if (!playerData) {
+                socket.emit('error', { message: 'Player not found' });
+                return;
+            }
+
+            const game = gameSessionService.getGame(playerData.gamePin);
+            if (!game) {
+                socket.emit('error', { message: 'Game not found' });
+                return;
+            }
+
+            const result = consensusFlowService.handleChatMessage(
+                socket.id,
+                data.text,
+                game,
+                socket,
+                io
+            );
+
+            if (!result.success) {
+                socket.emit('error', { message: result.error });
+            }
+        } catch (error) {
+            logger.error('Error in send-chat-message handler:', error);
+            socket.emit('error', { message: 'Failed to send chat message' });
+        }
+    });
+
+    // Handle consensus lock (host only)
+    socket.on('lock-consensus', () => {
+        if (!checkRateLimit(socket.id, 'lock-consensus', 3, socket)) return;
+        try {
+            const game = gameSessionService.findGameByHost(socket.id);
+            if (!game) {
+                socket.emit('error', { message: 'Only host can lock consensus' });
+                return;
+            }
+
+            if (!game.isConsensusMode) {
+                socket.emit('error', { message: 'Not in consensus mode' });
+                return;
+            }
+
+            const result = consensusFlowService.lockConsensus(game, io);
+
+            if (!result.success) {
+                socket.emit('error', { message: result.error });
+            }
+        } catch (error) {
+            logger.error('Error in lock-consensus handler:', error);
+            socket.emit('error', { message: 'Failed to lock consensus' });
+        }
+    });
+
+    // ==================== END CONSENSUS MODE EVENTS ====================
+
     socket.on('next-question', () => {
         if (!checkRateLimit(socket.id, 'next-question', 5, socket)) return;
         try {
@@ -2288,13 +2441,30 @@ app.get('/debug/config', (req, res) => {
 });
 
 // Readiness probe - check if server is ready to accept traffic
-app.get('/ready', (req, res) => {
+// Uses async file operations to avoid blocking the event loop
+app.get('/ready', async (req, res) => {
     try {
-    // Check if required directories exist and are accessible
+        // Async directory check helper
+        const checkDirectory = async (dir) => {
+            try {
+                const stat = await fs.promises.stat(dir);
+                return stat.isDirectory();
+            } catch {
+                return false;
+            }
+        };
+
+        // Check all directories in parallel
+        const [quizzesOk, resultsOk, uploadsOk] = await Promise.all([
+            checkDirectory('quizzes'),
+            checkDirectory('results'),
+            checkDirectory('public/uploads')
+        ]);
+
         const checks = {
-            quizzes: fs.existsSync('quizzes') && fs.statSync('quizzes').isDirectory(),
-            results: fs.existsSync('results') && fs.statSync('results').isDirectory(),
-            uploads: fs.existsSync('public/uploads') && fs.statSync('public/uploads').isDirectory()
+            quizzes: quizzesOk,
+            results: resultsOk,
+            uploads: uploadsOk
         };
 
         const allReady = Object.values(checks).every(check => check === true);
@@ -2320,6 +2490,21 @@ app.get('/ready', (req, res) => {
             timestamp: new Date().toISOString()
         });
     }
+});
+
+// Memory stats endpoint for monitoring and debugging
+app.get('/api/stats/memory', (req, res) => {
+    const memUsage = process.memoryUsage();
+    res.json({
+        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB',
+        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + 'MB',
+        rss: Math.round(memUsage.rss / 1024 / 1024) + 'MB',
+        external: Math.round(memUsage.external / 1024 / 1024) + 'MB',
+        activeGames: gameSessionService.games.size,
+        batchStats: socketBatchService.getStats(),
+        uptime: Math.round(process.uptime()) + 's',
+        timestamp: new Date().toISOString()
+    });
 });
 
 const PORT = process.env.PORT || 3000;

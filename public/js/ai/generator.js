@@ -1323,7 +1323,7 @@ export class AIQuestionGenerator {
 
         // Check if this is Excel-converted content
         if (content.includes('# Quiz Questions from Excel File:') && content.includes('INSTRUCTIONS FOR AI:')) {
-            return this.buildExcelConversionPrompt(content, selectedTypes);
+            return this.buildExcelConversionPrompt(content);
         }
 
         // Detect content type for smart formatting
@@ -1371,8 +1371,8 @@ export class AIQuestionGenerator {
      * Build prompt for Excel conversion
      * Delegates to prompts.js module
      */
-    buildExcelConversionPrompt(content, selectedTypes) {
-        return buildExcelConversionPrompt(content, selectedTypes);
+    buildExcelConversionPrompt(content) {
+        return buildExcelConversionPrompt(content);
     }
 
     /**
