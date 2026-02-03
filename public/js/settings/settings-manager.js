@@ -23,7 +23,26 @@ export class SettingsManager {
         // Store event handler references for cleanup
         this.eventHandlers = {};
 
+        // SoundManager reference (injected to avoid window.game dependency)
+        this._soundManager = null;
+
         this.loadSettings();
+    }
+
+    /**
+     * Set the SoundManager reference (dependency injection)
+     * @param {Object} soundManager - SoundManager instance
+     */
+    setSoundManager(soundManager) {
+        this._soundManager = soundManager;
+    }
+
+    /**
+     * Get the SoundManager instance (falls back to window.game for backward compat)
+     * @returns {Object|null}
+     */
+    _getSoundManager() {
+        return this._soundManager || window.game?.soundManager || null;
     }
 
     /**
@@ -274,7 +293,7 @@ export class SettingsManager {
      * Note: Sound state is stored in 'quizAudioSettings' by SoundManager, not in quizSettings
      */
     setSoundEnabled(enabled) {
-        const soundManager = window.game?.soundManager;
+        const soundManager = this._getSoundManager();
         if (!soundManager) return;
 
         if (enabled) {
@@ -289,7 +308,7 @@ export class SettingsManager {
      * Get sound enabled status from SoundManager (source of truth)
      */
     getSoundEnabled() {
-        const soundManager = window.game?.soundManager;
+        const soundManager = this._getSoundManager();
         return soundManager?.isSoundsEnabled() ?? true;
     }
 
@@ -297,7 +316,7 @@ export class SettingsManager {
      * Toggle sound - delegates to SoundManager
      */
     toggleSound() {
-        const soundManager = window.game?.soundManager;
+        const soundManager = this._getSoundManager();
         if (!soundManager) return;
 
         if (soundManager.isSoundsEnabled()) {
@@ -313,7 +332,7 @@ export class SettingsManager {
      * Update sound toggle button icons and state
      */
     updateSoundToggleButtons() {
-        const soundManager = window.game?.soundManager;
+        const soundManager = this._getSoundManager();
         const isEnabled = soundManager?.isSoundsEnabled() ?? true;
         const icon = isEnabled ? '🔊' : '🔇';
         const tooltip = isEnabled ?

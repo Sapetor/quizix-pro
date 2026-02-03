@@ -146,13 +146,12 @@ class MobileQuestionCarousel {
      * Add a new question
      */
     addQuestion() {
-        // Use the global addQuestion function or trigger the main add question button
-        if (window.game && window.game.addQuestionAndScrollToIt) {
-            window.game.addQuestionAndScrollToIt();
-        } else if (document.getElementById('toolbar-add-question')) {
-            document.getElementById('toolbar-add-question').click();
+        // Trigger the main add question button (decoupled from window.game)
+        const addBtn = document.getElementById('toolbar-add-question');
+        if (addBtn) {
+            addBtn.click();
         } else {
-            logger.warn('Add question functionality not found');
+            logger.warn('Add question button not found');
         }
 
         // Update carousel after adding question

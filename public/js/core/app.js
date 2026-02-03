@@ -24,6 +24,8 @@ import { bindElement } from '../utils/dom.js';
 import { getJSON, setJSON } from '../utils/storage-utils.js';
 import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
+import { gameContext } from './game-context.js';
+import { openModal, closeModal } from '../utils/modal-utils.js';
 // Results viewer will be lazy loaded when needed
 
 export class QuizGame {
@@ -91,6 +93,25 @@ export class QuizGame {
         // Make preview manager globally accessible for onclick handlers
         window.game = this;
 
+        // Register managers with GameContext for dependency injection
+        gameContext.register('settingsManager', this.settingsManager);
+        gameContext.register('soundManager', this.soundManager);
+        gameContext.register('uiManager', this.uiManager);
+        gameContext.register('mathRenderer', this.mathRenderer);
+        gameContext.register('previewManager', this.previewManager);
+        gameContext.register('gameManager', this.gameManager);
+        gameContext.register('quizManager', this.quizManager);
+        gameContext.register('socketManager', this.socketManager);
+        gameContext.register('socketEventBus', this.socketEventBus);
+        gameContext.register('practiceModeManager', this.practiceModeManager);
+        gameContext.markInitialized();
+
+        // Wire up dependency injection for QuizManager
+        this.quizManager.setLoadQuizHandler((filename) => this.loadQuiz(filename));
+        this.quizManager.setStartPracticeModeHandler((filename) => this.startPracticeMode(filename));
+        this.quizManager.setPreviewManager(this.previewManager);
+        this.quizManager.setAddQuestionFunction(() => this.addQuestion());
+
         // Setup auto-save
         this.quizManager.setupAutoSave();
 
@@ -103,6 +124,7 @@ export class QuizGame {
         // Logger system initialized and ready
 
         logger.info('QuizGame initialized successfully');
+        logger.debug('GameContext initialized with managers:', gameContext.getRegisteredManagers());
     }
     /**
      * Handle image upload for quiz questions
@@ -875,7 +897,7 @@ export class QuizGame {
         // Render math in preview
         this.mathRenderer.renderMathJax(previewContainer);
 
-        modal.style.display = 'flex';
+        openModal(modal);
     }
 
     /**
@@ -884,7 +906,7 @@ export class QuizGame {
     hideQuizPreview() {
         const modal = document.getElementById('preview-modal');
         if (modal) {
-            modal.style.display = 'none';
+            closeModal(modal);
         }
     }
 
@@ -1028,7 +1050,7 @@ export class QuizGame {
                 if (errorMessage) {
                     errorMessage.textContent = `Debug function failed: ${error.message}. Please check the console for details.`;
                 }
-                errorModal.style.display = 'flex';
+                openModal(errorModal);
             } else {
                 alert(`Debug function failed: ${error.message}`);
             }
@@ -1134,13 +1156,17 @@ export class QuizGame {
                 const { AIQuestionGenerator } = await import('../ai/generator.js');
                 this.aiGenerator = new AIQuestionGenerator();
 
+                // Wire up dependency injection for AIQuestionGenerator
+                this.aiGenerator.setQuizManager(this.quizManager);
+                this.aiGenerator.setAddQuestionFunction(() => this.addQuestion());
+
                 logger.debug('AI Generator lazy loaded and initialized');
             } catch (error) {
                 logger.error('Failed to lazy load AI Generator:', error);
                 // Show fallback modal if available
                 const modal = document.getElementById('ai-generator-modal');
                 if (modal) {
-                    modal.style.display = 'flex';
+                    openModal(modal);
                 }
                 return;
             }
@@ -1155,7 +1181,7 @@ export class QuizGame {
             logger.warn('AI Generator class method not available, using fallback');
             const modal = document.getElementById('ai-generator-modal');
             if (modal) {
-                modal.style.display = 'flex';
+                openModal(modal);
                 logger.debug('AI Generator modal opened via fallback');
             } else {
                 logger.error('AI Generator modal not found in DOM');

@@ -7,7 +7,7 @@ import { translationManager, showErrorAlert, showSuccessAlert } from '../utils/t
 import { createQuestionElement } from '../utils/question-utils.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
-import { logger } from '../core/config.js';
+import { logger, TIMING } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { imagePathResolver, loadImageWithRetry as sharedLoadImageWithRetry } from '../utils/image-path-resolver.js';
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
@@ -15,6 +15,7 @@ import { getJSON, setJSON, removeItem } from '../utils/storage-utils.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
 import { escapeHtml } from '../utils/dom.js';
 import { getFileManager } from '../ui/file-manager.js';
+import { openModal, closeModal } from '../utils/modal-utils.js';
 
 // Shared translation fallback map used for cleaning translation keys from loaded data
 const TRANSLATION_FALLBACKS = {
@@ -49,6 +50,12 @@ export class QuizManager {
         this.autoSaveTimeout = null;
         this.errorHandler = errorHandler; // Add ErrorHandler for future use
 
+        // Dependency injection properties
+        this._loadQuizHandler = null;
+        this._startPracticeModeHandler = null;
+        this._previewManager = null;
+        this._addQuestionFn = null;
+
         // Memory management via EventListenerManager
         this.listenerManager = new EventListenerManager('QuizManager');
 
@@ -63,11 +70,80 @@ export class QuizManager {
     }
 
     /**
+     * Dependency injection: Set load quiz handler
+     * @param {Function} handler - Function to load a quiz by filename
+     */
+    setLoadQuizHandler(handler) {
+        this._loadQuizHandler = handler;
+    }
+
+    /**
+     * Dependency injection: Set start practice mode handler
+     * @param {Function} handler - Function to start practice mode by filename
+     */
+    setStartPracticeModeHandler(handler) {
+        this._startPracticeModeHandler = handler;
+    }
+
+    /**
+     * Dependency injection: Set preview manager reference
+     * @param {Object} previewManager - PreviewManager instance
+     */
+    setPreviewManager(previewManager) {
+        this._previewManager = previewManager;
+    }
+
+    /**
+     * Dependency injection: Set addQuestion function
+     * @param {Function} addQuestionFn - Function to add a new question
+     */
+    setAddQuestionFunction(addQuestionFn) {
+        this._addQuestionFn = addQuestionFn;
+    }
+
+    /**
+     * Get load quiz handler with fallback to window.game
+     * @returns {Function|null}
+     */
+    _getLoadQuizHandler() {
+        return this._loadQuizHandler || window.game?.loadQuiz || null;
+    }
+
+    /**
+     * Get start practice mode handler with fallback to window.game
+     * @returns {Function|null}
+     */
+    _getStartPracticeModeHandler() {
+        return this._startPracticeModeHandler || window.game?.startPracticeMode || null;
+    }
+
+    /**
+     * Get preview manager with fallback to window.game
+     * @returns {Object|null}
+     */
+    _getPreviewManager() {
+        return this._previewManager || window.game?.previewManager || null;
+    }
+
+    /**
+     * Get addQuestion function with fallback to window.game
+     * @returns {Function|null}
+     */
+    _getAddQuestionFn() {
+        return this._addQuestionFn || window.game?.addQuestion || null;
+    }
+
+    /**
      * Handle quiz load from file manager
      */
     handleFileManagerLoad(filename, data) {
         this.hideLoadQuizModal();
-        window.game.loadQuiz(filename);
+        const loadQuiz = this._getLoadQuizHandler();
+        if (loadQuiz) {
+            loadQuiz(filename);
+        } else {
+            logger.error('No loadQuiz handler available');
+        }
     }
 
     /**
@@ -75,7 +151,12 @@ export class QuizManager {
      */
     handleFileManagerPractice(filename, data) {
         this.hideLoadQuizModal();
-        window.game.startPracticeMode(filename);
+        const startPracticeMode = this._getStartPracticeModeHandler();
+        if (startPracticeMode) {
+            startPracticeMode(filename);
+        } else {
+            logger.error('No startPracticeMode handler available');
+        }
     }
 
     /**
@@ -334,7 +415,7 @@ export class QuizManager {
         }
 
         // Show modal
-        modal.style.display = 'flex';
+        openModal(modal);
         modal.classList.remove('hidden');
         modal.classList.add('visible-flex');
     }
@@ -346,7 +427,7 @@ export class QuizManager {
     hideSaveQuizModal(clearPending = false) {
         const modal = document.getElementById('save-quiz-modal');
         if (modal) {
-            modal.style.display = 'none';
+            closeModal(modal);
             modal.classList.remove('visible-flex');
             modal.classList.add('hidden');
         }
@@ -526,12 +607,18 @@ export class QuizManager {
 
                         loadBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            window.game.loadQuiz(quiz.filename);
+                            const loadQuiz = this._getLoadQuizHandler();
+                            if (loadQuiz) {
+                                loadQuiz(quiz.filename);
+                            }
                         });
 
                         practiceBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            window.game.startPracticeMode(quiz.filename);
+                            const startPracticeMode = this._getStartPracticeModeHandler();
+                            if (startPracticeMode) {
+                                startPracticeMode(quiz.filename);
+                            }
                         });
 
                         fragment.appendChild(quizItem);
@@ -648,10 +735,11 @@ export class QuizManager {
                     }
 
                     // Update split preview
-                    if (window.game?.previewManager) {
-                        window.game.previewManager.currentPreviewQuestion = 0;
-                        if (typeof window.game.previewManager.updateSplitPreview === 'function') {
-                            window.game.previewManager.updateSplitPreview();
+                    const previewManager = this._getPreviewManager();
+                    if (previewManager) {
+                        previewManager.currentPreviewQuestion = 0;
+                        if (typeof previewManager.updateSplitPreview === 'function') {
+                            previewManager.updateSplitPreview();
                             logger.debug('Split preview updated successfully');
                         }
                     }
@@ -678,7 +766,7 @@ export class QuizManager {
                 operation: 'updatePreviewSafely',
                 silent: true // Don't show errors - quiz already loaded successfully
             });
-        }, 200); // Give modal time to close before updating preview
+        }, TIMING.SHORT_DELAY); // Give modal time to close before updating preview
     }
 
     /**
@@ -869,9 +957,10 @@ export class QuizManager {
 
         // F5 RELOAD FIX: Wait for MathJax readiness before updating preview
         this.mathRenderer.waitForMathJaxReady(() => {
-            if (window.game && window.game.previewManager && window.game.previewManager.previewRenderer) {
+            const previewManager = this._getPreviewManager();
+            if (previewManager && previewManager.previewRenderer) {
                 logger.debug('🔄 Updating live preview after MathJax is ready');
-                window.game.previewManager.previewRenderer.renderMathJaxForPreview();
+                previewManager.previewRenderer.renderMathJaxForPreview();
             }
         });
     }
@@ -1394,7 +1483,7 @@ export class QuizManager {
             const normalizedData = this.normalizeQuestionData(questionData);
 
             QuestionTypeRegistry.populateQuestion(questionData.type, questionElement, normalizedData);
-        }, 100);
+        }, TIMING.DOM_UPDATE_DELAY);
     }
 
     /**
@@ -1553,13 +1642,14 @@ export class QuizManager {
         } else {
             // Add a new question
             logger.debug('🔧 AddGeneratedQuestion - Creating new question element');
-            if (window.game && window.game.addQuestion) {
+            const addQuestion = this._getAddQuestionFn();
+            if (addQuestion) {
                 const initialCount = questionElements.length;
-                window.game.addQuestion();
+                addQuestion();
 
                 // Use retry mechanism instead of fixed timeout to handle varying DOM update speeds
                 const maxRetries = 10;
-                const retryDelay = 50;
+                const retryDelay = TIMING.DOM_READY_CHECK;
                 let retryCount = 0;
 
                 const findAndPopulate = () => {
@@ -1584,7 +1674,7 @@ export class QuizManager {
                 };
 
                 // Start checking after initial delay
-                setTimeout(findAndPopulate, 50);
+                setTimeout(findAndPopulate, TIMING.DOM_READY_CHECK);
             } else {
                 logger.error('addQuestion function not available');
                 return;
@@ -1732,7 +1822,7 @@ export class QuizManager {
      */
     scheduleAutoSave() {
         clearTimeout(this.autoSaveTimeout);
-        this.autoSaveTimeout = setTimeout(() => this.autoSaveQuiz(), 5000);
+        this.autoSaveTimeout = setTimeout(() => this.autoSaveQuiz(), TIMING.AUTO_SAVE_DELAY);
     }
 
     /**

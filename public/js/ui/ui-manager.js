@@ -16,6 +16,37 @@ export class UIManager {
     constructor() {
         this.currentScreen = 'main-menu';
         this.errorHandler = errorHandler; // Add ErrorHandler for future use
+
+        // Dependency injection properties with window.game fallbacks
+        this._previewManager = null;
+        this._addQuestion = null;
+        this._quizManager = null;
+        this._joinGameFn = null;
+        this._joinGameByPinFn = null;
+    }
+
+    // Dependency injection setters
+    setPreviewManager(pm) { this._previewManager = pm; }
+    setAddQuestion(fn) { this._addQuestion = fn; }
+    setQuizManager(qm) { this._quizManager = qm; }
+    setJoinGameFn(fn) { this._joinGameFn = fn; }
+    setJoinGameByPinFn(fn) { this._joinGameByPinFn = fn; }
+
+    // Getters with window.game fallbacks for backward compatibility
+    _getPreviewManager() {
+        return this._previewManager || window.game?.previewManager;
+    }
+    _getAddQuestion() {
+        return this._addQuestion || window.game?.addQuestion?.bind(window.game);
+    }
+    _getQuizManager() {
+        return this._quizManager || window.game?.quizManager;
+    }
+    _getJoinGameFn() {
+        return this._joinGameFn || window.game?.joinGame?.bind(window.game);
+    }
+    _getJoinGameByPinFn() {
+        return this._joinGameByPinFn || window.game?.joinGameByPin?.bind(window.game);
     }
 
     showScreen(screenId) {
@@ -177,15 +208,17 @@ export class UIManager {
         const questionsContainer = document.getElementById('questions-container');
         if (questionsContainer && questionsContainer.children.length === 0) {
             // Add first question only if container is empty
-            if (window.game && window.game.addQuestion) {
-                window.game.addQuestion();
+            const addQuestion = this._getAddQuestion();
+            if (addQuestion) {
+                addQuestion();
                 logger.debug('Initialized quiz editor with first question');
 
                 // Ensure remove button visibility is properly set for initial question
                 setTimeout(() => {
-                    if (window.game.quizManager && window.game.quizManager.updateQuestionsUI) {
+                    const quizManager = this._getQuizManager();
+                    if (quizManager && quizManager.updateQuestionsUI) {
                         logger.debug('Running updateQuestionsUI after initial question creation');
-                        window.game.quizManager.updateQuestionsUI();
+                        quizManager.updateQuestionsUI();
                     }
                 }, 100);
             }
@@ -223,18 +256,19 @@ export class UIManager {
 
         // Initialize the preview manager if available
         setTimeout(() => {
-            if (window.game?.previewManager) {
+            const previewManager = this._getPreviewManager();
+            if (previewManager) {
                 // Set preview mode flag (so preview updates work)
-                window.game.previewManager.previewMode = true;
+                previewManager.previewMode = true;
 
                 // Initialize the split layout manager for resizing
-                window.game.previewManager.splitLayoutManager?.initializeSplitLayout?.();
+                previewManager.splitLayoutManager?.initializeSplitLayout?.();
 
                 // Setup preview event listeners
-                window.game.previewManager.setupSplitPreviewEventListeners();
+                previewManager.setupSplitPreviewEventListeners();
 
                 // Initial preview update
-                window.game.previewManager.updateSplitPreview();
+                previewManager.updateSplitPreview();
 
                 logger.debug('Always-on preview initialized');
             }
@@ -354,11 +388,12 @@ export class UIManager {
 
         // Delayed preview manager initialization (OK to be after fade-in)
         setTimeout(() => {
-            if (window.innerWidth >= 769 && window.game?.previewManager) {
-                window.game.previewManager.previewMode = true;
-                window.game.previewManager.splitLayoutManager?.initializeSplitLayout?.();
-                window.game.previewManager.setupSplitPreviewEventListeners();
-                window.game.previewManager.updateSplitPreview();
+            const previewManager = this._getPreviewManager();
+            if (window.innerWidth >= 769 && previewManager) {
+                previewManager.previewMode = true;
+                previewManager.splitLayoutManager?.initializeSplitLayout?.();
+                previewManager.setupSplitPreviewEventListeners();
+                previewManager.updateSplitPreview();
                 logger.debug('Preview manager initialized post-transition');
             }
             if (window.initializeQuestionPagination) {
@@ -513,7 +548,10 @@ export class UIManager {
         gameCard.addEventListener('click', (e) => {
             // Prevent double-click if user clicks the button specifically
             e.preventDefault();
-            window.game.joinGameByPin(game.pin);
+            const joinGameByPin = this._getJoinGameByPinFn();
+            if (joinGameByPin) {
+                joinGameByPin(game.pin);
+            }
         });
 
         gameCard.innerHTML = `
@@ -555,7 +593,10 @@ export class UIManager {
                 logger.debug('Auto-joining game with existing player name');
                 // Small delay to ensure screen transition completes
                 setTimeout(() => {
-                    window.game.joinGame();
+                    const joinGame = this._getJoinGameFn();
+                    if (joinGame) {
+                        joinGame();
+                    }
                 }, 100);
             }
         }

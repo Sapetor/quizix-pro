@@ -412,11 +412,6 @@ class TranslationManager {
             }
         }
 
-        // Update any other dynamic game elements
-        const playerInfo = document.querySelector('.player-info');
-        if (playerInfo && window.gameManager && window.gameManager.playerName) {
-            playerInfo.textContent = `${this.getTranslationSync('welcome')}, ${window.gameManager.playerName}!`;
-        }
     }
 
     /**

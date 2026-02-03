@@ -40,6 +40,35 @@ const QUESTION_TYPES = {
 
         scoreAnswer: (playerAnswer, correctAnswer) => {
             return playerAnswer === correctAnswer;
+        },
+
+        /**
+         * Normalize player answer for consistent comparison
+         */
+        normalizeAnswer: (answer) => {
+            if (typeof answer === 'string') return parseInt(answer, 10);
+            return answer;
+        },
+
+        /**
+         * Build statistics from player answers
+         * @param {Array} answers - Array of player answers
+         * @param {Object} question - Question data
+         * @returns {Object} Statistics object
+         */
+        buildStatistics: (answers, question) => {
+            const optionCounts = new Array(question.options?.length || 4).fill(0);
+            answers.forEach(answer => {
+                const idx = typeof answer === 'number' ? answer : parseInt(answer, 10);
+                if (idx >= 0 && idx < optionCounts.length) {
+                    optionCounts[idx]++;
+                }
+            });
+            return {
+                type: 'distribution',
+                optionCounts,
+                total: answers.length
+            };
         }
     },
 
@@ -71,6 +100,25 @@ const QUESTION_TYPES = {
                 return false;
             }
             return sortedPlayer.every((val, index) => val === sortedCorrect[index]);
+        },
+
+        normalizeAnswer: (answer) => {
+            if (!Array.isArray(answer)) return [];
+            return answer.map(a => typeof a === 'string' ? parseInt(a, 10) : a).sort((a, b) => a - b);
+        },
+
+        buildStatistics: (answers, question) => {
+            const optionCounts = new Array(question.options?.length || 4).fill(0);
+            answers.forEach(answerArray => {
+                if (Array.isArray(answerArray)) {
+                    answerArray.forEach(idx => {
+                        if (idx >= 0 && idx < optionCounts.length) {
+                            optionCounts[idx]++;
+                        }
+                    });
+                }
+            });
+            return { type: 'multi-distribution', optionCounts, total: answers.length };
         }
     },
 
@@ -95,6 +143,21 @@ const QUESTION_TYPES = {
                 return Boolean(val);
             };
             return normalizeBoolean(playerAnswer) === normalizeBoolean(correctAnswer);
+        },
+
+        normalizeAnswer: (answer) => {
+            if (typeof answer === 'boolean') return answer;
+            if (typeof answer === 'string') return answer.toLowerCase() === 'true';
+            return Boolean(answer);
+        },
+
+        buildStatistics: (answers, _question) => {
+            let trueCount = 0, falseCount = 0;
+            answers.forEach(answer => {
+                if (answer === true || answer === 'true') trueCount++;
+                else falseCount++;
+            });
+            return { type: 'binary', trueCount, falseCount, total: answers.length };
         }
     },
 
@@ -120,6 +183,25 @@ const QUESTION_TYPES = {
             }
             const diff = Math.abs(playerNum - correctNum);
             return diff <= tolerance;
+        },
+
+        normalizeAnswer: (answer) => {
+            const num = parseFloat(answer);
+            return isNaN(num) ? null : num;
+        },
+
+        buildStatistics: (answers, question) => {
+            const numericAnswers = answers.map(a => parseFloat(a)).filter(n => !isNaN(n));
+            const correctAnswer = question.correctAnswer;
+            const tolerance = question.tolerance || 0.1;
+            const correctCount = numericAnswers.filter(a => Math.abs(a - correctAnswer) <= tolerance).length;
+            return {
+                type: 'numeric',
+                answers: numericAnswers.slice(0, 10), // Sample of answers
+                correctCount,
+                total: answers.length,
+                average: numericAnswers.length > 0 ? numericAnswers.reduce((a, b) => a + b, 0) / numericAnswers.length : 0
+            };
         }
     },
 
@@ -162,6 +244,35 @@ const QUESTION_TYPES = {
 
             // Return percentage correct (0-1) for partial credit
             return correctPositions / correctOrder.length;
+        },
+
+        normalizeAnswer: (answer) => {
+            if (!Array.isArray(answer)) return [];
+            return answer.map(a => typeof a === 'string' ? parseInt(a, 10) : a);
+        },
+
+        buildStatistics: (answers, question) => {
+            const correctOrder = question.correctOrder || [];
+            let fullyCorrect = 0;
+            let partialScores = [];
+
+            answers.forEach(playerOrder => {
+                if (!Array.isArray(playerOrder)) return;
+                let correctPositions = 0;
+                for (let i = 0; i < Math.min(playerOrder.length, correctOrder.length); i++) {
+                    if (playerOrder[i] === correctOrder[i]) correctPositions++;
+                }
+                const score = correctOrder.length > 0 ? correctPositions / correctOrder.length : 0;
+                partialScores.push(score);
+                if (score === 1) fullyCorrect++;
+            });
+
+            return {
+                type: 'ordering',
+                fullyCorrect,
+                averageScore: partialScores.length > 0 ? partialScores.reduce((a, b) => a + b, 0) / partialScores.length : 0,
+                total: answers.length
+            };
         }
     }
 };
@@ -240,6 +351,42 @@ class QuestionTypeService {
     static getTypeIds() {
         return Object.keys(QUESTION_TYPES);
     }
+
+    /**
+     * Normalize answer for consistent comparison
+     * @param {string} typeId - Question type ID
+     * @param {*} answer - Player answer to normalize
+     * @returns {*} Normalized answer
+     */
+    static normalizeAnswer(typeId, answer) {
+        try {
+            const type = this.getType(typeId);
+            return type.normalizeAnswer ? type.normalizeAnswer(answer) : answer;
+        } catch (error) {
+            logger.error(`Error normalizing answer for type ${typeId}:`, error);
+            return answer;
+        }
+    }
+
+    /**
+     * Build statistics from answers
+     * @param {string} typeId - Question type ID
+     * @param {Array} answers - Array of player answers
+     * @param {Object} question - Question data
+     * @returns {Object} Statistics object
+     */
+    static buildStatistics(typeId, answers, question) {
+        try {
+            const type = this.getType(typeId);
+            return type.buildStatistics ? type.buildStatistics(answers, question) : { type: 'unknown', total: answers.length };
+        } catch (error) {
+            logger.error(`Error building statistics for type ${typeId}:`, error);
+            return { type: 'error', total: answers.length };
+        }
+    }
 }
 
-module.exports = { QuestionTypeService };
+// Backward compatibility alias
+const QuestionTypeRegistry = QuestionTypeService;
+
+module.exports = { QuestionTypeService, QuestionTypeRegistry };

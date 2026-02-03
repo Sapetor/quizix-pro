@@ -688,7 +688,7 @@ export class GameManager {
      */
     clearAllQuestionImages() {
         // Clear host question image
-        const hostImageContainer = document.getElementById('question-image-display');
+        const hostImageContainer = dom.get('question-image-display');
         if (hostImageContainer) {
             hostImageContainer.classList.add('hidden');
             const hostImg = hostImageContainer.querySelector('img');
@@ -699,7 +699,7 @@ export class GameManager {
         }
 
         // Clear player question image
-        const playerImageContainer = document.getElementById('player-question-image');
+        const playerImageContainer = dom.get('player-question-image');
         if (playerImageContainer) {
             playerImageContainer.classList.add('hidden');
             const playerImg = playerImageContainer.querySelector('img');
@@ -799,7 +799,7 @@ export class GameManager {
         }
 
         // Show the explanation in the question display area
-        const questionDisplay = document.getElementById('host-question-display');
+        const questionDisplay = dom.get('host-question-display');
         if (questionDisplay && explanation) {
             const explanationDiv = document.createElement('div');
             explanationDiv.className = 'question-explanation-display';
@@ -845,7 +845,7 @@ export class GameManager {
         }
 
         // Show the answer in the question display area (top frame)
-        const questionDisplay = document.getElementById('host-question-display');
+        const questionDisplay = dom.get('host-question-display');
         if (questionDisplay) {
             let answerText = `${getTranslation('correct_answer')}: ${correctAnswer}`;
             if (tolerance) {
@@ -867,13 +867,13 @@ export class GameManager {
         }
 
         // Hide the bottom options container for numeric questions
-        const optionsContainer = document.getElementById('answer-options');
+        const optionsContainer = dom.get('answer-options');
         if (optionsContainer) {
             optionsContainer.classList.add('hidden');
         }
 
         // Add class to hide the entire host-multiple-choice frame for numeric questions
-        const hostMultipleChoice = document.getElementById('host-multiple-choice');
+        const hostMultipleChoice = dom.get('host-multiple-choice');
         if (hostMultipleChoice) {
             hostMultipleChoice.classList.add('numeric-question-type');
         }
@@ -893,7 +893,7 @@ export class GameManager {
         dom.setContent('total-players', data.totalPlayers || 0);
 
         // Show the statistics container
-        const container = document.getElementById('answer-statistics');
+        const container = dom.get('answer-statistics');
         if (container) {
             container.classList.remove('hidden');
             container.style.display = 'block';
@@ -916,7 +916,7 @@ export class GameManager {
         });
 
         // Get existing statistics container
-        const statisticsContainer = document.getElementById('answer-statistics');
+        const statisticsContainer = dom.get('answer-statistics');
         if (!statisticsContainer) {
             logger.warn('Answer statistics container not found in HTML');
             return;
@@ -969,9 +969,9 @@ export class GameManager {
      * @param {Object} scoringInfo - Scoring information object
      */
     renderHostBreakdown(scoringInfo) {
-        const showBreakdown = document.getElementById('show-score-breakdown')?.checked ?? true;
-        const container = document.getElementById('host-score-breakdown');
-        const contentSpan = document.getElementById('breakdown-content');
+        const showBreakdown = dom.get('show-score-breakdown')?.checked ?? true;
+        const container = dom.get('host-score-breakdown');
+        const contentSpan = dom.get('breakdown-content');
 
         if (!showBreakdown || !scoringInfo || !container || !contentSpan) {
             if (container) container.style.display = 'none';
@@ -1034,11 +1034,11 @@ export class GameManager {
      * Create custom statistics display for numeric answers
      */
     createNumericStatisticsDisplay(answerCounts, sortedAnswers) {
-        const statsContent = document.getElementById('stats-grid');
+        const statsContent = dom.get('stats-grid');
         if (!statsContent) return;
 
         // Create or update numeric stats display
-        let numericStatsDiv = document.getElementById('numeric-stats-display');
+        let numericStatsDiv = dom.get('numeric-stats-display');
         if (!numericStatsDiv) {
             numericStatsDiv = document.createElement('div');
             numericStatsDiv.id = 'numeric-stats-display';
@@ -1097,11 +1097,11 @@ export class GameManager {
      * Clear custom statistics displays (numeric and ordering) when switching question types
      */
     clearNumericStatisticsDisplay() {
-        const numericStatsDiv = document.getElementById('numeric-stats-display');
+        const numericStatsDiv = dom.get('numeric-stats-display');
         if (numericStatsDiv) {
             numericStatsDiv.remove();
         }
-        const orderingStatsDiv = document.getElementById('ordering-stats-display');
+        const orderingStatsDiv = dom.get('ordering-stats-display');
         if (orderingStatsDiv) {
             orderingStatsDiv.remove();
         }
@@ -1115,7 +1115,7 @@ export class GameManager {
      * @param {Object} [options.answerCounts] - Answer counts for numeric questions
      */
     showHostStatistics(type, options = {}) {
-        const statsContent = document.getElementById('stats-grid');
+        const statsContent = dom.get('stats-grid');
         if (!statsContent) return;
 
         // Always clear numeric display first
@@ -1144,7 +1144,7 @@ export class GameManager {
      */
     setupMultipleChoiceStats(optionCount) {
         for (let i = 0; i < UI.MAX_STAT_ITEMS; i++) {
-            const statItem = document.getElementById(`stat-item-${i}`);
+            const statItem = dom.get(`stat-item-${i}`);
             const optionLabel = statItem?.querySelector('.option-label');
 
             if (statItem && optionLabel) {
@@ -1167,7 +1167,7 @@ export class GameManager {
     setupTrueFalseStats() {
         const tfTexts = getTrueFalseText();
         for (let i = 0; i < UI.MAX_STAT_ITEMS; i++) {
-            const statItem = document.getElementById(`stat-item-${i}`);
+            const statItem = dom.get(`stat-item-${i}`);
             const optionLabel = statItem?.querySelector('.option-label');
 
             if (statItem && optionLabel) {
@@ -1195,7 +1195,7 @@ export class GameManager {
     setupNumericStats(answerCounts) {
         // Hide all regular stat items
         for (let i = 0; i < UI.MAX_STAT_ITEMS; i++) {
-            const statItem = document.getElementById(`stat-item-${i}`);
+            const statItem = dom.get(`stat-item-${i}`);
             if (statItem) {
                 statItem.classList.add('hidden');
                 statItem.classList.remove('visible-flex');
@@ -1214,7 +1214,7 @@ export class GameManager {
     setupOrderingStats(answerCounts) {
         // Hide all regular stat items
         for (let i = 0; i < UI.MAX_STAT_ITEMS; i++) {
-            const statItem = document.getElementById(`stat-item-${i}`);
+            const statItem = dom.get(`stat-item-${i}`);
             if (statItem) {
                 statItem.classList.add('hidden');
                 statItem.classList.remove('visible-flex');
@@ -1222,10 +1222,10 @@ export class GameManager {
         }
 
         // Show most common ordering sequences
-        const statsGrid = document.getElementById('stats-grid');
+        const statsGrid = dom.get('stats-grid');
         if (!statsGrid) return;
 
-        let orderingDisplay = document.getElementById('ordering-stats-display');
+        let orderingDisplay = dom.get('ordering-stats-display');
         if (!orderingDisplay) {
             orderingDisplay = document.createElement('div');
             orderingDisplay.id = 'ordering-stats-display';
@@ -1283,8 +1283,8 @@ export class GameManager {
      * Update individual statistic item
      */
     updateStatItem(index, count, totalAnswered) {
-        const statCount = document.getElementById(`stat-count-${index}`);
-        const statFill = document.getElementById(`stat-fill-${index}`);
+        const statCount = dom.get(`stat-count-${index}`);
+        const statFill = dom.get(`stat-fill-${index}`);
 
         logger.debug(`updateStatItem: index=${index}, count=${count}, totalAnswered=${totalAnswered}`);
 
@@ -1312,7 +1312,7 @@ export class GameManager {
      * Hide answer statistics
      */
     hideAnswerStatistics() {
-        const statisticsContainer = document.getElementById('answer-statistics');
+        const statisticsContainer = dom.get('answer-statistics');
         if (statisticsContainer) {
             statisticsContainer.classList.add('hidden');
         }
@@ -1382,7 +1382,7 @@ export class GameManager {
      */
     updatePlayersList(players) {
         logger.debug('updatePlayersList called with:', players);
-        const playersListElement = document.getElementById('players-list');
+        const playersListElement = dom.get('players-list');
         logger.debug('playersListElement found:', !!playersListElement);
         if (!playersListElement) {
             logger.debug('players-list element not found');
@@ -1408,7 +1408,7 @@ export class GameManager {
         });
 
         // Update player count in lobby with animation
-        const lobbyPlayerCount = document.getElementById('lobby-player-count');
+        const lobbyPlayerCount = dom.get('lobby-player-count');
         if (lobbyPlayerCount) {
             // Add a simple scale animation for number changes
             const currentCount = parseInt(lobbyPlayerCount.textContent) || 0;
@@ -1427,7 +1427,7 @@ export class GameManager {
         }
 
         // Update legacy player count (for compatibility) - but check if element exists
-        const legacyPlayerCount = document.getElementById('player-count');
+        const legacyPlayerCount = dom.get('player-count');
         if (legacyPlayerCount) {
             dom.setContent('player-count', players.length);
         }
@@ -1523,25 +1523,25 @@ export class GameManager {
         simpleResultsDownloader.hideDownloadTool();
 
         // Hide final results overlay from previous game
-        const finalResults = document.getElementById('final-results');
+        const finalResults = dom.get('final-results');
         if (finalResults) {
             finalResults.classList.add('hidden');
             finalResults.classList.remove('game-complete-animation');
         }
 
         // 🔧 FIX: Clear player list UI to prevent phantom players from previous game
-        const playersListElement = document.getElementById('players-list');
+        const playersListElement = dom.get('players-list');
         if (playersListElement) {
             playersListElement.innerHTML = '';
             logger.debug('🧹 Cleared player list UI during game reset');
         }
 
         // Reset player count displays
-        const lobbyPlayerCount = document.getElementById('lobby-player-count');
+        const lobbyPlayerCount = dom.get('lobby-player-count');
         if (lobbyPlayerCount) {
             lobbyPlayerCount.textContent = '0';
         }
-        const legacyPlayerCount = document.getElementById('player-count');
+        const legacyPlayerCount = dom.get('player-count');
         if (legacyPlayerCount) {
             legacyPlayerCount.textContent = '0';
         }
@@ -1743,7 +1743,7 @@ export class GameManager {
         try {
             const containers = ['current-question', 'player-question-text'];
             containers.forEach(containerId => {
-                const container = document.getElementById(containerId);
+                const container = dom.get(containerId);
                 if (container) {
                     container.innerHTML = `
                         <div class="error-state">
@@ -1768,12 +1768,12 @@ export class GameManager {
      */
     showResultErrorState() {
         try {
-            const resultElement = document.getElementById('answer-feedback');
+            const resultElement = dom.get('answer-feedback');
             if (resultElement) {
                 resultElement.classList.remove('hidden');
                 resultElement.classList.add('error-bg');
 
-                const messageElement = document.getElementById('feedback-message');
+                const messageElement = dom.get('feedback-message');
                 if (messageElement) {
                     messageElement.textContent = '⚠️ Result display error';
                 }

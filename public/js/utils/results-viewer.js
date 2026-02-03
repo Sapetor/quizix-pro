@@ -10,7 +10,7 @@
  */
 
 import { translationManager, showErrorAlert, showSuccessAlert } from './translation-manager.js';
-import { logger } from '../core/config.js';
+import { logger, COLORS, TIMING } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
 import { SwipeToDelete } from './swipe-to-delete.js';
@@ -985,15 +985,15 @@ export class ResultsViewer {
 
         const trendIcon = comparisonData.trendDirection === 'improving' ? '📈' :
             comparisonData.trendDirection === 'declining' ? '📉' : '➡️';
-        const trendColor = comparisonData.trendDirection === 'improving' ? '#10b981' :
-            comparisonData.trendDirection === 'declining' ? '#ef4444' : '#6b7280';
+        const trendColor = comparisonData.trendDirection === 'improving' ? COLORS.SUCCESS :
+            comparisonData.trendDirection === 'declining' ? COLORS.ERROR : '#6b7280';
 
         let insightsHtml = '';
         if (comparisonData.mostImproved) {
-            insightsHtml += `<p style="color: #10b981;"><strong>Most Improved:</strong> Q${comparisonData.mostImproved.questionNumber} (+${comparisonData.mostImproved.trend.toFixed(1)}%)</p>`;
+            insightsHtml += `<p style="color: ${COLORS.SUCCESS};"><strong>Most Improved:</strong> Q${comparisonData.mostImproved.questionNumber} (+${comparisonData.mostImproved.trend.toFixed(1)}%)</p>`;
         }
         if (comparisonData.mostDeclined) {
-            insightsHtml += `<p style="color: #ef4444;"><strong>Needs Attention:</strong> Q${comparisonData.mostDeclined.questionNumber} (${comparisonData.mostDeclined.trend.toFixed(1)}%)</p>`;
+            insightsHtml += `<p style="color: ${COLORS.ERROR};"><strong>Needs Attention:</strong> Q${comparisonData.mostDeclined.questionNumber} (${comparisonData.mostDeclined.trend.toFixed(1)}%)</p>`;
         }
 
         modal.innerHTML = `
@@ -1039,7 +1039,7 @@ export class ResultsViewer {
         // Create chart after modal is in DOM
         setTimeout(() => {
             createComparisonChart('comparison-chart', comparisonData.sessions);
-        }, 100);
+        }, TIMING.DOM_UPDATE_DELAY);
 
         // Attach PDF export handler
         modal.querySelector('#export-comparison-pdf').addEventListener('click', async () => {

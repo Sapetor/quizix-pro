@@ -9,6 +9,7 @@ import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
 import { logger, COLORS } from '../../core/config.js';
 import { imagePathResolver, loadImageWithRetry } from '../../utils/image-path-resolver.js';
 import { escapeHtml, formatCodeBlocks as sharedFormatCodeBlocks } from '../../utils/dom.js';
+import { QuestionTypeRegistry } from '../../utils/question-type-registry.js';
 
 export class PreviewRenderer {
     constructor() {
@@ -210,14 +211,9 @@ export class PreviewRenderer {
     clearAllSplitAnswerTypes() {
         this.resetSplitAnswerStates();
 
-        // Hide all answer containers
-        const containerIds = [
-            'preview-multiple-choice-split',
-            'preview-multiple-correct-split',
-            'preview-true-false-split',
-            'preview-numeric-split',
-            'preview-ordering-split'
-        ];
+        // Use registry to get all type IDs and build container IDs dynamically
+        const typeIds = QuestionTypeRegistry.getTypeIds();
+        const containerIds = typeIds.map(typeId => `preview-${typeId}-split`);
 
         this.hideSplitAnswerContainers(containerIds);
 
@@ -329,30 +325,40 @@ export class PreviewRenderer {
         // Hide all containers first
         this.clearAllSplitAnswerTypes();
 
-        // Show and populate the correct container
+        const containerMap = {
+            'multiple-choice': 'preview-multiple-choice-split',
+            'multiple-correct': 'preview-multiple-correct-split',
+            'true-false': 'preview-true-false-split',
+            'numeric': 'preview-numeric-split',
+            'ordering': 'preview-ordering-split'
+        };
+
+        const containerId = containerMap[data.type];
+        if (!containerId) {
+            logger.warn('Unknown question type for preview:', data.type);
+            return;
+        }
+
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.style.display = 'block';
+        }
+
+        // Render based on type
         switch (data.type) {
             case 'multiple-choice':
-                document.getElementById('preview-multiple-choice-split').style.display = 'block';
                 this.renderSplitMultipleChoicePreview(data.options, data.correctIndex);
                 break;
-
             case 'multiple-correct':
-                document.getElementById('preview-multiple-correct-split').style.display = 'block';
                 this.renderSplitMultipleCorrectPreview(data.options, data.correctIndices);
                 break;
-
             case 'true-false':
-                document.getElementById('preview-true-false-split').style.display = 'block';
                 this.renderSplitTrueFalsePreview(data.correctAnswer);
                 break;
-
             case 'numeric':
-                document.getElementById('preview-numeric-split').style.display = 'block';
                 this.renderSplitNumericPreview();
                 break;
-
             case 'ordering':
-                document.getElementById('preview-ordering-split').style.display = 'block';
                 this.renderSplitOrderingPreview(data.options, data.correctOrder);
                 break;
         }
@@ -755,24 +761,19 @@ export class PreviewRenderer {
      * Render mobile answer type
      */
     renderMobileAnswerType(data) {
-        switch (data.type) {
-            case 'multiple-choice':
-                this.renderMobileMultipleChoicePreview(data.options, data.correctIndex);
-                break;
-            case 'multiple-correct':
-                this.renderMobileMultipleCorrectPreview(data.options, data.correctIndices);
-                break;
-            case 'true-false':
-                this.renderMobileTrueFalsePreview(data.correctAnswer);
-                break;
-            case 'numeric':
-                this.renderMobileNumericPreview(data.correctAnswer);
-                break;
-            case 'ordering':
-                this.renderMobileOrderingPreview(data.options, data.correctOrder);
-                break;
-            default:
-                logger.warn('Unknown mobile question type:', data.type);
+        const rendererMap = {
+            'multiple-choice': () => this.renderMobileMultipleChoicePreview(data.options, data.correctIndex),
+            'multiple-correct': () => this.renderMobileMultipleCorrectPreview(data.options, data.correctIndices),
+            'true-false': () => this.renderMobileTrueFalsePreview(data.correctAnswer),
+            'numeric': () => this.renderMobileNumericPreview(data.correctAnswer),
+            'ordering': () => this.renderMobileOrderingPreview(data.options, data.correctOrder)
+        };
+
+        const renderer = rendererMap[data.type];
+        if (renderer) {
+            renderer();
+        } else {
+            logger.warn('Unknown mobile question type:', data.type);
         }
     }
 

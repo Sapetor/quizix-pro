@@ -16,6 +16,8 @@ import { logger, LIMITS, UI } from '../core/config.js';
 import { translationManager } from './translation-manager.js';
 import { setItem, getJSON, setJSON } from './storage-utils.js';
 import { updateEditorQuestionCount } from './editor-question-count.js';
+import { openModal } from './modal-utils.js';
+import { dom } from './dom.js';
 
 // ============================================================================
 // Preview and Modal Functions
@@ -51,10 +53,10 @@ export async function openAIGeneratorModal() {
 }
 
 function openModalFallback(modalId) {
-    const modal = document.getElementById(modalId);
+    const modal = dom.get(modalId);
     if (modal) {
         logger.debug(`Opening ${modalId} directly as fallback`);
-        modal.style.display = 'flex';
+        openModal(modal);
     } else {
         logger.error(`${modalId} DOM element not found`);
     }
@@ -66,7 +68,7 @@ function openModalFallback(modalId) {
 
 export function toggleToolbar() {
     logger.debug('Horizontal toolbar toggle function called');
-    const toolbar = document.getElementById('horizontal-toolbar');
+    const toolbar = dom.get('horizontal-toolbar');
     if (toolbar) {
         const isVisible = toolbar.style.display !== 'none' && toolbar.style.display !== '';
         toolbar.style.display = isVisible ? 'none' : 'flex';
@@ -75,9 +77,9 @@ export function toggleToolbar() {
 
 export function toggleGlobalTime() {
     logger.debug('Global time toggle function called');
-    const globalTimeContainer = document.getElementById('global-time-container');
-    const useGlobalTime = document.getElementById('use-global-time');
-    const globalTimeLimit = document.getElementById('global-time-limit');
+    const globalTimeContainer = dom.get('global-time-container');
+    const useGlobalTime = dom.get('use-global-time');
+    const globalTimeLimit = dom.get('global-time-limit');
 
     if (!globalTimeContainer || !useGlobalTime) {
         logger.debug('Global time elements not found');
@@ -116,7 +118,7 @@ export function updateGlobalTime(inputElement) {
     if (value < LIMITS.MIN_TIME_LIMIT) inputElement.value = LIMITS.MIN_TIME_LIMIT;
     if (value > LIMITS.MAX_TIME_LIMIT) inputElement.value = LIMITS.MAX_TIME_LIMIT;
 
-    const useGlobalTime = document.getElementById('use-global-time');
+    const useGlobalTime = dom.get('use-global-time');
 
     // If global time is enabled, update all question time inputs to match
     if (useGlobalTime?.checked) {
@@ -197,7 +199,7 @@ export function scrollToCurrentQuestion() {
 
 export function toggleQuestionCollapse(questionItem) {
     // Disable collapse in always-preview mode (desktop) - questions are paginated instead
-    const hostContainer = document.getElementById('host-container');
+    const hostContainer = dom.get('host-container');
     if (hostContainer?.classList.contains('always-preview')) {
         return; // No collapse in pagination mode
     }
@@ -231,7 +233,7 @@ function updateCollapsedMeta(questionItem) {
 let currentEditingQuestion = 0;
 
 export function goToPreviousQuestion() {
-    const questionsContainer = document.getElementById('questions-container');
+    const questionsContainer = dom.get('questions-container');
     if (!questionsContainer) return;
 
     if (currentEditingQuestion > 0) {
@@ -241,7 +243,7 @@ export function goToPreviousQuestion() {
 }
 
 export function goToNextQuestion() {
-    const questionsContainer = document.getElementById('questions-container');
+    const questionsContainer = dom.get('questions-container');
     if (!questionsContainer) return;
 
     const questionItems = questionsContainer.querySelectorAll('.question-item');
@@ -253,7 +255,7 @@ export function goToNextQuestion() {
 }
 
 export function showQuestion(index) {
-    const questionsContainer = document.getElementById('questions-container');
+    const questionsContainer = dom.get('questions-container');
     if (!questionsContainer) return;
 
     const questionItems = questionsContainer.querySelectorAll('.question-item');
@@ -285,10 +287,10 @@ export function showQuestion(index) {
 }
 
 export function updatePaginationUI(index, total) {
-    const prevBtn = document.getElementById('prev-question-btn');
-    const nextBtn = document.getElementById('next-question-btn');
-    const currentNum = document.getElementById('current-question-num');
-    const totalNum = document.getElementById('total-question-num');
+    const prevBtn = dom.get('prev-question-btn');
+    const nextBtn = dom.get('next-question-btn');
+    const currentNum = dom.get('current-question-num');
+    const totalNum = dom.get('total-question-num');
 
     if (prevBtn) prevBtn.disabled = index <= 0;
     if (nextBtn) nextBtn.disabled = index >= total - 1;
@@ -300,7 +302,7 @@ export function updatePaginationUI(index, total) {
  * Navigate to newly added question
  */
 export function navigateToNewQuestion() {
-    const questionsContainer = document.getElementById('questions-container');
+    const questionsContainer = dom.get('questions-container');
     if (!questionsContainer) return;
 
     const questionItems = questionsContainer.querySelectorAll('.question-item');
@@ -314,7 +316,7 @@ export function navigateToNewQuestion() {
  * Handle question removal - adjust pagination
  */
 export function handleQuestionRemoved() {
-    const questionsContainer = document.getElementById('questions-container');
+    const questionsContainer = dom.get('questions-container');
     if (!questionsContainer) return;
 
     const questionItems = questionsContainer.querySelectorAll('.question-item');
@@ -344,8 +346,8 @@ export function getCurrentEditingQuestion() {
  * Initialize pagination on host screen (desktop only)
  */
 export function initializeQuestionPagination() {
-    const hostContainer = document.getElementById('host-container');
-    const questionsContainer = document.getElementById('questions-container');
+    const hostContainer = dom.get('host-container');
+    const questionsContainer = dom.get('questions-container');
 
     if (!hostContainer || !questionsContainer) return;
 
@@ -375,7 +377,7 @@ function setupPaginationKeyboardNav() {
 
 function handlePaginationKeyNav(e) {
     // Only handle when on host screen and not in an input/textarea
-    const hostScreen = document.getElementById('host-screen');
+    const hostScreen = dom.get('host-screen');
     if (!hostScreen?.classList.contains('active')) return;
 
     const activeElement = document.activeElement;
@@ -386,7 +388,7 @@ function handlePaginationKeyNav(e) {
     if (isTyping) return;
 
     // Check for settings modal open
-    const settingsModal = document.getElementById('quiz-settings-modal');
+    const settingsModal = dom.get('quiz-settings-modal');
     if (settingsModal?.classList.contains('visible')) return;
 
     if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
@@ -403,7 +405,7 @@ function handlePaginationKeyNav(e) {
 // ============================================================================
 
 export function openQuizSettingsModal() {
-    const modal = document.getElementById('quiz-settings-modal');
+    const modal = dom.get('quiz-settings-modal');
     if (!modal) return;
 
     // Sync modal values from inline settings
@@ -419,7 +421,7 @@ export function openQuizSettingsModal() {
 }
 
 export function closeQuizSettingsModal() {
-    const modal = document.getElementById('quiz-settings-modal');
+    const modal = dom.get('quiz-settings-modal');
     if (!modal) return;
 
     // Sync modal values back to inline settings
@@ -445,8 +447,8 @@ function handleSettingsModalOverlayClick(e) {
 }
 
 export function toggleConsensusModeModal() {
-    const consensusMode = document.getElementById('modal-consensus-mode');
-    const consensusSettings = document.getElementById('modal-consensus-settings');
+    const consensusMode = dom.get('modal-consensus-mode');
+    const consensusSettings = dom.get('modal-consensus-settings');
 
     if (!consensusMode || !consensusSettings) return;
 
@@ -454,8 +456,8 @@ export function toggleConsensusModeModal() {
 }
 
 export function toggleGlobalTimeModal() {
-    const useGlobalTime = document.getElementById('modal-use-global-time');
-    const globalTimeContainer = document.getElementById('modal-global-time-container');
+    const useGlobalTime = dom.get('modal-use-global-time');
+    const globalTimeContainer = dom.get('modal-global-time-container');
 
     if (!useGlobalTime || !globalTimeContainer) return;
 
@@ -470,8 +472,8 @@ function syncSettingsToModal() {
     syncInput('global-time-limit', 'modal-global-time-limit');
 
     // Update global time container visibility
-    const useGlobalTime = document.getElementById('modal-use-global-time');
-    const globalTimeContainer = document.getElementById('modal-global-time-container');
+    const useGlobalTime = dom.get('modal-use-global-time');
+    const globalTimeContainer = dom.get('modal-global-time-container');
     if (useGlobalTime && globalTimeContainer) {
         globalTimeContainer.style.display = useGlobalTime.checked ? 'block' : 'none';
     }
@@ -485,8 +487,8 @@ function syncSettingsToModal() {
     syncCheckbox('allow-chat', 'modal-allow-chat');
 
     // Update consensus settings visibility
-    const consensusMode = document.getElementById('modal-consensus-mode');
-    const consensusSettings = document.getElementById('modal-consensus-settings');
+    const consensusMode = dom.get('modal-consensus-mode');
+    const consensusSettings = dom.get('modal-consensus-settings');
     if (consensusMode && consensusSettings) {
         consensusSettings.classList.toggle('hidden', !consensusMode.checked);
     }
@@ -507,7 +509,7 @@ function syncSettingsFromModal() {
     syncInput('modal-global-time-limit', 'global-time-limit');
 
     // Trigger global time toggle on inline settings
-    const useGlobalTime = document.getElementById('use-global-time');
+    const useGlobalTime = dom.get('use-global-time');
     if (useGlobalTime) {
         const event = new Event('change');
         useGlobalTime.dispatchEvent(event);
@@ -530,16 +532,16 @@ function syncSettingsFromModal() {
 }
 
 function syncCheckbox(fromId, toId) {
-    const from = document.getElementById(fromId);
-    const to = document.getElementById(toId);
+    const from = dom.get(fromId);
+    const to = dom.get(toId);
     if (from && to) {
         to.checked = from.checked;
     }
 }
 
 function syncInput(fromId, toId) {
-    const from = document.getElementById(fromId);
-    const to = document.getElementById(toId);
+    const from = dom.get(fromId);
+    const to = dom.get(toId);
     if (from && to) {
         to.value = from.value;
     }
@@ -584,7 +586,7 @@ export function removeQuestion(buttonElement) {
     }
 
     // Dispatch event for question count update
-    const questionsContainer = document.getElementById('questions-container');
+    const questionsContainer = dom.get('questions-container');
     const newCount = questionsContainer ? questionsContainer.children.length : 0;
     document.dispatchEvent(new CustomEvent('questionRemoved', {
         detail: { questionCount: newCount }
@@ -617,7 +619,7 @@ export function setGlobalFontSize(scale) {
     document.documentElement.style.setProperty('--global-font-scale', scaleValue);
 
     // Update font size icon
-    const fontIcon = document.getElementById('font-size-icon');
+    const fontIcon = dom.get('font-size-icon');
     if (fontIcon) {
         const icons = { small: 'A\u207b', medium: 'A', large: 'A\u207a', xlarge: 'A\u207a\u207a' };
         fontIcon.textContent = icons[scale] || 'A';
@@ -673,7 +675,7 @@ function applyThemeFallback() {
     ];
 
     themeButtons.forEach(id => {
-        const button = document.getElementById(id);
+        const button = dom.get(id);
         if (!button) return;
 
         const iconSpan = button.querySelector('.control-icon');
@@ -711,7 +713,7 @@ export function returnToMainFromHeader() {
     document.querySelectorAll('.screen').forEach(screen => {
         screen.style.display = 'none';
     });
-    const mainMenu = document.getElementById('main-menu');
+    const mainMenu = dom.get('main-menu');
     if (mainMenu) {
         mainMenu.style.display = 'block';
     }
@@ -721,8 +723,8 @@ export function returnToMainFromHeader() {
  * Update mobile and desktop header return button visibility
  */
 export function updateMobileReturnButtonVisibility(currentScreen) {
-    const mobileReturnButton = document.getElementById('mobile-return-to-main');
-    const desktopReturnButton = document.getElementById('desktop-return-to-main');
+    const mobileReturnButton = dom.get('mobile-return-to-main');
+    const desktopReturnButton = dom.get('desktop-return-to-main');
     const shouldShow = currentScreen !== 'main-menu' && currentScreen !== '';
 
     if (mobileReturnButton) {

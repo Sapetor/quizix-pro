@@ -4,13 +4,133 @@ This guide documents the complete process for adding a new question type, based 
 
 ## Overview
 
-Adding a question type requires changes across **10+ files** spanning frontend, backend, and configuration. This guide provides a checklist to ensure nothing is missed.
+Adding a question type requires changes across **~8 files** spanning frontend, backend, and configuration. This guide provides a checklist to ensure nothing is missed.
+
+**PHASE 1 UPDATE (Q1 2026):** The rendering pipeline has been consolidated into `QuestionTypeRegistry` (frontend) and `QuestionTypeService` (backend). This reduces the number of locations where rendering/validation logic needs to be added from 40+ to ~8, dramatically simplifying the process.
+
+---
+
+## Simplified Workflow (Phase 1 - With QuestionTypeRegistry)
+
+The refactored codebase consolidates rendering logic in `QuestionTypeRegistry`:
+
+```
+Old way: question-renderer.js (setupHostMultipleChoiceOptions, setupPlayerMultipleChoiceOptions, etc.)
+         + 40+ repeated patterns scattered across codebase
+
+New way: QuestionTypeRegistry.renderHostOptions() / renderPlayerOptions()
+         + extractAnswer() for answer extraction
+         → Called from question-renderer.js and player-interaction-manager.js
+```
+
+**New Process: 8 Essential Locations (down from 40+)**
+
+1. **QuestionTypeRegistry** - Add type definition with rendering methods
+2. **QuestionTypeService** (backend) - Add validation & scoring
+3. **HTML templates** - Add editor UI and container
+4. **CSS** - Style the editor and display UIs
+5. **Translations** - Add labels for all 9 languages
+6. **PreviewManager** - Extract data for preview
+7. **PreviewRenderer** - Render preview display
+8. **Quiz validation** - Validate the data
 
 ---
 
 ## Critical Checklist
 
-### 1. Question Type Definition & Utilities
+### 1. Core Question Type Definition
+
+**File: `public/js/utils/question-type-registry.js`** ⭐ MOST IMPORTANT
+
+Add your question type definition with these methods:
+
+```javascript
+'your-type': {
+    id: 'your-type',
+    label: 'Your Type',
+
+    containerIds: {
+        player: 'player-your-type',
+        host: 'host-your-type',
+        preview: 'preview-your-type'
+    },
+
+    selectors: {
+        // Selectors for quiz editor DOM
+        optionsContainer: '.your-type-options',
+        options: '.your-type-options .option'
+    },
+
+    playerSelectors: {
+        optionsContainer: '.player-options'
+    },
+
+    extractData: (questionElement) => {
+        // Extract from editor and return data object
+        return { /* your data */ };
+    },
+
+    populateQuestion: (questionElement, data) => {
+        // Populate editor from data object
+    },
+
+    validate: (data) => {
+        // Return { valid: true/false, error?: string }
+    },
+
+    scoreAnswer: (playerAnswer, correctAnswer, options = {}) => {
+        // Return boolean or 0-1 for partial credit
+    },
+
+    renderHostOptions: (data, container, helpers) => {
+        // Render for host display
+        // helpers = { escapeHtml, formatCodeBlocks, translationManager, COLORS }
+    },
+
+    renderPlayerOptions: (data, container, helpers) => {
+        // Render for player input
+    },
+
+    extractAnswer: (container) => {
+        // Extract player's answer from DOM and return it
+    }
+}
+```
+
+**Benefits:**
+- Single source of truth for rendering logic
+- Automatically used by QuestionRenderer and PlayerInteractionManager
+- Eliminates 40+ lines of setup code
+- Easier to test in isolation
+
+---
+
+### 2. Backend Question Type Definition
+
+**File: `services/question-type-service.js`**
+
+Add validation and scoring (CommonJS format for Node.js):
+
+```javascript
+'your-type': {
+    validate: (data) => {
+        // Same validation as frontend
+        if (!data.options || data.options.length < 2) {
+            return { valid: false, error: 'At least 2 options required' };
+        }
+        return { valid: true };
+    },
+
+    scoreAnswer: (playerAnswer, correctAnswer, options = {}) => {
+        // Return boolean or 0-1 for partial credit
+        return playerAnswer === correctAnswer;
+    }
+}
+```
+
+---
+
+### 3. Question Type Definition & Utilities
 
 **File: `public/js/utils/question-utils.js`**
 
@@ -88,15 +208,23 @@ submitOrderingAnswer() {
 
 ### 4. Question Rendering (Host & Player)
 
-**File: `public/js/game/modules/question-renderer.js`**
+**✓ AUTOMATICALLY HANDLED BY QuestionTypeRegistry**
 
-- [ ] Add case in `updateHostOptionsContent()` (~line 96)
-- [ ] Add `setupHostXxxOptions()` method for host display (~line 185-211)
-- [ ] Add case in `updatePlayerOptions()` (~line 319)
-- [ ] Add `setupPlayerXxxOptions()` method for player display (~line 498-554)
-- [ ] Wire up submit button in `setupPlayerXxxOptions()` using `gameManager.addEventListenerTracked()`
+When you define `renderHostOptions()`, `renderPlayerOptions()`, and `extractAnswer()` in the registry, QuestionRenderer automatically calls them:
 
-⚠️ **Submit Button Pattern:** Follow the numeric question pattern - wire button directly in setup method, NOT in PlayerInteractionManager.bindPlayerEventListeners()
+```javascript
+// In question-renderer.js - already refactored to use registry
+const helpers = {
+    escapeHtml,
+    formatCodeBlocks,
+    translationManager,
+    COLORS
+};
+QuestionTypeRegistry.renderHostOptions(data.type, data, hostOptionsContainer, helpers);
+QuestionTypeRegistry.renderPlayerOptions(data.type, data, optionsContainer, helpers);
+```
+
+**No additional code needed in question-renderer.js!**
 
 **Example:**
 ```javascript
@@ -121,31 +249,22 @@ setupPlayerOrderingOptions(data, optionsContainer) {
 
 ### 5. Player Interaction
 
-**File: `public/js/game/modules/player-interaction-manager.js`**
+**✓ AUTOMATICALLY HANDLED BY QuestionTypeRegistry.extractAnswer()**
 
-- [ ] Bind submit method in constructor (~line 21)
-- [ ] Add submit method (~line 153)
-- [ ] Add internal submit implementation (~line 160)
-- [ ] Add case to `submitAnswerByType()` (~line 95-96)
+When you define `extractAnswer()` in the registry, PlayerInteractionManager automatically calls it:
 
-**Example:**
 ```javascript
-// In constructor
-this.submitOrderingAnswer = this.submitOrderingAnswer.bind(this);
-
-// Submit method
-submitOrderingAnswer() {
-    return this.submitAnswerByType('ordering');
-}
-
-// Internal implementation
-submitOrderingAnswerInternal() {
-    const container = document.getElementById('player-ordering-container');
-    const items = container.querySelectorAll('.ordering-display-item');
-    const answer = Array.from(items).map(item => parseInt(item.dataset.originalIndex));
-    this.submitAnswer(answer);
+// In player-interaction-manager.js - already refactored to use registry
+submitAnswerByType(type, directAnswer = null) {
+    const container = document.getElementById(`player-${type}`);
+    const answer = QuestionTypeRegistry.extractAnswer(type, container);
+    // ... validation and submission
 }
 ```
+
+**No additional code needed in player-interaction-manager.js!**
+
+The submit button wiring still happens in question-renderer.js after rendering the options - see Section 4.
 
 ---
 
@@ -456,19 +575,19 @@ After implementing a new question type, test:
 
 | File | Purpose | Changes Needed |
 |------|---------|----------------|
+| `public/js/utils/question-type-registry.js` | ✅ Rendering (registry-based) | 1 location |
+| `services/question-type-service.js` | ✅ Backend validation & scoring | 1 location |
 | `public/js/utils/question-utils.js` | Question creation/editing | 5 locations |
 | `public/index.html` | DOM structure | 3 locations |
 | `public/js/game/game-manager.js` | Game orchestration | 2 locations |
-| `public/js/game/modules/question-renderer.js` | Display logic | 4 methods |
-| `public/js/game/modules/player-interaction-manager.js` | Answer submission | 4 locations |
-| `server.js` | Validation & scoring | 3 locations |
-| `public/js/quiz/quiz-manager.js` | Quiz validation | 2 locations |
 | `public/js/ui/preview-manager.js` | Preview updates | 2 locations |
 | `public/js/ui/modules/preview-renderer.js` | Preview rendering | 4 methods |
 | `public/css/components.css` | Styling | Full section |
 | `public/js/utils/translations/*.js` | i18n | 9 files |
 
-**Total: ~40 specific code locations across 13+ files**
+**Total: ~8 essential locations (down from 40+)**
+
+**Registry-based rendering automatically eliminates the need for:** changes in `question-renderer.js` (uses `QuestionTypeRegistry.renderHostOptions/renderPlayerOptions()`), `player-interaction-manager.js` (uses `QuestionTypeRegistry.extractAnswer()`), and `server.js` answer handling (uses `QuestionTypeService`).
 
 ---
 
@@ -506,12 +625,12 @@ After implementing and testing:
 
 ## Recommended Improvements
 
-1. **Create a question type registry** - Single source of truth
-2. **Standardize submit button pattern** - Pick one approach
+1. ✅ **Create a question type registry** - DONE (QuestionTypeRegistry handles all rendering)
+2. ✅ **Standardize submit button pattern** - DONE (Registry-based, consistent across types)
 3. **Generate default question via JS** - Remove HTML hardcoding
 4. **Automate CSS bundle rebuild** - Pre-commit hook or eliminate build step
 5. **Use more defensive preview updates** - Broader class matching or delegation
-6. **Extract color scheme to constants** - DRY principle for item colors
+6. ✅ **Extract color scheme to constants** - DONE (COLORS.ORDERING_ITEM_COLORS in config.js)
 7. **Add integration tests** - Playwright tests for new question types
 8. **Document submit button pattern** - In-code comments explaining the choice
 
@@ -520,6 +639,10 @@ After implementing and testing:
 ## Notes
 
 - This document reflects lessons learned from adding "ordering" question type
-- Time to implement: ~8 hours (mostly debugging missing pieces)
-- Main time sinks: Finding all required locations, CSS bundle issue, submit button wiring
-- With this checklist: Estimated 2-3 hours for future question types
+- Time to implement: ~2-3 hours (down from 8+ hours before refactoring)
+- Main time sinks (original): Finding all required locations, CSS bundle issue, submit button wiring
+- Refactoring completed Q1 2026:
+  - QuestionTypeRegistry now handles rendering for all question types (frontend)
+  - QuestionTypeService provides validation and scoring (backend)
+  - File restructuring: generator.js split into 4 files, game-session-service.js split into 3 files
+  - Result: Eliminated 40+ scattered locations, reduced to ~8 essential locations
