@@ -365,6 +365,9 @@ export class PracticeModeManager {
     async restartPractice() {
         const filename = this.currentQuizFilename;
 
+        // IMPORTANT: Update UI BEFORE cleanup to properly remove event listeners
+        this.updateUIForPracticeMode(false);
+
         // Clean up current session
         this.cleanup();
 
@@ -386,7 +389,11 @@ export class PracticeModeManager {
     exitPracticeMode() {
         logger.debug('[PracticeModeManager] Exiting practice mode');
 
-        // Clean up
+        // IMPORTANT: Update UI BEFORE cleanup to properly remove event listeners
+        // (cleanup() resets _boundHandlers, so listener removal must happen first)
+        this.updateUIForPracticeMode(false);
+
+        // Clean up timers, sessions, and event handlers
         this.cleanup();
 
         // Hide results
@@ -394,9 +401,6 @@ export class PracticeModeManager {
         if (resultsContainer) {
             resultsContainer.classList.add('hidden');
         }
-
-        // Update UI
-        this.updateUIForPracticeMode(false);
 
         // Return to main menu (correct screen ID is 'main-menu', not 'main')
         if (this.uiManager) {
@@ -455,6 +459,15 @@ export class PracticeModeManager {
         if (this._advanceTimer) {
             clearTimeout(this._advanceTimer);
             this._advanceTimer = null;
+        }
+
+        // Stop game timer to prevent sound leaks (countdown tick sounds)
+        if (this.gameManager) {
+            this.gameManager.stopTimer();
+            // Also cleanup timer manager to cancel any pending sound timeouts
+            if (this.gameManager.timerManager) {
+                this.gameManager.timerManager.cleanup();
+            }
         }
 
         // Clean up game session
