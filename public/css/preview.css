@@ -10,9 +10,7 @@
     transition: opacity 0.2s ease-in-out;
 }
 
-.tex2jax_process {
-    transition: opacity 0.2s ease-in-out;
-}
+/* tex2jax_process transition handled by base.css with FOUC prevention */
 
 /* === PREMIUM PREVIEW LOADING SKELETON === */
 .preview-loading .preview-question-text,
@@ -291,14 +289,13 @@
 
 #preview-question-text,
 #preview-question-text-split {
-    font-size: 1.5rem;
-    line-height: 1.5;
-    margin: 20px 0;
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 20px 0 30px;
     text-align: center;
-    min-height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    max-width: 100%;
+    /* Remove flexbox to allow natural MathJax rendering */
 }
 
 #preview-question-image,
@@ -1418,18 +1415,16 @@ pre code {
 .preview-content-split .question-text,
 #preview-question-text,
 #preview-question-text-split {
-    font-size: 1.3rem;
-    margin-bottom: 20px;
-    text-align: center;
+    font-size: 2rem;
     font-weight: 600;
-    line-height: 1.5;
+    line-height: 1.4;
+    margin: 20px 0 30px;
+    text-align: center;
     color: white;
     text-shadow: 0 2px 6px rgba(0,0,0,0.4);
-    padding: 20px;
-    background: rgba(0,0,0,0.15);
-    border-radius: var(--border-radius-small);
-    border: 2px solid var(--border-color);
-    backdrop-filter: blur(10px);
+    max-width: 100%;
+    /* Removed: min-height, display:flex, padding, background, border, backdrop-filter */
+    /* These were constraining MathJax and making it look different from in-game */
 }
 
 [data-theme="dark"] .preview-content .question-text,
