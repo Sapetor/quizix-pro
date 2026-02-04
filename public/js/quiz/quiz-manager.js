@@ -13,7 +13,7 @@ import { imagePathResolver, loadImageWithRetry as sharedLoadImageWithRetry } fro
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 import { getJSON, setJSON, removeItem } from '../utils/storage-utils.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
-import { escapeHtml } from '../utils/dom.js';
+import { dom, escapeHtml } from '../utils/dom.js';
 import { getFileManager } from '../ui/file-manager.js';
 import { openModal, closeModal } from '../utils/modal-utils.js';
 
@@ -245,8 +245,8 @@ export class QuizManager {
         if (!questionText || !questionType) return null;
 
         // Check if global time is enabled
-        const useGlobalTime = document.getElementById('use-global-time')?.checked;
-        const globalTimeLimit = parseInt(document.getElementById('global-time-limit')?.value);
+        const useGlobalTime = dom.get('use-global-time')?.checked;
+        const globalTimeLimit = parseInt(dom.get('global-time-limit')?.value);
 
         // Use global time if enabled, otherwise use per-question time
         let timeLimit;
@@ -347,7 +347,7 @@ export class QuizManager {
      * Save quiz - shows modal for optional password
      */
     async saveQuiz() {
-        const title = document.getElementById('quiz-title')?.value?.trim();
+        const title = dom.get('quiz-title')?.value?.trim();
         if (!title) {
             showErrorAlert('please_enter_quiz_title');
             return;
@@ -377,7 +377,7 @@ export class QuizManager {
      * Show save quiz modal
      */
     showSaveQuizModal() {
-        const modal = document.getElementById('save-quiz-modal');
+        const modal = dom.get('save-quiz-modal');
         if (!modal) {
             // Fallback: save without password if modal doesn't exist
             this.confirmSave('');
@@ -385,9 +385,9 @@ export class QuizManager {
         }
 
         // Reset password fields
-        const passwordInput = document.getElementById('save-quiz-password');
-        const confirmInput = document.getElementById('save-quiz-password-confirm');
-        const confirmGroup = document.getElementById('save-quiz-confirm-group');
+        const passwordInput = dom.get('save-quiz-password');
+        const confirmInput = dom.get('save-quiz-password-confirm');
+        const confirmGroup = dom.get('save-quiz-confirm-group');
 
         if (passwordInput) passwordInput.value = '';
         if (confirmInput) confirmInput.value = '';
@@ -403,8 +403,8 @@ export class QuizManager {
         }
 
         // Setup button handlers
-        const cancelBtn = document.getElementById('cancel-save');
-        const confirmBtn = document.getElementById('confirm-save');
+        const cancelBtn = dom.get('cancel-save');
+        const confirmBtn = dom.get('confirm-save');
 
         if (cancelBtn) {
             cancelBtn.onclick = () => this.hideSaveQuizModal(true); // Clear pending on cancel
@@ -425,7 +425,7 @@ export class QuizManager {
      * @param {boolean} clearPending - Whether to clear pending save data (default: false)
      */
     hideSaveQuizModal(clearPending = false) {
-        const modal = document.getElementById('save-quiz-modal');
+        const modal = dom.get('save-quiz-modal');
         if (modal) {
             closeModal(modal);
             modal.classList.remove('visible-flex');
@@ -441,8 +441,8 @@ export class QuizManager {
      * Handle save confirmation from modal
      */
     handleSaveConfirm() {
-        const passwordInput = document.getElementById('save-quiz-password');
-        const confirmInput = document.getElementById('save-quiz-password-confirm');
+        const passwordInput = dom.get('save-quiz-password');
+        const confirmInput = dom.get('save-quiz-password-confirm');
 
         const password = passwordInput?.value || '';
         const confirmPassword = confirmInput?.value || '';
@@ -507,7 +507,7 @@ export class QuizManager {
      * Show load quiz modal
      */
     async showLoadQuizModal() {
-        const modal = document.getElementById('load-quiz-modal');
+        const modal = dom.get('load-quiz-modal');
         if (!modal) {
             logger.error('Load quiz modal not found');
             return;
@@ -517,7 +517,7 @@ export class QuizManager {
         this.setupLoadQuizModalHandlers(modal);
 
         // Check if tree view container exists (new folder tree UI)
-        const treeContainer = document.getElementById('quiz-tree-container');
+        const treeContainer = dom.get('quiz-tree-container');
         if (treeContainer) {
             // Use new folder tree view
             await this.showFolderTreeView(treeContainer, modal);
@@ -669,7 +669,7 @@ export class QuizManager {
      * Hide load quiz modal
      */
     hideLoadQuizModal() {
-        const modal = document.getElementById('load-quiz-modal');
+        const modal = dom.get('load-quiz-modal');
         if (!modal) {
             logger.warn('Load quiz modal not found when trying to hide');
             return;
@@ -723,7 +723,7 @@ export class QuizManager {
                 logger.debug('Attempting safe preview update');
 
                 // Check for always-preview mode (desktop editor with split view)
-                const hostContainer = document.getElementById('host-container');
+                const hostContainer = dom.get('host-container');
                 const isAlwaysPreview = hostContainer?.classList.contains('always-preview');
 
                 if (isAlwaysPreview) {
@@ -975,14 +975,14 @@ export class QuizManager {
             // ========== CRITICAL OPERATIONS (must succeed) ==========
 
             // Set quiz title (essential)
-            const titleInput = document.getElementById('quiz-title');
+            const titleInput = dom.get('quiz-title');
             if (!titleInput) {
                 throw new Error('Quiz title input not found');
             }
             titleInput.value = quizData.title || '';
 
             // Clear existing questions (essential)
-            const questionsContainer = document.getElementById('questions-container');
+            const questionsContainer = dom.get('questions-container');
             if (!questionsContainer) {
                 throw new Error('Questions container not found');
             }
@@ -1014,7 +1014,7 @@ export class QuizManager {
             // Container translation
             this.errorHandler.safeExecute(
                 () => {
-                    const container = document.getElementById('questions-container');
+                    const container = dom.get('questions-container');
                     if (container) {
                         translationManager.translateContainer(container);
                     }
@@ -1076,7 +1076,7 @@ export class QuizManager {
      * Updates both remove button visibility and question numbering in single operation
      */
     updateQuestionsUI() {
-        const questionsContainer = document.getElementById('questions-container');
+        const questionsContainer = dom.get('questions-container');
         if (!questionsContainer) return;
 
         const questionItems = questionsContainer.querySelectorAll('.question-item');
@@ -1117,7 +1117,7 @@ export class QuizManager {
      * Add question from data object
      */
     addQuestionFromData(questionData) {
-        const questionsContainer = document.getElementById('questions-container');
+        const questionsContainer = dom.get('questions-container');
         if (!questionsContainer) return;
 
         const questionElement = createQuestionElement(questionData);
@@ -1528,7 +1528,7 @@ export class QuizManager {
      * Import quiz from file
      */
     async importQuiz() {
-        const fileInput = document.getElementById('import-file-input');
+        const fileInput = dom.get('import-file-input');
         if (fileInput) {
             fileInput.click();
         }
@@ -1579,7 +1579,7 @@ export class QuizManager {
      * Export quiz to file
      */
     async exportQuiz() {
-        const title = document.getElementById('quiz-title')?.value?.trim();
+        const title = dom.get('quiz-title')?.value?.trim();
         if (!title) {
             showErrorAlert('please_enter_quiz_title');
             return;
@@ -1697,7 +1697,7 @@ export class QuizManager {
      * Auto-save quiz to localStorage
      */
     autoSaveQuiz() {
-        const title = document.getElementById('quiz-title')?.value?.trim();
+        const title = dom.get('quiz-title')?.value?.trim();
         const questions = this.collectQuestions();
 
         if (title || questions.length > 0) {
@@ -1830,7 +1830,7 @@ export class QuizManager {
      */
     setupAutoSave() {
         // Auto-save on quiz title change
-        const titleInput = document.getElementById('quiz-title');
+        const titleInput = dom.get('quiz-title');
         if (titleInput) {
             titleInput.addEventListener('input', () => this.scheduleAutoSave());
         }

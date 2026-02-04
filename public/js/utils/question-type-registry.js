@@ -179,7 +179,7 @@ const QUESTION_TYPES = {
                 <div class="option-display" data-option="2"></div>
                 <div class="option-display" data-option="3"></div>
             `;
-            container.style.display = 'grid';
+            container.classList.remove('hidden');
             const options = container.querySelectorAll('.option-display');
 
             if (data.options) {
@@ -189,12 +189,12 @@ const QUESTION_TYPES = {
                         const safeOptionText = escapeHtml(optionText);
                         options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
                         options[index].classList.add('tex2jax_process');
-                        options[index].style.display = 'block';
+                        options[index].classList.remove('hidden');
                     }
                 });
                 // Hide unused options
                 for (let i = data.options.length; i < 4; i++) {
-                    if (options[i]) options[i].style.display = 'none';
+                    if (options[i]) options[i].classList.add('hidden');
                 }
             }
         },
@@ -216,7 +216,7 @@ const QUESTION_TYPES = {
                     const button = document.createElement('button');
                     button.className = 'player-option';
                     button.setAttribute('data-option', i.toString());
-                    button.style.display = i < data.options.length ? 'block' : 'none';
+                    if (i >= data.options.length) button.classList.add('hidden');
                     container.appendChild(button);
                 }
                 existingButtons = container.querySelectorAll('.player-option');
@@ -228,11 +228,10 @@ const QUESTION_TYPES = {
                         const safeOption = escapeHtml(data.options[index] || '');
                         button.innerHTML = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${formatCodeBlocks(safeOption)}`;
                         button.setAttribute('data-answer', index.toString());
-                        button.classList.remove('selected', 'disabled');
+                        button.classList.remove('selected', 'disabled', 'hidden');
                         button.classList.add('tex2jax_process');
-                        button.style.display = 'block';
                     } else {
-                        button.style.display = 'none';
+                        button.classList.add('hidden');
                     }
                 });
             }
@@ -379,7 +378,7 @@ const QUESTION_TYPES = {
                 <div class="option-display" data-option="2" data-multiple="true"></div>
                 <div class="option-display" data-option="3" data-multiple="true"></div>
             `;
-            container.style.display = 'grid';
+            container.classList.remove('hidden');
             const options = container.querySelectorAll('.option-display');
 
             if (data.options) {
@@ -389,11 +388,11 @@ const QUESTION_TYPES = {
                         const safeOptionText = escapeHtml(optionText);
                         options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
                         options[index].classList.add('tex2jax_process');
-                        options[index].style.display = 'block';
+                        options[index].classList.remove('hidden');
                     }
                 });
                 for (let i = data.options.length; i < 4; i++) {
-                    if (options[i]) options[i].style.display = 'none';
+                    if (options[i]) options[i].classList.add('hidden');
                 }
             }
         },
@@ -408,9 +407,9 @@ const QUESTION_TYPES = {
                     const formattedOption = formatCodeBlocks(safeOption);
                     label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${translationManager.getOptionLetter(index)}: ${formattedOption}`;
                     label.setAttribute('data-option', index);
-                    label.style.display = 'block';
+                    label.classList.remove('hidden');
                 } else {
-                    label.style.display = 'none';
+                    label.classList.add('hidden');
                 }
             });
         },
@@ -489,7 +488,7 @@ const QUESTION_TYPES = {
                     <div class="tf-option false-btn" data-answer="false">${tfText.false}</div>
                 </div>
             `;
-            container.style.display = 'block';
+            container.classList.remove('hidden');
         },
 
         renderPlayerOptions: (data, container, helpers) => {
@@ -585,7 +584,7 @@ const QUESTION_TYPES = {
 
         renderHostOptions: (data, container, _helpers) => {
             // Numeric questions have no host options to display
-            container.style.display = 'none';
+            container.classList.add('hidden');
         },
 
         renderPlayerOptions: (data, container, helpers) => {
@@ -700,7 +699,7 @@ const QUESTION_TYPES = {
         renderHostOptions: (data, container, helpers) => {
             const { escapeHtml, formatCodeBlocks, COLORS } = helpers;
             if (!data.options || data.options.length === 0) {
-                container.style.display = 'none';
+                container.classList.add('hidden');
                 return;
             }
 
@@ -729,7 +728,7 @@ const QUESTION_TYPES = {
             });
             html += '</div>';
             container.innerHTML = html;
-            container.style.display = 'block';
+            container.classList.remove('hidden');
         },
 
         renderPlayerOptions: (data, container, helpers) => {
@@ -771,9 +770,7 @@ const QUESTION_TYPES = {
             `;
 
             container.innerHTML = html;
-            container.style.display = 'flex';
-            container.style.flexDirection = 'column';
-            container.style.alignItems = 'center';
+            container.classList.add('visible-flex');
 
             // Translate dynamic content
             if (translationManager?.translateContainer) {

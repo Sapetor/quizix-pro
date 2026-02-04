@@ -9,6 +9,7 @@ import { LocalGameSession } from './local-game-session.js';
 import { logger } from '../core/config.js';
 import { getTranslation } from '../utils/translation-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
+import { dom } from '../utils/dom.js';
 
 export class PracticeModeManager {
     /**
@@ -64,19 +65,19 @@ export class PracticeModeManager {
 
             // Check if power-ups are enabled (from quiz settings or UI checkbox)
             const powerUpsEnabled = quiz.powerUpsEnabled ||
-                document.getElementById('enable-power-ups')?.checked ||
+                dom.get('enable-power-ups')?.checked ||
                 false;
 
             // Get scoring configuration (per-game session, not saved to quiz file)
             // timeBonusThreshold: convert seconds to milliseconds (0 = disabled)
-            const thresholdSeconds = parseInt(document.getElementById('time-bonus-threshold')?.value) || 0;
+            const thresholdSeconds = parseInt(dom.get('time-bonus-threshold')?.value) || 0;
             const scoringConfig = {
-                timeBonusEnabled: document.getElementById('time-bonus-enabled')?.checked ?? true,
+                timeBonusEnabled: dom.get('time-bonus-enabled')?.checked ?? true,
                 timeBonusThreshold: thresholdSeconds * 1000, // Convert to milliseconds
                 difficultyMultipliers: {
-                    easy: parseFloat(document.getElementById('easy-multiplier')?.value) || 1,
-                    medium: parseFloat(document.getElementById('medium-multiplier')?.value) || 2,
-                    hard: parseFloat(document.getElementById('hard-multiplier')?.value) || 3
+                    easy: parseFloat(dom.get('easy-multiplier')?.value) || 1,
+                    medium: parseFloat(dom.get('medium-multiplier')?.value) || 2,
+                    hard: parseFloat(dom.get('hard-multiplier')?.value) || 3
                 }
             };
 
@@ -277,7 +278,7 @@ export class PracticeModeManager {
      * @param {Object} data - Game end data
      */
     showPracticeResults(data) {
-        const resultsContainer = document.getElementById('practice-results');
+        const resultsContainer = dom.get('practice-results');
         if (!resultsContainer) {
             logger.debug('[PracticeModeManager] Practice results container not found, using standard results');
             return;
@@ -343,8 +344,8 @@ export class PracticeModeManager {
         resultsContainer.classList.remove('hidden');
 
         // Wire up buttons
-        const tryAgainBtn = document.getElementById('practice-try-again');
-        const exitBtn = document.getElementById('practice-exit');
+        const tryAgainBtn = dom.get('practice-try-again');
+        const exitBtn = dom.get('practice-exit');
 
         if (tryAgainBtn) {
             tryAgainBtn.addEventListener('click', () => {
@@ -372,7 +373,7 @@ export class PracticeModeManager {
         this.cleanup();
 
         // Hide results
-        const resultsContainer = document.getElementById('practice-results');
+        const resultsContainer = dom.get('practice-results');
         if (resultsContainer) {
             resultsContainer.classList.add('hidden');
         }
@@ -397,7 +398,7 @@ export class PracticeModeManager {
         this.cleanup();
 
         // Hide results
-        const resultsContainer = document.getElementById('practice-results');
+        const resultsContainer = dom.get('practice-results');
         if (resultsContainer) {
             resultsContainer.classList.add('hidden');
         }
@@ -414,13 +415,13 @@ export class PracticeModeManager {
      */
     updateUIForPracticeMode(isPractice) {
         // Show/hide practice mode indicator
-        const indicator = document.getElementById('practice-mode-indicator');
+        const indicator = dom.get('practice-mode-indicator');
         if (indicator) {
             indicator.classList.toggle('hidden', !isPractice);
         }
 
         // Wire up home button
-        const homeBtn = document.getElementById('practice-home-btn');
+        const homeBtn = dom.get('practice-home-btn');
         if (homeBtn) {
             if (isPractice) {
                 // Add click handler

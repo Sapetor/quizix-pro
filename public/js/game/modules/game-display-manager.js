@@ -86,13 +86,13 @@ export class GameDisplayManager {
         // Validate image data first
         if (!data.image || !data.image.trim() || data.image === 'undefined' || data.image === 'null') {
             // Hide the container if no valid image
-            imageContainer.style.display = 'none';
+            imageContainer.classList.add('hidden');
             return;
         }
 
         // Additional validation for invalid paths
         if (data.image.includes('nonexistent') || data.image === window.location.origin + '/') {
-            imageContainer.style.display = 'none';
+            imageContainer.classList.add('hidden');
             return;
         }
 
@@ -102,7 +102,7 @@ export class GameDisplayManager {
 
         // If no valid image URL, hide container
         if (!originalSrc || originalSrc.trim() === '') {
-            imageContainer.style.display = 'none';
+            imageContainer.classList.add('hidden');
             return;
         }
 
@@ -133,11 +133,11 @@ export class GameDisplayManager {
 
         // Silent error handling - hide container on load failure
         img.onerror = () => {
-            imageContainer.style.display = 'none';
+            imageContainer.classList.add('hidden');
         };
 
         img.onload = () => {
-            imageContainer.style.display = 'block';
+            imageContainer.classList.remove('hidden');
         };
 
         picture.appendChild(img);
@@ -238,20 +238,19 @@ export class GameDisplayManager {
         // Clear and hide question image
         const questionImageDisplay = document.getElementById('question-image-display');
         if (questionImageDisplay) {
-            questionImageDisplay.style.display = 'none';
+            questionImageDisplay.classList.add('hidden');
         }
 
         // Clear host options container
         if (elements.hostOptionsContainer) {
             elements.hostOptionsContainer.innerHTML = '';
-            elements.hostOptionsContainer.style.display = 'none';
+            elements.hostOptionsContainer.classList.add('hidden');
         }
 
         // Reset host multiple choice container
         const hostMultipleChoice = document.getElementById('host-multiple-choice');
         if (hostMultipleChoice) {
-            hostMultipleChoice.style.display = 'block';
-            hostMultipleChoice.classList.remove('numeric-question-type');
+            hostMultipleChoice.classList.remove('hidden', 'numeric-question-type');
         }
 
         logger.debug('Host question content cleared', { showLoading });

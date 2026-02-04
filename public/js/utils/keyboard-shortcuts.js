@@ -5,6 +5,7 @@
 
 import { logger } from '../core/config.js';
 import { addQuestion } from './question-utils.js';
+import { dom } from './dom.js';
 
 export class KeyboardShortcuts {
     constructor() {
@@ -37,7 +38,7 @@ export class KeyboardShortcuts {
         this.addShortcut('ctrl+s', 'Save Quiz', (e) => {
             if (this.isQuizBuilderActive()) {
                 e.preventDefault();
-                const saveButton = document.getElementById('save-quiz') || document.getElementById('toolbar-save');
+                const saveButton = dom.get('save-quiz') || dom.get('toolbar-save');
                 if (saveButton) {
                     saveButton.click();
                     this.showShortcutFeedback('Quiz saved');
@@ -48,7 +49,7 @@ export class KeyboardShortcuts {
         this.addShortcut('ctrl+o', 'Load Quiz', (e) => {
             if (this.isQuizBuilderActive()) {
                 e.preventDefault();
-                const loadButton = document.getElementById('load-quiz') || document.getElementById('toolbar-load');
+                const loadButton = dom.get('load-quiz') || dom.get('toolbar-load');
                 if (loadButton) {
                     loadButton.click();
                     this.showShortcutFeedback('Load quiz dialog opened');
@@ -58,7 +59,7 @@ export class KeyboardShortcuts {
 
         this.addShortcut('ctrl+shift+p', 'Toggle Preview', () => {
             if (this.isQuizBuilderActive()) {
-                const previewButton = document.getElementById('preview-quiz') || document.getElementById('toolbar-preview');
+                const previewButton = dom.get('preview-quiz') || dom.get('toolbar-preview');
                 if (previewButton) {
                     previewButton.click();
                     this.showShortcutFeedback('Preview toggled');
@@ -84,7 +85,7 @@ export class KeyboardShortcuts {
         // Preview Navigation
         this.addShortcut('arrowleft', 'Previous Question (in preview)', () => {
             if (this.isPreviewActive()) {
-                const prevButton = document.getElementById('preview-prev') || document.getElementById('preview-prev-split');
+                const prevButton = dom.get('preview-prev') || dom.get('preview-prev-split');
                 if (prevButton) {
                     prevButton.click();
                 }
@@ -93,7 +94,7 @@ export class KeyboardShortcuts {
 
         this.addShortcut('arrowright', 'Next Question (in preview)', () => {
             if (this.isPreviewActive()) {
-                const nextButton = document.getElementById('preview-next') || document.getElementById('preview-next-split');
+                const nextButton = dom.get('preview-next') || dom.get('preview-next-split');
                 if (nextButton) {
                     nextButton.click();
                 }
@@ -103,7 +104,7 @@ export class KeyboardShortcuts {
         // Quick Actions
         this.addShortcut('ctrl+shift+a', 'AI Generator', () => {
             if (this.isQuizBuilderActive()) {
-                const aiButton = document.getElementById('ai-generator') || document.getElementById('toolbar-ai-gen');
+                const aiButton = dom.get('ai-generator') || dom.get('toolbar-ai-gen');
                 if (aiButton) {
                     aiButton.click();
                     this.showShortcutFeedback('AI Generator opened');
@@ -113,7 +114,7 @@ export class KeyboardShortcuts {
 
         this.addShortcut('ctrl+shift+i', 'Import Quiz', () => {
             if (this.isQuizBuilderActive()) {
-                const importButton = document.getElementById('import-quiz') || document.getElementById('toolbar-import');
+                const importButton = dom.get('import-quiz') || dom.get('toolbar-import');
                 if (importButton) {
                     importButton.click();
                     this.showShortcutFeedback('Import dialog opened');
@@ -123,7 +124,7 @@ export class KeyboardShortcuts {
 
         this.addShortcut('ctrl+shift+e', 'Export Quiz', () => {
             if (this.isQuizBuilderActive()) {
-                const exportButton = document.getElementById('export-quiz') || document.getElementById('toolbar-export');
+                const exportButton = dom.get('export-quiz') || dom.get('toolbar-export');
                 if (exportButton) {
                     exportButton.click();
                     this.showShortcutFeedback('Export dialog opened');
@@ -146,7 +147,7 @@ export class KeyboardShortcuts {
 
         // Theme and Settings
         this.addShortcut('ctrl+shift+t', 'Toggle Theme', () => {
-            const themeToggle = document.getElementById('theme-toggle');
+            const themeToggle = dom.get('theme-toggle');
             if (themeToggle) {
                 themeToggle.click();
                 this.showShortcutFeedback('Theme toggled');
@@ -271,7 +272,7 @@ export class KeyboardShortcuts {
      * Check if quiz builder is the active screen
      */
     isQuizBuilderActive() {
-        const quizBuilder = document.getElementById('quiz-builder-screen');
+        const quizBuilder = dom.get('quiz-builder-screen');
         return quizBuilder && quizBuilder.style.display !== 'none';
     }
 
@@ -279,8 +280,8 @@ export class KeyboardShortcuts {
      * Check if preview is active
      */
     isPreviewActive() {
-        const previewModal = document.getElementById('preview-modal');
-        const previewSplit = document.getElementById('live-preview');
+        const previewModal = dom.get('preview-modal');
+        const previewSplit = dom.get('live-preview');
 
         const modalActive = previewModal && previewModal.style.display !== 'none';
         const splitActive = previewSplit && previewSplit.style.display !== 'none';
@@ -293,7 +294,7 @@ export class KeyboardShortcuts {
      */
     showShortcutFeedback(message) {
         // Remove any existing feedback
-        const existingFeedback = document.getElementById('shortcut-feedback');
+        const existingFeedback = dom.get('shortcut-feedback');
         if (existingFeedback) {
             existingFeedback.remove();
         }
@@ -322,7 +323,7 @@ export class KeyboardShortcuts {
      */
     showShortcutsHelp() {
         // Create help modal if it doesn't exist
-        let helpModal = document.getElementById('shortcuts-help-modal');
+        let helpModal = dom.get('shortcuts-help-modal');
         if (!helpModal) {
             helpModal = document.createElement('div');
             helpModal.id = 'shortcuts-help-modal';
