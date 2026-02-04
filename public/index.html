@@ -507,10 +507,10 @@
                         </div>
                     </div>
                 </div>
-                <button id="start-hosting-header-small" class="btn primary small start-game-header" style="display: none;" data-translate-title="start_quiz_tooltip"><span data-translate="create_lobby">Create Lobby</span></button>
+                <button id="start-hosting-header-small" class="btn primary small start-game-header hidden" data-translate-title="start_quiz_tooltip"><span data-translate="create_lobby">Create Lobby</span></button>
                 
                 <!-- Horizontal Toolbar (shown only in host editing mode) -->
-                <div class="horizontal-toolbar" id="horizontal-toolbar" style="display: none;" role="toolbar" aria-label="Quiz editing tools">
+                <div class="horizontal-toolbar hidden" id="horizontal-toolbar" role="toolbar" aria-label="Quiz editing tools">
                     <div class="toolbar-group" role="group" aria-label="Question management">
                         <button class="toolbar-btn" id="toolbar-add-question" data-translate-title="add_question_tooltip" aria-label="Add question" data-translate-aria-label="add_question_tooltip">
                             <span class="toolbar-icon" aria-hidden="true">➕</span>
@@ -1041,7 +1041,7 @@
                 </div>
                 
                 <!-- Resizable Split Divider -->
-                <div class="split-resize-handle" id="split-resize-handle" style="display: none;">
+                <div class="split-resize-handle hidden" id="split-resize-handle">
                     <div class="resize-grip">
                         <div class="grip-dot"></div>
                         <div class="grip-dot"></div>
@@ -1050,7 +1050,7 @@
                 </div>
                 
                 <!-- Live Preview Section -->
-                <div class="quiz-preview-section" id="quiz-preview-section" style="display: none;">
+                <div class="quiz-preview-section hidden" id="quiz-preview-section">
                     <div class="preview-header">
                         <h4 data-translate="live_preview">Live Preview</h4>
                         <div class="preview-header-controls">
@@ -1081,7 +1081,7 @@
                             
                             <div id="preview-answer-area-split">
                                 <!-- Multiple Choice Preview -->
-                                <div id="preview-multiple-choice-split" class="preview-answer-type" style="display: none;">
+                                <div id="preview-multiple-choice-split" class="preview-answer-type hidden">
                                     <div class="player-options">
                                         <div class="player-option preview-option" data-option="0">A: Option 1</div>
                                         <div class="player-option preview-option" data-option="1">B: Option 2</div>
@@ -1091,7 +1091,7 @@
                                 </div>
                                 
                                 <!-- Multiple Correct Preview -->
-                                <div id="preview-multiple-correct-split" class="preview-answer-type" style="display: none;">
+                                <div id="preview-multiple-correct-split" class="preview-answer-type hidden">
                                     <div class="player-checkbox-options">
                                         <div class="checkbox-option preview-checkbox" data-option="0">
                                             <input type="checkbox" disabled> A: Option 1
@@ -1109,7 +1109,7 @@
                                 </div>
                                 
                                 <!-- True/False Preview -->
-                                <div id="preview-true-false-split" class="preview-answer-type" style="display: none;">
+                                <div id="preview-true-false-split" class="preview-answer-type hidden">
                                     <div class="true-false-options">
                                         <div class="tf-option preview-tf" data-option="true" data-translate="true">True</div>
                                         <div class="tf-option preview-tf" data-option="false" data-translate="false">False</div>
@@ -1117,7 +1117,7 @@
                                 </div>
                                 
                                 <!-- Numeric Preview -->
-                                <div id="preview-numeric-split" class="preview-answer-type" style="display: none;">
+                                <div id="preview-numeric-split" class="preview-answer-type hidden">
                                     <div class="numeric-input-container">
                                         <input type="number" id="preview-numeric-input-split" placeholder="Enter your answer" disabled data-translate-placeholder="enter_answer">
                                         <button class="btn primary" disabled data-translate="submit">Submit</button>
@@ -1125,7 +1125,7 @@
                                 </div>
 
                                 <!-- Ordering Preview -->
-                                <div id="preview-ordering-split" class="preview-answer-type" style="display: none;">
+                                <div id="preview-ordering-split" class="preview-answer-type hidden">
                                     <!-- Ordering options will be dynamically rendered here -->
                                 </div>
                             </div>
@@ -1177,7 +1177,7 @@
                         
                         <div id="preview-answer-area">
                             <!-- Multiple Choice Preview -->
-                            <div id="preview-multiple-choice" class="preview-answer-type" style="display: none;">
+                            <div id="preview-multiple-choice" class="preview-answer-type hidden">
                                 <div class="player-options">
                                     <div class="player-option preview-option" data-option="0">A: Option 1</div>
                                     <div class="player-option preview-option" data-option="1">B: Option 2</div>
@@ -1187,7 +1187,7 @@
                             </div>
                             
                             <!-- Multiple Correct Preview -->
-                            <div id="preview-multiple-correct" class="preview-answer-type" style="display: none;">
+                            <div id="preview-multiple-correct" class="preview-answer-type hidden">
                                 <div class="player-checkbox-options">
                                     <div class="checkbox-option preview-checkbox" data-option="0">
                                         <input type="checkbox" disabled> A: Option 1
@@ -1205,7 +1205,7 @@
                             </div>
                             
                             <!-- True/False Preview -->
-                            <div id="preview-true-false" class="preview-answer-type" style="display: none;">
+                            <div id="preview-true-false" class="preview-answer-type hidden">
                                 <div class="true-false-options">
                                     <div class="tf-option preview-tf" data-option="true" data-translate="true">True</div>
                                     <div class="tf-option preview-tf" data-option="false" data-translate="false">False</div>
@@ -1213,7 +1213,7 @@
                             </div>
                             
                             <!-- Numeric Preview -->
-                            <div id="preview-numeric" class="preview-answer-type" style="display: none;">
+                            <div id="preview-numeric" class="preview-answer-type hidden">
                                 <div class="numeric-input-container">
                                     <input type="number" id="preview-numeric-input" placeholder="Enter your answer" disabled data-translate-placeholder="enter_answer">
                                     <button class="btn primary" disabled data-translate="submit">Submit</button>
@@ -1399,7 +1399,7 @@
                 
                 <!-- Use client-style question display -->
                 <div id="host-question-display" class="player-question-area">
-                    <div id="question-image-display" class="question-image-container" style="display: none;">
+                    <div id="question-image-display" class="question-image-container hidden">
                         <img id="host-question-image" src="" alt="Question Image">
                     </div>
                     <h3 id="current-question" data-translate="question_will_appear_here">Question will appear here</h3>
@@ -1407,7 +1407,7 @@
                 
                     <!-- Real-time Answer Statistics -->
                     <!-- Moved above alternatives for better host visibility -->
-                    <div id="answer-statistics" class="answer-stats" style="display: none;" role="region" aria-label="Live answer statistics">
+                    <div id="answer-statistics" class="answer-stats hidden" role="region" aria-label="Live answer statistics">
                         <div class="stats-header">
                             <h3 data-translate="live_answer_statistics">Live Answer Statistics</h3>
                             <!-- Game control buttons for statistics phase - moved to top for visibility -->
@@ -1445,14 +1445,14 @@
                                 </div>
                                 <div class="stat-count" id="stat-count-3">0</div>
                             </div>
-                            <div class="stat-item" id="stat-item-4" style="display: none;">
+                            <div class="stat-item hidden" id="stat-item-4">
                                 <div class="option-label">E</div>
                                 <div class="stat-bar">
                                     <div class="stat-fill" id="stat-fill-4" style="width: 0%"></div>
                                 </div>
                                 <div class="stat-count" id="stat-count-4">0</div>
                             </div>
-                            <div class="stat-item" id="stat-item-5" style="display: none;">
+                            <div class="stat-item hidden" id="stat-item-5">
                                 <div class="option-label">F</div>
                                 <div class="stat-bar">
                                     <div class="stat-fill" id="stat-fill-5" style="width: 0%"></div>
@@ -1627,7 +1627,7 @@
                 </div>
                 
                 <div id="player-question-display" class="player-question-area">
-                    <div id="player-question-image" class="question-image-container" style="display: none;">
+                    <div id="player-question-image" class="question-image-container hidden">
                         <img id="player-question-img" src="" alt="Question Image">
                     </div>
                     <h3 id="player-question-text" data-translate="question_will_appear_here">Question will appear here</h3>
@@ -1814,7 +1814,7 @@
         </div>
 
         <!-- Save Quiz Modal -->
-        <div id="save-quiz-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="save-quiz-modal-title">
+        <div id="save-quiz-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="save-quiz-modal-title">
             <div class="modal-content">
                 <h3 id="save-quiz-modal-title" data-translate="save_quiz">Save Quiz</h3>
                 <div class="save-quiz-form">
@@ -1873,7 +1873,7 @@
                         <small data-translate="select_ollama_model">Select which Ollama model to use for generation</small>
                     </div>
 
-                    <div class="model-selection" id="claude-model-selection" style="display: none;">
+                    <div class="model-selection hidden" id="claude-model-selection">
                         <label for="claude-model" data-translate="choose_claude_model">Choose Claude Model:</label>
                         <select id="claude-model" class="input-field">
                             <option value="claude-sonnet-4-5">Claude Sonnet 4.5 (Recommended)</option>
@@ -1884,7 +1884,7 @@
                         <small data-translate="select_claude_model">Select which Claude model to use for generation</small>
                     </div>
 
-                    <div class="model-selection" id="gemini-model-selection" style="display: none;">
+                    <div class="model-selection hidden" id="gemini-model-selection">
                         <label for="gemini-model" data-translate="choose_gemini_model">Choose Gemini Model:</label>
                         <select id="gemini-model" class="input-field">
                             <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended)</option>
@@ -2002,7 +2002,7 @@
                 </div>
 
                 <!-- Cost Estimation -->
-                <div class="cost-estimation" id="cost-estimation" style="display: none;">
+                <div class="cost-estimation hidden" id="cost-estimation">
                     <div class="cost-info">
                         <span class="cost-icon">💰</span>
                         <span class="cost-label" data-translate="estimated_cost">Estimated:</span>
@@ -2011,7 +2011,7 @@
                     </div>
                 </div>
 
-                <div class="generation-status" id="generation-status" style="display: none;">
+                <div class="generation-status hidden" id="generation-status">
                     <div class="loading-spinner"></div>
                     <span data-translate="generating_questions">Generating questions...</span>
                 </div>
