@@ -39,7 +39,7 @@ export class AIBatchProcessor {
         const statusDiv = document.getElementById('generation-status');
         if (statusDiv) {
             // Ensure status div is visible for batch processing
-            statusDiv.style.display = 'block';
+            statusDiv.classList.remove('hidden');
 
             const statusText = statusDiv.querySelector('span');
             if (statusText) {
@@ -116,7 +116,7 @@ export class AIBatchProcessor {
                 const generateBtn = document.getElementById('generate-questions');
                 const statusDiv = document.getElementById('generation-status');
                 if (generateBtn) generateBtn.disabled = false;
-                if (statusDiv) statusDiv.style.display = 'none';
+                if (statusDiv) statusDiv.classList.add('hidden');
             }
         } else {
             showAlert(`Batch ${currentBatch} generated no questions`, 'warning');

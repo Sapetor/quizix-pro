@@ -377,7 +377,7 @@ export class AIQuestionGenerator {
         const statusDiv = dom.get('generation-status');
 
         if (generateBtn) generateBtn.disabled = true;
-        if (statusDiv) statusDiv.style.display = 'block';
+        if (statusDiv) statusDiv.classList.remove('hidden');
 
         try {
             logger.debug('Starting question generation with provider:', provider);
@@ -462,7 +462,7 @@ export class AIQuestionGenerator {
 
         } finally {
             if (generateBtn) generateBtn.disabled = false;
-            if (statusDiv) statusDiv.style.display = 'none';
+            if (statusDiv) statusDiv.classList.add('hidden');
             this.isGenerating = false;
         }
     }
@@ -892,12 +892,12 @@ export class AIQuestionGenerator {
             const modelSelection = dom.get('model-selection');
             if (modelSelection) {
                 modelSelection.classList.remove('hidden');
-                modelSelection.style.display = 'block';
+                modelSelection.classList.remove('hidden');
             }
 
             const claudeModelSelection = dom.get('claude-model-selection');
             if (claudeModelSelection) {
-                claudeModelSelection.style.display = 'none';
+                claudeModelSelection.classList.add('hidden');
             }
 
             const modelSelect = dom.get('ollama-model');

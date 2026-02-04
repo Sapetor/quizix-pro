@@ -70,7 +70,7 @@ export class PreviewRenderer {
 
         const formattedContent = this.formatCodeBlocks(text);
         element.innerHTML = formattedContent;
-        element.style.display = 'block';
+        element.classList.remove('hidden');
         element.style.opacity = '1';
 
         // Apply syntax highlighting for code blocks
@@ -102,7 +102,7 @@ export class PreviewRenderer {
         const img = imageDisplay?.querySelector('img');
 
         if (imageData && imageDisplay && img) {
-            imageDisplay.style.display = 'block';
+            imageDisplay.classList.remove('hidden');
             this.setupSplitImageHandlers(img, imageDisplay, imageData);
             this.setSplitImageSource(img, imageData);
         }
@@ -229,7 +229,7 @@ export class PreviewRenderer {
         const img = imageDisplay?.querySelector('img');
 
         if (imageDisplay) {
-            imageDisplay.style.display = 'none';
+            imageDisplay.classList.add('hidden');
             imageDisplay.classList.remove('loading');
         }
 
@@ -255,7 +255,7 @@ export class PreviewRenderer {
         containerIds.forEach(id => {
             const container = dom.get(id);
             if (container) {
-                container.style.display = 'none';
+                container.classList.add('hidden');
             }
         });
     }
@@ -341,7 +341,7 @@ export class PreviewRenderer {
 
         const container = dom.get(containerId);
         if (container) {
-            container.style.display = 'block';
+            container.classList.remove('hidden');
         }
 
         // Render based on type
@@ -686,7 +686,7 @@ export class PreviewRenderer {
      */
     clearAllMobileAnswerTypes() {
         document.querySelectorAll('#mobile-preview-answer-area .preview-answer-type').forEach(type => {
-            type.style.display = 'none';
+            type.classList.add('hidden');
         });
     }
 
@@ -789,7 +789,7 @@ export class PreviewRenderer {
             return;
         }
 
-        container.style.display = 'block';
+        container.classList.remove('hidden');
         optionsContainer.innerHTML = '';
 
         if (!options || options.length === 0) {
@@ -832,7 +832,7 @@ export class PreviewRenderer {
             return;
         }
 
-        container.style.display = 'block';
+        container.classList.remove('hidden');
         optionsContainer.innerHTML = '';
 
         if (!options || options.length === 0) {
@@ -896,7 +896,7 @@ export class PreviewRenderer {
             return;
         }
 
-        container.style.display = 'block';
+        container.classList.remove('hidden');
         optionsContainer.innerHTML = '';
 
         // Create True option
@@ -933,7 +933,7 @@ export class PreviewRenderer {
             return;
         }
 
-        container.style.display = 'block';
+        container.classList.remove('hidden');
 
         const input = inputContainer.querySelector('input[type="number"]');
         if (input) {
@@ -954,7 +954,7 @@ export class PreviewRenderer {
             return;
         }
 
-        container.style.display = 'block';
+        container.classList.remove('hidden');
         this.renderOrderingPreview('mobile-preview-ordering', options, correctOrder, 'mobile');
     }
 
