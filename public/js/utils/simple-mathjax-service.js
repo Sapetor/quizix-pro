@@ -107,30 +107,12 @@ export class SimpleMathJaxService {
             // Queue renders instead of skipping to prevent missing renders
             if (this.renderingInProgress) {
                 logger.debug('MathJax rendering in progress, queueing elements');
-                // Add has-math class immediately to prevent FOUC (flash of raw LaTeX)
-                validElements.forEach(element => {
-                    if (this.containsLaTeX(element.textContent || element.innerHTML)) {
-                        element.classList.add('has-math');
-                        element.classList.remove('rendered');
-                    }
-                });
                 this.pendingRenders.push(...validElements);
                 return Promise.resolve();
             }
 
-            // Add mobile-friendly LaTeX classes for FOUC prevention
-            validElements.forEach(element => {
-                if (this.containsLaTeX(element.textContent || element.innerHTML)) {
-                    element.classList.add('has-math');
-                    // Remove rendered class to show loading indicator on mobile
-                    element.classList.remove('rendered');
-                }
-            });
-
             if (!this.isAvailable()) {
                 logger.debug('MathJax not available, content will show without LaTeX rendering');
-                // Mark as rendered even without MathJax to show content
-                validElements.forEach(el => el.classList.add('rendered'));
                 return Promise.resolve();
             }
 
@@ -140,7 +122,6 @@ export class SimpleMathJaxService {
                 const existingContainers = element.querySelectorAll(':scope > mjx-container');
                 if (existingContainers.length > 0) {
                     logger.debug(`Skipping element - already has ${existingContainers.length} MathJax containers`);
-                    element.classList.add('rendered'); // Mark as done
                     return false; // Skip this element
                 }
                 return true;
@@ -162,11 +143,6 @@ export class SimpleMathJaxService {
                 logger.debug(`Rendering MathJax for ${elementsToRender.length} elements`);
                 await window.MathJax.typesetPromise(elementsToRender);
                 logger.debug('MathJax rendering completed');
-
-                // Mark elements as rendered to hide loading indicators
-                elementsToRender.forEach(element => {
-                    element.classList.add('rendered');
-                });
             }
 
             return Promise.resolve();

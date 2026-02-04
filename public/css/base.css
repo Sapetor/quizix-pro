@@ -158,18 +158,10 @@ body:not(.loaded) * {
     font-display: swap; /* Use fallback immediately, swap when Inter loads */
 }
 
-/* LaTeX rendering - Hide content until MathJax renders it */
-/* Use opacity for smooth transition, hide until .rendered class added */
-.tex2jax_process:not(.rendered) {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-}
-
-/* Show content when rendered (self or parent has rendered class) */
-.tex2jax_process.rendered,
-.rendered .tex2jax_process,
-.has-math.rendered .tex2jax_process {
-    opacity: 1;
+/* LaTeX rendering - Simple approach to prevent flashing */
+/* Hide LaTeX content until MathJax processes it */
+.tex2jax_process:not(.MathJax_Processed) {
+    visibility: hidden;
 }
 
 /* Simple fade-in for processed MathJax */

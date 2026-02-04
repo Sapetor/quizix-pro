@@ -63,36 +63,9 @@
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
         
-        /* Mobile LaTeX FOUC Prevention - hide until rendered */
-        .latex-content:not(.rendered),
-        .math-content:not(.rendered),
-        .has-math:not(.rendered) {
-            min-height: 1.2em;
-            opacity: 0;
-            transition: opacity 0.15s ease;
-        }
-
-        /* Show LaTeX content when fully rendered */
-        .latex-content.rendered,
-        .math-content.rendered,
-        .has-math.rendered {
-            opacity: 1;
-        }
-        
-        /* Mobile-specific LaTeX loading indicator */
-        @media (max-width: 768px) {
-            .latex-content:not(.rendered)::after,
-            .math-content:not(.rendered)::after {
-                content: "⏳";
-                opacity: 0.6;
-                font-size: 0.8em;
-                animation: pulse 1.5s infinite;
-            }
-            
-            @keyframes pulse {
-                0%, 100% { opacity: 0.3; }
-                50% { opacity: 0.8; }
-            }
+        /* LaTeX FOUC Prevention - hide until MathJax processes */
+        .tex2jax_process:not(.MathJax_Processed) {
+            visibility: hidden;
         }
     </style>
     <!-- CSS loaded via preload above for better performance -->
