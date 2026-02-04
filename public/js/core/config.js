@@ -332,15 +332,33 @@ export const AI = {
     EXISTING_QUESTIONS_INDICATORS: /\bquestion\s*\d*\s*[:\.]\s*|\bQ\s*\d+\s*[:\.]\s*|\b(correct\s*answer|right\s*answer|answer\s*key)\s*[:\.]\s*|\boption\s*[A-D]\s*[:\.]\s*|\bchoice\s*\d\s*[:\.]/i,
 
     // Language-specific code patterns for syntax highlighting hints
+    // Order matters! More specific languages (TypeScript) must come before general ones (JavaScript)
     CODE_LANGUAGE_HINTS: {
+        // TypeScript before JavaScript (TS has specific patterns JS doesn't)
+        typescript: /\binterface\s+\w+|\btype\s+\w+\s*=|:\s*(string|number|boolean|any|void)\b|<[A-Z]\w*>|\bReadonly<|\bPartial<|\bas\s+\w+|\bnamespace\s+\w+/i,
+        // Other languages
         python: /\bdef\s+\w+\(|\bimport\s+\w+|\bfrom\s+\w+\s+import|\bclass\s+\w+:|\bif\s+__name__\s*==|\bself\.\w+|\bprint\s*\(/i,
         javascript: /\bconst\s+\w+\s*=|\blet\s+\w+\s*=|\bfunction\s+\w+\s*\(|=>\s*\{|\bconsole\.(log|error|warn)|\basync\s+function|\bawait\s+/i,
         java: /\bpublic\s+(static\s+)?(void|class|int|String)|\bprivate\s+|\bprotected\s+|\bSystem\.out\.print/i,
         sql: /\bSELECT\s+.*\bFROM\b|\bCREATE\s+TABLE\b|\bINSERT\s+INTO\b|\bUPDATE\s+.*\bSET\b|\bDELETE\s+FROM\b|\bJOIN\b.*\bON\b/i,
         cpp: /\#include\s*<|\busing\s+namespace\s+std|\bstd::|\bcout\s*<<|\bcin\s*>>|\bint\s+main\s*\(/i,
         html: /<(!DOCTYPE|html|head|body|div|span|p|a|img|table|form|input|button)\b/i,
-        css: /\{[^}]*:\s*[^;]+;[^}]*\}|@media\s+|@keyframes\s+|\.[\w-]+\s*\{|#[\w-]+\s*\{/i
-    }
+        css: /\{[^}]*:\s*[^;]+;[^}]*\}|@media\s+|@keyframes\s+|\.[\w-]+\s*\{|#[\w-]+\s*\{/i,
+        go: /\bpackage\s+\w+|\bfunc\s+\w*\(|\bgo\s+func|:=|\bchan\s+|\bdefer\s+|\btype\s+\w+\s+struct|\bfmt\.\w+/i,
+        rust: /\bfn\s+\w+|\blet\s+mut\s+|\bimpl\s+\w+|\bpub\s+fn|\bmatch\s+\w+\s*\{|\b->\s*\w+|\bResult<|\bOption<|\bprintln!\(/i,
+        ruby: /\bdef\s+\w+|\bend\b.*\n|\bdo\s*\||\bputs\s+|\brequire\s+['"]|\battr_(reader|writer|accessor)|\bclass\s+\w+\s*<\s*\w+/i,
+        php: /<\?php|\$\w+\s*=|\bfunction\s+\w+\s*\(.*\)\s*\{|->[\w]+\(|::\w+|\becho\s+/i,
+        csharp: /\bnamespace\s+\w+|\busing\s+\w+;|\bpublic\s+class\s+\w+|\bvar\s+\w+\s*=|\basync\s+Task|\bConsole\.Write/i,
+        swift: /\bfunc\s+\w+\s*\(|\blet\s+\w+\s*[=:]|\bvar\s+\w+\s*[=:]|\bguard\s+let|\b@IBOutlet|\boverride\s+func|\bprint\s*\(/i,
+        kotlin: /\bfun\s+\w+\s*\(|\bval\s+\w+|\bvar\s+\w+\s*[=:]|\bobject\s+\w+|\bwhen\s*\(|\bdata\s+class/i,
+        bash: /\#!\/bin\/(bash|sh)|\becho\s+["']|\bexport\s+\w+=|\bif\s+\[\s*|\bfi\b|\bdone\b|\$\{\w+\}|\bfunction\s+\w+\s*\(\)/i,
+        r: /\s<-\s|\bfunction\s*\(|\blibrary\s*\(|\bdata\.frame\s*\(|\bggplot\s*\(|\bc\s*\(/i,
+        yaml: /^\s*[\w-]+:\s*[^\s{[]|^\s*-\s+[\w"']/m,
+        json: /^\s*\{\s*"[\w]+"\s*:|\[\s*\{|\"\w+\"\s*:\s*[\[{"\d]/m
+    },
+
+    // Generic code patterns that work across languages (for fallback detection)
+    GENERIC_CODE_PATTERNS: /```\w*\n|\/\/\s*\w+|\/\*[\s\S]*?\*\/|#\s+\w+.*\n.*\n|;\s*$|=>\s*[\({]|\.[\w]+\(.*\)\.[\w]+\(|<[A-Z]\w+>|===|!==|&&|\|\||\+\+|--/m
 };
 
 // Animation settings (simplified)

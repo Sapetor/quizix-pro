@@ -25,14 +25,31 @@ const AI = {
     ECONOMICS_INDICATORS: /economy|GDP|inflation|deflation|supply|demand|market|trade|investment|stock|bond|currency|fiscal|monetary|budget|tax|tariff|subsidy|unemployment|recession|growth|capitalism|socialism|microeconomics|macroeconomics|equilibrium|elasticity|monopoly|oligopoly|economía|PIB|inflación|mercado|comercio|inversión|économie|marché|commerce|investissement|Wirtschaft|BIP|Inflation|Markt|Handel|Investition|economia|mercato|commercio|investimento|economia|mercado|comércio|investimento|gospodarka|PKB|inflacja|rynek|handel|inwestycja|経済|GDP|インフレ|市場|貿易|投資|经济|通货膨胀|市场|贸易|投资/i,
 
     CODE_LANGUAGE_HINTS: {
+        // TypeScript before JavaScript (TS has specific patterns JS doesn't)
+        typescript: /\binterface\s+\w+|\btype\s+\w+\s*=|:\s*(string|number|boolean|any|void)\b|<[A-Z]\w*>|\bReadonly<|\bPartial<|\bas\s+\w+|\bnamespace\s+\w+/i,
+        // Other languages
         python: /\bdef\s+\w+\(|\bimport\s+\w+|\bfrom\s+\w+\s+import|\bclass\s+\w+:|\bif\s+__name__\s*==|\bself\.\w+|\bprint\s*\(/i,
         javascript: /\bconst\s+\w+\s*=|\blet\s+\w+\s*=|\bfunction\s+\w+\s*\(|=>\s*\{|\bconsole\.(log|error|warn)|\basync\s+function|\bawait\s+/i,
         java: /\bpublic\s+(static\s+)?(void|class|int|String)|\bprivate\s+|\bprotected\s+|\bSystem\.out\.print/i,
         sql: /\bSELECT\s+.*\bFROM\b|\bCREATE\s+TABLE\b|\bINSERT\s+INTO\b|\bUPDATE\s+.*\bSET\b|\bDELETE\s+FROM\b|\bJOIN\b.*\bON\b/i,
         cpp: /\#include\s*<|\busing\s+namespace\s+std|\bstd::|\bcout\s*<<|\bcin\s*>>|\bint\s+main\s*\(/i,
         html: /<(!DOCTYPE|html|head|body|div|span|p|a|img|table|form|input|button)\b/i,
-        css: /\{[^}]*:\s*[^;]+;[^}]*\}|@media\s+|@keyframes\s+|\.[\w-]+\s*\{|#[\w-]+\s*\{/i
-    }
+        css: /\{[^}]*:\s*[^;]+;[^}]*\}|@media\s+|@keyframes\s+|\.[\w-]+\s*\{|#[\w-]+\s*\{/i,
+        go: /\bpackage\s+\w+|\bfunc\s+\w*\(|\bgo\s+func|:=|\bchan\s+|\bdefer\s+|\btype\s+\w+\s+struct|\bfmt\.\w+/i,
+        rust: /\bfn\s+\w+|\blet\s+mut\s+|\bimpl\s+\w+|\bpub\s+fn|\bmatch\s+\w+\s*\{|\b->\s*\w+|\bResult<|\bOption<|\bprintln!\(/i,
+        ruby: /\bdef\s+\w+|\bend\b.*\n|\bdo\s*\||\bputs\s+|\brequire\s+['"]|\battr_(reader|writer|accessor)|\bclass\s+\w+\s*<\s*\w+/i,
+        php: /<\?php|\$\w+\s*=|\bfunction\s+\w+\s*\(.*\)\s*\{|->[\w]+\(|::\w+|\becho\s+/i,
+        csharp: /\bnamespace\s+\w+|\busing\s+\w+;|\bpublic\s+class\s+\w+|\bvar\s+\w+\s*=|\basync\s+Task|\bConsole\.Write/i,
+        swift: /\bfunc\s+\w+\s*\(|\blet\s+\w+\s*[=:]|\bvar\s+\w+\s*[=:]|\bguard\s+let|\b@IBOutlet|\boverride\s+func|\bprint\s*\(/i,
+        kotlin: /\bfun\s+\w+\s*\(|\bval\s+\w+|\bvar\s+\w+\s*[=:]|\bobject\s+\w+|\bwhen\s*\(|\bdata\s+class/i,
+        bash: /\#!\/bin\/(bash|sh)|\becho\s+["']|\bexport\s+\w+=|\bif\s+\[\s*|\bfi\b|\bdone\b|\$\{\w+\}|\bfunction\s+\w+\s*\(\)/i,
+        r: /\s<-\s|\bfunction\s*\(|\blibrary\s*\(|\bdata\.frame\s*\(|\bggplot\s*\(|\bc\s*\(/i,
+        yaml: /^\s*[\w-]+:\s*[^\s{[]|^\s*-\s+[\w"']/m,
+        json: /^\s*\{\s*"[\w]+"\s*:|\[\s*\{|\"\w+\"\s*:\s*[\[{"\d]/m
+    },
+
+    // Generic code patterns that work across languages (for fallback detection)
+    GENERIC_CODE_PATTERNS: /```\w*\n|\/\/\s*\w+|\/\*[\s\S]*?\*\/|#\s+\w+.*\n.*\n|;\s*$|=>\s*[\({]|\.[\w]+\(.*\)\.[\w]+\(|<[A-Z]\w+>|===|!==|&&|\|\||\+\+|--/m
 };
 
 describe('Content Detection Patterns', () => {
@@ -365,6 +382,122 @@ describe('Content Detection Patterns', () => {
         it('should detect SQL', () => {
             expect(hints.sql.test('SELECT id FROM users')).toBe(true);
             expect(hints.sql.test('CREATE TABLE test')).toBe(true);
+        });
+
+        // New language tests (12 additional languages)
+        it('should detect TypeScript', () => {
+            expect(hints.typescript.test('interface User {')).toBe(true);
+            expect(hints.typescript.test('type Status = "active"')).toBe(true);
+            expect(hints.typescript.test('const x: number = 5')).toBe(true);
+            expect(hints.typescript.test('Array<string>')).toBe(true);
+        });
+
+        it('should detect Go', () => {
+            expect(hints.go.test('package main')).toBe(true);
+            expect(hints.go.test('func main() {')).toBe(true);
+            expect(hints.go.test('x := 5')).toBe(true);
+            expect(hints.go.test('fmt.Println("hi")')).toBe(true);
+        });
+
+        it('should detect Rust', () => {
+            expect(hints.rust.test('fn main() {')).toBe(true);
+            expect(hints.rust.test('let mut x = 5')).toBe(true);
+            expect(hints.rust.test('impl MyStruct {')).toBe(true);
+            expect(hints.rust.test('println!("hi")')).toBe(true);
+        });
+
+        it('should detect Ruby', () => {
+            expect(hints.ruby.test('def calculate')).toBe(true);
+            expect(hints.ruby.test('puts "hello"')).toBe(true);
+            expect(hints.ruby.test("require 'json'")).toBe(true);
+            expect(hints.ruby.test('attr_accessor :name')).toBe(true);
+        });
+
+        it('should detect PHP', () => {
+            expect(hints.php.test('<?php')).toBe(true);
+            expect(hints.php.test('$name = "test"')).toBe(true);
+            expect(hints.php.test('echo "hello"')).toBe(true);
+        });
+
+        it('should detect C#', () => {
+            expect(hints.csharp.test('namespace MyApp')).toBe(true);
+            expect(hints.csharp.test('using System;')).toBe(true);
+            expect(hints.csharp.test('public class User')).toBe(true);
+            expect(hints.csharp.test('Console.WriteLine')).toBe(true);
+        });
+
+        it('should detect Swift', () => {
+            expect(hints.swift.test('func calculate() {')).toBe(true);
+            expect(hints.swift.test('let x = 5')).toBe(true);
+            expect(hints.swift.test('guard let value')).toBe(true);
+            expect(hints.swift.test('override func viewDidLoad')).toBe(true);
+        });
+
+        it('should detect Kotlin', () => {
+            expect(hints.kotlin.test('fun main() {')).toBe(true);
+            expect(hints.kotlin.test('val x = 5')).toBe(true);
+            expect(hints.kotlin.test('data class User')).toBe(true);
+            expect(hints.kotlin.test('when (x) {')).toBe(true);
+        });
+
+        it('should detect Bash', () => {
+            expect(hints.bash.test('#!/bin/bash')).toBe(true);
+            expect(hints.bash.test('echo "hello"')).toBe(true);
+            expect(hints.bash.test('export PATH=')).toBe(true);
+            expect(hints.bash.test('if [ -f file ]')).toBe(true);
+        });
+
+        it('should detect R', () => {
+            expect(hints.r.test('x <- c(1,2,3)')).toBe(true);
+            expect(hints.r.test('library(ggplot2)')).toBe(true);
+            expect(hints.r.test('data.frame(a=1)')).toBe(true);
+        });
+
+        it('should detect YAML', () => {
+            expect(hints.yaml.test('name: value')).toBe(true);
+            expect(hints.yaml.test('- item1')).toBe(true);
+        });
+
+        it('should detect JSON', () => {
+            expect(hints.json.test('{ "name": "test" }')).toBe(true);
+            expect(hints.json.test('[{ "id": 1 }]')).toBe(true);
+        });
+    });
+
+    describe('GENERIC_CODE_PATTERNS', () => {
+        const pattern = AI.GENERIC_CODE_PATTERNS;
+
+        it('should detect markdown code blocks', () => {
+            expect(pattern.test('```javascript\nconst x = 1')).toBe(true);
+        });
+
+        it('should detect C-style comments', () => {
+            expect(pattern.test('// this is a comment')).toBe(true);
+            expect(pattern.test('/* block comment */')).toBe(true);
+        });
+
+        it('should detect arrow functions', () => {
+            expect(pattern.test('x => {')).toBe(true);
+            expect(pattern.test('x => (')).toBe(true);
+        });
+
+        it('should detect method chaining', () => {
+            expect(pattern.test('.map(x).filter(y)')).toBe(true);
+        });
+
+        it('should detect strict equality operators', () => {
+            expect(pattern.test('x === y')).toBe(true);
+            expect(pattern.test('x !== y')).toBe(true);
+        });
+
+        it('should detect logical operators', () => {
+            expect(pattern.test('x && y')).toBe(true);
+            expect(pattern.test('x || y')).toBe(true);
+        });
+
+        it('should detect increment/decrement', () => {
+            expect(pattern.test('i++')).toBe(true);
+            expect(pattern.test('i--')).toBe(true);
         });
     });
 
