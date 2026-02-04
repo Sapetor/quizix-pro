@@ -368,6 +368,124 @@ kubectl get pvc -n quizmaster
 
 ---
 
+## Issue: Cluster-Wide Disk Pressure (External Access Fails)
+
+### Symptoms
+- App pod is Running and healthy
+- `kubectl exec` into pod shows app responds on localhost
+- External URL (http://10.80.21.11/quizmaster) times out or returns blank
+- Multiple namespaces showing evicted pods
+
+### Diagnosis
+
+**Check which nodes have disk pressure:**
+```bash
+kubectl get nodes -o custom-columns='NAME:.metadata.name,DISK_PRESSURE:.status.conditions[?(@.type=="DiskPressure")].status,LAST_TRANSITION:.status.conditions[?(@.type=="DiskPressure")].lastTransitionTime'
+```
+
+**Check cluster-wide eviction events:**
+```bash
+kubectl get events -A | grep -i "disk\|ephemeral\|evict" | tail -20
+```
+
+**Check MetalLB status (provides external IPs):**
+```bash
+kubectl get pods -n metallb-system | grep -E "Running|controller|speaker"
+```
+
+**Check Ingress controller:**
+```bash
+kubectl get pods -n ingress-nginx | grep Running
+```
+
+### Root Cause
+
+When multiple worker nodes have disk pressure:
+1. Pods get evicted cluster-wide (not just your app)
+2. Core infrastructure affected: MetalLB, Ingress, Rook-Ceph
+3. MetalLB controller/speakers down = external IPs don't route
+4. Cluster enters "flapping state" - components constantly evicted/restarting
+
+### Recovery
+
+**Step 1: Find a healthy node**
+```bash
+kubectl get nodes -o custom-columns='NAME:.metadata.name,DISK:.status.conditions[?(@.type=="DiskPressure")].status' | grep False
+```
+
+**Step 2: Move your app to healthy node**
+
+Edit `k8s/01-quizmaster-pro.yaml`:
+```yaml
+nodeSelector:
+  kubernetes.io/hostname: k8s-worker-node2  # Pick a node without disk pressure
+```
+
+Then redeploy:
+```bash
+scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizmaster-pro.yaml labadmin@10.80.21.11:/tmp/
+# On control plane:
+kubectl apply -f /tmp/01-quizmaster-pro.yaml
+kubectl rollout restart deployment/quizmaster-pro -n quizmaster
+```
+
+**Step 3: If external access still fails, use port-forward workaround**
+```bash
+# From control plane
+kubectl port-forward -n quizmaster svc/quizmaster-pro 3000:3000 --address=0.0.0.0
+```
+Then access: `http://10.80.21.11:3000`
+
+Or via SSH tunnel from local machine:
+```bash
+ssh -L 3000:localhost:3000 labadmin@10.80.21.11 "kubectl port-forward -n quizmaster svc/quizmaster-pro 3000:3000"
+```
+Then access: `http://localhost:3000`
+
+### When to Escalate to Cluster Owner
+
+Escalate immediately if:
+- 3+ worker nodes show `DiskPressure: True`
+- MetalLB has no running controller
+- Ingress controller keeps getting evicted
+- Multiple namespaces affected (gitlab, rook-ceph, metallb-system)
+
+The cluster owner needs to:
+1. Clean up disk on affected nodes
+2. Configure aggressive image garbage collection
+3. Set up log rotation
+4. Add monitoring/alerts for disk usage
+
+---
+
+## Issue: Stuck Volume Attachments
+
+### Symptoms
+- Pod stuck in `Init:0/1` for extended time
+- Events show: `AttachVolume.Attach failed for volume "pvc-xxx" : volume attachment is being deleted`
+- Volume attachments show `ATTACHED: true` but pod can't mount
+
+### Fix
+
+```bash
+# Scale down
+kubectl scale deployment quizmaster-pro -n quizmaster --replicas=0
+
+# Find stuck attachments
+kubectl get volumeattachments | grep -E "(pvc-99eec36a|pvc-e08e1895|pvc-15a8a2dd)"
+
+# Remove finalizers to force delete
+kubectl patch volumeattachment <NAME> -p '{"metadata":{"finalizers":null}}' --type=merge
+
+# Verify gone
+kubectl get volumeattachments | grep quizmaster
+
+# Scale back up
+kubectl scale deployment quizmaster-pro -n quizmaster --replicas=1
+```
+
+---
+
 ## Contact
 
 If disk issues persist, contact the cluster owner to:

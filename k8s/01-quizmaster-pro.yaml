@@ -84,7 +84,10 @@ spec:
       # Run: kubectl get nodes -l kubernetes.io/hostname -o name
       # Pick a worker node with adequate disk space
       nodeSelector:
-        kubernetes.io/hostname: k8s-worker-node5
+        kubernetes.io/hostname: k8s-worker-node2
+
+      # Give time for graceful shutdown and volume detachment
+      terminationGracePeriodSeconds: 60
 
       # Uncomment if your Docker Hub repo is private
       # imagePullSecrets:
@@ -118,15 +121,16 @@ spec:
             - containerPort: 3000
 
           # Resource requests/limits - prevents BestEffort QoS (first to evict)
+          # Higher ephemeral-storage request = evicted later during disk pressure
           resources:
             requests:
               memory: "128Mi"
               cpu: "100m"
-              ephemeral-storage: "100Mi"
+              ephemeral-storage: "256Mi"
             limits:
               memory: "512Mi"
               cpu: "500m"
-              ephemeral-storage: "500Mi"
+              ephemeral-storage: "1Gi"
 
           # Liveness probe - restart if unhealthy
           livenessProbe:
@@ -166,3 +170,16 @@ spec:
         - name: uploads
           persistentVolumeClaim:
             claimName: quizmaster-uploads
+---
+# PodDisruptionBudget - protects against voluntary evictions (node drain, upgrades)
+# Note: Does NOT protect against disk pressure evictions (those are involuntary)
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: quizmaster-pdb
+  namespace: quizmaster
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: quizmaster-pro
