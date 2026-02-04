@@ -14,6 +14,9 @@ export class SimpleMathJaxService {
         // Simple cache for rendered content
         this.renderCache = new Map();
 
+        // Queue for pending render requests (instead of skipping)
+        this.pendingRenders = [];
+
         this.initializeMathJax();
     }
 
@@ -101,9 +104,10 @@ export class SimpleMathJaxService {
                 return Promise.resolve();
             }
 
-            // Prevent concurrent rendering which can cause double-render issues
+            // Queue renders instead of skipping to prevent missing renders
             if (this.renderingInProgress) {
-                logger.debug('MathJax rendering already in progress, skipping');
+                logger.debug('MathJax rendering in progress, queueing elements');
+                this.pendingRenders.push(...validElements);
                 return Promise.resolve();
             }
 
@@ -165,7 +169,27 @@ export class SimpleMathJaxService {
             return Promise.resolve();
         } finally {
             this.renderingInProgress = false;
+            // Process any queued renders
+            this.processQueue();
         }
+    }
+
+    /**
+     * Process queued render requests
+     */
+    async processQueue() {
+        if (this.pendingRenders.length === 0 || this.renderingInProgress) {
+            return;
+        }
+
+        // Take all pending elements and clear the queue
+        const elementsToProcess = [...this.pendingRenders];
+        this.pendingRenders = [];
+
+        logger.debug(`Processing ${elementsToProcess.length} queued MathJax renders`);
+
+        // Render the queued elements
+        await this.render(elementsToProcess);
     }
 
     /**

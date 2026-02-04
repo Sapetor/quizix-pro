@@ -146,12 +146,18 @@ export class GameDisplayManager {
 
     /**
      * Render MathJax for question content with enhanced F5 handling
+     * @param {HTMLElement} element - Element to render MathJax in
+     * @param {number} delay - Delay in ms before rendering (to avoid concurrent render conflicts)
      */
-    async renderQuestionMath(element, _delay = 0) {
+    async renderQuestionMath(element, delay = 0) {
         if (!element) return;
 
         try {
-            // No delay - render immediately for faster LaTeX display
+            // Add delay to avoid concurrent rendering conflicts
+            // (SimpleMathJaxService has a renderingInProgress guard that skips concurrent calls)
+            if (delay > 0) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
 
             // Check if element still exists in DOM
             if (!document.contains(element)) {

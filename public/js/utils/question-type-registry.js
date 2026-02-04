@@ -172,7 +172,7 @@ const QUESTION_TYPES = {
          * @param {Object} helpers - Helper functions { escapeHtml, formatCodeBlocks, translationManager, COLORS }
          */
         renderHostOptions: (data, container, helpers) => {
-            const { escapeHtml, formatCodeBlocks, translationManager } = helpers;
+            const { escapeHtmlPreservingLatex, formatCodeBlocks, translationManager } = helpers;
             container.innerHTML = `
                 <div class="option-display" data-option="0"></div>
                 <div class="option-display" data-option="1"></div>
@@ -186,7 +186,7 @@ const QUESTION_TYPES = {
                 data.options.forEach((option, index) => {
                     if (options[index]) {
                         const optionText = option != null ? option : '';
-                        const safeOptionText = escapeHtml(optionText);
+                        const safeOptionText = escapeHtmlPreservingLatex(optionText);
                         options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
                         options[index].classList.add('tex2jax_process');
                         options[index].classList.remove('hidden');
@@ -206,7 +206,7 @@ const QUESTION_TYPES = {
          * @param {Object} helpers - Helper functions
          */
         renderPlayerOptions: (data, container, helpers) => {
-            const { escapeHtml, formatCodeBlocks, translationManager } = helpers;
+            const { escapeHtmlPreservingLatex, formatCodeBlocks, translationManager } = helpers;
             let existingButtons = container.querySelectorAll('.player-option');
 
             // If no existing buttons found, create them dynamically (fixes mobile DOM issues)
@@ -225,7 +225,7 @@ const QUESTION_TYPES = {
             if (data.options) {
                 existingButtons.forEach((button, index) => {
                     if (index < data.options.length) {
-                        const safeOption = escapeHtml(data.options[index] || '');
+                        const safeOption = escapeHtmlPreservingLatex(data.options[index] || '');
                         button.innerHTML = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${formatCodeBlocks(safeOption)}`;
                         button.setAttribute('data-answer', index.toString());
                         button.classList.remove('selected', 'disabled', 'hidden');
@@ -371,7 +371,7 @@ const QUESTION_TYPES = {
         },
 
         renderHostOptions: (data, container, helpers) => {
-            const { escapeHtml, formatCodeBlocks, translationManager } = helpers;
+            const { escapeHtmlPreservingLatex, formatCodeBlocks, translationManager } = helpers;
             container.innerHTML = `
                 <div class="option-display" data-option="0" data-multiple="true"></div>
                 <div class="option-display" data-option="1" data-multiple="true"></div>
@@ -385,7 +385,7 @@ const QUESTION_TYPES = {
                 data.options.forEach((option, index) => {
                     if (options[index]) {
                         const optionText = option != null ? option : '';
-                        const safeOptionText = escapeHtml(optionText);
+                        const safeOptionText = escapeHtmlPreservingLatex(optionText);
                         options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
                         options[index].classList.add('tex2jax_process');
                         options[index].classList.remove('hidden');
@@ -398,12 +398,12 @@ const QUESTION_TYPES = {
         },
 
         renderPlayerOptions: (data, container, helpers) => {
-            const { escapeHtml, formatCodeBlocks, translationManager } = helpers;
+            const { escapeHtmlPreservingLatex, formatCodeBlocks, translationManager } = helpers;
             const checkboxLabels = container.querySelectorAll('.checkbox-option');
 
             checkboxLabels.forEach((label, index) => {
                 if (data.options && data.options[index]) {
-                    const safeOption = escapeHtml(data.options[index]);
+                    const safeOption = escapeHtmlPreservingLatex(data.options[index]);
                     const formattedOption = formatCodeBlocks(safeOption);
                     label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${translationManager.getOptionLetter(index)}: ${formattedOption}`;
                     label.setAttribute('data-option', index);
@@ -697,7 +697,7 @@ const QUESTION_TYPES = {
         },
 
         renderHostOptions: (data, container, helpers) => {
-            const { escapeHtml, formatCodeBlocks, COLORS } = helpers;
+            const { escapeHtmlPreservingLatex, formatCodeBlocks, COLORS } = helpers;
             if (!data.options || data.options.length === 0) {
                 container.classList.add('hidden');
                 return;
@@ -717,7 +717,7 @@ const QUESTION_TYPES = {
             let html = '<div class="ordering-display">';
             shuffledIndices.forEach((originalIndex, displayIndex) => {
                 const option = data.options[originalIndex];
-                const safeOption = escapeHtml(option || '');
+                const safeOption = escapeHtmlPreservingLatex(option || '');
                 const bgColor = itemColors[originalIndex % itemColors.length];
                 html += `
                     <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
@@ -732,7 +732,7 @@ const QUESTION_TYPES = {
         },
 
         renderPlayerOptions: (data, container, helpers) => {
-            const { escapeHtml, formatCodeBlocks, translationManager, COLORS } = helpers;
+            const { escapeHtmlPreservingLatex, formatCodeBlocks, translationManager, COLORS } = helpers;
             if (!data.options || data.options.length === 0) {
                 return;
             }
@@ -754,7 +754,7 @@ const QUESTION_TYPES = {
 
             shuffledIndices.forEach((originalIndex, displayIndex) => {
                 const option = data.options[originalIndex];
-                const safeOption = escapeHtml(option || '');
+                const safeOption = escapeHtmlPreservingLatex(option || '');
                 const bgColor = itemColors[originalIndex % itemColors.length];
                 html += `
                     <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">

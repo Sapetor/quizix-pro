@@ -104,6 +104,7 @@ export class QuestionRenderer {
             // Use registry to render host options
             const helpers = {
                 escapeHtml,
+                escapeHtmlPreservingLatex,
                 formatCodeBlocks,
                 translationManager,
                 COLORS
@@ -220,6 +221,7 @@ export class QuestionRenderer {
         // Use registry to render player options
         const helpers = {
             escapeHtml,
+            escapeHtmlPreservingLatex,
             formatCodeBlocks,
             translationManager,
             COLORS
