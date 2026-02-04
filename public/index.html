@@ -63,17 +63,19 @@
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
         
-        /* Mobile LaTeX FOUC Prevention */
-        .latex-content, .math-content, .has-math {
+        /* Mobile LaTeX FOUC Prevention - hide until rendered */
+        .latex-content:not(.rendered),
+        .math-content:not(.rendered),
+        .has-math:not(.rendered) {
             min-height: 1.2em;
             opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: opacity 0.15s ease;
         }
-        
-        /* Show LaTeX content when MathJax is ready */
-        body.mathjax-ready .latex-content,
-        body.mathjax-ready .math-content,
-        body.mathjax-ready .has-math {
+
+        /* Show LaTeX content when fully rendered */
+        .latex-content.rendered,
+        .math-content.rendered,
+        .has-math.rendered {
             opacity: 1;
         }
         

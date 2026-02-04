@@ -107,6 +107,13 @@ export class SimpleMathJaxService {
             // Queue renders instead of skipping to prevent missing renders
             if (this.renderingInProgress) {
                 logger.debug('MathJax rendering in progress, queueing elements');
+                // Add has-math class immediately to prevent FOUC (flash of raw LaTeX)
+                validElements.forEach(element => {
+                    if (this.containsLaTeX(element.textContent || element.innerHTML)) {
+                        element.classList.add('has-math');
+                        element.classList.remove('rendered');
+                    }
+                });
                 this.pendingRenders.push(...validElements);
                 return Promise.resolve();
             }
