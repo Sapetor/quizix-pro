@@ -101,6 +101,12 @@ export class SimpleMathJaxService {
                 return Promise.resolve();
             }
 
+            // Prevent concurrent rendering which can cause double-render issues
+            if (this.renderingInProgress) {
+                logger.debug('MathJax rendering already in progress, skipping');
+                return Promise.resolve();
+            }
+
             // Add mobile-friendly LaTeX classes for FOUC prevention
             validElements.forEach(element => {
                 if (this.containsLaTeX(element.textContent || element.innerHTML)) {
@@ -117,20 +123,37 @@ export class SimpleMathJaxService {
                 return Promise.resolve();
             }
 
-            // Clear previous typeset data
+            // CRITICAL: Skip elements that already have rendered MathJax to prevent nested rendering
+            // This fixes the double-render bug where mjx-assistive-mml contains mjx-container
+            const elementsToRender = validElements.filter(element => {
+                const existingContainers = element.querySelectorAll(':scope > mjx-container');
+                if (existingContainers.length > 0) {
+                    logger.debug(`Skipping element - already has ${existingContainers.length} MathJax containers`);
+                    element.classList.add('rendered'); // Mark as done
+                    return false; // Skip this element
+                }
+                return true;
+            });
+
+            if (elementsToRender.length === 0) {
+                logger.debug('All elements already rendered, skipping MathJax');
+                return Promise.resolve();
+            }
+
+            // Clear previous typeset data for elements we're going to render
             if (window.MathJax.typesetClear) {
-                window.MathJax.typesetClear(validElements);
+                window.MathJax.typesetClear(elementsToRender);
             }
 
             this.renderingInProgress = true;
 
             if (window.MathJax.typesetPromise) {
-                logger.debug(`Rendering MathJax for ${validElements.length} elements`);
-                await window.MathJax.typesetPromise(validElements);
+                logger.debug(`Rendering MathJax for ${elementsToRender.length} elements`);
+                await window.MathJax.typesetPromise(elementsToRender);
                 logger.debug('MathJax rendering completed');
 
                 // Mark elements as rendered to hide loading indicators
-                validElements.forEach(element => {
+                elementsToRender.forEach(element => {
                     element.classList.add('rendered');
                 });
             }
