@@ -142,6 +142,20 @@ import { COLORS, TIMING, SCORING } from '../core/config.js';
 // Never hardcode colors or timing values
 ```
 
+### 8. Visibility - Use CSS Classes, Not Inline Styles
+
+```javascript
+// CORRECT - CSS classes work with classList toggling
+element.classList.add('hidden');
+element.classList.remove('hidden');
+
+// WRONG - Inline styles override CSS classes (specificity 1000 vs ~10)
+element.style.display = 'none';   // Don't do this
+element.style.display = 'block';  // Don't do this
+```
+
+**Why:** HTML elements use `class="hidden"` for initial state. JavaScript uses `classList.remove('hidden')` to show them. If code sets `style.display = 'none'`, the inline style overrides the CSS class and `classList.remove('hidden')` won't work.
+
 ---
 
 ## Key Gotchas
