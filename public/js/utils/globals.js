@@ -171,6 +171,34 @@ export function updateQuestionType(selectElement) {
     }
 }
 
+/**
+ * Update question type from the preview selector
+ * Syncs the change back to the editor's question
+ */
+export function updateQuestionTypeFromPreview(selectElement) {
+    logger.debug('Question type update from preview called');
+
+    // Get current question index from preview manager
+    const currentIndex = window.game?.previewManager?.currentPreviewQuestion ?? 0;
+    const questionItems = document.querySelectorAll('.question-item');
+
+    if (currentIndex >= 0 && currentIndex < questionItems.length) {
+        const questionItem = questionItems[currentIndex];
+        const editorTypeSelect = questionItem.querySelector('.question-type');
+
+        if (editorTypeSelect) {
+            // Update the editor's hidden selector
+            editorTypeSelect.value = selectElement.value;
+            // Trigger the update logic
+            updateQuestionType(editorTypeSelect);
+            // Refresh the preview
+            if (window.game?.previewManager?.updatePreview) {
+                window.game.previewManager.updatePreview();
+            }
+        }
+    }
+}
+
 export function updateTimeLimit(inputElement) {
     logger.debug('Time limit update function called');
     const value = parseInt(inputElement.value);
@@ -847,6 +875,7 @@ window.removeImage = removeImage;
 window.togglePreviewMode = togglePreviewMode;
 window.scrollToCurrentQuestion = scrollToCurrentQuestion;
 window.updateQuestionType = updateQuestionType;
+window.updateQuestionTypeFromPreview = updateQuestionTypeFromPreview;
 window.updateTimeLimit = updateTimeLimit;
 window.updateGlobalTime = updateGlobalTime;
 window.returnToMainFromHeader = returnToMainFromHeader;

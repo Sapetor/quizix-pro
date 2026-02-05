@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="/">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
@@ -12,9 +13,9 @@
     <noscript><link rel="stylesheet" href="css/main.bundle.css?v=38"></noscript>
     
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=17" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=17" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=17" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=18" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=18" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=18" as="script" crossorigin="anonymous">
     
     <!-- Optimized font loading for mobile performance -->
     <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
@@ -1038,9 +1039,16 @@
                             <button id="preview-prev-split" class="nav-btn" data-translate-aria-label="previous">◀</button>
                             <button id="preview-next-split" class="nav-btn" data-translate-aria-label="next">▶</button>
                         </div>
+                        <select id="preview-question-type" class="preview-type-selector" onchange="updateQuestionTypeFromPreview(this)">
+                            <option value="multiple-choice" data-translate="multiple_choice">Multiple Choice</option>
+                            <option value="multiple-correct" data-translate="multiple_correct">Multiple Correct</option>
+                            <option value="true-false" data-translate="true_false">True/False</option>
+                            <option value="numeric" data-translate="numeric">Numeric</option>
+                            <option value="ordering" data-translate="ordering">Ordering</option>
+                        </select>
                         <span id="preview-question-counter-split">Q1/1</span>
                         <div class="preview-nav-section">
-                            <button id="scroll-to-question" class="nav-btn edit-btn" onclick="scrollToCurrentQuestion()"><span data-translate="edit_question">Edit Question</span></button>
+                            <button id="scroll-to-question" class="nav-btn edit-btn" onclick="scrollToCurrentQuestion()"><span data-translate="edit_question">Edit</span></button>
                         </div>
                     </div>
                     
@@ -1485,10 +1493,10 @@
                 <div id="host-multiple-choice" class="player-answer-type">
                     <div class="question-alternatives-header" data-translate="question_alternatives">Question Alternatives</div>
                     <div id="answer-options" class="player-options">
-                        <div class="player-option" data-option="0">A</div>
-                        <div class="player-option" data-option="1">B</div>
-                        <div class="player-option" data-option="2">C</div>
-                        <div class="player-option" data-option="3">D</div>
+                        <div class="option-display" data-option="0"></div>
+                        <div class="option-display" data-option="1"></div>
+                        <div class="option-display" data-option="2"></div>
+                        <div class="option-display" data-option="3"></div>
                     </div>
                 </div>
                 </div>
@@ -2231,7 +2239,7 @@
             onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
     </script>
     <!-- Modular ES6 Structure -->
-<script type="module" src="js/main.js?v=17"></script>
+<script type="module" src="js/main.js?v=18"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // Fetch and display app version (always runs, even without service worker support)

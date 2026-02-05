@@ -28,15 +28,16 @@ export class QuestionUtils {
                 </div>
             </div>
             <div class="question-body">
+            <!-- Hidden question type selector - controlled from preview panel -->
+            <select class="question-type" style="display: none;" onchange="updateQuestionType(this)">
+                <option value="multiple-choice">Multiple Choice</option>
+                <option value="multiple-correct">Multiple Correct Answers</option>
+                <option value="true-false">True/False</option>
+                <option value="numeric">Numeric Answer</option>
+                <option value="ordering">Ordering</option>
+            </select>
+
             <div class="question-meta">
-                <select class="question-type" onchange="updateQuestionType(this)">
-                    <option value="multiple-choice" data-translate="multiple_choice">Multiple Choice</option>
-                    <option value="multiple-correct" data-translate="multiple_correct">Multiple Correct Answers</option>
-                    <option value="true-false" data-translate="true_false">True/False</option>
-                    <option value="numeric" data-translate="numeric">Numeric Answer</option>
-                    <option value="ordering" data-translate="ordering">Ordering</option>
-                </select>
-                
                 <select class="question-difficulty">
                     <option value="easy" data-translate="easy">Easy</option>
                     <option value="medium" selected data-translate="medium">Medium</option>
@@ -59,10 +60,10 @@ export class QuestionUtils {
                     </label>
                 </div>
             </div>
-            
+
             <div class="question-content">
                 <textarea class="question-text" placeholder="Enter your question (supports LaTeX)" data-translate-placeholder="enter_question_with_latex"></textarea>
-                
+
                 <div class="image-upload">
                     <label data-translate="add_image">Add Image</label>
                     <input type="file" class="image-input" accept="image/*" onchange="uploadImage(this)">

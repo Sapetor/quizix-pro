@@ -476,6 +476,7 @@ export class PreviewManager {
         const counterDisplay = document.getElementById('preview-question-counter-display-split');
         const prevBtn = document.getElementById('preview-prev-split');
         const nextBtn = document.getElementById('preview-next-split');
+        const previewTypeSelector = document.getElementById('preview-question-type');
 
         const questionNumber = this.currentPreviewQuestion + 1;
         const counterText = `${translationManager.getTranslationSync('question')} ${questionNumber} ${translationManager.getTranslationSync('of')} ${totalQuestions}`;
@@ -487,6 +488,16 @@ export class PreviewManager {
             counterDisplay.innerHTML = `<span data-translate="question">Question</span> ${questionNumber} <span data-translate="of">of</span> ${totalQuestions}`;
             // Update translations for the newly inserted content
             translationManager.updateGameTranslations();
+        }
+
+        // Sync question type selector with current question
+        if (previewTypeSelector) {
+            const questionItems = document.querySelectorAll('.question-item');
+            const currentQuestion = questionItems[this.currentPreviewQuestion];
+            if (currentQuestion) {
+                const questionType = currentQuestion.querySelector('.question-type')?.value || 'multiple-choice';
+                previewTypeSelector.value = questionType;
+            }
         }
 
         if (prevBtn) {

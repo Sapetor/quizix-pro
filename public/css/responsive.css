@@ -563,12 +563,12 @@
         flex-wrap: wrap !important;
     }
     
-    /* Clean mobile question meta layout - Type and Time compact */
+    /* Clean mobile question meta layout - Difficulty, Concepts, Time */
     .quiz-editor-section .question-meta {
         display: grid !important;
-        grid-template-columns: calc(100% - 80px) 80px !important; /* Type takes available space, Time gets 80px */
-        gap: 6px !important;
-        margin-bottom: 6px !important;
+        grid-template-columns: auto 1fr auto !important;
+        gap: 8px !important;
+        margin-bottom: 8px !important;
         padding: 8px !important;
         background: rgba(255, 255, 255, 0.04) !important;
         border-radius: 6px !important;
@@ -576,26 +576,44 @@
         max-width: 100% !important;
         box-sizing: border-box !important;
     }
-    
-    /* Question type selector */
-    .quiz-editor-section .question-meta .question-type {
-        font-size: 0.75rem !important;
-        padding: 6px 4px !important;
+
+    /* Question difficulty selector - Compact on mobile */
+    .quiz-editor-section .question-meta .question-difficulty {
+        font-size: 0.7rem !important;
+        padding: 4px 6px !important;
         height: 32px !important;
         background: rgba(255, 255, 255, 0.06) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
         border-radius: 6px !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+        min-width: 60px !important;
+    }
+
+    /* Concept tags container - Mobile compact */
+    .quiz-editor-section .question-meta .concept-tags-container {
         min-width: 0 !important;
     }
-    
-    /* Question difficulty selector - Hidden on mobile */
-    .quiz-editor-section .question-meta .question-difficulty {
+
+    .quiz-editor-section .question-meta .concept-tags-container > label {
         display: none !important;
+    }
+
+    .quiz-editor-section .question-meta .concept-tags-input {
+        min-height: 32px !important;
+        padding: 4px 6px !important;
+    }
+
+    .quiz-editor-section .question-meta .concept-input {
+        font-size: 0.7rem !important;
+        min-width: 60px !important;
+    }
+
+    .quiz-editor-section .question-meta .concept-hint {
+        display: none !important;
+    }
+
+    .quiz-editor-section .question-meta .concept-tag {
+        font-size: 0.6rem !important;
+        padding: 2px 5px !important;
     }
     
     /* Time container - Very compact */
@@ -624,51 +642,33 @@
         color: rgba(30, 41, 59, 0.9) !important;
     }
     
-    /* Time input container styling is now handled in the main .question-meta rule above */
-    
-    .quiz-editor-section .question-meta .time-container label {
-        font-size: 0.55rem !important;
-        margin-bottom: 1px !important;
-        color: var(--text-secondary) !important;
-        font-weight: 500 !important;
+    /* Time limit container mobile styling - compact */
+    .quiz-editor-section .time-limit-container {
+        display: flex !important;
+        align-items: center !important;
     }
-    
-    .quiz-editor-section .question-meta .time-container input {
-        width: 70px !important;
-        max-width: 70px !important;
-        padding: 4px 6px !important;
+
+    .quiz-editor-section .time-limit-container label {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 2px !important;
+    }
+
+    .quiz-editor-section .time-limit-container label span {
+        font-size: 0.55rem !important;
+        color: var(--text-secondary) !important;
+    }
+
+    .quiz-editor-section .time-limit-container input {
+        width: 55px !important;
         height: 28px !important;
+        padding: 4px !important;
         font-size: 0.7rem !important;
         text-align: center !important;
         background: rgba(255, 255, 255, 0.06) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
         border-radius: 4px !important;
-        font-weight: 600 !important;
-        box-sizing: border-box !important;
-    }
-    
-    /* Make dropdowns full width on mobile for better visibility */
-    .quiz-editor-section .question-type,
-    .quiz-editor-section .question-difficulty {
-        width: 100% !important;
-        max-width: none !important;
-        font-size: 0.8rem !important; /* Smaller font for better text display */
-    }
-    
-    /* Time limit container mobile styling */
-    .quiz-editor-section .time-limit-container {
-        width: 100% !important;
-    }
-    
-    .quiz-editor-section .time-limit-container label {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 6px !important;
-    }
-    
-    .quiz-editor-section .time-limit-container input {
-        width: 100% !important;
-        max-width: 70px !important;
     }
     
     /* Ultra-compact question sections with better visual appeal */
@@ -708,13 +708,13 @@
     .quiz-editor-section .image-upload {
         margin-bottom: 12px !important;
     }
-    
+
     .quiz-editor-section .image-upload label {
         display: block !important;
         margin-bottom: 6px !important;
         font-weight: 500 !important;
     }
-    
+
     /* Answer options mobile layout */
     .quiz-editor-section .answer-options {
         margin-top: 12px !important;

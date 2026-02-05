@@ -2419,13 +2419,13 @@ button:disabled:focus-visible {
     border-color: currentColor;
 }
 
-/* Question meta section - horizontal layout for type, difficulty, concepts, time */
+/* Question meta section - horizontal layout for difficulty, concepts, time (3 columns) */
 .question-meta {
     display: grid;
-    grid-template-columns: 1fr 1fr minmax(180px, 1.5fr) auto;
-    gap: 16px;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
     align-items: end;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     padding: 16px;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 8px;
@@ -2468,27 +2468,27 @@ button:disabled:focus-visible {
     text-align: center;
 }
 
-/* Concept Tags Input */
+/* Concept Tags Input - Flexible layout in meta row */
 .concept-tags-container {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    min-width: 180px;
+    min-width: 0;
 }
 
 .concept-tags-container > label {
     font-size: 12px;
     color: var(--text-secondary);
-    margin-bottom: 2px;
+    margin-bottom: 0;
 }
 
 .concept-tags-input {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px;
     align-items: center;
     min-height: 36px;
-    padding: 6px 10px;
+    padding: 4px 8px;
     background: var(--glass-medium);
     border: 1px solid var(--glass-border);
     border-radius: 6px;
@@ -2554,7 +2554,6 @@ button:disabled:focus-visible {
 .concept-input {
     flex: 1;
     min-width: 80px;
-    max-width: 150px;
     padding: 2px 4px;
     border: none;
     background: transparent;
@@ -2571,6 +2570,7 @@ button:disabled:focus-visible {
     font-size: 10px;
     color: var(--text-tertiary);
     font-style: italic;
+    opacity: 0.7;
 }
 
 /* Light mode concept tag styling */
