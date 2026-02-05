@@ -69,27 +69,25 @@ export class PreviewRenderer {
         }
 
         const formattedContent = this.formatCodeBlocks(text);
+        const hasLatex = this.mathJaxService.hasLatex(formattedContent);
+
         element.innerHTML = formattedContent;
-        element.classList.remove('hidden');
+        element.style.display = 'block';
         element.style.opacity = '1';
 
         // Apply syntax highlighting for code blocks
         this.applySyntaxHighlighting(element);
 
-        const hasLatex = this.mathJaxService.hasLatex(formattedContent);
-
         if (hasLatex) {
             logger.debug('LaTeX content detected in preview');
-            element.classList.add('tex2jax_process');
 
             this.mathJaxService.render([element]).then(() => {
                 logger.debug('Preview MathJax rendering completed');
-                element.classList.add('mathjax-rendered');
             }).catch(error => {
                 logger.warn('Preview MathJax rendering failed:', error);
-                element.classList.add('mathjax-failed');
             });
         } else {
+            // No LaTeX - show content immediately with plain-text class
             element.classList.add('plain-text-rendered');
         }
     }
@@ -103,6 +101,7 @@ export class PreviewRenderer {
 
         if (imageData && imageDisplay && img) {
             imageDisplay.classList.remove('hidden');
+            imageDisplay.style.display = 'block';
             this.setupSplitImageHandlers(img, imageDisplay, imageData);
             this.setSplitImageSource(img, imageData);
         }
@@ -230,6 +229,7 @@ export class PreviewRenderer {
 
         if (imageDisplay) {
             imageDisplay.classList.add('hidden');
+            imageDisplay.style.display = 'none';
             imageDisplay.classList.remove('loading');
         }
 
@@ -256,6 +256,7 @@ export class PreviewRenderer {
             const container = dom.get(id);
             if (container) {
                 container.classList.add('hidden');
+                container.style.display = 'none';
             }
         });
     }
@@ -342,6 +343,7 @@ export class PreviewRenderer {
         const container = dom.get(containerId);
         if (container) {
             container.classList.remove('hidden');
+            container.style.display = 'block';
         }
 
         // Render based on type
@@ -591,13 +593,12 @@ export class PreviewRenderer {
      */
     renderLatexOption(optionDiv, formattedContent, container) {
         optionDiv.innerHTML = formattedContent;
-        optionDiv.classList.add('tex2jax_process');
         container.appendChild(optionDiv);
 
         // Apply syntax highlighting for code blocks
         this.applySyntaxHighlighting(optionDiv);
 
-        // Always show option content immediately
+        // Set opacity for visibility
         optionDiv.style.opacity = '1';
 
         // Use simplified MathJax service for option rendering (non-blocking)
@@ -614,6 +615,7 @@ export class PreviewRenderer {
     renderPlainOption(optionDiv, formattedContent, container) {
         optionDiv.innerHTML = formattedContent;
         this.applySyntaxHighlighting(optionDiv);
+        // Plain text - set opacity for visibility
         optionDiv.style.opacity = '1';
         container.appendChild(optionDiv);
     }

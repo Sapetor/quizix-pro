@@ -257,6 +257,7 @@ export default {
     game_complete: 'Gioco Completato',
     your_final_rank: 'La tua Classifica Finale',
     top_players: 'Migliori Giocatori',
+    your_concept_mastery: 'La tua Padronanza dei Concetti',
     live_answer_statistics: 'Statistiche Risposte Live',
     player_answers: 'Risposte dei Giocatori',
     no_answers_yet: 'Nessuna risposta ancora',
@@ -619,7 +620,7 @@ export default {
     password_placeholder: 'Inserisci la password...',
     confirm_password_placeholder: 'Conferma la password...',
     verify_to_remove_password: 'Inserisci la password attuale per rimuovere la protezione',
-    right_click_hint: 'Clic destro sugli elementi per più opzioni (rinomina, sposta, elimina)',
+    right_click_hint: 'Clic destro (o pressione lunga su mobile) per più opzioni',
 
     // Missing keys found during audit
     answer_not_submitted: 'Impossibile inviare la risposta',
@@ -674,5 +675,91 @@ export default {
     ready_to_lock: 'Pronto a bloccare',
     consensus_progress: 'Progresso del Consenso',
     threshold_needed: 'Soglia richiesta',
-    current_consensus: 'Consenso attuale'
+    current_consensus: 'Consenso attuale',
+
+    // Quiz Settings Modal
+    quiz_settings: 'Impostazioni Quiz',
+    quiz_settings_tooltip: 'Apri impostazioni quiz',
+    general_options: 'Opzioni Generali',
+    advanced_options: 'Opzioni Avanzate',
+
+    // Missing keys - Error Messages
+    api_access_forbidden: "Accesso all'API vietato. Verifica i permessi della tua chiave API.",
+    billing_issue: 'Problema di fatturazione. Verifica il saldo e il metodo di pagamento del tuo account.',
+    rate_limit_exceeded: 'Limite di richieste superato. Riprova più tardi.',
+    too_many_requests: 'Troppe richieste. Attendi {0} secondi.',
+    invalid_api_key: 'Chiave API non valida. Verifica le tue credenziali.',
+    invalid_response_structure: "Struttura della risposta dell'API non valida",
+    content_blocked_safety: 'Contenuto bloccato dai filtri di sicurezza. Prova a riformulare la tua richiesta.',
+    code_model_warning: 'I modelli di codice sono progettati per la generazione di codice, non per la creazione di quiz. Usa un modello generale.',
+    no_provider_selected: 'Nessun Fornitore IA Selezionato',
+    no_provider_selected_msg: 'Seleziona un fornitore IA prima di generare domande.',
+    no_content_provided: 'Nessun Contenuto Fornito',
+    no_content_provided_msg: 'Inserisci contenuto sorgente per generare domande.',
+    no_question_types: 'Nessun Tipo di Domanda Selezionato',
+    no_question_types_msg: 'Seleziona almeno un tipo di domanda.',
+    generation_failed: 'Generazione Fallita',
+    no_questions_generated: 'Nessuna Domanda Generata',
+    retry_attempt: 'Tentativo di ripetizione {0} di {1}...',
+    processing_batch: 'Elaborazione batch {0} di {1}...',
+    invalid_quiz_data: 'Dati quiz non validi',
+    quiz_needs_questions: 'Il quiz deve avere almeno una domanda',
+    invalid_request_data: 'Dati richiesta non validi',
+    failed_create_game: 'Impossibile creare il gioco',
+    failed_join_game: 'Impossibile unirsi al gioco',
+    failed_start_game: 'Impossibile avviare il gioco',
+    invalid_pin_format: 'Formato PIN non valido. Deve essere di 6 cifre.',
+    failed_load_results: 'Impossibile caricare i risultati del quiz',
+    no_analytics_data: 'Nessun dato di risposta dei giocatori disponibile per le analisi.',
+    analytics_generation_failed: 'Generazione analisi fallita. Controlla la console per i dettagli.',
+    select_result_download: 'Seleziona un risultato da scaricare',
+    download_failed: 'Download fallito. Riprova.',
+    results_viewer_error: 'Impossibile aprire il visualizzatore dettagliato dei risultati',
+    app_init_error: "Errore dell'Applicazione",
+    app_init_error_msg: 'Inizializzazione di Quizix Pro fallita. Aggiorna la pagina.',
+
+    // Ollama-specific
+    ollama_not_running: 'Il server Ollama non è in esecuzione. Avvia Ollama e riprova.',
+    ollama_connection_error: 'Impossibile connettersi a Ollama. Assicurati che Ollama sia in esecuzione su localhost:11434',
+    ollama_not_available: 'Ollama non disponibile',
+    ollama_loading_models: 'Caricamento modelli...',
+    ollama_no_models: 'Nessun modello trovato',
+
+    // PDF-specific
+    pdf_size_limit: 'Il file PDF supera il limite di 10MB. Usa un file più piccolo o copia il testo manualmente.',
+    pdf_parsing_unavailable: 'Il server non ha capacità di analisi PDF. Copia e incolla il contenuto testuale manualmente.',
+
+    // Accessibility labels
+    previous_slide: 'Precedente',
+    next_slide: 'Successivo',
+    go_to_slide: 'Vai alla diapositiva',
+    editing_tools: 'Strumenti di Modifica',
+    connected_players: 'Giocatori Connessi',
+    game_info_controls: 'Informazioni e Controlli del Gioco',
+    click_to_copy_pin: 'Clicca per copiare il PIN',
+    start_quiz_game: 'Avvia il gioco del quiz',
+    more_answers: 'altre risposte',
+    loading_next_question: 'Caricamento prossima domanda...',
+    question_load_error: 'Impossibile caricare la domanda',
+
+    // Concept tags
+    concepts: 'Concetti',
+    add_concept: 'Aggiungi concetto...',
+    concept_hint: 'Premi Invio per aggiungere (max 5)',
+
+    // Missing validation/status keys
+    no_questions_to_preview: 'Nessuna domanda da visualizzare',
+    scroll_to_top: 'In Alto',
+    import: 'Importa',
+    export: 'Esporta',
+    to_top: 'In Alto',
+
+    // Additional missing keys
+    ready_to_start: 'Pronto per Iniziare?',
+    game_info: 'Info Gioco',
+    to_bottom: 'In Basso',
+    status: 'Stato',
+    ping: 'Ping',
+    quality: 'Qualità',
+    results: 'Risultati'
 };

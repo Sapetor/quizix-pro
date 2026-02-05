@@ -2419,10 +2419,10 @@ button:disabled:focus-visible {
     border-color: currentColor;
 }
 
-/* Question meta section - horizontal layout for difficulty, concepts, time (3 columns) */
+/* Question meta section - horizontal layout for type, difficulty, concepts, time (4 columns) */
 .question-meta {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr 1fr minmax(180px, 1.5fr) auto;
     gap: 12px;
     align-items: end;
     margin-bottom: 16px;
@@ -4166,34 +4166,34 @@ html {
 .ordering-options {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    gap: 8px;
+    padding: 12px;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 8px;
     border: 1px solid var(--glass-border);
 }
 
 .ordering-instruction {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     font-weight: 500;
 }
 
 .ordering-items {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .ordering-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
+    gap: 8px;
+    padding: 6px 10px;
     background: var(--glass-medium);
     border: 1px solid var(--glass-border);
-    border-radius: 8px;
+    border-radius: 6px;
     transition: all 0.2s ease;
     position: relative;
 }
@@ -4218,10 +4218,10 @@ html {
 
 .ordering-handle {
     cursor: grab;
-    font-size: 18px;
+    font-size: 14px;
     color: var(--text-secondary);
     user-select: none;
-    padding: 4px 8px;
+    padding: 2px 4px;
     border-radius: 4px;
     transition: all 0.2s ease;
     flex-shrink: 0;
@@ -4239,12 +4239,12 @@ html {
 
 .ordering-option {
     flex: 1;
-    min-height: var(--button-min-height); /* Scales with font for accessibility */
-    padding: 10px 14px !important;
-    font-size: 15px !important;
+    min-height: 36px; /* Compact height for editor */
+    padding: 6px 10px !important;
+    font-size: 14px !important;
     background: var(--glass-light) !important;
     border: 1px solid var(--glass-border) !important;
-    border-radius: 6px !important;
+    border-radius: 4px !important;
     color: var(--text-primary) !important;
     transition: all 0.2s ease;
 }
@@ -4259,15 +4259,15 @@ html {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
     background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
     color: white;
     border-radius: 50%;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 700;
     flex-shrink: 0;
-    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25);
 }
 
 /* Ordering question display in game (host and player) */
@@ -4430,14 +4430,14 @@ html {
     }
     
     .ordering-handle {
-        font-size: 16px;
-        padding: 2px 6px;
+        font-size: 14px;
+        padding: 2px 4px;
     }
-    
+
     .ordering-number {
-        width: 24px;
-        height: 24px;
-        font-size: 12px;
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
     }
     
     .ordering-submit-button {

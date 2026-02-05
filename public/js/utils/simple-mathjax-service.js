@@ -112,7 +112,14 @@ export class SimpleMathJaxService {
             }
 
             if (!this.isAvailable()) {
-                logger.debug('MathJax not available, content will show without LaTeX rendering');
+                logger.debug('MathJax not available, marking elements as processed for visibility');
+                // CRITICAL: Still add MathJax_Processed to prevent FOUC hiding content forever
+                validElements.forEach(el => {
+                    el.classList.add('MathJax_Processed');
+                    el.querySelectorAll('.tex2jax_process').forEach(child => {
+                        child.classList.add('MathJax_Processed');
+                    });
+                });
                 return Promise.resolve();
             }
 
@@ -128,7 +135,13 @@ export class SimpleMathJaxService {
             });
 
             if (elementsToRender.length === 0) {
-                logger.debug('All elements already rendered, skipping MathJax');
+                logger.debug('All elements already rendered, ensuring children are marked');
+                // CRITICAL: Still mark child elements that may have been added after initial render
+                validElements.forEach(el => {
+                    el.querySelectorAll('.tex2jax_process:not(.MathJax_Processed)').forEach(child => {
+                        child.classList.add('MathJax_Processed');
+                    });
+                });
                 return Promise.resolve();
             }
 
@@ -142,6 +155,17 @@ export class SimpleMathJaxService {
             if (window.MathJax.typesetPromise) {
                 logger.debug(`Rendering MathJax for ${elementsToRender.length} elements`);
                 await window.MathJax.typesetPromise(elementsToRender);
+
+                // Mark elements as processed so CSS unhides them
+                // Also mark ALL child elements with tex2jax_process to prevent FOUC
+                elementsToRender.forEach(el => {
+                    el.classList.add('MathJax_Processed');
+                    // Find and mark all child elements with tex2jax_process
+                    el.querySelectorAll('.tex2jax_process').forEach(child => {
+                        child.classList.add('MathJax_Processed');
+                    });
+                });
+
                 logger.debug('MathJax rendering completed');
             }
 
@@ -161,9 +185,22 @@ export class SimpleMathJaxService {
      * Process queued render requests
      */
     async processQueue() {
-        if (this.pendingRenders.length === 0 || this.renderingInProgress) {
+        if (this.pendingRenders.length === 0) {
             return;
         }
+
+        // Safety: if rendering stuck for >10s, reset flag
+        if (this.renderingInProgress) {
+            if (this._renderStartTime && (Date.now() - this._renderStartTime > 10000)) {
+                logger.warn('MathJax rendering appears stuck, resetting');
+                this.renderingInProgress = false;
+            } else {
+                return;
+            }
+        }
+
+        // Track render start time
+        this._renderStartTime = Date.now();
 
         // Take all pending elements and clear the queue
         const elementsToProcess = [...this.pendingRenders];

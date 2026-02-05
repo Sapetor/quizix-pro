@@ -115,6 +115,10 @@ export class QuizGame {
         this.quizManager.setPreviewManager(this.previewManager);
         this.quizManager.setAddQuestionFunction(() => this.addQuestion());
 
+        // Wire up dependency injection for UIManager (fixes cache bug where preview doesn't initialize)
+        this.uiManager.setPreviewManager(this.previewManager);
+        this.uiManager.setSocketManager(this.socketManager);
+
         // Setup auto-save
         this.quizManager.setupAutoSave();
 

@@ -257,6 +257,7 @@ export default {
     game_complete: '游戏完成',
     your_final_rank: '您的最终排名',
     top_players: '顶级玩家',
+    your_concept_mastery: '你的概念掌握程度',
     live_answer_statistics: '实时答案统计',
     player_answers: '玩家回答',
     no_answers_yet: '暂无回答',
@@ -609,7 +610,7 @@ export default {
     password_placeholder: '输入密码...',
     confirm_password_placeholder: '确认密码...',
     verify_to_remove_password: '输入当前密码以移除保护',
-    right_click_hint: '右键点击项目以获取更多选项（重命名、移动、删除）',
+    right_click_hint: '右键点击（或在移动设备上长按）以获取更多选项',
 
     // Missing keys found during audit
     answer_not_submitted: '无法提交答案',
@@ -664,5 +665,97 @@ export default {
     ready_to_lock: '准备锁定',
     consensus_progress: '共识进度',
     threshold_needed: '所需阈值',
-    current_consensus: '当前共识'
+    current_consensus: '当前共识',
+
+    // Quiz Settings Modal
+    quiz_settings: '测验设置',
+    quiz_settings_tooltip: '打开测验设置',
+    general_options: '常规选项',
+    advanced_options: '高级选项',
+
+    // Missing keys - Error Messages
+    api_access_forbidden: 'API访问被禁止。请检查您的API密钥权限。',
+    billing_issue: '账单问题。请检查您的账户余额和付款方式。',
+    rate_limit_exceeded: '请求限制已超出。请稍后重试。',
+    too_many_requests: '请求过多。请等待{0}秒。',
+    invalid_api_key: '无效的API密钥。请检查您的凭据。',
+    invalid_response_structure: '无效的API响应结构',
+    content_blocked_safety: '内容被安全过滤器阻止。请尝试重新表述您的请求。',
+    code_model_warning: '代码模型是为代码生成设计的，而不是用于创建测验。请使用通用模型。',
+    no_provider_selected: '未选择AI提供商',
+    no_provider_selected_msg: '请在生成问题之前选择AI提供商。',
+    no_content_provided: '未提供内容',
+    no_content_provided_msg: '请输入源内容以生成问题。',
+    no_question_types: '未选择问题类型',
+    no_question_types_msg: '请至少选择一种问题类型。',
+    generation_failed: '生成失败',
+    no_questions_generated: '未生成任何问题',
+    retry_attempt: '重试尝试 {0}/{1}...',
+    processing_batch: '处理批次 {0}/{1}...',
+    invalid_quiz_data: '无效的测验数据',
+    quiz_needs_questions: '测验必须至少有一个问题',
+    invalid_request_data: '无效的请求数据',
+    failed_create_game: '创建游戏失败',
+    failed_join_game: '加入游戏失败',
+    failed_start_game: '启动游戏失败',
+    invalid_pin_format: '无效的PIN格式。必须是6位数字。',
+    failed_load_results: '加载测验结果失败',
+    no_analytics_data: '没有可用于分析的玩家响应数据。',
+    analytics_generation_failed: '生成分析失败。请查看控制台了解详情。',
+    select_result_download: '请选择要下载的结果',
+    download_failed: '下载失败。请重试。',
+    results_viewer_error: '无法打开详细结果查看器',
+    app_init_error: '应用程序错误',
+    app_init_error_msg: 'Quizix Pro初始化失败。请刷新页面。',
+
+    // Ollama-specific
+    ollama_not_running: 'Ollama服务器未运行。请启动Ollama并重试。',
+    ollama_connection_error: '无法连接到Ollama。请确保Ollama正在localhost:11434上运行',
+    ollama_not_available: 'Ollama不可用',
+    ollama_loading_models: '正在加载模型...',
+    ollama_no_models: '未找到模型',
+
+    // PDF-specific
+    pdf_size_limit: 'PDF文件超过10MB限制。请使用较小的文件或手动复制文本。',
+    pdf_parsing_unavailable: '服务器没有PDF解析功能。请手动复制粘贴文本内容。',
+
+    // Accessibility labels
+    previous_slide: '上一个',
+    next_slide: '下一个',
+    go_to_slide: '转到幻灯片',
+    editing_tools: '编辑工具',
+    connected_players: '已连接玩家',
+    game_info_controls: '游戏信息和控制',
+    click_to_copy_pin: '点击复制PIN',
+    start_quiz_game: '开始测验游戏',
+    more_answers: '更多答案',
+    loading_next_question: '加载下一个问题...',
+    question_load_error: '无法加载问题',
+
+    // Concept tags
+    concepts: '概念',
+    add_concept: '添加概念...',
+    concept_hint: '按Enter添加（最多5个）',
+
+    // Missing validation/status keys
+    no_questions_to_preview: '没有可预览的问题',
+    scroll_to_top: '回到顶部',
+    import: '导入',
+    export: '导出',
+    to_top: '回到顶部',
+    welcome_to: '欢迎来到',
+    exit_to_main: '返回主菜单',
+    status: '状态',
+    ping: '延迟',
+    quality: '质量',
+
+    // Additional missing keys
+    ready_to_start: '准备开始？',
+    game_info: '游戏信息',
+    to_bottom: '到底部',
+    adjust_font_size_tooltip: '调整字体大小',
+    question_will_appear_here: '问题将显示在这里',
+    question_alternatives: '问题选项',
+    players_have_answered: '位玩家已回答',
+    results: '结果'
 };

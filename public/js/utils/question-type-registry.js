@@ -173,29 +173,38 @@ const QUESTION_TYPES = {
          */
         renderHostOptions: (data, container, helpers) => {
             const { escapeHtmlPreservingLatex, formatCodeBlocks, translationManager } = helpers;
-            container.innerHTML = `
-                <div class="option-display" data-option="0"></div>
-                <div class="option-display" data-option="1"></div>
-                <div class="option-display" data-option="2"></div>
-                <div class="option-display" data-option="3"></div>
-            `;
+
+            // Get existing option elements (like player does) - supports both class names
+            let existingOptions = container.querySelectorAll('.option-display, .player-option');
+
+            // If no existing options, create them (fallback for dynamic contexts)
+            if (existingOptions.length === 0 && data.options) {
+                container.innerHTML = '';
+                for (let i = 0; i < Math.max(data.options.length, 4); i++) {
+                    const div = document.createElement('div');
+                    div.className = 'option-display';
+                    div.setAttribute('data-option', i.toString());
+                    container.appendChild(div);
+                }
+                existingOptions = container.querySelectorAll('.option-display');
+            }
+
             container.classList.remove('hidden');
-            const options = container.querySelectorAll('.option-display');
 
             if (data.options) {
-                data.options.forEach((option, index) => {
-                    if (options[index]) {
-                        const optionText = option != null ? option : '';
+                existingOptions.forEach((option, index) => {
+                    if (index < data.options.length) {
+                        const optionText = data.options[index] != null ? data.options[index] : '';
                         const safeOptionText = escapeHtmlPreservingLatex(optionText);
-                        options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
-                        options[index].classList.add('tex2jax_process');
-                        options[index].classList.remove('hidden');
+                        // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
+                        option.classList.add('tex2jax_process');
+                        option.classList.remove('MathJax_Processed');
+                        option.innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
+                        option.classList.remove('hidden');
+                    } else {
+                        option.classList.add('hidden');
                     }
                 });
-                // Hide unused options
-                for (let i = data.options.length; i < 4; i++) {
-                    if (options[i]) options[i].classList.add('hidden');
-                }
             }
         },
 
@@ -226,10 +235,12 @@ const QUESTION_TYPES = {
                 existingButtons.forEach((button, index) => {
                     if (index < data.options.length) {
                         const safeOption = escapeHtmlPreservingLatex(data.options[index] || '');
+                        // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
+                        button.classList.add('tex2jax_process');
+                        button.classList.remove('MathJax_Processed');
                         button.innerHTML = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${formatCodeBlocks(safeOption)}`;
                         button.setAttribute('data-answer', index.toString());
                         button.classList.remove('selected', 'disabled', 'hidden');
-                        button.classList.add('tex2jax_process');
                     } else {
                         button.classList.add('hidden');
                     }
@@ -372,28 +383,39 @@ const QUESTION_TYPES = {
 
         renderHostOptions: (data, container, helpers) => {
             const { escapeHtmlPreservingLatex, formatCodeBlocks, translationManager } = helpers;
-            container.innerHTML = `
-                <div class="option-display" data-option="0" data-multiple="true"></div>
-                <div class="option-display" data-option="1" data-multiple="true"></div>
-                <div class="option-display" data-option="2" data-multiple="true"></div>
-                <div class="option-display" data-option="3" data-multiple="true"></div>
-            `;
+
+            // Get existing option elements (like player does) - supports both class names
+            let existingOptions = container.querySelectorAll('.option-display, .player-option');
+
+            // If no existing options, create them (fallback for dynamic contexts)
+            if (existingOptions.length === 0 && data.options) {
+                container.innerHTML = '';
+                for (let i = 0; i < Math.max(data.options.length, 4); i++) {
+                    const div = document.createElement('div');
+                    div.className = 'option-display';
+                    div.setAttribute('data-option', i.toString());
+                    div.setAttribute('data-multiple', 'true');
+                    container.appendChild(div);
+                }
+                existingOptions = container.querySelectorAll('.option-display');
+            }
+
             container.classList.remove('hidden');
-            const options = container.querySelectorAll('.option-display');
 
             if (data.options) {
-                data.options.forEach((option, index) => {
-                    if (options[index]) {
-                        const optionText = option != null ? option : '';
+                existingOptions.forEach((option, index) => {
+                    if (index < data.options.length) {
+                        const optionText = data.options[index] != null ? data.options[index] : '';
                         const safeOptionText = escapeHtmlPreservingLatex(optionText);
-                        options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
-                        options[index].classList.add('tex2jax_process');
-                        options[index].classList.remove('hidden');
+                        // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
+                        option.classList.add('tex2jax_process');
+                        option.classList.remove('MathJax_Processed');
+                        option.innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
+                        option.classList.remove('hidden');
+                    } else {
+                        option.classList.add('hidden');
                     }
                 });
-                for (let i = data.options.length; i < 4; i++) {
-                    if (options[i]) options[i].classList.add('hidden');
-                }
             }
         },
 
@@ -405,6 +427,9 @@ const QUESTION_TYPES = {
                 if (data.options && data.options[index]) {
                     const safeOption = escapeHtmlPreservingLatex(data.options[index]);
                     const formattedOption = formatCodeBlocks(safeOption);
+                    // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
+                    label.classList.add('tex2jax_process');
+                    label.classList.remove('MathJax_Processed');
                     label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${translationManager.getOptionLetter(index)}: ${formattedOption}`;
                     label.setAttribute('data-option', index);
                     label.classList.remove('hidden');
@@ -719,10 +744,11 @@ const QUESTION_TYPES = {
                 const option = data.options[originalIndex];
                 const safeOption = escapeHtmlPreservingLatex(option || '');
                 const bgColor = itemColors[originalIndex % itemColors.length];
+                // FOUC Prevention: Add tex2jax_process class in HTML template
                 html += `
                     <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
                         <div class="ordering-item-number">${displayIndex + 1}</div>
-                        <div class="ordering-item-content">${formatCodeBlocks(safeOption)}</div>
+                        <div class="ordering-item-content tex2jax_process">${formatCodeBlocks(safeOption)}</div>
                     </div>
                 `;
             });
@@ -756,10 +782,11 @@ const QUESTION_TYPES = {
                 const option = data.options[originalIndex];
                 const safeOption = escapeHtmlPreservingLatex(option || '');
                 const bgColor = itemColors[originalIndex % itemColors.length];
+                // FOUC Prevention: Add tex2jax_process class in HTML template
                 html += `
                     <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
                         <div class="ordering-item-number">${displayIndex + 1}</div>
-                        <div class="ordering-item-content">${formatCodeBlocks(safeOption)}</div>
+                        <div class="ordering-item-content tex2jax_process">${formatCodeBlocks(safeOption)}</div>
                     </div>
                 `;
             });

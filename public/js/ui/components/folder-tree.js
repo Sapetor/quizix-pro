@@ -24,8 +24,39 @@ export class FolderTree {
         this.expandedFolders = new Set();
         this.selectedItem = null;
 
+        // Double-tap detection for mobile
+        this.lastTapTime = 0;
+        this.lastTapTarget = null;
+        this.doubleTapDelay = 300; // ms
+
         // Load expanded state from storage
         this.loadExpandedState();
+    }
+
+    /**
+     * Add double-tap support for mobile devices
+     * Works alongside dblclick for desktop
+     */
+    addDoubleTapHandler(element, callback) {
+        element.addEventListener('touchend', (e) => {
+            const currentTime = Date.now();
+            const tapTarget = e.currentTarget;
+
+            // Check if this is a double-tap (same target, within delay)
+            if (this.lastTapTarget === tapTarget &&
+                (currentTime - this.lastTapTime) < this.doubleTapDelay) {
+                // Double-tap detected
+                e.preventDefault();
+                callback();
+                // Reset to prevent triple-tap triggering
+                this.lastTapTime = 0;
+                this.lastTapTarget = null;
+            } else {
+                // First tap - record it
+                this.lastTapTime = currentTime;
+                this.lastTapTarget = tapTarget;
+            }
+        }, { passive: false });
     }
 
     /**
@@ -125,6 +156,7 @@ export class FolderTree {
         // Event handlers
         row.addEventListener('click', () => this.handleSelect('folder', folder.id, folder));
         row.addEventListener('dblclick', () => this.toggleFolder(folder.id));
+        this.addDoubleTapHandler(row, () => this.toggleFolder(folder.id)); // Mobile double-tap
         row.addEventListener('contextmenu', (e) => this.handleContextMenu(e, 'folder', folder.id, folder));
 
         li.appendChild(row);
@@ -208,6 +240,7 @@ export class FolderTree {
         // Event handlers
         row.addEventListener('click', () => this.handleSelect('quiz', quiz.filename, quiz));
         row.addEventListener('dblclick', () => this.options.onDoubleClick('quiz', quiz.filename, quiz));
+        this.addDoubleTapHandler(row, () => this.options.onDoubleClick('quiz', quiz.filename, quiz)); // Mobile double-tap
         row.addEventListener('contextmenu', (e) => this.handleContextMenu(e, 'quiz', quiz.filename, quiz));
 
         li.appendChild(row);

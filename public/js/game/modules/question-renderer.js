@@ -59,11 +59,12 @@ export class QuestionRenderer {
 
         logger.debug('Updating host question content');
 
+        // Add question type indicator for styling BEFORE displayQuestionText
+        // (displayQuestionText adds tex2jax_process class for FOUC prevention)
+        hostQuestionElement.className = `question-display ${data.type}-question`;
+
         // Format and display question text using display manager
         this.displayManager.displayQuestionText(hostQuestionElement, data.question);
-
-        // Add question type indicator for styling
-        hostQuestionElement.className = `question-display ${data.type}-question`;
 
         // Set data attributes for debugging and styling
         hostQuestionElement.setAttribute('data-question-type', data.type);
@@ -115,8 +116,8 @@ export class QuestionRenderer {
         // Translate any dynamic content in the options container
         translationManager.translateContainer(hostOptionsContainer);
 
-        // Use GameDisplayManager for MathJax rendering - host needs more time after F5
-        this.displayManager.renderQuestionMath(hostOptionsContainer, 350);
+        // Use GameDisplayManager for MathJax rendering (no delay - SimpleMathJaxService handles queuing)
+        this.displayManager.renderQuestionMath(hostOptionsContainer);
     }
 
 
@@ -185,6 +186,10 @@ export class QuestionRenderer {
 
         logger.debug('Updating player question content');
 
+        // Add question type indicator for styling BEFORE displayQuestionText
+        // (displayQuestionText adds tex2jax_process class for FOUC prevention)
+        questionElement.className = `question-display player-question ${data.type}-question`;
+
         // Format and display question text using display manager
         this.displayManager.displayQuestionText(questionElement, data.question);
 
@@ -195,9 +200,6 @@ export class QuestionRenderer {
             instruction.innerHTML = `<small>💡 ${translationManager.getTranslationSync('multiple_correct_instruction')}</small>`;
             questionElement.appendChild(instruction);
         }
-
-        // Add question type indicator for styling
-        questionElement.className = `question-display player-question ${data.type}-question`;
 
         // Set data attributes
         questionElement.setAttribute('data-question-type', data.type);
@@ -237,7 +239,7 @@ export class QuestionRenderer {
         }
 
         // Use GameDisplayManager for MathJax rendering after options are set up
-        this.displayManager.renderQuestionMath(optionsContainer, TIMING.RENDER_DELAY);
+        this.displayManager.renderQuestionMath(optionsContainer);
     }
 
 

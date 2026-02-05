@@ -36,6 +36,8 @@ export class GameManager {
         this.stateManager = new ModularGameStateManager();
         this.timerManager = new TimerManager();
         this.interactionManager = new PlayerInteractionManager(this.stateManager, this.displayManager, soundManager, socketManager);
+        // Setup player interaction event listeners (click handlers for answer selection)
+        this.interactionManager.setupEventListeners();
         this.questionRenderer = new QuestionRenderer(this.displayManager, this.stateManager, uiManager, this);
         this.answerRevealManager = new AnswerRevealManager(this.stateManager, this.displayManager);
         this.leaderboardManager = new LeaderboardManager(this.stateManager, uiManager, soundManager);

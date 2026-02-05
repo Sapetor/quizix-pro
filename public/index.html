@@ -1786,7 +1786,7 @@
                 <h3 id="load-quiz-modal-title" data-translate="load_saved_quiz">Load Saved Quiz</h3>
                 <!-- Folder tree view (new) - used when available -->
                 <div id="quiz-tree-container" class="quiz-tree-container"></div>
-                <p class="tree-hint" data-translate="right_click_hint">Right-click items for more options (rename, move, password, delete)</p>
+                <p class="tree-hint" data-translate="right_click_hint">Right-click (or long-press on mobile) for more options</p>
                 <!-- Flat list view (legacy fallback) -->
                 <div id="quiz-list" class="quiz-list hidden"></div>
                 <div class="modal-actions">
@@ -2176,6 +2176,37 @@
             </div>
             
             <div class="mobile-quiz-sheet-content">
+                <!-- Quiz Settings (Mobile Only) -->
+                <div class="mobile-quiz-settings-section">
+                    <div class="mobile-quiz-settings-title" data-translate="quiz_settings_title">Quiz Settings</div>
+
+                    <!-- Quiz Title -->
+                    <div class="mobile-quiz-title-row">
+                        <input type="text" id="mobile-quiz-title" placeholder="Quiz Title" class="mobile-quiz-title-input"
+                               data-translate-placeholder="quiz_title" oninput="syncMobileQuizTitle(this)">
+                    </div>
+
+                    <!-- Quick Toggles -->
+                    <div class="mobile-quiz-toggles">
+                        <label class="mobile-quiz-toggle">
+                            <input type="checkbox" id="mobile-randomize-questions" onchange="syncMobileToggle('randomize-questions', this.checked)">
+                            <span data-translate="randomize_questions_short">Randomize Questions</span>
+                        </label>
+                        <label class="mobile-quiz-toggle">
+                            <input type="checkbox" id="mobile-randomize-answers" onchange="syncMobileToggle('randomize-answers', this.checked)">
+                            <span data-translate="randomize_answers_short">Randomize Answers</span>
+                        </label>
+                        <label class="mobile-quiz-toggle">
+                            <input type="checkbox" id="mobile-manual-advancement" onchange="syncMobileToggle('manual-advancement', this.checked)">
+                            <span data-translate="manual_short">Host Control</span>
+                        </label>
+                        <label class="mobile-quiz-toggle">
+                            <input type="checkbox" id="mobile-power-ups" onchange="syncMobileToggle('enable-power-ups', this.checked)">
+                            <span data-translate="power_ups_short">Power-Ups</span>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Primary Actions -->
                 <div class="mobile-quiz-primary-actions">
                     <button class="mobile-quiz-action-btn primary" onclick="handleMobileLoadQuiz()">

@@ -53,6 +53,9 @@ function showMobileQuizSheet() {
 
     mobileQuizSheetVisible = true;
 
+    // Sync mobile settings from main editor
+    syncMobileSettingsFromMain();
+
     // Update translations for the mobile quiz sheet
     if (typeof translationManager !== 'undefined' && translationManager.updateGameTranslations) {
         // Use setTimeout to ensure DOM is fully rendered before translation updates
@@ -361,6 +364,59 @@ function initializeMobileQuizControls() {
     });
 }
 
+/**
+ * Sync mobile quiz title to main editor
+ */
+function syncMobileQuizTitle(input) {
+    const mainTitle = dom.get('quiz-title');
+    if (mainTitle) {
+        mainTitle.value = input.value;
+        // Trigger input event for any listeners
+        mainTitle.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+}
+
+/**
+ * Sync mobile toggle to main editor checkbox
+ */
+function syncMobileToggle(targetId, checked) {
+    const mainCheckbox = dom.get(targetId);
+    if (mainCheckbox) {
+        mainCheckbox.checked = checked;
+        // Trigger change event for any listeners
+        mainCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+}
+
+/**
+ * Initialize mobile settings from main editor values
+ * Called when showing the bottom sheet
+ */
+function syncMobileSettingsFromMain() {
+    // Sync title
+    const mainTitle = dom.get('quiz-title');
+    const mobileTitle = dom.get('mobile-quiz-title');
+    if (mainTitle && mobileTitle) {
+        mobileTitle.value = mainTitle.value;
+    }
+
+    // Sync checkboxes
+    const checkboxes = [
+        ['randomize-questions', 'mobile-randomize-questions'],
+        ['randomize-answers', 'mobile-randomize-answers'],
+        ['manual-advancement', 'mobile-manual-advancement'],
+        ['enable-power-ups', 'mobile-power-ups']
+    ];
+
+    checkboxes.forEach(([mainId, mobileId]) => {
+        const main = dom.get(mainId);
+        const mobile = dom.get(mobileId);
+        if (main && mobile) {
+            mobile.checked = main.checked;
+        }
+    });
+}
+
 // Make functions globally available
 window.showMobileQuizSheet = showMobileQuizSheet;
 window.hideMobileQuizSheet = hideMobileQuizSheet;
@@ -374,6 +430,9 @@ window.handleMobileImport = handleMobileImport;
 window.handleMobileExport = handleMobileExport;
 window.handleMobileResults = handleMobileResults;
 window.scrollToBottom = scrollToBottom;
+window.syncMobileQuizTitle = syncMobileQuizTitle;
+window.syncMobileToggle = syncMobileToggle;
+window.syncMobileSettingsFromMain = syncMobileSettingsFromMain;
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
@@ -395,5 +454,8 @@ export {
     handleMobileExport,
     handleMobileResults,
     scrollToBottom,
-    initializeMobileQuizControls
+    initializeMobileQuizControls,
+    syncMobileQuizTitle,
+    syncMobileToggle,
+    syncMobileSettingsFromMain
 };

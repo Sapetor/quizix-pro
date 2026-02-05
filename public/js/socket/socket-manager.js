@@ -50,6 +50,14 @@ export class SocketManager {
     }
 
     /**
+     * Clear cached DOM elements (call on screen transitions)
+     */
+    clearCache() {
+        this._cachedElements = {};
+        logger.debug('SocketManager cache cleared');
+    }
+
+    /**
      * Reset button to default styles (clear any inline overrides)
      * @param {HTMLElement} button - Button element to reset
      */

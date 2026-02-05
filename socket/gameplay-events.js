@@ -10,14 +10,22 @@ function registerGameplayEvents(io, socket, options) {
         if (!checkRateLimit(socket.id, 'submit-answer', 3, socket)) return; // Strict limit: 3 per second
         try {
             if (!data || data.answer === undefined) {
+                socket.emit('answer-error', { message: 'Invalid answer data' });
                 return;
             }
 
             const { answer, type } = data;
             const playerData = playerManagementService.getPlayer(socket.id);
-            if (!playerData) return;
+            if (!playerData) {
+                socket.emit('answer-error', { message: 'Player session not found' });
+                return;
+            }
 
             const game = gameSessionService.getGame(playerData.gamePin);
+            if (!game) {
+                socket.emit('answer-error', { message: 'Game not found' });
+                return;
+            }
 
             questionFlowService.handleAnswerSubmission(
                 socket.id,
@@ -30,6 +38,7 @@ function registerGameplayEvents(io, socket, options) {
             );
         } catch (error) {
             logger.error('Error in submit-answer handler:', error);
+            socket.emit('answer-error', { message: 'Server error processing answer' });
         }
     });
 

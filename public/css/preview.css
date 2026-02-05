@@ -704,6 +704,7 @@ pre code {
 /* =============================================================================
    HIDE PREVIEW HEADER AND NAVIGATION IN ALWAYS-PREVIEW MODE
    Preview shows only content in the simplified layout
+   Type selector is shown in the editor section instead
    ============================================================================= */
 
 @media (min-width: 769px) {
@@ -1031,11 +1032,11 @@ pre code {
     transition: all 0.3s ease;
     margin: 8px 0;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    min-height: auto; /* Let content determine height */
+    min-height: 44px; /* WCAG touch target minimum */
     width: 100%;
     max-width: 95%;
     display: flex;
-    align-items: flex-start; /* Top-align for multi-line content */
+    align-items: center; /* Center content vertically */
     justify-content: flex-start;
     text-align: left;
     line-height: 1.4;

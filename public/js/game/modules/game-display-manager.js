@@ -181,6 +181,10 @@ export class GameDisplayManager {
     displayQuestionText(element, questionText) {
         if (!element) return;
 
+        // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
+        element.classList.add('tex2jax_process');
+        element.classList.remove('MathJax_Processed');
+
         element.innerHTML = this.mathRenderer.formatCodeBlocks(questionText);
         logger.debug('Question text displayed');
 
@@ -202,9 +206,13 @@ export class GameDisplayManager {
         // Clear question text
         if (elements.hostQuestionElement) {
             elements.hostQuestionElement.innerHTML = '';
+            // Reset MathJax processing classes
+            elements.hostQuestionElement.classList.remove('tex2jax_process', 'MathJax_Processed');
         }
         if (elements.questionElement) {
             elements.questionElement.innerHTML = '';
+            // Reset MathJax processing classes
+            elements.questionElement.classList.remove('tex2jax_process', 'MathJax_Processed');
         }
 
         // Clear options container
@@ -364,9 +372,10 @@ export class GameDisplayManager {
 
         // Update question text
         if (elements.questionText) {
-            this.displayQuestionText(elements.questionText, data.question);
+            // Set className BEFORE displayQuestionText (which adds tex2jax_process for FOUC prevention)
             elements.questionText.className = `question-display player-question ${data.type}-question`;
             elements.questionText.setAttribute('data-question-type', data.type);
+            this.displayQuestionText(elements.questionText, data.question);
         }
 
         // Update question image

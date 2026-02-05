@@ -344,7 +344,7 @@
     color: white;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
-    align-items: flex-start; /* Changed from center to allow multi-line content */
+    align-items: center; /* Center single-line content, multi-line handled by word-wrap */
     justify-content: flex-start;
     min-height: 70px;
     cursor: default;
@@ -352,6 +352,17 @@
     overflow: visible; /* Changed from hidden to allow full content display */
     width: 100%;
     max-width: 100%;
+}
+
+/* FOUC Prevention for host option display - ensure LaTeX is hidden before MathJax renders */
+.option-display.tex2jax_process:not(.MathJax_Processed) {
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+.option-display.tex2jax_process.MathJax_Processed {
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 /* === COLORFUL HOST OPTIONS SYSTEM === */
@@ -1085,13 +1096,13 @@
     overflow: hidden;
 }
 
-#player-true-false .tf-option[data-answer="0"] {
+#player-true-false .tf-option[data-answer="true"] {
     background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end)) !important;
     border-color: var(--true-color-start) !important;
     box-shadow: 0 4px 20px var(--true-shadow) !important;
 }
 
-#player-true-false .tf-option[data-answer="1"] {
+#player-true-false .tf-option[data-answer="false"] {
     background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end)) !important;
     border-color: var(--false-color-start) !important;
     box-shadow: 0 4px 20px var(--false-shadow) !important;
@@ -1102,11 +1113,11 @@
     filter: brightness(1.1);
 }
 
-#player-true-false .tf-option[data-answer="0"]:hover {
+#player-true-false .tf-option[data-answer="true"]:hover {
     box-shadow: 0 8px 32px var(--true-shadow-hover) !important;
 }
 
-#player-true-false .tf-option[data-answer="1"]:hover {
+#player-true-false .tf-option[data-answer="false"]:hover {
     box-shadow: 0 8px 32px var(--false-shadow-hover) !important;
 }
 

@@ -339,3 +339,126 @@ When modifying code block styling:
 - [ ] Works in both dark and light themes
 - [ ] Font size readable on mobile (~0.68rem)
 - [ ] Long lines wrap at word boundaries when possible
+
+## UI Elements Hidden in JavaScript Templates
+
+### Problem: Element Disappears When Loading Quiz or Adding Questions
+
+**Symptoms**: A UI element (like a dropdown or button) is visible when the page first loads, but disappears when:
+- Loading an existing quiz
+- Adding a new question
+- Any action that recreates DOM elements from JavaScript templates
+
+**Root Cause**: There are TWO sources of truth for question HTML:
+1. `public/index.html` - The initial template shown on page load
+2. `public/js/utils/question-utils.js` - The template used when creating questions programmatically
+
+If these templates differ, elements may appear/disappear inconsistently.
+
+### Real Example: Question Type Selector (Feb 2026)
+
+**What happened:**
+- Question type dropdown was visible on initial page load (from `index.html`)
+- Dropdown disappeared when loading a quiz (template from `question-utils.js` had `style="display: none;"`)
+- Root cause: Commit moved type selector to preview panel, hid it in JS template, but later the preview nav bar was also hidden in always-preview mode
+
+**The hidden inline style:**
+```javascript
+// WRONG - Hidden in JS template but visible in index.html
+<select class="question-type" style="display: none;" onchange="updateQuestionType(this)">
+```
+
+### Investigation Checklist
+
+When a UI element disappears after an action:
+
+1. **Check both template sources:**
+   - `public/index.html` - Initial HTML template
+   - `public/js/utils/question-utils.js` - JavaScript template for new questions
+
+2. **Search for inline styles:**
+   ```bash
+   grep -rn "element-class.*display.*none" public/js/
+   grep -rn "element-class.*hidden" public/js/
+   grep -rn 'style="display: none"' public/js/
+   ```
+
+3. **Check CSS hiding rules:**
+   - `always-preview` mode rules in `preview.css` and `layout.css`
+   - Responsive breakpoint rules in `responsive.css`
+   - Grid column changes that exclude elements
+
+4. **Verify grid layouts match:**
+   - If element should be in a CSS Grid, ensure grid-template-columns includes it
+   - Check both desktop (components.css) and mobile (responsive.css) grids
+
+### Prevention Rules
+
+1. **Keep templates synchronized**: When changing `index.html` question structure, update `question-utils.js` to match
+2. **Never use inline `style="display: none"` for layout purposes**: Use CSS classes instead
+3. **Document intentionally hidden elements**: If hiding something for "system compatibility", add a comment explaining WHY and WHERE it's controlled from
+4. **Test quiz loading after any editor UI changes**: The initial view and post-load view must match
+
+### Files to Check for Question/Editor UI Issues
+
+| File | Contains |
+|------|----------|
+| `public/index.html` | Initial question template (lines ~880-980) |
+| `public/js/utils/question-utils.js` | JS template for new questions |
+| `public/css/components.css` | `.question-meta` grid layout |
+| `public/css/responsive.css` | Mobile `.question-meta` overrides |
+| `public/css/preview.css` | Preview panel visibility rules |
+| `public/css/layout.css` | `always-preview` mode rules |
+
+## Service Worker Cache Issues
+
+### Problem: CSS Changes Not Appearing Despite Correct Code
+
+**Symptoms**: You've verified:
+- The CSS rule exists in `responsive.css` with correct selector
+- The CSS bundle was rebuilt (`npm run build`)
+- The selector specificity is higher than competing rules
+- Browser DevTools shows the rule should match
+
+But the browser still applies the old styles.
+
+**Root Cause**: Service Worker caching. The browser's service worker (`public/sw.js`) caches CSS files aggressively. Even after rebuilding the bundle, browsers serve the cached version.
+
+### Solution: Bump CACHE_VERSION
+
+After any CSS changes:
+
+1. **Rebuild the bundle**:
+   ```bash
+   npm run build
+   ```
+
+2. **Update service worker cache version** in `public/sw.js`:
+   ```javascript
+   // Change this to force cache invalidation
+   const CACHE_VERSION = 'v20260205-your-change-description';
+   ```
+
+3. **Hard refresh** the browser (Ctrl+Shift+R) or test in incognito
+
+### Debugging Checklist
+
+When CSS changes don't apply:
+
+1. [ ] Bundle rebuilt? (`npm run build`)
+2. [ ] Cache version bumped? (check `public/sw.js` line 13)
+3. [ ] Browser showing new version? (check footer version string)
+4. [ ] Tried hard refresh? (Ctrl+Shift+R)
+5. [ ] Tried incognito window?
+
+### Real Example: Question Header flex-direction (Feb 2026)
+
+**What happened:**
+- Added `.quiz-editor-section .question-header { flex-direction: row !important; }` to responsive.css
+- Rule existed in bundle, selector matched, specificity was correct
+- But browser kept showing `flex-direction: column`
+- Padding from the same rule WAS being applied (partial cache issue)
+
+**Fix:** Updated `CACHE_VERSION` from `v20260204-type-selector-fix` to `v20260205-question-header-fix`
+
+**Key insight:** Service worker cache can cause partial application of CSS rules - some properties update while others don't. Always bump the version after CSS changes.

@@ -563,29 +563,41 @@
         flex-wrap: wrap !important;
     }
     
-    /* Clean mobile question meta layout - Difficulty, Concepts, Time */
+    /* Clean mobile question meta layout - Type, Difficulty, Concepts, Time */
     .quiz-editor-section .question-meta {
         display: grid !important;
-        grid-template-columns: auto 1fr auto !important;
-        gap: 8px !important;
-        margin-bottom: 8px !important;
-        padding: 8px !important;
+        grid-template-columns: auto auto 1fr auto !important;
+        gap: 4px !important;
+        margin-bottom: 4px !important;
+        padding: 4px 6px !important;
         background: rgba(255, 255, 255, 0.04) !important;
-        border-radius: 6px !important;
+        border-radius: 4px !important;
         border: 1px solid rgba(255, 255, 255, 0.12) !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
     }
 
-    /* Question difficulty selector - Compact on mobile */
-    .quiz-editor-section .question-meta .question-difficulty {
-        font-size: 0.7rem !important;
-        padding: 4px 6px !important;
-        height: 32px !important;
+    /* Question type selector - Ultra compact on mobile */
+    .quiz-editor-section .question-meta .question-type {
+        display: block !important;
+        font-size: 0.65rem !important;
+        padding: 2px 4px !important;
+        height: 24px !important;
         background: rgba(255, 255, 255, 0.06) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 6px !important;
-        min-width: 60px !important;
+        border-radius: 4px !important;
+        min-width: 50px !important;
+    }
+
+    /* Question difficulty selector - Ultra compact on mobile */
+    .quiz-editor-section .question-meta .question-difficulty {
+        font-size: 0.65rem !important;
+        padding: 2px 4px !important;
+        height: 24px !important;
+        background: rgba(255, 255, 255, 0.06) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 4px !important;
+        min-width: 50px !important;
     }
 
     /* Concept tags container - Mobile compact */
@@ -598,13 +610,13 @@
     }
 
     .quiz-editor-section .question-meta .concept-tags-input {
-        min-height: 32px !important;
-        padding: 4px 6px !important;
+        min-height: 24px !important;
+        padding: 2px 4px !important;
     }
 
     .quiz-editor-section .question-meta .concept-input {
-        font-size: 0.7rem !important;
-        min-width: 60px !important;
+        font-size: 0.65rem !important;
+        min-width: 40px !important;
     }
 
     .quiz-editor-section .question-meta .concept-hint {
@@ -616,13 +628,25 @@
         padding: 2px 5px !important;
     }
     
-    /* Time container - Very compact */
+    /* Time container - Ultra compact */
     .quiz-editor-section .question-meta .time-container {
         display: flex !important;
-        flex-direction: column !important;
+        flex-direction: row !important;
         justify-content: center !important;
         align-items: center !important;
-        gap: 1px !important;
+        gap: 2px !important;
+    }
+
+    .quiz-editor-section .question-meta .time-container input {
+        width: 36px !important;
+        height: 24px !important;
+        font-size: 0.65rem !important;
+        padding: 2px !important;
+        text-align: center !important;
+    }
+
+    .quiz-editor-section .question-meta .time-container label {
+        font-size: 0.6rem !important;
     }
     
     /* Light mode question meta */
@@ -936,21 +960,21 @@
         margin-bottom: 16px !important;
     }
     
-    /* Mobile Question Navigation Header */
+    /* Mobile Question Navigation Header - Ultra compact */
     .mobile-question-nav {
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
-        padding: 8px 12px !important;
+        padding: 4px 8px !important;
         background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.08)) !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
     }
     
-    /* Mobile Add Question Button */
+    /* Mobile Add Question Button - Compact */
     .mobile-add-question-btn {
-        width: 36px !important;
-        height: 32px !important;
-        border-radius: 8px !important;
+        width: 28px !important;
+        height: 24px !important;
+        border-radius: 4px !important;
         border: 1px solid rgba(59, 130, 246, 0.4) !important;
         background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) !important;
         color: white !important;
@@ -958,9 +982,9 @@
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 1.2rem !important;
+        font-size: 0.9rem !important;
         transition: all 0.2s ease !important;
-        margin-right: 8px !important;
+        margin-right: 4px !important;
     }
     
     .mobile-add-question-btn:hover {
@@ -974,7 +998,7 @@
         text-align: center !important;
         color: var(--text-primary) !important;
         font-weight: 600 !important;
-        font-size: 0.95rem !important;
+        font-size: 0.8rem !important;
         margin: 0 !important;
     }
     
@@ -1071,13 +1095,13 @@
         transform: scale(1.2) !important;
     }
     
-    /* Mobile - Always show carousel, hide original questions container */
+    /* Mobile - Show questions container (carousel removed for simplicity) */
     #questions-container {
-        display: none !important;
-    }
-    
-    .mobile-carousel-container {
         display: block !important;
+    }
+
+    .mobile-carousel-container {
+        display: none !important;
     }
     
     /* Mobile question navigation bar */
@@ -3298,4 +3322,203 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         transition: var(--theme-transition-fast);
     }
+}
+
+/* ============================================
+   MOBILE QUIZ SETTINGS IN BOTTOM SHEET
+   ============================================ */
+
+/* Hide quiz config section on mobile - now in bottom sheet */
+@media (max-width: 768px) {
+    .quiz-editor-section .quiz-builder > #quiz-title,
+    .quiz-editor-section .quiz-settings {
+        display: none !important;
+    }
+
+    /* Compact question header on mobile EDITOR (not game) */
+    .quiz-editor-section .question-header {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        padding: 4px 8px !important;
+        margin: -8px -8px 4px -8px !important;
+        gap: 6px !important;
+        min-height: auto !important;
+    }
+
+    .quiz-editor-section .question-header h3 {
+        font-size: 0.75rem !important;
+        flex: 1 !important;
+        margin: 0 !important;
+    }
+
+    .quiz-editor-section .question-header .collapse-indicator {
+        font-size: 8px !important;
+    }
+
+    .quiz-editor-section .question-header-actions {
+        display: flex !important;
+        gap: 4px !important;
+    }
+
+    .quiz-editor-section .question-header-actions .btn-icon {
+        width: 20px !important;
+        height: 20px !important;
+        font-size: 0.7rem !important;
+        padding: 0 !important;
+    }
+
+    .quiz-editor-section .collapsed-type-badge,
+    .quiz-editor-section .collapsed-difficulty-badge {
+        font-size: 0.55rem !important;
+        padding: 1px 3px !important;
+    }
+
+    /* Hide question count banner on mobile - takes too much space */
+    .editor-question-count {
+        display: none !important;
+    }
+
+    /* Keep h2 title visible but compact */
+    .quiz-editor-section > h2 {
+        font-size: 1rem !important;
+        margin-bottom: 8px !important;
+    }
+
+    /* Show question pagination on mobile (override desktop-only) */
+    .quiz-editor-section .question-pagination.desktop-only {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 8px !important;
+        padding: 6px 12px !important;
+        margin-bottom: 8px !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 8px !important;
+    }
+
+    /* Compact pagination buttons */
+    .quiz-editor-section .question-pagination .pagination-btn {
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        font-size: 1rem !important;
+        min-width: 32px !important;
+    }
+
+    /* Compact question indicator - just "1/5" style */
+    .quiz-editor-section .question-pagination .question-indicator {
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
+    }
+
+    /* Hide verbose text, show compact format */
+    .quiz-editor-section .question-pagination .question-indicator [data-translate="question"],
+    .quiz-editor-section .question-pagination .question-indicator [data-translate="of"] {
+        display: none !important;
+    }
+
+    /* Style the numbers as "X / Y" */
+    .quiz-editor-section .question-pagination #current-question-num::after {
+        content: " / " !important;
+    }
+
+    /* Hide "Question X" from question header since it's now in pagination */
+    .quiz-editor-section .question-header h3 {
+        display: none !important;
+    }
+
+    /* Make collapse indicator clickable for the whole header */
+    .quiz-editor-section .question-header .collapse-indicator {
+        font-size: 12px !important;
+    }
+}
+
+/* Mobile Quiz Settings in Bottom Sheet */
+.mobile-quiz-settings-section {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 12px;
+}
+
+.mobile-quiz-settings-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.mobile-quiz-title-row {
+    margin-bottom: 12px;
+}
+
+.mobile-quiz-title-input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+}
+
+.mobile-quiz-title-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.mobile-quiz-toggles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.mobile-quiz-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+}
+
+.mobile-quiz-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+    margin: 0 !important;
+    accent-color: #6366f1;
+}
+
+.mobile-quiz-toggle:active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Light mode adjustments for mobile quiz settings */
+[data-theme="light"] .mobile-quiz-settings-section {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .mobile-quiz-settings-title {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .mobile-quiz-title-input {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #1e293b;
+}
+
+[data-theme="light"] .mobile-quiz-title-input::placeholder {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .mobile-quiz-toggle {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1e293b;
 }

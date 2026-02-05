@@ -23,6 +23,17 @@ export class UIManager {
         this._quizManager = null;
         this._joinGameFn = null;
         this._joinGameByPinFn = null;
+
+        // SocketManager reference for cache clearing
+        this._socketManager = null;
+    }
+
+    /**
+     * Set SocketManager reference for cache clearing on screen transitions
+     * @param {SocketManager} sm - SocketManager instance
+     */
+    setSocketManager(sm) {
+        this._socketManager = sm;
     }
 
     // Dependency injection setters
@@ -51,6 +62,14 @@ export class UIManager {
 
     showScreen(screenId) {
         logger.debug('Switching to screen:', screenId);
+
+        // Clear DOM caches on screen transition to prevent stale references
+        dom.clearCache();
+
+        // Clear SocketManager cache if available
+        if (this._socketManager && typeof this._socketManager.clearCache === 'function') {
+            this._socketManager.clearCache();
+        }
 
         const targetScreen = dom.get(screenId);
         if (!targetScreen) {
@@ -132,6 +151,7 @@ export class UIManager {
                         header.style.zIndex = '';
                         header.style.transition = '';
                     }
+                    // Create Lobby button is only shown in editor (host-screen), not main menu
                     // Force retranslation of main menu to ensure Quick Start Guide is translated
                     setTimeout(() => {
                         const mainMenuScreen = dom.get('main-menu');

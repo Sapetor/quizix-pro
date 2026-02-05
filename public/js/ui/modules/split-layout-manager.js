@@ -58,7 +58,11 @@ export class SplitLayoutManager {
             logger.debug('Mobile viewport detected, skipping resize handle initialization');
         }
 
-        this.setDefaultSplitRatio();
+        // Load saved ratio first, fall back to default only if none exists
+        // This prevents visual "jump" when loading a quiz
+        if (!this.loadSavedSplitRatio()) {
+            this.setDefaultSplitRatio();
+        }
         this.loadSavedFontSize();
         this.initializeResizeListener();
     }
@@ -252,9 +256,6 @@ export class SplitLayoutManager {
 
         // Mark as initialized for viewport resize tracking
         this.dragFunctionalityInitialized = true;
-
-        // Load saved ratio from localStorage
-        this.loadSavedSplitRatio();
     }
 
     /**
@@ -269,6 +270,7 @@ export class SplitLayoutManager {
 
     /**
      * Load saved split ratio from localStorage
+     * @returns {boolean} True if a valid saved ratio was loaded, false otherwise
      */
     loadSavedSplitRatio() {
         const savedRatio = getItem('splitRatio');
@@ -281,9 +283,11 @@ export class SplitLayoutManager {
                     hostContainer.style.setProperty('--split-right', `${100 - ratio}fr`);
                     this.updateDragHandlePosition(ratio);
                     logger.debug('Loaded saved split ratio', { ratio });
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     /**

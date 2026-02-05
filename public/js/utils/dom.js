@@ -15,11 +15,23 @@ export class DOMManager {
 
     /**
      * Get element by ID with caching
+     * @param {string} id - Element ID
+     * @param {boolean} validateInDOM - If true, validates cached element is still in DOM
+     * @returns {HTMLElement|null}
      */
-    get(id) {
-        // Fast path: return cached element without expensive DOM validation
+    get(id, validateInDOM = false) {
         if (this.elementCache.has(id)) {
-            return this.elementCache.get(id);
+            const cached = this.elementCache.get(id);
+            // Fast path: skip validation unless explicitly requested
+            if (!validateInDOM) {
+                return cached;
+            }
+            // Validate element is still in DOM
+            if (document.contains(cached)) {
+                return cached;
+            }
+            // Invalidate stale entry
+            this.elementCache.delete(id);
         }
 
         const element = document.getElementById(id);

@@ -26,14 +26,18 @@ export class PlayerInteractionManager {
         this._handleMultipleChoiceClick = this._handleMultipleChoiceClick.bind(this);
         this._handleTrueFalseClick = this._handleTrueFalseClick.bind(this);
         this._handleNumericKeypress = this._handleNumericKeypress.bind(this);
+
+        // Track timeout IDs for cleanup
+        this._errorTimeoutId = null;
     }
 
     /**
      * Handler for multiple choice option clicks (bound for cleanup)
      */
     _handleMultipleChoiceClick(event) {
-        if (event.target.classList.contains('player-option')) {
-            const answer = parseInt(event.target.dataset.answer);
+        const button = event.target.closest('.player-option');
+        if (button) {
+            const answer = parseInt(button.dataset.answer);
             if (!isNaN(answer)) {
                 this.selectAnswer(answer);
             }
@@ -44,8 +48,9 @@ export class PlayerInteractionManager {
      * Handler for true/false option clicks (bound for cleanup)
      */
     _handleTrueFalseClick(event) {
-        if (event.target.classList.contains('tf-option')) {
-            const answer = event.target.dataset.answer === 'true';
+        const button = event.target.closest('.tf-option');
+        if (button) {
+            const answer = button.dataset.answer === 'true';
             this.selectAnswer(answer);
         }
     }
@@ -265,6 +270,12 @@ export class PlayerInteractionManager {
     showError(message) {
         logger.error('Player interaction error:', message);
 
+        // Clear any existing error timeout
+        if (this._errorTimeoutId) {
+            clearTimeout(this._errorTimeoutId);
+            this._errorTimeoutId = null;
+        }
+
         // Create error element
         const errorElement = document.createElement('div');
         errorElement.className = 'player-error-message';
@@ -292,12 +303,29 @@ export class PlayerInteractionManager {
 
         document.body.appendChild(errorElement);
 
-        // Remove after delay
-        setTimeout(() => {
-            if (errorElement.parentNode) {
-                errorElement.parentNode.removeChild(errorElement);
+        // Remove after delay (tracked for cleanup)
+        this._errorTimeoutId = setTimeout(() => {
+            this._errorTimeoutId = null;
+            if (document.body.contains(errorElement)) {
+                errorElement.remove();
             }
         }, 3000);
+    }
+
+    /**
+     * Cleanup resources
+     */
+    cleanup() {
+        // Clear error timeout
+        if (this._errorTimeoutId) {
+            clearTimeout(this._errorTimeoutId);
+            this._errorTimeoutId = null;
+        }
+
+        // Remove event listeners
+        this.removeEventListeners();
+
+        logger.debug('PlayerInteractionManager cleanup completed');
     }
 
     /**

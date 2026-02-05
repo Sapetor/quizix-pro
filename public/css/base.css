@@ -158,20 +158,16 @@ body:not(.loaded) * {
     font-display: swap; /* Use fallback immediately, swap when Inter loads */
 }
 
-/* LaTeX rendering - Simple approach to prevent flashing */
-/* Hide LaTeX content until MathJax processes it */
-.tex2jax_process:not(.MathJax_Processed) {
-    visibility: hidden;
+/* LaTeX rendering - FOUC Prevention with instant hide, smooth reveal */
+/* Content starts invisible immediately, then fades in after MathJax processes */
+.tex2jax_process {
+    opacity: 0 !important;
+    transition: none !important;  /* INSTANT hide to prevent FOUC */
 }
 
-/* Simple fade-in for processed MathJax */
-.MathJax_Processed {
-    animation: mathFadeIn 0.2s ease-in;
-}
-
-@keyframes mathFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+.tex2jax_process.MathJax_Processed {
+    opacity: 1 !important;
+    transition: opacity 0.15s ease-in;  /* Only animate the reveal */
 }
 
 /* Background Gradient Effects - Theme Aware */

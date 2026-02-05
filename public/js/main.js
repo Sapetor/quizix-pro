@@ -128,6 +128,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         logger.debug(`🟠 [${appCreatedTimestamp}] QuizGame instance created successfully`);
         logger.debug('QuizGame instance created successfully');
 
+        // Ensure UI state is synced on page load (fixes cache bug after F5)
+        // This shows the Create Lobby button on main-menu and prepares UI state
+        window.game.uiManager.showScreen('main-menu');
+
         // Check for QR code URL parameters and auto-fill PIN
         const urlParams = new URLSearchParams(window.location.search);
         const pinFromURL = urlParams.get('pin');

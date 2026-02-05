@@ -168,6 +168,10 @@ element.style.display = 'block';  // Don't do this
 6. **Translation keys** - validate across all 9 languages (EN, ES, FR, DE, IT, PT, PL, JA, ZH)
 7. **Test at 150%+ zoom** - buttons and layouts must work
 8. **Adding question types** requires 40+ code locations - see `docs/ADD-QUESTION-TYPE.md`
+9. **PlayerInteractionManager.setupEventListeners()** MUST be called in GameManager constructor - without this, players cannot click answer buttons
+10. **Service Worker Cache** - bump `CACHE_VERSION` in `public/sw.js` when deploying JS changes, otherwise browsers serve stale cached files
+11. **Click handlers on buttons with child elements** - use `event.target.closest('.class')` not `event.target.classList.contains('.class')` (clicks on child spans won't match the parent class)
+12. **Question templates exist in TWO places** - `index.html` (initial) and `question-utils.js` (programmatic). Both must stay synchronized. If UI changes on quiz load, check the JS template for differences (see `public/css/CLAUDE.md` for details)
 
 ---
 

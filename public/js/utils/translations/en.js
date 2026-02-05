@@ -705,7 +705,7 @@ export default {
     password_placeholder: 'Enter password...',
     confirm_password_placeholder: 'Confirm password...',
     verify_to_remove_password: 'Enter current password to remove protection',
-    right_click_hint: 'Right-click items for more options (rename, move, delete)',
+    right_click_hint: 'Right-click (or long-press on mobile) for more options',
 
     // Quiz Settings Modal
     quiz_settings: 'Quiz Settings',

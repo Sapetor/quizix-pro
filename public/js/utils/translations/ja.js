@@ -262,6 +262,7 @@ export default {
     game_complete: 'ゲーム完了',
     your_final_rank: 'あなたの最終順位',
     top_players: '上位プレイヤー',
+    your_concept_mastery: 'コンセプトの習得度',
     live_answer_statistics: 'ライブ回答統計',
     player_answers: 'プレイヤーの回答',
     no_answers_yet: 'まだ回答がありません',
@@ -610,7 +611,7 @@ export default {
     password_placeholder: 'パスワードを入力...',
     confirm_password_placeholder: 'パスワードを確認...',
     verify_to_remove_password: '保護を解除するには現在のパスワードを入力してください',
-    right_click_hint: '右クリックでオプションを表示（名前変更、移動、削除）',
+    right_click_hint: '右クリック（モバイルでは長押し）でオプションを表示',
 
     // Missing keys found during audit
     answer_not_submitted: '回答を送信できませんでした',
@@ -665,5 +666,94 @@ export default {
     ready_to_lock: 'ロックする準備ができました',
     consensus_progress: 'コンセンサス進捗',
     threshold_needed: '必要な閾値',
-    current_consensus: '現在のコンセンサス'
+    current_consensus: '現在のコンセンサス',
+
+    // Quiz Settings Modal
+    quiz_settings: 'クイズ設定',
+    quiz_settings_tooltip: 'クイズ設定を開く',
+    general_options: '一般オプション',
+    advanced_options: '詳細オプション',
+
+    // Missing keys - Error Messages
+    api_access_forbidden: 'APIアクセスが禁止されています。APIキーの権限を確認してください。',
+    billing_issue: '請求に問題があります。アカウントの残高と支払い方法を確認してください。',
+    rate_limit_exceeded: 'リクエスト制限を超えました。後でもう一度お試しください。',
+    too_many_requests: 'リクエストが多すぎます。{0}秒お待ちください。',
+    invalid_api_key: '無効なAPIキーです。資格情報を確認してください。',
+    invalid_response_structure: '無効なAPIレスポンス構造',
+    content_blocked_safety: 'コンテンツがセーフティフィルターによりブロックされました。プロンプトを言い換えてみてください。',
+    code_model_warning: 'コードモデルはコード生成用であり、クイズ作成用ではありません。一般モデルを使用してください。',
+    no_provider_selected: 'AIプロバイダーが選択されていません',
+    no_provider_selected_msg: '質問を生成する前にAIプロバイダーを選択してください。',
+    no_content_provided: 'コンテンツが提供されていません',
+    no_content_provided_msg: '質問を生成するためのソースコンテンツを入力してください。',
+    no_question_types: '質問タイプが選択されていません',
+    no_question_types_msg: '少なくとも1つの質問タイプを選択してください。',
+    generation_failed: '生成に失敗しました',
+    no_questions_generated: '質問が生成されませんでした',
+    retry_attempt: '再試行 {0}/{1}...',
+    processing_batch: 'バッチ {0}/{1} を処理中...',
+    invalid_quiz_data: '無効なクイズデータ',
+    quiz_needs_questions: 'クイズには少なくとも1つの質問が必要です',
+    invalid_request_data: '無効なリクエストデータ',
+    failed_create_game: 'ゲームの作成に失敗しました',
+    failed_join_game: 'ゲームへの参加に失敗しました',
+    failed_start_game: 'ゲームの開始に失敗しました',
+    invalid_pin_format: '無効なPIN形式です。6桁である必要があります。',
+    failed_load_results: 'クイズ結果の読み込みに失敗しました',
+    no_analytics_data: '分析用のプレイヤー回答データがありません。',
+    analytics_generation_failed: '分析の生成に失敗しました。詳細はコンソールを確認してください。',
+    select_result_download: 'ダウンロードする結果を選択してください',
+    download_failed: 'ダウンロードに失敗しました。再試行してください。',
+    results_viewer_error: '詳細結果ビューアを開けませんでした',
+    app_init_error: 'アプリケーションエラー',
+    app_init_error_msg: 'Quizix Proの初期化に失敗しました。ページを更新してください。',
+
+    // Ollama-specific
+    ollama_not_running: 'Ollamaサーバーが実行されていません。Ollamaを起動して再試行してください。',
+    ollama_connection_error: 'Ollamaに接続できません。Ollamaがlocalhost:11434で実行されていることを確認してください',
+    ollama_not_available: 'Ollamaは利用できません',
+    ollama_loading_models: 'モデルを読み込み中...',
+    ollama_no_models: 'モデルが見つかりません',
+
+    // PDF-specific
+    pdf_size_limit: 'PDFファイルが10MB制限を超えています。小さいファイルを使用するか、テキストを手動でコピーしてください。',
+    pdf_parsing_unavailable: 'サーバーにはPDF解析機能がありません。テキスト内容を手動でコピー＆ペーストしてください。',
+
+    // Accessibility labels
+    previous_slide: '前へ',
+    next_slide: '次へ',
+    go_to_slide: 'スライドに移動',
+    editing_tools: '編集ツール',
+    connected_players: '接続済みプレイヤー',
+    game_info_controls: 'ゲーム情報とコントロール',
+    click_to_copy_pin: 'クリックしてPINをコピー',
+    start_quiz_game: 'クイズゲームを開始',
+    more_answers: 'その他の回答',
+    loading_next_question: '次の質問を読み込み中...',
+    question_load_error: '質問を読み込めません',
+
+    // Concept tags
+    concepts: 'コンセプト',
+    add_concept: 'コンセプトを追加...',
+    concept_hint: 'Enterキーで追加（最大5つ）',
+
+    // Missing validation/status keys
+    no_questions_to_preview: 'プレビューする質問がありません',
+    scroll_to_top: 'トップへ',
+    import: 'インポート',
+    export: 'エクスポート',
+    to_top: 'トップへ',
+    welcome_to: 'ようこそ',
+    exit_to_main: 'メインメニューに戻る',
+
+    // Additional missing keys
+    ready_to_start: '開始準備完了？',
+    game_info: 'ゲーム情報',
+    to_bottom: '下へ',
+    adjust_font_size_tooltip: 'フォントサイズを調整',
+    question_will_appear_here: '質問がここに表示されます',
+    question_alternatives: '質問の選択肢',
+    players_have_answered: '人が回答済み',
+    results: '結果'
 };
