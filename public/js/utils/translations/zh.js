@@ -485,6 +485,11 @@ export default {
 
     // Mobile tools menu keys
     quiz_actions: '测验操作',
+    quiz_settings_title: '测验设置',
+    randomize_questions_short: '随机问题',
+    randomize_answers_short: '随机答案',
+    manual_short: '主持人控制',
+    power_ups_short: '增益道具',
     open_saved_quiz: '打开已保存的测验',
     begin_hosting: '开始主持',
     save_progress: '保存进度',

@@ -72,8 +72,7 @@ export class PreviewRenderer {
         const hasLatex = this.mathJaxService.hasLatex(formattedContent);
 
         element.innerHTML = formattedContent;
-        element.style.display = 'block';
-        element.style.opacity = '1';
+        element.classList.remove('hidden');
 
         // Apply syntax highlighting for code blocks
         this.applySyntaxHighlighting(element);
@@ -101,7 +100,6 @@ export class PreviewRenderer {
 
         if (imageData && imageDisplay && img) {
             imageDisplay.classList.remove('hidden');
-            imageDisplay.style.display = 'block';
             this.setupSplitImageHandlers(img, imageDisplay, imageData);
             this.setSplitImageSource(img, imageData);
         }
@@ -229,7 +227,6 @@ export class PreviewRenderer {
 
         if (imageDisplay) {
             imageDisplay.classList.add('hidden');
-            imageDisplay.style.display = 'none';
             imageDisplay.classList.remove('loading');
         }
 
@@ -256,7 +253,6 @@ export class PreviewRenderer {
             const container = dom.get(id);
             if (container) {
                 container.classList.add('hidden');
-                container.style.display = 'none';
             }
         });
     }
@@ -343,7 +339,6 @@ export class PreviewRenderer {
         const container = dom.get(containerId);
         if (container) {
             container.classList.remove('hidden');
-            container.style.display = 'block';
         }
 
         // Render based on type

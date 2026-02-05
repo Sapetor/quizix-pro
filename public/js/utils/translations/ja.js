@@ -486,6 +486,11 @@ export default {
 
     // Mobile tools menu keys
     quiz_actions: 'クイズアクション',
+    quiz_settings_title: 'クイズ設定',
+    randomize_questions_short: '問題をランダム',
+    randomize_answers_short: '回答をランダム',
+    manual_short: 'ホスト操作',
+    power_ups_short: 'パワーアップ',
     open_saved_quiz: '保存されたクイズを開く',
     begin_hosting: 'ホストを開始',
     save_progress: '進捗を保存',

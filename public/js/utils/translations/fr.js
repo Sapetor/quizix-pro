@@ -514,6 +514,11 @@ export default {
 
     // Mobile tools menu keys
     quiz_actions: 'Actions du Quiz',
+    quiz_settings_title: 'Paramètres du Quiz',
+    randomize_questions_short: 'Mélanger les Questions',
+    randomize_answers_short: 'Mélanger les Réponses',
+    manual_short: 'Contrôle de l\'Hôte',
+    power_ups_short: 'Power-Ups',
     open_saved_quiz: 'Ouvrir un quiz sauvegardé',
     begin_hosting: "Commencer l'hébergement",
     save_progress: 'Sauvegarder les progrès',

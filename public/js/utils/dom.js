@@ -329,10 +329,9 @@ export function escapeHtmlPreservingLatex(text) {
     if (!text) return '';
     // Escape HTML entities but keep $ and \ for LaTeX
     const escaped = escapeHtml(text);
-    // Restore LaTeX delimiters that were escaped
+    // Restore only backslash escapes needed for LaTeX (not angle brackets)
+    // Do NOT restore < and > as that re-opens XSS vectors
     return escaped
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
         .replace(/\\(.)/g, '\\$1'); // Preserve backslash escapes for LaTeX
 }
 

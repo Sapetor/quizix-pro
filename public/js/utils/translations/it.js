@@ -495,6 +495,11 @@ export default {
 
     // Mobile tools menu keys
     quiz_actions: 'Azioni Quiz',
+    quiz_settings_title: 'Impostazioni Quiz',
+    randomize_questions_short: 'Domande Casuali',
+    randomize_answers_short: 'Risposte Casuali',
+    manual_short: 'Controllo Host',
+    power_ups_short: 'Power-Ups',
     open_saved_quiz: 'Apri quiz salvato',
     begin_hosting: 'Inizia hosting',
     save_progress: 'Salva progresso',
