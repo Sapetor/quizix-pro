@@ -127,6 +127,27 @@ function clearButtonStates() {
 }
 
 /**
+ * Handle mobile add question action
+ */
+function handleMobileAddQuestion() {
+    clearButtonStates();
+    hideMobileQuizSheet();
+
+    // Small delay to ensure sheet is hidden before adding question
+    setTimeout(() => {
+        // Use existing add question functionality
+        const addBtn = document.getElementById('toolbar-add-question');
+        if (addBtn) {
+            addBtn.click();
+        } else if (typeof addQuestion === 'function') {
+            addQuestion();
+        } else {
+            logger.warn('Add question functionality not available');
+        }
+    }, 100);
+}
+
+/**
  * Handle mobile load quiz action
  */
 function handleMobileLoadQuiz() {
@@ -421,6 +442,7 @@ function syncMobileSettingsFromMain() {
 window.showMobileQuizSheet = showMobileQuizSheet;
 window.hideMobileQuizSheet = hideMobileQuizSheet;
 window.toggleMobileQuizSheet = toggleMobileQuizSheet;
+window.handleMobileAddQuestion = handleMobileAddQuestion;
 window.handleMobileLoadQuiz = handleMobileLoadQuiz;
 window.handleMobileSaveQuiz = handleMobileSaveQuiz;
 window.handleMobileStartGame = handleMobileStartGame;
@@ -445,6 +467,7 @@ export {
     showMobileQuizSheet,
     hideMobileQuizSheet,
     toggleMobileQuizSheet,
+    handleMobileAddQuestion,
     handleMobileLoadQuiz,
     handleMobileSaveQuiz,
     handleMobileStartGame,

@@ -30,11 +30,11 @@ export class QuestionUtils {
             <div class="question-body">
             <div class="question-meta">
                 <select class="question-type" onchange="updateQuestionType(this)">
-                    <option value="multiple-choice">Multiple Choice</option>
-                    <option value="multiple-correct">Multiple Correct Answers</option>
-                    <option value="true-false">True/False</option>
-                    <option value="numeric">Numeric Answer</option>
-                    <option value="ordering">Ordering</option>
+                    <option value="multiple-choice" data-translate="multiple_choice">Multiple Choice</option>
+                    <option value="multiple-correct" data-translate="multiple_correct">Multiple Correct Answers</option>
+                    <option value="true-false" data-translate="true_false">True/False</option>
+                    <option value="numeric" data-translate="numeric_answer">Numeric Answer</option>
+                    <option value="ordering" data-translate="ordering">Ordering</option>
                 </select>
 
                 <select class="question-difficulty">
@@ -249,8 +249,8 @@ export function addQuestion() {
     });
     document.dispatchEvent(event);
 
-    // Navigate to the new question (desktop only)
-    if (window.innerWidth >= 769 && window.navigateToNewQuestion) {
+    // Navigate to the new question
+    if (window.navigateToNewQuestion) {
         window.navigateToNewQuestion();
     }
 
