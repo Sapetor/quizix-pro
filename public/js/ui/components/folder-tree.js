@@ -36,6 +36,9 @@ export class FolderTree {
     /**
      * Add double-tap support for mobile devices
      * Works alongside dblclick for desktop
+     * @param {HTMLElement} element - The element to attach handler to
+     * @param {string} tapId - Unique string identifier for tap detection (survives re-renders)
+     * @param {Function} callback - Function to call on double-tap
      */
     addDoubleTapHandler(element, tapId, callback) {
         element.addEventListener('touchend', (e) => {

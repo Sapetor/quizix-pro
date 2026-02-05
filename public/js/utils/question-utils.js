@@ -258,8 +258,8 @@ export function addQuestion() {
 }
 
 /**
- * Create a question element with given data
- * Note: questionData parameter reserved for future use when populating from data
+ * Create a question element
+ * @returns {HTMLElement} The created question element
  */
 export function createQuestionElement() {
     const questionDiv = document.createElement('div');

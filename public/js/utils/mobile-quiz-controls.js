@@ -6,9 +6,16 @@
 import { logger } from '../core/config.js';
 import { dom } from './dom.js';
 
+// Animation and gesture timing constants
+const SHEET_OPEN_DELAY_MS = 10;
+const SHEET_ANIMATION_MS = 200;
+const SHEET_CLOSE_ANIMATION_MS = 300;
+const ACTION_DELAY_MS = 100;
+const SWIPE_CLOSE_THRESHOLD_PX = 80;
+
 // Mobile quiz sheet state management
-let mobileQuizSheetVisible = false;
-let isShowingSheet = false; // Prevent double-clicks
+let mobileQuizSheetVisible = false;  // True when sheet is fully visible
+let isShowingSheet = false;          // True during opening animation (prevents double-clicks)
 
 /**
  * Show the mobile quiz actions bottom sheet
@@ -48,8 +55,8 @@ function showMobileQuizSheet() {
             if (fab) {
                 fab.classList.remove('clicking');
             }
-        }, 200);
-    }, 10);
+        }, SHEET_ANIMATION_MS);
+    }, SHEET_OPEN_DELAY_MS);
 
     mobileQuizSheetVisible = true;
 
@@ -94,7 +101,7 @@ function hideMobileQuizSheet() {
     // Remove overlay after animation completes
     setTimeout(() => {
         overlay.classList.remove('active');
-    }, 300);
+    }, SHEET_CLOSE_ANIMATION_MS);
 
     mobileQuizSheetVisible = false;
 
@@ -144,7 +151,7 @@ function handleMobileAddQuestion() {
         } else {
             logger.warn('Add question functionality not available');
         }
-    }, 100);
+    }, ACTION_DELAY_MS);
 }
 
 /**
@@ -165,7 +172,7 @@ function handleMobileLoadQuiz() {
         } else {
             logger.warn('Load quiz functionality not available');
         }
-    }, 100);
+    }, ACTION_DELAY_MS);
 }
 
 /**
@@ -353,8 +360,8 @@ function initializeMobileQuizControls() {
 
             const deltaY = currentY - startY;
 
-            // If swiped down more than 80px, close the sheet
-            if (deltaY > 80) {
+            // If swiped down past threshold, close the sheet
+            if (deltaY > SWIPE_CLOSE_THRESHOLD_PX) {
                 hideMobileQuizSheet();
             } else {
                 // Snap back to original position
