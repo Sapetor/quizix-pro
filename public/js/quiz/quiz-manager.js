@@ -746,6 +746,11 @@ export class QuizManager {
                     return;
                 }
 
+                // Mobile: also initialize pagination after quiz load
+                if (window.innerWidth < 769 && window.showQuestion) {
+                    window.showQuestion(0);
+                }
+
                 // Legacy: Check for modal preview mode
                 if (window.previewManager &&
                     typeof window.previewManager.isPreviewMode === 'function' &&

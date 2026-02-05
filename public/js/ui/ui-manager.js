@@ -106,9 +106,15 @@ export class UIManager {
         if (screenId === 'game-lobby') {
                 // Hide editing toolbar on lobby screen, but enable header auto-hide
                 if (headerStartBtn) headerStartBtn.classList.add('hidden');
-                if (horizontalToolbar) horizontalToolbar.classList.add('hidden');
+                if (horizontalToolbar) {
+                    horizontalToolbar.classList.add('hidden');
+                    horizontalToolbar.classList.remove('visible-flex');
+                }
                 // Hide mobile FAB on lobby screen
-                if (mobileQuizFab) mobileQuizFab.classList.add('hidden');
+                if (mobileQuizFab) {
+                    mobileQuizFab.classList.add('hidden');
+                    mobileQuizFab.classList.remove('visible-flex');
+                }
 
                 // Initialize auto-hide functionality for HEADER on lobby screen
                 setTimeout(() => {
@@ -119,9 +125,15 @@ export class UIManager {
             } else {
                 // Hide toolbar and start button for other screens
                 if (headerStartBtn) headerStartBtn.classList.add('hidden');
-                if (horizontalToolbar) horizontalToolbar.classList.add('hidden');
+                if (horizontalToolbar) {
+                    horizontalToolbar.classList.add('hidden');
+                    horizontalToolbar.classList.remove('visible-flex');
+                }
                 // Hide mobile FAB on all other screens
-                if (mobileQuizFab) mobileQuizFab.classList.add('hidden');
+                if (mobileQuizFab) {
+                    mobileQuizFab.classList.add('hidden');
+                    mobileQuizFab.classList.remove('visible-flex');
+                }
 
                 // Disable auto-hide when leaving lobby/host screens
                 if (isAutoHideToolbarActive()) {

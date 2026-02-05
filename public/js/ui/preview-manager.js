@@ -171,12 +171,14 @@ export class PreviewManager {
 
         // Hide preview and remove split-screen class simultaneously
         previewSection.classList.add('hidden');
+        previewSection.classList.remove('visible-flex');
         hostContainer.classList.remove('split-screen');
 
         // Hide resize handle
         const resizeHandle = dom.get('split-resize-handle');
         if (resizeHandle) {
             resizeHandle.classList.add('hidden');
+            resizeHandle.classList.remove('visible-flex');
         }
 
         // Re-enable transitions after layout changes are complete

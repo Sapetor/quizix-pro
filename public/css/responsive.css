@@ -563,10 +563,10 @@
         flex-wrap: wrap !important;
     }
     
-    /* Clean mobile question meta layout - Type, Difficulty, Concepts, Time */
+    /* Clean mobile question meta layout - Type, Difficulty, Time (concepts hidden) */
     .quiz-editor-section .question-meta {
         display: grid !important;
-        grid-template-columns: auto auto 1fr auto !important;
+        grid-template-columns: auto auto auto !important;
         gap: 4px !important;
         margin-bottom: 4px !important;
         padding: 4px 6px !important;
@@ -600,32 +600,9 @@
         min-width: 50px !important;
     }
 
-    /* Concept tags container - Mobile compact */
+    /* Concept tags - hidden on mobile to reduce vertical space */
     .quiz-editor-section .question-meta .concept-tags-container {
-        min-width: 0 !important;
-    }
-
-    .quiz-editor-section .question-meta .concept-tags-container > label {
         display: none !important;
-    }
-
-    .quiz-editor-section .question-meta .concept-tags-input {
-        min-height: 24px !important;
-        padding: 2px 4px !important;
-    }
-
-    .quiz-editor-section .question-meta .concept-input {
-        font-size: 0.65rem !important;
-        min-width: 40px !important;
-    }
-
-    .quiz-editor-section .question-meta .concept-hint {
-        display: none !important;
-    }
-
-    .quiz-editor-section .question-meta .concept-tag {
-        font-size: 0.6rem !important;
-        padding: 2px 5px !important;
     }
     
     /* Time container - Ultra compact */
@@ -697,8 +674,8 @@
     
     /* Ultra-compact question sections with better visual appeal */
     .quiz-editor-section .question-item {
-        margin-bottom: 12px !important; /* Further reduced */
-        padding: 10px 6px !important; /* More compact */
+        margin-bottom: 8px !important;
+        padding: 6px 6px !important;
         border: 1px solid rgba(59, 130, 246, 0.2) !important;
         border-radius: 10px !important;
         background: linear-gradient(135deg, rgba(59, 130, 246, 0.03) 0%, rgba(147, 51, 234, 0.02) 100%) !important;
@@ -720,35 +697,29 @@
     
     /* Question content improvements */
     .quiz-editor-section .question-content {
-        margin-bottom: 12px !important;
-    }
-    
-    .quiz-editor-section .question-text {
-        margin-bottom: 8px !important;
-        min-height: calc(80px * var(--global-font-scale)) !important; /* Scales with font for accessibility */
-    }
-    
-    /* Image upload section */
-    .quiz-editor-section .image-upload {
-        margin-bottom: 12px !important;
+        margin-bottom: 6px !important;
     }
 
-    .quiz-editor-section .image-upload label {
-        display: block !important;
-        margin-bottom: 6px !important;
-        font-weight: 500 !important;
+    .quiz-editor-section .question-text {
+        margin-bottom: 4px !important;
+        min-height: calc(60px * var(--global-font-scale)) !important;
+    }
+
+    /* Image upload - hidden on mobile to reduce vertical space */
+    .quiz-editor-section .image-upload {
+        display: none !important;
     }
 
     /* Answer options mobile layout */
     .quiz-editor-section .answer-options {
-        margin-top: 12px !important;
+        margin-top: 6px !important;
     }
-    
+
     .quiz-editor-section .options {
         display: flex !important;
         flex-direction: column !important;
-        gap: 8px !important;
-        margin-bottom: 12px !important;
+        gap: 4px !important;
+        margin-bottom: 6px !important;
     }
     
     /* Correct answer selector full width */
@@ -3431,6 +3402,15 @@
     /* Make collapse indicator clickable for the whole header */
     .quiz-editor-section .question-header .collapse-indicator {
         font-size: 12px !important;
+    }
+
+    /* Mobile: One question at a time (pagination mode) */
+    .quiz-editor-section #questions-container .question-item {
+        display: none !important;
+    }
+
+    .quiz-editor-section #questions-container .question-item.active-question {
+        display: block !important;
     }
 }
 

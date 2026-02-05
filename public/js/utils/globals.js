@@ -379,9 +379,6 @@ export function initializeQuestionPagination() {
 
     if (!hostContainer || !questionsContainer) return;
 
-    // Check if desktop (min-width: 769px)
-    if (window.innerWidth < 769) return;
-
     const questionItems = questionsContainer.querySelectorAll('.question-item');
     const total = questionItems.length;
 
