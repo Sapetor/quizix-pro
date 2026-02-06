@@ -71,6 +71,8 @@ metadata:
   namespace: quizmaster
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
+  progressDeadlineSeconds: 300
   # Use Recreate strategy with RWO volumes to avoid Multi-Attach errors
   strategy:
     type: Recreate
