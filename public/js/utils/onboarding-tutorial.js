@@ -9,7 +9,7 @@ import { getJSON, setJSON, removeItem } from './storage-utils.js';
 import { isMobile } from './dom.js';
 
 const STORAGE_KEY = 'quiz_onboarding_complete';
-const TUTORIAL_VERSION = 2;
+const TUTORIAL_VERSION = 3;
 
 class OnboardingTutorial {
     constructor() {
@@ -53,7 +53,7 @@ class OnboardingTutorial {
 
     /**
      * Define all tutorial steps with target elements and content
-     * Version 2: Rewritten flow with image drag-drop and streamlined editor tour
+     * Version 3: Retargeted for split-screen editor with sidebar toolbar and question pagination
      */
     initializeSteps() {
         this.steps = [
@@ -78,7 +78,7 @@ class OnboardingTutorial {
                 icon: '✏️',
                 position: 'bottom'
             },
-            // Step 3: Question types
+            // Step 3: Question types (editor select; preview bar select is hidden in split layout)
             {
                 id: 'question-type',
                 targetSelector: '.question-type',
@@ -88,36 +88,38 @@ class OnboardingTutorial {
                 icon: '📝',
                 position: 'right'
             },
-            // Step 4: Image drag-drop
+            // Step 4: Question pagination (replaces image drag-drop)
             {
-                id: 'image-upload',
-                targetSelector: '.image-upload',
+                id: 'question-nav',
+                targetSelector: '#question-pagination',
+                mobileSelector: '#editor-question-count',
                 requiredScreen: 'host-screen',
                 titleKey: 'onboarding_step4_title',
                 contentKey: 'onboarding_step4_content',
-                icon: '🖼️',
-                position: 'top'
+                icon: '🔢',
+                position: 'bottom',
+                skipIfHidden: true
             },
-            // Step 5: AI Generator
+            // Step 5: AI Generator (retargeted to sidebar)
             {
-                id: 'toolbar-ai-gen',
-                targetSelector: '#toolbar-ai-gen',
+                id: 'ai-gen',
+                targetSelector: '#vtoolbar-ai-gen',
                 mobileSelector: '#mobile-quiz-fab',
                 requiredScreen: 'host-screen',
                 titleKey: 'onboarding_step5_title',
                 contentKey: 'onboarding_step5_content',
                 icon: '🤖',
-                position: 'bottom'
+                position: 'right'
             },
-            // Step 6: Save & Load
+            // Step 6: Save (retargeted to sidebar)
             {
-                id: 'toolbar-save',
-                targetSelector: '#toolbar-save',
+                id: 'save',
+                targetSelector: '#vtoolbar-save',
                 requiredScreen: 'host-screen',
                 titleKey: 'onboarding_step6_title',
                 contentKey: 'onboarding_step6_content',
                 icon: '💾',
-                position: 'bottom'
+                position: 'right'
             },
             // Step 7: Start the game
             {
