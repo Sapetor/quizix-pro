@@ -1460,7 +1460,8 @@ pre code {
     color: white;
     text-shadow: 0 2px 6px rgba(0,0,0,0.4);
     max-width: 100%;
-    /* Removed: min-height, display:flex, padding, background, border, backdrop-filter */
+    border: 2px solid transparent;
+    /* Removed: min-height, display:flex, padding, background, backdrop-filter */
     /* These were constraining MathJax and making it look different from in-game */
 }
 

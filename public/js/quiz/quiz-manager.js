@@ -1139,7 +1139,6 @@ export class QuizManager {
 
         // Translate the individual question element after populating data
         translationManager.translateContainer(questionElement);
-        // logger.debug('Translated individual question element');
 
         // Debug: Check if translation keys are showing as actual text
         const problemElements = questionElement.querySelectorAll('*');

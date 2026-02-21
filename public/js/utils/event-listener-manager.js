@@ -315,12 +315,3 @@ export class EventListenerManager {
         return Array.from(this.namedTimers.keys());
     }
 }
-
-/**
- * Factory function for creating EventListenerManager instances
- * @param {string} context - Context name for logging
- * @returns {EventListenerManager} New instance
- */
-export function createEventListenerManager(context) {
-    return new EventListenerManager(context);
-}

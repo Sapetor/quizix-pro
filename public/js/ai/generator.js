@@ -9,11 +9,10 @@
  */
 
 import { logger, AI, TIMING } from '../core/config.js';
-import { translationManager, showAlert } from '../utils/translation-manager.js';
+import { translationManager } from '../utils/translation-manager.js';
 import { secureStorage } from '../services/secure-storage-service.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
-import { toastNotifications } from '../utils/toast-notifications.js';
 import { dom, escapeHtml } from '../utils/dom.js';
 import { setItem } from '../utils/storage-utils.js';
 import {
@@ -584,20 +583,6 @@ export class AIQuestionGenerator {
     // Delegate to UI helpers for content detection
     detectContentType(content) {
         return this.uiHelpers.detectContentType(content);
-    }
-
-    debugDetectContent(content) {
-        console.group('Content Detection Debug');
-        console.log('Input:', content?.substring(0, 100));
-        console.log('AI config loaded:', !!AI);
-        console.log('MATH_INDICATORS:', AI?.MATH_INDICATORS);
-        console.log('MATH test:', AI?.MATH_INDICATORS?.test(content));
-        console.log('PROGRAMMING test:', AI?.PROGRAMMING_INDICATORS?.test(content));
-        console.log('PHYSICS test:', AI?.PHYSICS_INDICATORS?.test(content));
-        const result = this.detectContentType(content);
-        console.log('Result:', result);
-        console.groupEnd();
-        return result;
     }
 
     // Excel processing delegates

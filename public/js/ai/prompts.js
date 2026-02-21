@@ -13,7 +13,7 @@ import { LANGUAGES } from '../core/config.js';
 // ============================================================================
 
 // Language name mappings (using centralized config from core/config.js)
-export const LANGUAGE_NAMES = Object.fromEntries(
+const LANGUAGE_NAMES = Object.fromEntries(
     LANGUAGES.SUPPORTED_CODES.map(code => [code, LANGUAGES.getEnglishName(code)])
 );
 
@@ -25,7 +25,7 @@ export const LANGUAGE_NATIVE_NAMES = Object.fromEntries(
  * JSON structure examples for each question type
  * Note: concepts array identifies the knowledge areas tested (max 5)
  */
-export const TYPE_EXAMPLES = {
+const TYPE_EXAMPLES = {
     'multiple-choice': '{"question": "Question text?", "type": "multiple-choice", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "timeLimit": 30, "explanation": "Why A is correct", "difficulty": "medium", "concepts": ["topic1", "topic2"]}',
     'true-false': '{"question": "Statement to verify.", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20, "explanation": "Why true", "difficulty": "easy", "concepts": ["topic1"]}',
     'multiple-correct': '{"question": "Select all that apply:", "type": "multiple-correct", "options": ["A", "B", "C", "D"], "correctAnswers": [0, 2], "timeLimit": 35, "explanation": "A and C are correct", "difficulty": "medium", "concepts": ["topic1", "topic2"]}',
@@ -36,7 +36,7 @@ export const TYPE_EXAMPLES = {
 /**
  * Minimal type examples for retry prompts
  */
-export const MINIMAL_TYPE_EXAMPLES = {
+const MINIMAL_TYPE_EXAMPLES = {
     'multiple-choice': '{"question":"Q?","type":"multiple-choice","options":["A","B","C","D"],"correctAnswer":0,"timeLimit":30,"difficulty":"medium"}',
     'true-false': '{"question":"Statement.","type":"true-false","options":["True","False"],"correctAnswer":"true","timeLimit":20,"difficulty":"easy"}',
     'multiple-correct': '{"question":"Select all.","type":"multiple-correct","options":["A","B","C","D"],"correctAnswers":[0,2],"timeLimit":35,"difficulty":"medium"}',
@@ -47,7 +47,7 @@ export const MINIMAL_TYPE_EXAMPLES = {
 /**
  * Bloom's Taxonomy cognitive level descriptions
  */
-export const BLOOM_DESCRIPTIONS = {
+const BLOOM_DESCRIPTIONS = {
     'remember': {
         verbs: ['define', 'list', 'name', 'recall', 'identify', 'recognize', 'state'],
         description: 'Focus on RECALL and RECOGNITION of facts',
@@ -196,7 +196,7 @@ QUESTION QUALITY & FEEDBACK:
  * @param {Object} contentInfo - Content analysis info
  * @returns {Array} Structure examples
  */
-export function buildStructureExamples(selectedTypes, contentInfo) {
+function buildStructureExamples(selectedTypes, contentInfo) {
     const structureExamples = [];
 
     if (selectedTypes.includes('multiple-choice')) {

@@ -14,7 +14,7 @@ import { logger, COLORS, TIMING } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
 import { SwipeToDelete } from './swipe-to-delete.js';
-import { bindElement, dom } from './dom.js';
+import { bindElement, dom, escapeHtml } from './dom.js';
 import {
     openModal,
     closeModal,
@@ -401,12 +401,23 @@ export class ResultsViewer {
         const untitledQuiz = translationManager.getTranslationSync('untitled_quiz') || 'Untitled Quiz';
         const unknown = translationManager.getTranslationSync('unknown') || 'Unknown';
 
-        dom.get('result-detail-title').textContent = `${fullResult.quizTitle || untitledQuiz} - Results`;
-        dom.get('detail-quiz-title').textContent = fullResult.quizTitle || untitledQuiz;
-        dom.get('detail-game-pin').textContent = fullResult.gamePin || unknown;
-        dom.get('detail-date').textContent = formatDate(fullResult.saved);
-        dom.get('detail-participants').textContent = fullResult.results?.length || 0;
-        dom.get('detail-avg-score').textContent = `${calculateAverageScore(fullResult)}%`;
+        const titleEl = dom.get('result-detail-title');
+        if (titleEl) titleEl.textContent = `${fullResult.quizTitle || untitledQuiz} - Results`;
+
+        const quizTitleEl = dom.get('detail-quiz-title');
+        if (quizTitleEl) quizTitleEl.textContent = fullResult.quizTitle || untitledQuiz;
+
+        const gamePinEl = dom.get('detail-game-pin');
+        if (gamePinEl) gamePinEl.textContent = fullResult.gamePin || unknown;
+
+        const dateEl = dom.get('detail-date');
+        if (dateEl) dateEl.textContent = formatDate(fullResult.saved);
+
+        const participantsEl = dom.get('detail-participants');
+        if (participantsEl) participantsEl.textContent = fullResult.results?.length || 0;
+
+        const avgScoreEl = dom.get('detail-avg-score');
+        if (avgScoreEl) avgScoreEl.textContent = `${calculateAverageScore(fullResult)}%`;
 
         const participantResults = dom.get('participant-results');
         if (!participantResults) return;
@@ -798,9 +809,9 @@ export class ResultsViewer {
         modal.style.zIndex = '1050';
 
         const quizListHtml = quizzesWithSessions.map(quiz => `
-            <div class="comparison-quiz-item" data-quiz-title="${quiz.title.replace(/"/g, '&quot;')}">
+            <div class="comparison-quiz-item" data-quiz-title="${escapeHtml(quiz.title)}">
                 <div class="quiz-info">
-                    <div class="quiz-title">${quiz.title}</div>
+                    <div class="quiz-title">${escapeHtml(quiz.title)}</div>
                     <div class="quiz-meta">${quiz.sessionCount} sessions | ${quiz.totalParticipants} total participants</div>
                 </div>
                 <button class="btn primary compare-btn">Compare</button>
@@ -999,7 +1010,7 @@ export class ResultsViewer {
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 800px;">
                 <div class="modal-header">
-                    <h2>Session Comparison: ${quizTitle}</h2>
+                    <h2>Session Comparison: ${escapeHtml(quizTitle)}</h2>
                     <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
                 </div>
                 <div class="modal-body" style="padding: 20px;">

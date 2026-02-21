@@ -736,11 +736,11 @@ export function returnToMainFromHeader() {
 
     // Fallback: direct navigation
     document.querySelectorAll('.screen').forEach(screen => {
-        screen.style.display = 'none';
+        screen.classList.add('hidden');
     });
     const mainMenu = dom.get('main-menu');
     if (mainMenu) {
-        mainMenu.style.display = 'block';
+        mainMenu.classList.remove('hidden');
     }
 }
 

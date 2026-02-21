@@ -602,4 +602,4 @@ class GameSessionService {
     }
 }
 
-module.exports = { GameSessionService, Game, shuffleWithMapping };
+module.exports = { GameSessionService };

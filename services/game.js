@@ -5,7 +5,6 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
-const { QuestionTypeService } = require('./question-type-service');
 const { ScoringService } = require('./scoring-service');
 const { getLimits } = require('../config/limits');
 

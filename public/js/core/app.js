@@ -24,7 +24,6 @@ import { bindElement, dom } from '../utils/dom.js';
 import { getJSON, setJSON } from '../utils/storage-utils.js';
 import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
-import { gameContext } from './game-context.js';
 import { openModal, closeModal } from '../utils/modal-utils.js';
 // Results viewer will be lazy loaded when needed
 
@@ -96,19 +95,6 @@ export class QuizGame {
         // Expose QuizManager globally for inline onclick handlers
         window.QM = this.quizManager;
 
-        // Register managers with GameContext for dependency injection
-        gameContext.register('settingsManager', this.settingsManager);
-        gameContext.register('soundManager', this.soundManager);
-        gameContext.register('uiManager', this.uiManager);
-        gameContext.register('mathRenderer', this.mathRenderer);
-        gameContext.register('previewManager', this.previewManager);
-        gameContext.register('gameManager', this.gameManager);
-        gameContext.register('quizManager', this.quizManager);
-        gameContext.register('socketManager', this.socketManager);
-        gameContext.register('socketEventBus', this.socketEventBus);
-        gameContext.register('practiceModeManager', this.practiceModeManager);
-        gameContext.markInitialized();
-
         // Wire up dependency injection for QuizManager
         this.quizManager.setLoadQuizHandler((filename) => this.loadQuiz(filename));
         this.quizManager.setStartPracticeModeHandler((filename) => this.startPracticeMode(filename));
@@ -131,7 +117,6 @@ export class QuizGame {
         // Logger system initialized and ready
 
         logger.info('QuizGame initialized successfully');
-        logger.debug('GameContext initialized with managers:', gameContext.getRegisteredManagers());
     }
     /**
      * Handle image upload for quiz questions

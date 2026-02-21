@@ -6,16 +6,10 @@ const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const fs = require('fs');
-// uuid removed - not currently used (GameSessionService generates PINs)
 const cors = require('cors');
-const multer = require('multer');
-const QRCode = require('qrcode');
 const os = require('os');
-const crypto = require('crypto');
 const compression = require('compression');
-const sharp = require('sharp');
 const { CORSValidationService } = require('./services/cors-validation-service');
-const { QuestionTypeService } = require('./services/question-type-service');
 const { QuizService } = require('./services/quiz-service');
 const { ResultsService } = require('./services/results-service');
 const { MetadataService } = require('./services/metadata-service');

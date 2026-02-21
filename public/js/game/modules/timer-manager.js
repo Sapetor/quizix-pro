@@ -91,12 +91,10 @@ export class TimerManager {
      */
     updateTimerDisplay(timeRemaining) {
         const timerElement = document.getElementById('timer');
-        // logger.debug('updateTimerDisplay - element found:', !!timerElement, 'timeRemaining:', timeRemaining);
 
         if (timerElement) {
             const seconds = Math.max(0, Math.ceil(timeRemaining / 1000));
             timerElement.textContent = seconds.toString();
-            // logger.debug('Timer updated to:', seconds);
 
             // Add warning class for last 10 seconds
             if (seconds <= 10 && seconds > 0) {

@@ -386,7 +386,4 @@ class QuestionTypeService {
     }
 }
 
-// Backward compatibility alias
-const QuestionTypeRegistry = QuestionTypeService;
-
-module.exports = { QuestionTypeService, QuestionTypeRegistry };
+module.exports = { QuestionTypeService };

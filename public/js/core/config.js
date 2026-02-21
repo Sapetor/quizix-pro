@@ -4,7 +4,7 @@
  */
 
 // Development/Production Configuration
-export const DEBUG = {
+const DEBUG = {
     ENABLED: true, // Set to false for production builds
     LEVELS: {
         ERROR: 1,
@@ -256,7 +256,7 @@ export const LANGUAGES = {
 };
 
 // Simplified audio settings
-export const AUDIO = {
+const AUDIO = {
     QUESTION_START_FREQ: 800,
     SUCCESS_FREQUENCIES: [523, 659, 784], // C, E, G notes
     WRONG_ANSWER_FREQ: 300,
@@ -279,14 +279,14 @@ export const UI = {
     DEFAULT_TIMER_SECONDS: 30 // Default question timer in seconds
 };
 
-export const VALIDATION = {
+const VALIDATION = {
     MIN_QUESTIONS: 1,
     MAX_QUESTIONS: 100,
     MIN_OPTIONS: 2,
     MAX_OPTIONS: 6
 };
 
-export const DEFAULTS = {
+const DEFAULTS = {
     QUESTION_TIME: 20,
     DIFFICULTY: 'medium',
     QUESTION_TYPE: 'multiple-choice'
@@ -382,7 +382,7 @@ export const API = {
 };
 
 // Socket.IO event names
-export const SOCKET_EVENTS = {
+const SOCKET_EVENTS = {
     CONNECT: 'connect',
     DISCONNECT: 'disconnect',
     HOST_JOIN: 'host-join',

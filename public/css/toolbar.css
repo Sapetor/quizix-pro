@@ -103,10 +103,6 @@
     }
 }
 
-/* Legacy support - Hide old vertical toolbar completely */
-.left-toolbar {
-    display: none !important;
-}
 
 /* Tooltip styling for better UX */
 .horizontal-toolbar .toolbar-btn[title] {

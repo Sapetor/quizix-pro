@@ -36,69 +36,10 @@ body {
     display: none !important;
 }
 
-.visible {
-    display: block !important;
-}
-
 .visible-flex {
     display: flex !important;
 }
 
-.visible-inline {
-    display: inline-block !important;
-}
-
-.invisible {
-    visibility: hidden !important;
-}
-
-/* Opacity utilities */
-.opacity-0 {
-    opacity: 0 !important;
-}
-
-.opacity-50 {
-    opacity: 0.5 !important;
-}
-
-.opacity-100 {
-    opacity: 1 !important;
-}
-
-/* Overflow utilities */
-.overflow-hidden {
-    overflow: hidden !important;
-}
-
-.overflow-auto {
-    overflow: auto !important;
-}
-
-/* Pointer event utilities */
-.pointer-events-none {
-    pointer-events: none !important;
-}
-
-.pointer-events-auto {
-    pointer-events: auto !important;
-}
-
-/* Cursor utilities */
-.cursor-pointer {
-    cursor: pointer !important;
-}
-
-.cursor-default {
-    cursor: default !important;
-}
-
-.cursor-grab {
-    cursor: grab !important;
-}
-
-.cursor-col-resize {
-    cursor: col-resize !important;
-}
 
 /* Correct answer highlighting for player side */
 .correct-answer-highlight {
@@ -130,22 +71,6 @@ body {
     background-color: #f39c12 !important;
 }
 
-/* Screenshot Mode - Apply to document root to disable stacking context properties
-   that can cause rendering issues in full-page screenshots */
-html.screenshot-mode .modal {
-    contain: none !important;
-    will-change: auto !important;
-}
-
-html.screenshot-mode .modal-content {
-    will-change: auto !important;
-    backface-visibility: visible !important;
-}
-
-html.screenshot-mode .toast-container,
-html.screenshot-mode .toast {
-    will-change: auto !important;
-}
 
 /* Remove any jarring transitions during theme switching on load */
 body:not(.loaded) * {
@@ -300,35 +225,6 @@ h6 {
     }
 }
 
-/* Animation Classes */
-.animate-slide-in {
-    animation: slideInUp 0.4s ease-out;
-}
-
-.animate-fade-in {
-    animation: fadeInScale 0.3s ease-out;
-}
-
-.animate-pulse {
-    animation: pulse 2s infinite;
-}
-
-/* Interactive Elements */
-.interactive {
-    transition: all 0.2s ease;
-    cursor: pointer;
-}
-
-.interactive:hover {
-    transform: translateY(-2px);
-}
-
-/* Focus Indicators */
-.focus-ring:focus-visible {
-    outline: 2px solid var(--color-primary-500);
-    outline-offset: 2px;
-    border-radius: 4px;
-}
 
 /* Paragraph and Text Elements */
 p {

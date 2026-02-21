@@ -540,39 +540,10 @@ const translationManager = new TranslationManager();
 export { translationManager };
 
 /**
- * Convenience function for getting translations (async)
- */
-export async function getTranslationAsync(key, params = []) {
-    return translationManager.getTranslation(key, params);
-}
-
-/**
  * Convenience function for getting translations (sync, for backward compatibility)
  */
 export function getTranslation(key, params = []) {
     return translationManager.getTranslationSync(key, params);
-}
-
-/**
- * Convenience function for changing language
- */
-export async function changeLanguage(languageCode) {
-    const success = await translationManager.changeLanguage(languageCode);
-    if (success) {
-        // Trigger UI update
-        const event = new CustomEvent('languageChanged', {
-            detail: { language: languageCode }
-        });
-        document.dispatchEvent(event);
-    }
-    return success;
-}
-
-/**
- * Get option letter for backward compatibility
- */
-export function getOptionLetter(index) {
-    return String.fromCharCode(65 + index); // A, B, C, D...
 }
 
 // Common utility functions for translation patterns
