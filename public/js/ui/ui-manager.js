@@ -483,7 +483,7 @@ export class UIManager {
 
                 if (qrImage) {
                     qrImage.src = data.qrCode;
-                    qrImage.classList.remove('hidden');
+                    qrImage.style.display = '';
                 }
                 if (qrLoading) qrLoading.classList.add('hidden');
                 if (gameUrl) gameUrl.textContent = data.gameUrl;

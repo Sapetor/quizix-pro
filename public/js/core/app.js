@@ -375,9 +375,9 @@ export class QuizGame {
             });
         }
 
-        bindElement('return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
-        bindElement('mobile-return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
-        bindElement('desktop-return-to-main', 'click', () => this.uiManager.showScreen('main-menu'));
+        bindElement('return-to-main', 'click', () => this.resetAndReturnToMenu());
+        bindElement('mobile-return-to-main', 'click', () => this.resetAndReturnToMenu());
+        bindElement('desktop-return-to-main', 'click', () => this.resetAndReturnToMenu());
 
         // Language selection
         document.querySelectorAll('[data-lang]').forEach(btn => {

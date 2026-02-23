@@ -171,6 +171,9 @@ export class SocketManager {
             logger.debug('Game started:', data);
             const isHost = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
 
+            // Clear stale content from any previous game before showing game screen
+            this.gameManager.clearGameDisplayContent();
+
             // Initialize power-ups for players (not host)
             if (!isHost && data.powerUpsEnabled) {
                 this.gameManager.initializePowerUps(true);
@@ -496,9 +499,21 @@ export class SocketManager {
             this.gameManager.updatePlayersList(data.players);
         });
 
+        // Handle game-ended (emitted when host disconnects mid-game)
+        this.socket.on('game-ended', (data) => {
+            logger.debug('Game ended (host disconnected):', data);
+            this.gameManager.stopTimer();
+            this.gameManager.resetGameState();
+            this.uiManager.showScreen('main-menu');
+            const reason = data?.reason || 'The game has ended';
+            translationManager.showAlert('info', reason);
+        });
+
         // Special events
         this.socket.on('force-disconnect', (data) => {
             logger.debug('Force disconnect:', data);
+            this.gameManager.stopTimer();
+            this.gameManager.resetGameState();
             translationManager.showAlert('info', data.message || 'You have been disconnected');
             this.uiManager.showScreen('main-menu');
         });

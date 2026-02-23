@@ -1548,10 +1548,137 @@ export class GameManager {
             legacyPlayerCount.textContent = '0';
         }
 
+        // Clear all visible game screen content to prevent stale data flash
+        this.clearGameDisplayContent();
+
         // Clean up event listeners and timers when resetting game
         this.cleanup();
 
         logger.debug('🔄 Complete game state reset - both main and modular state managers');
+    }
+
+    /**
+     * Clear all visible game screen DOM content to prevent stale data between games.
+     * Resets question text, timer, answer options, statistics, and feedback
+     * to their initial HTML state.
+     */
+    clearGameDisplayContent() {
+        const placeholder = getTranslation('question_will_appear_here') || 'Question will appear here';
+
+        // Reset question text (host + player)
+        const hostQuestion = document.getElementById('current-question');
+        if (hostQuestion) {
+            hostQuestion.textContent = placeholder;
+            hostQuestion.className = '';
+        }
+        const playerQuestion = document.getElementById('player-question-text');
+        if (playerQuestion) {
+            playerQuestion.textContent = placeholder;
+            playerQuestion.className = '';
+        }
+
+        // Reset question counters
+        const hostCounter = document.getElementById('question-counter');
+        if (hostCounter) hostCounter.textContent = '';
+        const playerCounter = document.getElementById('player-question-counter');
+        if (playerCounter) playerCounter.textContent = '';
+
+        // Reset timer
+        const timer = document.getElementById('timer');
+        if (timer) {
+            timer.textContent = '';
+            timer.classList.remove('warning');
+        }
+
+        // Hide and clear question images
+        const hostImageContainer = document.getElementById('question-image-display');
+        if (hostImageContainer) hostImageContainer.classList.add('hidden');
+        const playerImageContainer = document.getElementById('player-question-image');
+        if (playerImageContainer) playerImageContainer.classList.add('hidden');
+
+        // Hide and clear question videos
+        const hostVideoContainer = document.getElementById('question-video-display');
+        if (hostVideoContainer) {
+            hostVideoContainer.classList.add('hidden');
+            hostVideoContainer.innerHTML = '';
+        }
+        const playerVideoContainer = document.getElementById('player-question-video');
+        if (playerVideoContainer) {
+            playerVideoContainer.classList.add('hidden');
+            playerVideoContainer.innerHTML = '';
+        }
+
+        // Reset host answer options
+        const hostOptions = document.getElementById('answer-options');
+        if (hostOptions) hostOptions.innerHTML = '';
+
+        // Reset player multiple-choice options (clear selection state, keep structure)
+        document.querySelectorAll('.player-option').forEach(opt => {
+            opt.classList.remove('selected', 'correct', 'incorrect', 'disabled', 'power-up-hidden');
+            opt.style.pointerEvents = '';
+        });
+
+        // Reset true/false options
+        document.querySelectorAll('.tf-option').forEach(opt => {
+            opt.classList.remove('selected', 'correct', 'incorrect', 'disabled');
+        });
+
+        // Reset multiple-correct checkboxes
+        document.querySelectorAll('.checkbox-option').forEach(opt => {
+            opt.classList.remove('selected', 'correct', 'incorrect');
+            const checkbox = opt.querySelector('input[type="checkbox"]');
+            if (checkbox) checkbox.checked = false;
+        });
+
+        // Reset numeric input
+        const numericInput = document.getElementById('numeric-answer-input');
+        if (numericInput) numericInput.value = '';
+
+        // Hide all answer type containers except default
+        document.querySelectorAll('.player-answer-type').forEach(type => {
+            type.classList.add('hidden');
+        });
+        const defaultAnswerType = document.getElementById('player-multiple-choice');
+        if (defaultAnswerType) defaultAnswerType.classList.remove('hidden');
+
+        // Hide answer statistics and reset bars
+        const answerStats = document.getElementById('answer-statistics');
+        if (answerStats) answerStats.classList.add('hidden');
+        for (let i = 0; i < 6; i++) {
+            const fill = document.getElementById(`stat-fill-${i}`);
+            if (fill) fill.style.width = '0%';
+            const count = document.getElementById(`stat-count-${i}`);
+            if (count) count.textContent = '0';
+        }
+
+        // Reset response counts
+        const responsesCount = document.getElementById('responses-count');
+        if (responsesCount) responsesCount.textContent = '0';
+        const totalPlayers = document.getElementById('total-players');
+        if (totalPlayers) totalPlayers.textContent = '0';
+
+        // Hide answer feedback
+        const feedback = document.getElementById('answer-feedback');
+        if (feedback) feedback.classList.add('hidden');
+
+        // Hide score breakdown
+        const scoreBreakdown = document.getElementById('host-score-breakdown');
+        if (scoreBreakdown) scoreBreakdown.style.display = 'none';
+
+        // Hide game controls
+        const gameControls = document.getElementById('game-controls');
+        if (gameControls) gameControls.style.display = 'none';
+
+        // Clear modal feedback from previous game
+        if (modalFeedback) {
+            modalFeedback.hide();
+            modalFeedback.clearContent();
+        }
+
+        // Remove any lingering dynamic elements from previous game
+        document.querySelectorAll('.correct-answer-display, .numeric-correct-answer-display, .question-explanation-display').forEach(el => el.remove());
+
+        logger.debug('🧹 Cleared all game display content');
     }
 
     /**
