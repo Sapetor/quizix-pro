@@ -76,6 +76,7 @@ export class QuestionUtils {
                     <div class="video-tabs">
                         <button type="button" class="video-tab active" data-target="question">Question Animation</button>
                         <button type="button" class="video-tab" data-target="explanation">Explanation Animation</button>
+                        <button type="button" class="manim-help-btn" title="Manim Tutorial">?</button>
                     </div>
                     <div class="video-panel" data-panel="question">
                         <div class="manim-code-editor">

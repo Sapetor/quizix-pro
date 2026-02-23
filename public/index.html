@@ -935,6 +935,7 @@
                                     <div class="video-tabs">
                                         <button type="button" class="video-tab active" data-target="question">Question Animation</button>
                                         <button type="button" class="video-tab" data-target="explanation">Explanation Animation</button>
+                                        <button type="button" class="manim-help-btn" title="Manim Tutorial">?</button>
                                     </div>
                                     <div class="video-panel" data-panel="question">
                                         <div class="manim-code-editor">
@@ -1867,6 +1868,118 @@
             </div>
         </div>
         
+
+        <!-- Manim Tutorial Modal -->
+        <div id="manim-tutorial-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="manim-tutorial-title">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3 id="manim-tutorial-title">Manim Animation Tutorial</h3>
+                    <button id="close-manim-tutorial" class="close-btn">&times;</button>
+                </div>
+                <div class="manim-tutorial-body">
+                    <section class="tutorial-section">
+                        <h4>What are Manim Animations?</h4>
+                        <p>Manim lets you create mathematical animations using Python code. Attach animations to your quiz questions to make concepts visual and engaging.</p>
+                        <video class="tutorial-video" controls playsinline preload="metadata">
+                            <source src="assets/tutorial/manim-demo.mp4" type="video/mp4">
+                        </video>
+                    </section>
+
+                    <section class="tutorial-section">
+                        <h4>How to Use</h4>
+                        <video class="tutorial-video" controls playsinline preload="metadata">
+                            <source src="assets/tutorial/manim-steps.mp4" type="video/mp4">
+                        </video>
+                        <ol class="tutorial-steps">
+                            <li><strong>Question Animation</strong> tab &mdash; plays alongside the question during the quiz</li>
+                            <li><strong>Explanation Animation</strong> tab &mdash; plays after the answer is revealed</li>
+                            <li>Write Manim Python code in the editor</li>
+                            <li>Click <em>Render Animation</em> and wait a few seconds</li>
+                            <li>Preview the result, then save your quiz</li>
+                        </ol>
+                    </section>
+
+                    <section class="tutorial-section">
+                        <h4>Code Examples</h4>
+                        <p>Click any example to copy it to your clipboard.</p>
+
+                        <div class="tutorial-example">
+                            <h5>Basic Shapes</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code">from manim import *
+
+class ShapesScene(Scene):
+    def construct(self):
+        circle = Circle(color=BLUE, fill_opacity=0.5)
+        square = Square(color=GREEN, fill_opacity=0.5)
+        shapes = VGroup(circle, square).arrange(RIGHT, buff=1)
+        self.play(Create(circle), Create(square))
+        self.play(Rotate(square, PI/4))
+        self.wait(1)</pre>
+                        </div>
+
+                        <div class="tutorial-example">
+                            <h5>Text &amp; Annotations</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code">from manim import *
+
+class TextScene(Scene):
+    def construct(self):
+        title = Text("Key Concept", font_size=48, color=YELLOW)
+        self.play(Write(title))
+        self.play(title.animate.to_edge(UP))
+
+        bullet1 = Text("- Point one", font_size=28)
+        bullet2 = Text("- Point two", font_size=28)
+        bullets = VGroup(bullet1, bullet2).arrange(DOWN, aligned_edge=LEFT)
+        self.play(FadeIn(bullets))
+        self.wait(1)</pre>
+                        </div>
+
+                        <div class="tutorial-example">
+                            <h5>Number Line</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code">from manim import *
+
+class NumberLineScene(Scene):
+    def construct(self):
+        line = NumberLine(x_range=[-5, 5, 1], include_numbers=True)
+        self.play(Create(line))
+
+        dot = Dot(line.n2p(3), color=RED, radius=0.15)
+        label = Text("x = 3", font_size=24, color=RED)
+        label.next_to(dot, UP)
+        self.play(Create(dot), Write(label))
+        self.wait(1)</pre>
+                        </div>
+
+                        <div class="tutorial-example">
+                            <h5>Graph / Function Plot</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code">from manim import *
+
+class GraphScene(Scene):
+    def construct(self):
+        axes = Axes(x_range=[-3, 3], y_range=[-1, 9], axis_config={"include_numbers": True})
+        graph = axes.plot(lambda x: x**2, color=BLUE)
+        label = axes.get_graph_label(graph, label="x^2")
+        self.play(Create(axes), Create(graph), Write(label))
+        self.wait(1)</pre>
+                        </div>
+                    </section>
+
+                    <section class="tutorial-section">
+                        <h4>Tips</h4>
+                        <ul class="tutorial-tips">
+                            <li>Keep animations short (2&ndash;5 seconds) for quiz flow</li>
+                            <li>Use <code>self.wait(1)</code> to pause between steps</li>
+                            <li>Your class must extend <code>Scene</code> (e.g. <code>class MyScene(Scene)</code>)</li>
+                            <li>Always start with <code>from manim import *</code></li>
+                            <li>Use <code>Text()</code> for labels &mdash; <code>MathTex()</code> requires LaTeX installed</li>
+                        </ul>
+                    </section>
+                </div>
+                <div class="modal-actions">
+                    <button id="close-manim-tutorial-btn" class="btn secondary">Close</button>
+                </div>
+            </div>
+        </div>
 
         <!-- AI Question Generator Modal -->
         <div id="ai-generator-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="ai-generator-modal-title">

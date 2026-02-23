@@ -6911,4 +6911,196 @@ html {
     }
 }
 
+/* --- Manim help button --- */
+.manim-help-btn {
+    margin-left: auto;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+    flex-shrink: 0;
+}
+
+.manim-help-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+}
+
+[data-theme="light"] .manim-help-btn {
+    border-color: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .manim-help-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #333;
+}
+
+/* --- Manim Tutorial Modal --- */
+.manim-tutorial-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 0 4px;
+}
+
+.tutorial-section {
+    margin-bottom: 28px;
+}
+
+.tutorial-section h4 {
+    font-size: 18px;
+    margin: 0 0 10px;
+    color: var(--accent-color, #4dabf7);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 6px;
+}
+
+[data-theme="light"] .tutorial-section h4 {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+.tutorial-section p {
+    margin: 0 0 12px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="light"] .tutorial-section p {
+    color: #444;
+}
+
+.tutorial-video {
+    width: 100%;
+    max-height: 260px;
+    border-radius: 8px;
+    background: #000;
+    margin-bottom: 12px;
+}
+
+.tutorial-steps {
+    padding-left: 20px;
+    margin: 8px 0 0;
+    line-height: 1.8;
+}
+
+.tutorial-steps li {
+    margin-bottom: 4px;
+}
+
+.tutorial-example {
+    margin-bottom: 16px;
+}
+
+.tutorial-example h5 {
+    font-size: 14px;
+    margin: 0 0 6px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="light"] .tutorial-example h5 {
+    color: #555;
+}
+
+.tutorial-code {
+    display: block;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre;
+    overflow-x: auto;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+}
+
+.tutorial-code:hover {
+    border-color: var(--accent-color, #4dabf7);
+    box-shadow: 0 0 0 1px var(--accent-color, #4dabf7);
+}
+
+.tutorial-code::after {
+    content: 'Click to copy';
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: sans-serif;
+    pointer-events: none;
+    transition: color 0.2s;
+}
+
+.tutorial-code:hover::after {
+    color: var(--accent-color, #4dabf7);
+}
+
+.tutorial-code.copied::after {
+    content: 'Copied!';
+    color: #4caf50;
+}
+
+[data-theme="light"] .tutorial-code {
+    background: #f5f5f5;
+    border-color: #ddd;
+    color: #333;
+}
+
+[data-theme="light"] .tutorial-code::after {
+    color: rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="light"] .tutorial-code:hover {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 1px #2196f3;
+}
+
+.tutorial-tips {
+    padding-left: 20px;
+    line-height: 1.8;
+}
+
+.tutorial-tips code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+[data-theme="light"] .tutorial-tips code {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+@media (max-width: 768px) {
+    .manim-tutorial-body {
+        max-height: 60vh;
+    }
+
+    .tutorial-video {
+        max-height: 180px;
+    }
+
+    .tutorial-code {
+        font-size: 11px;
+    }
+
+    .tutorial-code::after {
+        display: none;
+    }
+}
+
 /* === END CONSENSUS MODE SYSTEM === */

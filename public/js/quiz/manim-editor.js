@@ -2,6 +2,7 @@ import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
 import { unifiedErrorHandler } from '../utils/unified-error-handler.js';
+import { openModal, closeModal, createModalBindings } from '../utils/modal-utils.js';
 
 /**
  * ManimEditor - Manages Manim animation code editing for quiz questions
@@ -88,6 +89,12 @@ export class ManimEditor {
             }
             btn.addEventListener('click', () => this.handleRemoveVideo(questionElement, placement));
         });
+
+        // Help button
+        const helpBtn = videoSection.querySelector('.manim-help-btn');
+        if (helpBtn) {
+            helpBtn.addEventListener('click', () => this.openTutorial());
+        }
     }
 
     /**
@@ -226,6 +233,50 @@ export class ManimEditor {
         }
 
         logger.debug(`ManimEditor: video removed for placement "${placement}"`);
+    }
+
+    // -------------------------------------------------------------------------
+    // Tutorial
+    // -------------------------------------------------------------------------
+
+    /**
+     * Open the Manim tutorial modal.
+     */
+    openTutorial() {
+        const modal = document.getElementById('manim-tutorial-modal');
+        if (!modal) {
+            logger.warn('ManimEditor: tutorial modal not found');
+            return;
+        }
+
+        openModal(modal);
+
+        // Only bind handlers once
+        if (!this._tutorialBound) {
+            this._tutorialBound = true;
+
+            const close = () => closeModal(modal);
+
+            document.getElementById('close-manim-tutorial')?.addEventListener('click', close);
+            document.getElementById('close-manim-tutorial-btn')?.addEventListener('click', close);
+
+            createModalBindings(modal, close);
+
+            // Copy-to-clipboard on code examples
+            modal.querySelectorAll('.tutorial-code').forEach(pre => {
+                pre.addEventListener('click', () => {
+                    const code = pre.textContent;
+                    navigator.clipboard.writeText(code).then(() => {
+                        const original = pre.dataset.originalLabel || '';
+                        pre.dataset.originalLabel = original;
+                        pre.classList.add('copied');
+                        setTimeout(() => pre.classList.remove('copied'), 1500);
+                    }).catch(err => {
+                        logger.warn('ManimEditor: clipboard write failed', err);
+                    });
+                });
+            });
+        }
     }
 
     /**
