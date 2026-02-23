@@ -166,7 +166,10 @@ export class GameDisplayManager {
         const video = document.createElement('video');
         video.className = 'question-video-player';
         video.controls = true;
-        video.preload = 'metadata';
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.preload = 'auto';
         video.playsInline = true;
 
         const source = document.createElement('source');

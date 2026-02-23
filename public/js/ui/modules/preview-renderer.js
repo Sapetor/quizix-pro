@@ -47,7 +47,10 @@ export class PreviewRenderer {
                 videoContainer.innerHTML = '';
                 const video = document.createElement('video');
                 video.controls = true;
-                video.preload = 'metadata';
+                video.autoplay = true;
+                video.muted = true;
+                video.loop = true;
+                video.preload = 'auto';
                 video.playsInline = true;
                 video.className = 'preview-question-video';
                 const source = document.createElement('source');
