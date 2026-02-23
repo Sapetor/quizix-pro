@@ -172,6 +172,10 @@ element.style.display = 'block';  // Don't do this
 10. **Service Worker Cache** - bump `CACHE_VERSION` in `public/sw.js` when deploying JS changes, otherwise browsers serve stale cached files
 11. **Click handlers on buttons with child elements** - use `event.target.closest('.class')` not `event.target.classList.contains('.class')` (clicks on child spans won't match the parent class)
 12. **Question templates exist in TWO places** - `index.html` (initial) and `question-utils.js` (programmatic). Both must stay synchronized. If UI changes on quiz load, check the JS template for differences (see `public/css/CLAUDE.md` for details)
+13. **Screen transitions don't clear DOM content** - `UIManager.showScreen()` only toggles CSS `.active` classes. It does NOT clear innerHTML of any elements. Stale content from a previous game persists unless explicitly cleared. Always call `gameManager.clearGameDisplayContent()` or `resetGameState()` before showing a game screen after a previous game
+14. **Navigating away from game screens MUST use `resetAndReturnToMenu()`** - never call `uiManager.showScreen('main-menu')` directly from a game context. Direct calls skip `resetGameState()`, leaving socket connections active, game state dirty, and DOM content stale
+15. **Socket events must have client handlers for ALL server emits** - verify that every `io.emit('event-name')` on the server has a matching `socket.on('event-name')` on the client. Missing handlers leave users stuck (e.g., `game-ended` vs `game-end` are different events)
+16. **Inline `style="display: none"` in HTML cannot be toggled with `classList`** - if an element uses `style="display: none"` in the HTML, you must use `element.style.display = ''` to show it. `classList.remove('hidden')` won't work because inline styles have higher specificity. Prefer using the `hidden` CSS class consistently (see Critical Pattern #8)
 
 ---
 
