@@ -61,7 +61,7 @@ function createFileUploadRoutes(options) {
         try {
             if (!req.file) {
                 logger.warn('Upload attempt with no file');
-                return res.status(400).json({ error: 'No file uploaded' });
+                return res.status(400).json({ error: 'No file uploaded', messageKey: 'error_no_file_uploaded' });
             }
 
             // Enhanced debugging for Ubuntu binary file issues
@@ -81,7 +81,7 @@ function createFileUploadRoutes(options) {
                 stats = await fs.promises.stat(req.file.path);
             } catch (statError) {
                 logger.error(`File not found after upload: ${req.file.path}`);
-                return res.status(500).json({ error: 'File upload failed - file not saved' });
+                return res.status(500).json({ error: 'File upload failed - file not saved', messageKey: 'error_upload_not_saved' });
             }
 
             logger.debug(`File verification: ${stats.size} bytes on disk`);
@@ -89,7 +89,7 @@ function createFileUploadRoutes(options) {
             if (stats.size === 0) {
                 logger.error('WARNING: Uploaded file is empty (0 bytes)!');
                 await fs.promises.unlink(req.file.path); // Clean up empty file
-                return res.status(500).json({ error: 'File upload failed - empty file' });
+                return res.status(500).json({ error: 'File upload failed - empty file', messageKey: 'error_upload_empty_file' });
             }
 
             if (stats.size !== req.file.size) {
@@ -119,7 +119,7 @@ function createFileUploadRoutes(options) {
             if (!isValidImage) {
                 logger.warn(`File content doesn't match image signature: ${req.file.filename}`);
                 await fs.promises.unlink(req.file.path); // Delete suspicious file
-                return res.status(400).json({ error: 'Invalid image file content' });
+                return res.status(400).json({ error: 'Invalid image file content', messageKey: 'error_invalid_image_content' });
             }
 
             // Convert to WebP for better compression (skip if already WebP or animated GIF)
@@ -169,7 +169,7 @@ function createFileUploadRoutes(options) {
             });
         } catch (error) {
             logger.error('Upload error:', error);
-            res.status(500).json({ error: 'Upload failed' });
+            res.status(500).json({ error: 'Upload failed', messageKey: 'error_upload_failed' });
         }
     });
 
@@ -202,7 +202,7 @@ function createFileUploadRoutes(options) {
 
         try {
             if (!req.file) {
-                return res.status(400).json({ error: 'No PDF file uploaded' });
+                return res.status(400).json({ error: 'No PDF file uploaded', messageKey: 'error_no_pdf_uploaded' });
             }
 
             // Reject very large files early (before parsing)
@@ -210,6 +210,7 @@ function createFileUploadRoutes(options) {
             if (req.file.size > MAX_PDF_SIZE) {
                 return res.status(413).json({
                     error: 'PDF too large',
+                    messageKey: 'error_pdf_too_large',
                     message: 'PDF file exceeds 10MB limit. Please use a smaller file or copy text manually.'
                 });
             }
@@ -222,6 +223,7 @@ function createFileUploadRoutes(options) {
                 logger.warn('pdf-parse not installed. Run: npm install pdf-parse');
                 return res.status(501).json({
                     error: 'PDF extraction not available',
+                    messageKey: 'error_pdf_not_available',
                     message: 'Server does not have PDF parsing capability. Please copy and paste the text content manually.'
                 });
             }
@@ -245,10 +247,10 @@ function createFileUploadRoutes(options) {
 
             // Provide user-friendly error messages
             if (error.message.includes('timed out')) {
-                return res.status(408).json({ error: error.message });
+                return res.status(408).json({ error: error.message, messageKey: 'error_pdf_timeout' });
             }
 
-            res.status(500).json({ error: 'Failed to extract text from PDF: ' + error.message });
+            res.status(500).json({ error: 'Failed to extract text from PDF: ' + error.message, messageKey: 'error_pdf_extraction_failed' });
         }
     });
 
@@ -270,7 +272,7 @@ function createFileUploadRoutes(options) {
 
         try {
             if (!req.file) {
-                return res.status(400).json({ error: 'No DOCX file uploaded' });
+                return res.status(400).json({ error: 'No DOCX file uploaded', messageKey: 'error_no_docx_uploaded' });
             }
 
             // Dynamic import of mammoth
@@ -281,6 +283,7 @@ function createFileUploadRoutes(options) {
                 logger.warn('mammoth not installed. Run: npm install mammoth');
                 return res.status(501).json({
                     error: 'DOCX extraction not available',
+                    messageKey: 'error_docx_not_available',
                     message: 'Server does not have DOCX parsing capability.'
                 });
             }
@@ -305,10 +308,10 @@ function createFileUploadRoutes(options) {
             logger.error('DOCX extraction error:', error);
 
             if (error.message.includes('timed out')) {
-                return res.status(408).json({ error: error.message });
+                return res.status(408).json({ error: error.message, messageKey: 'error_docx_timeout' });
             }
 
-            res.status(500).json({ error: 'Failed to extract text from DOCX: ' + error.message });
+            res.status(500).json({ error: 'Failed to extract text from DOCX: ' + error.message, messageKey: 'error_docx_extraction_failed' });
         }
     });
 
@@ -331,7 +334,7 @@ function createFileUploadRoutes(options) {
 
         try {
             if (!req.file) {
-                return res.status(400).json({ error: 'No PowerPoint file uploaded' });
+                return res.status(400).json({ error: 'No PowerPoint file uploaded', messageKey: 'error_no_pptx_uploaded' });
             }
 
             // Dynamic import of officeparser
@@ -342,6 +345,7 @@ function createFileUploadRoutes(options) {
                 logger.warn('officeparser not installed. Run: npm install officeparser');
                 return res.status(501).json({
                     error: 'PowerPoint extraction not available',
+                    messageKey: 'error_pptx_not_available',
                     message: 'Server does not have PowerPoint parsing capability.'
                 });
             }
@@ -366,10 +370,10 @@ function createFileUploadRoutes(options) {
             logger.error('PPTX extraction error:', error);
 
             if (error.message.includes('timed out')) {
-                return res.status(408).json({ error: error.message });
+                return res.status(408).json({ error: error.message, messageKey: 'error_pptx_timeout' });
             }
 
-            res.status(500).json({ error: 'Failed to extract text from PowerPoint: ' + error.message });
+            res.status(500).json({ error: 'Failed to extract text from PowerPoint: ' + error.message, messageKey: 'error_pptx_extraction_failed' });
         }
     });
 

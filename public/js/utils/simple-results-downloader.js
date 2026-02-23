@@ -129,7 +129,7 @@ export class SimpleResultsDownloader {
         results.forEach(result => {
             const option = document.createElement('option');
             option.value = result.filename;
-            option.textContent = `${result.quizTitle} (PIN: ${result.gamePin}) - ${this.formatDate(result.saved)}`;
+            option.textContent = `${result.quizTitle} (${translationManager.getTranslationSync('pin_label')}${result.gamePin}) - ${this.formatDate(result.saved)}`;
             dropdown.appendChild(option);
         });
 

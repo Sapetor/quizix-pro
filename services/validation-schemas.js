@@ -168,6 +168,7 @@ function validateBody(schema) {
                 }));
                 return res.status(400).json({
                     error: 'Validation failed',
+                    messageKey: 'error_validation_failed',
                     details: errors
                 });
             }
@@ -176,6 +177,7 @@ function validateBody(schema) {
         } catch (error) {
             return res.status(500).json({
                 error: 'Validation error',
+                messageKey: 'error_validation_error',
                 message: error.message
             });
         }
@@ -198,6 +200,7 @@ function validateParams(schema) {
                 }));
                 return res.status(400).json({
                     error: 'Invalid parameters',
+                    messageKey: 'error_invalid_parameters',
                     details: errors
                 });
             }
@@ -206,6 +209,7 @@ function validateParams(schema) {
         } catch (error) {
             return res.status(500).json({
                 error: 'Validation error',
+                messageKey: 'error_validation_error',
                 message: error.message
             });
         }
@@ -228,6 +232,7 @@ function validateQuery(schema) {
                 }));
                 return res.status(400).json({
                     error: 'Invalid query parameters',
+                    messageKey: 'error_invalid_query_parameters',
                     details: errors
                 });
             }
@@ -236,6 +241,7 @@ function validateQuery(schema) {
         } catch (error) {
             return res.status(500).json({
                 error: 'Validation error',
+                messageKey: 'error_validation_error',
                 message: error.message
             });
         }

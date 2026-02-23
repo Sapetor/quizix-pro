@@ -10,20 +10,20 @@ function registerGameplayEvents(io, socket, options) {
         if (!checkRateLimit(socket.id, 'submit-answer', 3, socket)) return; // Strict limit: 3 per second
         try {
             if (!data || data.answer === undefined) {
-                socket.emit('answer-error', { message: 'Invalid answer data' });
+                socket.emit('answer-error', { message: 'Invalid answer data', messageKey: 'error_invalid_answer' });
                 return;
             }
 
             const { answer, type } = data;
             const playerData = playerManagementService.getPlayer(socket.id);
             if (!playerData) {
-                socket.emit('answer-error', { message: 'Player session not found' });
+                socket.emit('answer-error', { message: 'Player session not found', messageKey: 'error_session_not_found' });
                 return;
             }
 
             const game = gameSessionService.getGame(playerData.gamePin);
             if (!game) {
-                socket.emit('answer-error', { message: 'Game not found' });
+                socket.emit('answer-error', { message: 'Game not found', messageKey: 'error_game_not_found' });
                 return;
             }
 
@@ -38,7 +38,7 @@ function registerGameplayEvents(io, socket, options) {
             );
         } catch (error) {
             logger.error('Error in submit-answer handler:', error);
-            socket.emit('answer-error', { message: 'Server error processing answer' });
+            socket.emit('answer-error', { message: 'Server error processing answer', messageKey: 'error_server_error' });
         }
     });
 
@@ -47,20 +47,20 @@ function registerGameplayEvents(io, socket, options) {
         if (!checkRateLimit(socket.id, 'use-power-up', 3, socket)) return;
         try {
             if (!data || !data.type) {
-                socket.emit('power-up-result', { success: false, error: 'Invalid power-up data' });
+                socket.emit('power-up-result', { success: false, error: 'Invalid power-up data', messageKey: 'error_invalid_powerup' });
                 return;
             }
 
             const { type } = data;
             const playerData = playerManagementService.getPlayer(socket.id);
             if (!playerData) {
-                socket.emit('power-up-result', { success: false, error: 'Player not found' });
+                socket.emit('power-up-result', { success: false, error: 'Player not found', messageKey: 'error_player_not_found' });
                 return;
             }
 
             const game = gameSessionService.getGame(playerData.gamePin);
             if (!game) {
-                socket.emit('power-up-result', { success: false, error: 'Game not found' });
+                socket.emit('power-up-result', { success: false, error: 'Game not found', messageKey: 'error_game_not_found' });
                 return;
             }
 
@@ -72,7 +72,7 @@ function registerGameplayEvents(io, socket, options) {
             }
         } catch (error) {
             logger.error('Error in use-power-up handler:', error);
-            socket.emit('power-up-result', { success: false, error: 'Server error' });
+            socket.emit('power-up-result', { success: false, error: 'Server error', messageKey: 'error_server_error' });
         }
     });
 

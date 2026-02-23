@@ -9,7 +9,7 @@
  * - ResultsAnalytics: Analytics calculation and visualization
  */
 
-import { translationManager, showErrorAlert, showSuccessAlert } from './translation-manager.js';
+import { translationManager, getTranslation, showErrorAlert, showSuccessAlert } from './translation-manager.js';
 import { logger, COLORS, TIMING } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
@@ -100,10 +100,10 @@ export class ResultsViewer {
                 this.onResultsUpdated(data);
                 break;
             case 'error':
-                this.showError('Failed to load quiz results: ' + data.message);
+                this.showError(`${getTranslation('results_failed_load')}: ${data.message}`);
                 break;
             case 'downloadComplete':
-                showSuccessAlert(`Downloaded: ${data.downloadFilename}`);
+                showSuccessAlert(`${getTranslation('results_downloaded')}: ${data.downloadFilename}`);
                 break;
             case 'resultDeleted':
                 this.onResultDeleted(data);
@@ -171,7 +171,7 @@ export class ResultsViewer {
     async showModal() {
         const modal = getModal('results-viewing-modal');
         if (!modal) {
-            showErrorAlert('Results viewer not available');
+            showErrorAlert(getTranslation('results_viewer_not_available'));
             return;
         }
 
@@ -225,17 +225,17 @@ export class ResultsViewer {
             logger.debug(`Loaded ${results.length} results`);
         } catch (error) {
             logger.error('Error loading results:', error);
-            this.showError('Failed to load quiz results');
+            this.showError(getTranslation('results_failed_load'));
         }
     }
 
     async refreshResults() {
         try {
             await resultsManagerService.fetchResults(true);
-            showSuccessAlert('Results refreshed successfully');
+            showSuccessAlert(getTranslation('results_refreshed_success'));
         } catch (error) {
             logger.error('Error refreshing results:', error);
-            showErrorAlert('Failed to refresh results');
+            showErrorAlert(getTranslation('results_failed_refresh'));
         }
     }
 
@@ -271,7 +271,7 @@ export class ResultsViewer {
                             <circle cx="95" cy="95" r="2" fill="currentColor" opacity="0.3"/>
                         </svg>
                     </div>
-                    <h4>Error</h4>
+                    <h4>${getTranslation('error')}</h4>
                     <p>${message}</p>
                 </div>
             `;
@@ -402,7 +402,7 @@ export class ResultsViewer {
         const unknown = translationManager.getTranslationSync('unknown') || 'Unknown';
 
         const titleEl = dom.get('result-detail-title');
-        if (titleEl) titleEl.textContent = `${fullResult.quizTitle || untitledQuiz} - Results`;
+        if (titleEl) titleEl.textContent = `${fullResult.quizTitle || untitledQuiz} - ${getTranslation('results_title_suffix')}`;
 
         const quizTitleEl = dom.get('detail-quiz-title');
         if (quizTitleEl) quizTitleEl.textContent = fullResult.quizTitle || untitledQuiz;
@@ -444,7 +444,7 @@ export class ResultsViewer {
             await resultsManagerService.deleteResult(filename);
         } catch (error) {
             logger.error('Error deleting result via swipe:', error);
-            showErrorAlert('Failed to delete result');
+            showErrorAlert(getTranslation('results_failed_delete'));
             this.swipeToDelete.refresh();
         }
     }
@@ -459,7 +459,7 @@ export class ResultsViewer {
             await resultsManagerService.deleteResult(filename);
         } catch (error) {
             logger.error('Error deleting result:', error);
-            showErrorAlert('Failed to delete result');
+            showErrorAlert(getTranslation('results_failed_delete'));
         }
     }
 
@@ -508,7 +508,7 @@ export class ResultsViewer {
                 } catch (error) {
                     logger.error('Error fetching detailed results for analytics:', error);
                     this.hideLoading();
-                    this.showError('Failed to load detailed data for analytics. Please try again.');
+                    this.showError(getTranslation('results_failed_load_detailed'));
                     return;
                 }
             }
@@ -534,7 +534,7 @@ export class ResultsViewer {
 
             if (results.length === 0) {
                 this.hideLoading();
-                this.showError('No player response data available for analytics.');
+                this.showError(getTranslation('results_no_player_data_analytics'));
                 return;
             }
 
@@ -547,7 +547,7 @@ export class ResultsViewer {
         } catch (error) {
             logger.error('Error in showQuestionAnalytics:', error);
             this.hideLoading();
-            this.showError('Failed to generate analytics. Please check the console for details.');
+            this.showError(getTranslation('results_failed_generate_analytics_detail'));
         }
     }
 
@@ -705,7 +705,7 @@ export class ResultsViewer {
 
             const result = this.filteredResults?.find(r => r.filename === filename);
             if (!result) {
-                showErrorAlert('Result not found');
+                showErrorAlert(getTranslation('results_not_found'));
                 this.hideLoading();
                 return;
             }
@@ -730,7 +730,7 @@ export class ResultsViewer {
         } catch (error) {
             logger.error('Error exporting to PDF:', error);
             this.hideLoading();
-            showErrorAlert('Failed to export PDF');
+            showErrorAlert(getTranslation('results_failed_export_pdf'));
         }
     }
 
@@ -745,7 +745,7 @@ export class ResultsViewer {
 
             const result = this.filteredResults?.find(r => r.filename === filename);
             if (!result) {
-                showErrorAlert('Result not found');
+                showErrorAlert(getTranslation('results_not_found'));
                 this.hideLoading();
                 return;
             }
@@ -770,7 +770,7 @@ export class ResultsViewer {
         } catch (error) {
             logger.error('Error exporting to Excel:', error);
             this.hideLoading();
-            showErrorAlert('Failed to export Excel');
+            showErrorAlert(getTranslation('results_failed_export_excel'));
         }
     }
 
@@ -786,7 +786,7 @@ export class ResultsViewer {
         const quizzesWithSessions = getQuizzesWithMultipleSessions(allResults);
 
         if (quizzesWithSessions.length === 0) {
-            showErrorAlert('No quizzes with multiple sessions found. Run a quiz multiple times to compare results.');
+            showErrorAlert(getTranslation('results_no_multi_sessions'));
             return;
         }
 
@@ -812,28 +812,28 @@ export class ResultsViewer {
             <div class="comparison-quiz-item" data-quiz-title="${escapeHtml(quiz.title)}">
                 <div class="quiz-info">
                     <div class="quiz-title">${escapeHtml(quiz.title)}</div>
-                    <div class="quiz-meta">${quiz.sessionCount} sessions | ${quiz.totalParticipants} total participants</div>
+                    <div class="quiz-meta">${quiz.sessionCount} ${getTranslation('compare_sessions_count')} | ${quiz.totalParticipants} ${getTranslation('compare_total_participants')}</div>
                 </div>
-                <button class="btn primary compare-btn">Compare</button>
+                <button class="btn primary compare-btn">${getTranslation('compare_btn')}</button>
             </div>
         `).join('');
 
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 600px;">
                 <div class="modal-header">
-                    <h2>Compare Quiz Sessions</h2>
+                    <h2>${getTranslation('compare_quiz_sessions')}</h2>
                     <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
                 </div>
                 <div class="modal-body" style="padding: 20px; max-height: 400px; overflow-y: auto;">
                     <p style="margin-bottom: 16px; color: #6b7280;">
-                        Select a quiz to compare results across multiple sessions.
+                        ${getTranslation('compare_select_quiz_desc')}
                     </p>
                     <div class="comparison-quiz-list">
                         ${quizListHtml}
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                    <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">${getTranslation('close')}</button>
                 </div>
             </div>
         `;
@@ -877,7 +877,7 @@ export class ResultsViewer {
                     <input type="checkbox" value="${session.filename}" ${idx < 3 ? 'checked' : ''}>
                     <span class="session-info">
                         <span class="session-date">${date}</span>
-                        <span class="session-meta">PIN: ${session.gamePin} | ${participants} participants</span>
+                        <span class="session-meta">${getTranslation('analytics_pin_label')}: ${session.gamePin} | ${participants} ${getTranslation('analytics_participants_label').toLowerCase()}</span>
                     </span>
                 </label>
             `;
@@ -886,21 +886,21 @@ export class ResultsViewer {
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 500px;">
                 <div class="modal-header">
-                    <h2>Select Sessions to Compare</h2>
+                    <h2>${getTranslation('compare_select_sessions')}</h2>
                     <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
                 </div>
                 <div class="modal-body" style="padding: 20px;">
                     <p style="margin-bottom: 8px;"><strong>${quizTitle}</strong></p>
                     <p style="margin-bottom: 16px; color: #6b7280; font-size: 0.9rem;">
-                        Select 2-5 sessions to compare. Results will show performance trends over time.
+                        ${getTranslation('compare_select_sessions_desc')}
                     </p>
                     <div class="session-checkbox-list" style="max-height: 300px; overflow-y: auto;">
                         ${sessionListHtml}
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
-                    <button class="btn primary" id="run-comparison-btn">Compare Selected</button>
+                    <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">${getTranslation('compare_cancel')}</button>
+                    <button class="btn primary" id="run-comparison-btn">${getTranslation('compare_selected')}</button>
                 </div>
             </div>
         `;
@@ -913,12 +913,12 @@ export class ResultsViewer {
                 .map(cb => cb.value);
 
             if (selectedFilenames.length < 2) {
-                showErrorAlert('Please select at least 2 sessions to compare');
+                showErrorAlert(getTranslation('compare_min_sessions'));
                 return;
             }
 
             if (selectedFilenames.length > 5) {
-                showErrorAlert('Please select no more than 5 sessions for clarity');
+                showErrorAlert(getTranslation('compare_max_sessions'));
                 return;
             }
 
@@ -955,7 +955,7 @@ export class ResultsViewer {
 
             if (results.length < 2) {
                 this.hideLoading();
-                showErrorAlert('Could not load enough session data for comparison');
+                showErrorAlert(getTranslation('results_not_enough_comparison'));
                 return;
             }
 
@@ -965,7 +965,7 @@ export class ResultsViewer {
             this.hideLoading();
 
             if (!comparisonData) {
-                showErrorAlert('Could not generate comparison data');
+                showErrorAlert(getTranslation('results_failed_comparison_data'));
                 return;
             }
 
@@ -974,7 +974,7 @@ export class ResultsViewer {
         } catch (error) {
             logger.error('Error running comparison:', error);
             this.hideLoading();
-            showErrorAlert('Failed to generate comparison');
+            showErrorAlert(getTranslation('results_failed_comparison'));
         }
     }
 
@@ -1001,31 +1001,31 @@ export class ResultsViewer {
 
         let insightsHtml = '';
         if (comparisonData.mostImproved) {
-            insightsHtml += `<p style="color: ${COLORS.SUCCESS};"><strong>Most Improved:</strong> Q${comparisonData.mostImproved.questionNumber} (+${comparisonData.mostImproved.trend.toFixed(1)}%)</p>`;
+            insightsHtml += `<p style="color: ${COLORS.SUCCESS};"><strong>${getTranslation('compare_most_improved')}:</strong> Q${comparisonData.mostImproved.questionNumber} (+${comparisonData.mostImproved.trend.toFixed(1)}%)</p>`;
         }
         if (comparisonData.mostDeclined) {
-            insightsHtml += `<p style="color: ${COLORS.ERROR};"><strong>Needs Attention:</strong> Q${comparisonData.mostDeclined.questionNumber} (${comparisonData.mostDeclined.trend.toFixed(1)}%)</p>`;
+            insightsHtml += `<p style="color: ${COLORS.ERROR};"><strong>${getTranslation('compare_needs_attention')}:</strong> Q${comparisonData.mostDeclined.questionNumber} (${comparisonData.mostDeclined.trend.toFixed(1)}%)</p>`;
         }
 
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 800px;">
                 <div class="modal-header">
-                    <h2>Session Comparison: ${escapeHtml(quizTitle)}</h2>
+                    <h2>${getTranslation('compare_quiz_sessions')}: ${escapeHtml(quizTitle)}</h2>
                     <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
                 </div>
                 <div class="modal-body" style="padding: 20px;">
                     <div class="comparison-summary" style="display: flex; gap: 20px; margin-bottom: 20px;">
                         <div class="stat-card" style="flex: 1; background: #f3f4f6; padding: 16px; border-radius: 8px; text-align: center;">
                             <div style="font-size: 2rem;">${comparisonData.sessionCount}</div>
-                            <div style="color: #6b7280;">Sessions</div>
+                            <div style="color: #6b7280;">${getTranslation('compare_sessions_title')}</div>
                         </div>
                         <div class="stat-card" style="flex: 1; background: #f3f4f6; padding: 16px; border-radius: 8px; text-align: center;">
                             <div style="font-size: 2rem;">${comparisonData.averageParticipants}</div>
-                            <div style="color: #6b7280;">Avg Participants</div>
+                            <div style="color: #6b7280;">${getTranslation('compare_avg_participants')}</div>
                         </div>
                         <div class="stat-card" style="flex: 1; background: ${trendColor}15; padding: 16px; border-radius: 8px; text-align: center;">
                             <div style="font-size: 2rem;">${trendIcon}</div>
-                            <div style="color: ${trendColor};">${comparisonData.trendDirection.charAt(0).toUpperCase() + comparisonData.trendDirection.slice(1)} (${comparisonData.overallTrend > 0 ? '+' : ''}${comparisonData.overallTrend.toFixed(1)}%)</div>
+                            <div style="color: ${trendColor};">${getTranslation('compare_' + comparisonData.trendDirection)} (${comparisonData.overallTrend > 0 ? '+' : ''}${comparisonData.overallTrend.toFixed(1)}%)</div>
                         </div>
                     </div>
 
@@ -1034,13 +1034,13 @@ export class ResultsViewer {
                     </div>
 
                     <div class="comparison-insights" style="background: #f9fafb; padding: 16px; border-radius: 8px;">
-                        <h4 style="margin: 0 0 12px 0;">Key Insights</h4>
-                        ${insightsHtml || '<p style="color: #6b7280;">Performance has remained stable across sessions.</p>'}
+                        <h4 style="margin: 0 0 12px 0;">${getTranslation('compare_key_insights')}</h4>
+                        ${insightsHtml || `<p style="color: #6b7280;">${getTranslation('compare_stable_performance')}</p>`}
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
-                    <button class="btn primary" id="export-comparison-pdf">Export PDF</button>
+                    <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">${getTranslation('close')}</button>
+                    <button class="btn primary" id="export-comparison-pdf">${getTranslation('export_pdf_btn')}</button>
                 </div>
             </div>
         `;

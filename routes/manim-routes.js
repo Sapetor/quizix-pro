@@ -81,13 +81,14 @@ function createManimRoutes({ logger, CONFIG, manimRenderService }) {
 
             // Validate code
             if (!code || typeof code !== 'string' || code.trim().length === 0) {
-                return res.status(400).json({ error: 'code is required and must be a non-empty string' });
+                return res.status(400).json({ error: 'code is required and must be a non-empty string', messageKey: 'error_manim_code_required' });
             }
 
             // Validate quality
             if (!VALID_QUALITIES.includes(quality)) {
                 return res.status(400).json({
-                    error: `quality must be one of: ${VALID_QUALITIES.join(', ')}`
+                    error: `quality must be one of: ${VALID_QUALITIES.join(', ')}`,
+                    messageKey: 'error_manim_invalid_quality'
                 });
             }
 
@@ -99,6 +100,7 @@ function createManimRoutes({ logger, CONFIG, manimRenderService }) {
                 logger.warn(`Manim render rate limit exceeded for IP: ${clientIP}`);
                 return res.status(429).json({
                     error: 'Rate limit exceeded',
+                    messageKey: 'error_rate_limited',
                     retryAfter: rateCheck.retryAfter
                 });
             }
@@ -116,7 +118,7 @@ function createManimRoutes({ logger, CONFIG, manimRenderService }) {
             // Validation errors from the service (bad code, syntax issues, etc.)
             if (error.name === 'ValidationError' || error.code === 'VALIDATION_ERROR') {
                 logger.warn('Manim render validation error:', error.message);
-                return res.status(400).json({ error: error.message });
+                return res.status(400).json({ error: error.message, messageKey: error.messageKey || 'error_manim_invalid_code' });
             }
 
             // Timeout errors
@@ -127,7 +129,8 @@ function createManimRoutes({ logger, CONFIG, manimRenderService }) {
             ) {
                 logger.warn('Manim render timed out');
                 return res.status(408).json({
-                    error: 'Animation render timed out. Try simplifying the animation.'
+                    error: 'Animation render timed out. Try simplifying the animation.',
+                    messageKey: error.messageKey || 'error_manim_timeout'
                 });
             }
 
@@ -135,6 +138,7 @@ function createManimRoutes({ logger, CONFIG, manimRenderService }) {
             logger.error('Manim render error:', error.message);
             return res.status(500).json({
                 error: 'Render failed',
+                messageKey: error.messageKey || 'error_manim_render_failed',
                 details: sanitizeErrorMessage(error.message)
             });
         }

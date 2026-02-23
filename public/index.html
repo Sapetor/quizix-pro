@@ -725,29 +725,29 @@
             <div class="host-container" id="host-container">
                 <!-- Vertical Editor Toolbar (Desktop always-preview mode) -->
                 <aside class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="Quiz editing tools">
-                    <button class="toolbar-btn" id="vtoolbar-add-question" data-translate-title="add_question_tooltip" aria-label="Add question">
+                    <button class="toolbar-btn" id="vtoolbar-add-question" data-translate-title="add_question_tooltip" aria-label="Add question" data-translate-aria-label="add_question_tooltip">
                         <span class="toolbar-icon" aria-hidden="true">➕</span>
                     </button>
-                    <button class="toolbar-btn" id="vtoolbar-save" data-translate-title="save_quiz_tooltip" aria-label="Save quiz">
+                    <button class="toolbar-btn" id="vtoolbar-save" data-translate-title="save_quiz_tooltip" aria-label="Save quiz" data-translate-aria-label="save_quiz_tooltip">
                         <span class="toolbar-icon" aria-hidden="true">💾</span>
                     </button>
-                    <button class="toolbar-btn" id="vtoolbar-load" data-translate-title="load_quiz_tooltip" aria-label="Load quiz">
+                    <button class="toolbar-btn" id="vtoolbar-load" data-translate-title="load_quiz_tooltip" aria-label="Load quiz" data-translate-aria-label="load_quiz_tooltip">
                         <span class="toolbar-icon" aria-hidden="true">📂</span>
                     </button>
                     <div class="toolbar-divider"></div>
-                    <button class="toolbar-btn" id="vtoolbar-ai-gen" data-translate-title="ai_generator_tooltip" aria-label="AI question generator">
+                    <button class="toolbar-btn" id="vtoolbar-ai-gen" data-translate-title="ai_generator_tooltip" aria-label="AI question generator" data-translate-aria-label="ai_generator_tooltip">
                         <span class="toolbar-icon" aria-hidden="true">🤖</span>
                     </button>
-                    <button class="toolbar-btn" id="vtoolbar-settings" data-translate-title="quiz_settings_tooltip" aria-label="Quiz settings">
+                    <button class="toolbar-btn" id="vtoolbar-settings" data-translate-title="quiz_settings_tooltip" aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip">
                         <span class="toolbar-icon" aria-hidden="true">⚙️</span>
                     </button>
-                    <button class="toolbar-btn" id="vtoolbar-import" data-translate-title="import_quiz_tooltip" aria-label="Import quiz">
+                    <button class="toolbar-btn" id="vtoolbar-import" data-translate-title="import_quiz_tooltip" aria-label="Import quiz" data-translate-aria-label="import_quiz_tooltip">
                         <span class="toolbar-icon" aria-hidden="true">📥</span>
                     </button>
-                    <button class="toolbar-btn" id="vtoolbar-export" data-translate-title="export_quiz_tooltip" aria-label="Export quiz">
+                    <button class="toolbar-btn" id="vtoolbar-export" data-translate-title="export_quiz_tooltip" aria-label="Export quiz" data-translate-aria-label="export_quiz_tooltip">
                         <span class="toolbar-icon" aria-hidden="true">📤</span>
                     </button>
-                    <button class="toolbar-btn" id="vtoolbar-results" data-translate-title="view_results_tooltip" aria-label="View results">
+                    <button class="toolbar-btn" id="vtoolbar-results" data-translate-title="view_results_tooltip" aria-label="View results" data-translate-aria-label="view_results_tooltip">
                         <span class="toolbar-icon" aria-hidden="true">📊</span>
                     </button>
                 </aside>
@@ -934,36 +934,36 @@
 
                                 <div class="video-section hidden">
                                     <div class="video-tabs">
-                                        <button type="button" class="video-tab active" data-target="question">Question Animation</button>
-                                        <button type="button" class="video-tab" data-target="explanation">Explanation Animation</button>
-                                        <button type="button" class="manim-help-btn" title="Manim Tutorial">?</button>
+                                        <button type="button" class="video-tab active" data-target="question" data-translate="manim_question_animation_tab">Question Animation</button>
+                                        <button type="button" class="video-tab" data-target="explanation" data-translate="manim_explanation_animation_tab">Explanation Animation</button>
+                                        <button type="button" class="manim-help-btn" title="Manim Tutorial" data-translate-title="manim_tutorial_title">?</button>
                                     </div>
                                     <div class="video-panel" data-panel="question">
                                         <div class="manim-code-editor">
-                                            <label>Manim Code:</label>
+                                            <label data-translate="manim_code_label">Manim Code:</label>
                                             <textarea class="manim-code question-manim-code" placeholder="from manim import *&#10;class MyScene(Scene):&#10;    def construct(self):&#10;        ..." rows="6"></textarea>
                                             <div class="manim-actions">
-                                                <button type="button" class="render-manim-btn" data-placement="question">Render Animation</button>
+                                                <button type="button" class="render-manim-btn" data-placement="question" data-translate="render_animation">Render Animation</button>
                                                 <span class="render-status hidden"></span>
                                             </div>
                                         </div>
                                         <div class="video-preview hidden">
                                             <video class="question-video" controls preload="metadata"></video>
-                                            <button type="button" class="remove-video" data-placement="question">Remove Video</button>
+                                            <button type="button" class="remove-video" data-placement="question" data-translate="remove_video">Remove Video</button>
                                         </div>
                                     </div>
                                     <div class="video-panel hidden" data-panel="explanation">
                                         <div class="manim-code-editor">
-                                            <label>Manim Code:</label>
+                                            <label data-translate="manim_code_label">Manim Code:</label>
                                             <textarea class="manim-code explanation-manim-code" placeholder="from manim import *&#10;class ExplainScene(Scene):&#10;    def construct(self):&#10;        ..." rows="6"></textarea>
                                             <div class="manim-actions">
-                                                <button type="button" class="render-manim-btn" data-placement="explanation">Render Animation</button>
+                                                <button type="button" class="render-manim-btn" data-placement="explanation" data-translate="render_animation">Render Animation</button>
                                                 <span class="render-status hidden"></span>
                                             </div>
                                         </div>
                                         <div class="video-preview hidden">
                                             <video class="explanation-video" controls preload="metadata"></video>
-                                            <button type="button" class="remove-video" data-placement="explanation">Remove Video</button>
+                                            <button type="button" class="remove-video" data-placement="explanation" data-translate="remove_video">Remove Video</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1047,7 +1047,7 @@
                     <input type="file" id="import-file-input" accept=".csv,.json" style="display: none;">
                     
                     <!-- Back to Top Button -->
-                    <button id="back-to-top" class="back-to-top-btn" onclick="scrollToTop()" style="display: none;" title="Back to Top" aria-label="Back to top" data-translate-aria-label="back_to_top_tooltip">
+                    <button id="back-to-top" class="back-to-top-btn" onclick="scrollToTop()" style="display: none;" title="Back to Top" data-translate-title="back_to_top_tooltip" aria-label="Back to top" data-translate-aria-label="back_to_top_tooltip">
                         <span aria-hidden="true">⬆️</span>
                     </button>
                     </div>
@@ -1163,7 +1163,7 @@
         </button>
 
         <!-- Mobile Quiz Management FAB - Outside container to ensure position:fixed works on mobile -->
-        <button id="mobile-quiz-fab" class="mobile-quiz-fab" onclick="showMobileQuizSheet()" aria-label="Editing Tools">
+        <button id="mobile-quiz-fab" class="mobile-quiz-fab" onclick="showMobileQuizSheet()" aria-label="Editing Tools" data-translate-aria-label="tools">
             🔧 <span data-translate="tools">Tools</span>
         </button>
 
@@ -1355,7 +1355,7 @@
                 <div class="lobby-layout">
                     <!-- Left Column: Players List -->
                     <div class="lobby-column left-column">
-                        <div class="lobby-card players-list-card" role="region" aria-label="Connected Players">
+                        <div class="lobby-card players-list-card" role="region" aria-label="Connected Players" data-translate-aria-label="players_joined">
                             <div class="card-header">
                                 <h3 class="card-title" data-translate="players_joined">Players Joined</h3>
                             </div>
@@ -1367,7 +1367,7 @@
                     
                     <!-- Right Column: Combined Game Info with QR, PIN, Player Count, and Start Button -->
                     <div class="lobby-column right-column">
-                        <div class="lobby-card combined-info-card" role="region" aria-label="Game Information and Controls">
+                        <div class="lobby-card combined-info-card" role="region" aria-label="Game Information and Controls" data-translate-aria-label="game_info">
                             <div class="card-header">
                                 <h3 class="card-title" data-translate="game_info">Game Info</h3>
                             </div>
@@ -1379,7 +1379,7 @@
                                         <img id="qr-code-image" style="display: none;" alt="QR Code to join game">
                                     </div>
                                     <div class="pin-section">
-                                        <div id="game-pin" class="pin-display" role="button" tabindex="0" aria-label="Click to copy PIN">
+                                        <div id="game-pin" class="pin-display" role="button" tabindex="0" aria-label="Click to copy PIN" data-translate-aria-label="click_to_copy_pin">
                                             <div class="pin-text" data-translate="game_pin">Game PIN</div>
                                             <div class="pin-digits">------</div>
                                         </div>
@@ -1394,7 +1394,7 @@
                                         <span id="lobby-player-count" class="player-count-number">0</span>
                                         <span class="info-label" data-translate="players">players</span>
                                     </div>
-                                    <button id="start-game" class="btn primary large-start-btn" aria-label="Start the quiz game">
+                                    <button id="start-game" class="btn primary large-start-btn" aria-label="Start the quiz game" data-translate-aria-label="start_game">
                                         <span data-translate="start_game">Start Game</span>
                                     </button>
                                 </div>
@@ -1415,7 +1415,7 @@
                 <!-- Host-specific header with timer and counter -->
                 <div class="question-header">
                     <span id="question-counter" aria-live="polite">Question 1 of 5</span>
-                    <div id="timer" class="timer" role="timer" aria-live="off" aria-label="Time remaining">20</div>
+                    <div id="timer" class="timer" role="timer" aria-live="off" aria-label="Time remaining" data-translate-aria-label="time_remaining">20</div>
                 </div>
                 
                 <!-- Use client-style question display -->
@@ -1429,7 +1429,7 @@
                 
                     <!-- Real-time Answer Statistics -->
                     <!-- Moved above alternatives for better host visibility -->
-                    <div id="answer-statistics" class="answer-stats hidden" role="region" aria-label="Live answer statistics">
+                    <div id="answer-statistics" class="answer-stats hidden" role="region" aria-label="Live answer statistics" data-translate-aria-label="live_answer_statistics">
                         <div class="stats-header">
                             <h3 data-translate="live_answer_statistics">Live Answer Statistics</h3>
                             <!-- Game control buttons for statistics phase - moved to top for visibility -->
@@ -1778,7 +1778,7 @@
                         <button id="next-question" class="btn primary" style="display: none;" data-translate="next_question">Next Question</button>
                     </div>
                 </div>
-                <div id="leaderboard-list" class="leaderboard" role="list" aria-live="polite" aria-label="Player rankings"></div>
+                <div id="leaderboard-list" class="leaderboard" role="list" aria-live="polite" aria-label="Player rankings" data-translate-aria-label="player_rankings"></div>
                 <div id="final-results" class="final-results hidden">
                     <h3 data-translate="game_complete">🎉 Game Complete!</h3>
                     <div class="final-actions">
@@ -1806,9 +1806,9 @@
                 </div>
                 <div id="top-players" class="top-players">
                     <h3 data-translate="top_players"><span aria-hidden="true">🏆</span> Top Players</h3>
-                    <div id="final-leaderboard" class="final-leaderboard" role="list" aria-label="Top players"></div>
+                    <div id="final-leaderboard" class="final-leaderboard" role="list" aria-label="Top players" data-translate-aria-label="top_players"></div>
                 </div>
-                <div id="player-concept-mastery" class="player-concept-mastery hidden" role="region" aria-label="Your concept mastery">
+                <div id="player-concept-mastery" class="player-concept-mastery hidden" role="region" aria-label="Your concept mastery" data-translate-aria-label="your_concept_mastery">
                     <!-- Dynamically populated by LeaderboardManager -->
                 </div>
                 <button id="play-again" class="btn primary" data-translate="play_again">Play Again</button>
@@ -1874,39 +1874,39 @@
         <div id="manim-tutorial-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="manim-tutorial-title">
             <div class="modal-content large">
                 <div class="modal-header">
-                    <h3 id="manim-tutorial-title">Manim Animation Tutorial</h3>
-                    <button id="close-manim-tutorial" class="close-btn">&times;</button>
+                    <h3 id="manim-tutorial-title" data-translate="manim_tutorial_title">Manim Animation Tutorial</h3>
+                    <button id="close-manim-tutorial" class="close-btn" data-translate-aria-label="close">&times;</button>
                 </div>
                 <div class="manim-tutorial-body">
                     <section class="tutorial-section">
-                        <h4>What are Manim Animations?</h4>
-                        <p>Manim lets you create mathematical animations using Python code. Attach animations to your quiz questions to make concepts visual and engaging.</p>
+                        <h4 data-translate="manim_what_are_animations">What are Manim Animations?</h4>
+                        <p data-translate="manim_what_are_animations_desc">Manim lets you create mathematical animations using Python code. Attach animations to your quiz questions to make concepts visual and engaging.</p>
                         <video class="tutorial-video" controls playsinline preload="metadata">
                             <source src="assets/tutorial/manim-demo.mp4" type="video/mp4">
                         </video>
                     </section>
 
                     <section class="tutorial-section">
-                        <h4>How to Use</h4>
+                        <h4 data-translate="manim_how_to_use">How to Use</h4>
                         <video class="tutorial-video" controls playsinline preload="metadata">
                             <source src="assets/tutorial/manim-steps.mp4" type="video/mp4">
                         </video>
                         <ol class="tutorial-steps">
-                            <li><strong>Question Animation</strong> tab &mdash; plays alongside the question during the quiz</li>
-                            <li><strong>Explanation Animation</strong> tab &mdash; plays after the answer is revealed</li>
-                            <li>Write Manim Python code in the editor</li>
-                            <li>Click <em>Render Animation</em> and wait a few seconds</li>
-                            <li>Preview the result, then save your quiz</li>
+                            <li><strong data-translate="manim_question_animation_tab">Question Animation</strong> tab &mdash; plays alongside the question during the quiz</li>
+                            <li><strong data-translate="manim_explanation_animation_tab">Explanation Animation</strong> tab &mdash; plays after the answer is revealed</li>
+                            <li data-translate="manim_step_write_code">Write Manim Python code in the editor</li>
+                            <li data-translate="manim_step_click_render">Click <em>Render Animation</em> and wait a few seconds</li>
+                            <li data-translate="manim_step_preview_save">Preview the result, then save your quiz</li>
                         </ol>
                     </section>
 
                     <section class="tutorial-section">
-                        <h4>Code Examples</h4>
-                        <p>Click any example to copy it to your clipboard.</p>
+                        <h4 data-translate="manim_code_examples">Code Examples</h4>
+                        <p data-translate="manim_code_examples_desc">Click any example to copy it to your clipboard.</p>
 
                         <div class="tutorial-example">
-                            <h5>Basic Shapes</h5>
-                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code">from manim import *
+                            <h5 data-translate="manim_example_basic_shapes">Basic Shapes</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code" data-translate-aria-label="manim_copy_code_aria">from manim import *
 
 class ShapesScene(Scene):
     def construct(self):
@@ -1919,8 +1919,8 @@ class ShapesScene(Scene):
                         </div>
 
                         <div class="tutorial-example">
-                            <h5>Text &amp; Annotations</h5>
-                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code">from manim import *
+                            <h5 data-translate="manim_example_text">Text &amp; Annotations</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code" data-translate-aria-label="manim_copy_code_aria">from manim import *
 
 class TextScene(Scene):
     def construct(self):
@@ -1936,8 +1936,8 @@ class TextScene(Scene):
                         </div>
 
                         <div class="tutorial-example">
-                            <h5>Number Line</h5>
-                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code">from manim import *
+                            <h5 data-translate="manim_example_number_line">Number Line</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code" data-translate-aria-label="manim_copy_code_aria">from manim import *
 
 class NumberLineScene(Scene):
     def construct(self):
@@ -1952,8 +1952,8 @@ class NumberLineScene(Scene):
                         </div>
 
                         <div class="tutorial-example">
-                            <h5>Graph / Function Plot</h5>
-                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code">from manim import *
+                            <h5 data-translate="manim_example_graph">Graph / Function Plot</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code" data-translate-aria-label="manim_copy_code_aria">from manim import *
 
 class GraphScene(Scene):
     def construct(self):
@@ -1966,18 +1966,18 @@ class GraphScene(Scene):
                     </section>
 
                     <section class="tutorial-section">
-                        <h4>Tips</h4>
+                        <h4 data-translate="manim_tips">Tips</h4>
                         <ul class="tutorial-tips">
-                            <li>Keep animations short (2&ndash;5 seconds) for quiz flow</li>
-                            <li>Use <code>self.wait(1)</code> to pause between steps</li>
-                            <li>Your class must extend <code>Scene</code> (e.g. <code>class MyScene(Scene)</code>)</li>
-                            <li>Always start with <code>from manim import *</code></li>
-                            <li>Use <code>Text()</code> for labels &mdash; <code>MathTex()</code> requires LaTeX installed</li>
+                            <li data-translate="manim_tip_keep_short">Keep animations short (2&ndash;5 seconds) for quiz flow</li>
+                            <li data-translate="manim_tip_use_wait">Use <code>self.wait(1)</code> to pause between steps</li>
+                            <li data-translate="manim_tip_scene_class">Your class must extend <code>Scene</code> (e.g. <code>class MyScene(Scene)</code>)</li>
+                            <li data-translate="manim_tip_import">Always start with <code>from manim import *</code></li>
+                            <li data-translate="manim_tip_mathtex">Use <code>Text()</code> for labels &mdash; <code>MathTex()</code> requires LaTeX installed</li>
                         </ul>
                     </section>
                 </div>
                 <div class="modal-actions">
-                    <button id="close-manim-tutorial-btn" class="btn secondary">Close</button>
+                    <button id="close-manim-tutorial-btn" class="btn secondary" data-translate="manim_tutorial_close">Close</button>
                 </div>
             </div>
         </div>
@@ -2011,10 +2011,10 @@ class GraphScene(Scene):
                     <div class="model-selection hidden" id="claude-model-selection">
                         <label for="claude-model" data-translate="choose_claude_model">Choose Claude Model:</label>
                         <select id="claude-model" class="input-field">
-                            <option value="claude-sonnet-4-5">Claude Sonnet 4.5 (Recommended)</option>
-                            <option value="claude-haiku-4-5">Claude Haiku 4.5 (Fast & Cheap)</option>
-                            <option value="claude-opus-4-5">Claude Opus 4.5 (Most Capable)</option>
-                            <option value="claude-sonnet-4-0">Claude Sonnet 4 (Legacy)</option>
+                            <option value="claude-sonnet-4-5" data-translate="claude_sonnet_45">Claude Sonnet 4.5 (Recommended)</option>
+                            <option value="claude-haiku-4-5" data-translate="claude_haiku_45">Claude Haiku 4.5 (Fast & Cheap)</option>
+                            <option value="claude-opus-4-5" data-translate="claude_opus_45">Claude Opus 4.5 (Most Capable)</option>
+                            <option value="claude-sonnet-4-0" data-translate="claude_sonnet_40">Claude Sonnet 4 (Legacy)</option>
                         </select>
                         <small data-translate="select_claude_model">Select which Claude model to use for generation</small>
                     </div>
@@ -2022,11 +2022,11 @@ class GraphScene(Scene):
                     <div class="model-selection hidden" id="gemini-model-selection">
                         <label for="gemini-model" data-translate="choose_gemini_model">Choose Gemini Model:</label>
                         <select id="gemini-model" class="input-field">
-                            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended)</option>
-                            <option value="gemini-2.5-pro">Gemini 2.5 Pro (Most Capable)</option>
-                            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Fast & Cheap)</option>
-                            <option value="gemini-3-flash-preview">Gemini 3 Flash (Preview - Latest)</option>
-                            <option value="gemini-3-pro-preview">Gemini 3 Pro (Preview - Most Advanced)</option>
+                            <option value="gemini-2.5-flash" data-translate="gemini_25_flash">Gemini 2.5 Flash (Recommended)</option>
+                            <option value="gemini-2.5-pro" data-translate="gemini_25_pro">Gemini 2.5 Pro (Most Capable)</option>
+                            <option value="gemini-2.5-flash-lite" data-translate="gemini_25_flash_lite">Gemini 2.5 Flash Lite (Fast & Cheap)</option>
+                            <option value="gemini-3-flash-preview" data-translate="gemini_3_flash_preview">Gemini 3 Flash (Preview - Latest)</option>
+                            <option value="gemini-3-pro-preview" data-translate="gemini_3_pro_preview">Gemini 3 Pro (Preview - Most Advanced)</option>
                         </select>
                         <small data-translate="select_gemini_model">Select which Gemini model to use for generation</small>
                     </div>
@@ -2241,15 +2241,15 @@ class GraphScene(Scene):
                         <button id="refresh-results" class="btn secondary refresh-btn" data-translate="refresh" title="Refresh results list">
                             ↻ Refresh
                         </button>
-                        <button id="compare-sessions-btn" class="btn secondary" title="Compare multiple sessions of the same quiz" onclick="window.resultsViewer?.showComparisonSelector()">
-                            Compare Sessions
+                        <button id="compare-sessions-btn" class="btn secondary" title="Compare multiple sessions of the same quiz" data-translate-title="compare_sessions_tooltip" onclick="window.resultsViewer?.showComparisonSelector()">
+                            <span data-translate="compare_sessions">Compare Sessions</span>
                         </button>
                     </div>
                 </div>
                 
                 <div class="results-list" id="results-list">
                     <div class="loading-message" id="results-loading">
-                        <span>Loading quiz results...</span>
+                        <span data-translate="loading_quiz_results">Loading quiz results...</span>
                     </div>
                 </div>
             </div>
@@ -2322,7 +2322,7 @@ class GraphScene(Scene):
     <div id="mobile-quiz-sheet-overlay" class="mobile-quiz-sheet-overlay" onclick="hideMobileQuizSheet()" role="dialog" aria-modal="true" aria-labelledby="mobile-quiz-sheet-title">
         <div id="mobile-quiz-sheet" class="mobile-quiz-sheet" onclick="event.stopPropagation()">
             <div class="mobile-quiz-sheet-header">
-                <div class="mobile-quiz-sheet-handle" onclick="hideMobileQuizSheet()" role="button" aria-label="Close sheet" tabindex="0"></div>
+                <div class="mobile-quiz-sheet-handle" onclick="hideMobileQuizSheet()" role="button" aria-label="Close sheet" data-translate-aria-label="close" tabindex="0"></div>
                 <h3 id="mobile-quiz-sheet-title" class="mobile-quiz-sheet-title" data-translate="quiz_actions">Quiz Actions</h3>
                 <button class="mobile-quiz-sheet-close" onclick="hideMobileQuizSheet()" data-translate-aria-label="close">×</button>
             </div>

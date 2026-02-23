@@ -6,6 +6,7 @@
 
 import { logger, UI } from '../../core/config.js';
 import { getItem, setItem } from '../../utils/storage-utils.js';
+import { getTranslation } from '../../utils/translation-manager.js';
 
 // Mobile breakpoint - matches CSS media query in responsive.css
 const MOBILE_BREAKPOINT = 1000;
@@ -249,7 +250,7 @@ export class SplitLayoutManager {
         resizeHandle.setAttribute('aria-valuenow', '70');
         resizeHandle.setAttribute('aria-valuemin', String(MIN_RATIO));
         resizeHandle.setAttribute('aria-valuemax', String(MAX_RATIO));
-        resizeHandle.setAttribute('aria-label', 'Resize split view. Use left and right arrow keys to adjust.');
+        resizeHandle.setAttribute('aria-label', getTranslation('resize_split_view'));
 
         this.listeners.keyboardResize = (e) => this.handleKeyboardResize(e);
         resizeHandle.addEventListener('keydown', this.listeners.keyboardResize);

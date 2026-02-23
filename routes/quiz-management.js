@@ -53,7 +53,7 @@ function createQuizManagementRoutes(options) {
             res.json(quizzes);
         } catch (error) {
             logger.error('Load quizzes error:', error);
-            res.status(500).json({ error: 'Failed to load quizzes' });
+            res.status(500).json({ error: 'Failed to load quizzes', messageKey: 'error_failed_load_quizzes' });
         }
     });
 
@@ -66,7 +66,7 @@ function createQuizManagementRoutes(options) {
         } catch (error) {
             logger.error('Load quiz error:', error);
             const statusCode = error.message === 'Quiz not found' ? 404 : 400;
-            res.status(statusCode).json({ error: error.message || 'Failed to load quiz' });
+            res.status(statusCode).json({ error: error.message || 'Failed to load quiz', messageKey: error.messageKey || 'error_failed_load_quiz' });
         }
     });
 
@@ -82,7 +82,7 @@ function createQuizManagementRoutes(options) {
             res.json(result);
         } catch (error) {
             logger.error('Save results error:', error);
-            res.status(400).json({ error: error.message || 'Failed to save results' });
+            res.status(400).json({ error: error.message || 'Failed to save results', messageKey: error.messageKey || 'error_failed_save_results' });
         }
     });
 
@@ -93,7 +93,7 @@ function createQuizManagementRoutes(options) {
             res.json(results);
         } catch (error) {
             logger.error('Error listing results:', error);
-            res.status(500).json({ error: 'Failed to list results' });
+            res.status(500).json({ error: 'Failed to list results', messageKey: 'error_failed_list_results' });
         }
     });
 
@@ -106,12 +106,12 @@ function createQuizManagementRoutes(options) {
             const host = req.get('host');
             if (origin && !origin.includes(host)) {
                 logger.warn(`Rejected cross-origin delete attempt from ${origin}`);
-                return res.status(403).json({ error: 'Cross-origin requests not allowed' });
+                return res.status(403).json({ error: 'Cross-origin requests not allowed', messageKey: 'error_cross_origin' });
             }
 
             // Require confirmation parameter to prevent accidental deletes
             if (req.query.confirm !== 'true') {
-                return res.status(400).json({ error: 'Delete requires confirm=true parameter' });
+                return res.status(400).json({ error: 'Delete requires confirm=true parameter', messageKey: 'error_confirm_required' });
             }
 
             const filename = req.params.filename;
@@ -124,7 +124,7 @@ function createQuizManagementRoutes(options) {
         } catch (error) {
             logger.error('Error deleting result file:', error);
             const statusCode = error.message === 'Result file not found' ? 404 : 400;
-            res.status(statusCode).json({ error: error.message || 'Failed to delete result file' });
+            res.status(statusCode).json({ error: error.message || 'Failed to delete result file', messageKey: error.messageKey || 'error_failed_delete_result' });
         }
     });
 
@@ -137,7 +137,7 @@ function createQuizManagementRoutes(options) {
         } catch (error) {
             logger.error('Error retrieving result file:', error);
             const statusCode = error.message === 'Result file not found' ? 404 : 400;
-            res.status(statusCode).json({ error: error.message || 'Failed to retrieve result file' });
+            res.status(statusCode).json({ error: error.message || 'Failed to retrieve result file', messageKey: error.messageKey || 'error_failed_retrieve_result' });
         }
     });
 
@@ -159,7 +159,7 @@ function createQuizManagementRoutes(options) {
         } catch (error) {
             logger.error('Error exporting result file:', error);
             const statusCode = error.message === 'Result file not found' ? 404 : 400;
-            res.status(statusCode).json({ error: error.message || 'Failed to export result file' });
+            res.status(statusCode).json({ error: error.message || 'Failed to export result file', messageKey: error.messageKey || 'error_failed_export_result' });
         }
     });
 
@@ -190,7 +190,7 @@ function createQuizManagementRoutes(options) {
             });
         } catch (error) {
             logger.error('Active games fetch error:', error);
-            res.status(500).json({ error: 'Failed to fetch active games' });
+            res.status(500).json({ error: 'Failed to fetch active games', messageKey: 'error_failed_fetch_games' });
         }
     });
 
@@ -201,13 +201,13 @@ function createQuizManagementRoutes(options) {
 
             // Validate PIN format - must be 6 digits
             if (!pin || !/^\d{6}$/.test(pin)) {
-                return res.status(400).json({ error: 'Invalid PIN format. Must be 6 digits.' });
+                return res.status(400).json({ error: 'Invalid PIN format. Must be 6 digits.', messageKey: 'error_invalid_pin_format' });
             }
 
             const game = gameSessionService.getGame(pin);
 
             if (!game) {
-                return res.status(404).json({ error: 'Game not found' });
+                return res.status(404).json({ error: 'Game not found', messageKey: 'error_game_not_found' });
             }
 
             // Generate QR code with caching
@@ -222,7 +222,7 @@ function createQuizManagementRoutes(options) {
             res.json(responseData);
         } catch (error) {
             logger.error(`QR code generation error for PIN ${req.params.pin}:`, error);
-            res.status(500).json({ error: error.message || 'Failed to generate QR code' });
+            res.status(500).json({ error: error.message || 'Failed to generate QR code', messageKey: 'error_failed_generate_qr' });
         }
     });
 
@@ -237,7 +237,7 @@ function createQuizManagementRoutes(options) {
             res.json(tree);
         } catch (error) {
             logger.error('Get quiz tree error:', error);
-            res.status(500).json({ error: 'Failed to get quiz tree' });
+            res.status(500).json({ error: 'Failed to get quiz tree', messageKey: 'error_failed_get_quiz_tree' });
         }
     });
 
@@ -249,7 +249,7 @@ function createQuizManagementRoutes(options) {
             res.status(201).json(folder);
         } catch (error) {
             logger.error('Create folder error:', error);
-            res.status(400).json({ error: error.message || 'Failed to create folder' });
+            res.status(400).json({ error: error.message || 'Failed to create folder', messageKey: error.messageKey || 'error_failed_create_folder' });
         }
     });
 
@@ -263,7 +263,7 @@ function createQuizManagementRoutes(options) {
         } catch (error) {
             logger.error('Rename folder error:', error);
             const statusCode = error.message === 'Folder not found' ? 404 : 400;
-            res.status(statusCode).json({ error: error.message || 'Failed to rename folder' });
+            res.status(statusCode).json({ error: error.message || 'Failed to rename folder', messageKey: error.messageKey || 'error_failed_rename_folder' });
         }
     });
 
@@ -277,7 +277,7 @@ function createQuizManagementRoutes(options) {
         } catch (error) {
             logger.error('Move folder error:', error);
             const statusCode = error.message === 'Folder not found' ? 404 : 400;
-            res.status(statusCode).json({ error: error.message || 'Failed to move folder' });
+            res.status(statusCode).json({ error: error.message || 'Failed to move folder', messageKey: error.messageKey || 'error_failed_move_folder' });
         }
     });
 
@@ -291,7 +291,7 @@ function createQuizManagementRoutes(options) {
         } catch (error) {
             logger.error('Set folder password error:', error);
             const statusCode = error.message === 'Folder not found' ? 404 : 400;
-            res.status(statusCode).json({ error: error.message || 'Failed to set folder password' });
+            res.status(statusCode).json({ error: error.message || 'Failed to set folder password', messageKey: error.messageKey || 'error_failed_set_password' });
         }
     });
 
@@ -306,12 +306,12 @@ function createQuizManagementRoutes(options) {
                 // Extract token from Authorization header
                 const authHeader = req.headers['authorization'];
                 if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                    return res.status(401).json({ error: 'Authentication required' });
+                    return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
                 }
 
                 const token = authHeader.substring(7); // Remove 'Bearer ' prefix
                 if (!metadataService.verifyToken(token, id, 'folder')) {
-                    return res.status(403).json({ error: 'Invalid or expired authentication token' });
+                    return res.status(403).json({ error: 'Invalid or expired authentication token', messageKey: 'error_invalid_token' });
                 }
             }
 
@@ -320,7 +320,7 @@ function createQuizManagementRoutes(options) {
         } catch (error) {
             logger.error('Delete folder error:', error);
             const statusCode = error.message === 'Folder not found' ? 404 : 400;
-            res.status(statusCode).json({ error: error.message || 'Failed to delete folder' });
+            res.status(statusCode).json({ error: error.message || 'Failed to delete folder', messageKey: error.messageKey || 'error_failed_delete_folder' });
         }
     });
 
@@ -331,7 +331,7 @@ function createQuizManagementRoutes(options) {
 
             // Validate filename
             if (!quizService.validateFilename(filename)) {
-                return res.status(400).json({ error: 'Invalid filename' });
+                return res.status(400).json({ error: 'Invalid filename', messageKey: 'error_invalid_filename' });
             }
 
             const { displayName, folderId } = req.validatedBody;
@@ -343,7 +343,7 @@ function createQuizManagementRoutes(options) {
                     const quizData = await quizService.loadQuiz(filename);
                     quiz = await metadataService.registerQuiz(filename, quizData.title);
                 } catch {
-                    return res.status(404).json({ error: 'Quiz not found' });
+                    return res.status(404).json({ error: 'Quiz not found', messageKey: 'error_quiz_not_found' });
                 }
             }
 
@@ -361,7 +361,7 @@ function createQuizManagementRoutes(options) {
             res.json(updatedQuiz);
         } catch (error) {
             logger.error('Update quiz metadata error:', error);
-            res.status(400).json({ error: error.message || 'Failed to update quiz metadata' });
+            res.status(400).json({ error: error.message || 'Failed to update quiz metadata', messageKey: error.messageKey || 'error_failed_update_metadata' });
         }
     });
 
@@ -372,7 +372,7 @@ function createQuizManagementRoutes(options) {
 
             // Validate filename
             if (!quizService.validateFilename(filename)) {
-                return res.status(400).json({ error: 'Invalid filename' });
+                return res.status(400).json({ error: 'Invalid filename', messageKey: 'error_invalid_filename' });
             }
 
             const { password } = req.validatedBody;
@@ -381,7 +381,7 @@ function createQuizManagementRoutes(options) {
         } catch (error) {
             logger.error('Set quiz password error:', error);
             const statusCode = error.message.includes('not found') ? 404 : 400;
-            res.status(statusCode).json({ error: error.message || 'Failed to set quiz password' });
+            res.status(statusCode).json({ error: error.message || 'Failed to set quiz password', messageKey: error.messageKey || 'error_failed_set_password' });
         }
     });
 
@@ -392,12 +392,12 @@ function createQuizManagementRoutes(options) {
 
             // Validate filename
             if (!quizService.validateFilename(filename)) {
-                return res.status(400).json({ error: 'Invalid filename' });
+                return res.status(400).json({ error: 'Invalid filename', messageKey: 'error_invalid_filename' });
             }
 
             // Require confirmation parameter
             if (req.query.confirm !== 'true') {
-                return res.status(400).json({ error: 'Delete requires confirm=true parameter' });
+                return res.status(400).json({ error: 'Delete requires confirm=true parameter', messageKey: 'error_confirm_required' });
             }
 
             // Check if quiz requires authentication
@@ -405,12 +405,12 @@ function createQuizManagementRoutes(options) {
                 // Extract token from Authorization header
                 const authHeader = req.headers['authorization'];
                 if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                    return res.status(401).json({ error: 'Authentication required' });
+                    return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
                 }
 
                 const token = authHeader.substring(7); // Remove 'Bearer ' prefix
                 if (!metadataService.verifyToken(token, filename, 'quiz')) {
-                    return res.status(403).json({ error: 'Invalid or expired authentication token' });
+                    return res.status(403).json({ error: 'Invalid or expired authentication token', messageKey: 'error_invalid_token' });
                 }
             }
 
@@ -429,7 +429,7 @@ function createQuizManagementRoutes(options) {
         } catch (error) {
             logger.error('Delete quiz error:', error);
             const statusCode = error.message === 'Quiz not found' ? 404 : 400;
-            res.status(statusCode).json({ error: error.message || 'Failed to delete quiz' });
+            res.status(statusCode).json({ error: error.message || 'Failed to delete quiz', messageKey: error.messageKey || 'error_failed_delete_quiz' });
         }
     });
 
@@ -445,15 +445,15 @@ function createQuizManagementRoutes(options) {
 
             // Rate limiting
             if (error.message.includes('Too many')) {
-                return res.status(429).json({ error: error.message });
+                return res.status(429).json({ error: error.message, messageKey: error.messageKey || 'error_rate_limited' });
             }
 
             // Wrong password
             if (error.message.includes('Incorrect password')) {
-                return res.status(401).json({ error: error.message });
+                return res.status(401).json({ error: error.message, messageKey: error.messageKey || 'error_incorrect_password' });
             }
 
-            res.status(400).json({ error: error.message || 'Failed to unlock' });
+            res.status(400).json({ error: error.message || 'Failed to unlock', messageKey: error.messageKey || 'error_failed_unlock' });
         }
     });
 
@@ -463,14 +463,14 @@ function createQuizManagementRoutes(options) {
             const { itemType, itemId } = req.params;
 
             if (!['folder', 'quiz'].includes(itemType)) {
-                return res.status(400).json({ error: 'Invalid item type' });
+                return res.status(400).json({ error: 'Invalid item type', messageKey: 'error_invalid_item_type' });
             }
 
             const requiresAuth = metadataService.requiresAuth(itemId, itemType);
             res.json({ requiresAuth });
         } catch (error) {
             logger.error('Check auth error:', error);
-            res.status(400).json({ error: error.message || 'Failed to check authentication' });
+            res.status(400).json({ error: error.message || 'Failed to check authentication', messageKey: error.messageKey || 'error_failed_check_auth' });
         }
     });
 

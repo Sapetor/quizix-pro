@@ -4,6 +4,7 @@
  */
 
 import { logger } from '../core/config.js';
+import { getTranslation } from './translation-manager.js';
 
 let autoHideTimeout = null;
 let isAutoHideEnabled = false;
@@ -25,7 +26,7 @@ function createHintElement() {
 
     hintElement = document.createElement('div');
     hintElement.className = 'header-hint';
-    hintElement.innerHTML = '<span class="header-hint-icon">\u25bc</span>Menu';
+    hintElement.innerHTML = `<span class="header-hint-icon">\u25bc</span>${getTranslation('menu')}`;
     document.body.appendChild(hintElement);
 
     // Show header when hovering over hint

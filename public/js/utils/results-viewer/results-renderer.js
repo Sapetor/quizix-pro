@@ -4,7 +4,7 @@
  */
 
 import { escapeHtml } from '../dom.js';
-import { translationManager } from '../translation-manager.js';
+import { translationManager, getTranslation } from '../translation-manager.js';
 
 /**
  * SVG icons used in empty states and UI elements
@@ -79,32 +79,32 @@ export function renderResultItem(result, formattedDate, avgScore) {
         <div class="result-item" data-filename="${safeFilename}">
             <div class="swipe-delete-action">
                 <div class="swipe-delete-icon">
-                    <span>Delete</span>
+                    <span>${getTranslation('delete')}</span>
                 </div>
             </div>
             <div class="result-info">
-                <div class="result-title">${escapeHtml(result.quizTitle || 'Untitled Quiz')}</div>
+                <div class="result-title">${escapeHtml(result.quizTitle || getTranslation('untitled_quiz'))}</div>
                 <div class="result-meta">
                     <span>${formattedDate}</span>
-                    <span>PIN: ${escapeHtml(result.gamePin)}</span>
-                    <span>${participantCount} participants</span>
-                    <span>${avgScore}% avg score</span>
+                    <span>${getTranslation('analytics_pin_label')}: ${escapeHtml(result.gamePin)}</span>
+                    <span>${participantCount} ${getTranslation('analytics_participants_label').toLowerCase()}</span>
+                    <span>${avgScore}% ${getTranslation('analytics_avg').toLowerCase()}</span>
                 </div>
             </div>
             <div class="result-actions">
-                <button class="result-action-btn analytics" data-action="analytics" data-filename="${safeFilename}" title="View Question Analytics">
-                    Analytics
+                <button class="result-action-btn analytics" data-action="analytics" data-filename="${safeFilename}" title="${getTranslation('analytics_overview_tab')}">
+                    ${getTranslation('analytics_overview_tab')}
                 </button>
                 <div class="download-options">
                     <button class="result-action-btn download" data-action="download" data-filename="${safeFilename}">
-                        Download
+                        ${getTranslation('download_btn')}
                     </button>
                 </div>
                 <button class="result-action-btn delete" data-action="delete" data-filename="${safeFilename}">
-                    Delete
+                    ${getTranslation('delete')}
                 </button>
             </div>
-            <span class="swipe-hint">swipe</span>
+            <span class="swipe-hint">${getTranslation('results_swipe')}</span>
         </div>
     `;
 }
@@ -118,7 +118,7 @@ export function renderResultItem(result, formattedDate, avgScore) {
  */
 export function renderResultsList(results, calculateAvgScore, formatDate) {
     if (!results || results.length === 0) {
-        return renderEmptyState('noResults', 'No Results Found', 'No quiz results match your search criteria.');
+        return renderEmptyState('noResults', getTranslation('results_no_results_title'), getTranslation('results_no_results_message'));
     }
 
     return results.map(result => {
@@ -145,8 +145,8 @@ export function renderParticipantRow(player, getScoreClass, formatTime) {
 
     return `
         <div class="participant-row">
-            <div class="participant-name">${escapeHtml(player.name || 'Anonymous')}</div>
-            <div class="participant-score ${scoreClass}">${playerScore} pts</div>
+            <div class="participant-name">${escapeHtml(player.name || getTranslation('anonymous_player'))}</div>
+            <div class="participant-score ${scoreClass}">${playerScore} ${getTranslation('pts')}</div>
             <div class="participant-percentage ${scoreClass}">${percentage}%</div>
             <div class="participant-time">${timeDisplay}</div>
         </div>
@@ -162,13 +162,13 @@ export function renderParticipantRow(player, getScoreClass, formatTime) {
  */
 export function renderParticipantsList(results, getScoreClass, formatTime) {
     if (!results || results.length === 0) {
-        return renderEmptyState('noParticipants', 'No Participants', 'No participant data available for this quiz.');
+        return renderEmptyState('noParticipants', getTranslation('results_no_participants_title'), getTranslation('results_no_participants_message'));
     }
 
     const sortedResults = [...results].sort((a, b) => (b.score || 0) - (a.score || 0));
 
     return `
-        <div class="participant-header">Participant Results</div>
+        <div class="participant-header">${getTranslation('results_participant_results_header')}</div>
         ${sortedResults.map(player => renderParticipantRow(player, getScoreClass, formatTime)).join('')}
     `;
 }
@@ -206,8 +206,8 @@ export function createFormatSelectionModal(filename, formats, currentFormat) {
     `;
 
     content.innerHTML = `
-        <h3>Select Export Format</h3>
-        <p>Choose how you'd like to download the results:</p>
+        <h3>${getTranslation('results_select_export_format')}</h3>
+        <p>${getTranslation('results_choose_download_format')}</p>
         <div class="format-options" style="margin: 15px 0;">
             ${formats.map(format => `
                 <label style="display: block; margin: 8px 0; cursor: pointer;">
@@ -219,8 +219,8 @@ export function createFormatSelectionModal(filename, formats, currentFormat) {
             `).join('')}
         </div>
         <div style="text-align: right; margin-top: 20px;">
-            <button id="format-cancel-btn" style="margin-right: 10px; padding: 8px 16px;">Cancel</button>
-            <button id="format-download-btn" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px;">Download</button>
+            <button id="format-cancel-btn" style="margin-right: 10px; padding: 8px 16px;">${getTranslation('cancel')}</button>
+            <button id="format-download-btn" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px;">${getTranslation('download_btn')}</button>
         </div>
     `;
 
@@ -244,51 +244,50 @@ export function createAnalyticsUnavailableModal(result) {
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
-                <h2>Analytics Not Available</h2>
+                <h2>${getTranslation('analytics_not_available')}</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
             </div>
 
             <div class="modal-body" style="padding: 20px;">
                 <div style="text-align: center; margin-bottom: 20px;">
                     <div style="font-size: 4rem; margin-bottom: 16px;">📈</div>
-                    <h3>Question Analytics Not Available</h3>
-                    <p>This quiz result doesn't contain the detailed question data needed for analytics.</p>
+                    <h3>${getTranslation('analytics_not_available_title')}</h3>
+                    <p>${getTranslation('analytics_not_available_desc')}</p>
                 </div>
 
                 <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
-                    <h4 style="margin: 0 0 12px 0; color: #374151;">What you can still see:</h4>
+                    <h4 style="margin: 0 0 12px 0; color: #374151;">${getTranslation('analytics_still_see')}:</h4>
                     <ul style="margin: 0; padding-left: 20px; color: #6b7280;">
-                        <li>Player scores and rankings</li>
-                        <li>Game completion data</li>
-                        <li>Overall participation statistics</li>
-                        <li>Basic performance summary</li>
+                        <li>${getTranslation('analytics_player_scores')}</li>
+                        <li>${getTranslation('analytics_completion_data')}</li>
+                        <li>${getTranslation('analytics_participation_stats')}</li>
+                        <li>${getTranslation('analytics_performance_summary')}</li>
                     </ul>
                 </div>
 
                 <div style="background: #dbeafe; padding: 16px; border-radius: 8px; border-left: 4px solid #3b82f6;">
-                    <h4 style="margin: 0 0 12px 0; color: #1e40af;">Why aren't analytics available?</h4>
+                    <h4 style="margin: 0 0 12px 0; color: #1e40af;">${getTranslation('analytics_why_not_available')}?</h4>
                     <p style="margin: 0 0 12px 0; color: #1e40af;">
-                        This game result was saved without the detailed question metadata needed for advanced analytics.
+                        ${getTranslation('analytics_why_not_available_desc')}
                     </p>
                     <p style="margin: 0; color: #1e40af;">
-                        <strong>For full analytics in future games:</strong><br>
-                        New games automatically save complete analytics data.
-                        Create and host a new quiz to see detailed success rates, timing analysis, and question difficulty insights.
+                        <strong>${getTranslation('analytics_future_games')}:</strong><br>
+                        ${getTranslation('analytics_future_games_desc')}
                     </p>
                 </div>
 
                 <div style="text-align: center; margin-top: 20px;">
                     <p style="color: #6b7280; font-size: 0.9rem;">
-                        <strong>Quiz:</strong> ${escapeHtml(result.quizTitle || untitledQuiz)}<br>
-                        <strong>PIN:</strong> ${escapeHtml(result.gamePin)}<br>
-                        <strong>Participants:</strong> ${result.results?.length || 0}
+                        <strong>${getTranslation('analytics_quiz_label')}:</strong> ${escapeHtml(result.quizTitle || untitledQuiz)}<br>
+                        <strong>${getTranslation('analytics_pin_label')}:</strong> ${escapeHtml(result.gamePin)}<br>
+                        <strong>${getTranslation('analytics_participants_label')}:</strong> ${result.results?.length || 0}
                     </p>
                 </div>
             </div>
 
             <div class="modal-footer">
-                <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
-                <button class="btn primary" data-filename="${safeFilename}" data-action="view-basic">View Basic Results</button>
+                <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">${getTranslation('close')}</button>
+                <button class="btn primary" data-filename="${safeFilename}" data-action="view-basic">${getTranslation('analytics_view_basic')}</button>
             </div>
         </div>
     `;

@@ -35,7 +35,8 @@ class QuestionFlowService {
             // Inform player their answer was rejected (too late or game not ready)
             socket.emit('answer-rejected', {
                 reason: game ? 'question_ended' : 'game_not_found',
-                message: game ? 'Question has already ended' : 'Game not found'
+                message: game ? 'Question has already ended' : 'Game not found',
+                messageKey: game ? 'error_question_ended' : 'error_game_not_found'
             });
             return;
         }

@@ -73,6 +73,30 @@ export class SocketManager {
     }
 
     /**
+     * Resolve a server-sent message to a translated string.
+     * Prefers data.messageKey (translation key) over data.message (raw string),
+     * with an optional fallbackKey if neither produces a usable result.
+     * @param {object} data - Socket event data object
+     * @param {string} [fallbackKey] - Translation key to use as last resort
+     * @returns {string}
+     */
+    _resolveServerMessage(data, fallbackKey) {
+        if (data?.messageKey) {
+            const translated = translationManager.getTranslationSync(data.messageKey);
+            if (translated && translated !== data.messageKey) {
+                return translated;
+            }
+        }
+        if (fallbackKey) {
+            const fallback = translationManager.getTranslationSync(fallbackKey);
+            if (fallback && fallback !== fallbackKey) {
+                return fallback;
+            }
+        }
+        return data?.message || data?.error || translationManager.getTranslationSync('error_occurred') || 'An error occurred';
+    }
+
+    /**
      * Initialize all socket event listeners
      */
     initializeSocketListeners() {
@@ -360,7 +384,7 @@ export class SocketManager {
 
         this.socket.on('answer-rejected', (data) => {
             logger.warn('Answer rejected:', data);
-            this.gameManager.showAnswerRejected(data.message || 'Answer could not be submitted');
+            this.gameManager.showAnswerRejected(this._resolveServerMessage(data, 'error_answer_rejected'));
         });
 
         // Show leaderboard
@@ -460,27 +484,27 @@ export class SocketManager {
         // Error handling
         this.socket.on('error', (data) => {
             logger.error('Socket error:', data);
-            translationManager.showAlert('error', data.message || 'An error occurred');
+            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_occurred'));
         });
 
         this.socket.on('game-not-found', (data) => {
             logger.error('Game not found:', data);
-            translationManager.showAlert('error', data.message || 'Game not found');
+            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_game_not_found'));
         });
 
         this.socket.on('player-limit-reached', (data) => {
             logger.error('Player limit reached:', data);
-            translationManager.showAlert('error', data.message || 'Player limit reached');
+            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_player_limit'));
         });
 
         this.socket.on('invalid-pin', (data) => {
             logger.error('Invalid PIN:', data);
-            translationManager.showAlert('error', data.message || 'Invalid game PIN');
+            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_invalid_pin'));
         });
 
         this.socket.on('name-taken', (data) => {
             logger.error('Name taken:', data);
-            translationManager.showAlert('error', data.message || 'Name is already taken');
+            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_name_taken'));
         });
 
         this.socket.on('player-disconnected', (data) => {
@@ -514,7 +538,7 @@ export class SocketManager {
             logger.debug('Force disconnect:', data);
             this.gameManager.stopTimer();
             this.gameManager.resetGameState();
-            translationManager.showAlert('info', data.message || 'You have been disconnected');
+            translationManager.showAlert('info', this._resolveServerMessage(data, 'error_host_disconnected'));
             this.uiManager.showScreen('main-menu');
         });
 

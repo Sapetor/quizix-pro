@@ -10,7 +10,7 @@ function registerPlayerEvents(io, socket, options) {
         if (!checkRateLimit(socket.id, 'player-join', 5, socket)) return;
         try {
             if (!data || typeof data !== 'object') {
-                socket.emit('error', { message: 'Invalid request data' });
+                socket.emit('error', { message: 'Invalid request data', messageKey: 'error_invalid_request' });
                 return;
             }
 
@@ -27,11 +27,11 @@ function registerPlayerEvents(io, socket, options) {
             );
 
             if (!result.success) {
-                socket.emit('error', { message: result.error });
+                socket.emit('error', { message: result.error, messageKey: result.messageKey || 'error_failed_join' });
             }
         } catch (error) {
             logger.error('Error in player-join handler:', error);
-            socket.emit('error', { message: 'Failed to join game' });
+            socket.emit('error', { message: 'Failed to join game', messageKey: 'error_failed_join' });
         }
     });
 
@@ -39,7 +39,7 @@ function registerPlayerEvents(io, socket, options) {
         if (!checkRateLimit(socket.id, 'player-change-name', 5, socket)) return;
         try {
             if (!data || typeof data !== 'object') {
-                socket.emit('error', { message: 'Invalid request data' });
+                socket.emit('error', { message: 'Invalid request data', messageKey: 'error_invalid_request' });
                 return;
             }
 
@@ -47,7 +47,7 @@ function registerPlayerEvents(io, socket, options) {
             const playerData = playerManagementService.getPlayer(socket.id);
 
             if (!playerData) {
-                socket.emit('error', { message: 'Player not found' });
+                socket.emit('error', { message: 'Player not found', messageKey: 'error_player_not_found' });
                 return;
             }
 
@@ -62,11 +62,11 @@ function registerPlayerEvents(io, socket, options) {
             );
 
             if (!result.success) {
-                socket.emit('error', { message: result.error });
+                socket.emit('error', { message: result.error, messageKey: result.messageKey || 'error_failed_change_name' });
             }
         } catch (error) {
             logger.error('Error in player-change-name handler:', error);
-            socket.emit('error', { message: 'Failed to change name' });
+            socket.emit('error', { message: 'Failed to change name', messageKey: 'error_failed_change_name' });
         }
     });
 

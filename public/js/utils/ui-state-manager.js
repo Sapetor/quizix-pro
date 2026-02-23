@@ -5,6 +5,7 @@
  */
 
 import { logger } from '../core/config.js';
+import { getTranslation } from './translation-manager.js';
 
 export class UIStateManager {
     constructor() {
@@ -48,13 +49,13 @@ export class UIStateManager {
             floatingControls = document.createElement('div');
             floatingControls.className = 'floating-controls';
             floatingControls.innerHTML = `
-                <button class="floating-control-btn" id="floating-menu" title="Menu">
+                <button class="floating-control-btn" id="floating-menu" title="${getTranslation('menu')}">
                     ☰
                 </button>
-                <button class="floating-control-btn" id="floating-theme" title="Toggle Theme">
+                <button class="floating-control-btn" id="floating-theme" title="${getTranslation('toggle_theme')}">
                     🌙
                 </button>
-                <button class="floating-control-btn" id="floating-fullscreen" title="Fullscreen">
+                <button class="floating-control-btn" id="floating-fullscreen" title="${getTranslation('fullscreen')}">
                     ⛶
                 </button>
             `;
@@ -74,7 +75,7 @@ export class UIStateManager {
             uiReveal = document.createElement('div');
             uiReveal.className = 'game-ui-reveal';
             uiReveal.innerHTML = `
-                <button class="floating-control-btn" id="ui-reveal-btn" title="Show UI">
+                <button class="floating-control-btn" id="ui-reveal-btn" title="${getTranslation('show_ui')}">
                     ⬇️
                 </button>
             `;

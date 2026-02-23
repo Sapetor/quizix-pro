@@ -496,7 +496,7 @@ export class QuizGame {
 
                 // Show toast notification
                 if (typeof translationManager !== 'undefined' && translationManager.showAlert) {
-                    translationManager.showAlert('success', 'PIN copied to clipboard!');
+                    translationManager.showAlert('success', translationManager.getTranslationSync('pin_copied'));
                 } else {
                     // Fallback notification
                     logger.info('PIN copied to clipboard:', pin);

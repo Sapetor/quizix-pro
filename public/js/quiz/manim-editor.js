@@ -3,6 +3,7 @@ import { APIHelper } from '../utils/api-helper.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
 import { unifiedErrorHandler } from '../utils/unified-error-handler.js';
 import { openModal, closeModal, createModalBindings } from '../utils/modal-utils.js';
+import { getTranslation } from '../utils/translation-manager.js';
 
 /**
  * ManimEditor - Manages Manim animation code editing for quiz questions
@@ -145,7 +146,7 @@ export class ManimEditor {
         if (!code) {
             const statusEl = panel.querySelector('.render-status');
             if (statusEl) {
-                statusEl.textContent = 'Please enter Manim code first.';
+                statusEl.textContent = getTranslation('manim_enter_code_first');
                 statusEl.className = 'render-status error';
             }
             return;
@@ -155,7 +156,7 @@ export class ManimEditor {
         const renderBtn = panel.querySelector('.render-manim-btn');
 
         if (statusEl) {
-            statusEl.textContent = 'Rendering...';
+            statusEl.textContent = getTranslation('manim_rendering');
             statusEl.className = 'render-status rendering';
         }
         if (renderBtn) {
@@ -188,7 +189,7 @@ export class ManimEditor {
             }
 
             if (statusEl) {
-                statusEl.textContent = 'Rendered successfully';
+                statusEl.textContent = getTranslation('manim_rendered_successfully');
                 statusEl.className = 'render-status success';
             }
 
@@ -196,7 +197,7 @@ export class ManimEditor {
         } catch (err) {
             logger.error('ManimEditor: render failed', err);
             if (statusEl) {
-                statusEl.textContent = `Render failed: ${err.message}`;
+                statusEl.textContent = `${getTranslation('manim_render_failed')}: ${err.message}`;
                 statusEl.className = 'render-status error';
             }
             unifiedErrorHandler.safeExecute(() => {

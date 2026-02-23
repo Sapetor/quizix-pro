@@ -4,7 +4,7 @@
  */
 
 import { logger } from '../core/config.js';
-import { translationManager } from './translation-manager.js';
+import { translationManager, getTranslation } from './translation-manager.js';
 import { getJSON, setJSON, removeItem } from './storage-utils.js';
 import { isMobile } from './dom.js';
 
@@ -586,7 +586,7 @@ class OnboardingTutorial {
             const completedClass = i < this.currentStep ? 'completed' : '';
             dotsHtml += `<button class="onboarding-dot ${activeClass} ${completedClass}"
                                 data-step="${i}"
-                                aria-label="Go to step ${i + 1}"
+                                aria-label="${getTranslation('go_to_step').replace('{0}', i + 1)}"
                                 tabindex="0"></button>`;
         }
 

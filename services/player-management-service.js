@@ -30,7 +30,8 @@ class PlayerManagementService {
         if (!pin || !name || typeof pin !== 'string' || typeof name !== 'string') {
             return {
                 success: false,
-                error: 'PIN and name are required'
+                error: 'PIN and name are required',
+                messageKey: 'error_pin_name_required'
             };
         }
 
@@ -38,7 +39,8 @@ class PlayerManagementService {
         if (name.length > this.config.LIMITS.MAX_PLAYER_NAME_LENGTH || name.trim().length === 0) {
             return {
                 success: false,
-                error: `Name must be 1-${this.config.LIMITS.MAX_PLAYER_NAME_LENGTH} characters`
+                error: `Name must be 1-${this.config.LIMITS.MAX_PLAYER_NAME_LENGTH} characters`,
+                messageKey: 'error_name_length'
             };
         }
 
@@ -47,7 +49,8 @@ class PlayerManagementService {
         if (!/^[\p{L}\p{N}\s\-_'.!?]+$/u.test(name)) {
             return {
                 success: false,
-                error: 'Name contains invalid characters'
+                error: 'Name contains invalid characters',
+                messageKey: 'error_name_invalid_chars'
             };
         }
 
@@ -55,7 +58,8 @@ class PlayerManagementService {
         if (!game) {
             return {
                 success: false,
-                error: 'Game not found'
+                error: 'Game not found',
+                messageKey: 'error_game_not_found'
             };
         }
 
@@ -63,7 +67,8 @@ class PlayerManagementService {
         if (game.gameState !== 'lobby') {
             return {
                 success: false,
-                error: 'Game already started'
+                error: 'Game already started',
+                messageKey: 'error_game_already_started'
             };
         }
 
@@ -202,7 +207,7 @@ class PlayerManagementService {
     handlePlayerNameChange(socketId, newName, game, socket, io) {
         // Validate input
         if (!newName || typeof newName !== 'string') {
-            return { success: false, error: 'Name is required' };
+            return { success: false, error: 'Name is required', messageKey: 'error_name_required' };
         }
 
         const trimmedName = newName.trim();
@@ -211,29 +216,30 @@ class PlayerManagementService {
         if (trimmedName.length === 0 || trimmedName.length > this.config.LIMITS.MAX_PLAYER_NAME_LENGTH) {
             return {
                 success: false,
-                error: `Name must be 1-${this.config.LIMITS.MAX_PLAYER_NAME_LENGTH} characters`
+                error: `Name must be 1-${this.config.LIMITS.MAX_PLAYER_NAME_LENGTH} characters`,
+                messageKey: 'error_name_length'
             };
         }
 
         // Validate name content - allow alphanumeric, spaces, and common special chars
         if (!/^[\p{L}\p{N}\s\-_'.!?]+$/u.test(trimmedName)) {
-            return { success: false, error: 'Name contains invalid characters' };
+            return { success: false, error: 'Name contains invalid characters', messageKey: 'error_name_invalid_chars' };
         }
 
         // Check if game exists
         if (!game) {
-            return { success: false, error: 'Game not found' };
+            return { success: false, error: 'Game not found', messageKey: 'error_game_not_found' };
         }
 
         // Check if game is still in lobby
         if (game.gameState !== 'lobby') {
-            return { success: false, error: 'Cannot change name after game has started' };
+            return { success: false, error: 'Cannot change name after game has started', messageKey: 'error_name_change_started' };
         }
 
         // Get current player data from registry
         const playerData = this.players.get(socketId);
         if (!playerData) {
-            return { success: false, error: 'Player not found' };
+            return { success: false, error: 'Player not found', messageKey: 'error_player_not_found' };
         }
 
         const oldName = playerData.name;
@@ -248,7 +254,7 @@ class PlayerManagementService {
             p => p.name.toLowerCase() === trimmedName.toLowerCase() && p.id !== socketId
         );
         if (duplicatePlayer) {
-            return { success: false, error: 'Name is already taken' };
+            return { success: false, error: 'Name is already taken', messageKey: 'error_name_already_taken' };
         }
 
         // Update player name in game's players Map

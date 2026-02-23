@@ -119,6 +119,7 @@ class GameSessionService {
         if (this.games.size >= this.limits.MAX_CONCURRENT_GAMES) {
             const error = new Error(`Maximum concurrent games limit reached (${this.limits.MAX_CONCURRENT_GAMES})`);
             error.code = 'GAME_LIMIT_REACHED';
+            error.messageKey = 'error_player_limit';
             throw error;
         }
 

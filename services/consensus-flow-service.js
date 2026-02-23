@@ -33,28 +33,28 @@ class ConsensusFlowService {
      */
     handleProposalSubmission(playerId, answer, game, socket, io) {
         if (!game || !game.isConsensusMode) {
-            return { success: false, error: 'Not in consensus mode' };
+            return { success: false, error: 'Not in consensus mode', messageKey: 'consensus_not_active' };
         }
 
         if (game.gameState !== 'question') {
-            return { success: false, error: 'No active question' };
+            return { success: false, error: 'No active question', messageKey: 'consensus_no_question' };
         }
 
         if (game.consensusLocked) {
-            return { success: false, error: 'Consensus already locked' };
+            return { success: false, error: 'Consensus already locked', messageKey: 'consensus_already_locked' };
         }
 
         // Validate answer index
         const question = game.quiz.questions[game.currentQuestion];
         if (!question || !question.options || answer < 0 || answer >= question.options.length) {
-            return { success: false, error: 'Invalid answer' };
+            return { success: false, error: 'Invalid answer', messageKey: 'consensus_invalid_answer' };
         }
 
         // Submit proposal
         const distribution = game.submitProposal(playerId, answer);
 
         if (!distribution) {
-            return { success: false, error: 'Failed to submit proposal' };
+            return { success: false, error: 'Failed to submit proposal', messageKey: 'consensus_failed_propose' };
         }
 
         // Broadcast updated distribution to all players in the game
@@ -88,17 +88,17 @@ class ConsensusFlowService {
      */
     handleQuickResponse(playerId, type, targetPlayer, game, socket, io) {
         if (!game || !game.isConsensusMode) {
-            return { success: false, error: 'Not in consensus mode' };
+            return { success: false, error: 'Not in consensus mode', messageKey: 'consensus_not_active' };
         }
 
         if (!QUICK_RESPONSE_TYPES[type]) {
-            return { success: false, error: 'Invalid response type' };
+            return { success: false, error: 'Invalid response type', messageKey: 'consensus_invalid_response' };
         }
 
         const message = game.addDiscussionMessage(playerId, 'quick', type, targetPlayer);
 
         if (!message) {
-            return { success: false, error: 'Player not found' };
+            return { success: false, error: 'Player not found', messageKey: 'error_player_not_found' };
         }
 
         // Broadcast to all players
@@ -120,11 +120,11 @@ class ConsensusFlowService {
      */
     handleChatMessage(playerId, text, game, socket, io) {
         if (!game || !game.isConsensusMode) {
-            return { success: false, error: 'Not in consensus mode' };
+            return { success: false, error: 'Not in consensus mode', messageKey: 'consensus_not_active' };
         }
 
         if (!game.consensusConfig.allowChat) {
-            return { success: false, error: 'Chat is disabled' };
+            return { success: false, error: 'Chat is disabled', messageKey: 'consensus_chat_disabled' };
         }
 
         // Basic text sanitization
@@ -134,13 +134,13 @@ class ConsensusFlowService {
             .replace(/[<>]/g, '');
 
         if (!sanitizedText) {
-            return { success: false, error: 'Empty message' };
+            return { success: false, error: 'Empty message', messageKey: 'consensus_empty_message' };
         }
 
         const message = game.addDiscussionMessage(playerId, 'chat', sanitizedText);
 
         if (!message) {
-            return { success: false, error: 'Player not found' };
+            return { success: false, error: 'Player not found', messageKey: 'error_player_not_found' };
         }
 
         // Broadcast to all players
@@ -159,13 +159,13 @@ class ConsensusFlowService {
      */
     lockConsensus(game, io) {
         if (!game || !game.isConsensusMode) {
-            return { success: false, error: 'Not in consensus mode' };
+            return { success: false, error: 'Not in consensus mode', messageKey: 'consensus_not_active' };
         }
 
         const result = game.lockConsensus();
 
         if (!result) {
-            return { success: false, error: 'Failed to lock consensus' };
+            return { success: false, error: 'Failed to lock consensus', messageKey: 'consensus_failed_lock' };
         }
 
         // Broadcast consensus result

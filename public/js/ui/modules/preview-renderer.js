@@ -83,7 +83,7 @@ export class PreviewRenderer {
         if (questionText) {
             this.renderSplitTextWithLatex(previewElement, questionText);
         } else {
-            previewElement.innerHTML = '<em>No question text</em>';
+            previewElement.innerHTML = `<em>${translationManager.getTranslationSync('no_question_text')}</em>`;
         }
     }
 
@@ -516,7 +516,7 @@ export class PreviewRenderer {
         const input = container?.querySelector('input');
 
         if (input) {
-            input.placeholder = 'Enter numeric answer...';
+            input.placeholder = translationManager.getTranslationSync('enter_numeric_placeholder');
             input.disabled = true;
         }
     }
@@ -540,7 +540,7 @@ export class PreviewRenderer {
         }
 
         if (!options || options.length === 0) {
-            container.innerHTML = '<p>No ordering options available</p>';
+            container.innerHTML = `<p>${translationManager.getTranslationSync('no_ordering_options')}</p>`;
             return;
         }
 

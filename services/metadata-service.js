@@ -137,14 +137,18 @@ class MetadataService {
         this.validateFolderName(name);
 
         if (parentId && !this.metadata.folders[parentId]) {
-            throw new Error('Parent folder not found');
+            const err = new Error('Parent folder not found');
+            err.messageKey = 'error_folder_not_found';
+            throw err;
         }
 
         // Check for duplicate names in same parent
         const siblings = Object.values(this.metadata.folders)
             .filter(f => f.parentId === parentId);
         if (siblings.some(f => f.name.toLowerCase() === name.toLowerCase())) {
-            throw new Error('A folder with this name already exists');
+            const err = new Error('A folder with this name already exists');
+            err.messageKey = 'error_folder_name_exists';
+            throw err;
         }
 
         const id = uuidv4();
@@ -172,14 +176,18 @@ class MetadataService {
 
         const folder = this.metadata.folders[folderId];
         if (!folder) {
-            throw new Error('Folder not found');
+            const err = new Error('Folder not found');
+            err.messageKey = 'error_folder_not_found';
+            throw err;
         }
 
         // Check for duplicate names in same parent
         const siblings = Object.values(this.metadata.folders)
             .filter(f => f.parentId === folder.parentId && f.id !== folderId);
         if (siblings.some(f => f.name.toLowerCase() === newName.toLowerCase())) {
-            throw new Error('A folder with this name already exists');
+            const err = new Error('A folder with this name already exists');
+            err.messageKey = 'error_folder_name_exists';
+            throw err;
         }
 
         folder.name = newName;
@@ -195,27 +203,37 @@ class MetadataService {
     async moveFolder(folderId, newParentId) {
         const folder = this.metadata.folders[folderId];
         if (!folder) {
-            throw new Error('Folder not found');
+            const err = new Error('Folder not found');
+            err.messageKey = 'error_folder_not_found';
+            throw err;
         }
 
         if (newParentId !== null && !this.metadata.folders[newParentId]) {
-            throw new Error('Target folder not found');
+            const err = new Error('Target folder not found');
+            err.messageKey = 'error_target_folder_not_found';
+            throw err;
         }
 
         // Prevent moving to self or descendant
         if (newParentId === folderId) {
-            throw new Error('Cannot move folder into itself');
+            const err = new Error('Cannot move folder into itself');
+            err.messageKey = 'error_folder_move_self';
+            throw err;
         }
 
         if (newParentId && this.isDescendant(newParentId, folderId)) {
-            throw new Error('Cannot move folder into its own descendant');
+            const err = new Error('Cannot move folder into its own descendant');
+            err.messageKey = 'error_folder_move_descendant';
+            throw err;
         }
 
         // Check for duplicate names in target
         const siblings = Object.values(this.metadata.folders)
             .filter(f => f.parentId === newParentId && f.id !== folderId);
         if (siblings.some(f => f.name.toLowerCase() === folder.name.toLowerCase())) {
-            throw new Error('A folder with this name already exists in the target location');
+            const err = new Error('A folder with this name already exists in the target location');
+            err.messageKey = 'error_folder_name_exists';
+            throw err;
         }
 
         folder.parentId = newParentId;
@@ -232,7 +250,9 @@ class MetadataService {
     async deleteFolder(folderId, deleteContents = false) {
         const folder = this.metadata.folders[folderId];
         if (!folder) {
-            throw new Error('Folder not found');
+            const err = new Error('Folder not found');
+            err.messageKey = 'error_folder_not_found';
+            throw err;
         }
 
         // Get all contents
@@ -242,7 +262,9 @@ class MetadataService {
             .filter(([_, q]) => q.folderId === folderId);
 
         if (!deleteContents && (childFolders.length > 0 || childQuizzes.length > 0)) {
-            throw new Error('Folder is not empty. Use deleteContents=true to delete all contents.');
+            const err = new Error('Folder is not empty. Use deleteContents=true to delete all contents.');
+            err.messageKey = 'error_folder_not_empty';
+            throw err;
         }
 
         if (deleteContents) {
@@ -283,21 +305,29 @@ class MetadataService {
      */
     validateFolderName(name) {
         if (!name || typeof name !== 'string') {
-            throw new Error('Folder name is required');
+            const err = new Error('Folder name is required');
+            err.messageKey = 'error_folder_name_required';
+            throw err;
         }
 
         const trimmed = name.trim();
         if (trimmed.length === 0) {
-            throw new Error('Folder name cannot be empty');
+            const err = new Error('Folder name cannot be empty');
+            err.messageKey = 'error_folder_name_required';
+            throw err;
         }
 
         if (trimmed.length > 100) {
-            throw new Error('Folder name must be less than 100 characters');
+            const err = new Error('Folder name must be less than 100 characters');
+            err.messageKey = 'error_folder_name_too_long';
+            throw err;
         }
 
         // Prevent problematic characters
         if (/[<>:"/\\|?*]/.test(trimmed)) {
-            throw new Error('Folder name contains invalid characters');
+            const err = new Error('Folder name contains invalid characters');
+            err.messageKey = 'error_folder_name_invalid';
+            throw err;
         }
     }
 
@@ -333,15 +363,21 @@ class MetadataService {
     async setQuizDisplayName(filename, displayName) {
         const quiz = this.metadata.quizzes[filename];
         if (!quiz) {
-            throw new Error('Quiz not found in metadata');
+            const err = new Error('Quiz not found in metadata');
+            err.messageKey = 'error_quiz_not_found';
+            throw err;
         }
 
         if (!displayName || typeof displayName !== 'string') {
-            throw new Error('Display name is required');
+            const err = new Error('Display name is required');
+            err.messageKey = 'error_display_name_required';
+            throw err;
         }
 
         if (displayName.length > 200) {
-            throw new Error('Display name must be less than 200 characters');
+            const err = new Error('Display name must be less than 200 characters');
+            err.messageKey = 'error_display_name_too_long';
+            throw err;
         }
 
         quiz.displayName = displayName;
@@ -357,11 +393,15 @@ class MetadataService {
     async moveQuizToFolder(filename, folderId) {
         const quiz = this.metadata.quizzes[filename];
         if (!quiz) {
-            throw new Error('Quiz not found in metadata');
+            const err = new Error('Quiz not found in metadata');
+            err.messageKey = 'error_quiz_not_found';
+            throw err;
         }
 
         if (folderId !== null && !this.metadata.folders[folderId]) {
-            throw new Error('Target folder not found');
+            const err = new Error('Target folder not found');
+            err.messageKey = 'error_target_folder_not_found';
+            throw err;
         }
 
         quiz.folderId = folderId;
@@ -376,7 +416,9 @@ class MetadataService {
      */
     async deleteQuizMetadata(filename) {
         if (!this.metadata.quizzes[filename]) {
-            throw new Error('Quiz not found in metadata');
+            const err = new Error('Quiz not found in metadata');
+            err.messageKey = 'error_quiz_not_found';
+            throw err;
         }
 
         delete this.metadata.quizzes[filename];
@@ -439,12 +481,16 @@ class MetadataService {
     async setFolderPassword(folderId, password) {
         const folder = this.metadata.folders[folderId];
         if (!folder) {
-            throw new Error('Folder not found');
+            const err = new Error('Folder not found');
+            err.messageKey = 'error_folder_not_found';
+            throw err;
         }
 
         if (password) {
             if (password.length < 4) {
-                throw new Error('Password must be at least 4 characters');
+                const err = new Error('Password must be at least 4 characters');
+                err.messageKey = 'error_password_too_short';
+                throw err;
             }
             folder.passwordHash = await this.hashPassword(password);
         } else {
@@ -462,12 +508,16 @@ class MetadataService {
     async setQuizPassword(filename, password) {
         const quiz = this.metadata.quizzes[filename];
         if (!quiz) {
-            throw new Error('Quiz not found in metadata');
+            const err = new Error('Quiz not found in metadata');
+            err.messageKey = 'error_quiz_not_found';
+            throw err;
         }
 
         if (password) {
             if (password.length < 4) {
-                throw new Error('Password must be at least 4 characters');
+                const err = new Error('Password must be at least 4 characters');
+                err.messageKey = 'error_password_too_short';
+                throw err;
             }
             quiz.passwordHash = await this.hashPassword(password);
         } else {
@@ -516,31 +566,47 @@ class MetadataService {
     async unlock(itemId, itemType, password, ip) {
         // Check rate limiting
         if (this.isRateLimited(ip)) {
-            throw new Error('Too many unlock attempts. Please try again later.');
+            const err = new Error('Too many unlock attempts. Please try again later.');
+            err.messageKey = 'error_rate_limited';
+            throw err;
         }
 
         let item, passwordHash;
         if (itemType === 'folder') {
             item = this.metadata.folders[itemId];
-            if (!item) throw new Error('Folder not found');
+            if (!item) {
+                const err = new Error('Folder not found');
+                err.messageKey = 'error_folder_not_found';
+                throw err;
+            }
             passwordHash = item.passwordHash;
         } else if (itemType === 'quiz') {
             item = this.metadata.quizzes[itemId];
-            if (!item) throw new Error('Quiz not found');
+            if (!item) {
+                const err = new Error('Quiz not found');
+                err.messageKey = 'error_quiz_not_found';
+                throw err;
+            }
             passwordHash = item.passwordHash;
         } else {
-            throw new Error('Invalid item type');
+            const err = new Error('Invalid item type');
+            err.messageKey = 'error_invalid_item_type';
+            throw err;
         }
 
         if (!passwordHash) {
-            throw new Error('Item is not password protected');
+            const err = new Error('Item is not password protected');
+            err.messageKey = 'error_not_protected';
+            throw err;
         }
 
         this.recordUnlockAttempt(ip);
 
         const valid = await this.verifyPassword(password, passwordHash);
         if (!valid) {
-            throw new Error('Incorrect password');
+            const err = new Error('Incorrect password');
+            err.messageKey = 'error_incorrect_password';
+            throw err;
         }
 
         // Generate session token

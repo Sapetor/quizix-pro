@@ -42,31 +42,43 @@ class QuizService {
      */
     async saveQuiz(title, questions) {
         if (!title || !questions || !Array.isArray(questions)) {
-            throw new Error('Invalid quiz data');
+            const err = new Error('Invalid quiz data');
+            err.messageKey = 'error_invalid_quiz_data';
+            throw err;
         }
 
         // Input length validation
         if (title.length > 200) {
-            throw new Error('Quiz title must be less than 200 characters');
+            const err = new Error('Quiz title must be less than 200 characters');
+            err.messageKey = 'error_quiz_title_too_long';
+            throw err;
         }
 
         if (questions.length > 100) {
-            throw new Error('Maximum 100 questions allowed per quiz');
+            const err = new Error('Maximum 100 questions allowed per quiz');
+            err.messageKey = 'error_too_many_questions';
+            throw err;
         }
 
         // Validate individual question content lengths
         for (let i = 0; i < questions.length; i++) {
             const q = questions[i];
             if (q.question && q.question.length > 5000) {
-                throw new Error(`Question ${i + 1} text exceeds 5000 characters`);
+                const err = new Error(`Question ${i + 1} text exceeds 5000 characters`);
+                err.messageKey = 'error_question_too_long';
+                throw err;
             }
             if (q.explanation && q.explanation.length > 2000) {
-                throw new Error(`Question ${i + 1} explanation exceeds 2000 characters`);
+                const err = new Error(`Question ${i + 1} explanation exceeds 2000 characters`);
+                err.messageKey = 'error_explanation_too_long';
+                throw err;
             }
             if (q.options && Array.isArray(q.options)) {
                 for (let j = 0; j < q.options.length; j++) {
                     if (q.options[j] && q.options[j].length > 1000) {
-                        throw new Error(`Question ${i + 1}, option ${j + 1} exceeds 1000 characters`);
+                        const err = new Error(`Question ${i + 1}, option ${j + 1} exceeds 1000 characters`);
+                        err.messageKey = 'error_option_too_long';
+                        throw err;
                     }
                 }
             }
@@ -143,11 +155,15 @@ class QuizService {
     async loadQuiz(filename) {
         // Validate filename to prevent path traversal
         if (!this.validateFilename(filename)) {
-            throw new Error('Invalid filename');
+            const err = new Error('Invalid filename');
+            err.messageKey = 'error_invalid_filename';
+            throw err;
         }
 
         if (!filename.endsWith('.json')) {
-            throw new Error('Invalid filename');
+            const err = new Error('Invalid filename');
+            err.messageKey = 'error_invalid_filename';
+            throw err;
         }
 
         const filePath = path.join(this.quizzesDir, filename);
@@ -155,7 +171,9 @@ class QuizService {
         try {
             await fs.access(filePath);
         } catch {
-            throw new Error('Quiz not found');
+            const err = new Error('Quiz not found');
+            err.messageKey = 'error_quiz_not_found';
+            throw err;
         }
 
         const data = JSON.parse(await fs.readFile(filePath, 'utf8'));
@@ -168,11 +186,15 @@ class QuizService {
     async deleteQuiz(filename) {
         // Validate filename to prevent path traversal
         if (!this.validateFilename(filename)) {
-            throw new Error('Invalid filename');
+            const err = new Error('Invalid filename');
+            err.messageKey = 'error_invalid_filename';
+            throw err;
         }
 
         if (!filename.endsWith('.json')) {
-            throw new Error('Invalid filename');
+            const err = new Error('Invalid filename');
+            err.messageKey = 'error_invalid_filename';
+            throw err;
         }
 
         const filePath = path.join(this.quizzesDir, filename);
@@ -180,7 +202,9 @@ class QuizService {
         try {
             await fs.access(filePath);
         } catch {
-            throw new Error('Quiz not found');
+            const err = new Error('Quiz not found');
+            err.messageKey = 'error_quiz_not_found';
+            throw err;
         }
 
         await this.wslMonitor.trackFileOperation(

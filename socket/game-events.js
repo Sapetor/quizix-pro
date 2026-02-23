@@ -14,7 +14,7 @@ function registerGameEvents(io, socket, options) {
             logger.debug('quiz title from data:', data?.quiz?.title);
 
             if (!data || !data.quiz || !Array.isArray(data.quiz.questions)) {
-                socket.emit('error', { message: 'Invalid quiz data' });
+                socket.emit('error', { message: 'Invalid quiz data', messageKey: 'error_invalid_quiz_data' });
                 return;
             }
 
@@ -22,7 +22,7 @@ function registerGameEvents(io, socket, options) {
             logger.debug('extracted quiz title:', quiz.title);
 
             if (quiz.questions.length === 0) {
-                socket.emit('error', { message: 'Quiz must have at least one question' });
+                socket.emit('error', { message: 'Quiz must have at least one question', messageKey: 'error_quiz_needs_questions' });
                 return;
             }
 
@@ -30,7 +30,7 @@ function registerGameEvents(io, socket, options) {
             const existingGame = gameSessionService.findGameByHost(socket.id);
             if (existingGame) {
                 existingGame.endQuestion();
-                io.to(`game-${existingGame.pin}`).emit('game-ended', { reason: 'Host started new game' });
+                io.to(`game-${existingGame.pin}`).emit('game-ended', { reason: 'Host started new game', messageKey: 'error_host_new_game' });
                 gameSessionService.deleteGame(existingGame.pin);
             }
 
@@ -53,7 +53,7 @@ function registerGameEvents(io, socket, options) {
             });
         } catch (error) {
             logger.error('Error in host-join handler:', error);
-            socket.emit('error', { message: 'Failed to create game' });
+            socket.emit('error', { message: 'Failed to create game', messageKey: 'error_failed_create_game' });
         }
     });
 
@@ -68,7 +68,7 @@ function registerGameEvents(io, socket, options) {
             gameSessionService.startGame(game, io);
         } catch (error) {
             logger.error('Error in start-game handler:', error);
-            socket.emit('error', { message: 'Failed to start game' });
+            socket.emit('error', { message: 'Failed to start game', messageKey: 'error_failed_start_game' });
         }
     });
 
@@ -78,13 +78,13 @@ function registerGameEvents(io, socket, options) {
         try {
             const game = gameSessionService.findGameByHost(socket.id);
             if (!game) {
-                socket.emit('error', { message: 'Game not found' });
+                socket.emit('error', { message: 'Game not found', messageKey: 'error_game_not_found' });
                 return;
             }
 
             // Only allow rematch if game has finished
             if (game.gameState !== 'finished') {
-                socket.emit('error', { message: 'Can only rematch after game ends' });
+                socket.emit('error', { message: 'Can only rematch after game ends', messageKey: 'error_can_only_rematch' });
                 return;
             }
 
@@ -109,7 +109,7 @@ function registerGameEvents(io, socket, options) {
             logger.info(`Game ${game.pin} reset for rematch by host`);
         } catch (error) {
             logger.error('Error in rematch-game handler:', error);
-            socket.emit('error', { message: 'Failed to start rematch' });
+            socket.emit('error', { message: 'Failed to start rematch', messageKey: 'error_failed_rematch' });
         }
     });
 }

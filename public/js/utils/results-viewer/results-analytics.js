@@ -5,6 +5,7 @@
 
 import { logger } from '../../core/config.js';
 import { escapeHtml } from '../dom.js';
+import { getTranslation } from '../translation-manager.js';
 import { getSuccessRateClass } from './results-filter-manager.js';
 
 /**
@@ -302,34 +303,34 @@ export function createAnalyticsModal(result, analytics, summary, conceptData = n
     modal.innerHTML = `
         <div class="modal-content analytics-modal-content">
             <div class="modal-header">
-                <h2>Quiz Analytics: ${escapeHtml(result.quizTitle || 'Untitled Quiz')}</h2>
+                <h2>${getTranslation('analytics_quiz_title')}: ${escapeHtml(result.quizTitle || getTranslation('untitled_quiz'))}</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
             </div>
 
             <div class="analytics-tabs">
-                <button class="tab-btn active" data-tab="overview">Overview</button>
-                <button class="tab-btn" data-tab="questions">Questions</button>
-                <button class="tab-btn" data-tab="insights">Insights</button>
-                ${conceptData?.hasConcepts ? '<button class="tab-btn" data-tab="concepts">Concepts</button>' : ''}
+                <button class="tab-btn active" data-tab="overview">${getTranslation('analytics_overview_tab')}</button>
+                <button class="tab-btn" data-tab="questions">${getTranslation('analytics_questions_tab')}</button>
+                <button class="tab-btn" data-tab="insights">${getTranslation('analytics_insights_tab')}</button>
+                ${conceptData?.hasConcepts ? `<button class="tab-btn" data-tab="concepts">${getTranslation('analytics_concepts_tab')}</button>` : ''}
             </div>
 
             <div class="tab-content active" id="overview-tab">
                 <div class="summary-stats">
                     <div class="stat-card">
                         <div class="stat-value">${summary.avgSuccessRate.toFixed(1)}%</div>
-                        <div class="stat-label">Average Success Rate</div>
+                        <div class="stat-label">${getTranslation('analytics_avg_success_rate')}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value">${summary.avgTime.toFixed(1)}s</div>
-                        <div class="stat-label">Average Response Time</div>
+                        <div class="stat-label">${getTranslation('analytics_avg_response_time')}</div>
                     </div>
                     <div class="stat-card ${summary.problematicCount > 0 ? 'warning' : 'success'}">
                         <div class="stat-value">${summary.problematicCount}</div>
-                        <div class="stat-label">Questions Need Review</div>
+                        <div class="stat-label">${getTranslation('analytics_questions_need_review')}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value">${result.results?.length || 0}</div>
-                        <div class="stat-label">Participants</div>
+                        <div class="stat-label">${getTranslation('analytics_participants_label')}</div>
                     </div>
                 </div>
 
@@ -343,7 +344,7 @@ export function createAnalyticsModal(result, analytics, summary, conceptData = n
             </div>
 
             <div class="tab-content" id="questions-tab">
-                <p class="click-hint">Click a question for detailed breakdown</p>
+                <p class="click-hint">${getTranslation('analytics_click_hint')}</p>
                 <div class="questions-analytics-list">
                     ${analytics.map((q, idx) => `
                         <div class="question-analytics-item clickable ${q.isPotentiallyProblematic ? 'problematic' : ''}" data-question-index="${idx}">
@@ -353,9 +354,9 @@ export function createAnalyticsModal(result, analytics, summary, conceptData = n
                             </div>
                             <div class="question-text">${escapeHtml(q.text)}</div>
                             <div class="question-metrics">
-                                <span class="metric">${q.averageTime.toFixed(1)}s avg</span>
-                                <span class="metric">${q.totalResponses} responses</span>
-                                <span class="metric">${q.averagePoints.toFixed(0)} avg points</span>
+                                <span class="metric">${q.averageTime.toFixed(1)}s ${getTranslation('analytics_avg')}</span>
+                                <span class="metric">${q.totalResponses} ${getTranslation('analytics_responses')}</span>
+                                <span class="metric">${q.averagePoints.toFixed(0)} ${getTranslation('analytics_avg_points')}</span>
                             </div>
                             ${q.problemFlags.length > 0 ? `
                                 <div class="problem-flags">
@@ -371,30 +372,30 @@ export function createAnalyticsModal(result, analytics, summary, conceptData = n
 
             <div class="tab-content" id="insights-tab">
                 <div class="insights-section">
-                    <h3>Content Review Recommendations</h3>
+                    <h3>${getTranslation('analytics_content_review_title')}</h3>
                     ${problematicQuestions.length > 0 ? `
                         <div class="problematic-questions">
                             ${flagsHtml}
                         </div>
-                    ` : '<p class="no-issues">No major issues detected. All questions performing well!</p>'}
+                    ` : `<p class="no-issues">${getTranslation('analytics_no_major_issues')}</p>`}
 
-                    <h3>Performance Insights</h3>
+                    <h3>${getTranslation('analytics_performance_insights_title')}</h3>
                     <div class="insights-grid">
                         <div class="insight-item">
-                            <h4>Hardest Question</h4>
+                            <h4>${getTranslation('analytics_hardest_question')}</h4>
                             <p><strong>Q${summary.hardestQuestion.number}:</strong> ${escapeHtml(summary.hardestQuestion.text.substring(0, 80))}...</p>
-                            <p>Success Rate: ${summary.hardestQuestion.successRate.toFixed(1)}%</p>
+                            <p>${getTranslation('analytics_success_rate')}: ${summary.hardestQuestion.successRate.toFixed(1)}%</p>
                         </div>
                         <div class="insight-item">
-                            <h4>Easiest Question</h4>
+                            <h4>${getTranslation('analytics_easiest_question')}</h4>
                             <p><strong>Q${summary.easiestQuestion.number}:</strong> ${escapeHtml(summary.easiestQuestion.text.substring(0, 80))}...</p>
-                            <p>Success Rate: ${summary.easiestQuestion.successRate.toFixed(1)}%</p>
+                            <p>${getTranslation('analytics_success_rate')}: ${summary.easiestQuestion.successRate.toFixed(1)}%</p>
                         </div>
                     </div>
 
                     ${summary.needsReview ? `
                         <div class="review-alert">
-                            <strong>Quiz needs review:</strong> ${summary.problematicCount} out of ${summary.totalQuestions} questions (${(summary.problematicCount / summary.totalQuestions * 100).toFixed(1)}%) may need improvement.
+                            <strong>${getTranslation('analytics_quiz_needs_review')}:</strong> ${summary.problematicCount} / ${summary.totalQuestions} (${(summary.problematicCount / summary.totalQuestions * 100).toFixed(1)}%) ${getTranslation('analytics_may_need_improvement')}.
                         </div>
                     ` : ''}
                 </div>
@@ -403,10 +404,10 @@ export function createAnalyticsModal(result, analytics, summary, conceptData = n
             ${conceptData?.hasConcepts ? buildConceptsTabContent(conceptData, result) : ''}
 
             <div class="modal-footer">
-                <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
-                <button class="btn secondary" data-action="export-excel" data-filename="${safeFilename}">Export Excel</button>
-                <button class="btn secondary" data-action="export-pdf" data-filename="${safeFilename}">Export PDF</button>
-                <button class="btn primary" data-action="export-analytics" data-filename="${safeFilename}">Export CSV</button>
+                <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">${getTranslation('close')}</button>
+                <button class="btn secondary" data-action="export-excel" data-filename="${safeFilename}">${getTranslation('export_excel_btn')}</button>
+                <button class="btn secondary" data-action="export-pdf" data-filename="${safeFilename}">${getTranslation('export_pdf_btn')}</button>
+                <button class="btn primary" data-action="export-analytics" data-filename="${safeFilename}">${getTranslation('export_csv_btn')}</button>
             </div>
         </div>
     `;
@@ -459,18 +460,18 @@ function buildConceptsTabContent(conceptData, result) {
                 </div>
             ` : ''}
         </div>
-    `).join('') : '<p class="no-issues">All concepts are performing well!</p>';
+    `).join('') : `<p class="no-issues">${getTranslation('analytics_all_concepts_well')}</p>`;
 
     return `
         <div class="tab-content" id="concepts-tab">
             <div class="concepts-section">
                 <div class="concepts-header">
-                    <h3>Concept Mastery</h3>
+                    <h3>${getTranslation('analytics_concept_mastery')}</h3>
                     <div class="concepts-legend">
-                        <span class="legend-item mastered"><span class="legend-color"></span> Mastered (80%+)</span>
-                        <span class="legend-item proficient"><span class="legend-color"></span> Proficient (60-79%)</span>
-                        <span class="legend-item developing"><span class="legend-color"></span> Developing (40-59%)</span>
-                        <span class="legend-item needs-work"><span class="legend-color"></span> Needs Work (&lt;40%)</span>
+                        <span class="legend-item mastered"><span class="legend-color"></span> ${getTranslation('analytics_mastered_label')}</span>
+                        <span class="legend-item proficient"><span class="legend-color"></span> ${getTranslation('analytics_proficient_label')}</span>
+                        <span class="legend-item developing"><span class="legend-color"></span> ${getTranslation('analytics_developing_label')}</span>
+                        <span class="legend-item needs-work"><span class="legend-color"></span> ${getTranslation('analytics_needs_work_label')}</span>
                     </div>
                 </div>
 
@@ -484,11 +485,11 @@ function buildConceptsTabContent(conceptData, result) {
 
                 <div class="concept-insights-section">
                     <div class="insights-header">
-                        <h3>Study Suggestions</h3>
+                        <h3>${getTranslation('analytics_study_suggestions')}</h3>
                         <label class="toggle-switch">
                             <input type="checkbox" id="show-study-suggestions">
                             <span class="toggle-slider"></span>
-                            <span class="toggle-label">Show suggestions</span>
+                            <span class="toggle-label">${getTranslation('analytics_show_suggestions')}</span>
                         </label>
                     </div>
                     <div class="concept-insights-content" id="concept-insights-content" style="display: none;">
@@ -515,7 +516,7 @@ export function createSuccessRateChart(analytics) {
         data: {
             labels: analytics.map(q => `Q${q.questionNumber}`),
             datasets: [{
-                label: 'Success Rate (%)',
+                label: getTranslation('chart_success_rate_pct'),
                 data: analytics.map(q => q.successRate),
                 backgroundColor: analytics.map(q => {
                     if (q.successRate >= 80) return '#10b981';
@@ -533,7 +534,7 @@ export function createSuccessRateChart(analytics) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Success Rate by Question'
+                    text: getTranslation('chart_success_rate_by_question')
                 },
                 legend: {
                     display: false
@@ -568,7 +569,7 @@ export function createTimeVsSuccessChart(analytics) {
         type: 'scatter',
         data: {
             datasets: [{
-                label: 'Questions',
+                label: getTranslation('analytics_questions_tab'),
                 data: analytics.map(q => ({
                     x: q.averageTime,
                     y: q.successRate,
@@ -586,7 +587,7 @@ export function createTimeVsSuccessChart(analytics) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Time vs Success Rate (Red = Problematic)'
+                    text: getTranslation('chart_time_vs_success')
                 },
                 tooltip: {
                     callbacks: {
@@ -609,13 +610,13 @@ export function createTimeVsSuccessChart(analytics) {
                 x: {
                     title: {
                         display: true,
-                        text: 'Average Time (seconds)'
+                        text: getTranslation('chart_avg_time_seconds')
                     }
                 },
                 y: {
                     title: {
                         display: true,
-                        text: 'Success Rate (%)'
+                        text: getTranslation('chart_success_rate_pct')
                     },
                     beginAtZero: true,
                     max: 100
@@ -738,15 +739,15 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
         ? wrongAnswers.map(([answer, count]) => `
             <div class="wrong-answer-item">
                 <span class="wrong-answer-text">${escapeHtml(answer.substring(0, 40))}${answer.length > 40 ? '...' : ''}</span>
-                <span class="wrong-answer-count">${count} students</span>
+                <span class="wrong-answer-count">${count} ${getTranslation('analytics_students')}</span>
             </div>
         `).join('')
-        : '<p class="no-wrong-answers">All answers were correct!</p>';
+        : `<p class="no-wrong-answers">${getTranslation('analytics_all_answers_correct')}</p>`;
 
     modal.innerHTML = `
         <div class="modal-content drilldown-modal-content">
             <div class="modal-header">
-                <h2>Question ${qNum} Details</h2>
+                <h2>${getTranslation('analytics_question_num_details', [qNum])}</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
             </div>
 
@@ -759,38 +760,38 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
                 <div class="drilldown-stats">
                     <div class="drilldown-stat">
                         <div class="stat-value ${questionAnalysis.successRate >= 60 ? 'good' : 'poor'}">${questionAnalysis.successRate.toFixed(1)}%</div>
-                        <div class="stat-label">Success Rate</div>
+                        <div class="stat-label">${getTranslation('analytics_success_rate')}</div>
                     </div>
                     <div class="drilldown-stat">
                         <div class="stat-value">${questionAnalysis.averageTime.toFixed(1)}s</div>
-                        <div class="stat-label">Avg Time</div>
+                        <div class="stat-label">${getTranslation('analytics_avg_time')}</div>
                     </div>
                     <div class="drilldown-stat">
                         <div class="stat-value correct">${correctCount}</div>
-                        <div class="stat-label">Correct</div>
+                        <div class="stat-label">${getTranslation('analytics_correct')}</div>
                     </div>
                     <div class="drilldown-stat">
                         <div class="stat-value incorrect">${incorrectCount}</div>
-                        <div class="stat-label">Incorrect</div>
+                        <div class="stat-label">${getTranslation('analytics_incorrect')}</div>
                     </div>
                 </div>
 
                 <div class="drilldown-section">
-                    <h4>Answer Distribution</h4>
+                    <h4>${getTranslation('analytics_answer_distribution')}</h4>
                     <div class="answer-distribution">
                         ${answerDistHtml}
                     </div>
                 </div>
 
                 <div class="drilldown-section">
-                    <h4>Response Time Distribution</h4>
+                    <h4>${getTranslation('analytics_response_time_dist')}</h4>
                     <div class="time-distribution">
                         ${timeDistHtml}
                     </div>
                 </div>
 
                 <div class="drilldown-section">
-                    <h4>Most Common Wrong Answers</h4>
+                    <h4>${getTranslation('analytics_common_wrong')}</h4>
                     <div class="wrong-answers-list">
                         ${wrongAnswersHtml}
                     </div>
@@ -798,7 +799,7 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
 
                 ${questionAnalysis.problemFlags && questionAnalysis.problemFlags.length > 0 ? `
                     <div class="drilldown-section">
-                        <h4>Issues Detected</h4>
+                        <h4>${getTranslation('analytics_issues_detected')}</h4>
                         <div class="problem-flags">
                             ${questionAnalysis.problemFlags.map(flag =>
         `<span class="flag ${flag.severity}">${escapeHtml(flag.message)}</span>`
@@ -809,7 +810,7 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
             </div>
 
             <div class="modal-footer">
-                <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">${getTranslation('close')}</button>
             </div>
         </div>
     `;
@@ -892,7 +893,7 @@ export function createNumericDistributionChart(canvasId, questionData, correctAn
         data: {
             labels: bucketLabels,
             datasets: [{
-                label: 'Answer Count',
+                label: getTranslation('chart_number_of_answers'),
                 data: buckets,
                 backgroundColor: buckets.map((_, i) =>
                     i === correctBucketIndex ? '#10b981' : '#3b82f6'
@@ -907,7 +908,7 @@ export function createNumericDistributionChart(canvasId, questionData, correctAn
             plugins: {
                 title: {
                     display: true,
-                    text: 'Numeric Answer Distribution'
+                    text: getTranslation('chart_numeric_answer_dist')
                 },
                 legend: {
                     display: false
@@ -947,7 +948,7 @@ export function createNumericDistributionChart(canvasId, questionData, correctAn
                         afterLabel: function(context) {
                             const idx = context.dataIndex;
                             if (idx === correctBucketIndex) {
-                                return '(Contains correct answer)';
+                                return getTranslation('chart_contains_correct');
                             }
                             return '';
                         }
@@ -959,7 +960,7 @@ export function createNumericDistributionChart(canvasId, questionData, correctAn
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Number of Answers'
+                        text: getTranslation('chart_number_of_answers')
                     },
                     ticks: {
                         stepSize: 1
@@ -968,7 +969,7 @@ export function createNumericDistributionChart(canvasId, questionData, correctAn
                 x: {
                     title: {
                         display: true,
-                        text: 'Answer Range'
+                        text: getTranslation('chart_answer_range')
                     }
                 }
             }
@@ -1026,7 +1027,7 @@ export function createMultipleCorrectChart(canvasId, questionData, options) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Selection %',
+                label: getTranslation('chart_selection_rate'),
                 data: percentages,
                 backgroundColor: backgroundColors,
                 borderColor: '#374151',
@@ -1040,15 +1041,15 @@ export function createMultipleCorrectChart(canvasId, questionData, options) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Option Selection Distribution'
+                    text: getTranslation('chart_option_selection_dist')
                 },
                 legend: {
                     display: true,
                     labels: {
                         generateLabels: function() {
                             return [
-                                { text: 'Correct Option', fillStyle: '#10b981', strokeStyle: '#374151' },
-                                { text: 'Incorrect Option', fillStyle: '#ef4444', strokeStyle: '#374151' }
+                                { text: getTranslation('chart_correct_option'), fillStyle: '#10b981', strokeStyle: '#374151' },
+                                { text: getTranslation('chart_incorrect_option'), fillStyle: '#ef4444', strokeStyle: '#374151' }
                             ];
                         }
                     }
@@ -1070,7 +1071,7 @@ export function createMultipleCorrectChart(canvasId, questionData, options) {
                     max: 100,
                     title: {
                         display: true,
-                        text: 'Selection Rate (%)'
+                        text: getTranslation('chart_selection_rate')
                     },
                     ticks: {
                         callback: function(value) {
@@ -1124,7 +1125,7 @@ export function createComparisonChart(canvasId, sessionsData) {
     });
 
     datasets.push({
-        label: 'Overall Average',
+        label: getTranslation('chart_overall_average'),
         data: avgData,
         borderColor: '#1f2937',
         backgroundColor: '#1f293720',
@@ -1163,7 +1164,7 @@ export function createComparisonChart(canvasId, sessionsData) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Success Rate Comparison Across Sessions'
+                    text: getTranslation('chart_success_rate_comparison')
                 },
                 tooltip: {
                     mode: 'index',
@@ -1176,7 +1177,7 @@ export function createComparisonChart(canvasId, sessionsData) {
                     max: 100,
                     title: {
                         display: true,
-                        text: 'Success Rate (%)'
+                        text: getTranslation('chart_success_rate_pct')
                     },
                     ticks: {
                         callback: function(value) {
@@ -1187,7 +1188,7 @@ export function createComparisonChart(canvasId, sessionsData) {
                 x: {
                     title: {
                         display: true,
-                        text: 'Session Date'
+                        text: getTranslation('chart_session_date')
                     }
                 }
             },
@@ -1474,7 +1475,7 @@ export function generateConceptInsights(conceptMastery, dependencies) {
     if (needsWork.length > 0) {
         insights.push({
             type: 'focus-areas',
-            title: 'Focus Areas',
+            title: getTranslation('analytics_focus_areas'),
             message: `${needsWork.length} concept${needsWork.length > 1 ? 's' : ''} need${needsWork.length === 1 ? 's' : ''} improvement`,
             concepts: needsWork.map(c => c.name),
             severity: needsWork.some(c => c.masteryRate < 40) ? 'high' : 'medium'
@@ -1486,7 +1487,7 @@ export function generateConceptInsights(conceptMastery, dependencies) {
     if (strengths.length > 0) {
         insights.push({
             type: 'strengths',
-            title: 'Strong Areas',
+            title: getTranslation('analytics_strong_areas'),
             message: `${strengths.length} concept${strengths.length > 1 ? 's' : ''} mastered`,
             concepts: strengths.map(c => c.name),
             severity: 'success'
@@ -1497,7 +1498,7 @@ export function generateConceptInsights(conceptMastery, dependencies) {
     dependencies.forEach(dep => {
         insights.push({
             type: 'dependency',
-            title: 'Study Suggestion',
+            title: getTranslation('analytics_study_suggestion'),
             message: dep.message,
             severity: dep.severity
         });
@@ -1540,7 +1541,7 @@ export function createConceptMasteryChart(canvasId, conceptMastery) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Mastery %',
+                label: getTranslation('analytics_concept_mastery'),
                 data: data,
                 backgroundColor: colors,
                 borderColor: '#374151',
@@ -1554,7 +1555,7 @@ export function createConceptMasteryChart(canvasId, conceptMastery) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Concept Mastery Levels'
+                    text: getTranslation('chart_concept_mastery_levels')
                 },
                 legend: {
                     display: false

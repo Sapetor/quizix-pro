@@ -100,7 +100,8 @@ class Game {
         if (this.players.size >= this.limits.MAX_PLAYERS_PER_GAME) {
             return {
                 success: false,
-                error: `Game is full (max ${this.limits.MAX_PLAYERS_PER_GAME} players)`
+                error: `Game is full (max ${this.limits.MAX_PLAYERS_PER_GAME} players)`,
+                messageKey: 'error_game_full'
             };
         }
 
@@ -144,17 +145,17 @@ class Game {
      */
     usePowerUp(playerId, powerUpType) {
         if (!this.powerUpsEnabled) {
-            return { success: false, error: 'Power-ups not enabled for this game' };
+            return { success: false, error: 'Power-ups not enabled for this game', messageKey: 'error_powerup_not_enabled' };
         }
 
         const player = this.players.get(playerId);
         if (!player?.powerUps) {
-            return { success: false, error: 'Player not found or power-ups not initialized' };
+            return { success: false, error: 'Player not found or power-ups not initialized', messageKey: 'error_player_not_found' };
         }
 
         const powerUp = player.powerUps[powerUpType];
         if (!powerUp || powerUp.used) {
-            return { success: false, error: powerUp ? 'Power-up already used' : 'Unknown power-up type' };
+            return { success: false, error: powerUp ? 'Power-up already used' : 'Unknown power-up type', messageKey: powerUp ? 'error_powerup_already_used' : 'error_unknown_powerup' };
         }
 
         powerUp.used = true;

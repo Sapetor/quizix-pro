@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         logger.debug('Quizix Pro - Application initialized successfully');
     }, 'app_initialization', () => {
         logger.error('Failed to initialize application');
-        document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h2>Application Error</h2><p>Failed to initialize Quizix Pro. Please refresh the page.</p></div>';
+        document.body.innerHTML = `<div style="text-align: center; padding: 50px;"><h2>${translationManager.getTranslationSync('application_error')}</h2><p>${translationManager.getTranslationSync('app_failed_init')}</p></div>`;
     });
 });
 

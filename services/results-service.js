@@ -32,7 +32,9 @@ class ResultsService {
         const resolvedPath = path.resolve(this.resultsDir, filename);
 
         if (!resolvedPath.startsWith(resolvedBase + path.sep) && resolvedPath !== resolvedBase) {
-            throw new Error('Invalid path: attempted directory traversal');
+            const err = new Error('Invalid path: attempted directory traversal');
+            err.messageKey = 'error_invalid_path';
+            throw err;
         }
 
         return resolvedPath;
@@ -43,7 +45,9 @@ class ResultsService {
      */
     async saveResults(quizTitle, gamePin, results, startTime, endTime, questions) {
         if (!quizTitle || !gamePin || !results) {
-            throw new Error('Invalid results data');
+            const err = new Error('Invalid results data');
+            err.messageKey = 'error_invalid_results_data';
+            throw err;
         }
 
         const filename = `results_${gamePin}_${Date.now()}.json`;
@@ -130,7 +134,9 @@ class ResultsService {
         this.logger.info(`DELETE request for file: ${filename}`);
 
         if (!this.validateFilename(filename)) {
-            throw new Error('Invalid filename format');
+            const err = new Error('Invalid filename format');
+            err.messageKey = 'error_invalid_filename';
+            throw err;
         }
 
         const filePath = this.validatePath(filename);
@@ -140,7 +146,9 @@ class ResultsService {
             await fs.access(filePath);
         } catch {
             this.logger.info(`File does not exist: ${filePath}`);
-            throw new Error('Result file not found');
+            const err = new Error('Result file not found');
+            err.messageKey = 'error_result_not_found';
+            throw err;
         }
 
         await fs.unlink(filePath);
@@ -157,7 +165,9 @@ class ResultsService {
      */
     async getResult(filename) {
         if (!this.validateFilename(filename)) {
-            throw new Error('Invalid filename format');
+            const err = new Error('Invalid filename format');
+            err.messageKey = 'error_invalid_filename';
+            throw err;
         }
 
         const filePath = this.validatePath(filename);
@@ -165,7 +175,9 @@ class ResultsService {
         try {
             await fs.access(filePath);
         } catch {
-            throw new Error('Result file not found');
+            const err = new Error('Result file not found');
+            err.messageKey = 'error_result_not_found';
+            throw err;
         }
 
         try {
@@ -174,7 +186,9 @@ class ResultsService {
             return data;
         } catch (parseError) {
             this.logger.error(`Failed to parse result file ${filename}:`, parseError);
-            throw new Error('Result file is corrupted or invalid JSON');
+            const err = new Error('Result file is corrupted or invalid JSON');
+            err.messageKey = 'error_result_corrupted';
+            throw err;
         }
     }
 
@@ -183,15 +197,21 @@ class ResultsService {
      */
     async exportResults(filename, format, exportType = 'analytics') {
         if (!this.validateFilename(filename)) {
-            throw new Error('Invalid filename format');
+            const err = new Error('Invalid filename format');
+            err.messageKey = 'error_invalid_filename';
+            throw err;
         }
 
         if (!['csv', 'json'].includes(format.toLowerCase())) {
-            throw new Error('Unsupported export format. Use csv or json.');
+            const err = new Error('Unsupported export format. Use csv or json.');
+            err.messageKey = 'error_unsupported_format';
+            throw err;
         }
 
         if (!['analytics', 'simple'].includes(exportType)) {
-            throw new Error('Invalid export type. Use analytics or simple.');
+            const err = new Error('Invalid export type. Use analytics or simple.');
+            err.messageKey = 'error_invalid_export_type';
+            throw err;
         }
 
         const filePath = this.validatePath(filename);
@@ -199,7 +219,9 @@ class ResultsService {
         try {
             await fs.access(filePath);
         } catch {
-            throw new Error('Result file not found');
+            const err = new Error('Result file not found');
+            err.messageKey = 'error_result_not_found';
+            throw err;
         }
 
         let data;
@@ -208,7 +230,9 @@ class ResultsService {
             data = JSON.parse(content);
         } catch (parseError) {
             this.logger.error(`Failed to parse result file for export ${filename}:`, parseError);
-            throw new Error('Result file is corrupted or invalid JSON');
+            const err = new Error('Result file is corrupted or invalid JSON');
+            err.messageKey = 'error_result_corrupted';
+            throw err;
         }
 
         if (format.toLowerCase() === 'csv') {

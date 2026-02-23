@@ -176,7 +176,7 @@ class MobileQuestionCarousel {
 
         if (this.questions.length === 0) {
             // If no questions, show a placeholder
-            this.questionsWrapper.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No questions yet. Click + to add one!</div>';
+            this.questionsWrapper.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">${getTranslation('no_questions_yet')}</div>`;
             this.updateIndicators();
             this.updateNavigation();
             return;

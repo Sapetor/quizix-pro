@@ -1512,9 +1512,9 @@ export class QuizManager {
         }
 
         errorMsg.innerHTML = `
-            <div style="margin-bottom: 6px;">📷 Image not found</div>
+            <div style="margin-bottom: 6px;">📷 ${translationManager.getTranslationSync('image_not_found')}</div>
             <div style="font-size: 0.75rem; opacity: 0.7;">${imageData}</div>
-            <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 3px;">Remove reference or upload file</div>
+            <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 3px;">${translationManager.getTranslationSync('image_remove_or_upload')}</div>
         `;
     }
 

@@ -5,7 +5,7 @@
 
 import { logger } from '../../core/config.js';
 import { resultsManagerService } from '../../services/results-manager-service.js';
-import { showErrorAlert, showSuccessAlert } from '../translation-manager.js';
+import { getTranslation, showErrorAlert, showSuccessAlert } from '../translation-manager.js';
 import { createFormatSelectionModal } from './results-renderer.js';
 import { calculateQuestionAnalytics, getQuizSummaryStats } from './results-analytics.js';
 
@@ -85,7 +85,7 @@ export class ResultsExporter {
             await resultsManagerService.downloadResult(filename, exportFormat, 'csv');
         } catch (error) {
             logger.error('Error downloading result:', error);
-            showErrorAlert('Failed to download result');
+            showErrorAlert(getTranslation('export_failed_download'));
         }
     }
 
@@ -158,7 +158,7 @@ export class ResultsExporter {
             logger.debug('Analytics report downloaded successfully');
         } catch (error) {
             logger.error('Failed to export analytics report:', error);
-            showErrorAlert('Failed to export analytics report');
+            showErrorAlert(getTranslation('export_failed_analytics'));
         }
     }
 
@@ -175,9 +175,9 @@ export class ResultsExporter {
             const { jsPDF } = jspdfLib;
             const doc = new jsPDF();
 
-            const quizTitle = resultData.quizTitle || 'Untitled Quiz';
-            const gamePin = resultData.gamePin || 'Unknown';
-            const savedDate = resultData.saved ? new Date(resultData.saved).toLocaleDateString() : 'Unknown';
+            const quizTitle = resultData.quizTitle || getTranslation('untitled_quiz');
+            const gamePin = resultData.gamePin || getTranslation('unknown');
+            const savedDate = resultData.saved ? new Date(resultData.saved).toLocaleDateString() : getTranslation('unknown');
             const participants = resultData.results?.length || 0;
 
             // Calculate analytics
@@ -195,7 +195,7 @@ export class ResultsExporter {
             // Title
             doc.setFontSize(20);
             doc.setFont('helvetica', 'bold');
-            doc.text('Quiz Results Report', pageWidth / 2, yPos, { align: 'center' });
+            doc.text(getTranslation('export_quiz_results_report'), pageWidth / 2, yPos, { align: 'center' });
             yPos += 12;
 
             // Quiz title
@@ -212,15 +212,15 @@ export class ResultsExporter {
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             yPos += 8;
-            doc.text(`Game PIN: ${gamePin}`, margin + 5, yPos);
-            doc.text(`Date: ${savedDate}`, margin + 70, yPos);
-            doc.text(`Participants: ${participants}`, margin + 130, yPos);
+            doc.text(`${getTranslation('export_game_pin_label')}: ${gamePin}`, margin + 5, yPos);
+            doc.text(`${getTranslation('export_date_label')}: ${savedDate}`, margin + 70, yPos);
+            doc.text(`${getTranslation('export_participants_label')}: ${participants}`, margin + 130, yPos);
             yPos += 25;
 
             // Summary statistics header
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
-            doc.text('Summary Statistics', margin, yPos);
+            doc.text(getTranslation('export_summary_stats'), margin, yPos);
             yPos += 10;
 
             // Summary stats
@@ -232,37 +232,37 @@ export class ResultsExporter {
             const problematicCount = summary.problematicCount || 0;
             const totalQuestions = summary.totalQuestions || questionAnalytics.length;
 
-            doc.text(`Average Success Rate: ${avgSuccessRate}%`, margin, yPos);
+            doc.text(`${getTranslation('analytics_avg_success_rate')}: ${avgSuccessRate}%`, margin, yPos);
             yPos += 7;
-            doc.text(`Average Response Time: ${avgTime} seconds`, margin, yPos);
+            doc.text(`${getTranslation('analytics_avg_response_time')}: ${avgTime}s`, margin, yPos);
             yPos += 7;
-            doc.text(`Total Questions: ${totalQuestions}`, margin, yPos);
+            doc.text(`${getTranslation('export_total_questions')}: ${totalQuestions}`, margin, yPos);
             yPos += 7;
-            doc.text(`Questions Needing Review: ${problematicCount}`, margin, yPos);
+            doc.text(`${getTranslation('export_questions_needing_review')}: ${problematicCount}`, margin, yPos);
             yPos += 15;
 
             // Hardest/Easiest questions
             if (summary.hardestQuestion) {
                 doc.setFont('helvetica', 'bold');
-                doc.text('Most Challenging Question:', margin, yPos);
+                doc.text(`${getTranslation('export_most_challenging')}:`, margin, yPos);
                 yPos += 7;
                 doc.setFont('helvetica', 'normal');
                 const hardestText = `Q${summary.hardestQuestion.number}: ${summary.hardestQuestion.text.substring(0, 60)}...`;
                 doc.text(hardestText, margin + 5, yPos);
                 yPos += 7;
-                doc.text(`Success Rate: ${summary.hardestQuestion.successRate.toFixed(1)}%`, margin + 5, yPos);
+                doc.text(`${getTranslation('export_success_rate_label')}: ${summary.hardestQuestion.successRate.toFixed(1)}%`, margin + 5, yPos);
                 yPos += 12;
             }
 
             if (summary.easiestQuestion) {
                 doc.setFont('helvetica', 'bold');
-                doc.text('Easiest Question:', margin, yPos);
+                doc.text(`${getTranslation('export_easiest_question')}:`, margin, yPos);
                 yPos += 7;
                 doc.setFont('helvetica', 'normal');
                 const easiestText = `Q${summary.easiestQuestion.number}: ${summary.easiestQuestion.text.substring(0, 60)}...`;
                 doc.text(easiestText, margin + 5, yPos);
                 yPos += 7;
-                doc.text(`Success Rate: ${summary.easiestQuestion.successRate.toFixed(1)}%`, margin + 5, yPos);
+                doc.text(`${getTranslation('export_success_rate_label')}: ${summary.easiestQuestion.successRate.toFixed(1)}%`, margin + 5, yPos);
                 yPos += 15;
             }
 
@@ -277,7 +277,7 @@ export class ResultsExporter {
 
                 doc.setFontSize(14);
                 doc.setFont('helvetica', 'bold');
-                doc.text('Question-by-Question Analysis', margin, yPos);
+                doc.text(getTranslation('export_question_by_question'), margin, yPos);
                 yPos += 12;
 
                 for (let i = 0; i < maxQuestions; i++) {
@@ -311,16 +311,16 @@ export class ResultsExporter {
                     // Question text
                     doc.setFontSize(10);
                     doc.setFont('helvetica', 'normal');
-                    const qText = this._sanitizePdfText(q.text || 'Question text not available');
+                    const qText = this._sanitizePdfText(q.text || getTranslation('export_question_text_not_available'));
                     const truncatedQText = qText.length > 80 ? qText.substring(0, 77) + '...' : qText;
                     doc.text(truncatedQText, margin + 55, yPos + 3);
 
                     // Metrics
                     yPos += 12;
                     doc.setFontSize(9);
-                    doc.text(`Responses: ${q.totalResponses}`, margin + 5, yPos);
-                    doc.text(`Avg Time: ${q.averageTime.toFixed(1)}s`, margin + 50, yPos);
-                    doc.text(`Avg Points: ${q.averagePoints.toFixed(0)}`, margin + 100, yPos);
+                    doc.text(`${getTranslation('export_responses_label')}: ${q.totalResponses}`, margin + 5, yPos);
+                    doc.text(`${getTranslation('export_avg_time_label')}: ${q.averageTime.toFixed(1)}s`, margin + 50, yPos);
+                    doc.text(`${getTranslation('export_avg_points_label')}: ${q.averagePoints.toFixed(0)}`, margin + 100, yPos);
 
                     // Problem flags
                     if (q.problemFlags && q.problemFlags.length > 0) {
@@ -337,7 +337,7 @@ export class ResultsExporter {
                 if (questionAnalytics.length > maxQuestions) {
                     doc.setFontSize(10);
                     doc.setFont('helvetica', 'italic');
-                    doc.text(`... and ${questionAnalytics.length - maxQuestions} more questions (see CSV export for full data)`, margin, yPos);
+                    doc.text(getTranslation('export_more_questions_csv', [questionAnalytics.length - maxQuestions]), margin, yPos);
                 }
             }
 
@@ -348,7 +348,7 @@ export class ResultsExporter {
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'italic');
                 doc.setTextColor(128, 128, 128);
-                doc.text(`Generated by Quizix Pro | Page ${i} of ${pageCount}`, pageWidth / 2, 287, { align: 'center' });
+                doc.text(`${getTranslation('generated_by_quizix')} | ${getTranslation('export_page_of', [i, pageCount])}`, pageWidth / 2, 287, { align: 'center' });
                 doc.setTextColor(0, 0, 0);
             }
 
@@ -358,11 +358,11 @@ export class ResultsExporter {
             doc.save(filename);
 
             logger.info('PDF report generated:', filename);
-            showSuccessAlert(`PDF report downloaded: ${filename}`);
+            showSuccessAlert(getTranslation('export_pdf_downloaded', [filename]));
 
         } catch (error) {
             logger.error('Failed to generate PDF:', error);
-            showErrorAlert('Failed to generate PDF report');
+            showErrorAlert(getTranslation('export_failed_pdf'));
         }
     }
 
@@ -390,13 +390,13 @@ export class ResultsExporter {
         try {
             // Check if SheetJS is available
             if (typeof XLSX === 'undefined') {
-                showErrorAlert('Excel export library not loaded. Please refresh and try again.');
+                showErrorAlert(getTranslation('export_excel_not_loaded'));
                 return;
             }
 
-            const quizTitle = resultData.quizTitle || 'Untitled Quiz';
-            const gamePin = resultData.gamePin || 'Unknown';
-            const savedDate = resultData.saved ? new Date(resultData.saved).toLocaleDateString() : 'Unknown';
+            const quizTitle = resultData.quizTitle || getTranslation('untitled_quiz');
+            const gamePin = resultData.gamePin || getTranslation('unknown');
+            const savedDate = resultData.saved ? new Date(resultData.saved).toLocaleDateString() : getTranslation('unknown');
 
             // Calculate analytics
             const questionAnalytics = calculateQuestionAnalytics(resultData);
@@ -407,28 +407,28 @@ export class ResultsExporter {
 
             // === Sheet 1: Summary ===
             const summaryData = [
-                ['Quiz Results Report'],
+                [getTranslation('export_quiz_results_report')],
                 [],
-                ['Quiz Title', quizTitle],
-                ['Game PIN', gamePin],
-                ['Date', savedDate],
-                ['Participants', resultData.results?.length || 0],
+                [getTranslation('export_quiz_title_label'), quizTitle],
+                [getTranslation('export_game_pin_label'), gamePin],
+                [getTranslation('export_date_label'), savedDate],
+                [getTranslation('export_participants_label'), resultData.results?.length || 0],
                 [],
-                ['Summary Statistics'],
-                ['Average Success Rate', `${(summary.avgSuccessRate || 0).toFixed(1)}%`],
-                ['Average Response Time', `${(summary.avgTime || 0).toFixed(1)} seconds`],
-                ['Total Questions', summary.totalQuestions || questionAnalytics.length],
-                ['Questions Needing Review', summary.problematicCount || 0],
+                [getTranslation('export_summary_stats')],
+                [getTranslation('analytics_avg_success_rate'), `${(summary.avgSuccessRate || 0).toFixed(1)}%`],
+                [getTranslation('analytics_avg_response_time'), `${(summary.avgTime || 0).toFixed(1)}s`],
+                [getTranslation('export_total_questions'), summary.totalQuestions || questionAnalytics.length],
+                [getTranslation('export_questions_needing_review'), summary.problematicCount || 0],
                 [],
-                ['Hardest Question', summary.hardestQuestion ? `Q${summary.hardestQuestion.number}: ${summary.hardestQuestion.successRate.toFixed(1)}%` : 'N/A'],
-                ['Easiest Question', summary.easiestQuestion ? `Q${summary.easiestQuestion.number}: ${summary.easiestQuestion.successRate.toFixed(1)}%` : 'N/A']
+                [getTranslation('analytics_hardest_question'), summary.hardestQuestion ? `Q${summary.hardestQuestion.number}: ${summary.hardestQuestion.successRate.toFixed(1)}%` : 'N/A'],
+                [getTranslation('analytics_easiest_question'), summary.easiestQuestion ? `Q${summary.easiestQuestion.number}: ${summary.easiestQuestion.successRate.toFixed(1)}%` : 'N/A']
             ];
             const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
             summarySheet['!cols'] = [{ wch: 25 }, { wch: 50 }];
-            XLSX.utils.book_append_sheet(wb, summarySheet, 'Summary');
+            XLSX.utils.book_append_sheet(wb, summarySheet, getTranslation('export_summary_sheet'));
 
             // === Sheet 2: Question Analysis ===
-            const questionHeaders = ['Question #', 'Question Text', 'Type', 'Success Rate', 'Avg Time (s)', 'Responses', 'Avg Points', 'Problematic', 'Issues'];
+            const questionHeaders = [getTranslation('export_question_num', ['#']), getTranslation('export_question_text'), getTranslation('export_type_label'), getTranslation('export_success_rate_label'), getTranslation('export_avg_time_label'), getTranslation('export_responses_label'), getTranslation('export_avg_points_label'), getTranslation('export_problematic'), getTranslation('export_issues')];
             const questionRows = questionAnalytics.map(q => [
                 q.questionNumber,
                 this._sanitizeExcelText(q.text || ''),
@@ -437,7 +437,7 @@ export class ResultsExporter {
                 q.averageTime.toFixed(1),
                 q.totalResponses,
                 q.averagePoints.toFixed(0),
-                q.isPotentiallyProblematic ? 'Yes' : 'No',
+                q.isPotentiallyProblematic ? getTranslation('export_yes') : getTranslation('export_no'),
                 q.problemFlags?.map(f => f.message).join('; ') || ''
             ]);
             const questionData = [questionHeaders, ...questionRows];
@@ -446,11 +446,11 @@ export class ResultsExporter {
                 { wch: 12 }, { wch: 50 }, { wch: 15 }, { wch: 12 },
                 { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 40 }
             ];
-            XLSX.utils.book_append_sheet(wb, questionSheet, 'Questions');
+            XLSX.utils.book_append_sheet(wb, questionSheet, getTranslation('export_questions_sheet'));
 
             // === Sheet 3: Player Results ===
             if (resultData.results && resultData.results.length > 0) {
-                const playerHeaders = ['Rank', 'Player', 'Score', 'Correct Answers', 'Total Questions', 'Success Rate', 'Completed At'];
+                const playerHeaders = [getTranslation('export_rank_label'), getTranslation('export_player_label'), getTranslation('export_score_label'), getTranslation('export_correct_answers'), getTranslation('export_total_questions'), getTranslation('export_success_rate_label'), getTranslation('export_completed_at')];
                 const sortedPlayers = [...resultData.results].sort((a, b) => (b.score || 0) - (a.score || 0));
                 const playerRows = sortedPlayers.map((player, idx) => {
                     const totalQ = player.answers?.length || 0;
@@ -458,7 +458,7 @@ export class ResultsExporter {
                     const rate = totalQ > 0 ? ((correctQ / totalQ) * 100).toFixed(1) : '0';
                     return [
                         idx + 1,
-                        player.name || 'Anonymous',
+                        player.name || getTranslation('anonymous_player'),
                         player.score || 0,
                         correctQ,
                         totalQ,
@@ -472,11 +472,11 @@ export class ResultsExporter {
                     { wch: 6 }, { wch: 20 }, { wch: 10 }, { wch: 15 },
                     { wch: 15 }, { wch: 12 }, { wch: 15 }
                 ];
-                XLSX.utils.book_append_sheet(wb, playerSheet, 'Players');
+                XLSX.utils.book_append_sheet(wb, playerSheet, getTranslation('export_players_sheet'));
             }
 
             // === Sheet 4: Common Wrong Answers ===
-            const wrongAnswerHeaders = ['Question #', 'Question Text', 'Wrong Answer', 'Count'];
+            const wrongAnswerHeaders = [getTranslation('export_question_num_header'), getTranslation('export_question_text_header'), getTranslation('export_wrong_answer'), getTranslation('export_count')];
             const wrongAnswerRows = [];
             questionAnalytics.forEach(q => {
                 const entries = Object.entries(q.commonWrongAnswers || {});
@@ -494,7 +494,7 @@ export class ResultsExporter {
                 const wrongAnswerData = [wrongAnswerHeaders, ...wrongAnswerRows];
                 const wrongAnswerSheet = XLSX.utils.aoa_to_sheet(wrongAnswerData);
                 wrongAnswerSheet['!cols'] = [{ wch: 12 }, { wch: 40 }, { wch: 30 }, { wch: 8 }];
-                XLSX.utils.book_append_sheet(wb, wrongAnswerSheet, 'Wrong Answers');
+                XLSX.utils.book_append_sheet(wb, wrongAnswerSheet, getTranslation('export_wrong_answers_sheet'));
             }
 
             // Generate filename and save
@@ -503,11 +503,11 @@ export class ResultsExporter {
             XLSX.writeFile(wb, filename);
 
             logger.info('Excel report generated:', filename);
-            showSuccessAlert(`Excel report downloaded: ${filename}`);
+            showSuccessAlert(getTranslation('export_excel_downloaded', [filename]));
 
         } catch (error) {
             logger.error('Failed to generate Excel:', error);
-            showErrorAlert('Failed to generate Excel report');
+            showErrorAlert(getTranslation('export_failed_excel'));
         }
     }
 
@@ -545,7 +545,7 @@ export class ResultsExporter {
             // Title
             doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
-            doc.text('Session Comparison Report', pageWidth / 2, yPos, { align: 'center' });
+            doc.text(getTranslation('export_session_comparison_report'), pageWidth / 2, yPos, { align: 'center' });
             yPos += 10;
 
             doc.setFontSize(14);
@@ -560,18 +560,18 @@ export class ResultsExporter {
             yPos += 8;
 
             doc.setFontSize(10);
-            doc.text(`Sessions Compared: ${comparisonData.sessionCount}`, margin + 5, yPos);
-            doc.text(`Average Participants: ${comparisonData.averageParticipants}`, margin + 80, yPos);
+            doc.text(`${getTranslation('export_sessions_compared')}: ${comparisonData.sessionCount}`, margin + 5, yPos);
+            doc.text(`${getTranslation('export_avg_participants')}: ${comparisonData.averageParticipants}`, margin + 80, yPos);
 
-            const trendText = comparisonData.trendDirection === 'improving' ? 'Improving' :
-                comparisonData.trendDirection === 'declining' ? 'Declining' : 'Stable';
-            doc.text(`Overall Trend: ${trendText} (${comparisonData.overallTrend > 0 ? '+' : ''}${comparisonData.overallTrend.toFixed(1)}%)`, margin + 150, yPos);
+            const trendText = comparisonData.trendDirection === 'improving' ? getTranslation('export_improving') :
+                comparisonData.trendDirection === 'declining' ? getTranslation('export_declining') : getTranslation('export_stable');
+            doc.text(`${getTranslation('export_overall_trend')}: ${trendText} (${comparisonData.overallTrend > 0 ? '+' : ''}${comparisonData.overallTrend.toFixed(1)}%)`, margin + 150, yPos);
             yPos += 20;
 
             // Session details
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
-            doc.text('Session Details', margin, yPos);
+            doc.text(getTranslation('export_session_details'), margin, yPos);
             yPos += 8;
 
             doc.setFontSize(9);
@@ -584,7 +584,7 @@ export class ResultsExporter {
                 }
 
                 const date = new Date(session.date).toLocaleDateString();
-                doc.text(`Session ${idx + 1}: ${date} | ${session.participantCount} participants | ${session.overallSuccessRate.toFixed(1)}% success`, margin, yPos);
+                doc.text(`${getTranslation('export_session_label', [idx + 1])}: ${date} | ${session.participantCount} ${getTranslation('analytics_participants_label').toLowerCase()} | ${session.overallSuccessRate.toFixed(1)}% ${getTranslation('export_success_rate_label').toLowerCase()}`, margin, yPos);
                 yPos += 6;
             });
 
@@ -594,7 +594,7 @@ export class ResultsExporter {
             if (comparisonData.questionTrends && comparisonData.questionTrends.length > 0) {
                 doc.setFontSize(12);
                 doc.setFont('helvetica', 'bold');
-                doc.text('Question Performance Trends', margin, yPos);
+                doc.text(getTranslation('export_question_trends'), margin, yPos);
                 yPos += 8;
 
                 doc.setFontSize(9);
@@ -619,18 +619,18 @@ export class ResultsExporter {
             doc.setFontSize(8);
             doc.setFont('helvetica', 'italic');
             doc.setTextColor(128, 128, 128);
-            doc.text('Generated by Quizix Pro', pageWidth / 2, 287, { align: 'center' });
+            doc.text(getTranslation('generated_by_quizix'), pageWidth / 2, 287, { align: 'center' });
 
             const safeTitle = quizTitle.replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30);
             const filename = `${safeTitle}-comparison.pdf`;
             doc.save(filename);
 
             logger.info('Comparison PDF generated:', filename);
-            showSuccessAlert(`Comparison report downloaded: ${filename}`);
+            showSuccessAlert(getTranslation('export_comparison_downloaded', [filename]));
 
         } catch (error) {
             logger.error('Failed to generate comparison PDF:', error);
-            showErrorAlert('Failed to generate comparison report');
+            showErrorAlert(getTranslation('export_failed_comparison'));
         }
     }
 }

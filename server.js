@@ -367,7 +367,7 @@ app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {
         res.json(result);
     } catch (error) {
         logger.error('Save quiz error:', error);
-        res.status(400).json({ error: error.message || 'Failed to save quiz' });
+        res.status(400).json({ error: error.message || 'Failed to save quiz', messageKey: error.messageKey || 'error_failed_save_quiz' });
     }
 });
 

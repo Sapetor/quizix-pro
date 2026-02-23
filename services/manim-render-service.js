@@ -157,20 +157,26 @@ class ManimRenderService {
      */
     async renderAnimation(manimCode, options = {}) {
         if (!this.enabled) {
-            throw new Error('Manim rendering is disabled');
+            const err = new Error('Manim rendering is disabled');
+            err.messageKey = 'error_manim_disabled';
+            throw err;
         }
 
         // Validate code before touching the filesystem
         const { valid, errors } = this.validateCode(manimCode);
         if (!valid) {
-            throw new Error(`Invalid Manim code: ${errors.join('; ')}`);
+            const err = new Error(`Invalid Manim code: ${errors.join('; ')}`);
+            err.messageKey = 'error_manim_invalid_code';
+            throw err;
         }
 
         // Extract the first Scene class name
         const sceneMatch = manimCode.match(/class\s+(\w+)\s*\(\s*\w*Scene\s*\)/);
         if (!sceneMatch) {
             // validateCode already catches this but belt-and-suspenders
-            throw new Error('No Scene subclass found in code');
+            const err = new Error('No Scene subclass found in code');
+            err.messageKey = 'error_manim_no_scene';
+            throw err;
         }
         const sceneClassName = sceneMatch[1];
 
@@ -218,12 +224,16 @@ class ManimRenderService {
                         if (err) {
                             // execFile sets err.killed = true on timeout
                             if (err.killed || err.signal === 'SIGKILL') {
-                                reject(new Error(
+                                const timeoutErr = new Error(
                                     `Manim render timed out after ${this.renderTimeout}ms`
-                                ));
+                                );
+                                timeoutErr.messageKey = 'error_manim_timeout';
+                                reject(timeoutErr);
                             } else {
                                 const detail = (stderr || err.message || '').slice(0, 500);
-                                reject(new Error(`Manim render failed: ${detail}`));
+                                const renderErr = new Error(`Manim render failed: ${detail}`);
+                                renderErr.messageKey = 'error_manim_render_failed';
+                                reject(renderErr);
                             }
                             return;
                         }
@@ -248,16 +258,20 @@ class ManimRenderService {
             // Locate the output MP4
             const mp4Path = this._findMp4(tempDir);
             if (!mp4Path) {
-                throw new Error('Manim render completed but no MP4 output was found');
+                const err = new Error('Manim render completed but no MP4 output was found');
+                err.messageKey = 'error_manim_no_output';
+                throw err;
             }
 
             // Guard against absurdly large output files
             const { size } = fs.statSync(mp4Path);
             if (size > this.maxOutputSize) {
-                throw new Error(
+                const err = new Error(
                     `Rendered video (${size} bytes) exceeds maximum allowed size ` +
                     `(${this.maxOutputSize} bytes)`
                 );
+                err.messageKey = 'error_manim_video_too_large';
+                throw err;
             }
 
             // Ensure uploads directory exists

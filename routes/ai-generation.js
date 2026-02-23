@@ -160,7 +160,7 @@ function createAIGenerationRoutes(options) {
             const response = await fetch(`${OLLAMA_URL}/api/tags`);
 
             if (!response.ok) {
-                return res.status(500).json({ error: 'Failed to fetch Ollama models' });
+                return res.status(500).json({ error: 'Failed to fetch Ollama models', messageKey: 'error_ollama_fetch_models' });
             }
 
             const data = await response.json();
@@ -175,7 +175,7 @@ function createAIGenerationRoutes(options) {
             });
         } catch (error) {
             logger.error('Ollama models fetch error:', error);
-            res.status(500).json({ error: 'Failed to connect to Ollama' });
+            res.status(500).json({ error: 'Failed to connect to Ollama', messageKey: 'error_ollama_connect' });
         }
     });
 
@@ -202,6 +202,7 @@ function createAIGenerationRoutes(options) {
                     logger.warn(`BYOK rate limit exceeded for IP: ${clientIP}`);
                     return res.status(429).json({
                         error: 'Rate limit exceeded',
+                        messageKey: 'error_rate_limited',
                         message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
                         retryAfter: rateCheck.retryAfter
                     });
@@ -214,12 +215,13 @@ function createAIGenerationRoutes(options) {
             if (!apiKey) {
                 return res.status(400).json({
                     error: 'API key is required',
+                    messageKey: 'error_api_key_required',
                     hint: serverApiKey ? undefined : 'Set CLAUDE_API_KEY environment variable or provide key in request'
                 });
             }
 
             if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
-                return res.status(400).json({ error: 'Valid API key is required' });
+                return res.status(400).json({ error: 'Valid API key is required', messageKey: 'error_api_key_required' });
             }
 
             // Log which mode is being used (without exposing key)
@@ -272,16 +274,21 @@ function createAIGenerationRoutes(options) {
                 logger.error('Claude API error:', response.status);
 
                 let errorMessage = `Claude API error: ${response.status}`;
+                let messageKey = 'error_claude_api';
                 if (response.status === 401) {
                     errorMessage = 'Invalid API key. Please check your Claude API key and try again.';
+                    messageKey = 'error_invalid_api_key';
                 } else if (response.status === 429) {
                     errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+                    messageKey = 'error_rate_limited';
                 } else if (response.status === 400) {
                     errorMessage = 'Invalid request. Please check your input and try again.';
+                    messageKey = 'error_invalid_request';
                 }
 
                 return res.status(response.status).json({
                     error: errorMessage,
+                    messageKey,
                     details: isProduction ? undefined : errorText // Hide details in production
                 });
             }
@@ -292,6 +299,7 @@ function createAIGenerationRoutes(options) {
             logger.error('Claude proxy error:', error.message);
             res.status(500).json({
                 error: 'Failed to connect to Claude API',
+                messageKey: 'error_claude_connect',
                 details: isProduction ? undefined : error.message // Hide details in production
             });
         }
@@ -320,6 +328,7 @@ function createAIGenerationRoutes(options) {
                     logger.warn(`BYOK rate limit exceeded for IP: ${clientIP}`);
                     return res.status(429).json({
                         error: 'Rate limit exceeded',
+                        messageKey: 'error_rate_limited',
                         message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
                         retryAfter: rateCheck.retryAfter
                     });
@@ -332,12 +341,13 @@ function createAIGenerationRoutes(options) {
             if (!apiKey) {
                 return res.status(400).json({
                     error: 'API key is required',
+                    messageKey: 'error_api_key_required',
                     hint: serverApiKey ? undefined : 'Set GEMINI_API_KEY environment variable or provide key in request'
                 });
             }
 
             if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
-                return res.status(400).json({ error: 'Valid API key is required' });
+                return res.status(400).json({ error: 'Valid API key is required', messageKey: 'error_api_key_required' });
             }
 
             // Log which mode is being used (without exposing key)
@@ -399,20 +409,27 @@ function createAIGenerationRoutes(options) {
                 logger.error('Gemini API error:', response.status);
 
                 let errorMessage = `Gemini API error: ${response.status}`;
+                let messageKey = 'error_gemini_api';
                 if (response.status === 401) {
                     errorMessage = 'Invalid API key. Please check your Gemini API key and try again.';
+                    messageKey = 'error_invalid_api_key';
                 } else if (response.status === 429) {
                     errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+                    messageKey = 'error_rate_limited';
                 } else if (response.status === 400) {
                     errorMessage = 'Invalid request. Please check your input and try again.';
+                    messageKey = 'error_invalid_request';
                 } else if (response.status === 403) {
                     errorMessage = 'Access forbidden. Please check your API key permissions or account quotas.';
+                    messageKey = 'error_api_forbidden';
                 } else if (response.status === 402) {
                     errorMessage = 'Quota exceeded. Please check your account billing and quotas.';
+                    messageKey = 'error_api_quota_exceeded';
                 }
 
                 return res.status(response.status).json({
                     error: errorMessage,
+                    messageKey,
                     details: isProduction ? undefined : errorText // Hide details in production
                 });
             }
@@ -423,6 +440,7 @@ function createAIGenerationRoutes(options) {
             logger.error('Gemini proxy error:', error.message);
             res.status(500).json({
                 error: 'Failed to connect to Gemini API',
+                messageKey: 'error_gemini_connect',
                 details: isProduction ? undefined : error.message // Hide details in production
             });
         }
@@ -445,6 +463,7 @@ function createAIGenerationRoutes(options) {
                 logger.warn(`URL rate limit exceeded for IP: ${clientIP}`);
                 return res.status(429).json({
                     error: 'Rate limit exceeded',
+                    messageKey: 'error_rate_limited',
                     message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
                     retryAfter: rateCheck.retryAfter
                 });
@@ -457,7 +476,7 @@ function createAIGenerationRoutes(options) {
             try {
                 parsedUrl = new URL(url);
             } catch {
-                return res.status(400).json({ error: 'Invalid URL format' });
+                return res.status(400).json({ error: 'Invalid URL format', messageKey: 'error_invalid_url' });
             }
 
             // SSRF protection: Block private IPs
@@ -465,6 +484,7 @@ function createAIGenerationRoutes(options) {
                 logger.warn(`Blocked private IP URL request: ${url}`);
                 return res.status(403).json({
                     error: 'URL blocked',
+                    messageKey: 'error_url_blocked',
                     message: 'This URL cannot be accessed for security reasons.'
                 });
             }
@@ -479,6 +499,7 @@ function createAIGenerationRoutes(options) {
                 logger.warn('Required packages not installed for URL extraction');
                 return res.status(501).json({
                     error: 'URL extraction not available',
+                    messageKey: 'error_url_extraction_not_available',
                     message: 'Server does not have URL fetching capability.'
                 });
             }
@@ -505,6 +526,7 @@ function createAIGenerationRoutes(options) {
                 if (!response.ok) {
                     return res.status(response.status).json({
                         error: 'Failed to fetch URL',
+                        messageKey: 'error_url_fetch_failed',
                         message: `Server returned status ${response.status}`
                     });
                 }
@@ -514,6 +536,7 @@ function createAIGenerationRoutes(options) {
                 if (!contentType.includes('text/html') && !contentType.includes('text/plain') && !contentType.includes('application/xhtml')) {
                     return res.status(400).json({
                         error: 'Unsupported content type',
+                        messageKey: 'error_unsupported_content_type',
                         message: 'URL must point to an HTML or text document.'
                     });
                 }
@@ -577,6 +600,7 @@ function createAIGenerationRoutes(options) {
                 if (fetchError.name === 'AbortError') {
                     return res.status(408).json({
                         error: 'Request timeout',
+                        messageKey: 'error_url_timeout',
                         message: 'The URL took too long to respond.'
                     });
                 }
@@ -585,7 +609,7 @@ function createAIGenerationRoutes(options) {
             }
         } catch (error) {
             logger.error('URL extraction error:', error);
-            res.status(500).json({ error: 'Failed to extract content from URL: ' + error.message });
+            res.status(500).json({ error: 'Failed to extract content from URL: ' + error.message, messageKey: 'error_url_extraction_failed' });
         }
     });
 

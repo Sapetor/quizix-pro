@@ -32,7 +32,7 @@ class SocketRateLimiter {
             this.logger.warn(`Rate limit exceeded for socket ${socketId} on event ${eventName}`);
             // Notify client about rate limiting
             if (socket) {
-                socket.emit('rate-limited', { event: eventName, message: 'Too many requests, please slow down' });
+                socket.emit('rate-limited', { event: eventName, message: 'Too many requests, please slow down', messageKey: 'error_rate_limited' });
             }
             return false;
         }

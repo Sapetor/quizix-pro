@@ -92,7 +92,7 @@ export class ConnectionStatus {
         });
 
         // Add hover tooltip
-        indicator.title = 'Click to view connection details';
+        indicator.title = translationManager.getTranslationSync('click_connection_details');
 
         logger.debug('Connection status UI initialized');
     }
