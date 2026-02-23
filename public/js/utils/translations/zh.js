@@ -671,6 +671,8 @@ export default {
     quiz_settings_tooltip: '打开测验设置',
     general_options: '常规选项',
     advanced_options: '高级选项',
+    editor_mode_basic: '基础',
+    editor_mode_advanced: '高级',
 
     // Missing keys - Error Messages
     api_access_forbidden: 'API访问被禁止。请检查您的API密钥权限。',

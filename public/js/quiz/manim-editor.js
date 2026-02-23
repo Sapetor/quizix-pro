@@ -41,6 +41,7 @@ export class ManimEditor {
             }
             this._statusChecked = true;
             logger.debug(`ManimEditor: status resolved — available=${this.manimAvailable}`);
+            this.initModeToggle();
             return this.manimAvailable;
         })();
 
@@ -277,6 +278,53 @@ export class ManimEditor {
                     });
                 });
             });
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Editor mode toggle (basic / advanced)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Wire up the editor mode pill toggle. Called once after status check.
+     */
+    initModeToggle() {
+        const toggle = document.getElementById('editor-mode-toggle');
+        const btn = document.getElementById('editor-mode-btn');
+        if (!toggle || !btn) return;
+
+        // Only show the toggle when manim is actually available
+        if (!this.manimAvailable) {
+            toggle.classList.add('hidden');
+            return;
+        }
+        toggle.classList.remove('hidden');
+
+        const mode = window.game?.settingsManager?.getEditorMode?.() || 'basic';
+        this._applyModeUI(mode);
+
+        btn.addEventListener('click', () => {
+            const current = window.game?.settingsManager?.getEditorMode?.() || 'basic';
+            const next = current === 'basic' ? 'advanced' : 'basic';
+            window.game?.settingsManager?.setEditorMode?.(next);
+            this._applyModeUI(next);
+        });
+    }
+
+    /**
+     * Update the pill button appearance and body attribute for the given mode.
+     * @param {'basic'|'advanced'} mode
+     */
+    _applyModeUI(mode) {
+        document.body.setAttribute('data-editor-mode', mode);
+
+        const btn = document.getElementById('editor-mode-btn');
+        const label = document.getElementById('editor-mode-label');
+        if (btn) btn.classList.toggle('advanced', mode === 'advanced');
+        if (label) {
+            const key = mode === 'advanced' ? 'editor_mode_advanced' : 'editor_mode_basic';
+            label.setAttribute('data-translate', key);
+            label.textContent = getTranslation(key);
         }
     }
 

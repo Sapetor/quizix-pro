@@ -18,7 +18,8 @@ export class SettingsManager {
             // Use getLanguage() to get current language
             autoSave: true,
             animations: true,
-            fullscreenMode: false
+            fullscreenMode: false,
+            editorMode: 'basic'
         };
 
         // Store event handler references for cleanup
@@ -76,6 +77,9 @@ export class SettingsManager {
         // Apply other settings
         this.applyAnimations(this.settings.animations);
         this.applyFullscreen(this.settings.fullscreenMode);
+
+        // Apply editor mode
+        document.body.setAttribute('data-editor-mode', this.settings.editorMode || 'basic');
 
         // Update UI elements
         this.updateSettingsUI();
@@ -433,7 +437,8 @@ export class SettingsManager {
             theme: 'light',
             autoSave: true,
             animations: true,
-            fullscreenMode: false
+            fullscreenMode: false,
+            editorMode: 'basic'
         };
 
         // Reset language via TranslationManager (source of truth) - await async operation
@@ -585,6 +590,24 @@ export class SettingsManager {
     }
 
     /**
+     * Get current editor mode
+     * @returns {'basic'|'advanced'}
+     */
+    getEditorMode() {
+        return this.settings.editorMode || 'basic';
+    }
+
+    /**
+     * Set editor mode and persist
+     * @param {'basic'|'advanced'} mode
+     */
+    setEditorMode(mode) {
+        this.settings.editorMode = mode;
+        document.body.setAttribute('data-editor-mode', mode);
+        this.saveSettings();
+    }
+
+    /**
      * Export settings
      */
     exportSettings() {
@@ -639,7 +662,8 @@ export class SettingsManager {
             theme: { type: 'string', values: ['light', 'dark'] },
             autoSave: { type: 'boolean' },
             animations: { type: 'boolean' },
-            fullscreenMode: { type: 'boolean' }
+            fullscreenMode: { type: 'boolean' },
+            editorMode: { type: 'string', values: ['basic', 'advanced'] }
         };
 
         for (const [key, config] of Object.entries(schema)) {

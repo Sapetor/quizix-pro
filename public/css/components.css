@@ -6873,6 +6873,61 @@ html {
     color: white;
 }
 
+/* === EDITOR MODE TOGGLE === */
+.editor-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.editor-heading-row h2 {
+    margin: 0;
+}
+
+.editor-mode-btn {
+    padding: 4px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--glass-medium, rgba(255, 255, 255, 0.15));
+    background: transparent;
+    color: var(--text-secondary, #a0a0a0);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+}
+
+.editor-mode-btn:hover {
+    border-color: var(--color-primary-400, #818cf8);
+    color: var(--color-primary-400, #818cf8);
+}
+
+.editor-mode-btn.advanced {
+    background: var(--color-primary-500, #6366f1);
+    color: #fff;
+    border-color: var(--color-primary-500, #6366f1);
+}
+
+.editor-mode-btn.advanced:hover {
+    background: var(--color-primary-600, #4f46e5);
+    border-color: var(--color-primary-600, #4f46e5);
+}
+
+[data-theme="light"] .editor-mode-btn {
+    border-color: rgba(0, 0, 0, 0.15);
+    color: var(--text-secondary, #6b7280);
+}
+
+[data-theme="light"] .editor-mode-btn:hover {
+    border-color: var(--color-primary-500, #6366f1);
+    color: var(--color-primary-500, #6366f1);
+}
+
+/* Hide video sections in basic editor mode */
+[data-editor-mode="basic"] .video-section {
+    display: none !important;
+}
+
 /* Game display video containers */
 .question-video-container {
     text-align: center;

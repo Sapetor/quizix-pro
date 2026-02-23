@@ -753,8 +753,15 @@
                 </aside>
 
                 <div class="quiz-editor-section" id="quiz-editor-section">
-                    <h2 data-translate="create_quiz">Create Your Quiz</h2>
-                    
+                    <div class="editor-heading-row">
+                        <h2 data-translate="create_quiz">Create Your Quiz</h2>
+                        <div class="editor-mode-toggle hidden" id="editor-mode-toggle">
+                            <button type="button" id="editor-mode-btn" class="editor-mode-btn" aria-label="Toggle editor mode">
+                                <span id="editor-mode-label" data-translate="editor_mode_basic">Basic</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="quiz-builder">
                     <input type="text" id="quiz-title" placeholder="Quiz Title" class="input-field" data-translate-placeholder="quiz_title" aria-label="Quiz title" data-translate-aria-label="quiz_title">
                     

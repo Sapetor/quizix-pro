@@ -673,6 +673,8 @@ export default {
     quiz_settings_tooltip: 'クイズ設定を開く',
     general_options: '一般オプション',
     advanced_options: '詳細オプション',
+    editor_mode_basic: '基本',
+    editor_mode_advanced: '高度',
 
     // Missing keys - Error Messages
     api_access_forbidden: 'APIアクセスが禁止されています。APIキーの権限を確認してください。',

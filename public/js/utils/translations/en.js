@@ -713,6 +713,8 @@ export default {
     quiz_settings_tooltip: 'Open quiz settings',
     general_options: 'General Options',
     advanced_options: 'Advanced Options',
+    editor_mode_basic: 'Basic',
+    editor_mode_advanced: 'Advanced',
 
     // Missing keys found during audit
     answer_not_submitted: 'Answer could not be submitted',

@@ -693,6 +693,8 @@ export default {
     quiz_settings_tooltip: 'Abrir configuración del quiz',
     general_options: 'Opciones Generales',
     advanced_options: 'Opciones Avanzadas',
+    editor_mode_basic: 'Básico',
+    editor_mode_advanced: 'Avanzado',
 
     // Missing keys - Error Messages
     api_access_forbidden: 'Acceso a la API prohibido. Por favor verifica los permisos de tu clave API.',
