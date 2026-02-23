@@ -2419,6 +2419,18 @@ button:disabled:focus-visible {
     border-color: currentColor;
 }
 
+/* Question meta section title */
+.question-meta-title {
+    grid-column: 1 / -1;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-primary-400, #60a5fa);
+    margin: 0 0 2px 0;
+    padding: 0;
+}
+
 /* Question meta section - horizontal layout for type, difficulty, concepts, time (4 columns) */
 .question-meta {
     display: grid;

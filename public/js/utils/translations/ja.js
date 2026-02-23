@@ -135,6 +135,7 @@ export default {
     hard: '難しい',
     enter_question: '質問を入力（LaTeX対応：$x^2 + y^2 = z^2$）',
     time_seconds: '時間(s)',
+    question_settings: '問題設定',
     correct_answer: '正解',
     tolerance: '許容範囲（+/-）',
     explanation_optional: '解説（任意）',

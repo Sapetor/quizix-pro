@@ -111,6 +111,7 @@ export default {
     // Question editor keys
     enter_question: 'Wprowadź swoje pytanie (obsługuje LaTeX: $x^2 + y^2 = z^2$)',
     time_seconds: 'Czas (s)',
+    question_settings: 'Ustawienia Pytania',
     correct_answer: 'Poprawna Odpowiedź',
     tolerance: 'Tolerancja (+/-)',
     explanation_optional: 'Wyjaśnienie (opcjonalne)',

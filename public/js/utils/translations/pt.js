@@ -136,6 +136,7 @@ export default {
     hard: 'Difícil',
     enter_question: 'Digite sua pergunta (suporte LaTeX: $x^2 + y^2 = z^2$)',
     time_seconds: 'Tempo (s)',
+    question_settings: 'Configurações da Pergunta',
     correct_answer: 'Resposta Correta',
     tolerance: 'Tolerância (+/-)',
     explanation_optional: 'Explicação (opcional)',

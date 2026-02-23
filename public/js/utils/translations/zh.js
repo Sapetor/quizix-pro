@@ -130,6 +130,7 @@ export default {
     hard: '困难',
     enter_question: '输入您的问题（支持LaTeX：$x^2 + y^2 = z^2$）',
     time_seconds: '时间(s)',
+    question_settings: '题目设置',
     correct_answer: '正确答案',
     tolerance: '容差（+/-）',
     explanation_optional: '解释（可选）',

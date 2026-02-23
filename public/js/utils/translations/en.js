@@ -179,6 +179,7 @@ export default {
     // Question editor keys
     enter_question: 'Enter your question (supports LaTeX: $x^2$ and code: ```python```)',
     time_seconds: 'Time (s)',
+    question_settings: 'Question Settings',
     correct_answer: 'Correct Answer',
     tolerance: 'Tolerance (+/-)',
     explanation_optional: 'Explanation (optional)',

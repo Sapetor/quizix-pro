@@ -563,6 +563,11 @@
         flex-wrap: wrap !important;
     }
     
+    /* Hide question meta title on mobile to save vertical space */
+    .quiz-editor-section .question-meta .question-meta-title {
+        display: none !important;
+    }
+
     /* Clean mobile question meta layout - Type, Difficulty, Time (concepts hidden) */
     .quiz-editor-section .question-meta {
         display: grid !important;
