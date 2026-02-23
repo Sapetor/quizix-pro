@@ -62,7 +62,7 @@ export class QuestionUtils {
             </div>
 
             <div class="question-content">
-                <textarea class="question-text" placeholder="Enter your question (supports LaTeX)" data-translate-placeholder="enter_question_with_latex"></textarea>
+                <textarea class="question-text" placeholder="Enter your question (supports LaTeX and code blocks)" data-translate-placeholder="enter_question_with_latex"></textarea>
 
                 <div class="image-upload">
                     <label data-translate="add_image">Add Image</label>

@@ -135,7 +135,7 @@ export default {
     tolerance: '容差（+/-）',
     explanation_optional: '解释（可选）',
     explanation_placeholder: '解释为什么正确答案是正确的...',
-    enter_question_with_latex: '输入您的问题（支持LaTeX）',
+    enter_question_with_latex: '输入您的问题（支持LaTeX和代码块）',
     option_a: '选项 A',
     option_b: '选项 B',
     option_c: '选项 C',

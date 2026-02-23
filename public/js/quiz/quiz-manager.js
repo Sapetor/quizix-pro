@@ -39,7 +39,7 @@ const TRANSLATION_FALLBACKS = {
     'false': 'False',
     'question': 'Question',
     'enter_question_preview': 'Enter your question above to see preview',
-    'enter_question_with_latex': 'Enter your question (supports LaTeX)',
+    'enter_question_with_latex': 'Enter your question (supports LaTeX and code blocks)',
     'toggle_live_preview': 'Live Preview',
     'close_live_preview': 'Close Live Preview'
 };

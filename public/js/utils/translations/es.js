@@ -136,7 +136,7 @@ export default {
     tolerance: 'Tolerancia (+/-)',
     explanation_optional: 'Explicación (opcional)',
     explanation_placeholder: 'Explica por qué la respuesta correcta es correcta...',
-    enter_question_with_latex: 'Introduce tu pregunta (soporta LaTeX)',
+    enter_question_with_latex: 'Introduce tu pregunta (soporta LaTeX y bloques de código)',
     option_a: 'Opción A',
     option_b: 'Opción B',
     option_c: 'Opción C',

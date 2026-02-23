@@ -140,7 +140,7 @@ export default {
     tolerance: '許容範囲（+/-）',
     explanation_optional: '解説（任意）',
     explanation_placeholder: '正解の理由を説明してください...',
-    enter_question_with_latex: '質問を入力（LaTeX対応）',
+    enter_question_with_latex: '質問を入力（LaTeXとコードブロック対応）',
     option_a: '選択肢 A',
     option_b: '選択肢 B',
     option_c: '選択肢 C',
