@@ -267,6 +267,7 @@ class GameSessionService {
             question: question.question,
             type: questionType,
             image: question.image || '',
+            video: question.video || '',
             timeLimit: timeLimit
         };
 
@@ -383,7 +384,8 @@ class GameSessionService {
             correctOption: correctOption,
             questionType: question.type || 'multiple-choice',
             tolerance: question.tolerance || null,
-            explanation: question.explanation || null
+            explanation: question.explanation || null,
+            explanationVideo: question.explanationVideo || null
         };
 
         // For multiple-correct questions, also send the correctAnswers array

@@ -639,6 +639,30 @@ export class AIQuestionGenerator {
                     delete questionData.imageType;
                 }
 
+                // Handle AI-generated Manim animation code
+                if (questionData.videoData && questionData.videoType === 'manim') {
+                    const placement = questionData.videoPlacement || 'question';
+                    await errorHandler.safeExecute(
+                        async () => {
+                            const videoPath = await this.renderManimCode(questionData.videoData);
+                            if (videoPath) {
+                                if (placement === 'explanation') {
+                                    questionData.explanationVideo = videoPath;
+                                    questionData.explanationVideoManimCode = questionData.videoData;
+                                } else {
+                                    questionData.video = videoPath;
+                                    questionData.videoManimCode = questionData.videoData;
+                                }
+                                logger.debug(`Manim animation rendered for ${placement}: ${videoPath}`);
+                            }
+                        },
+                        { operation: 'render-manim-animation', questionIndex: index + 1 }
+                    );
+                    delete questionData.videoData;
+                    delete questionData.videoType;
+                    delete questionData.videoPlacement;
+                }
+
                 if (this.validateGeneratedQuestion(questionData)) {
                     logger.debug(`ProcessGeneratedQuestions - Question ${index + 1} is valid, adding to quiz`);
 
@@ -690,6 +714,31 @@ export class AIQuestionGenerator {
         } catch (error) {
             logger.error(`Image rendering failed for type ${imageType}:`, error);
             throw error;
+        }
+    }
+
+    /**
+     * Render Manim code to MP4 via the server endpoint
+     * @param {string} manimCode - Manim Python source code
+     * @returns {Promise<string|null>} Video path or null on failure
+     */
+    async renderManimCode(manimCode) {
+        try {
+            const response = await fetch(APIHelper.getApiUrl('api/manim/render'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: manimCode, quality: 'low' })
+            });
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                logger.warn(`Manim render failed: ${err.error || response.statusText}`);
+                return null;
+            }
+            const data = await response.json();
+            return data.videoPath || null;
+        } catch (error) {
+            logger.warn('Manim render request failed:', error.message);
+            return null;
         }
     }
 

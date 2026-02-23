@@ -565,6 +565,12 @@ export class PreviewManager {
             ...typeSpecificData
         };
 
+        // Extract video data for preview
+        const questionVideo = questionItem.querySelector('.question-video');
+        if (questionVideo && questionVideo.dataset.videoUrl) {
+            extractedData.video = questionVideo.dataset.videoUrl;
+        }
+
         logger.debug('Extracted question data:', extractedData);
         return extractedData;
     }

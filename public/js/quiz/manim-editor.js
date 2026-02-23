@@ -1,0 +1,316 @@
+import { logger } from '../core/config.js';
+import { APIHelper } from '../utils/api-helper.js';
+import { imagePathResolver } from '../utils/image-path-resolver.js';
+import { unifiedErrorHandler } from '../utils/unified-error-handler.js';
+
+/**
+ * ManimEditor - Manages Manim animation code editing for quiz questions
+ */
+export class ManimEditor {
+    constructor() {
+        this.manimAvailable = null;
+        this._statusChecked = false;
+        this._statusPromise = null;
+    }
+
+    /**
+     * Check whether the Manim render service is available.
+     * Result is cached after the first call.
+     * @returns {Promise<boolean>}
+     */
+    checkManimStatus() {
+        if (this._statusPromise) {
+            return this._statusPromise;
+        }
+
+        this._statusPromise = (async () => {
+            try {
+                const response = await fetch(APIHelper.getApiUrl('api/manim/status'));
+                if (!response.ok) {
+                    this.manimAvailable = false;
+                    this._statusChecked = true;
+                    return false;
+                }
+                const data = await response.json();
+                this.manimAvailable = data.available === true;
+            } catch (err) {
+                logger.warn('ManimEditor: status check failed', err);
+                this.manimAvailable = false;
+            }
+            this._statusChecked = true;
+            logger.debug(`ManimEditor: status resolved — available=${this.manimAvailable}`);
+            return this.manimAvailable;
+        })();
+
+        return this._statusPromise;
+    }
+
+    /**
+     * Initialise the video section for a question element.
+     * Must be called whenever a question is added or loaded into the editor.
+     * @param {HTMLElement} questionElement
+     */
+    async initVideoSection(questionElement) {
+        if (!this._statusChecked) {
+            await this.checkManimStatus();
+        }
+
+        const videoSection = questionElement.querySelector('.video-section');
+        if (!videoSection) {
+            return;
+        }
+
+        if (!this.manimAvailable) {
+            videoSection.classList.add('hidden');
+            return;
+        }
+
+        videoSection.classList.remove('hidden');
+
+        this.setupTabSwitching(videoSection);
+
+        // Render buttons — one per panel (question / explanation)
+        videoSection.querySelectorAll('.render-manim-btn').forEach(btn => {
+            const placement = btn.dataset.placement;
+            if (!placement) {
+                logger.warn('ManimEditor: .render-manim-btn missing data-placement attribute');
+                return;
+            }
+            btn.addEventListener('click', () => this.handleRender(questionElement, placement));
+        });
+
+        // Remove-video buttons
+        videoSection.querySelectorAll('.remove-video').forEach(btn => {
+            const placement = btn.dataset.placement;
+            if (!placement) {
+                logger.warn('ManimEditor: .remove-video missing data-placement attribute');
+                return;
+            }
+            btn.addEventListener('click', () => this.handleRemoveVideo(questionElement, placement));
+        });
+    }
+
+    /**
+     * Wire up tab switching inside a video section.
+     * @param {HTMLElement} videoSection
+     */
+    setupTabSwitching(videoSection) {
+        videoSection.querySelectorAll('.video-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.dataset.target; // 'question' or 'explanation'
+
+                // Toggle active class on tabs
+                videoSection.querySelectorAll('.video-tab').forEach(t => {
+                    t.classList.toggle('active', t === tab);
+                });
+
+                // Show the matching panel, hide the other
+                videoSection.querySelectorAll('.video-panel').forEach(panel => {
+                    if (panel.dataset.panel === target) {
+                        panel.classList.remove('hidden');
+                    } else {
+                        panel.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    }
+
+    /**
+     * Render a Manim animation for the given placement.
+     * @param {HTMLElement} questionElement
+     * @param {'question'|'explanation'} placement
+     */
+    async handleRender(questionElement, placement) {
+        const panel = questionElement.querySelector(`.video-panel[data-panel="${placement}"]`);
+        if (!panel) {
+            logger.error(`ManimEditor: panel not found for placement "${placement}"`);
+            return;
+        }
+
+        const textarea = panel.querySelector(`.${placement}-manim-code`);
+        if (!textarea) {
+            logger.error(`ManimEditor: textarea .${placement}-manim-code not found`);
+            return;
+        }
+
+        const code = textarea.value.trim();
+        if (!code) {
+            const statusEl = panel.querySelector('.render-status');
+            if (statusEl) {
+                statusEl.textContent = 'Please enter Manim code first.';
+                statusEl.className = 'render-status error';
+            }
+            return;
+        }
+
+        const statusEl = panel.querySelector('.render-status');
+        const renderBtn = panel.querySelector('.render-manim-btn');
+
+        if (statusEl) {
+            statusEl.textContent = 'Rendering...';
+            statusEl.className = 'render-status rendering';
+        }
+        if (renderBtn) {
+            renderBtn.disabled = true;
+        }
+
+        try {
+            const response = await fetch(APIHelper.getApiUrl('api/manim/render'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, quality: 'low' })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `Server error ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            const videoEl = panel.querySelector(`.${placement}-video`);
+            if (videoEl) {
+                videoEl.src = imagePathResolver.toDisplayPath(result.videoPath);
+                videoEl.dataset.videoUrl = result.videoPath;
+            }
+
+            const preview = panel.querySelector('.video-preview');
+            if (preview) {
+                preview.classList.remove('hidden');
+            }
+
+            if (statusEl) {
+                statusEl.textContent = 'Rendered successfully';
+                statusEl.className = 'render-status success';
+            }
+
+            logger.info(`ManimEditor: render complete for placement "${placement}"`);
+        } catch (err) {
+            logger.error('ManimEditor: render failed', err);
+            if (statusEl) {
+                statusEl.textContent = `Render failed: ${err.message}`;
+                statusEl.className = 'render-status error';
+            }
+            unifiedErrorHandler.safeExecute(() => {
+                // Record the error for diagnostics without crashing the editor
+            });
+        } finally {
+            if (renderBtn) {
+                renderBtn.disabled = false;
+            }
+        }
+    }
+
+    /**
+     * Remove the rendered video for the given placement.
+     * The Manim code textarea is preserved so the user can re-render.
+     * @param {HTMLElement} questionElement
+     * @param {'question'|'explanation'} placement
+     */
+    handleRemoveVideo(questionElement, placement) {
+        const panel = questionElement.querySelector(`.video-panel[data-panel="${placement}"]`);
+        if (!panel) {
+            return;
+        }
+
+        const videoEl = panel.querySelector(`.${placement}-video`);
+        if (videoEl) {
+            videoEl.src = '';
+            delete videoEl.dataset.videoUrl;
+        }
+
+        const preview = panel.querySelector('.video-preview');
+        if (preview) {
+            preview.classList.add('hidden');
+        }
+
+        logger.debug(`ManimEditor: video removed for placement "${placement}"`);
+    }
+
+    /**
+     * Collect video-related fields from the question element for quiz save.
+     * Only fields that have values are included.
+     * @param {HTMLElement} questionElement
+     * @returns {{video?: string, videoManimCode?: string, explanationVideo?: string, explanationVideoManimCode?: string}}
+     */
+    collectVideoData(questionElement) {
+        const data = {};
+
+        const questionVideoEl = questionElement.querySelector('.question-video');
+        if (questionVideoEl?.dataset.videoUrl) {
+            data.video = imagePathResolver.toStoragePath(questionVideoEl.dataset.videoUrl);
+        }
+
+        const questionCodeEl = questionElement.querySelector('.question-manim-code');
+        const questionCode = questionCodeEl?.value?.trim();
+        if (questionCode) {
+            data.videoManimCode = questionCode;
+        }
+
+        const explanationVideoEl = questionElement.querySelector('.explanation-video');
+        if (explanationVideoEl?.dataset.videoUrl) {
+            data.explanationVideo = imagePathResolver.toStoragePath(explanationVideoEl.dataset.videoUrl);
+        }
+
+        const explanationCodeEl = questionElement.querySelector('.explanation-manim-code');
+        const explanationCode = explanationCodeEl?.value?.trim();
+        if (explanationCode) {
+            data.explanationVideoManimCode = explanationCode;
+        }
+
+        return data;
+    }
+
+    /**
+     * Populate the editor from saved quiz data, then initialise handlers.
+     * @param {HTMLElement} questionElement
+     * @param {object} questionData
+     */
+    async populateVideoData(questionElement, questionData) {
+        if (questionData.video) {
+            const videoEl = questionElement.querySelector('.question-video');
+            if (videoEl) {
+                videoEl.src = imagePathResolver.toDisplayPath(questionData.video);
+                videoEl.dataset.videoUrl = questionData.video;
+            }
+            const preview = questionElement.querySelector('.video-panel[data-panel="question"] .video-preview');
+            if (preview) {
+                preview.classList.remove('hidden');
+            }
+        }
+
+        if (questionData.videoManimCode) {
+            const textarea = questionElement.querySelector('.question-manim-code');
+            if (textarea) {
+                textarea.value = questionData.videoManimCode;
+            }
+        }
+
+        if (questionData.explanationVideo) {
+            const videoEl = questionElement.querySelector('.explanation-video');
+            if (videoEl) {
+                videoEl.src = imagePathResolver.toDisplayPath(questionData.explanationVideo);
+                videoEl.dataset.videoUrl = questionData.explanationVideo;
+            }
+            const preview = questionElement.querySelector('.video-panel[data-panel="explanation"] .video-preview');
+            if (preview) {
+                preview.classList.remove('hidden');
+            }
+        }
+
+        if (questionData.explanationVideoManimCode) {
+            const textarea = questionElement.querySelector('.explanation-manim-code');
+            if (textarea) {
+                textarea.value = questionData.explanationVideoManimCode;
+            }
+        }
+
+        await this.initVideoSection(questionElement);
+    }
+}
+
+export const manimEditor = new ManimEditor();
+
+// Eagerly start status check so it's ready by the time initVideoSection is called
+manimEditor.checkManimStatus();

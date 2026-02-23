@@ -145,6 +145,42 @@ export class GameDisplayManager {
     }
 
     /**
+     * Update question video display for host or player
+     * @param {Object} data - Question data (expects data.video)
+     * @param {string} containerId - ID of the container element
+     */
+    updateQuestionVideo(data, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            return;
+        }
+
+        if (!data.video || !data.video.trim()) {
+            container.classList.add('hidden');
+            container.innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = '';
+
+        const video = document.createElement('video');
+        video.className = 'question-video-player';
+        video.controls = true;
+        video.preload = 'metadata';
+        video.playsInline = true;
+
+        const source = document.createElement('source');
+        source.src = imagePathResolver.toAbsoluteUrl(data.video);
+        source.type = 'video/mp4';
+
+        video.appendChild(source);
+        container.appendChild(video);
+
+        video.onerror = () => container.classList.add('hidden');
+        video.onloadedmetadata = () => container.classList.remove('hidden');
+    }
+
+    /**
      * Render MathJax for question content with enhanced F5 handling
      * @param {HTMLElement} element - Element to render MathJax in
      * @param {number} delay - Delay in ms before rendering (to avoid concurrent render conflicts)
@@ -223,6 +259,10 @@ export class GameDisplayManager {
         // Hide image containers
         this.updateQuestionImage({ image: '' }, 'question-image-display');
         this.updateQuestionImage({ image: '' }, 'player-question-image');
+
+        // Hide video containers
+        this.updateQuestionVideo({ video: '' }, 'question-video-display');
+        this.updateQuestionVideo({ video: '' }, 'player-question-video');
 
         logger.debug('Question display cleared');
     }
@@ -382,6 +422,9 @@ export class GameDisplayManager {
         if (data.image && elements.questionImage) {
             this.updateQuestionImage(data, 'player-question-image');
         }
+
+        // Update question video
+        this.updateQuestionVideo(data, 'player-question-video');
 
         // Update question counter
         if (data.questionNumber && data.totalQuestions) {

@@ -45,6 +45,9 @@ export class QuestionRenderer {
 
             // Update question image
             this.displayManager.updateQuestionImage(data, 'question-image-display');
+
+            // Update question video
+            this.displayManager.updateQuestionVideo(data, 'question-video-display');
         }, TIMING.RENDER_DELAY);
     }
 

@@ -43,6 +43,8 @@ const { createHealthCheckRoutes } = require('./routes/health-checks');
 const { createQuizManagementRoutes } = require('./routes/quiz-management');
 const { createFileUploadRoutes } = require('./routes/file-uploads');
 const { createAIGenerationRoutes } = require('./routes/ai-generation');
+const { createManimRoutes } = require('./routes/manim-routes');
+const { ManimRenderService } = require('./services/manim-render-service');
 const { registerSocketHandlers } = require('./socket');
 
 // Detect production environment (Railway sets NODE_ENV automatically)
@@ -190,6 +192,7 @@ const quizService = new QuizService(logger, WSLMonitor, 'quizzes');
 const resultsService = new ResultsService(logger, 'results');
 const qrService = new QRService(logger, BASE_PATH);
 const metadataService = new MetadataService(logger, WSLMonitor, 'quizzes');
+const manimRenderService = new ManimRenderService(logger, CONFIG);
 
 // Initialize Socket.IO game services
 const gameSessionService = new GameSessionService(logger, CONFIG);
@@ -341,6 +344,11 @@ app.use('/api', createAIGenerationRoutes({
     extractUrlSchema,
     isProduction
 }));
+
+// ============================================================================
+// Manim Animation Routes
+// ============================================================================
+app.use('/api', createManimRoutes({ logger, CONFIG, manimRenderService }));
 
 // Save quiz endpoint
 app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {

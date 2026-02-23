@@ -159,6 +159,21 @@ LATEX FORMATTING (IMPORTANT):
 `;
     }
 
+    // Manim animation instructions for visual concepts
+    if (contentInfo.needsLatex || contentInfo.type === 'mathematics' || contentInfo.type === 'physics') {
+        instructions += `
+MANIM ANIMATION (OPTIONAL - only for concepts that benefit from visual animation):
+- If a question involves a visual concept (geometry, graphs, motion, transformations), you may include a "videoData" field
+- videoData must be valid Manim Community v0.20 Python code
+- The code MUST define exactly one class extending Scene with a construct(self) method
+- Keep animations SHORT (3-5 seconds, max 10 seconds)
+- Use simple, clear animations: Create, Transform, FadeIn, FadeOut, Write, MoveAlongPath
+- Include "videoType": "manim" and "videoPlacement": "question" or "explanation"
+- Example: "videoData": "from manim import *\\nclass Demo(Scene):\\n    def construct(self):\\n        c = Circle(color=BLUE)\\n        self.play(Create(c))\\n        self.wait(1)", "videoType": "manim", "videoPlacement": "question"
+- Do NOT include videoData for every question — only where animation genuinely helps understanding
+`;
+    }
+
     if (contentInfo.needsCodeBlocks) {
         const langHint = contentInfo.language ? `Use \`\`\`${contentInfo.language}\` for code blocks.` : '';
         instructions += `

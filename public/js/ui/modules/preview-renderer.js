@@ -39,6 +39,31 @@ export class PreviewRenderer {
         if (data.image) {
             this.handleSplitQuestionImage(data.imageWebp || data.image);
         }
+
+        // Handle question video
+        if (data.video) {
+            const videoContainer = document.getElementById('preview-question-video-split');
+            if (videoContainer) {
+                videoContainer.innerHTML = '';
+                const video = document.createElement('video');
+                video.controls = true;
+                video.preload = 'metadata';
+                video.playsInline = true;
+                video.className = 'preview-question-video';
+                const source = document.createElement('source');
+                source.src = imagePathResolver.toDisplayPath(data.video);
+                source.type = 'video/mp4';
+                video.appendChild(source);
+                videoContainer.appendChild(video);
+                videoContainer.classList.remove('hidden');
+            }
+        } else {
+            const videoContainer = document.getElementById('preview-question-video-split');
+            if (videoContainer) {
+                videoContainer.innerHTML = '';
+                videoContainer.classList.add('hidden');
+            }
+        }
     }
 
     /**

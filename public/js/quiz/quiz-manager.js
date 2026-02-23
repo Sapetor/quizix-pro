@@ -16,6 +16,7 @@ import { EventListenerManager } from '../utils/event-listener-manager.js';
 import { dom, escapeHtml } from '../utils/dom.js';
 import { getFileManager } from '../ui/file-manager.js';
 import { openModal, closeModal } from '../utils/modal-utils.js';
+import { manimEditor } from './manim-editor.js';
 
 // Shared translation fallback map used for cleaning translation keys from loaded data
 const TRANSLATION_FALLBACKS = {
@@ -67,6 +68,36 @@ export class QuizManager {
 
         // Bind cleanup method
         this.cleanup = this.cleanup.bind(this);
+
+        // Defer Manim init until DOM is fully loaded
+        const initVideo = () => this._initExistingVideoSections();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initVideo);
+        } else {
+            setTimeout(initVideo, 0);
+        }
+
+        // Also init video sections for questions added via the "Add Question" button
+        document.addEventListener('questionAdded', () => {
+            const container = document.getElementById('questions-container');
+            if (container?.lastElementChild) {
+                manimEditor.initVideoSection(container.lastElementChild);
+            }
+        });
+    }
+
+    /**
+     * Initialize video sections for questions already present in the HTML template.
+     */
+    async _initExistingVideoSections() {
+        const existing = document.querySelectorAll('.question-item');
+        for (const el of existing) {
+            try {
+                await manimEditor.initVideoSection(el);
+            } catch (err) {
+                logger.warn('Failed to init video section:', err);
+            }
+        }
     }
 
     /**
@@ -280,6 +311,13 @@ export class QuizManager {
 
         // Extract image data
         this.extractQuestionImageData(questionElement, questionData);
+
+        // Extract video/Manim data
+        const videoData = manimEditor.collectVideoData(questionElement);
+        if (videoData.video) questionData.video = videoData.video;
+        if (videoData.videoManimCode) questionData.videoManimCode = videoData.videoManimCode;
+        if (videoData.explanationVideo) questionData.explanationVideo = videoData.explanationVideo;
+        if (videoData.explanationVideoManimCode) questionData.explanationVideoManimCode = videoData.explanationVideoManimCode;
 
         return questionData;
     }
@@ -1128,6 +1166,9 @@ export class QuizManager {
         const questionElement = createQuestionElement(questionData);
         questionsContainer.appendChild(questionElement);
 
+        // Initialize video section for the new question element
+        manimEditor.initVideoSection(questionElement);
+
         // Clean translation keys from text content WITHOUT using innerHTML
         // This preserves the DOM structure and form field values
         this.cleanTranslationKeysInElement(questionElement);
@@ -1216,6 +1257,11 @@ export class QuizManager {
         this.populateBasicQuestionData(questionElement, questionData);
         this.populateQuestionImage(questionElement, questionData);
         this.populateTypeSpecificData(questionElement, questionData);
+
+        // Populate video/Manim data
+        if (questionData.video || questionData.videoManimCode || questionData.explanationVideo || questionData.explanationVideoManimCode) {
+            manimEditor.populateVideoData(questionElement, questionData);
+        }
     }
 
     /**

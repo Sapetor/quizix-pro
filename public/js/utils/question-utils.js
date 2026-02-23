@@ -71,6 +71,41 @@ export class QuestionUtils {
                         <button type="button" class="remove-image" onclick="removeImage(this)" data-translate="remove_image">Remove Image</button>
                     </div>
                 </div>
+
+                <div class="video-section hidden">
+                    <div class="video-tabs">
+                        <button type="button" class="video-tab active" data-target="question">Question Animation</button>
+                        <button type="button" class="video-tab" data-target="explanation">Explanation Animation</button>
+                    </div>
+                    <div class="video-panel" data-panel="question">
+                        <div class="manim-code-editor">
+                            <label>Manim Code:</label>
+                            <textarea class="manim-code question-manim-code" placeholder="from manim import *&#10;class MyScene(Scene):&#10;    def construct(self):&#10;        ..." rows="6"></textarea>
+                            <div class="manim-actions">
+                                <button type="button" class="render-manim-btn" data-placement="question">Render Animation</button>
+                                <span class="render-status hidden"></span>
+                            </div>
+                        </div>
+                        <div class="video-preview hidden">
+                            <video class="question-video" controls preload="metadata"></video>
+                            <button type="button" class="remove-video" data-placement="question">Remove Video</button>
+                        </div>
+                    </div>
+                    <div class="video-panel hidden" data-panel="explanation">
+                        <div class="manim-code-editor">
+                            <label>Manim Code:</label>
+                            <textarea class="manim-code explanation-manim-code" placeholder="from manim import *&#10;class ExplainScene(Scene):&#10;    def construct(self):&#10;        ..." rows="6"></textarea>
+                            <div class="manim-actions">
+                                <button type="button" class="render-manim-btn" data-placement="explanation">Render Animation</button>
+                                <span class="render-status hidden"></span>
+                            </div>
+                        </div>
+                        <div class="video-preview hidden">
+                            <video class="explanation-video" controls preload="metadata"></video>
+                            <button type="button" class="remove-video" data-placement="explanation">Remove Video</button>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="answer-options multiple-choice-options">
