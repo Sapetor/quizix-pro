@@ -73,6 +73,78 @@ function updateLanguageDropdownDisplay(languageCode) {
     }
 }
 
+/**
+ * Show the language picker overlay and return a Promise that resolves when user picks a language.
+ * @returns {Promise<void>}
+ */
+function showLanguagePicker() {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('language-picker-overlay');
+        if (!overlay) { resolve(); return; }
+
+        overlay.classList.remove('hidden');
+
+        const handler = async (e) => {
+            const option = e.target.closest('.language-picker-option');
+            if (!option) return;
+
+            const langCode = option.dataset.lang;
+            if (!langCode) return;
+
+            overlay.removeEventListener('click', handler);
+
+            // Apply language
+            await translationManager.setLanguage(langCode);
+            translationManager.translatePage();
+            updateLanguageDropdownDisplay(langCode);
+
+            // Hide overlay
+            overlay.classList.add('hidden');
+            logger.debug('Language picker: user selected', langCode);
+            resolve();
+        };
+        overlay.addEventListener('click', handler);
+    });
+}
+
+/**
+ * Detect browser language and match against supported languages.
+ * Tries exact match first, then base-language match (e.g., 'en-US' → 'en').
+ * @returns {string} Best matching language code, or 'es' as final fallback
+ */
+function detectBrowserLanguage() {
+    const supported = ['es', 'en', 'pl', 'fr', 'de', 'it', 'pt', 'ja', 'zh'];
+    const candidates = navigator.languages || [navigator.language || 'es'];
+
+    for (const lang of candidates) {
+        const lower = lang.toLowerCase();
+        // Exact match (e.g., 'en' in supported)
+        if (supported.includes(lower)) return lower;
+        // Base-language match (e.g., 'en-US' → 'en', 'zh-TW' → 'zh')
+        const base = lower.split('-')[0];
+        if (supported.includes(base)) return base;
+    }
+    return 'es';
+}
+
+/**
+ * Attempt to start the onboarding tutorial after an optional delay.
+ * @param {number} delay - Milliseconds to wait before checking (0 for immediate)
+ */
+function tryStartOnboarding(delay) {
+    const start = () => {
+        if (onboardingTutorial.shouldShowOnboarding()) {
+            onboardingTutorial.start();
+            logger.debug('Onboarding tutorial started for first-time user');
+        }
+    };
+    if (delay > 0) {
+        setTimeout(start, delay);
+    } else {
+        start();
+    }
+}
+
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     logger.debug('Quizix Pro - Initializing modular application...');
@@ -85,7 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await errorBoundary.safeNetworkOperation(async () => {
         // Initialize translation manager first
-        const savedLanguage = getItem('language', 'es');
+        const savedLanguage = getItem('language', null) || detectBrowserLanguage();
         logger.debug('Initializing translation manager with language:', savedLanguage);
 
         const success = await translationManager.initialize(savedLanguage);
@@ -166,14 +238,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         logger.debug(`App initialized for ${isMobile() ? 'mobile' : 'desktop'} layout`);
 
-        // Start onboarding tutorial for first-time users
-        // Delay slightly to ensure UI is fully rendered
-        setTimeout(() => {
-            if (onboardingTutorial.shouldShowOnboarding()) {
-                onboardingTutorial.start();
-                logger.debug('Onboarding tutorial started for first-time user');
-            }
-        }, 800);
+        // Hide first-game hints for returning players
+        if (getItem('quiz_player_first_game')) {
+            document.querySelectorAll('.first-game-hint').forEach(el => el.classList.add('hidden'));
+        }
+
+        // First visit: show language picker, then onboarding; returning: delayed onboarding check
+        if (!getItem('language')) {
+            showLanguagePicker().then(() => tryStartOnboarding(0));
+        } else {
+            tryStartOnboarding(800);
+        }
 
         // FOUC Prevention: Add loaded class for smooth appearance
         document.body.classList.add('loaded');

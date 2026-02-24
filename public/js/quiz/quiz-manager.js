@@ -663,8 +663,33 @@ export class QuizManager {
                     });
                 } else {
                     const noQuizzesDiv = document.createElement('div');
-                    noQuizzesDiv.className = 'no-quizzes';
-                    noQuizzesDiv.innerHTML = `<p>${translationManager.getTranslationSync('no_saved_quizzes')}</p>`;
+                    noQuizzesDiv.className = 'no-quizzes empty-state';
+                    noQuizzesDiv.innerHTML = `
+                        <div class="empty-state-icon">
+                            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="12" y="8" width="40" height="48" rx="4" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+                                <line x1="20" y1="20" x2="44" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+                                <line x1="20" y1="28" x2="38" y2="28" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+                                <line x1="20" y1="36" x2="42" y2="36" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+                                <circle cx="48" cy="48" r="12" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+                                <line x1="48" y1="42" x2="48" y2="54" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                                <line x1="42" y1="48" x2="54" y2="48" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                            </svg>
+                        </div>
+                        <p>${translationManager.getTranslationSync('no_saved_quizzes')}</p>
+                        <div class="empty-state-actions">
+                            <button class="btn primary empty-state-create-btn">${translationManager.getTranslationSync('create_first_quiz')}</button>
+                            <p class="empty-state-hint">${translationManager.getTranslationSync('try_ai_generation')}</p>
+                            <p class="empty-state-hint">${translationManager.getTranslationSync('import_quiz_hint')}</p>
+                        </div>
+                    `;
+                    // Wire up the create button to close dialog and go to editor
+                    const createBtn = noQuizzesDiv.querySelector('.empty-state-create-btn');
+                    createBtn?.addEventListener('click', () => {
+                        const modal = noQuizzesDiv.closest('.modal-overlay, .modal');
+                        if (modal) modal.classList.remove('visible');
+                        if (window.game?.uiManager) window.game.uiManager.showScreen('host-screen');
+                    });
                     fragment.appendChild(noQuizzesDiv);
                 }
 

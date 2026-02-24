@@ -764,6 +764,27 @@ export function updateMobileReturnButtonVisibility(currentScreen) {
 }
 
 // ============================================================================
+// Help Popover Handler (click-outside dismisses, click button toggles)
+// ============================================================================
+
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.help-btn');
+    const popover = btn?.nextElementSibling;
+    const isToggle = popover?.classList.contains('help-popover');
+
+    // Close all open popovers (except the one being toggled)
+    document.querySelectorAll('.help-popover:not(.hidden)').forEach(p => {
+        if (p !== popover) p.classList.add('hidden');
+    });
+
+    // Toggle the clicked popover
+    if (isToggle) {
+        e.stopPropagation();
+        popover.classList.toggle('hidden');
+    }
+});
+
+// ============================================================================
 // Data-onclick Event Delegation
 // ============================================================================
 
@@ -791,6 +812,12 @@ function initializeGlobals() {
     initializeDropdownListeners();
     initializeBackToTopButton();
     initializeEditorQuestionCount();
+
+    // Restart onboarding tour from settings modal
+    document.getElementById('restart-tour-btn')?.addEventListener('click', () => {
+        closeQuizSettingsModal();
+        setTimeout(() => window.startOnboardingTutorial(), 350);
+    });
 }
 
 if (document.readyState === 'loading') {

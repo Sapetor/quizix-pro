@@ -568,13 +568,6 @@ export class UIManager {
                     </div>
                     <h3>${translationManager.getTranslationSync('failed_load_games')}</h3>
                     <p>${translationManager.getTranslationSync('check_connection')}</p>
-                    <details style="margin-top: 10px; font-size: 0.8em; opacity: 0.7;">
-                        <summary>Debug Info (tap to expand)</summary>
-                        <p><strong>Error:</strong> ${errorMessage}</p>
-                        <p><strong>Host:</strong> ${window.location.host}</p>
-                        <p><strong>Network Error:</strong> ${isNetworkError ? 'Yes' : 'No'}</p>
-                        <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
-                    </details>
                 </div>
             `;
         }

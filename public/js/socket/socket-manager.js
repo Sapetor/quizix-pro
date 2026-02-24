@@ -340,6 +340,9 @@ export class SocketManager {
             // Clear any remaining timers and show final results
             this.gameManager.stopTimer();
             this.gameManager.showFinalResults(data.finalLeaderboard, data.conceptMastery);
+
+            // Mark player as having completed a game (hides first-game hints on next visit)
+            localStorage.setItem('quiz_player_first_game', 'done');
         });
 
         // Handle game reset for rematch

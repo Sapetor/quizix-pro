@@ -811,7 +811,7 @@ export default {
     manim_tip_use_wait: 'Use self.wait() to add pauses between animations',
     manim_tip_scene_class: 'Your class must inherit from Scene',
     manim_tip_import: 'No need to add imports - they are included automatically',
-    manim_tip_mathtex: 'Use MathTex for LaTeX formulas: MathTex(r"E=mc^2")',
+    manim_tip_mathtex: 'Use Text() for labels — MathTex() requires LaTeX installed',
     manim_tutorial_help_tooltip: 'Open Manim animation tutorial',
     manim_copy_code_aria: 'Copy code to clipboard',
 
@@ -1253,5 +1253,15 @@ export default {
     export_question_trends: 'Question Performance Trends',
     export_session_label: 'Session {0}',
     export_question_num_header: 'Question #',
-    export_question_text_header: 'Question Text'
+    export_question_text_header: 'Question Text',
+    help_and_tour: 'Help & Tour',
+    restart_tour: 'Restart Tour',
+    power_ups_help: 'Give players special abilities: 50-50 removes two wrong answers, +10s adds extra time, 2x doubles points for one question.',
+    consensus_mode_help: 'Players discuss and vote together before answering. The team must reach the threshold to lock in an answer.',
+    create_first_quiz: 'Create your first quiz',
+    try_ai_generation: 'Try AI generation to create questions automatically',
+    import_quiz_hint: 'You can also import quizzes from JSON or Excel files',
+    pin_format_hint: 'Enter the 6-digit PIN shown on the host\'s screen',
+    waiting_hint: 'The host will start the game when all players have joined',
+    choose_your_language: 'Choose Your Language'
 };

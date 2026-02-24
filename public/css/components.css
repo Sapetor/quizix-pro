@@ -6914,13 +6914,24 @@ html {
 }
 
 [data-theme="light"] .editor-mode-btn {
-    border-color: rgba(0, 0, 0, 0.15);
-    color: var(--text-secondary, #6b7280);
+    border-color: rgba(0, 0, 0, 0.35);
+    color: #4b5563;
 }
 
 [data-theme="light"] .editor-mode-btn:hover {
-    border-color: var(--color-primary-500, #6366f1);
-    color: var(--color-primary-500, #6366f1);
+    border-color: var(--color-primary-600, #4f46e5);
+    color: var(--color-primary-600, #4f46e5);
+}
+
+[data-theme="light"] .editor-mode-btn.advanced {
+    background: var(--color-primary-600, #4f46e5);
+    color: #fff;
+    border-color: var(--color-primary-600, #4f46e5);
+}
+
+[data-theme="light"] .editor-mode-btn.advanced:hover {
+    background: var(--color-primary-700, #4338ca);
+    border-color: var(--color-primary-700, #4338ca);
 }
 
 /* Hide video sections in basic editor mode */
@@ -7171,3 +7182,222 @@ html {
 }
 
 /* === END CONSENSUS MODE SYSTEM === */
+
+/* ============================================================================
+   HELP POPOVERS & CONTEXTUAL HELP
+   ============================================================================ */
+
+.setting-with-help {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.setting-with-help > label {
+    flex: 1;
+}
+
+.help-btn {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.help-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+}
+
+[data-theme="light"] .help-btn {
+    border-color: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .help-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #333;
+}
+
+.help-popover {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 6px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(30, 30, 50, 0.95);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    max-width: 300px;
+    width: max-content;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: popoverFadeIn 0.15s ease-out;
+}
+
+[data-theme="light"] .help-popover {
+    background: rgba(255, 255, 255, 0.97);
+    color: #333;
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes popoverFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================================
+   EMPTY STATE (Load Quiz Dialog)
+   ============================================================================ */
+
+.empty-state {
+    text-align: center;
+    padding: 32px 16px;
+}
+
+.empty-state-icon {
+    margin-bottom: 16px;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="light"] .empty-state-icon {
+    color: rgba(0, 0, 0, 0.25);
+}
+
+.empty-state-actions {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Shared muted hint styling */
+.empty-state-hint,
+.first-game-hint {
+    font-size: 0.82rem;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+[data-theme="light"] .empty-state-hint,
+[data-theme="light"] .first-game-hint {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+.empty-state-hint {
+    margin: 0;
+}
+
+/* ============================================================================
+   FIRST-GAME HINTS (Player Join Flow)
+   ============================================================================ */
+
+.first-game-hint {
+    margin: 4px 0 8px;
+}
+
+/* ============================================================================
+   LANGUAGE PICKER OVERLAY (First Visit)
+   ============================================================================ */
+
+.language-picker-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    backdrop-filter: blur(4px);
+    animation: popoverFadeIn 0.3s ease-out;
+}
+
+.language-picker-modal {
+    background: var(--bg-secondary, #1e1e2e);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .language-picker-modal {
+    background: #fff;
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.language-picker-modal h2 {
+    margin: 0 0 24px;
+    font-size: 1.4rem;
+}
+
+.language-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.language-picker-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, border-color 0.2s;
+    font-size: 0.85rem;
+}
+
+.language-picker-option:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.language-picker-option:active {
+    transform: translateY(0);
+}
+
+[data-theme="light"] .language-picker-option {
+    border-color: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .language-picker-option:hover {
+    background: rgba(0, 0, 0, 0.07);
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+.language-picker-flag {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.language-picker-name {
+    font-weight: 500;
+}
