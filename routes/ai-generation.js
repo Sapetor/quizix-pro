@@ -24,20 +24,9 @@ function createAIGenerationRoutes(options) {
         isProduction
     } = options;
 
-    if (!logger) {
-        throw new Error('logger is required for AI generation routes');
-    }
-    if (!validateBody) {
-        throw new Error('validateBody is required for AI generation routes');
-    }
-    if (!claudeGenerateSchema) {
-        throw new Error('claudeGenerateSchema is required for AI generation routes');
-    }
-    if (!geminiGenerateSchema) {
-        throw new Error('geminiGenerateSchema is required for AI generation routes');
-    }
-    if (!extractUrlSchema) {
-        throw new Error('extractUrlSchema is required for AI generation routes');
+    const required = { logger, validateBody, claudeGenerateSchema, geminiGenerateSchema, extractUrlSchema };
+    for (const [name, value] of Object.entries(required)) {
+        if (!value) throw new Error(`${name} is required for AI generation routes`);
     }
     if (typeof isProduction !== 'boolean') {
         throw new Error('isProduction flag is required for AI generation routes');
@@ -45,73 +34,48 @@ function createAIGenerationRoutes(options) {
 
     const router = express.Router();
 
-    // ==================== BYOK RATE LIMITING ====================
-    // BYOK (Bring Your Own Key) rate limiter for Claude/Gemini API
-    // Prevents abuse when users provide their own API keys
-    const byokRateLimits = new Map();
-    const BYOK_MAX_REQUESTS_PER_MINUTE = 10;
-    const BYOK_WINDOW_MS = 60 * 1000; // 1 minute
+    // ==================== RATE LIMITING ====================
 
-    function checkByokRateLimit(ip) {
-        const now = Date.now();
-        const limit = byokRateLimits.get(ip);
+    /**
+     * Generic per-IP rate limiter factory.
+     * Returns a check function and a cleanup interval.
+     */
+    function createRateLimiter(maxPerMinute) {
+        const limits = new Map();
+        const windowMs = 60 * 1000;
 
-        if (!limit || now > limit.resetTime) {
-            byokRateLimits.set(ip, { count: 1, resetTime: now + BYOK_WINDOW_MS });
-            return { allowed: true, remaining: BYOK_MAX_REQUESTS_PER_MINUTE - 1 };
+        function check(ip) {
+            const now = Date.now();
+            const limit = limits.get(ip);
+
+            if (!limit || now > limit.resetTime) {
+                limits.set(ip, { count: 1, resetTime: now + windowMs });
+                return { allowed: true, remaining: maxPerMinute - 1 };
+            }
+
+            if (limit.count >= maxPerMinute) {
+                const retryAfter = Math.ceil((limit.resetTime - now) / 1000);
+                return { allowed: false, retryAfter, remaining: 0 };
+            }
+
+            limit.count++;
+            return { allowed: true, remaining: maxPerMinute - limit.count };
         }
 
-        if (limit.count >= BYOK_MAX_REQUESTS_PER_MINUTE) {
-            const retryAfter = Math.ceil((limit.resetTime - now) / 1000);
-            return { allowed: false, retryAfter, remaining: 0 };
-        }
+        const cleanupInterval = setInterval(() => {
+            const now = Date.now();
+            for (const [ip, limit] of limits.entries()) {
+                if (now > limit.resetTime + 60000) {
+                    limits.delete(ip);
+                }
+            }
+        }, 5 * 60 * 1000);
 
-        limit.count++;
-        return { allowed: true, remaining: BYOK_MAX_REQUESTS_PER_MINUTE - limit.count };
+        return { check, cleanupInterval };
     }
 
-    // Cleanup old BYOK rate limit entries every 5 minutes
-    const byokCleanupInterval = setInterval(() => {
-        const now = Date.now();
-        for (const [ip, limit] of byokRateLimits.entries()) {
-            if (now > limit.resetTime + 60000) {
-                byokRateLimits.delete(ip);
-            }
-        }
-    }, 5 * 60 * 1000);
-
-    // ==================== URL RATE LIMITING ====================
-    // Rate limiting for URL extraction to prevent abuse
-    const urlRateLimits = new Map();
-    const URL_MAX_REQUESTS_PER_MINUTE = 5;
-
-    function checkUrlRateLimit(ip) {
-        const now = Date.now();
-        const limit = urlRateLimits.get(ip);
-
-        if (!limit || now > limit.resetTime) {
-            urlRateLimits.set(ip, { count: 1, resetTime: now + 60000 });
-            return { allowed: true, remaining: URL_MAX_REQUESTS_PER_MINUTE - 1 };
-        }
-
-        if (limit.count >= URL_MAX_REQUESTS_PER_MINUTE) {
-            const retryAfter = Math.ceil((limit.resetTime - now) / 1000);
-            return { allowed: false, retryAfter, remaining: 0 };
-        }
-
-        limit.count++;
-        return { allowed: true, remaining: URL_MAX_REQUESTS_PER_MINUTE - limit.count };
-    }
-
-    // Cleanup old URL rate limit entries every 5 minutes
-    const urlCleanupInterval = setInterval(() => {
-        const now = Date.now();
-        for (const [ip, limit] of urlRateLimits.entries()) {
-            if (now > limit.resetTime + 60000) {
-                urlRateLimits.delete(ip);
-            }
-        }
-    }, 5 * 60 * 1000);
+    const byokLimiter = createRateLimiter(10);
+    const urlLimiter = createRateLimiter(5);
 
     // ==================== SSRF PROTECTION ====================
     // Check if an IP address is private (SSRF protection)
@@ -196,7 +160,7 @@ function createAIGenerationRoutes(options) {
             // Apply rate limiting for BYOK mode only (server key has no limit)
             if (!serverApiKey && clientApiKey) {
                 const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
-                const rateCheck = checkByokRateLimit(clientIP);
+                const rateCheck = byokLimiter.check(clientIP);
 
                 if (!rateCheck.allowed) {
                     logger.warn(`BYOK rate limit exceeded for IP: ${clientIP}`);
@@ -208,11 +172,10 @@ function createAIGenerationRoutes(options) {
                     });
                 }
 
-                // Add rate limit headers
                 res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
             }
 
-            if (!apiKey) {
+            if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
                 return res.status(400).json({
                     error: 'API key is required',
                     messageKey: 'error_api_key_required',
@@ -220,16 +183,7 @@ function createAIGenerationRoutes(options) {
                 });
             }
 
-            if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
-                return res.status(400).json({ error: 'Valid API key is required', messageKey: 'error_api_key_required' });
-            }
-
-            // Log which mode is being used (without exposing key)
-            if (serverApiKey) {
-                logger.debug('Using server-side Claude API key');
-            } else {
-                logger.debug('Using client-provided Claude API key');
-            }
+            logger.debug(`Using ${serverApiKey ? 'server-side' : 'client-provided'} Claude API key`);
 
             // Import node-fetch for HTTP requests
             const { default: fetchFunction } = await import('node-fetch');
@@ -322,7 +276,7 @@ function createAIGenerationRoutes(options) {
             // Apply rate limiting for BYOK mode only (server key has no limit)
             if (!serverApiKey && clientApiKey) {
                 const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
-                const rateCheck = checkByokRateLimit(clientIP);
+                const rateCheck = byokLimiter.check(clientIP);
 
                 if (!rateCheck.allowed) {
                     logger.warn(`BYOK rate limit exceeded for IP: ${clientIP}`);
@@ -334,11 +288,10 @@ function createAIGenerationRoutes(options) {
                     });
                 }
 
-                // Add rate limit headers
                 res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
             }
 
-            if (!apiKey) {
+            if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
                 return res.status(400).json({
                     error: 'API key is required',
                     messageKey: 'error_api_key_required',
@@ -346,16 +299,7 @@ function createAIGenerationRoutes(options) {
                 });
             }
 
-            if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
-                return res.status(400).json({ error: 'Valid API key is required', messageKey: 'error_api_key_required' });
-            }
-
-            // Log which mode is being used (without exposing key)
-            if (serverApiKey) {
-                logger.debug('Using server-side Gemini API key');
-            } else {
-                logger.debug('Using client-provided Gemini API key');
-            }
+            logger.debug(`Using ${serverApiKey ? 'server-side' : 'client-provided'} Gemini API key`);
 
             // Import node-fetch for HTTP requests
             const { default: fetchFunction } = await import('node-fetch');
@@ -457,7 +401,7 @@ function createAIGenerationRoutes(options) {
 
             // Rate limiting
             const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
-            const rateCheck = checkUrlRateLimit(clientIP);
+            const rateCheck = urlLimiter.check(clientIP);
 
             if (!rateCheck.allowed) {
                 logger.warn(`URL rate limit exceeded for IP: ${clientIP}`);
@@ -626,7 +570,7 @@ function createAIGenerationRoutes(options) {
     });
 
     // Cleanup intervals on router destruction (prevents memory leaks)
-    router._cleanupIntervals = [byokCleanupInterval, urlCleanupInterval];
+    router._cleanupIntervals = [byokLimiter.cleanupInterval, urlLimiter.cleanupInterval];
 
     return router;
 }

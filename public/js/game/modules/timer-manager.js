@@ -39,8 +39,6 @@ export class TimerManager {
 
             this.timer = setInterval(() => {
                 timeRemaining -= 1000;
-                logger.debug('Timer tick - timeRemaining:', timeRemaining);
-
                 this.updateTimerDisplay(timeRemaining);
 
                 // Call tick callback if provided

@@ -355,21 +355,6 @@ describe('QuestionFlowService', () => {
         });
     });
 
-    describe('getCorrectAnswerData (alias)', () => {
-        test('should be an alias for buildCorrectAnswerData', () => {
-            const question = {
-                type: 'multiple-choice',
-                options: ['A', 'B'],
-                correctAnswer: 0
-            };
-
-            const result1 = questionFlowService.getCorrectAnswerData(question);
-            const result2 = questionFlowService.buildCorrectAnswerData(question);
-
-            expect(result1).toEqual(result2);
-        });
-    });
-
     describe('getAnswerStatistics', () => {
         test('should delegate to game.getAnswerStatistics', () => {
             const game = createMockGame();

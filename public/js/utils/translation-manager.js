@@ -128,21 +128,11 @@ class TranslationManager {
      */
     async doLoadLanguage(languageCode) {
         try {
-            logger.debug(`🔄 Attempting to load language: ${languageCode}`);
             const importPath = `./translations/${languageCode}.js`;
-            logger.debug(`📁 Import path: ${importPath}`);
-
-            // Dynamic import of language module
             const module = await import(importPath);
-            logger.debug('✅ Module loaded successfully:', module);
-
-            const translations = module.default || module.translations;
-            logger.debug('📖 Translations extracted:', translations ? Object.keys(translations).length : 'null');
-
-            return translations;
+            return module.default || module.translations;
         } catch (error) {
-            logger.error(`❌ Failed to import language module ${languageCode}:`, error);
-            logger.error(`📁 Attempted path: ./translations/${languageCode}.js`);
+            logger.error(`Failed to import language module ${languageCode}:`, error);
             throw error;
         }
     }
@@ -421,46 +411,24 @@ class TranslationManager {
     translateContainer(container) {
         if (!container) return;
 
-        // Debug: count elements to translate
-        const elementsToTranslate = container.querySelectorAll('[data-translate]');
-        logger.debug(`🔍 translateContainer: Found ${elementsToTranslate.length} elements to translate`);
-        logger.debug(`🌐 Current language: ${this.currentLanguage}`);
-        logger.debug(`📚 Has translations loaded: ${this.loadedTranslations.has(this.currentLanguage)}`);
-        logger.debug('🗂️ All loaded languages:', Array.from(this.loadedTranslations.keys()));
-        logger.debug('📊 Total loaded translations:', this.loadedTranslations.size);
-
-        if (this.loadedTranslations.has(this.currentLanguage)) {
-            const translations = this.loadedTranslations.get(this.currentLanguage);
-            logger.debug('📖 Available translation keys:', Object.keys(translations).slice(0, 10));
-            logger.debug('🎯 Test translation for \'multiple_choice\':', translations['multiple_choice']);
-        } else {
-            logger.error(`❌ No translations found for language: ${this.currentLanguage}`);
-            logger.error('🔍 Available languages:', Array.from(this.loadedTranslations.keys()));
+        if (!this.loadedTranslations.has(this.currentLanguage)) {
+            logger.error(`No translations found for language: ${this.currentLanguage}`);
+            return;
         }
 
         // Translate elements with data-translate attribute within this container
-        elementsToTranslate.forEach((element, index) => {
+        container.querySelectorAll('[data-translate]').forEach(element => {
             const translationKey = element.getAttribute('data-translate');
             const args = element.getAttribute('data-translate-args');
             const parsedArgs = args ? args.split(',').map(arg => arg.trim()) : [];
 
             if (translationKey) {
-                const originalText = element.textContent;
                 const translatedText = this.getTranslationSync(translationKey, parsedArgs);
 
                 // Only replace content if translation was found (not falling back to key)
                 // This preserves the HTML fallback text if translation fails
                 if (translatedText !== translationKey) {
                     element.textContent = translatedText;
-                }
-
-                // Debug all translations, especially problematic ones
-                if (['add_image', 'time_seconds', 'multiple_choice', 'question', 'remove', 'a_is_correct', 'enable_power_ups'].includes(translationKey)) {
-                    logger.debug(`🔤 Translation ${index + 1}: "${translationKey}" -> "${translatedText}" (was: "${originalText}")`);
-
-                    if (translatedText === translationKey) {
-                        logger.warn(`⚠️ Translation not found for: ${translationKey}, keeping original text`);
-                    }
                 }
             }
         });
@@ -598,24 +566,18 @@ export function getThemeToggleTitles() {
 export function showAlert(key, params = []) {
     const message = translationManager.getTranslationSync(key, params);
 
-    logger.debug('showAlert called with:', { key, message, params });
-
     // Use toast for known success/error message keys
-    if (key.includes('success') || key.includes('loaded') || key.includes('saved') || key.includes('exported') || key.includes('generated')) {
-        logger.debug('Showing success toast');
+    const successKeywords = ['success', 'loaded', 'saved', 'exported', 'generated'];
+    const errorKeywords = ['error', 'failed', 'invalid', 'wrong', 'missing', 'empty'];
+
+    const lowerMessage = message.toLowerCase();
+    const errorMessagePatterns = ['failed', 'error', 'invalid', 'wrong', 'check your', 'try again'];
+
+    if (successKeywords.some(kw => key.includes(kw))) {
         toastNotifications.success(message);
-    } else if (key.includes('error') || key.includes('failed') || key.includes('invalid') ||
-               key.includes('wrong') || key.includes('missing') || key.includes('empty') ||
-               message.toLowerCase().includes('failed') || message.toLowerCase().includes('error') ||
-               message.toLowerCase().includes('invalid') || message.toLowerCase().includes('wrong') ||
-               message.toLowerCase().includes('check your') || message.toLowerCase().includes('try again')) {
-        logger.debug('Showing error toast');
+    } else if (errorKeywords.some(kw => key.includes(kw)) || errorMessagePatterns.some(p => lowerMessage.includes(p))) {
         toastNotifications.error(message);
     } else {
-        logger.debug('Showing fallback alert');
-        // Fallback to regular alert for other message types
         alert(message);
     }
 }
-
-export default translationManager;

@@ -181,15 +181,10 @@ class PlayerManagementService {
         });
 
         // Clean up player references from global registry
-        const playersToRemove = [];
-        game.players.forEach((player, playerId) => {
-            playersToRemove.push(playerId);
-        });
-
-        playersToRemove.forEach(playerId => {
+        for (const playerId of game.players.keys()) {
             this.players.delete(playerId);
             this.logger.debug(`Removed player ${playerId} from global registry (host disconnect)`);
-        });
+        }
 
         // Clean up game resources
         game.cleanup();

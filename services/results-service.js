@@ -83,12 +83,10 @@ class ResultsService {
      * List all results
      */
     async listResults() {
-        this.logger.info('Listing results');
-
         try {
             await fs.access(this.resultsDir);
         } catch {
-            this.logger.info('Results directory does not exist');
+            this.logger.debug('Results directory does not exist');
             return [];
         }
 
@@ -123,7 +121,7 @@ class ResultsService {
             .filter(result => result !== null)
             .sort((a, b) => new Date(b.saved) - new Date(a.saved));
 
-        this.logger.info(`Found ${files.length} result files`);
+        this.logger.debug(`Found ${files.length} result files`);
         return files;
     }
 
@@ -131,8 +129,6 @@ class ResultsService {
      * Delete a result file
      */
     async deleteResult(filename) {
-        this.logger.info(`DELETE request for file: ${filename}`);
-
         if (!this.validateFilename(filename)) {
             const err = new Error('Invalid filename format');
             err.messageKey = 'error_invalid_filename';
@@ -140,19 +136,17 @@ class ResultsService {
         }
 
         const filePath = this.validatePath(filename);
-        this.logger.info(`Checking file path: ${filePath}`);
 
         try {
             await fs.access(filePath);
         } catch {
-            this.logger.info(`File does not exist: ${filePath}`);
             const err = new Error('Result file not found');
             err.messageKey = 'error_result_not_found';
             throw err;
         }
 
         await fs.unlink(filePath);
-        this.logger.info(`Result file deleted successfully: ${filename}`);
+        this.logger.info(`Result file deleted: ${filename}`);
 
         return {
             success: true,

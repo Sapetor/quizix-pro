@@ -926,7 +926,6 @@ export class AIQuestionGenerator {
             const modelSelection = dom.get('model-selection');
             if (modelSelection) {
                 modelSelection.classList.remove('hidden');
-                modelSelection.classList.remove('hidden');
             }
 
             const claudeModelSelection = dom.get('claude-model-selection');

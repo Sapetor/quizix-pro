@@ -455,9 +455,7 @@ class MobileQuestionCarousel {
         this._boundHandlers.dotClicks = [];
 
         // Remove carousel container from DOM
-        if (this.carouselContainer && this.carouselContainer.parentNode) {
-            this.carouselContainer.parentNode.removeChild(this.carouselContainer);
-        }
+        this.carouselContainer?.remove();
 
         // Reset state
         this.carouselContainer = null;

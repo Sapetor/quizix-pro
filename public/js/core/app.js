@@ -407,10 +407,7 @@ export class QuizGame {
             this.nextQuestion();
         });
         bindElement('join-game', 'click', () => this.joinGame());
-        bindElement('new-game', 'click', () => {
-            logger.debug('New Game button clicked!');
-            this.newGame();
-        });
+        bindElement('new-game', 'click', () => this.newGame());
         bindElement('rematch-game', 'click', () => this.triggerRematch());
         bindElement('play-again', 'click', () => this.handlePlayAgain());
         bindElement('exit-to-main', 'click', () => this.exitToMainMenu());
@@ -430,14 +427,8 @@ export class QuizGame {
             }, TIMING.AUTO_SAVE_DELAY);
         });
 
-        // Global click handler for game interactions (with abort signal for cleanup)
+        // Global click handler for PIN copy (with abort signal for cleanup)
         document.addEventListener('click', (e) => {
-            // Handle player answer selection
-            if (e.target.closest('#player-game-screen')) {
-                this.handlePlayerGameClick(e);
-            }
-
-            // Handle PIN copy to clipboard
             if (e.target.closest('#game-pin')) {
                 this.copyPinToClipboard(e.target.closest('#game-pin'));
             }
@@ -467,15 +458,6 @@ export class QuizGame {
     }
 
     /**
-     * Handle player game screen clicks
-     */
-    handlePlayerGameClick(_e) {
-        // Client interactions are now handled by PlayerInteractionManager
-        // This method kept for future non-client click handling if needed
-        logger.debug('Player game click delegated to PlayerInteractionManager');
-    }
-
-    /**
      * Copy game PIN to clipboard
      */
     async copyPinToClipboard(pinElement) {
@@ -495,12 +477,7 @@ export class QuizGame {
                 targetElement.textContent = translationManager.getTranslationSync('copied') || 'Copied!';
 
                 // Show toast notification
-                if (typeof translationManager !== 'undefined' && translationManager.showAlert) {
-                    translationManager.showAlert('success', translationManager.getTranslationSync('pin_copied'));
-                } else {
-                    // Fallback notification
-                    logger.info('PIN copied to clipboard:', pin);
-                }
+                translationManager.showAlert('success', translationManager.getTranslationSync('pin_copied'));
 
                 // Reset appearance after animation
                 setTimeout(() => {
@@ -705,8 +682,7 @@ export class QuizGame {
 
         const newName = input.value.trim();
 
-        // Validate name
-        if (!newName || newName.length === 0) {
+        if (!newName) {
             showErrorAlert('name_is_required');
             return;
         }
@@ -778,18 +754,7 @@ export class QuizGame {
      * Start a new game
      */
     newGame() {
-        try {
-            logger.debug('New Game - resetting and returning to main menu');
-            this.resetAndReturnToMenu();
-        } catch (error) {
-            logger.error('Error in newGame():', error);
-            // Fallback - try to at least show main menu
-            try {
-                this.uiManager.showScreen('main-menu');
-            } catch (fallbackError) {
-                logger.error('Fallback showScreen also failed:', fallbackError);
-            }
-        }
+        this.resetAndReturnToMenu();
     }
 
     /**
@@ -977,144 +942,6 @@ export class QuizGame {
     }
 
     /**
-     * Quick debug: Load preset quiz and start game immediately
-     */
-    async loadLastQuiz() {
-        try {
-            logger.debug('Loading quiz for game startup...');
-
-            // First check if we can fetch the quiz list
-            const response = await fetch(APIHelper.getApiUrl('api/quizzes'));
-            if (!response.ok) {
-                throw new Error(`Failed to fetch quizzes: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            logger.debug('Available quizzes:', data?.length || 0);
-
-            // Look for debug quiz first
-            const debugQuizFilename = 'debug-width-quiz.json';
-            const debugQuiz = data?.find(q => q.filename === debugQuizFilename);
-
-            let targetQuiz = null;
-            if (debugQuiz) {
-                logger.debug('Found debug quiz:', debugQuiz.title);
-                targetQuiz = debugQuiz;
-            } else if (data && data.length > 0) {
-                logger.debug('Debug quiz not found, using first available quiz');
-                targetQuiz = data[0];
-            } else {
-                throw new Error('No quizzes available');
-            }
-
-            logger.debug('Loading quiz for debug:', targetQuiz.title);
-
-            // Load the quiz
-            await this.quizManager.loadQuiz(targetQuiz.filename);
-
-            // Wait for quiz to load, then start the game
-            setTimeout(() => {
-                try {
-                    logger.debug('🐛 DEBUG: Auto-starting quiz...');
-                    this.startHosting();
-
-                    // Add debugging after game starts
-                    setTimeout(() => {
-                        try {
-                            // Game startup analysis complete
-                        } catch (debugError) {
-                            logger.error('Debug analysis failed:', debugError);
-                        }
-                    }, TIMING.GAME_START_DELAY); // Wait for game to fully start
-
-                } catch (startError) {
-                    logger.error('Failed to start game:', startError);
-                }
-            }, TIMING.GAME_START_DELAY);
-
-        } catch (error) {
-            logger.error('🐛 DEBUG: Error in loadLastQuiz:', error);
-
-            // Show user-friendly error
-            const errorModal = dom.get('error-modal');
-            if (errorModal) {
-                const errorMessage = dom.get('error-message');
-                if (errorMessage) {
-                    errorMessage.textContent = `Debug function failed: ${error.message}. Please check the console for details.`;
-                }
-                openModal(errorModal);
-            } else {
-                alert(`Debug function failed: ${error.message}`);
-            }
-        }
-    }
-
-    /**
-     * Debug function to analyze question width styles
-     */
-
-
-    /**
-     * Load quiz directly as fallback
-     */
-    async loadQuizDirectly() {
-        try {
-            logger.debug('Using direct quiz loading fallback');
-            const filename = 'advanced_quiz_with_latex_images.json';
-            this.quizManager.loadQuiz(filename);
-
-            toastNotifications.info('Debug: Loading LaTeX quiz - starting in 2 seconds...');
-
-            setTimeout(() => {
-                logger.debug('Auto-starting quiz via fallback method...');
-                this.startHosting();
-            }, TIMING.GAME_START_DELAY);
-        } catch (error) {
-            logger.error('Fallback quiz loading failed:', error);
-            translationManager.showAlert('error', 'Debug function failed');
-        }
-    }
-
-    /**
-     * Load default LaTeX quiz for debugging
-     */
-    async loadDefaultLatexQuiz() {
-        try {
-            logger.debug('Loading default LaTeX quiz for debugging');
-
-            // Try to load the advanced LaTeX quiz file directly
-            const filename = 'advanced_quiz_with_latex_images.json';
-            logger.debug('Attempting to load:', filename);
-
-            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${filename}`));
-            if (!response.ok) {
-                throw new Error(`Failed to load quiz: ${response.status}`);
-            }
-
-            const quizData = await response.json();
-            logger.debug('Loaded quiz data:', quizData);
-
-            if (quizData && quizData.quiz) {
-                // Use the quiz manager to populate the form
-                this.quizManager.populateQuizForm(quizData.quiz);
-
-                toastNotifications.info(`Debug: Loaded "${quizData.quiz.title}" - starting game...`);
-
-                // Wait for form to populate, then start game
-                setTimeout(() => {
-                    logger.debug('Auto-starting loaded LaTeX quiz...');
-                    this.startHosting();
-                }, 1500);
-            } else {
-                throw new Error('Invalid quiz data format');
-            }
-        } catch (error) {
-            logger.error('Failed to load default LaTeX quiz:', error);
-            translationManager.showAlert('error', 'Failed to load LaTeX quiz for debugging');
-        }
-    }
-
-    /**
      * Get socket connection status
      */
     isConnected() {
@@ -1164,19 +991,15 @@ export class QuizGame {
             }
         }
 
-        // Use the AI generator's openModal method if available
-        if (this.aiGenerator && this.aiGenerator.openModal) {
+        // Use the AI generator's openModal method
+        if (this.aiGenerator.openModal) {
             this.aiGenerator.openModal();
-            logger.debug('AI Generator modal opened via class method');
         } else {
             // Fallback: open modal directly
-            logger.warn('AI Generator class method not available, using fallback');
+            logger.warn('AI Generator openModal method not available, using fallback');
             const modal = document.getElementById('ai-generator-modal');
             if (modal) {
                 openModal(modal);
-                logger.debug('AI Generator modal opened via fallback');
-            } else {
-                logger.error('AI Generator modal not found in DOM');
             }
         }
     }
@@ -1302,42 +1125,25 @@ export class QuizGame {
      * Scroll to bottom
      */
     scrollToBottom() {
-        logger.info('Scroll to bottom function called');
         const hostContainer = document.querySelector('.host-container');
         const quizEditor = document.querySelector('.quiz-editor-section');
-        const isPreviewMode = hostContainer && hostContainer.classList.contains('split-screen');
-
-        logger.debug('Preview mode:', isPreviewMode);
+        const isPreviewMode = hostContainer?.classList.contains('split-screen');
 
         if (quizEditor) {
-            logger.debug('Quiz editor found, scrollHeight:', quizEditor.scrollHeight, 'clientHeight:', quizEditor.clientHeight);
-
             if (isPreviewMode) {
-                // In split-screen mode, scroll the editor section directly
-                logger.debug('Scrolling editor section in split-screen mode');
                 quizEditor.scrollTo({ top: quizEditor.scrollHeight, behavior: 'smooth' });
             } else {
-                // In single-screen mode, need to scroll the main container or window
-                logger.debug('Scrolling in single-screen mode');
-
-                // Try scrolling the host container first
                 if (hostContainer && hostContainer.scrollHeight > hostContainer.clientHeight) {
-                    logger.debug('Scrolling host container');
                     hostContainer.scrollTo({ top: hostContainer.scrollHeight, behavior: 'smooth' });
                 } else {
-                    // Fallback to window scroll
-                    logger.debug('Scrolling window');
                     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                 }
 
-                // Also try scrolling the editor section itself in case it's scrollable
                 if (quizEditor.scrollHeight > quizEditor.clientHeight) {
-                    logger.debug('Also scrolling editor section');
                     quizEditor.scrollTo({ top: quizEditor.scrollHeight, behavior: 'smooth' });
                 }
             }
         } else {
-            logger.warn('Editor section not found, using window scroll');
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
     }

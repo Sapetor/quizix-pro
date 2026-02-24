@@ -260,16 +260,6 @@ export class SplitLayoutManager {
     }
 
     /**
-     * Update the drag handle position based on the split ratio
-     * Note: In the new 4-column grid layout, the handle is in a fixed grid column,
-     * so this method is now a no-op. The ratio is controlled via --split-left/--split-right CSS vars.
-     */
-    updateDragHandlePosition(_ratio) {
-        // No-op: Handle is now in a fixed grid column (column 3)
-        // The split ratio is controlled by CSS custom properties
-    }
-
-    /**
      * Load saved split ratio from localStorage
      * @returns {boolean} True if a valid saved ratio was loaded, false otherwise
      */
@@ -282,7 +272,6 @@ export class SplitLayoutManager {
                 if (hostContainer) {
                     hostContainer.style.setProperty('--split-left', `${ratio}fr`);
                     hostContainer.style.setProperty('--split-right', `${100 - ratio}fr`);
-                    this.updateDragHandlePosition(ratio);
                     logger.debug('Loaded saved split ratio', { ratio });
                     return true;
                 }
@@ -313,7 +302,6 @@ export class SplitLayoutManager {
 
         hostContainer.style.setProperty('--split-left', `${currentRatio}fr`);
         hostContainer.style.setProperty('--split-right', `${100 - currentRatio}fr`);
-        this.updateDragHandlePosition(currentRatio);
 
         // Save the new ratio
         setItem('splitRatio', currentRatio.toString());
@@ -404,20 +392,15 @@ export class SplitLayoutManager {
      * Load saved font size preference
      */
     loadSavedFontSize() {
+        const validSizes = ['small', 'medium', 'large', 'xlarge'];
         const savedSize = getItem('fontSize');
-        if (savedSize && ['small', 'medium', 'large', 'xlarge'].includes(savedSize)) {
-            setTimeout(() => {
-                if (window.setGlobalFontSize) {
-                    window.setGlobalFontSize(savedSize);
-                    logger.debug('Loaded saved font size:', savedSize);
-                }
-            }, 100);
-        } else {
-            setTimeout(() => {
-                if (window.setGlobalFontSize) {
-                    window.setGlobalFontSize('medium');
-                }
-            }, 100);
-        }
+        const size = validSizes.includes(savedSize) ? savedSize : 'medium';
+
+        setTimeout(() => {
+            if (window.setGlobalFontSize) {
+                window.setGlobalFontSize(size);
+                logger.debug('Loaded font size:', size);
+            }
+        }, 100);
     }
 }

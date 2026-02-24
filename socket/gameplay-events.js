@@ -79,25 +79,13 @@ function registerGameplayEvents(io, socket, options) {
     socket.on('next-question', () => {
         if (!checkRateLimit(socket.id, 'next-question', 5, socket)) return;
         try {
-            logger.debug('NEXT-QUESTION EVENT RECEIVED');
             const game = gameSessionService.findGameByHost(socket.id);
+            if (!game) return;
 
-            if (!game) {
-                logger.debug('No game found for host');
-                return;
-            }
-
-            logger.debug('Game state before next-question:', {
-                gameState: game.gameState,
-                currentQuestion: game.currentQuestion,
-                totalQuestions: game.quiz.questions.length,
-                gamePin: game.pin
-            });
-
+            logger.debug(`next-question: game ${game.pin}, question ${game.currentQuestion + 1}/${game.quiz.questions.length}`);
             gameSessionService.manualAdvanceToNextQuestion(game, io);
         } catch (error) {
-            logger.error('SERVER ERROR in next-question handler:', error);
-            logger.error('Error stack:', error.stack);
+            logger.error('Error in next-question handler:', error);
         }
     });
 }

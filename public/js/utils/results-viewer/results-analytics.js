@@ -1588,21 +1588,3 @@ export function createConceptMasteryChart(canvasId, conceptMastery) {
     });
 }
 
-export default {
-    calculateQuestionAnalytics,
-    getQuizSummaryStats,
-    reconstructQuestionsFromResults,
-    createAnalyticsModal,
-    createSuccessRateChart,
-    createTimeVsSuccessChart,
-    switchAnalyticsTab,
-    createQuestionDrilldownModal,
-    createNumericDistributionChart,
-    createMultipleCorrectChart,
-    createComparisonChart,
-    calculateComparativeMetrics,
-    calculateConceptMastery,
-    inferConceptDependencies,
-    generateConceptInsights,
-    createConceptMasteryChart
-};

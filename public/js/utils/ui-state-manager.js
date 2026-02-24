@@ -410,15 +410,8 @@ export class UIStateManager {
         this.abortController.abort();
 
         // Remove floating controls from DOM
-        const floatingControls = document.querySelector('.floating-controls');
-        if (floatingControls && floatingControls.parentNode) {
-            floatingControls.parentNode.removeChild(floatingControls);
-        }
-
-        const uiReveal = document.querySelector('.game-ui-reveal');
-        if (uiReveal && uiReveal.parentNode) {
-            uiReveal.parentNode.removeChild(uiReveal);
-        }
+        document.querySelector('.floating-controls')?.remove();
+        document.querySelector('.game-ui-reveal')?.remove();
 
         logger.debug('🎮 UI State Manager destroyed');
     }
@@ -431,5 +424,3 @@ export const uiStateManager = new UIStateManager();
 if (typeof window !== 'undefined') {
     window.uiStateManager = uiStateManager;
 }
-
-export default uiStateManager;

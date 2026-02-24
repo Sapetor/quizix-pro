@@ -1,7 +1,6 @@
 import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
-import { unifiedErrorHandler } from '../utils/unified-error-handler.js';
 import { openModal, closeModal, createModalBindings } from '../utils/modal-utils.js';
 import { getTranslation } from '../utils/translation-manager.js';
 
@@ -11,7 +10,6 @@ import { getTranslation } from '../utils/translation-manager.js';
 export class ManimEditor {
     constructor() {
         this.manimAvailable = null;
-        this._statusChecked = false;
         this._statusPromise = null;
     }
 
@@ -30,7 +28,6 @@ export class ManimEditor {
                 const response = await fetch(APIHelper.getApiUrl('api/manim/status'));
                 if (!response.ok) {
                     this.manimAvailable = false;
-                    this._statusChecked = true;
                     return false;
                 }
                 const data = await response.json();
@@ -39,7 +36,6 @@ export class ManimEditor {
                 logger.warn('ManimEditor: status check failed', err);
                 this.manimAvailable = false;
             }
-            this._statusChecked = true;
             logger.debug(`ManimEditor: status resolved — available=${this.manimAvailable}`);
             this.initModeToggle();
             return this.manimAvailable;
@@ -54,9 +50,7 @@ export class ManimEditor {
      * @param {HTMLElement} questionElement
      */
     async initVideoSection(questionElement) {
-        if (!this._statusChecked) {
-            await this.checkManimStatus();
-        }
+        await this.checkManimStatus();
 
         const videoSection = questionElement.querySelector('.video-section');
         if (!videoSection) {
@@ -201,9 +195,6 @@ export class ManimEditor {
                 statusEl.textContent = `${getTranslation('manim_render_failed')}: ${err.message}`;
                 statusEl.className = 'render-status error';
             }
-            unifiedErrorHandler.safeExecute(() => {
-                // Record the error for diagnostics without crashing the editor
-            });
         } finally {
             if (renderBtn) {
                 renderBtn.disabled = false;

@@ -9,17 +9,13 @@ function registerGameEvents(io, socket, options) {
     socket.on('host-join', (data) => {
         if (!checkRateLimit(socket.id, 'host-join', 5, socket)) return;
         try {
-            logger.debug('host-join event received');
-            logger.debug('host-join received data:', JSON.stringify(data, null, 2));
-            logger.debug('quiz title from data:', data?.quiz?.title);
-
             if (!data || !data.quiz || !Array.isArray(data.quiz.questions)) {
                 socket.emit('error', { message: 'Invalid quiz data', messageKey: 'error_invalid_quiz_data' });
                 return;
             }
 
             const { quiz } = data;
-            logger.debug('extracted quiz title:', quiz.title);
+            logger.debug(`host-join: "${quiz.title}" with ${quiz.questions.length} questions`);
 
             if (quiz.questions.length === 0) {
                 socket.emit('error', { message: 'Quiz must have at least one question', messageKey: 'error_quiz_needs_questions' });
@@ -38,7 +34,6 @@ function registerGameEvents(io, socket, options) {
             const game = gameSessionService.createGame(socket.id, quiz);
 
             socket.join(`game-${game.pin}`);
-            logger.debug('Sending game-created with title:', quiz.title);
             socket.emit('game-created', {
                 pin: game.pin,
                 gameId: game.id,

@@ -595,11 +595,8 @@ class Game {
         } else if (question.type === 'true-false') {
             stats.answerCounts['true'] = 0;
             stats.answerCounts['false'] = 0;
-        } else if (question.type === 'numeric') {
-            stats.answerCounts = {};
-        } else if (question.type === 'ordering') {
-            stats.answerCounts = {};
         }
+        // numeric and ordering types use dynamic keys, no pre-initialization needed
 
         Array.from(this.players.values()).forEach(player => {
             const playerAnswer = player.answers[this.currentQuestion];
@@ -659,11 +656,11 @@ class Game {
         const basePoints = this.config.SCORING.BASE_POINTS * difficultyMultiplier;
 
         return {
-            basePoints: basePoints,
-            difficultyMultiplier: difficultyMultiplier,
+            basePoints,
+            difficultyMultiplier,
             difficulty: question.difficulty || 'medium',
-            timeBonusEnabled: timeBonusEnabled,
-            timeBonusThreshold: timeBonusThreshold
+            timeBonusEnabled,
+            timeBonusThreshold
         };
     }
 
@@ -678,11 +675,7 @@ class Game {
 
             // Ensure results directory exists
             const resultsDir = 'results';
-            try {
-                await fs.access(resultsDir);
-            } catch {
-                await fs.mkdir(resultsDir, { recursive: true });
-            }
+            await fs.mkdir(resultsDir, { recursive: true });
 
             const results = {
                 quizTitle: this.quiz.title || 'Untitled Quiz',

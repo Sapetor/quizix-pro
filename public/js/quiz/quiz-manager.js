@@ -1149,14 +1149,6 @@ export class QuizManager {
     }
 
     /**
-     * Update remove button visibility for all questions
-     * @deprecated Use updateQuestionsUI() instead - kept for backward compatibility
-     */
-    updateRemoveButtonVisibility() {
-        this.updateQuestionsUI();
-    }
-
-    /**
      * Add question from data object
      */
     addQuestionFromData(questionData) {
@@ -1180,15 +1172,6 @@ export class QuizManager {
 
         // Translate the individual question element after populating data
         translationManager.translateContainer(questionElement);
-
-        // Debug: Check if translation keys are showing as actual text
-        const problemElements = questionElement.querySelectorAll('*');
-        problemElements.forEach(el => {
-            const text = el.textContent || '';
-            if (text.includes('add_image') || text.includes('time_seconds') || text.includes('multiple_choice')) {
-                logger.warn('Found translation key as text:', text, 'in element:', el.tagName, el.className);
-            }
-        });
     }
 
     /**

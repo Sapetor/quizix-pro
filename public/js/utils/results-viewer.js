@@ -695,38 +695,43 @@ export class ResultsViewer {
     }
 
     /**
+     * Fetch full result data if the result lacks question details
+     * @param {string} filename - Result filename
+     * @returns {Object|null} Full result data, or null if not found
+     */
+    async fetchFullResultData(filename) {
+        const result = this.filteredResults?.find(r => r.filename === filename);
+        if (!result) {
+            showErrorAlert(getTranslation('results_not_found'));
+            return null;
+        }
+
+        if (result.questions || !result.filename) return result;
+
+        try {
+            const response = await fetch(APIHelper.getApiUrl(`api/results/${result.filename}`));
+            if (response.ok) {
+                const fullResult = await response.json();
+                fullResult.filename = result.filename;
+                return fullResult;
+            }
+        } catch (error) {
+            logger.error('Error fetching full results:', error);
+        }
+
+        return result;
+    }
+
+    /**
      * Export current analytics view to PDF
-     * Fetches full data if needed
      * @param {string} filename - Result filename
      */
     async exportCurrentToPDF(filename) {
         try {
             this.showLoading();
-
-            const result = this.filteredResults?.find(r => r.filename === filename);
-            if (!result) {
-                showErrorAlert(getTranslation('results_not_found'));
-                this.hideLoading();
-                return;
-            }
-
-            // Fetch full data if needed
-            let fullResult = result;
-            if (!result.questions && result.filename) {
-                try {
-                    const response = await fetch(APIHelper.getApiUrl(`api/results/${result.filename}`));
-                    if (response.ok) {
-                        fullResult = await response.json();
-                        fullResult.filename = result.filename;
-                    }
-                } catch (error) {
-                    logger.error('Error fetching full results for PDF:', error);
-                }
-            }
-
+            const fullResult = await this.fetchFullResultData(filename);
             this.hideLoading();
-            await resultsExporter.exportToPDF(fullResult);
-
+            if (fullResult) await resultsExporter.exportToPDF(fullResult);
         } catch (error) {
             logger.error('Error exporting to PDF:', error);
             this.hideLoading();
@@ -736,37 +741,14 @@ export class ResultsViewer {
 
     /**
      * Export current analytics view to Excel
-     * Fetches full data if needed
      * @param {string} filename - Result filename
      */
     async exportCurrentToExcel(filename) {
         try {
             this.showLoading();
-
-            const result = this.filteredResults?.find(r => r.filename === filename);
-            if (!result) {
-                showErrorAlert(getTranslation('results_not_found'));
-                this.hideLoading();
-                return;
-            }
-
-            // Fetch full data if needed
-            let fullResult = result;
-            if (!result.questions && result.filename) {
-                try {
-                    const response = await fetch(APIHelper.getApiUrl(`api/results/${result.filename}`));
-                    if (response.ok) {
-                        fullResult = await response.json();
-                        fullResult.filename = result.filename;
-                    }
-                } catch (error) {
-                    logger.error('Error fetching full results for Excel:', error);
-                }
-            }
-
+            const fullResult = await this.fetchFullResultData(filename);
             this.hideLoading();
-            await resultsExporter.exportToExcel(fullResult);
-
+            if (fullResult) await resultsExporter.exportToExcel(fullResult);
         } catch (error) {
             logger.error('Error exporting to Excel:', error);
             this.hideLoading();

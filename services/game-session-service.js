@@ -562,20 +562,7 @@ class GameSessionService {
         game.gameState = 'finished';
         game.endTime = new Date().toISOString();
         game.isAdvancing = false;
-
-        // Clear all timers
-        if (game.questionTimer) {
-            clearTimeout(game.questionTimer);
-            game.questionTimer = null;
-        }
-        if (game.advanceTimer) {
-            clearTimeout(game.advanceTimer);
-            game.advanceTimer = null;
-        }
-        if (game.leaderboardTimer) {
-            clearTimeout(game.leaderboardTimer);
-            game.leaderboardTimer = null;
-        }
+        game.clearTimers();
 
         io.to(game.hostId).emit('hide-next-button');
 

@@ -222,11 +222,7 @@ gameSessionService.setSocketBatchService(socketBatchService);
 // Initialize socket rate limiter
 const socketRateLimiter = new SocketRateLimiter(logger);
 socketRateLimiter.startCleanup();
-
-// Helper function for socket event rate limiting
-function checkRateLimit(socketId, eventName, maxPerSecond = 10, socket = null) {
-    return socketRateLimiter.checkRateLimit(socketId, eventName, maxPerSecond, socket);
-}
+const checkRateLimit = socketRateLimiter.checkRateLimit.bind(socketRateLimiter);
 
 // Initialize graceful shutdown handler
 const gracefulShutdownHandler = new GracefulShutdown(logger, { forceTimeout: 10000 });
@@ -235,8 +231,6 @@ app.use(cors(corsValidator.getExpressCorsConfig()));
 
 // Add metrics middleware for Prometheus monitoring
 app.use(metricsService.metricsMiddleware);
-
-// Rate limiting removed - not needed for local classroom deployment
 
 // Add compression middleware for better mobile performance
 app.use(compression({
@@ -285,14 +279,7 @@ app.use('/debug', express.static('debug', createDebugStaticConfig()));
 (async () => {
     const dirsToCreate = ['quizzes', 'results', 'public/uploads'];
     for (const dir of dirsToCreate) {
-        try {
-            await fs.promises.mkdir(dir, { recursive: true });
-        } catch (err) {
-            // Ignore EEXIST errors (directory already exists)
-            if (err.code !== 'EEXIST') {
-                logger.error(`Failed to create directory ${dir}:`, err.message);
-            }
-        }
+        await fs.promises.mkdir(dir, { recursive: true });
     }
     logger.debug('Required directories verified');
 })();
@@ -348,7 +335,7 @@ app.use('/api', createAIGenerationRoutes({
 // ============================================================================
 // Manim Animation Routes
 // ============================================================================
-app.use('/api', createManimRoutes({ logger, CONFIG, manimRenderService }));
+app.use('/api', createManimRoutes({ logger, manimRenderService }));
 
 // Save quiz endpoint
 app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {
@@ -478,8 +465,6 @@ app.get('/api/ping', (req, res) => {
         clientType: isMobile ? 'mobile' : 'desktop'
     });
 });
-
-// Game state management is now handled by GameSessionService and PlayerManagementService
 
 // Socket.IO event handlers
 io.on('connection', (socket) => {

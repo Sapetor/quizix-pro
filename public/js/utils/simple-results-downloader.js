@@ -300,5 +300,3 @@ export const simpleResultsDownloader = new SimpleResultsDownloader();
 
 // Make available globally
 window.simpleResultsDownloader = simpleResultsDownloader;
-
-export default simpleResultsDownloader;

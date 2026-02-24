@@ -6,7 +6,7 @@
 import { QuizGame } from './core/app.js';
 import { translationManager } from './utils/translation-manager.js';
 import { unifiedErrorHandler as errorBoundary } from './utils/unified-error-handler.js';
-import { TIMING, logger } from './core/config.js';
+import { logger } from './core/config.js';
 import { getItem } from './utils/storage-utils.js';
 import { isMobile } from './utils/dom.js';
 import './utils/globals.js'; // Import globals to make them available
@@ -75,8 +75,6 @@ function updateLanguageDropdownDisplay(languageCode) {
 
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
-    const timestamp = new Date().toISOString();
-    logger.debug(`🟠 [${timestamp}] main.js DOMContentLoaded event fired`);
     logger.debug('Quizix Pro - Initializing modular application...');
 
     // FOUC Prevention: Apply saved font size immediately (should already be done in HTML head)
@@ -98,18 +96,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             translationManager.translatePage();
             logger.debug('Page translated with language:', savedLanguage);
 
-            // Ensure main menu is translated specifically (fixes Quick Start Guide translation)
+            // Ensure main menu is translated and language dropdown is updated after DOM renders
             setTimeout(() => {
                 const mainMenuScreen = document.getElementById('main-menu');
                 if (mainMenuScreen) {
                     translationManager.translateContainer(mainMenuScreen);
-                    logger.debug('🔄 Main menu screen translated specifically');
                 }
-            }, 100);
-
-            // Update language dropdown display to show current language
-            // Use setTimeout to ensure DOM is fully rendered
-            setTimeout(() => {
                 updateLanguageDropdownDisplay(savedLanguage);
             }, 100);
 
@@ -121,11 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Initialize the main application
-        const appInitTimestamp = new Date().toISOString();
-        logger.debug(`🟠 [${appInitTimestamp}] Creating QuizGame instance`);
         window.game = new QuizGame();
-        const appCreatedTimestamp = new Date().toISOString();
-        logger.debug(`🟠 [${appCreatedTimestamp}] QuizGame instance created successfully`);
         logger.debug('QuizGame instance created successfully');
 
         // Ensure UI state is synced on page load (fixes cache bug after F5)
@@ -162,13 +150,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         mobileLayoutManager.setEnabled(isMobile());
         logger.debug('Mobile layout manager initialized');
 
-        // Initialize mobile enhancements for touch interactions and UX improvements
-        if (window.mobileEnhancements) {
-            logger.debug('Mobile enhancements initialized successfully');
-        } else {
-            logger.warn('Mobile enhancements not available');
-        }
-
         // Enhanced mobile initialization for better Android/iOS compatibility
         if (isMobileUserAgent) {
             logger.info(`📱 Mobile device detected: ${navigator.userAgent.substring(0, 50)}...`);
@@ -183,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 300);
         }
 
-        logger.debug(`App initialized for ${isMobile ? 'mobile' : 'desktop'} layout`);
+        logger.debug(`App initialized for ${isMobile() ? 'mobile' : 'desktop'} layout`);
 
         // Start onboarding tutorial for first-time users
         // Delay slightly to ensure UI is fully rendered
@@ -206,24 +187,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 logger.debug('window.game.toggleTheme not available');
             }
         };
-
-        // Theme initialization is handled by SettingsManager
-        // Remove conflicting theme initialization to prevent race conditions
-        logger.debug('Theme initialization delegated to SettingsManager');
-
-        // Initialize global font size after DOM is ready
-        setTimeout(() => {
-            errorBoundary.safeDOMOperation(() => {
-                const savedFontSize = getItem('globalFontSize', 'medium');
-                logger.debug('Setting global font size to:', savedFontSize);
-                if (window.setGlobalFontSize) {
-                    window.setGlobalFontSize(savedFontSize);
-                    logger.debug('Global font size initialized successfully');
-                } else {
-                    logger.warn('setGlobalFontSize function not available yet');
-                }
-            }, 'font-size-init');
-        }, TIMING.MATHJAX_TIMEOUT);
 
         // Initialize browser optimizations
         logger.debug('Browser optimization status:', browserOptimizer.getOptimizationStatus());

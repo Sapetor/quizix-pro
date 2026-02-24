@@ -7,11 +7,10 @@ const express = require('express');
  * Factory function to create Manim routes with dependencies
  * @param {Object} options - Configuration options
  * @param {Object} options.logger - Logger instance
- * @param {Object} options.CONFIG - Application config
  * @param {Object} options.manimRenderService - Manim render service instance
  * @returns {express.Router} Configured router
  */
-function createManimRoutes({ logger, CONFIG, manimRenderService }) {
+function createManimRoutes({ logger, manimRenderService }) {
     if (!logger) {
         throw new Error('logger is required for Manim routes');
     }

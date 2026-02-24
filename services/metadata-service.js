@@ -40,11 +40,7 @@ class MetadataService {
     async initialize() {
         try {
             // Ensure quizzes directory exists
-            try {
-                await fs.access(this.quizzesDir);
-            } catch {
-                await fs.mkdir(this.quizzesDir, { recursive: true });
-            }
+            await fs.mkdir(this.quizzesDir, { recursive: true });
 
             // Try to load existing metadata
             try {

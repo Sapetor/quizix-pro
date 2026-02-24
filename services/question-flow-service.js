@@ -150,15 +150,6 @@ class QuestionFlowService {
     }
 
     /**
-   * Get correct answer data for a question (alias for buildCorrectAnswerData)
-   * @param {Object} question - Question data
-   * @returns {Object} Correct answer data
-   */
-    getCorrectAnswerData(question) {
-        return this.buildCorrectAnswerData(question);
-    }
-
-    /**
    * Build correct answer data for a question
    * @param {Object} question - Question data
    * @returns {Object} Correct answer data
@@ -227,35 +218,20 @@ class QuestionFlowService {
    * @param {Object} io - Socket.IO instance
    */
     emitPlayerResults(game, io) {
-    // Get explanation and correct answer data from current question
         const currentQuestion = game.quiz.questions[game.currentQuestion];
-        const explanation = currentQuestion?.explanation || null;
-        const correctAnswerData = this.getCorrectAnswerData(currentQuestion);
+        const correctAnswerData = this.buildCorrectAnswerData(currentQuestion);
 
         game.players.forEach((player, playerId) => {
             const playerAnswer = player.answers[game.currentQuestion];
-
-            if (playerAnswer) {
-                io.to(playerId).emit('player-result', {
-                    isCorrect: playerAnswer.isCorrect,
-                    points: playerAnswer.points,
-                    totalScore: player.score,
-                    explanation: explanation,
-                    questionType: correctAnswerData.questionType,
-                    correctAnswer: correctAnswerData.correctAnswer,
-                    correctAnswers: correctAnswerData.correctAnswers
-                });
-            } else {
-                io.to(playerId).emit('player-result', {
-                    isCorrect: false,
-                    points: 0,
-                    totalScore: player.score,
-                    explanation: explanation,
-                    questionType: correctAnswerData.questionType,
-                    correctAnswer: correctAnswerData.correctAnswer,
-                    correctAnswers: correctAnswerData.correctAnswers
-                });
-            }
+            io.to(playerId).emit('player-result', {
+                isCorrect: playerAnswer ? playerAnswer.isCorrect : false,
+                points: playerAnswer ? playerAnswer.points : 0,
+                totalScore: player.score,
+                explanation: currentQuestion?.explanation || null,
+                questionType: correctAnswerData.questionType,
+                correctAnswer: correctAnswerData.correctAnswer,
+                correctAnswers: correctAnswerData.correctAnswers
+            });
         });
 
         this.logger.debug(`Emitted results to ${game.players.size} players`);

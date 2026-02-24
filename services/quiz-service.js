@@ -150,23 +150,24 @@ class QuizService {
     }
 
     /**
+     * Validate filename and resolve the full path, throwing on invalid input
+     * @param {string} filename - Filename to validate
+     * @returns {string} Resolved file path
+     */
+    resolveQuizPath(filename) {
+        if (!this.validateFilename(filename) || !filename.endsWith('.json')) {
+            const err = new Error('Invalid filename');
+            err.messageKey = 'error_invalid_filename';
+            throw err;
+        }
+        return path.join(this.quizzesDir, filename);
+    }
+
+    /**
      * Load a specific quiz
      */
     async loadQuiz(filename) {
-        // Validate filename to prevent path traversal
-        if (!this.validateFilename(filename)) {
-            const err = new Error('Invalid filename');
-            err.messageKey = 'error_invalid_filename';
-            throw err;
-        }
-
-        if (!filename.endsWith('.json')) {
-            const err = new Error('Invalid filename');
-            err.messageKey = 'error_invalid_filename';
-            throw err;
-        }
-
-        const filePath = path.join(this.quizzesDir, filename);
+        const filePath = this.resolveQuizPath(filename);
 
         try {
             await fs.access(filePath);
@@ -176,28 +177,14 @@ class QuizService {
             throw err;
         }
 
-        const data = JSON.parse(await fs.readFile(filePath, 'utf8'));
-        return data;
+        return JSON.parse(await fs.readFile(filePath, 'utf8'));
     }
 
     /**
      * Delete a quiz file
      */
     async deleteQuiz(filename) {
-        // Validate filename to prevent path traversal
-        if (!this.validateFilename(filename)) {
-            const err = new Error('Invalid filename');
-            err.messageKey = 'error_invalid_filename';
-            throw err;
-        }
-
-        if (!filename.endsWith('.json')) {
-            const err = new Error('Invalid filename');
-            err.messageKey = 'error_invalid_filename';
-            throw err;
-        }
-
-        const filePath = path.join(this.quizzesDir, filename);
+        const filePath = this.resolveQuizPath(filename);
 
         try {
             await fs.access(filePath);

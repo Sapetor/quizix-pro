@@ -715,15 +715,6 @@ export class GameManager {
     }
 
     /**
-     * Reset button styles (from monolithic version)
-     */
-    resetButtonStyles(options) {
-        options.forEach(option => {
-            option.classList.remove('correct-answer-highlight', 'host-correct-answer', 'hidden');
-        });
-    }
-
-    /**
      * Highlight correct answers on host display (original monolithic style)
      */
     highlightCorrectAnswers(data) {
@@ -909,14 +900,6 @@ export class GameManager {
         const gameState = this.stateManager.getGameState();
         if (!gameState.isHost || !data) return;
 
-        logger.debug('Answer statistics data received:', data);
-        logger.debug('Data structure:', {
-            answeredPlayers: data.answeredPlayers,
-            totalPlayers: data.totalPlayers,
-            answerCounts: data.answerCounts,
-            questionType: data.questionType || data.type
-        });
-
         // Get existing statistics container
         const statisticsContainer = dom.get('answer-statistics');
         if (!statisticsContainer) {
@@ -925,43 +908,38 @@ export class GameManager {
         }
 
         // Show statistics container
-        if (statisticsContainer) {
-            statisticsContainer.classList.remove('hidden');
-            statisticsContainer.style.display = 'block';
+        statisticsContainer.classList.remove('hidden');
+        statisticsContainer.style.display = 'block';
 
-            // Update response counts
-            dom.setContent('responses-count', data.answeredPlayers || 0);
-            dom.setContent('total-players', data.totalPlayers || 0);
+        // Update response counts
+        dom.setContent('responses-count', data.answeredPlayers || 0);
+        dom.setContent('total-players', data.totalPlayers || 0);
 
-            // Update individual answer statistics
-            const questionType = data.questionType || data.type;
-            logger.debug('Question type:', questionType, 'Answer counts:', data.answerCounts);
+        // Update individual answer statistics
+        const questionType = data.questionType || data.type;
 
-            if (questionType === 'multiple-choice' || questionType === 'multiple-correct') {
-                const optionCount = data.optionCount || Object.keys(data.answerCounts).length || 4;
-                this.showMultipleChoiceStatistics(optionCount);
-                for (let i = 0; i < optionCount; i++) {
-                    const count = data.answerCounts[i] || 0;
-                    logger.debug(`Updating option ${i}: ${count} answers`);
-                    this.updateStatItem(i, count, data.answeredPlayers || 0);
-                }
-            } else if (questionType === 'true-false') {
-                this.showTrueFalseStatistics();
-                const trueCount = data.answerCounts['true'] || data.answerCounts[0] || 0;
-                const falseCount = data.answerCounts['false'] || data.answerCounts[1] || 0;
-                logger.debug(`True/False counts: true=${trueCount}, false=${falseCount}`);
-                this.updateStatItem(0, trueCount, data.answeredPlayers || 0);
-                this.updateStatItem(1, falseCount, data.answeredPlayers || 0);
-            } else if (questionType === 'numeric') {
-                this.showNumericStatistics(data.answerCounts);
-            } else if (questionType === 'ordering') {
-                this.showOrderingStatistics(data.answerCounts);
+        if (questionType === 'multiple-choice' || questionType === 'multiple-correct') {
+            const optionCount = data.optionCount || Object.keys(data.answerCounts).length || 4;
+            this.showMultipleChoiceStatistics(optionCount);
+            for (let i = 0; i < optionCount; i++) {
+                const count = data.answerCounts[i] || 0;
+                this.updateStatItem(i, count, data.answeredPlayers || 0);
             }
+        } else if (questionType === 'true-false') {
+            this.showTrueFalseStatistics();
+            const trueCount = data.answerCounts['true'] || data.answerCounts[0] || 0;
+            const falseCount = data.answerCounts['false'] || data.answerCounts[1] || 0;
+            this.updateStatItem(0, trueCount, data.answeredPlayers || 0);
+            this.updateStatItem(1, falseCount, data.answeredPlayers || 0);
+        } else if (questionType === 'numeric') {
+            this.showNumericStatistics(data.answerCounts);
+        } else if (questionType === 'ordering') {
+            this.showOrderingStatistics(data.answerCounts);
+        }
 
-            // Render score breakdown for host (if enabled)
-            if (data.scoringInfo) {
-                this.renderHostBreakdown(data.scoringInfo);
-            }
+        // Render score breakdown for host (if enabled)
+        if (data.scoringInfo) {
+            this.renderHostBreakdown(data.scoringInfo);
         }
     }
 
@@ -1924,25 +1902,6 @@ export class GameManager {
     setStaticTimerDisplay(seconds) {
         this.timerManager.setStaticTimerDisplay(seconds);
     }
-
-    // ===============================
-    // DEBUG METHODS - Call from browser console
-    // ===============================
-
-    /**
-     * Debug game state - call debugGame() from console
-     */
-
-
-    /**
-     * Debug MathJax state - call debugMathJax() from console
-     */
-
-
-    /**
-     * Debug LaTeX elements - call debugLatex() from console
-     */
-
 
     /**
      * Save game results to server for later download

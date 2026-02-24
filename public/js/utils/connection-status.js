@@ -354,5 +354,3 @@ export const connectionStatus = new ConnectionStatus();
 
 // Make globally available for translation updates
 window.connectionStatus = connectionStatus;
-
-export default connectionStatus;

@@ -239,16 +239,8 @@ export class PreviewManager {
         const nextBtn = dom.get('preview-next-split');
         const scrollBtn = dom.get('scroll-to-question');
 
-        logger.debug('🔘 Preview navigation buttons found:', {
-            prevBtn: !!prevBtn,
-            nextBtn: !!nextBtn,
-            scrollBtn: !!scrollBtn
-        });
-
         // Store listener references for cleanup
         this.listeners.prevBtn = () => {
-            const questionItems = document.querySelectorAll('.question-item');
-            logger.debug(`Prev button clicked: current=${this.currentPreviewQuestion}, total=${questionItems.length}`);
 
             // Set manual navigation flag to prevent auto-scroll conflicts
             this.manualNavigationInProgress = true;
@@ -267,7 +259,6 @@ export class PreviewManager {
         this.listeners.nextBtn = () => {
             const questionItems = document.querySelectorAll('.question-item');
             const maxIndex = questionItems.length - 1;
-            logger.debug(`Next button clicked: current=${this.currentPreviewQuestion}, max=${maxIndex}, total=${questionItems.length}`);
 
             // Set manual navigation flag to prevent auto-scroll conflicts
             this.manualNavigationInProgress = true;
@@ -289,21 +280,12 @@ export class PreviewManager {
 
         if (prevBtn) {
             prevBtn.addEventListener('click', this.listeners.prevBtn);
-            logger.debug('✅ Prev button listener attached');
-        } else {
-            logger.warn('⚠️ Prev button not found - navigation may not work');
         }
-
         if (nextBtn) {
             nextBtn.addEventListener('click', this.listeners.nextBtn);
-            logger.debug('✅ Next button listener attached');
-        } else {
-            logger.warn('⚠️ Next button not found - navigation may not work');
         }
-
         if (scrollBtn) {
             scrollBtn.addEventListener('click', this.listeners.scrollBtn);
-            logger.debug('✅ Scroll button listener attached');
         }
 
         // Real-time updates for split screen
@@ -379,19 +361,6 @@ export class PreviewManager {
 
         // Clear simple MathJax cache for fresh rendering
         this.mathJaxService?.clearCache?.();
-        logger.debug('MathJax cache cleared for fresh preview rendering');
-
-        // Track who called updateSplitPreview
-        const stack = new Error().stack;
-        const caller = stack.split('\n')[2]?.trim() || 'unknown';
-        logger.debug(`UPDATE SPLIT PREVIEW: total=${totalQuestions}, current=${this.currentPreviewQuestion}, caller=${caller}`);
-
-        // Log all question items and their indices
-        questionItems.forEach((item, index) => {
-            const questionType = item.querySelector('.question-type')?.value || 'unknown';
-            const questionText = item.querySelector('.question-text')?.value?.substring(0, 30) || 'empty';
-            logger.debug(`Question ${index}: type=${questionType}, text="${questionText}"`);
-        });
 
         if (totalQuestions === 0) {
             this.showEmptySplitPreview();
@@ -411,38 +380,22 @@ export class PreviewManager {
         // Get current question data
         const currentQuestion = questionItems[this.currentPreviewQuestion];
 
-        logger.debug('🔍 QUESTION RETRIEVAL:', {
-            requestedIndex: this.currentPreviewQuestion,
-            totalItems: questionItems.length,
-            foundQuestion: !!currentQuestion,
-            className: currentQuestion?.className || 'none'
-        });
-
         if (!currentQuestion) {
-            logger.error(`❌ Current question not found at index ${this.currentPreviewQuestion}, total questions: ${totalQuestions}`);
-            logger.debug('📋 Available question items:', questionItems.length, 'DOM nodes found');
-
-            // Only reset to 0 if we have questions and current index is invalid
-            if (totalQuestions > 0 && questionItems.length > 0) {
-                logger.debug('🔄 Resetting to question 0');
+            // Reset to question 0 if current index is invalid
+            if (totalQuestions > 0) {
                 this.currentPreviewQuestion = 0;
                 const firstQuestion = questionItems[0];
-                if (!firstQuestion) {
-                    logger.error('❌ First question also not found, aborting preview update');
-                    return;
-                }
+                if (!firstQuestion) return;
 
                 const questionData = this.extractQuestionDataForPreview(firstQuestion);
                 questionData.questionNumber = 1;
                 questionData.totalQuestions = totalQuestions;
                 this.previewRenderer.renderSplitQuestionPreview(questionData);
 
-                // Render MathJax after content is ready
                 setTimeout(() => {
                     this.previewRenderer.renderMathJaxForPreview();
                 }, 100);
             } else {
-                logger.warn('📭 No questions available for preview');
                 this.showEmptySplitPreview();
             }
             return;
@@ -451,16 +404,6 @@ export class PreviewManager {
         const questionData = this.extractQuestionDataForPreview(currentQuestion);
         questionData.questionNumber = this.currentPreviewQuestion + 1;
         questionData.totalQuestions = totalQuestions;
-
-        logger.debug(`📊 EXTRACTED DATA FOR Q${questionData.questionNumber}:`, {
-            hasQuestion: !!questionData.question,
-            questionLength: questionData.question?.length || 0,
-            questionPreview: questionData.question?.substring(0, 50) + '...' || 'empty',
-            type: questionData.type,
-            hasOptions: !!questionData.options,
-            optionsCount: questionData.options?.length || 0
-        });
-
 
         this.previewRenderer.renderSplitQuestionPreview(questionData);
 
@@ -541,22 +484,15 @@ export class PreviewManager {
      * Uses QuestionTypeRegistry for consistent extraction
      */
     extractQuestionDataForPreview(questionItem) {
-        logger.debug('Extracting data from question item:', questionItem);
-
         const questionText = questionItem.querySelector('.question-text')?.value?.trim() || translationManager.getTranslationSync('enter_question_preview') || 'Enter question text...';
         const questionType = questionItem.querySelector('.question-type')?.value || 'multiple-choice';
         const imageElement = questionItem.querySelector('.question-image');
         const imageUrl = imageElement ? imageElement.dataset.url || '' : '';
         const imageWebpUrl = imageElement ? imageElement.dataset.webpUrl || '' : '';
 
-        logger.debug('Question text:', questionText);
-        logger.debug('Question type:', questionType);
-        logger.debug('Image URL:', imageUrl, 'WebP:', imageWebpUrl);
-
         // Use QuestionTypeRegistry for consistent extraction
         const typeSpecificData = QuestionTypeRegistry.extractData(questionType, questionItem);
 
-        // Build extracted data with consistent field names
         const extractedData = {
             question: questionText,
             type: questionType,
@@ -571,7 +507,6 @@ export class PreviewManager {
             extractedData.video = questionVideo.dataset.videoUrl;
         }
 
-        logger.debug('Extracted question data:', extractedData);
         return extractedData;
     }
 
@@ -626,32 +561,19 @@ export class PreviewManager {
         // Only work when split preview is active
         if (!this.previewMode) return;
 
-        // Add a flag to prevent auto-scroll during manual navigation
-        if (this.manualNavigationInProgress) {
-            logger.debug('Manual navigation in progress, skipping auto-scroll');
-            return;
-        }
+        if (this.manualNavigationInProgress) return;
 
         // Find which question this input belongs to
         const questionItem = inputElement.closest('.question-item');
         if (!questionItem) return;
 
-        // Find the index of this question
         const questionItems = Array.from(document.querySelectorAll('.question-item'));
         const questionIndex = questionItems.indexOf(questionItem);
 
-        logger.debug(`📝 Auto-scroll triggered: questionIndex=${questionIndex}, current=${this.currentPreviewQuestion}, total=${questionItems.length}`);
-
-        if (questionIndex !== -1 && questionIndex !== this.currentPreviewQuestion) {
-            // Validate the index before updating
-            if (questionIndex >= 0 && questionIndex < questionItems.length) {
-                logger.debug(`🎯 Auto-scrolling preview from question ${this.currentPreviewQuestion + 1} to ${questionIndex + 1}`);
-                this.currentPreviewQuestion = questionIndex;
-                this.updateSplitPreview();
-                // updateSplitPreview() already handles rendering
-            } else {
-                logger.debug(`❌ Invalid questionIndex: ${questionIndex}, not updating preview`);
-            }
+        if (questionIndex !== -1 && questionIndex !== this.currentPreviewQuestion &&
+            questionIndex >= 0 && questionIndex < questionItems.length) {
+            this.currentPreviewQuestion = questionIndex;
+            this.updateSplitPreview();
         }
     }
 
@@ -799,15 +721,8 @@ export class PreviewManager {
             body.style.height = this.originalBodyHeight;
         }
 
-        // Remove mobile preview overlay container
-        const mobilePreview = document.getElementById('mobile-preview-container');
-        if (mobilePreview) {
-            mobilePreview.remove();
-            logger.debug('Mobile preview overlay removed');
-        }
-
-        // Clean up listeners
-        this.cleanupMobilePreviewListeners();
+        // Remove mobile preview overlay container (also cleans up its event listeners)
+        document.getElementById('mobile-preview-container')?.remove();
     }
 
     /**
@@ -1419,14 +1334,6 @@ export class PreviewManager {
         if (nextBtn) {
             nextBtn.disabled = this.currentPreviewQuestion >= totalQuestions - 1;
         }
-    }
-
-    /**
-     * Cleanup mobile preview listeners
-     */
-    cleanupMobilePreviewListeners() {
-        // Mobile preview listeners are cleaned up when container is removed
-        // Touch listeners are also removed with the container
     }
 
     /**

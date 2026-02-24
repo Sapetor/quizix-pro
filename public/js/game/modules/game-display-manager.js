@@ -124,12 +124,6 @@ export class GameDisplayManager {
         img.className = 'question-image';
         img.src = originalSrc;
         img.alt = 'Question Image';
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '300px';
-        img.style.height = 'auto';
-        img.style.borderRadius = '8px';
-        img.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-        img.style.margin = '15px 0';
 
         // Silent error handling - hide container on load failure
         img.onerror = () => {

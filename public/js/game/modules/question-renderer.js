@@ -4,7 +4,7 @@
  * Extracted from GameManager for better separation of concerns
  */
 
-import { translationManager, getTranslation, getTrueFalseText } from '../../utils/translation-manager.js';
+import { translationManager } from '../../utils/translation-manager.js';
 import { logger, TIMING, COLORS } from '../../core/config.js';
 import { escapeHtmlPreservingLatex, escapeHtml, formatCodeBlocks } from '../../utils/dom.js';
 import { QuestionTypeRegistry } from '../../utils/question-type-registry.js';
@@ -125,31 +125,6 @@ export class QuestionRenderer {
 
 
     /**
-     * Shuffle array using Fisher-Yates algorithm
-     */
-    shuffleArray(array) {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-    }
-
-    /**
-     * Reset button styles for options
-     */
-    resetButtonStyles(options) {
-        options.forEach(option => {
-            option.classList.remove('correct', 'incorrect', 'selected');
-            option.style.background = '';
-            option.style.border = '';
-            option.style.transform = '';
-        });
-    }
-
-
-    /**
      * Hide answer statistics during question display
      */
     hideAnswerStatistics() {
@@ -176,39 +151,6 @@ export class QuestionRenderer {
             // Update answer options (still specific to question renderer)
             this.updatePlayerOptions(data, optionsContainer);
         }, TIMING.RENDER_DELAY);
-    }
-
-    /**
-     * Update player question content with LaTeX support
-     */
-    updatePlayerQuestionContent(data, questionElement) {
-        if (!questionElement) {
-            logger.warn('Player question element not found');
-            return;
-        }
-
-        logger.debug('Updating player question content');
-
-        // Add question type indicator for styling BEFORE displayQuestionText
-        // (displayQuestionText adds tex2jax_process class for FOUC prevention)
-        questionElement.className = `question-display player-question ${data.type}-question`;
-
-        // Format and display question text using display manager
-        this.displayManager.displayQuestionText(questionElement, data.question);
-
-        // Add subtle instruction for multiple correct questions
-        if (data.type === 'multiple-correct') {
-            const instruction = document.createElement('div');
-            instruction.className = 'multiple-correct-instruction';
-            instruction.innerHTML = `<small>💡 ${translationManager.getTranslationSync('multiple_correct_instruction')}</small>`;
-            questionElement.appendChild(instruction);
-        }
-
-        // Set data attributes
-        questionElement.setAttribute('data-question-type', data.type);
-        questionElement.setAttribute('data-question-number', data.questionNumber);
-
-        logger.debug('Player question content updated successfully');
     }
 
     /**
