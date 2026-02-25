@@ -1,0 +1,58 @@
+{
+  "title": "Demo: Matem\u00e1ticas y Ciencias B\u00e1sicas",
+  "id": "demo-quiz-es",
+  "created": "2026-01-01T00:00:00.000Z",
+  "isDemo": true,
+  "questions": [
+    {
+      "question": "\u00bfCu\u00e1l es el \u00e1rea de un c\u00edrculo con radio 5?",
+      "type": "multiple-choice",
+      "difficulty": "easy",
+      "options": [
+        "25\u03c0 \u2248 78,54",
+        "10\u03c0 \u2248 31,42",
+        "5\u03c0 \u2248 15,71",
+        "50\u03c0 \u2248 157,08"
+      ],
+      "correctAnswer": 0,
+      "timeLimit": 30,
+      "explanation": "El \u00e1rea de un c\u00edrculo es \u03c0r\u00b2. Con r = 5: \u03c0 \u00d7 5\u00b2 = 25\u03c0 \u2248 78,54"
+    },
+    {
+      "question": "El agua hierve a 100\u00b0C al nivel del mar.",
+      "type": "true-false",
+      "difficulty": "easy",
+      "options": ["Verdadero", "Falso"],
+      "correctAnswer": "true",
+      "timeLimit": 30,
+      "explanation": "A presi\u00f3n atmosf\u00e9rica est\u00e1ndar (1 atm), el agua hierve exactamente a 100\u00b0C (212\u00b0F)."
+    },
+    {
+      "question": "\u00bfCu\u00e1nto es \u221a144?",
+      "type": "numeric",
+      "difficulty": "easy",
+      "correctAnswer": 12,
+      "tolerance": 0,
+      "timeLimit": 30,
+      "explanation": "\u221a144 = 12 porque 12 \u00d7 12 = 144."
+    },
+    {
+      "question": "\u00bfCu\u00e1les de estos son n\u00fameros primos? (Selecciona todos los correctos)",
+      "type": "multiple-correct",
+      "difficulty": "medium",
+      "options": ["2", "4", "7", "9", "11"],
+      "correctAnswers": [0, 2, 4],
+      "timeLimit": 30,
+      "explanation": "Los n\u00fameros primos solo son divisibles por 1 y por s\u00ed mismos. 2, 7 y 11 son primos. 4 = 2\u00d72 y 9 = 3\u00d73 no lo son."
+    },
+    {
+      "question": "Ordena estos planetas por distancia al Sol (del m\u00e1s cercano al m\u00e1s lejano).",
+      "type": "ordering",
+      "difficulty": "medium",
+      "options": ["Mercurio", "Venus", "Tierra", "Marte"],
+      "correctOrder": [0, 1, 2, 3],
+      "timeLimit": 30,
+      "explanation": "El orden desde el Sol: Mercurio (0,39 UA), Venus (0,72 UA), Tierra (1 UA), Marte (1,52 UA)."
+    }
+  ]
+}

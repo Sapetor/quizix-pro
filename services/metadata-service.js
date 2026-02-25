@@ -68,6 +68,11 @@ class MetadataService {
                 }
             }
 
+            // Seed demo quizzes on first boot (when no quizzes exist)
+            if (Object.keys(this.metadata.quizzes).length === 0) {
+                await this.seedDemoQuizzes();
+            }
+
             // Start token cleanup interval
             this.tokenCleanupInterval = setInterval(() => this.cleanupExpiredTokens(), 5 * 60 * 1000);
 
@@ -109,6 +114,60 @@ class MetadataService {
             this.logger.info(`Migrated ${quizFiles.length} existing quizzes to metadata`);
         } catch (error) {
             this.logger.error('Failed to migrate existing quizzes:', error);
+        }
+    }
+
+    /**
+     * Seed demo quizzes on first boot when no quizzes exist
+     */
+    async seedDemoQuizzes() {
+        const seedDir = path.join(__dirname, '..', 'seeds', 'demo-quizzes');
+        try {
+            const files = await fs.readdir(seedDir);
+            const jsonFiles = files.filter(f => f.endsWith('.json'));
+
+            if (jsonFiles.length === 0) {
+                this.logger.warn('No demo quiz seed files found');
+                return;
+            }
+
+            // Create "Demo Quizzes" folder
+            const folderId = uuidv4();
+            this.metadata.folders[folderId] = {
+                id: folderId,
+                name: 'Demo Quizzes',
+                parentId: null,
+                passwordHash: null,
+                created: new Date().toISOString(),
+                sortOrder: 0
+            };
+
+            // Copy each seed file to quizzes/ and register in metadata
+            for (let i = 0; i < jsonFiles.length; i++) {
+                const filename = jsonFiles[i];
+                const src = path.join(seedDir, filename);
+                const dest = path.join(this.quizzesDir, filename);
+
+                await fs.copyFile(src, dest);
+
+                const quizData = JSON.parse(await fs.readFile(dest, 'utf8'));
+                this.metadata.quizzes[filename] = {
+                    displayName: quizData.title || filename.replace('.json', ''),
+                    folderId,
+                    passwordHash: null,
+                    created: quizData.created || new Date().toISOString(),
+                    sortOrder: i
+                };
+            }
+
+            await this.saveMetadata();
+            this.logger.info(`Seeded ${jsonFiles.length} demo quizzes in "Demo Quizzes" folder`);
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                this.logger.debug('No seeds/demo-quizzes directory found, skipping demo seeding');
+            } else {
+                this.logger.warn('Failed to seed demo quizzes:', error.message);
+            }
         }
     }
 

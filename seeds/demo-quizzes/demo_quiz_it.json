@@ -1,0 +1,58 @@
+{
+  "title": "Demo: Matematica e Scienze di base",
+  "id": "demo-quiz-it",
+  "created": "2026-01-01T00:00:00.000Z",
+  "isDemo": true,
+  "questions": [
+    {
+      "question": "Qual \u00e8 l'area di un cerchio con raggio 5?",
+      "type": "multiple-choice",
+      "difficulty": "easy",
+      "options": [
+        "25\u03c0 \u2248 78,54",
+        "10\u03c0 \u2248 31,42",
+        "5\u03c0 \u2248 15,71",
+        "50\u03c0 \u2248 157,08"
+      ],
+      "correctAnswer": 0,
+      "timeLimit": 30,
+      "explanation": "L'area di un cerchio \u00e8 \u03c0r\u00b2. Con r = 5: \u03c0 \u00d7 5\u00b2 = 25\u03c0 \u2248 78,54"
+    },
+    {
+      "question": "L'acqua bolle a 100\u00b0C al livello del mare.",
+      "type": "true-false",
+      "difficulty": "easy",
+      "options": ["Vero", "Falso"],
+      "correctAnswer": "true",
+      "timeLimit": 30,
+      "explanation": "Alla pressione atmosferica standard (1 atm), l'acqua bolle esattamente a 100\u00b0C (212\u00b0F)."
+    },
+    {
+      "question": "Quanto fa \u221a144?",
+      "type": "numeric",
+      "difficulty": "easy",
+      "correctAnswer": 12,
+      "tolerance": 0,
+      "timeLimit": 30,
+      "explanation": "\u221a144 = 12 perch\u00e9 12 \u00d7 12 = 144."
+    },
+    {
+      "question": "Quali di questi sono numeri primi? (Seleziona tutti i corretti)",
+      "type": "multiple-correct",
+      "difficulty": "medium",
+      "options": ["2", "4", "7", "9", "11"],
+      "correctAnswers": [0, 2, 4],
+      "timeLimit": 30,
+      "explanation": "I numeri primi sono divisibili solo per 1 e per se stessi. 2, 7 e 11 sono primi. 4 = 2\u00d72 e 9 = 3\u00d73 non lo sono."
+    },
+    {
+      "question": "Ordina questi pianeti per distanza dal Sole (dal pi\u00f9 vicino al pi\u00f9 lontano).",
+      "type": "ordering",
+      "difficulty": "medium",
+      "options": ["Mercurio", "Venere", "Terra", "Marte"],
+      "correctOrder": [0, 1, 2, 3],
+      "timeLimit": 30,
+      "explanation": "L'ordine dal Sole: Mercurio (0,39 UA), Venere (0,72 UA), Terra (1 UA), Marte (1,52 UA)."
+    }
+  ]
+}

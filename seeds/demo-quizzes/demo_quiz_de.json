@@ -1,0 +1,58 @@
+{
+  "title": "Demo: Mathematik & Naturwissenschaften Grundlagen",
+  "id": "demo-quiz-de",
+  "created": "2026-01-01T00:00:00.000Z",
+  "isDemo": true,
+  "questions": [
+    {
+      "question": "Wie gro\u00df ist die Fl\u00e4che eines Kreises mit Radius 5?",
+      "type": "multiple-choice",
+      "difficulty": "easy",
+      "options": [
+        "25\u03c0 \u2248 78,54",
+        "10\u03c0 \u2248 31,42",
+        "5\u03c0 \u2248 15,71",
+        "50\u03c0 \u2248 157,08"
+      ],
+      "correctAnswer": 0,
+      "timeLimit": 30,
+      "explanation": "Die Fl\u00e4che eines Kreises ist \u03c0r\u00b2. Mit r = 5: \u03c0 \u00d7 5\u00b2 = 25\u03c0 \u2248 78,54"
+    },
+    {
+      "question": "Wasser kocht bei 100\u00b0C auf Meeresh\u00f6he.",
+      "type": "true-false",
+      "difficulty": "easy",
+      "options": ["Wahr", "Falsch"],
+      "correctAnswer": "true",
+      "timeLimit": 30,
+      "explanation": "Bei Standardatmosph\u00e4rendruck (1 atm) kocht Wasser genau bei 100\u00b0C (212\u00b0F)."
+    },
+    {
+      "question": "Was ist \u221a144?",
+      "type": "numeric",
+      "difficulty": "easy",
+      "correctAnswer": 12,
+      "tolerance": 0,
+      "timeLimit": 30,
+      "explanation": "\u221a144 = 12, weil 12 \u00d7 12 = 144."
+    },
+    {
+      "question": "Welche davon sind Primzahlen? (Alle zutreffenden ausw\u00e4hlen)",
+      "type": "multiple-correct",
+      "difficulty": "medium",
+      "options": ["2", "4", "7", "9", "11"],
+      "correctAnswers": [0, 2, 4],
+      "timeLimit": 30,
+      "explanation": "Primzahlen sind nur durch 1 und sich selbst teilbar. 2, 7 und 11 sind Primzahlen. 4 = 2\u00d72 und 9 = 3\u00d73 sind es nicht."
+    },
+    {
+      "question": "Ordne diese Planeten nach Entfernung von der Sonne (n\u00e4chster zuerst).",
+      "type": "ordering",
+      "difficulty": "medium",
+      "options": ["Merkur", "Venus", "Erde", "Mars"],
+      "correctOrder": [0, 1, 2, 3],
+      "timeLimit": 30,
+      "explanation": "Die Reihenfolge von der Sonne: Merkur (0,39 AE), Venus (0,72 AE), Erde (1 AE), Mars (1,52 AE)."
+    }
+  ]
+}

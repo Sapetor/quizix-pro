@@ -1,0 +1,58 @@
+{
+  "title": "Demo: Matem\u00e1tica e Ci\u00eancias B\u00e1sicas",
+  "id": "demo-quiz-pt",
+  "created": "2026-01-01T00:00:00.000Z",
+  "isDemo": true,
+  "questions": [
+    {
+      "question": "Qual \u00e9 a \u00e1rea de um c\u00edrculo com raio 5?",
+      "type": "multiple-choice",
+      "difficulty": "easy",
+      "options": [
+        "25\u03c0 \u2248 78,54",
+        "10\u03c0 \u2248 31,42",
+        "5\u03c0 \u2248 15,71",
+        "50\u03c0 \u2248 157,08"
+      ],
+      "correctAnswer": 0,
+      "timeLimit": 30,
+      "explanation": "A \u00e1rea de um c\u00edrculo \u00e9 \u03c0r\u00b2. Com r = 5: \u03c0 \u00d7 5\u00b2 = 25\u03c0 \u2248 78,54"
+    },
+    {
+      "question": "A \u00e1gua ferve a 100\u00b0C ao n\u00edvel do mar.",
+      "type": "true-false",
+      "difficulty": "easy",
+      "options": ["Verdadeiro", "Falso"],
+      "correctAnswer": "true",
+      "timeLimit": 30,
+      "explanation": "Na press\u00e3o atmosf\u00e9rica padr\u00e3o (1 atm), a \u00e1gua ferve exatamente a 100\u00b0C (212\u00b0F)."
+    },
+    {
+      "question": "Quanto \u00e9 \u221a144?",
+      "type": "numeric",
+      "difficulty": "easy",
+      "correctAnswer": 12,
+      "tolerance": 0,
+      "timeLimit": 30,
+      "explanation": "\u221a144 = 12 porque 12 \u00d7 12 = 144."
+    },
+    {
+      "question": "Quais destes s\u00e3o n\u00fameros primos? (Selecione todos os corretos)",
+      "type": "multiple-correct",
+      "difficulty": "medium",
+      "options": ["2", "4", "7", "9", "11"],
+      "correctAnswers": [0, 2, 4],
+      "timeLimit": 30,
+      "explanation": "N\u00fameros primos s\u00f3 s\u00e3o divis\u00edveis por 1 e por si mesmos. 2, 7 e 11 s\u00e3o primos. 4 = 2\u00d72 e 9 = 3\u00d73 n\u00e3o s\u00e3o."
+    },
+    {
+      "question": "Ordene estes planetas por dist\u00e2ncia ao Sol (do mais pr\u00f3ximo ao mais distante).",
+      "type": "ordering",
+      "difficulty": "medium",
+      "options": ["Merc\u00fario", "V\u00e9nus", "Terra", "Marte"],
+      "correctOrder": [0, 1, 2, 3],
+      "timeLimit": 30,
+      "explanation": "A ordem a partir do Sol: Merc\u00fario (0,39 UA), V\u00e9nus (0,72 UA), Terra (1 UA), Marte (1,52 UA)."
+    }
+  ]
+}

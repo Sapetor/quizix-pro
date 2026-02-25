@@ -1,0 +1,58 @@
+{
+  "title": "\u30c7\u30e2: \u6570\u5b66\u30fb\u79d1\u5b66\u306e\u57fa\u672c",
+  "id": "demo-quiz-ja",
+  "created": "2026-01-01T00:00:00.000Z",
+  "isDemo": true,
+  "questions": [
+    {
+      "question": "\u534a\u5f845\u306e\u5186\u306e\u9762\u7a4d\u306f\uff1f",
+      "type": "multiple-choice",
+      "difficulty": "easy",
+      "options": [
+        "25\u03c0 \u2248 78.54",
+        "10\u03c0 \u2248 31.42",
+        "5\u03c0 \u2248 15.71",
+        "50\u03c0 \u2248 157.08"
+      ],
+      "correctAnswer": 0,
+      "timeLimit": 30,
+      "explanation": "\u5186\u306e\u9762\u7a4d\u306f\u03c0r\u00b2\u3002r = 5\u306e\u5834\u5408: \u03c0 \u00d7 5\u00b2 = 25\u03c0 \u2248 78.54"
+    },
+    {
+      "question": "\u6c34\u306f\u6d77\u9762\u4e0a\u3067100\u00b0C\u3067\u6cb8\u9a30\u3059\u308b\u3002",
+      "type": "true-false",
+      "difficulty": "easy",
+      "options": ["\u6b63\u3057\u3044", "\u9593\u9055\u3044"],
+      "correctAnswer": "true",
+      "timeLimit": 30,
+      "explanation": "\u6a19\u6e96\u6c17\u5727\uff081 atm\uff09\u3067\u306f\u3001\u6c34\u306f\u3061\u3087\u3046\u3069100\u00b0C\uff08212\u00b0F\uff09\u3067\u6cb8\u9a30\u3057\u307e\u3059\u3002"
+    },
+    {
+      "question": "\u221a144\u306f\u3044\u304f\u3064\uff1f",
+      "type": "numeric",
+      "difficulty": "easy",
+      "correctAnswer": 12,
+      "tolerance": 0,
+      "timeLimit": 30,
+      "explanation": "\u221a144 = 12\u300012 \u00d7 12 = 144 \u3060\u304b\u3089\u3067\u3059\u3002"
+    },
+    {
+      "question": "\u7d20\u6570\u306f\u3069\u308c\uff1f\uff08\u3059\u3079\u3066\u9078\u3093\u3067\u304f\u3060\u3055\u3044\uff09",
+      "type": "multiple-correct",
+      "difficulty": "medium",
+      "options": ["2", "4", "7", "9", "11"],
+      "correctAnswers": [0, 2, 4],
+      "timeLimit": 30,
+      "explanation": "\u7d20\u6570\u306f1\u3068\u81ea\u5206\u81ea\u8eab\u3067\u3057\u304b\u5272\u308a\u5207\u308c\u306a\u3044\u6570\u3067\u3059\u30022\u30017\u300111\u306f\u7d20\u6570\u3067\u3059\u30024 = 2\u00d72\u30019 = 3\u00d73\u306f\u7d20\u6570\u3067\u306f\u3042\u308a\u307e\u305b\u3093\u3002"
+    },
+    {
+      "question": "\u3053\u308c\u3089\u306e\u60d1\u661f\u3092\u592a\u967d\u304b\u3089\u306e\u8ddd\u96e2\u9806\u306b\u4e26\u3079\u3066\u304f\u3060\u3055\u3044\uff08\u8fd1\u3044\u9806\uff09\u3002",
+      "type": "ordering",
+      "difficulty": "medium",
+      "options": ["\u6c34\u661f", "\u91d1\u661f", "\u5730\u7403", "\u706b\u661f"],
+      "correctOrder": [0, 1, 2, 3],
+      "timeLimit": 30,
+      "explanation": "\u592a\u967d\u304b\u3089\u306e\u9806\u756a: \u6c34\u661f (0.39 AU)\u3001\u91d1\u661f (0.72 AU)\u3001\u5730\u7403 (1 AU)\u3001\u706b\u661f (1.52 AU)\u3002"
+    }
+  ]
+}
