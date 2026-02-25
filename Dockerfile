@@ -39,9 +39,14 @@ COPY --from=production-deps --chown=nodejs:nodejs /app/node_modules ./node_modul
 
 # Copy application code from builder (with cache-busted versions)
 COPY --from=builder --chown=nodejs:nodejs /app/server.js ./
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/public ./public/
 COPY --from=builder --chown=nodejs:nodejs /app/services ./services/
 COPY --from=builder --chown=nodejs:nodejs /app/config ./config/
+COPY --from=builder --chown=nodejs:nodejs /app/utils ./utils/
+COPY --from=builder --chown=nodejs:nodejs /app/middleware ./middleware/
+COPY --from=builder --chown=nodejs:nodejs /app/routes ./routes/
+COPY --from=builder --chown=nodejs:nodejs /app/socket ./socket/
 COPY --from=builder --chown=nodejs:nodejs /app/seeds ./seeds/
 
 # Create directories for persistent data with proper permissions
