@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   quizmaster-pro:
     build:
@@ -7,13 +5,12 @@ services:
       dockerfile: Dockerfile
     image: quizmaster-pro:latest
     container_name: quizmaster-pro
-    ports:
-      - "3000:3000"
+    network_mode: host
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - BASE_PATH=/
     volumes:
-      # Persistent storage for data
       - quizzes-data:/app/quizzes
       - results-data:/app/results
       - uploads-data:/app/public/uploads
@@ -24,8 +21,6 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
-    networks:
-      - quizmaster-network
 
 volumes:
   quizzes-data:
@@ -34,7 +29,3 @@ volumes:
     driver: local
   uploads-data:
     driver: local
-
-networks:
-  quizmaster-network:
-    driver: bridge
