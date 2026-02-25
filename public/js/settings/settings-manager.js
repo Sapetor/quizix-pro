@@ -5,37 +5,57 @@
 
 import { translationManager, getThemeToggleTitles } from '../utils/translation-manager.js';
 import { logger } from '../core/config.js';
+import { getJSON, setJSON } from '../utils/storage-utils.js';
+import { dom } from '../utils/dom.js';
 
 export class SettingsManager {
     constructor() {
         this.settings = {
             theme: 'light',
-            soundEnabled: true,
-            language: 'en',
+            // Note: soundEnabled is NOT stored here - SoundManager is the source of truth
+            // Use getSoundEnabled() to get current sound state
+            // Note: language is NOT stored here - TranslationManager is the source of truth
+            // Use getLanguage() to get current language
             autoSave: true,
             animations: true,
-            fullscreenMode: false
+            fullscreenMode: false,
+            editorMode: 'basic'
         };
-        
+
         // Store event handler references for cleanup
         this.eventHandlers = {};
-        
+
+        // SoundManager reference (injected to avoid window.game dependency)
+        this._soundManager = null;
+
         this.loadSettings();
+    }
+
+    /**
+     * Set the SoundManager reference (dependency injection)
+     * @param {Object} soundManager - SoundManager instance
+     */
+    setSoundManager(soundManager) {
+        this._soundManager = soundManager;
+    }
+
+    /**
+     * Get the SoundManager instance (falls back to window.game for backward compat)
+     * @returns {Object|null}
+     */
+    _getSoundManager() {
+        return this._soundManager || window.game?.soundManager || null;
     }
 
     /**
      * Load settings from localStorage
      */
     loadSettings() {
-        try {
-            const savedSettings = localStorage.getItem('quizSettings');
-            if (savedSettings) {
-                this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
-            }
-        } catch (error) {
-            logger.error('Failed to load settings:', error);
+        const savedSettings = getJSON('quizSettings');
+        if (savedSettings) {
+            this.settings = { ...this.settings, ...savedSettings };
         }
-        
+
         // Apply loaded settings
         this.applySettings();
     }
@@ -44,11 +64,7 @@ export class SettingsManager {
      * Save settings to localStorage
      */
     saveSettings() {
-        try {
-            localStorage.setItem('quizSettings', JSON.stringify(this.settings));
-        } catch (error) {
-            logger.error('Failed to save settings:', error);
-        }
+        setJSON('quizSettings', this.settings);
     }
 
     /**
@@ -57,11 +73,14 @@ export class SettingsManager {
     applySettings() {
         // Apply theme
         this.applyTheme(this.settings.theme);
-        
+
         // Apply other settings
         this.applyAnimations(this.settings.animations);
         this.applyFullscreen(this.settings.fullscreenMode);
-        
+
+        // Apply editor mode
+        document.body.setAttribute('data-editor-mode', this.settings.editorMode || 'basic');
+
         // Update UI elements
         this.updateSettingsUI();
     }
@@ -71,21 +90,21 @@ export class SettingsManager {
      */
     applyTheme(theme) {
         const body = document.body;
-        
+
         // Get all theme toggle buttons (desktop, mobile header, mobile bottom)
         const themeToggleButtons = [
-            document.getElementById('theme-toggle'),
-            document.getElementById('theme-toggle-mobile-header'),
-            document.getElementById('theme-toggle-mobile'), // fallback if still exists
-            document.getElementById('mobile-theme-toggle')  // fallback if still exists
+            dom.get('theme-toggle'),
+            dom.get('theme-toggle-mobile-header'),
+            dom.get('theme-toggle-mobile'), // fallback if still exists
+            dom.get('mobile-theme-toggle')  // fallback if still exists
         ].filter(button => button !== null); // Remove null elements
-        
+
         if (theme === 'dark') {
             body.classList.add('dark-theme');
             body.classList.remove('light-theme');
             body.setAttribute('data-theme', 'dark');
             document.documentElement.setAttribute('data-theme', 'dark');
-            
+
             // Update all theme toggle buttons - show moon (current state: dark)
             themeToggleButtons.forEach(themeToggle => {
                 // Update icon span if it exists (for mobile header controls)
@@ -103,7 +122,7 @@ export class SettingsManager {
             body.classList.remove('dark-theme');
             body.setAttribute('data-theme', 'light');
             document.documentElement.setAttribute('data-theme', 'light');
-            
+
             // Update all theme toggle buttons - show sun (current state: light)
             themeToggleButtons.forEach(themeToggle => {
                 // Update icon span if it exists (for mobile header controls)
@@ -117,7 +136,7 @@ export class SettingsManager {
                 themeToggle.title = getThemeToggleTitles().switchToDark;
             });
         }
-        
+
         this.settings.theme = theme;
     }
 
@@ -130,10 +149,10 @@ export class SettingsManager {
         const currentTheme = body.getAttribute('data-theme') || this.settings.theme || 'light';
         logger.debug('Current theme from DOM:', currentTheme);
         logger.debug('Current theme from settings:', this.settings.theme);
-        
+
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         logger.debug('New theme will be:', newTheme);
-        
+
         this.applyTheme(newTheme);
         this.saveSettings();
         logger.debug('Theme after toggle:', this.settings.theme);
@@ -149,7 +168,7 @@ export class SettingsManager {
         } else {
             body.classList.add('no-animations');
         }
-        
+
         this.settings.animations = enabled;
     }
 
@@ -192,10 +211,10 @@ export class SettingsManager {
      */
     enterFullscreen() {
         const element = document.documentElement;
-        
+
         try {
             let fullscreenPromise;
-            
+
             if (element.requestFullscreen) {
                 fullscreenPromise = element.requestFullscreen();
             } else if (element.mozRequestFullScreen) { // Firefox
@@ -205,7 +224,7 @@ export class SettingsManager {
             } else if (element.msRequestFullscreen) { // IE/Edge
                 fullscreenPromise = element.msRequestFullscreen();
             }
-            
+
             // Handle promise-based fullscreen API
             if (fullscreenPromise && fullscreenPromise.then) {
                 fullscreenPromise
@@ -237,7 +256,7 @@ export class SettingsManager {
      */
     exitFullscreen() {
         // Only try to exit fullscreen if we're actually in fullscreen mode
-        if (document.fullscreenElement || document.webkitFullscreenElement || 
+        if (document.fullscreenElement || document.webkitFullscreenElement ||
             document.mozFullScreenElement || document.msFullscreenElement) {
             try {
                 if (document.exitFullscreen) {
@@ -253,7 +272,7 @@ export class SettingsManager {
                 logger.warn('Failed to exit fullscreen:', error);
             }
         }
-        
+
         this.settings.fullscreenMode = false;
         this.updateFullscreenButton();
     }
@@ -262,7 +281,7 @@ export class SettingsManager {
      * Update fullscreen button appearance
      */
     updateFullscreenButton() {
-        const fullscreenToggle = document.getElementById('fullscreen-toggle');
+        const fullscreenToggle = dom.get('fullscreen-toggle');
         if (fullscreenToggle) {
             if (this.settings.fullscreenMode) {
                 fullscreenToggle.textContent = '🔲';
@@ -275,28 +294,92 @@ export class SettingsManager {
     }
 
     /**
-     * Set sound enabled/disabled
+     * Set sound enabled/disabled - delegates to SoundManager (source of truth)
+     * Note: Sound state is stored in 'quizAudioSettings' by SoundManager, not in quizSettings
      */
     setSoundEnabled(enabled) {
-        this.settings.soundEnabled = enabled;
-        this.saveSettings();
+        const soundManager = this._getSoundManager();
+        if (!soundManager) return;
+
+        if (enabled) {
+            soundManager.unmute();
+        } else {
+            soundManager.mute();
+        }
         this.updateSettingsUI();
     }
 
     /**
-     * Toggle sound
+     * Get sound enabled status from SoundManager (source of truth)
+     */
+    getSoundEnabled() {
+        const soundManager = this._getSoundManager();
+        return soundManager?.isSoundsEnabled() ?? true;
+    }
+
+    /**
+     * Toggle sound - delegates to SoundManager
      */
     toggleSound() {
-        this.setSoundEnabled(!this.settings.soundEnabled);
+        const soundManager = this._getSoundManager();
+        if (!soundManager) return;
+
+        if (soundManager.isSoundsEnabled()) {
+            soundManager.mute();
+        } else {
+            soundManager.unmute();
+        }
+        // SoundManager.mute()/unmute() saves to localStorage automatically
+        this.updateSoundToggleButtons();
     }
 
     /**
-     * Set language
+     * Update sound toggle button icons and state
      */
-    setLanguage(language) {
-        this.settings.language = language;
-        this.saveSettings();
-        this.updateSettingsUI();
+    updateSoundToggleButtons() {
+        const soundManager = this._getSoundManager();
+        const isEnabled = soundManager?.isSoundsEnabled() ?? true;
+        const icon = isEnabled ? '🔊' : '🔇';
+        const tooltip = isEnabled ?
+            (translationManager.getTranslationSync('mute_sound') || 'Mute sound') :
+            (translationManager.getTranslationSync('unmute_sound') || 'Unmute sound');
+
+        // Desktop button
+        const desktopBtn = dom.get('sound-toggle');
+        if (desktopBtn) {
+            desktopBtn.textContent = icon;
+            desktopBtn.title = tooltip;
+        }
+
+        // Mobile button
+        const mobileBtn = dom.get('sound-toggle-mobile-header');
+        if (mobileBtn) {
+            const iconSpan = mobileBtn.querySelector('.control-icon');
+            if (iconSpan) {
+                iconSpan.textContent = icon;
+            }
+            mobileBtn.title = tooltip;
+        }
+    }
+
+    /**
+     * Set language - delegates to TranslationManager which is the source of truth
+     * Note: Language is stored in 'language' localStorage key by TranslationManager,
+     * not in quizSettings, to avoid duplication
+     */
+    async setLanguage(language) {
+        const success = await translationManager.setLanguage(language);
+        if (success) {
+            this.updateSettingsUI();
+        }
+        return success;
+    }
+
+    /**
+     * Get current language from TranslationManager (source of truth)
+     */
+    getLanguage() {
+        return translationManager.getCurrentLanguage();
     }
 
     /**
@@ -324,8 +407,16 @@ export class SettingsManager {
 
     /**
      * Get specific setting
+     * Note: For 'soundEnabled' and 'language', delegates to their respective managers
      */
     getSetting(key) {
+        // Delegate to source of truth managers for these keys
+        if (key === 'soundEnabled') {
+            return this.getSoundEnabled();
+        }
+        if (key === 'language') {
+            return this.getLanguage();
+        }
         return this.settings[key];
     }
 
@@ -341,16 +432,21 @@ export class SettingsManager {
     /**
      * Reset settings to defaults
      */
-    resetSettings() {
+    async resetSettings() {
         this.settings = {
             theme: 'light',
-            soundEnabled: true,
-            language: 'en',
             autoSave: true,
             animations: true,
-            fullscreenMode: false
+            fullscreenMode: false,
+            editorMode: 'basic'
         };
-        
+
+        // Reset language via TranslationManager (source of truth) - await async operation
+        await translationManager.setLanguage('en');
+
+        // Reset sound via SoundManager (source of truth)
+        this.setSoundEnabled(true);
+
         this.saveSettings();
         this.applySettings();
     }
@@ -361,12 +457,12 @@ export class SettingsManager {
     updateSettingsUI() {
         // Update all theme toggle buttons (desktop and mobile)
         const themeToggleButtons = [
-            document.getElementById('theme-toggle'),
-            document.getElementById('theme-toggle-mobile-header'),
-            document.getElementById('theme-toggle-mobile'),
-            document.getElementById('mobile-theme-toggle')
+            dom.get('theme-toggle'),
+            dom.get('theme-toggle-mobile-header'),
+            dom.get('theme-toggle-mobile'),
+            dom.get('mobile-theme-toggle')
         ].filter(button => button !== null);
-        
+
         themeToggleButtons.forEach(themeToggle => {
             const iconSpan = themeToggle.querySelector('.control-icon');
             // Update icon based on current theme - show current state
@@ -388,37 +484,33 @@ export class SettingsManager {
                 themeToggle.title = getThemeToggleTitles().switchToDark;
             }
         });
-        
-        // Update sound toggle
-        const soundToggle = document.getElementById('sound-toggle');
-        if (soundToggle) {
-            soundToggle.textContent = this.settings.soundEnabled ? '🔊' : '🔇';
-            soundToggle.title = this.settings.soundEnabled ? 
-                translationManager.getTranslationSync('disable_sound') : translationManager.getTranslationSync('enable_sound');
-        }
-        
+
+        // Update sound toggle (reads from SoundManager)
+        this.updateSoundToggleButtons();
+
         // Update fullscreen toggle
         this.updateFullscreenButton();
-        
-        // Update language selector
+
+        // Update language selector - use getLanguage() which reads from TranslationManager
+        const currentLanguage = this.getLanguage();
         const languageButtons = document.querySelectorAll('[data-lang]');
         languageButtons.forEach(button => {
             const lang = button.getAttribute('data-lang');
-            if (lang === this.settings.language) {
+            if (lang === currentLanguage) {
                 button.classList.add('active');
             } else {
                 button.classList.remove('active');
             }
         });
-        
+
         // Update auto-save toggle
-        const autoSaveToggle = document.getElementById('auto-save-toggle');
+        const autoSaveToggle = dom.get('auto-save-toggle');
         if (autoSaveToggle) {
             autoSaveToggle.checked = this.settings.autoSave;
         }
-        
+
         // Update animations toggle
-        const animationsToggle = document.getElementById('animations-toggle');
+        const animationsToggle = dom.get('animations-toggle');
         if (animationsToggle) {
             animationsToggle.checked = this.settings.animations;
         }
@@ -430,61 +522,64 @@ export class SettingsManager {
     initializeEventListeners() {
         // Theme toggle (desktop and mobile)
         const themeToggleButtons = [
-            document.getElementById('theme-toggle'),
-            document.getElementById('theme-toggle-mobile-header')
+            dom.get('theme-toggle'),
+            dom.get('theme-toggle-mobile-header')
         ].filter(button => button !== null);
-        
+
         themeToggleButtons.forEach(themeToggle => {
             if (themeToggle) {
                 themeToggle.addEventListener('click', () => this.toggleTheme());
             }
         });
-        
-        // Sound toggle
-        const soundToggle = document.getElementById('sound-toggle');
-        if (soundToggle) {
-            soundToggle.addEventListener('click', () => this.toggleSound());
-        }
-        
+
+        // Sound toggle (desktop and mobile)
+        const soundToggleButtons = [
+            dom.get('sound-toggle'),
+            dom.get('sound-toggle-mobile-header')
+        ].filter(button => button !== null);
+
+        soundToggleButtons.forEach(soundToggle => {
+            if (soundToggle) {
+                soundToggle.addEventListener('click', () => this.toggleSound());
+            }
+        });
+
+        // Initial sound button state - reads from SoundManager (source of truth)
+        this.updateSoundToggleButtons();
+
         // Fullscreen toggle
-        const fullscreenToggle = document.getElementById('fullscreen-toggle');
+        const fullscreenToggle = dom.get('fullscreen-toggle');
         if (fullscreenToggle) {
             fullscreenToggle.addEventListener('click', () => this.toggleFullscreen());
         }
-        
+
         // Auto-save toggle
-        const autoSaveToggle = document.getElementById('auto-save-toggle');
+        const autoSaveToggle = dom.get('auto-save-toggle');
         if (autoSaveToggle) {
             autoSaveToggle.addEventListener('change', (e) => {
                 this.setAutoSave(e.target.checked);
             });
         }
-        
+
         // Animations toggle
-        const animationsToggle = document.getElementById('animations-toggle');
+        const animationsToggle = dom.get('animations-toggle');
         if (animationsToggle) {
             animationsToggle.addEventListener('change', (e) => {
                 this.applyAnimations(e.target.checked);
                 this.saveSettings();
             });
         }
-        
-        // Language buttons
-        const languageButtons = document.querySelectorAll('[data-lang]');
-        languageButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const lang = button.getAttribute('data-lang');
-                this.setLanguage(lang);
-            });
-        });
-        
+
+        // Note: Language buttons are handled by app.js which calls translationManager.setLanguage()
+        // SettingsManager.setLanguage() delegates to TranslationManager, so no duplicate handlers needed
+
         // Handle fullscreen change events
         document.addEventListener('fullscreenchange', () => {
             this.settings.fullscreenMode = !!document.fullscreenElement;
             this.updateFullscreenButton();
             this.saveSettings();
         });
-        
+
         // Handle fullscreen errors
         document.addEventListener('fullscreenerror', (e) => {
             logger.error('Fullscreen error:', e);
@@ -495,6 +590,24 @@ export class SettingsManager {
     }
 
     /**
+     * Get current editor mode
+     * @returns {'basic'|'advanced'}
+     */
+    getEditorMode() {
+        return this.settings.editorMode || 'basic';
+    }
+
+    /**
+     * Set editor mode and persist
+     * @param {'basic'|'advanced'} mode
+     */
+    setEditorMode(mode) {
+        this.settings.editorMode = mode;
+        document.body.setAttribute('data-editor-mode', mode);
+        this.saveSettings();
+    }
+
+    /**
      * Export settings
      */
     exportSettings() {
@@ -502,10 +615,10 @@ export class SettingsManager {
             settings: this.settings,
             exportedAt: new Date().toISOString()
         };
-        
+
         const dataStr = JSON.stringify(settingsData, null, 2);
         const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        
+
         const link = document.createElement('a');
         link.href = URL.createObjectURL(dataBlob);
         link.download = 'quizix-settings.json';
@@ -513,24 +626,66 @@ export class SettingsManager {
     }
 
     /**
-     * Import settings
+     * Import settings with validation
      */
     async importSettings(file) {
         try {
             const text = await file.text();
             const importData = JSON.parse(text);
-            
+
             if (importData.settings) {
-                this.settings = { ...this.settings, ...importData.settings };
+                // Validate imported settings to prevent injection attacks
+                const validatedSettings = this.validateImportedSettings(importData.settings);
+                this.settings = { ...this.settings, ...validatedSettings };
                 this.saveSettings();
                 this.applySettings();
                 return true;
             }
-            
+
             return false;
         } catch (error) {
             logger.error('Failed to import settings:', error);
             return false;
         }
+    }
+
+    /**
+     * Validate imported settings structure and types
+     * @param {Object} settings - Settings to validate
+     * @returns {Object} Validated settings with only known keys and correct types
+     */
+    validateImportedSettings(settings) {
+        const validated = {};
+
+        // Define allowed settings with their expected types and validators
+        const schema = {
+            theme: { type: 'string', values: ['light', 'dark'] },
+            autoSave: { type: 'boolean' },
+            animations: { type: 'boolean' },
+            fullscreenMode: { type: 'boolean' },
+            editorMode: { type: 'string', values: ['basic', 'advanced'] }
+        };
+
+        for (const [key, config] of Object.entries(schema)) {
+            if (key in settings) {
+                const value = settings[key];
+
+                // Type check
+                if (typeof value !== config.type) {
+                    logger.warn(`Invalid type for setting ${key}: expected ${config.type}, got ${typeof value}`);
+                    continue;
+                }
+
+                // Value validation for enums
+                if (config.values && !config.values.includes(value)) {
+                    logger.warn(`Invalid value for setting ${key}: ${value}`);
+                    continue;
+                }
+
+                validated[key] = value;
+            }
+        }
+
+        return validated;
     }
 }

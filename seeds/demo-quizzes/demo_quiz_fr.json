@@ -1,0 +1,58 @@
+{
+  "title": "D\u00e9mo : Math\u00e9matiques et Sciences de base",
+  "id": "demo-quiz-fr",
+  "created": "2026-01-01T00:00:00.000Z",
+  "isDemo": true,
+  "questions": [
+    {
+      "question": "Quelle est l'aire d'un cercle de rayon 5 ?",
+      "type": "multiple-choice",
+      "difficulty": "easy",
+      "options": [
+        "25\u03c0 \u2248 78,54",
+        "10\u03c0 \u2248 31,42",
+        "5\u03c0 \u2248 15,71",
+        "50\u03c0 \u2248 157,08"
+      ],
+      "correctAnswer": 0,
+      "timeLimit": 30,
+      "explanation": "L'aire d'un cercle est \u03c0r\u00b2. Avec r = 5 : \u03c0 \u00d7 5\u00b2 = 25\u03c0 \u2248 78,54"
+    },
+    {
+      "question": "L'eau bout \u00e0 100\u00b0C au niveau de la mer.",
+      "type": "true-false",
+      "difficulty": "easy",
+      "options": ["Vrai", "Faux"],
+      "correctAnswer": "true",
+      "timeLimit": 30,
+      "explanation": "\u00c0 pression atmosph\u00e9rique standard (1 atm), l'eau bout exactement \u00e0 100\u00b0C (212\u00b0F)."
+    },
+    {
+      "question": "Combien vaut \u221a144 ?",
+      "type": "numeric",
+      "difficulty": "easy",
+      "correctAnswer": 12,
+      "tolerance": 0,
+      "timeLimit": 30,
+      "explanation": "\u221a144 = 12 car 12 \u00d7 12 = 144."
+    },
+    {
+      "question": "Lesquels de ces nombres sont premiers ? (S\u00e9lectionnez tous les corrects)",
+      "type": "multiple-correct",
+      "difficulty": "medium",
+      "options": ["2", "4", "7", "9", "11"],
+      "correctAnswers": [0, 2, 4],
+      "timeLimit": 30,
+      "explanation": "Les nombres premiers ne sont divisibles que par 1 et eux-m\u00eames. 2, 7 et 11 sont premiers. 4 = 2\u00d72 et 9 = 3\u00d73 ne le sont pas."
+    },
+    {
+      "question": "Classez ces plan\u00e8tes par distance au Soleil (de la plus proche \u00e0 la plus \u00e9loign\u00e9e).",
+      "type": "ordering",
+      "difficulty": "medium",
+      "options": ["Mercure", "V\u00e9nus", "Terre", "Mars"],
+      "correctOrder": [0, 1, 2, 3],
+      "timeLimit": 30,
+      "explanation": "L'ordre depuis le Soleil : Mercure (0,39 UA), V\u00e9nus (0,72 UA), Terre (1 UA), Mars (1,52 UA)."
+    }
+  ]
+}

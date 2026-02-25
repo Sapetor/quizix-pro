@@ -10,9 +10,54 @@
     transition: opacity 0.2s ease-in-out;
 }
 
-.tex2jax_process {
-    transition: opacity 0.2s ease-in-out;
+/* tex2jax_process transition handled by base.css with FOUC prevention */
+
+/* === PREMIUM PREVIEW LOADING SKELETON === */
+.preview-loading .preview-question-text,
+.preview-loading #preview-question-text-split {
+    background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.03) 0%,
+        rgba(255,255,255,0.08) 50%,
+        rgba(255,255,255,0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: previewShimmer 1.5s infinite;
+    min-height: 60px;
+    border-radius: 8px;
+    color: transparent !important;
 }
+
+.preview-loading .player-option,
+.preview-loading .checkbox-option,
+.preview-loading .tf-option {
+    background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.03) 0%,
+        rgba(255,255,255,0.06) 50%,
+        rgba(255,255,255,0.03) 100%
+    ) !important;
+    background-size: 200% 100%;
+    animation: previewShimmer 1.5s infinite;
+    color: transparent !important;
+    border-color: transparent !important;
+}
+
+@keyframes previewShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* MathJax rendered state */
+.mathjax-rendered {
+    animation: previewFadeIn 0.3s ease-out;
+}
+
+@keyframes previewFadeIn {
+    from { opacity: 0.7; }
+    to { opacity: 1; }
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -138,16 +183,14 @@
 
 /* Question counter in navigation bar - Compact design */
 #preview-question-counter-split {
-    /* font-size handled by variables.css utility class for global scaling */
     font-weight: 700;
     color: var(--text-primary);
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px; /* Reduced border radius for compact design */
-    padding: 4px 12px; /* Reduced padding for better space efficiency */
+    border-radius: 12px;
+    padding: 4px 12px;
     backdrop-filter: blur(8px);
-    font-size: 0.75rem; /* Smaller font size to save space */
-    white-space: nowrap; /* Prevent text wrapping */
+    font-size: 0.75rem;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
     min-width: 180px;
     max-width: 220px;
@@ -162,6 +205,42 @@
     background: rgba(255, 255, 255, 0.12);
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Preview Question Type Selector */
+.preview-type-selector {
+    font-weight: 500;
+    color: var(--text-primary);
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 110px;
+    max-width: 140px;
+}
+
+.preview-type-selector:hover {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.preview-type-selector:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+[data-theme="light"] .preview-type-selector {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.25);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .preview-type-selector:hover {
+    background: rgba(99, 102, 241, 0.18);
 }
 
 .nav-btn:hover {
@@ -246,14 +325,13 @@
 
 #preview-question-text,
 #preview-question-text-split {
-    font-size: 1.5rem;
-    line-height: 1.5;
-    margin: 20px 0;
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 20px 0 30px;
     text-align: center;
-    min-height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    max-width: 100%;
+    /* Remove flexbox to allow natural MathJax rendering */
 }
 
 #preview-question-image,
@@ -323,12 +401,15 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--preview-spacing);
-    margin: 0;
+    margin: 0 auto;
+    max-width: 95%;
+    width: 100%;
 }
 
 .mobile-viewport #preview-true-false-split:not([style*="display: none"]) .true-false-options {
     grid-template-columns: 1fr;
     max-width: 300px;
+    margin: 0 auto;
     gap: 15px;
 }
 
@@ -620,6 +701,45 @@ pre code {
 /* Duplicate removed - see main definition above */
 
 
+/* =============================================================================
+   HIDE PREVIEW HEADER AND NAVIGATION IN ALWAYS-PREVIEW MODE
+   Preview shows only content in the simplified layout
+   Type selector is shown in the editor section instead
+   ============================================================================= */
+
+@media (min-width: 769px) {
+    .host-container.always-preview .preview-header,
+    .host-container.always-preview .preview-navigation-bar {
+        display: none !important;
+    }
+
+    /* Preview viewport - compact, full height */
+    .host-container.always-preview .preview-viewport-split {
+        height: 100%;
+        border-radius: 12px;
+        flex: 1;
+        padding: 16px; /* Reduced from 40px desktop default */
+    }
+
+    /* Preview content - compact padding */
+    .host-container.always-preview .preview-content-split {
+        padding: 20px; /* Reduced from 40px */
+        height: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Compact question area in preview */
+    .host-container.always-preview .preview-content-split .player-question-area {
+        padding: 12px 16px; /* Reduced padding */
+        margin-bottom: 16px; /* Reduced gap */
+    }
+
+    /* Compact answer options spacing */
+    .host-container.always-preview .preview-content-split .player-options {
+        gap: 10px; /* Tighter spacing between options */
+    }
+}
+
 .preview-header {
     display: flex;
     justify-content: space-between;
@@ -831,6 +951,42 @@ pre code {
     font-size: 0.7rem;
 }
 
+/* ===== SPLIT-SCREEN PREVIEW: MINIMAL OVERRIDES ===== */
+/*
+ * Philosophy: The preview should use the SAME CSS as the host game view.
+ * Only override what's absolutely necessary for the narrow panel context.
+ *
+ * The base .player-option CSS in game.css already handles:
+ * - max-width: min(500px, 85vw) - limits width appropriately
+ * - overflow: visible - doesn't clip content
+ * - word wrapping via flex layout
+ *
+ * We only need to ensure the preview container doesn't add conflicting styles.
+ */
+
+/* Remove any transforms or special sizing - use natural flow */
+.preview-content-split {
+    /* No transform, no special scaling - render naturally */
+}
+
+/* Ensure options container doesn't restrict width unnecessarily */
+.preview-content-split .player-options,
+.preview-content-split .player-checkbox-options {
+    max-width: 100%;
+    width: 100%;
+    align-items: center;
+}
+
+/* Options: inherit base styles from game.css, only add wrapping for long content */
+.preview-content-split .player-option,
+.preview-content-split .checkbox-option,
+.preview-content-split .tf-option {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    /* DO NOT override font-size, padding, min-height - use base styles */
+}
+
 /* ===== UI IMPROVEMENTS FOR BETTER PREVIEW AND DARK MODE ===== */
 
 /* Enhanced Preview Content Background - Maximized space for content */
@@ -876,96 +1032,98 @@ pre code {
     transition: all 0.3s ease;
     margin: 8px 0;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    min-height: 55px;
+    min-height: 44px; /* WCAG touch target minimum */
     width: 100%;
-    max-width: 95%; /* Use maximum available width for optimal space usage */
+    max-width: 95%;
     display: flex;
-    align-items: center;
+    align-items: center; /* Center content vertically */
     justify-content: flex-start;
     text-align: left;
     line-height: 1.4;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* CRITICAL: Don't clip content - matches game.css */
+    word-break: break-word; /* Allow long words to wrap */
 }
 
 /* === COLORFUL PREVIEW OPTIONS === */
+/* WCAG AA Accessible Colors: All meet ≥4.5:1 contrast with white text */
 .preview-content .player-option:nth-child(1),
 .preview-content-split .player-option:nth-child(1) {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Blue */
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%); /* Blue 5.17:1 */
 }
 
 .preview-content .player-option:nth-child(2),
 .preview-content-split .player-option:nth-child(2) {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%); /* Green */
+    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%); /* Green 5.48:1 */
 }
 
 .preview-content .player-option:nth-child(3),
 .preview-content-split .player-option:nth-child(3) {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Orange */
+    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%); /* Orange 5.02:1 */
 }
 
 .preview-content .player-option:nth-child(4),
 .preview-content-split .player-option:nth-child(4) {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Red */
+    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%); /* Red 4.83:1 */
 }
 
 .preview-content .player-option:nth-child(5),
 .preview-content-split .player-option:nth-child(5) {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); /* Purple */
+    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%); /* Purple 5.70:1 */
 }
 
 .preview-content .player-option:nth-child(6),
 .preview-content-split .player-option:nth-child(6) {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); /* Cyan */
+    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%); /* Cyan 5.36:1 */
 }
 
-/* Dark theme multicolored options - same colors as light theme */
+/* Dark theme multicolored options - use CSS variables for accessible colors */
 [data-theme="dark"] .preview-content .player-option:nth-child(1),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(1) {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Blue */
-    border: 2px solid rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%); /* Blue */
+    border: 2px solid var(--option-0-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px var(--option-0-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-option:nth-child(2),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(2) {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%); /* Green */
-    border: 2px solid rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%); /* Green */
+    border: 2px solid var(--option-1-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 12px var(--option-1-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-option:nth-child(3),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(3) {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Orange */
-    border: 2px solid rgba(245, 158, 11, 0.4);
+    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%); /* Orange */
+    border: 2px solid var(--option-2-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 4px 12px var(--option-2-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-option:nth-child(4),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(4) {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Red */
-    border: 2px solid rgba(239, 68, 68, 0.4);
+    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%); /* Red */
+    border: 2px solid var(--option-3-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    box-shadow: 0 4px 12px var(--option-3-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-option:nth-child(5),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(5) {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); /* Purple */
-    border: 2px solid rgba(139, 92, 246, 0.4);
+    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%); /* Purple */
+    border: 2px solid var(--option-4-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 4px 12px var(--option-4-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-option:nth-child(6),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(6) {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); /* Cyan */
-    border: 2px solid rgba(6, 182, 212, 0.4);
+    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%); /* Cyan */
+    border: 2px solid var(--option-5-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+    box-shadow: 0 4px 12px var(--option-5-shadow);
 }
 
 /* Fallback for additional options beyond 6 */
@@ -985,14 +1143,15 @@ pre code {
 }
 
 /* Light theme multicolored checkbox options - match multiple choice colors */
+/* WCAG AA Accessible Colors */
 .preview-content .player-checkbox-options .checkbox-option:nth-child(1),
 .preview-content-split .player-checkbox-options .checkbox-option:nth-child(1),
 .preview-content .checkbox-option.preview-checkbox:nth-child(1),
 .preview-content-split .checkbox-option.preview-checkbox:nth-child(1) {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; /* Blue */
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%) !important; /* Blue */
     border: 2px solid rgba(255,255,255,0.3) !important;
     color: white !important;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2) !important;
+    box-shadow: 0 4px 12px var(--option-0-shadow) !important;
 }
 
 /* Colorful checkbox options - clean cascade without !important */
@@ -1035,47 +1194,47 @@ pre code {
     box-shadow: 0 4px 20px var(--option-5-shadow);
 }
 
-/* Dark theme multicolored checkbox options */
+/* Dark theme multicolored checkbox options - use CSS variables for accessible colors */
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(1),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(1) {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Blue */
-    border: 2px solid rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%); /* Blue */
+    border: 2px solid var(--option-0-shadow);
     color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px var(--option-0-shadow);
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(2),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(2) {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%); /* Green */
-    border: 2px solid rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%); /* Green */
+    border: 2px solid var(--option-1-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(3),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(3) {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Orange */
-    border: 2px solid rgba(245, 158, 11, 0.4);
+    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%); /* Orange */
+    border: 2px solid var(--option-2-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(4),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(4) {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Red */
-    border: 2px solid rgba(239, 68, 68, 0.4);
+    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%); /* Red */
+    border: 2px solid var(--option-3-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(5),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(5) {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); /* Purple */
-    border: 2px solid rgba(139, 92, 246, 0.4);
+    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%); /* Purple */
+    border: 2px solid var(--option-4-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(6),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(6) {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); /* Cyan */
-    border: 2px solid rgba(6, 182, 212, 0.4);
+    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%); /* Cyan */
+    border: 2px solid var(--option-5-shadow);
     color: #f8fafc;
 }
 
@@ -1085,6 +1244,7 @@ pre code {
 
 /* GREEN HALO approach for multiple-choice correct answers */
 /* Maintains colorful backgrounds while adding distinctive green border/glow */
+/* NOTE: No transform:scale - it causes blurry text due to sub-pixel rendering */
 .preview-content .player-option.correct,
 .preview-content-split .player-option.correct {
     border: 4px solid #22c55e !important;
@@ -1093,7 +1253,7 @@ pre code {
     outline: 2px solid rgba(34, 197, 94, 0.6);
     outline-offset: 2px;
     font-weight: 700 !important;
-    transform: scale(1.02) !important;
+    /* transform: scale removed - causes blurry text */
 }
 
 /* GREEN HALO for multiple-correct checkbox options - HIGH SPECIFICITY */
@@ -1106,7 +1266,7 @@ pre code {
     outline: 2px solid rgba(34, 197, 94, 0.6);
     outline-offset: 2px;
     font-weight: 700 !important;
-    transform: scale(1.02) !important;
+    /* transform: scale removed - causes blurry text */
 }
 
 /* Specific overrides for each nth-child to ensure green halo wins */
@@ -1128,7 +1288,7 @@ pre code {
     outline: 2px solid rgba(34, 197, 94, 0.6);
     outline-offset: 2px;
     font-weight: 700 !important;
-    transform: scale(1.02) !important;
+    /* transform: scale removed - causes blurry text */
 }
 
 /* Dark theme variants for correct answers */
@@ -1141,6 +1301,7 @@ pre code {
 }
 
 /* Hover states for correct answers - enhanced green glow */
+/* NOTE: No transform:scale on hover either - prevents blurry text */
 .preview-content .player-option.correct:hover,
 .preview-content-split .player-option.correct:hover,
 .preview-content .player-checkbox-options .checkbox-option.correct-preview:hover,
@@ -1149,7 +1310,7 @@ pre code {
     box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.4),
                 0 6px 24px rgba(34, 197, 94, 0.6) !important;
     outline-color: rgba(34, 197, 94, 0.8);
-    transform: scale(1.04) !important;
+    /* transform: scale removed - causes blurry text */
 }
 
 /* ======================================================================== */
@@ -1217,69 +1378,71 @@ pre code {
     border-color: rgba(96, 165, 250, 0.7);
 }
 
-/* True button - vibrant green (using data attributes) */
+/* True button - WCAG AA accessible green (using data attributes) */
+/* Green: 5.48:1 / 7.68:1 contrast ratio */
 .preview-content .tf-option[data-option="true"],
 .preview-content-split .tf-option[data-option="true"],
 .tf-option[data-option="true"] {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important; /* Bright green */
-    border: 3px solid rgba(16, 185, 129, 0.6) !important;
-    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3) !important;
+    background: linear-gradient(135deg, var(--true-color-start) 0%, var(--true-color-end) 100%) !important;
+    border: 3px solid var(--true-shadow) !important;
+    box-shadow: 0 5px 15px var(--true-shadow) !important;
 }
 
 [data-theme="dark"] .preview-content .tf-option[data-option="true"],
 [data-theme="dark"] .preview-content-split .tf-option[data-option="true"],
 [data-theme="dark"] .tf-option[data-option="true"] {
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important; /* Slightly brighter for dark */
-    border: 3px solid rgba(34, 197, 94, 0.6) !important;
-    box-shadow: 0 5px 15px rgba(34, 197, 94, 0.3) !important;
+    background: linear-gradient(135deg, var(--true-color-start) 0%, var(--true-color-end) 100%) !important;
+    border: 3px solid var(--true-shadow) !important;
+    box-shadow: 0 5px 15px var(--true-shadow) !important;
 }
 
-/* False button - vibrant red (using data attributes) */
+/* False button - WCAG AA accessible red (using data attributes) */
+/* Red: 4.83:1 / 6.47:1 contrast ratio */
 .preview-content .tf-option[data-option="false"],
 .preview-content-split .tf-option[data-option="false"],
 .tf-option[data-option="false"] {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important; /* Bright red */
-    border: 3px solid rgba(239, 68, 68, 0.6) !important;
-    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3) !important;
+    background: linear-gradient(135deg, var(--false-color-start) 0%, var(--false-color-end) 100%) !important;
+    border: 3px solid var(--false-shadow) !important;
+    box-shadow: 0 5px 15px var(--false-shadow) !important;
 }
 
 [data-theme="dark"] .preview-content .tf-option[data-option="false"],
 [data-theme="dark"] .preview-content-split .tf-option[data-option="false"],
 [data-theme="dark"] .tf-option[data-option="false"] {
-    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important; /* Slightly brighter for dark */
-    border: 3px solid rgba(248, 113, 113, 0.6) !important;
-    box-shadow: 0 5px 15px rgba(248, 113, 113, 0.3) !important;
+    background: linear-gradient(135deg, var(--false-color-start) 0%, var(--false-color-end) 100%) !important;
+    border: 3px solid var(--false-shadow) !important;
+    box-shadow: 0 5px 15px var(--false-shadow) !important;
 }
 
 /* Enhanced hover effects for True/False */
 .preview-content .tf-option[data-option="true"]:hover,
 .preview-content-split .tf-option[data-option="true"]:hover,
 .tf-option[data-option="true"]:hover {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4) !important;
+    background: linear-gradient(135deg, var(--true-color-end) 0%, var(--true-color-end) 100%) !important;
+    box-shadow: 0 8px 20px var(--true-shadow-hover) !important;
     transform: translateY(-3px);
 }
 
 .preview-content .tf-option[data-option="false"]:hover,
 .preview-content-split .tf-option[data-option="false"]:hover,
 .tf-option[data-option="false"]:hover {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4) !important;
+    background: linear-gradient(135deg, var(--false-color-end) 0%, var(--false-color-end) 100%) !important;
+    box-shadow: 0 8px 20px var(--false-shadow-hover) !important;
     transform: translateY(-3px);
 }
 
 [data-theme="dark"] .preview-content .tf-option[data-option="true"]:hover,
 [data-theme="dark"] .preview-content-split .tf-option[data-option="true"]:hover,
 [data-theme="dark"] .tf-option[data-option="true"]:hover {
-    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
-    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4) !important;
+    background: linear-gradient(135deg, var(--true-color-end) 0%, var(--true-color-end) 100%) !important;
+    box-shadow: 0 8px 20px var(--true-shadow-hover) !important;
 }
 
 [data-theme="dark"] .preview-content .tf-option[data-option="false"]:hover,
 [data-theme="dark"] .preview-content-split .tf-option[data-option="false"]:hover,
 [data-theme="dark"] .tf-option[data-option="false"]:hover {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-    box-shadow: 0 8px 20px rgba(248, 113, 113, 0.4) !important;
+    background: linear-gradient(135deg, var(--false-color-end) 0%, var(--false-color-end) 100%) !important;
+    box-shadow: 0 8px 20px var(--false-shadow-hover) !important;
 }
 
 /* Removed - checkbox styling now comes from components.css */
@@ -1289,18 +1452,17 @@ pre code {
 .preview-content-split .question-text,
 #preview-question-text,
 #preview-question-text-split {
-    font-size: 1.3rem;
-    margin-bottom: 20px;
-    text-align: center;
+    font-size: 2rem;
     font-weight: 600;
-    line-height: 1.5;
+    line-height: 1.4;
+    margin: 20px 0 30px;
+    text-align: center;
     color: white;
     text-shadow: 0 2px 6px rgba(0,0,0,0.4);
-    padding: 20px;
-    background: rgba(0,0,0,0.15);
-    border-radius: var(--border-radius-small);
-    border: 2px solid var(--border-color);
-    backdrop-filter: blur(10px);
+    max-width: 100%;
+    border: 2px solid transparent;
+    /* Removed: min-height, display:flex, padding, background, backdrop-filter */
+    /* These were constraining MathJax and making it look different from in-game */
 }
 
 [data-theme="dark"] .preview-content .question-text,
@@ -1532,22 +1694,21 @@ pre code {
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.3);
     color: white;
-    padding: 4px 8px; /* Ultra compact padding to prevent overflow */
-    border-radius: 4px; /* Smaller radius for compact design */
+    padding: 4px 8px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.75rem; /* Smaller font to fit more content */
+    font-size: 0.75rem;
     font-weight: 600;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 2px; /* Minimal gap for compact layout */
-    white-space: nowrap; /* Prevent text wrapping */
-    overflow: hidden; /* Prevent content overflow */
-    text-overflow: ellipsis; /* Add ellipsis if text is too long */
-    min-width: 0; /* Allow flex shrinking */
-    flex-shrink: 1; /* Allow buttons to shrink if needed */
+    gap: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex-shrink: 1;
     box-shadow: 0 2px 8px var(--shadow-light);
-    white-space: nowrap; /* Prevent text wrapping */
 }
 
 [data-theme="dark"] .nav-btn {

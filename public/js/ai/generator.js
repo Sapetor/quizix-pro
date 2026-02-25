@@ -1,63 +1,130 @@
 /**
  * AI Question Generator Module
  * Handles AI-powered question generation from various providers
- * 
- * EXTRACTION NOTES:
- * - Extracted from script.js lines 4804-5572
- * - Includes all AI provider integrations: Ollama, OpenAI, Claude, HuggingFace
- * - Handles file uploads and content parsing
- * - Manages API keys and model selection
- * - Dependencies: translation-manager.js for translationManager.getTranslationSync()
+ *
+ * Refactored to use helper classes for better maintainability:
+ * - AIQuestionPreview: Preview modal logic
+ * - AIBatchProcessor: Batch processing logic
+ * - AIUIHelpers: UI helper methods
  */
 
 import { logger, AI, TIMING } from '../core/config.js';
-import { translationManager, showAlert } from '../utils/translation-manager.js';
+import { translationManager } from '../utils/translation-manager.js';
 import { secureStorage } from '../services/secure-storage-service.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
+import { dom, escapeHtml } from '../utils/dom.js';
+import { setItem } from '../utils/storage-utils.js';
+import {
+    openModal,
+    closeModal,
+    bindOverlayClose,
+    bindEscapeClose,
+    getModal
+} from '../utils/modal-utils.js';
 
-// Import XLSX library for Excel processing
-const XLSX = window.XLSX;
+// Import prompt templates
+import {
+    buildMainPrompt,
+    buildRetryPrompt,
+    buildExcelConversionPrompt,
+    buildFormattingInstructions,
+    buildBloomInstructions
+} from './prompts.js';
+
+// Import extracted services
+import { aiProviderService } from './ai-provider-service.js';
+import { aiQuestionValidator } from './ai-question-validator.js';
+import { excelQuestionParser } from './excel-question-parser.js';
+
+// Import helper classes
+import { AIQuestionPreview } from './ai-question-preview.js';
+import { AIBatchProcessor } from './ai-batch-processor.js';
+import { AIUIHelpers } from './ai-ui-helpers.js';
 
 export class AIQuestionGenerator {
     constructor() {
         this.providers = {
             ollama: {
-                name: "Ollama (Local)",
+                name: 'Ollama (Local)',
                 apiKey: false,
                 endpoint: AI.OLLAMA_ENDPOINT,
-                models: ["llama3.2:latest", "codellama:13b-instruct", "codellama:7b-instruct", "codellama:7b-code"]
-            },
-            huggingface: {
-                name: "Hugging Face",
-                apiKey: true,
-                endpoint: "https://api-inference.huggingface.co/models/google/flan-t5-large",
-                models: ["google/flan-t5-large"]
+                models: ['llama3.2:latest', 'codellama:13b-instruct', 'codellama:7b-instruct', 'codellama:7b-code']
             },
             openai: {
-                name: "OpenAI",
+                name: 'OpenAI',
                 apiKey: true,
-                endpoint: "https://api.openai.com/v1/chat/completions",
-                models: [AI.OPENAI_MODEL, "gpt-4"]
+                endpoint: 'https://api.openai.com/v1/chat/completions',
+                models: [AI.OPENAI_MODEL, 'gpt-4']
             },
             claude: {
-                name: "Anthropic Claude", 
+                name: 'Anthropic Claude',
                 apiKey: true,
-                endpoint: "https://api.anthropic.com/v1/messages",
-                models: ["claude-3-haiku", "claude-3-sonnet"]
+                endpoint: 'https://api.anthropic.com/v1/messages',
+                models: [
+                    { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5 (Recommended)' },
+                    { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5 (Fast & Cheap)' },
+                    { id: 'claude-opus-4-5', name: 'Claude Opus 4.5 (Most Capable)' },
+                    { id: 'claude-sonnet-4-0', name: 'Claude Sonnet 4 (Legacy)' }
+                ]
             },
             gemini: {
-                name: "Google Gemini",
+                name: 'Google Gemini',
                 apiKey: true,
-                endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
-                models: [AI.GEMINI_MODEL, "gemini-2.0-flash", "gemini-1.5-pro"]
+                endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
+                models: [AI.GEMINI_MODEL, 'gemini-2.0-flash', 'gemini-1.5-pro']
             }
         };
-        
-        this.isGenerating = false; // Flag to prevent multiple simultaneous generations
-        this.eventHandlers = {}; // Store event handler references for cleanup
+
+        this.isGenerating = false;
+        this.eventHandlers = {};
+        this.batchInfo = null;
+        this.requestedQuestionCount = 1;
+        this.detectedQuestionCount = null;
+
+        // Dependency injection properties
+        this._quizManager = null;
+        this._addQuestionFn = null;
+
+        // Initialize helper classes
+        this.questionPreview = new AIQuestionPreview(this);
+        this.batchProcessor = new AIBatchProcessor(this);
+        this.uiHelpers = new AIUIHelpers(this);
+
         this.initializeEventListeners();
         this.initializeSecureStorage();
+    }
+
+    /**
+     * Dependency injection: Set quiz manager reference
+     * @param {Object} quizManager - QuizManager instance
+     */
+    setQuizManager(quizManager) {
+        this._quizManager = quizManager;
+    }
+
+    /**
+     * Dependency injection: Set addQuestion function
+     * @param {Function} addQuestionFn - Function to add a new question
+     */
+    setAddQuestionFunction(addQuestionFn) {
+        this._addQuestionFn = addQuestionFn;
+    }
+
+    /**
+     * Get quiz manager with fallback to window.game
+     * @returns {Object|null}
+     */
+    _getQuizManager() {
+        return this._quizManager || window.game?.quizManager || null;
+    }
+
+    /**
+     * Get addQuestion function with fallback to window.game
+     * @returns {Function|null}
+     */
+    _getAddQuestionFn() {
+        return this._addQuestionFn || window.game?.addQuestion || null;
     }
 
     /**
@@ -65,74 +132,43 @@ export class AIQuestionGenerator {
      */
     async initializeSecureStorage() {
         return await errorHandler.wrapAsyncOperation(async () => {
-            // Check if Web Crypto API is supported
             if (!secureStorage.constructor.isSupported()) {
                 logger.warn('Web Crypto API not supported - API keys will not be encrypted');
                 return;
             }
-
-            // Migrate existing API keys to secure storage
             await secureStorage.migrateApiKeys();
             logger.debug('Secure storage initialized and API keys migrated');
         }, {
             errorType: errorHandler.errorTypes.SYSTEM,
             context: 'secure-storage-initialization',
-            userMessage: null, // Silent failure for initialization
+            userMessage: null,
             retryable: false,
             fallback: null
         });
     }
 
     initializeEventListeners() {
-        const modal = document.getElementById('ai-generator-modal');
-        const closeButton = document.getElementById('close-ai-generator');
+        const modal = getModal('ai-generator-modal');
+        const closeButton = dom.get('close-ai-generator');
 
-        // Store handler references for cleanup
-        this.eventHandlers.modalClick = (e) => {
-            if (e.target === modal) {
-                this.closeModal();
-            }
-        };
+        // Use modal-utils for overlay click and escape key handlers
+        this.eventHandlers.modalClick = bindOverlayClose(modal, () => this.closeModalMethod());
+        this.eventHandlers.keydown = bindEscapeClose(modal, () => this.closeModalMethod());
 
-        this.eventHandlers.closeButtonClick = () => {
-            this.closeModal();
-        };
-
-        this.eventHandlers.keydown = (e) => {
-            if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
-                this.closeModal();
-            }
-        };
-
-        this.eventHandlers.providerChange = (e) => {
-            this.handleProviderChange(e.target.value);
-        };
-
+        this.eventHandlers.closeButtonClick = () => this.closeModalMethod();
+        this.eventHandlers.providerChange = (e) => this.uiHelpers.handleProviderChange(e.target.value);
         this.eventHandlers.modelChange = (e) => {
             if (e.target.value) {
-                localStorage.setItem('ollama_selected_model', e.target.value);
+                setItem('ollama_selected_model', e.target.value);
             }
         };
-
-        this.eventHandlers.fileChange = (e) => {
-            this.handleFileUpload(e.target.files[0]);
-        };
-
-        this.eventHandlers.contentInput = (e) => {
-            this.detectContentType(e.target.value);
-        };
-
-        this.eventHandlers.generateClick = () => {
-            this.generateQuestions();
-        };
-
-        this.eventHandlers.cancelClick = () => {
-            this.closeModal();
-        };
-
+        this.eventHandlers.fileChange = (e) => this.uiHelpers.handleFileUpload(e.target.files[0]);
+        this.eventHandlers.contentInput = (e) => this.uiHelpers.detectContentType(e.target.value);
+        this.eventHandlers.generateClick = () => this.generateQuestions();
+        this.eventHandlers.cancelClick = () => this.closeModalMethod();
         this.eventHandlers.apiKeyBlur = async (e) => {
             await errorHandler.wrapAsyncOperation(async () => {
-                const provider = document.getElementById('ai-provider')?.value;
+                const provider = dom.get('ai-provider')?.value;
                 if (provider && e.target.value.trim()) {
                     const success = await secureStorage.setSecureItem(`api_key_${provider}`, e.target.value.trim());
                     if (success) {
@@ -148,58 +184,51 @@ export class AIQuestionGenerator {
                 retryable: false
             });
         };
+        this.eventHandlers.fetchUrlClick = () => this.uiHelpers.handleUrlFetch();
 
-        // Add event listeners
-        if (modal) {
-            modal.addEventListener('click', this.eventHandlers.modalClick);
-        }
-
+        // Attach listeners
         if (closeButton) {
             closeButton.addEventListener('click', this.eventHandlers.closeButtonClick);
         }
 
-        document.addEventListener('keydown', this.eventHandlers.keydown);
-
-        // Provider selection change
-        const providerSelect = document.getElementById('ai-provider');
+        const providerSelect = dom.get('ai-provider');
         if (providerSelect) {
             providerSelect.addEventListener('change', this.eventHandlers.providerChange);
         }
 
-        // Model selection change
-        const modelSelect = document.getElementById('ollama-model');
+        const modelSelect = dom.get('ollama-model');
         if (modelSelect) {
             modelSelect.addEventListener('change', this.eventHandlers.modelChange);
         }
 
-        // File upload handling
-        const fileInput = document.getElementById('content-file');
+        const fileInput = dom.get('content-file');
         if (fileInput) {
             fileInput.addEventListener('change', this.eventHandlers.fileChange);
         }
 
-        // Content type detection
-        const contentTextarea = document.getElementById('source-content');
+        const contentTextarea = dom.get('source-content');
         if (contentTextarea) {
             contentTextarea.addEventListener('input', this.eventHandlers.contentInput);
         }
 
-        // Generate questions button
-        const generateBtn = document.getElementById('generate-questions');
+        const generateBtn = dom.get('generate-questions');
         if (generateBtn) {
             generateBtn.addEventListener('click', this.eventHandlers.generateClick);
         }
 
-        // Cancel button
-        const cancelBtn = document.getElementById('cancel-ai-generator');
+        const cancelBtn = dom.get('cancel-ai-generator');
         if (cancelBtn) {
             cancelBtn.addEventListener('click', this.eventHandlers.cancelClick);
         }
 
-        // API key input change listener
-        const apiKeyInput = document.getElementById('ai-api-key');
+        const apiKeyInput = dom.get('ai-api-key');
         if (apiKeyInput) {
             apiKeyInput.addEventListener('blur', this.eventHandlers.apiKeyBlur);
+        }
+
+        const fetchUrlBtn = dom.get('fetch-url-btn');
+        if (fetchUrlBtn) {
+            fetchUrlBtn.addEventListener('click', this.eventHandlers.fetchUrlClick);
         }
     }
 
@@ -207,149 +236,135 @@ export class AIQuestionGenerator {
      * Clean up all event listeners to prevent memory leaks
      */
     cleanup() {
-        const modal = document.getElementById('ai-generator-modal');
-        const closeButton = document.getElementById('close-ai-generator');
-        const providerSelect = document.getElementById('ai-provider');
-        const modelSelect = document.getElementById('ollama-model');
-        const fileInput = document.getElementById('content-file');
-        const contentTextarea = document.getElementById('source-content');
-        const generateBtn = document.getElementById('generate-questions');
-        const cancelBtn = document.getElementById('cancel-ai-generator');
-        const apiKeyInput = document.getElementById('ai-api-key');
+        const modal = dom.get('ai-generator-modal');
+        const closeButton = dom.get('close-ai-generator');
+        const providerSelect = dom.get('ai-provider');
+        const modelSelect = dom.get('ollama-model');
+        const fileInput = dom.get('content-file');
+        const contentTextarea = dom.get('source-content');
+        const generateBtn = dom.get('generate-questions');
+        const cancelBtn = dom.get('cancel-ai-generator');
+        const apiKeyInput = dom.get('ai-api-key');
+        const fetchUrlBtn = dom.get('fetch-url-btn');
 
-        // Remove all event listeners
         if (modal && this.eventHandlers.modalClick) {
             modal.removeEventListener('click', this.eventHandlers.modalClick);
         }
-
         if (closeButton && this.eventHandlers.closeButtonClick) {
             closeButton.removeEventListener('click', this.eventHandlers.closeButtonClick);
         }
-
         if (this.eventHandlers.keydown) {
             document.removeEventListener('keydown', this.eventHandlers.keydown);
         }
-
         if (providerSelect && this.eventHandlers.providerChange) {
             providerSelect.removeEventListener('change', this.eventHandlers.providerChange);
         }
-
         if (modelSelect && this.eventHandlers.modelChange) {
             modelSelect.removeEventListener('change', this.eventHandlers.modelChange);
         }
-
         if (fileInput && this.eventHandlers.fileChange) {
             fileInput.removeEventListener('change', this.eventHandlers.fileChange);
         }
-
         if (contentTextarea && this.eventHandlers.contentInput) {
             contentTextarea.removeEventListener('input', this.eventHandlers.contentInput);
         }
-
         if (generateBtn && this.eventHandlers.generateClick) {
             generateBtn.removeEventListener('click', this.eventHandlers.generateClick);
         }
-
         if (cancelBtn && this.eventHandlers.cancelClick) {
             cancelBtn.removeEventListener('click', this.eventHandlers.cancelClick);
         }
-
         if (apiKeyInput && this.eventHandlers.apiKeyBlur) {
             apiKeyInput.removeEventListener('blur', this.eventHandlers.apiKeyBlur);
         }
+        if (fetchUrlBtn && this.eventHandlers.fetchUrlClick) {
+            fetchUrlBtn.removeEventListener('click', this.eventHandlers.fetchUrlClick);
+        }
 
-        // Clear handler references
+        // Clean up helper classes
+        this.questionPreview.cleanup();
+
         this.eventHandlers = {};
-        
         logger.debug('AI Generator event listeners cleaned up');
     }
 
+    /**
+     * Truncate text at a word boundary to avoid cutting words mid-way
+     */
+    truncateAtWordBoundary(text, maxLength) {
+        if (!text || text.length <= maxLength) return text;
+
+        const truncated = text.substring(0, maxLength);
+        const lastSpace = truncated.lastIndexOf(' ');
+        const lastNewline = truncated.lastIndexOf('\n');
+        const lastBreak = Math.max(lastSpace, lastNewline);
+
+        if (lastBreak > maxLength - 200) {
+            return text.substring(0, lastBreak) + '...';
+        }
+        return truncated + '...';
+    }
+
     async generateQuestions() {
-        console.log('🔥 DEBUG: generateQuestions called');
-        
-        // Prevent multiple simultaneous generations
+        logger.debug('generateQuestions called');
+
         if (this.isGenerating) {
             logger.debug('Generation already in progress, ignoring request');
             return;
         }
-        
+
         this.isGenerating = true;
-        
-        // Direct validation - show errors to user instead of silent failure
+
         let provider, content, questionCount, difficulty, selectedTypes;
-        
+
         try {
-            provider = document.getElementById('ai-provider')?.value;
-            content = document.getElementById('source-content')?.value?.trim();
-            questionCount = parseInt(document.getElementById('question-count')?.value) || 1;
-            difficulty = document.getElementById('difficulty-level')?.value || 'medium';
-            
-            console.log('🔥 DEBUG: Form values:', { provider, content: content?.length, questionCount, difficulty });
-            
-            // Get selected question types
+            provider = dom.get('ai-provider')?.value;
+            content = dom.get('source-content')?.value?.trim();
+            questionCount = parseInt(dom.get('question-count')?.value) || 1;
+            difficulty = dom.get('difficulty-level')?.value || 'medium';
+
+            logger.debug('Form values:', { provider, content: content?.length, questionCount, difficulty });
+
             selectedTypes = [];
-            if (document.getElementById('type-multiple-choice')?.checked) {
-                selectedTypes.push('multiple-choice');
-            }
-            if (document.getElementById('type-true-false')?.checked) {
-                selectedTypes.push('true-false');
-            }
-            if (document.getElementById('type-multiple-correct')?.checked) {
-                selectedTypes.push('multiple-correct');
-            }
-            if (document.getElementById('type-numeric')?.checked) {
-                selectedTypes.push('numeric');
-            }
-            
+            if (dom.get('type-multiple-choice')?.checked) selectedTypes.push('multiple-choice');
+            if (dom.get('type-true-false')?.checked) selectedTypes.push('true-false');
+            if (dom.get('type-multiple-correct')?.checked) selectedTypes.push('multiple-correct');
+            if (dom.get('type-numeric')?.checked) selectedTypes.push('numeric');
+            if (dom.get('type-ordering')?.checked) selectedTypes.push('ordering');
+
             logger.debug('Selected question types:', selectedTypes);
-            
-            // Validate required fields with custom red popups
+
             if (!provider) {
-                console.log('🔥 DEBUG: No provider selected');
-                this.showSimpleErrorPopup('No AI Provider Selected', '❌ Please select an AI provider to generate questions.\n\nAvailable options:\n• OpenAI (paid)\n• Claude (paid)\n• Gemini (paid)\n• Ollama (free, local)', '🤖');
+                this.showSimpleErrorPopup('No AI Provider Selected', 'Please select an AI provider to generate questions.\n\nAvailable options:\n- OpenAI (paid)\n- Claude (paid)\n- Gemini (paid)\n- Ollama (free, local)', '\uD83E\uDD16');
                 this.isGenerating = false;
                 return;
             }
-            
+
             if (!content) {
-                console.log('🔥 DEBUG: No content provided');
-                this.showSimpleErrorPopup('No Content Provided', '❌ Please enter source content for question generation.\n\n💡 You can provide:\n• Text passages to create questions about\n• Topics you want questions on\n• Educational content to quiz students about\n• Any material you want to turn into quiz questions', '📝');
+                this.showSimpleErrorPopup('No Content Provided', 'Please enter source content for question generation.\n\nYou can provide:\n- Text passages to create questions about\n- Topics you want questions on\n- Educational content to quiz students about\n- Any material you want to turn into quiz questions', '\uD83D\uDCDD');
                 this.isGenerating = false;
                 return;
             }
-            
+
             if (selectedTypes.length === 0) {
-                console.log('🔥 DEBUG: No question types selected');
-                this.showSimpleErrorPopup('No Question Types Selected', '❌ Please select at least one question type to generate.\n\n✅ Available types:\n• Multiple Choice (4 options, 1 correct)\n• True/False (factual statements)\n• Multiple Correct (select all that apply)\n• Numeric (number-based answers)');
+                this.showSimpleErrorPopup('No Question Types Selected', 'Please select at least one question type to generate.\n\nAvailable types:\n- Multiple Choice (4 options, 1 correct)\n- True/False (factual statements)\n- Multiple Correct (select all that apply)\n- Numeric (number-based answers)\n- Ordering (arrange items in sequence)');
                 this.isGenerating = false;
                 return;
             }
-            
+
         } catch (error) {
-            console.log('🔥 DEBUG: Validation error:', error);
             logger.error('Validation error:', error);
-            this.showSimpleErrorPopup('Validation Error', `❌ Form validation failed: ${error.message}\n\nPlease check your inputs and try again.`);
+            this.showSimpleErrorPopup('Validation Error', `Form validation failed: ${error.message}\n\nPlease check your inputs and try again.`);
             this.isGenerating = false;
             return;
         }
-        
-        // Store the requested count for use throughout the process
+
         this.requestedQuestionCount = questionCount;
 
-        // Check for API key if required
         const needsApiKey = this.providers[provider]?.apiKey;
-        console.log('🔥 DEBUG: Provider needs API key:', { provider, needsApiKey });
-        
         if (needsApiKey) {
             const apiKey = await secureStorage.getSecureItem(`api_key_${provider}`);
-            logger.debug(`API key validation for ${provider}:`, {
-                exists: !!apiKey,
-                length: apiKey?.length || 0,
-                type: typeof apiKey
-            });
-            
             if (!apiKey || apiKey.trim().length === 0) {
-                console.log('🔥 DEBUG: Missing API key, showing popup');
                 logger.warn(`Missing or empty API key for provider: ${provider}`);
                 this.showApiKeyErrorPopup(provider, 'missing');
                 this.isGenerating = false;
@@ -357,1432 +372,247 @@ export class AIQuestionGenerator {
             }
         }
 
-        // Show loading state
-        const generateBtn = document.getElementById('generate-questions');
-        const statusDiv = document.getElementById('generation-status');
-        
+        const generateBtn = dom.get('generate-questions');
+        const statusDiv = dom.get('generation-status');
+
         if (generateBtn) generateBtn.disabled = true;
-        if (statusDiv) statusDiv.style.display = 'block';
+        if (statusDiv) statusDiv.classList.remove('hidden');
 
         try {
-            console.log('🔥 DEBUG: Starting question generation with provider:', provider);
-            
-            // Check if this is batched Excel processing
+            logger.debug('Starting question generation with provider:', provider);
+
             if (this.batchInfo) {
-                logger.debug('🔄 Starting batched Excel processing');
-                await this.processBatchedGeneration();
-                return; // processBatchedGeneration handles the full flow
+                logger.debug('Starting batched Excel processing');
+                await this.batchProcessor.processBatchedGeneration();
+                return;
             }
-            
-            // Build prompt based on content type and settings, including selected question types
+
             const prompt = this.buildPrompt(content, questionCount, difficulty, selectedTypes);
-            
+
+            const maxRetries = 3;
             let questions = [];
-            try {
-                switch (provider) {
-                    case 'ollama':
-                        questions = await this.generateWithOllama(prompt);
+
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    if (attempt > 1) {
+                        const statusText = statusDiv?.querySelector('span');
+                        if (statusText) {
+                            statusText.textContent = `Retry attempt ${attempt}/${maxRetries}...`;
+                        }
+                        logger.debug(`Retry attempt ${attempt}/${maxRetries}`);
+                    }
+
+                    const currentPrompt = attempt === 1 ? prompt : this.buildRetryPrompt(content, questionCount, difficulty, selectedTypes, attempt);
+                    questions = await this.batchProcessor.generateWithProvider(provider, currentPrompt);
+
+                    if (questions && questions.length > 0) {
+                        if (attempt > 1) {
+                            logger.debug(`Retry successful on attempt ${attempt}`);
+                        }
                         break;
-                    case 'huggingface':
-                        questions = await this.generateWithHuggingFace();
-                        break;
-                    case 'openai':
-                        questions = await this.generateWithOpenAI(prompt);
-                        break;
-                    case 'claude':
-                        questions = await this.generateWithClaude(prompt);
-                        break;
-                    case 'gemini':
-                        questions = await this.generateWithGemini(prompt);
-                        break;
-                }
-            } catch (providerError) {
-                console.log('🔥 DEBUG: Provider error caught:', providerError.message);
-                
-                // Handle API key related errors with custom popup
-                if (providerError.message.includes('Invalid') && providerError.message.includes('API key')) {
-                    console.log('🔥 DEBUG: Invalid API key error detected');
-                    this.showApiKeyErrorPopup(provider, 'invalid', providerError.message);
-                    return;
-                } else if (providerError.message.includes('401') || providerError.message.includes('Unauthorized')) {
-                    console.log('🔥 DEBUG: 401 Unauthorized error detected');
-                    this.showApiKeyErrorPopup(provider, 'invalid', 'Unauthorized - please check your API key');
-                    return;
-                } else if (providerError.message.includes('429') || providerError.message.includes('rate limit')) {
-                    console.log('🔥 DEBUG: Rate limit error detected');
-                    this.showApiKeyErrorPopup(provider, 'network', 'Rate limit exceeded - please try again in a few minutes');
-                    return;
-                } else if (providerError.message.includes('quota') || providerError.message.includes('billing')) {
-                    console.log('🔥 DEBUG: Quota/billing error detected');
-                    this.showApiKeyErrorPopup(provider, 'invalid', 'Account quota exceeded or billing issue - please check your account');
-                    return;
-                } else {
-                    console.log('🔥 DEBUG: Other provider error, showing custom alert');
-                    // For other errors, show a custom red alert instead of green showAlert
-                    this.showSimpleErrorPopup('Generation Failed', `❌ ${providerError.message}\n\n🔧 Possible solutions:\n• Check your API key is correct\n• Verify your account has credits\n• Try with different content\n• Wait a moment and try again`);
-                    return;
+                    }
+
+                } catch (providerError) {
+                    logger.debug(`Provider error on attempt ${attempt}:`, providerError.message);
+
+                    if (providerError.message.includes('Invalid') && providerError.message.includes('API key')) {
+                        this.showApiKeyErrorPopup(provider, 'invalid', providerError.message);
+                        return;
+                    } else if (providerError.message.includes('401') || providerError.message.includes('Unauthorized')) {
+                        this.showApiKeyErrorPopup(provider, 'invalid', 'Unauthorized - please check your API key');
+                        return;
+                    } else if (providerError.message.includes('429') || providerError.message.includes('rate limit')) {
+                        this.showApiKeyErrorPopup(provider, 'network', 'Rate limit exceeded - please try again in a few minutes');
+                        return;
+                    } else if (providerError.message.includes('quota') || providerError.message.includes('billing')) {
+                        this.showApiKeyErrorPopup(provider, 'invalid', 'Account quota exceeded or billing issue - please check your account');
+                        return;
+                    }
+
+                    const isJsonError = providerError.message.includes('Invalid JSON') ||
+                                       providerError.message.includes('JSON parsing') ||
+                                       providerError.message.includes('Unexpected token');
+
+                    if (isJsonError && attempt < maxRetries) {
+                        logger.debug('JSON parsing failed, will retry with simplified prompt');
+                        await new Promise(resolve => setTimeout(resolve, TIMING.RETRY_DELAY));
+                        continue;
+                    }
+
+                    if (attempt === maxRetries) {
+                        this.showSimpleErrorPopup('Generation Failed', `${providerError.message}\n\nPossible solutions:\n- Check your API key is correct\n- Verify your account has credits\n- Try with different content\n- Wait a moment and try again\n\n(Tried ${maxRetries} times)`);
+                        return;
+                    }
                 }
             }
 
-            console.log('🔥 DEBUG: Generation completed, questions:', questions?.length);
+            logger.debug('Generation completed, questions:', questions?.length);
 
             if (questions && questions.length > 0) {
-                // Double-check the count one more time before processing
                 if (questions.length > this.requestedQuestionCount) {
                     questions = questions.slice(0, this.requestedQuestionCount);
                 }
-                
-                // Process questions without showing alerts from within
-                await this.processGeneratedQuestions(questions, false);
-                this.playCompletionChime();
-                this.closeModal();
-                
-                // Show single success message after processing is complete
-                setTimeout(() => {
-                    showAlert('successfully_generated_questions', [questions.length]);
-                    this.isGenerating = false;
-                }, TIMING.ANIMATION_DURATION);
+                this.questionPreview.showQuestionPreview(questions);
+                this.isGenerating = false;
             } else {
-                console.log('🔥 DEBUG: No questions generated');
-                this.showSimpleErrorPopup('No Questions Generated', '❌ The AI provider returned no questions.\n\n🔧 Try:\n• Providing more detailed content\n• Using different question types\n• Rephrasing your content\n• Checking if your content is suitable for quiz questions');
+                logger.debug('No questions generated');
+                this.showSimpleErrorPopup('No Questions Generated', 'The AI provider returned no questions.\n\nTry:\n- Providing more detailed content\n- Using different question types\n- Rephrasing your content\n- Checking if your content is suitable for quiz questions');
             }
 
         } finally {
-            // Reset UI
             if (generateBtn) generateBtn.disabled = false;
-            if (statusDiv) statusDiv.style.display = 'none';
+            if (statusDiv) statusDiv.classList.add('hidden');
             this.isGenerating = false;
-        }
-    }
-
-    async processBatchedGeneration() {
-        if (!this.batchInfo) {
-            logger.warn('processBatchedGeneration called without batch info');
-            return;
-        }
-        
-        const { totalBatches, currentBatch, originalData, filename, batchSize } = this.batchInfo;
-        
-        // Update status to show batch progress
-        const statusDiv = document.getElementById('generation-status');
-        if (statusDiv) {
-            // Ensure status div is visible for batch processing
-            statusDiv.style.display = 'block';
-            
-            const statusText = statusDiv.querySelector('span');
-            if (statusText) {
-                statusText.textContent = `Processing batch ${currentBatch} of ${totalBatches}...`;
-            } else {
-                // Create status text if it doesn't exist
-                const newStatusText = document.createElement('span');
-                newStatusText.textContent = `Processing batch ${currentBatch} of ${totalBatches}...`;
-                statusDiv.appendChild(newStatusText);
-            }
-        }
-        
-        // Process next batch
-        const batchStart = (currentBatch - 1) * batchSize;
-        const batchEnd = Math.min(batchStart + batchSize, this.batchInfo.totalQuestions);
-        logger.debug(`📦 Processing batch ${currentBatch}: questions ${batchStart + 1}-${batchEnd}`);
-        
-        const structuredText = this.convertExcelToStructuredText(
-            originalData, 
-            filename, 
-            batchStart, 
-            batchSize
-        );
-        
-        logger.debug(`📦 Batch ${currentBatch} structured text length:`, structuredText.length);
-        
-        // Get form values
-        const provider = document.getElementById('ai-provider')?.value || 'ollama';
-        const difficulty = document.getElementById('difficulty-level')?.value || 'medium';
-        const selectedTypes = ['multiple-choice']; // Default for Excel conversion
-        
-        // Build prompt and generate
-        const prompt = this.buildPrompt(structuredText, batchSize, difficulty, selectedTypes);
-        
-        let questions = [];
-        try {
-            switch (provider) {
-                case 'ollama':
-                    questions = await this.generateWithOllama(prompt);
-                    break;
-                case 'openai':
-                    questions = await this.generateWithOpenAI(prompt);
-                    break;
-                case 'claude':
-                    questions = await this.generateWithClaude(prompt);
-                    break;
-                case 'gemini':
-                    questions = await this.generateWithGemini(prompt);
-                    break;
-            }
-        } catch (error) {
-            logger.error('Batch generation error:', error);
-            showAlert(`Batch ${currentBatch} failed: ${error.message}`, 'error');
-            return;
-        }
-        
-        if (questions && questions.length > 0) {
-            // Process questions for this batch
-            await this.processGeneratedQuestions(questions, false);
-            
-            logger.debug(`✅ Batch ${currentBatch} completed: ${questions.length} questions processed`);
-            
-            // Check if we have more batches
-            if (currentBatch < totalBatches) {
-                // Prepare next batch
-                this.batchInfo.currentBatch++;
-                
-                // Add delay between batches to be respectful to APIs
-                setTimeout(() => {
-                    this.processBatchedGeneration();
-                }, 2000); // 2-second delay between batches
-            } else {
-                // All batches complete!
-                this.playCompletionChime();
-                this.closeModal();
-                showAlert(`🎉 All ${totalBatches} batches completed! ${this.batchInfo.totalQuestions} questions generated successfully.`, 'success');
-                
-                // Reset batch info
-                this.batchInfo = null;
-                this.isGenerating = false;
-                
-                // Reset UI
-                const generateBtn = document.getElementById('generate-questions');
-                const statusDiv = document.getElementById('generation-status');
-                if (generateBtn) generateBtn.disabled = false;
-                if (statusDiv) statusDiv.style.display = 'none';
-            }
-        } else {
-            showAlert(`Batch ${currentBatch} generated no questions`, 'warning');
-            this.batchInfo = null;
-            this.isGenerating = false;
-        }
-    }
-
-    playCompletionChime() {
-        // Create and play completion sound similar to Claude Code's hook chime
-        try {
-            // Create a pleasant completion chime using Web Audio API
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // Create a sequence of pleasant tones
-            const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 - major chord
-            const duration = 0.3;
-            
-            frequencies.forEach((frequency, index) => {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + index * 0.15);
-                oscillator.type = 'sine';
-                
-                gainNode.gain.setValueAtTime(0, audioContext.currentTime + index * 0.15);
-                gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + index * 0.15 + 0.05);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.15 + duration);
-                
-                oscillator.start(audioContext.currentTime + index * 0.15);
-                oscillator.stop(audioContext.currentTime + index * 0.15 + duration);
-            });
-            
-            logger.debug('🔔 Completion chime played');
-        } catch (error) {
-            logger.debug('Could not play completion chime:', error);
-            // Fallback: try to play a system beep
-            try {
-                const utterance = new SpeechSynthesisUtterance('');
-                utterance.volume = 0;
-                speechSynthesis.speak(utterance);
-            } catch (fallbackError) {
-                logger.debug('Fallback chime also failed');
-            }
         }
     }
 
     buildPrompt(content, questionCount, difficulty, selectedTypes) {
-        // Safety check for parameters
         if (!selectedTypes || !Array.isArray(selectedTypes)) {
             logger.warn('buildPrompt called with invalid selectedTypes:', selectedTypes);
-            selectedTypes = ['multiple-choice']; // Default fallback
+            selectedTypes = ['multiple-choice'];
         }
-        
-        // Check if this is Excel-converted content
+
         if (content.includes('# Quiz Questions from Excel File:') && content.includes('INSTRUCTIONS FOR AI:')) {
-            return this.buildExcelConversionPrompt(content, selectedTypes);
+            return this.buildExcelConversionPrompt(content);
         }
-        
-        // Original prompt logic for generating questions from general content
-        const contentType = this.detectContentType(content);
-        // Use translation manager to get current app language (more reliable than localStorage)
-        const language = translationManager.getCurrentLanguage() || 'en';
-        
-        // Language name mapping for LLM instruction
-        const languageNames = {
-            'en': 'English',
-            'es': 'Spanish', 
-            'fr': 'French',
-            'de': 'German',
-            'it': 'Italian',
-            'pt': 'Portuguese', 
-            'pl': 'Polish',
-            'ja': 'Japanese',
-            'zh': 'Chinese'
-        };
-        
-        const targetLanguage = languageNames[language] || 'English';
-        
-        // Build question type description (using English prompts - LLM will handle translation)
-        let typeDescription = `Create EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} about the following content. Difficulty: ${difficulty}.`;
-        let structureExamples = [];
-        
-        if (selectedTypes.includes('multiple-choice')) {
-            typeDescription += '\n- Some questions should be multiple choice (4 options, one correct)';
-            structureExamples.push('{"question": "Question text here?", "type": "multiple-choice", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": 0, "timeLimit": 30}');
-        }
-        if (selectedTypes.includes('true-false')) {
-            typeDescription += '\n- Some questions should be true/false (single factual statements about the content, not choices between opposites)';
-            structureExamples.push('{"question": "Python is an interpreted programming language.", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20}');
-        }
-        if (selectedTypes.includes('multiple-correct')) {
-            typeDescription += '\n- Some questions should allow multiple correct answers (use "correctAnswers" array with indices)';
-            structureExamples.push('{"question": "Which of the following statements are TRUE? (Select all that apply)", "type": "multiple-correct", "options": ["Statement A is correct", "Statement B is wrong", "Statement C is correct", "Statement D is also correct"], "correctAnswers": [0, 2, 3], "timeLimit": 35}');
-        }
-        if (selectedTypes.includes('numeric')) {
-            typeDescription += '\n- Some questions should have numeric answers derived from the content (counts, dates, measurements, etc., NO generic math problems)';
-            structureExamples.push('{"question": "In what year was Python first released?", "type": "numeric", "correctAnswer": 1991, "tolerance": 0, "timeLimit": 25}');
-        }
-        
-        // Build structure example showing all selected types
-        const structureExample = `Return ONLY a valid JSON array with structures EXACTLY like these:\n[${structureExamples.join(',\n')}]`;
 
-        return `${typeDescription}\n\nCONTENT TO CREATE QUESTIONS FROM:\n${content}\n\n${structureExample}\n\nCRITICAL REQUIREMENTS: \n- Generate ALL questions in ${targetLanguage} language\n- Generate EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} - no more, no less\n- EVERY SINGLE QUESTION MUST be directly based on the content provided above - read it carefully and create questions that test understanding of THAT specific content\n- If the content is about topic X, ALL questions must be about topic X - no generic questions about other topics\n- Questions must reference specific facts, concepts, names, dates, or details mentioned in the provided content\n- Do NOT create questions about general knowledge unless that knowledge is specifically mentioned in the content\n- Mix different question types from the selected types: ${selectedTypes.join(', ')}\n- For true/false questions: Create single factual statements about the content, NOT binary choices between opposites (e.g., "Tom is a cat" not "Choose happy or sad")\n- For numeric questions: Numbers must come from the content (dates, counts, measurements), NOT random math problems\n- Return ONLY the JSON array, no other text\n- Use EXACTLY these JSON structures:\n  * Multiple-choice: correctAnswer as integer index (0, 1, 2, or 3), options array with 4 items\n  * True-false: Single factual statement about content, options must be ["True", "False"], correctAnswer as string ("true" or "false")  \n  * Multiple-correct: correctAnswers as array of indices [0, 1, 2, 3], options array\n  * Numeric: Answer derived from content, NO options array, correctAnswer as number, tolerance as number\n- All questions must have "timeLimit" field (15-40 seconds based on difficulty)\n- Make sure all JSON is properly formatted and valid\n- Do not include any explanations or additional text\n- If you generate more than ${questionCount} question${questionCount === 1 ? '' : 's'}, you have failed the task\n- REMEMBER: Every question must test something specific from the content above - reread the content if needed\n\nIMAGE/DIAGRAM GENERATION (OPTIONAL):\n- If a question would benefit from a visual aid, you can GENERATE the image code directly in the response\n- Add these OPTIONAL fields:\n  * "imageData": The actual SVG code OR Mermaid diagram syntax (not a description - the actual code!)\n  * "imageType": Either "svg" or "mermaid"\n- When to include images:\n  * Processes, workflows, sequences → Generate Mermaid flowchart syntax in imageData\n  * Simple shapes, diagrams, illustrations → Generate SVG XML code in imageData\n  * ONLY add images when they genuinely enhance understanding - not every question needs one\n\nMERMAID SYNTAX (for processes/flowcharts):\n- Write valid Mermaid code: graph TD; A[Start] --> B[Step]; B --> C[End];\n- Example: graph LR; A[Evaporation] --> B[Condensation]; B --> C[Precipitation]; C --> A;\n- Keep simple (3-6 nodes max)\n\nSVG CODE (for shapes/diagrams):\n- Write valid SVG XML with viewBox="0 0 400 300"\n- Example: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><circle cx="200" cy="150" r="80" fill="#4CAF50"/><text x="200" y="160" text-anchor="middle" fill="white">Cell</text></svg>\n\nEXAMPLES:\nMermaid: {"question": "First step in water cycle?", "type": "multiple-choice", "options": ["Evaporation", "Condensation", "Precipitation", "Collection"], "correctAnswer": 0, "timeLimit": 25, "imageData": "graph LR; A[Evaporation] --> B[Condensation]; B --> C[Precipitation]; C --> D[Collection]; D --> A;", "imageType": "mermaid"}\nSVG: {"question": "Which shape has 3 sides?", "type": "multiple-choice", "options": ["Triangle", "Square", "Pentagon", "Hexagon"], "correctAnswer": 0, "timeLimit": 20, "imageData": "<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 200 200\\"><polygon points=\\"100,20 20,180 180,180\\" fill=\\"#2196F3\\"/></svg>", "imageType": "svg"}\n\nCRITICAL: Put the COMPLETE code in imageData - don't truncate!`;
-    }
+        const contentInfo = this.uiHelpers.detectContentType(content);
+        const cognitiveLevel = dom.get('cognitive-level')?.value || 'mixed';
 
-    buildExcelConversionPrompt(content, selectedTypes) {
-        const language = translationManager.getCurrentLanguage() || 'en';
-        const languageNames = {
-            'en': 'English',
-            'es': 'Spanish', 
-            'fr': 'French',
-            'de': 'German',
-            'it': 'Italian',
-            'pt': 'Portuguese', 
-            'pl': 'Polish',
-            'ja': 'Japanese',
-            'zh': 'Chinese'
-        };
-        const targetLanguage = languageNames[language] || 'English';
-
-        return `CONVERT EXCEL QUESTIONS TO JSON - DO NOT MAKE UP NEW QUESTIONS
-
-You must convert ONLY the questions that are in this Excel data. Do not create any new questions.
-
-${content}
-
-STEP BY STEP INSTRUCTIONS:
-1. Find each "Question X:" section in the Excel data above
-2. For each question, copy the exact text and answers from the Excel
-3. Convert to JSON format shown below
-4. Do NOT translate or change any text
-5. Do NOT create questions not in the Excel
-
-JSON TEMPLATE - Use exactly this format:
-{"question": "EXACT_TEXT_FROM_EXCEL_COLUMN_A", "type": "multiple-choice", "options": ["EXACT_TEXT_FROM_COLUMN_B", "EXACT_TEXT_FROM_COLUMN_C", "EXACT_TEXT_FROM_COLUMN_D", "EXACT_TEXT_FROM_COLUMN_E"], "correctAnswer": 0, "timeLimit": 30}
-
-CRITICAL RULES:
-- Use ONLY questions that appear in the Excel data above
-- COPY TEXT EXACTLY AS WRITTEN - do NOT change, rephrase, translate, or modify ANY words
-- DO NOT fix grammar, spelling, or punctuation - use the exact text from Excel
-- DO NOT add punctuation marks if they're not in the original text
-- DO NOT change question marks, periods, or any formatting
-- CRITICAL: Use the CORRECT_ANSWER_INDEX provided for each question:
-  * Look for "CORRECT_ANSWER_INDEX: [number]" in the data
-  * Use that exact number as the correctAnswer field
-  * Do NOT try to figure out the correct answer yourself
-  * The correctAnswer field must be 0, 1, 2, or 3 (not A, B, C, D)
-- Return valid JSON array format: [{"question": ...}, {"question": ...}]
-- NO explanations, NO extra text, ONLY the JSON array
-- PRESERVE EXACT TEXT: Copy every word, space, and character exactly as it appears in the Excel
-
-Start converting now. Return only the JSON array.`;
-    }
-
-
-    async generateWithOllama(prompt) {
-        return await errorHandler.safeNetworkOperation(async () => {
-            const model = localStorage.getItem('ollama_selected_model') || AI.OLLAMA_DEFAULT_MODEL;
-            const timestamp = Date.now();
-            const randomSeed = Math.floor(Math.random() * 10000);
-            
-            // Enhanced prompt specifically for Ollama to ensure 4 options
-            const enhancedPrompt = `[Session: ${timestamp}-${randomSeed}] ${prompt}
-
-OLLAMA SPECIFIC REQUIREMENTS:
-- For multiple-choice questions: You MUST provide exactly 4 options in the "options" array
-- NEVER generate multiple-choice questions with 3 or fewer options
-- If you cannot think of 4 good options, create plausible distractors related to the content
-- Example: "options": ["Correct answer", "Related but wrong", "Plausible distractor", "Another distractor"]
-
-Please respond with only valid JSON. Do not include explanations or additional text.`;
-
-            const response = await fetch(AI.OLLAMA_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: model,
-                    prompt: enhancedPrompt,
-                    stream: false,
-                    options: {
-                        temperature: AI.DEFAULT_TEMPERATURE,
-                        seed: randomSeed
-                    }
-                })
-            });
-
-            if (!response.ok) {
-                if (response.status === 404) {
-                    throw new Error('Ollama server not running. Please start Ollama and try again.');
-                } else if (response.status === 0) {
-                    throw new Error('Cannot connect to Ollama. Make sure Ollama is running on localhost:11434');
-                } else {
-                    throw new Error(`Ollama error: ${response.status} - ${response.statusText}`);
-                }
-            }
-
-            const data = await response.json();
-            return this.parseAIResponse(data.response);
-        }, {
-            context: 'ollama-generation',
-            userMessage: 'Failed to generate questions with Ollama. Please ensure Ollama is running and try again.',
-            retryable: true
+        return buildMainPrompt({
+            content,
+            questionCount,
+            difficulty,
+            selectedTypes,
+            contentInfo,
+            isFormattingExistingQuestions: contentInfo.hasExistingQuestions,
+            cognitiveLevel
         });
+    }
+
+    buildRetryPrompt(content, questionCount, difficulty, selectedTypes, attemptNumber) {
+        return buildRetryPrompt({
+            content,
+            questionCount,
+            difficulty,
+            selectedTypes,
+            attemptNumber,
+            truncateAtWordBoundary: this.truncateAtWordBoundary.bind(this)
+        });
+    }
+
+    buildBloomInstructions(cognitiveLevel) {
+        return buildBloomInstructions(cognitiveLevel);
+    }
+
+    buildExcelConversionPrompt(content) {
+        return buildExcelConversionPrompt(content);
+    }
+
+    buildFormattingInstructions(contentInfo) {
+        return buildFormattingInstructions(contentInfo);
+    }
+
+    // Provider generation methods
+    async generateWithOllama(prompt) {
+        const rawResponse = await aiProviderService.generateWithOllama(prompt);
+        return this.parseAIResponse(rawResponse);
     }
 
     async generateWithOpenAI(prompt) {
-        return await errorHandler.safeNetworkOperation(async () => {
-            const apiKey = await secureStorage.getSecureItem('api_key_openai');
-            
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model: AI.OPENAI_MODEL,
-                    messages: [{
-                        role: 'user',
-                        content: prompt
-                    }],
-                    temperature: AI.DEFAULT_TEMPERATURE
-                })
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Invalid OpenAI API key. Please check your credentials.');
-                } else if (response.status === 429) {
-                    throw new Error('OpenAI rate limit exceeded. Please try again later.');
-                } else if (response.status === 402) {
-                    throw new Error('OpenAI billing issue. Please check your account balance and payment method.');
-                } else if (response.status === 403) {
-                    throw new Error('OpenAI API access forbidden. Please check your API key permissions.');
-                } else {
-                    const errorText = await response.text();
-                    throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
-                }
-            }
-
-            const data = await response.json();
-            return this.parseAIResponse(data.choices[0].message.content);
-        }, {
-            context: 'openai-generation',
-            userMessage: 'Failed to generate questions with OpenAI. Please check your API key and try again.',
-            retryable: true
-        });
-    }
-
-    async generateWithHuggingFace() {
-        // Placeholder for Hugging Face implementation
-        throw new Error(translationManager.getTranslationSync('huggingface_integration_coming'));
+        const rawResponse = await aiProviderService.generateWithOpenAI(prompt);
+        return this.parseAIResponse(rawResponse);
     }
 
     async generateWithClaude(prompt) {
-        console.log('🔥 DEBUG: generateWithClaude called');
-        
+        logger.debug('generateWithClaude called');
+
         try {
-            const apiKey = await secureStorage.getSecureItem('api_key_claude');
-            console.log('🔥 DEBUG: Claude API key retrieved:', !!apiKey);
-            
-            const response = await fetch(APIHelper.getApiUrl('api/claude/generate'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    prompt: prompt,
-                    apiKey: apiKey
-                })
+            const modelSelect = dom.get('claude-model');
+            const selectedModel = modelSelect?.value || 'claude-sonnet-4-5';
+
+            const rawResponse = await aiProviderService.generateWithClaude(prompt, {
+                model: selectedModel,
+                numQuestions: this.requestedQuestionCount || 5
             });
 
-            console.log('🔥 DEBUG: Claude API response status:', response.status);
+            return this.parseAIResponse(rawResponse);
 
-            if (!response.ok) {
-                let errorMessage = `Claude API error (${response.status})`;
-                
-                if (response.status === 401) {
-                    errorMessage = 'Invalid Claude API key. Please check your credentials.';
-                } else if (response.status === 429) {
-                    errorMessage = 'Claude rate limit exceeded. Please try again later.';
-                } else if (response.status === 402) {
-                    errorMessage = 'Claude billing issue. Please check your account balance.';
-                } else if (response.status === 403) {
-                    errorMessage = 'Claude API access forbidden. Please check your API key permissions.';
-                } else {
-                    try {
-                        const errorText = await response.text();
-                        errorMessage = `Claude API error (${response.status}): ${errorText}`;
-                    } catch (e) {
-                        errorMessage = `Claude API error (${response.status})`;
-                    }
-                }
-                
-                console.log('🔥 DEBUG: Claude API error message:', errorMessage);
-                throw new Error(errorMessage);
-            }
-
-            const data = await response.json();
-            console.log('🔥 DEBUG: Claude API success, parsing response');
-            
-            // Claude API returns content in data.content[0].text format
-            let content = '';
-            if (data.content && Array.isArray(data.content) && data.content.length > 0) {
-                content = data.content[0].text || data.content[0].content || '';
-            } else if (data.content) {
-                content = data.content;
-            } else {
-                throw new Error('Invalid Claude API response structure');
-            }
-            
-            return this.parseAIResponse(content);
-            
         } catch (error) {
-            console.log('🔥 DEBUG: Claude generation error caught:', error.message);
-            
-            // Show error popup directly
-            this.showSimpleErrorPopup('Claude Error', error.message, '❌');
-            
-            // Re-throw to stop further processing
+            logger.debug('Claude generation error caught:', error.message);
+            this.showSimpleErrorPopup('Claude Error', error.message, '\u274C');
             throw error;
         }
     }
 
     async generateWithGemini(prompt) {
-        return await errorHandler.safeNetworkOperation(async () => {
-            const apiKey = await secureStorage.getSecureItem('api_key_gemini');
-            
-            // Import the Google Gen AI library dynamically
-            const { GoogleGenAI } = await import('https://esm.sh/@google/genai@0.21.0');
-            
-            const ai = new GoogleGenAI({ apiKey: apiKey });
-            
-            try {
-                const response = await ai.models.generateContent({
-                    model: AI.GEMINI_MODEL,
-                    contents: prompt,
-                    config: {
-                        temperature: AI.DEFAULT_TEMPERATURE,
-                        maxOutputTokens: AI.GEMINI_MAX_TOKENS,
-                        candidateCount: 1,
-                        responseMimeType: 'text/plain'
-                    }
-                });
+        logger.debug('generateWithGemini called');
 
-                if (!response || !response.text) {
-                    throw new Error('Invalid Gemini API response structure');
-                }
+        try {
+            const modelSelect = dom.get('gemini-model');
+            const selectedModel = modelSelect?.value || 'gemini-2.5-flash';
 
-                const content = response.text();
-                logger.debug('Gemini API response:', content);
-                
-                return this.parseAIResponse(content);
-                
-            } catch (error) {
-                if (error.message.includes('API key') || error.message.includes('invalid_api_key')) {
-                    throw new Error('Invalid Gemini API key. Please check your credentials.');
-                } else if (error.message.includes('quota') || error.message.includes('429') || error.message.includes('RATE_LIMIT_EXCEEDED')) {
-                    throw new Error('Gemini rate limit exceeded. Please try again later.');
-                } else if (error.message.includes('billing') || error.message.includes('QUOTA_EXCEEDED')) {
-                    throw new Error('Gemini quota exceeded. Please check your account billing and quotas.');
-                } else if (error.message.includes('safety') || error.message.includes('blocked') || error.message.includes('SAFETY')) {
-                    throw new Error('Content blocked by Gemini safety filters. Try rephrasing your prompt.');
-                } else if (error.message.includes('permission') || error.message.includes('forbidden') || error.message.includes('403')) {
-                    throw new Error('Gemini API access forbidden. Please check your API key permissions.');
-                } else {
-                    throw new Error(`Gemini API error: ${error.message}`);
-                }
-            }
-        }, {
-            context: 'gemini-generation',
-            userMessage: 'Failed to generate questions with Gemini. Please check your API key and try again.',
-            retryable: true
-        });
+            const rawResponse = await aiProviderService.generateWithGemini(prompt, {
+                model: selectedModel,
+                numQuestions: this.requestedQuestionCount || 5
+            });
+
+            return this.parseAIResponse(rawResponse);
+
+        } catch (error) {
+            logger.debug('Gemini generation error caught:', error.message);
+            this.showSimpleErrorPopup('Gemini Error', error.message, '\u274C');
+            throw error;
+        }
     }
 
     parseAIResponse(responseText) {
-        logger.debug('🔍 ParseAIResponse - Raw response length:', responseText.length);
-        logger.debug('🔍 ParseAIResponse - Raw response preview:', responseText.substring(0, 200) + '...');
-        
-        try {
-            // Clean up the response text
-            let cleanText = responseText.trim();
-            
-            // Handle code models that might return comments or explanations
-            // Remove common code comments at the start of response
-            cleanText = cleanText.replace(/^\/\/[^\n]*\n?/gm, ''); // Remove // comments
-            cleanText = cleanText.replace(/^\/\*[\s\S]*?\*\/\n?/gm, ''); // Remove /* */ comments
-            cleanText = cleanText.replace(/^#[^\n]*\n?/gm, ''); // Remove # comments
-            cleanText = cleanText.replace(/^<!--[\s\S]*?-->\n?/gm, ''); // Remove HTML comments
-            
-            // Remove explanation text before JSON (common with code models)
-            const explanationPatterns = [
-                /^Here's?\s+(?:the|a)\s+JSON.*?:\s*/i,
-                /^(?:Here\s+is|This\s+is)\s+.*?:\s*/i,
-                /^(?:Based\s+on|From)\s+.*?:\s*/i,
-                /^(?:The\s+)?(?:JSON|Array)\s+(?:response|output)\s*:?\s*/i,
-                /^(?:Generated\s+)?(?:Questions?|Quiz)\s*:?\s*/i
-            ];
-            
-            for (const pattern of explanationPatterns) {
-                cleanText = cleanText.replace(pattern, '');
-            }
-            
-            cleanText = cleanText.trim();
-            
-            // Detect if response is primarily code (common with code-specialized models like CodeLlama)
-            const codePatterns = /^(from\s+\w+\s+import|import\s+\w+|def\s+\w+|class\s+\w+|function\s+\w+|var\s+\w+|const\s+\w+|let\s+\w+)/m;
-            if (codePatterns.test(cleanText) && !cleanText.includes('[') && !cleanText.includes('{')) {
-                throw new Error('Code models like CodeLlama are designed for code generation, not quiz creation. Please use Ollama with a general model like llama3.2 instead.');
-            }
-            
-            // Extract JSON from markdown code blocks if present
-            const jsonMatch = cleanText.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
-            if (jsonMatch) {
-                cleanText = jsonMatch[1];
-                logger.debug('🔍 ParseAIResponse - Extracted from code block');
-            }
-            
-            // Try to extract JSON array from text even if not in code blocks
-            const arrayMatch = cleanText.match(/\[[\s\S]*\]/);
-            if (arrayMatch && !jsonMatch) {
-                cleanText = arrayMatch[0];
-                logger.debug('🔍 ParseAIResponse - Extracted JSON array from text');
-            }
-            
-            // Remove any text before the JSON array
-            const startBracket = cleanText.indexOf('[');
-            const endBracket = cleanText.lastIndexOf(']');
-            if (startBracket !== -1 && endBracket !== -1 && endBracket > startBracket) {
-                cleanText = cleanText.substring(startBracket, endBracket + 1);
-            }
-            
-            // Try to fix common JSON issues for Claude/large models
-            cleanText = this.fixCommonJsonIssues(cleanText);
-            
-            logger.debug('🔍 ParseAIResponse - Clean text for parsing:', cleanText.substring(0, 300) + '...');
-            
-            // Try to parse as JSON
-            const parsed = JSON.parse(cleanText);
-            logger.debug('🔍 ParseAIResponse - JSON parsed successfully');
-            
-            // Handle both single question object and array of questions
-            let questions = Array.isArray(parsed) ? parsed : [parsed];
-            logger.debug('🔍 ParseAIResponse - Questions after array handling:', questions.length);
-            
-            // Limit to requested count (in case AI generates more than requested)
-            const requestedCount = this.requestedQuestionCount || 1;
-            logger.debug('🔍 ParseAIResponse - Requested count:', requestedCount);
-            
-            if (questions.length > requestedCount) {
-                logger.debug('🔍 ParseAIResponse - Truncating from', questions.length, 'to', requestedCount);
-                questions = questions.slice(0, requestedCount);
-            }
-            
-            logger.debug('🔍 ParseAIResponse - Final questions count:', questions.length);
-            questions.forEach((q, i) => {
-                logger.debug(`🔍 ParseAIResponse - Question ${i + 1}:`, {
-                    type: q.type,
-                    question: q.question?.substring(0, 50) + '...',
-                    hasOptions: !!q.options,
-                    optionsCount: q.options?.length,
-                    correctAnswer: q.correctAnswer,
-                    correctAnswers: q.correctAnswers
-                });
-            });
-            
-            return questions;
-            
-        } catch (error) {
-            logger.error('🔍 ParseAIResponse - JSON parsing failed:', error);
-            logger.error('🔍 ParseAIResponse - Failed text:', responseText.substring(0, 1000));
-            
-            // Try to extract questions manually if JSON parsing fails
-            try {
-                const manualQuestions = this.extractQuestionsManually(responseText);
-                logger.debug('🔍 ParseAIResponse - Manual extraction succeeded, count:', manualQuestions.length);
-                return manualQuestions;
-            } catch (manualError) {
-                logger.error('🔍 ParseAIResponse - Manual extraction also failed:', manualError);
-                throw new Error(`Invalid JSON response from AI provider. Response: ${responseText.substring(0, 100)}...`);
-            }
-        }
+        aiQuestionValidator.setRequestedCount(this.requestedQuestionCount || 1);
+        return aiQuestionValidator.parseAIResponse(responseText);
     }
 
     fixCommonJsonIssues(jsonText) {
-        let fixed = jsonText;
-
-        // Fix trailing commas before closing brackets/braces
-        fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
-
-        // Fix common quote issues first
-        fixed = fixed.replace(/'/g, '"'); // Replace single quotes with double quotes
-
-        // Fix missing quotes around property names
-        fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
-
-        // Fix incomplete JSON by finding complete question objects
-        if (fixed.includes('[') && !fixed.endsWith(']')) {
-            logger.debug('🔧 Detected incomplete JSON, attempting to fix');
-
-            // Count opening vs closing brackets
-            const openBrackets = (fixed.match(/\[/g) || []).length;
-            const closeBrackets = (fixed.match(/\]/g) || []).length;
-            const openBraces = (fixed.match(/\{/g) || []).length;
-            const closeBraces = (fixed.match(/\}/g) || []).length;
-
-            if (openBrackets > closeBrackets || openBraces > closeBraces) {
-                // Extract complete question objects using more reliable pattern matching
-                // Look for complete question objects that end with } or },
-                const completeObjectPattern = /\{[^}]*"question"[^}]*"type"[^}]*\}/g;
-                const completeObjects = fixed.match(completeObjectPattern) || [];
-
-                if (completeObjects.length > 0) {
-                    // Reconstruct the JSON array with only complete objects
-                    fixed = '[' + completeObjects.join(',') + ']';
-                    logger.debug(`🔧 Extracted ${completeObjects.length} complete question objects from truncated JSON`);
-                } else {
-                    // Fallback: Try to find the last complete property and close from there
-                    const lastCompleteProperty = Math.max(
-                        fixed.lastIndexOf('"}'),
-                        fixed.lastIndexOf('"]'),
-                        fixed.lastIndexOf('}')
-                    );
-
-                    if (lastCompleteProperty !== -1) {
-                        // Find how many closing braces/brackets we need
-                        const textBeforeEnd = fixed.substring(0, lastCompleteProperty + 2);
-                        const unclosedBraces = (textBeforeEnd.match(/\{/g) || []).length -
-                                              (textBeforeEnd.match(/\}/g) || []).length;
-                        const unclosedBrackets = (textBeforeEnd.match(/\[/g) || []).length -
-                                                (textBeforeEnd.match(/\]/g) || []).length;
-
-                        fixed = textBeforeEnd + '}'.repeat(Math.max(0, unclosedBraces)) +
-                                               ']'.repeat(Math.max(0, unclosedBrackets));
-                        logger.debug('🔧 Fixed incomplete JSON by closing unclosed braces and brackets');
-                    }
-                }
-            }
-        }
-
-        // Additional validation: Try to parse and see if we can improve further
-        try {
-            JSON.parse(fixed);
-            logger.debug('🔧 JSON fix successful - valid JSON produced');
-        } catch (e) {
-            logger.warn('🔧 Fixed JSON still invalid, but will attempt to parse anyway:', e.message);
-        }
-
-        logger.debug('🔧 Applied JSON fixes, length changed from', jsonText.length, 'to', fixed.length);
-        return fixed;
+        return aiQuestionValidator.fixCommonJsonIssues(jsonText);
     }
 
     extractQuestionsManually(responseText) {
-        logger.debug('🔍 Manual extraction attempting to find questions in text');
-
-        // First, try to extract individual JSON objects even if the array is malformed
-        const jsonObjectPattern = /\{[\s\S]*?"question"\s*:\s*"[^"]*?"[\s\S]*?"type"\s*:\s*"[^"]*?"[\s\S]*?\}/g;
-        const jsonObjects = responseText.match(jsonObjectPattern);
-
-        if (jsonObjects && jsonObjects.length > 0) {
-            logger.debug(`🔍 Found ${jsonObjects.length} JSON-like objects, attempting to parse each`);
-            const questions = [];
-
-            for (const objText of jsonObjects) {
-                try {
-                    // Try to fix and parse each object individually
-                    let fixedObj = objText;
-
-                    // Fix trailing commas
-                    fixedObj = fixedObj.replace(/,(\s*\})/g, '$1');
-
-                    // Fix single quotes
-                    fixedObj = fixedObj.replace(/'/g, '"');
-
-                    // Try to parse
-                    const parsed = JSON.parse(fixedObj);
-
-                    if (parsed.question && parsed.type) {
-                        questions.push(parsed);
-                        logger.debug('🔍 Successfully parsed JSON object:', parsed.question.substring(0, 50) + '...');
-                    }
-                } catch (e) {
-                    logger.warn('🔍 Failed to parse individual JSON object:', e.message);
-                }
-            }
-
-            if (questions.length > 0) {
-                const requestedCount = this.requestedQuestionCount || 1;
-                const limited = questions.slice(0, requestedCount);
-                logger.debug(`🔍 Manual extraction successful: found ${limited.length} valid questions`);
-                return limited;
-            }
-        }
-
-        // Fallback: Try to find question-like patterns in plain text
-        logger.debug('🔍 Attempting text pattern matching fallback');
-        const questionPattern = /(?:question|q\d+)[:\s]*(.+?)(?:options?|choices?)[:\s]*(.+?)(?:answer|correct)[:\s]*(.+?)(?=(?:question|q\d+|$))/gis;
-        const matches = [...responseText.matchAll(questionPattern)];
-
-        if (matches.length > 0) {
-            let questions = matches.map(match => {
-                const question = match[1].trim();
-                const optionsText = match[2].trim();
-                const answerText = match[3].trim();
-
-                // Extract options (A, B, C, D format)
-                const options = optionsText.split(/[ABCD][\):\.]?\s*/).filter(opt => opt.trim()).slice(0, 4);
-
-                // Try to determine correct answer
-                let correctAnswer = 0;
-                if (answerText.match(/^[A]$/i)) correctAnswer = 0;
-                else if (answerText.match(/^[B]$/i)) correctAnswer = 1;
-                else if (answerText.match(/^[C]$/i)) correctAnswer = 2;
-                else if (answerText.match(/^[D]$/i)) correctAnswer = 3;
-
-                return {
-                    question: question,
-                    options: options.length >= 4 ? options.slice(0, 4) : ['Option A', 'Option B', 'Option C', 'Option D'],
-                    correctAnswer: correctAnswer,
-                    type: 'multiple-choice',
-                    timeLimit: 30
-                };
-            });
-
-            // Limit to requested count
-            const requestedCount = this.requestedQuestionCount || 1;
-            if (questions.length > requestedCount) {
-                questions = questions.slice(0, requestedCount);
-            }
-
-            logger.debug(`🔍 Text pattern matching found ${questions.length} questions`);
-            return questions;
-        }
-
-        logger.error('🔍 All manual extraction methods failed');
-        throw new Error('Could not extract questions from response');
+        aiQuestionValidator.setRequestedCount(this.requestedQuestionCount || 1);
+        return aiQuestionValidator.extractQuestionsManually(responseText);
     }
 
+    // Delegate to UI helpers for content detection
     detectContentType(content) {
-        if (!content) return 'general';
-        
-        try {
-            // Mathematics indicators
-            if (AI.MATH_INDICATORS && AI.MATH_INDICATORS.test(content)) {
-                return 'mathematics';
-            }
-            
-            // Programming indicators  
-            if (AI.PROGRAMMING_INDICATORS && AI.PROGRAMMING_INDICATORS.test(content)) {
-                return 'programming';
-            }
-            
-            // Physics indicators
-            if (AI.PHYSICS_INDICATORS && AI.PHYSICS_INDICATORS.test(content)) {
-                return 'physics';
-            }
-            
-            // Chemistry indicators
-            if (AI.CHEMISTRY_INDICATORS && AI.CHEMISTRY_INDICATORS.test(content)) {
-                return 'chemistry';
-            }
-            
-            return 'general';
-        } catch (error) {
-            logger.warn('Content type detection failed:', error.message);
-            return 'general';
-        }
+        return this.uiHelpers.detectContentType(content);
     }
 
-    async handleProviderChange(provider) {
-        return await errorHandler.wrapAsyncOperation(async () => {
-            // Prevent multiple simultaneous calls
-            if (this.isChangingProvider) {
-                logger.debug('HandleProviderChange - Already changing provider, ignoring call for:', provider);
-                return;
-            }
-            
-            this.isChangingProvider = true;
-            logger.debug('HandleProviderChange called with provider:', provider);
-            
-            try {
-                const apiKeySection = document.getElementById('api-key-section');
-                const modelSelection = document.getElementById('model-selection');
-                
-                logger.debug('HandleProviderChange - Elements found:', { apiKeySection: !!apiKeySection, modelSelection: !!modelSelection });
-                
-                if (!apiKeySection || !modelSelection) return;
-                
-                const needsApiKey = this.providers[provider]?.apiKey;
-                
-                if (needsApiKey) {
-                    apiKeySection.style.display = 'block';
-                    // Clear API key input to force user to enter fresh key every time
-                    const apiKeyInput = document.getElementById('ai-api-key');
-                    if (apiKeyInput) {
-                        apiKeyInput.value = '';
-                        apiKeyInput.placeholder = 'Enter your API key';
-                    }
-                } else {
-                    apiKeySection.style.display = 'none';
-                }
-                
-                // Model selection visibility and loading
-                if (provider === 'ollama') {
-                    logger.debug('HandleProviderChange - Showing model selection for Ollama');
-                    // Make sure it's visible (remove hidden class if it exists)
-                    modelSelection.classList.remove('hidden');
-                    modelSelection.style.display = 'block';
-                    
-                    // Load the models
-                    await this.loadOllamaModels();
-                } else {
-                    logger.debug('HandleProviderChange - Hiding model selection for provider:', provider);
-                    modelSelection.classList.add('hidden');
-                }
-            } finally {
-                this.isChangingProvider = false;
-            }
-        }, {
-            errorType: errorHandler.errorTypes.SYSTEM,
-            context: 'provider-change',
-            userMessage: null, // Silent failure for UI operations
-            retryable: false,
-            fallback: () => {
-                this.isChangingProvider = false; // Ensure flag is reset on error
-            }
-        });
-    }
-
-    async loadOllamaModels() {
-        return await errorHandler.wrapAsyncOperation(async () => {
-            const modelSelect = document.getElementById('ollama-model');
-            const modelSelection = document.getElementById('model-selection');
-            
-            if (!modelSelect) {
-                logger.debug('LoadOllamaModels - Model select element not found');
-                return;
-            }
-
-            logger.debug('LoadOllamaModels - Starting model loading');
-            
-            // Ensure the parent div is visible first
-            if (modelSelection) {
-                modelSelection.classList.remove('hidden');
-                modelSelection.style.display = 'block';
-                logger.debug('LoadOllamaModels - Ensured model selection div is visible');
-            }
-            
-            // Set initial loading state and disable the select element
-            modelSelect.innerHTML = '<option value="">🔄 Loading models...</option>';
-            modelSelect.disabled = true;
-            
-            try {
-                logger.debug('LoadOllamaModels - Fetching from:', AI.OLLAMA_TAGS_ENDPOINT);
-                
-                const response = await fetch(AI.OLLAMA_TAGS_ENDPOINT);
-                
-                logger.debug('LoadOllamaModels - Fetch response status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                logger.debug('LoadOllamaModels - Response data:', data);
-                
-                const models = data.models || [];
-                logger.debug('LoadOllamaModels - Found models count:', models.length);
-                
-                // Clear existing options and populate with models
-                modelSelect.innerHTML = ''; 
-                
-                if (models.length === 0) {
-                    logger.debug('LoadOllamaModels - No models found, showing message');
-                    modelSelect.innerHTML = '<option value="">No models found</option>';
-                } else {
-                    logger.debug('LoadOllamaModels - Populating select with models');
-                    
-                    models.forEach((model, index) => {
-                        const option = document.createElement('option');
-                        option.value = model.name;
-                        option.textContent = `${model.name} (${(model.size / 1024 / 1024 / 1024).toFixed(1)}GB)`;
-                        modelSelect.appendChild(option);
-                        logger.debug(`LoadOllamaModels - Added model ${index + 1}:`, model.name);
-                    });
-                    
-                    // Restore saved selection or set default
-                    const savedModel = localStorage.getItem('ollama_selected_model');
-                    if (savedModel && models.some(m => m.name === savedModel)) {
-                        modelSelect.value = savedModel;
-                        logger.debug('LoadOllamaModels - Set saved model:', savedModel);
-                    } else if (models.length > 0) {
-                        // Set default to first available model
-                        modelSelect.value = models[0].name;
-                        localStorage.setItem('ollama_selected_model', models[0].name);
-                        logger.debug('LoadOllamaModels - Set default model:', models[0].name);
-                    }
-                }
-                
-                logger.debug('LoadOllamaModels - Final select options count:', modelSelect.options.length);
-                
-            } finally {
-                modelSelect.disabled = false;
-                
-                // Force visibility again after loading
-                if (modelSelection) {
-                    modelSelection.classList.remove('hidden');
-                    modelSelection.style.display = 'block';
-                    logger.debug('LoadOllamaModels - Final visibility enforcement');
-                }
-                
-                logger.debug('LoadOllamaModels - Enabled select, final state:', {
-                    optionsCount: modelSelect.options.length,
-                    selectedValue: modelSelect.value,
-                    disabled: modelSelect.disabled,
-                    parentVisible: modelSelection ? window.getComputedStyle(modelSelection).display : 'unknown'
-                });
-            }
-        }, {
-            errorType: errorHandler.errorTypes.NETWORK,
-            context: 'ollama-model-loading',
-            userMessage: null, // Don't show alert for model loading failures
-            retryable: false,
-            fallback: () => {
-                // Load fallback models on failure
-                const modelSelect = document.getElementById('ollama-model');
-                if (modelSelect) {
-                    logger.debug('LoadOllamaModels - Loading fallback models');
-                    const fallbackModels = this.providers.ollama.models;
-                    if (fallbackModels && fallbackModels.length > 0) {
-                        modelSelect.innerHTML = '';
-                        fallbackModels.forEach(modelName => {
-                            const option = document.createElement('option');
-                            option.value = modelName;
-                            option.textContent = `${modelName} (fallback)`;
-                            modelSelect.appendChild(option);
-                        });
-                        
-                        // Set first fallback as default
-                        modelSelect.value = fallbackModels[0];
-                        localStorage.setItem('ollama_selected_model', fallbackModels[0]);
-                        logger.debug('LoadOllamaModels - Set fallback default:', fallbackModels[0]);
-                    } else {
-                        modelSelect.innerHTML = '<option value="">❌ Ollama not available</option>';
-                    }
-                }
-            }
-        });
-    }
-
-    handleFileUpload(file) {
-        if (!file) return;
-        
-        // Check if file is Excel format
-        const fileExtension = file.name.toLowerCase().split('.').pop();
-        if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-            this.handleExcelUpload(file);
-            return;
-        }
-        
-        // Handle text-based files as before
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const content = e.target.result;
-            const contentTextarea = document.getElementById('source-content');
-            if (contentTextarea) {
-                contentTextarea.value = content;
-                this.detectContentType(content);
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    handleExcelUpload(file) {
-        if (!XLSX) {
-            logger.error('XLSX library not loaded');
-            showAlert('Excel processing library not available', 'error');
-            return;
-        }
-        
-        logger.debug('🗂️ Processing Excel file:', file.name);
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                
-                // Use the first sheet
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                
-                // Convert to array of objects
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                
-                logger.debug('🗂️ Excel data parsed:', jsonData.length, 'rows');
-                
-                // Convert Excel data to structured text for AI processing
-                const structuredText = this.convertExcelToStructuredText(jsonData, file.name);
-                
-                if (structuredText) {
-                    // Put the structured text in the content textarea for AI processing
-                    const contentTextarea = document.getElementById('source-content');
-                    if (contentTextarea) {
-                        contentTextarea.value = structuredText;
-                        this.detectContentType(structuredText);
-                    }
-                    
-                    // Auto-fill question count field with detected questions
-                    const questionCountField = document.getElementById('question-count');
-                    if (questionCountField && this.detectedQuestionCount) {
-                        const previousCount = questionCountField.value;
-                        questionCountField.value = this.detectedQuestionCount;
-                        logger.debug('🗂️ Auto-filled question count from', previousCount, 'to', this.detectedQuestionCount);
-                    }
-                    
-                    // Note: Batch processing alert will be shown by convertExcelToStructuredText if needed
-                    logger.debug('🗂️ Excel converted to structured text for AI');
-                } else {
-                    throw new Error('No valid data found in Excel file');
-                }
-                
-            } catch (error) {
-                logger.error('🗂️ Excel processing failed:', error);
-                showAlert('Failed to process Excel file: ' + error.message, 'error');
-            }
-        };
-        
-        reader.onerror = (error) => {
-            logger.error('🗂️ File reading failed:', error);
-            showAlert('Failed to read Excel file', 'error');
-        };
-        
-        reader.readAsArrayBuffer(file);
-    }
-
+    // Excel processing delegates
     convertExcelToStructuredText(jsonData, filename, batchStart = 0, batchSize = null) {
-        if (!jsonData || jsonData.length < 2) {
-            throw new Error('Excel file must contain at least a header row and one data row');
-        }
-        
-        // Smart batching based on model capabilities  
-        const totalRows = jsonData.length - 1; // Subtract header row
-        const provider = document.getElementById('ai-provider')?.value || 'ollama';
-        
-        // Dynamic batch sizes based on AI provider capabilities
-        const batchSizes = {
-            'ollama': 5,        // Small local models work better with fewer questions
-            'huggingface': 5,   // Free tier models are limited
-            'openai': 10,       // Powerful models can handle more
-            'claude': 10,       // Powerful models can handle more
-            'gemini': 10        // Powerful models can handle more
-        };
-        
-        const optimalBatchSize = batchSizes[provider] || 5;
-        const actualBatchSize = batchSize || optimalBatchSize;
-        
-        // Determine if we need batching (only on initial call, not recursive)
-        if (totalRows > optimalBatchSize && batchSize === null && !this.batchInfo) {
-            // Store batch info for later processing
-            this.batchInfo = {
-                totalQuestions: totalRows,
-                batchSize: optimalBatchSize,
-                totalBatches: Math.ceil(totalRows / optimalBatchSize),
-                currentBatch: 1,
-                originalData: jsonData,
-                filename: filename
-            };
-            
-            const modelName = provider === 'ollama' ? 
-                localStorage.getItem('ollama_selected_model') || 'Unknown Model' : 
-                provider.charAt(0).toUpperCase() + provider.slice(1);
-            
-            showAlert(`Excel file has ${totalRows} questions. Processing in ${this.batchInfo.totalBatches} batches of ${optimalBatchSize} questions each with ${modelName} for better accuracy.`, 'info');
-            
-            // Process first batch
-            return this.convertExcelToStructuredText(jsonData, filename, 0, optimalBatchSize);
-        }
-        
-        // Create batch-specific data with consistent header handling
-        let batchData = jsonData;
-        if (batchSize !== null) {
-            const hasHeaders = jsonData[0] && jsonData[0].some(cell => 
-                cell && typeof cell === 'string' && 
-                (cell.toLowerCase().includes('question') || cell.toLowerCase().includes('pregunta'))
-            );
-            
-            const headerRows = hasHeaders ? 1 : 0;
-            const startRow = headerRows + batchStart;
-            const endRow = Math.min(startRow + batchSize, jsonData.length);
-            
-            // ALWAYS include original headers for consistent format detection
-            // This ensures all batches see the same header structure
-            batchData = hasHeaders ? 
-                [jsonData[0], ...jsonData.slice(startRow, endRow)] :
-                jsonData.slice(startRow, endRow);
-                
-            logger.debug(`📦 Batch data: headers=${hasHeaders}, startRow=${startRow}, endRow=${endRow}, batchData.length=${batchData.length}`);
-        }
-        
-        // Use enhanced format detection
-        const structuredText = this.formatExcelDataWithDetection(batchData, filename, batchStart, batchSize);
-        
-        logger.debug('🗂️ Converted Excel batch to structured text:', structuredText.length, 'characters');
-        
-        // Store the detected question count for auto-filling (only on first batch)
-        if (batchStart === 0) {
-            this.detectedQuestionCount = totalRows;
-        }
-        
-        return structuredText;
+        const provider = dom.get('ai-provider')?.value || 'ollama';
+        const result = excelQuestionParser.convertToStructuredText(jsonData, filename, provider, batchStart, batchSize);
+        this.batchInfo = excelQuestionParser.getBatchInfo();
+        this.detectedQuestionCount = excelQuestionParser.getDetectedQuestionCount();
+        return result;
     }
 
     detectExcelFormat(jsonData) {
-        if (!jsonData || jsonData.length < 2) {
-            return { questionCol: 0, answerCols: [1, 2, 3, 4], hasHeaders: false };
-        }
-        
-        const headerRow = jsonData[0];
-        const dataRow = jsonData[1];
-        
-        // Check if first row looks like headers
-        const hasHeaders = headerRow && headerRow.some(cell => 
-            cell && typeof cell === 'string' && 
-            (cell.toLowerCase().includes('question') || 
-             cell.toLowerCase().includes('pregunta') ||
-             cell.toLowerCase().includes('answer') ||
-             cell.toLowerCase().includes('respuesta') ||
-             cell.toLowerCase().includes('option') ||
-             cell.toLowerCase().includes('opción') ||
-             cell.toLowerCase().includes('correct') ||
-             cell.toLowerCase().includes('correcto'))
-        );
-        
-        let questionCol = 0;
-        let answerCols = [];
-        let correctAnswerCol = -1;
-        
-        if (hasHeaders) {
-            // Try to identify columns by headers
-            headerRow.forEach((header, index) => {
-                if (!header) return;
-                
-                const headerLower = header.toString().toLowerCase();
-                
-                // Question column
-                if (headerLower.includes('question') || headerLower.includes('pregunta')) {
-                    questionCol = index;
-                }
-                // Answer/option columns
-                else if (headerLower.includes('answer') || headerLower.includes('respuesta') ||
-                         headerLower.includes('option') || headerLower.includes('opción')) {
-                    answerCols.push(index);
-                }
-                // Correct answer column
-                else if (headerLower.includes('correct') || headerLower.includes('correcto')) {
-                    correctAnswerCol = index;
-                }
-            });
-            
-            // If we didn't find specific answer columns, assume they follow the question
-            if (answerCols.length === 0) {
-                for (let i = questionCol + 1; i < headerRow.length && i < questionCol + 5; i++) {
-                    if (headerRow[i] && headerRow[i].toString().trim()) {
-                        answerCols.push(i);
-                    }
-                }
-            }
-        } else {
-            // No headers - use default assumption but try to be smarter
-            // Look at the data to infer structure
-            if (dataRow) {
-                // Find the column with the longest text (likely the question)
-                let longestTextCol = 0;
-                let longestLength = 0;
-                
-                dataRow.forEach((cell, index) => {
-                    if (cell && cell.toString().length > longestLength) {
-                        longestLength = cell.toString().length;
-                        longestTextCol = index;
-                    }
-                });
-                
-                questionCol = longestTextCol;
-                
-                // Assume next 4 columns are answers
-                for (let i = 0; i < dataRow.length; i++) {
-                    if (i !== questionCol && dataRow[i] && dataRow[i].toString().trim()) {
-                        answerCols.push(i);
-                    }
-                }
-            }
-        }
-        
-        // Ensure we have some answer columns
-        if (answerCols.length === 0) {
-            // Default fallback
-            answerCols = [1, 2, 3, 4].filter(col => col < (headerRow?.length || 5));
-        }
-        
-        logger.debug('🔍 Excel format detected:', {
-            hasHeaders,
-            questionCol,
-            answerCols,
-            correctAnswerCol
-        });
-        
-        // Debug: Show what columns we think contain what
-        logger.debug('🔍 Column interpretation:', {
-            questionColumn: `Column ${String.fromCharCode(65 + questionCol)}`,
-            answerColumns: answerCols.map(col => `Column ${String.fromCharCode(65 + col)}`),
-            correctAnswerColumn: correctAnswerCol !== -1 ? `Column ${String.fromCharCode(65 + correctAnswerCol)}` : 'Not detected'
-        });
-        
-        return {
-            hasHeaders,
-            questionCol,
-            answerCols,
-            correctAnswerCol
-        };
+        return excelQuestionParser.detectFormat(jsonData);
     }
 
     formatExcelDataWithDetection(jsonData, filename, batchStart = 0, batchSize = null) {
-        const format = this.detectExcelFormat(jsonData);
-        const totalRows = jsonData.length - (format.hasHeaders ? 1 : 0);
-        
-        let structuredText = `# Quiz Questions from Excel File: ${filename}\n\n`;
-        structuredText += `IMPORTANT: These are existing questions from an Excel file. Convert them exactly as written.\n\n`;
-        
-        // Add batch information if applicable
-        if (this.batchInfo && batchSize !== null) {
-            const batchEnd = Math.min(batchStart + batchSize, this.batchInfo.totalQuestions);
-            structuredText += `BATCH PROCESSING: Questions ${batchStart + 1} to ${batchEnd} (Batch ${this.batchInfo.currentBatch} of ${this.batchInfo.totalBatches})\n\n`;
-        }
-        
-        if (format.hasHeaders) {
-            const headerRow = jsonData[0];
-            structuredText += `Detected Format:\n`;
-            structuredText += `- Question Column: ${headerRow[format.questionCol] || 'Column ' + String.fromCharCode(65 + format.questionCol)}\n`;
-            structuredText += `- Answer Columns: ${format.answerCols.map(col => headerRow[col] || 'Column ' + String.fromCharCode(65 + col)).join(', ')}\n\n`;
-        } else {
-            structuredText += `Detected Format: Question in Column ${String.fromCharCode(65 + format.questionCol)}, Answers in Columns ${format.answerCols.map(col => String.fromCharCode(65 + col)).join(', ')}\n\n`;
-        }
-        
-        structuredText += `EXCEL QUESTIONS TO CONVERT:\n\n`;
-        
-        // Process data rows
-        const startRow = format.hasHeaders ? 1 : 0;
-        let questionNumber = batchStart + 1; // Continue numbering from batch start
-        
-        for (let i = startRow; i < jsonData.length; i++) {
-            const row = jsonData[i];
-            
-            // Skip completely empty rows
-            if (!row || row.length === 0 || row.every(cell => !cell || cell.toString().trim() === '')) {
-                continue;
-            }
-            
-            structuredText += `Question ${questionNumber}:\n`;
-            
-            // Question text
-            if (row[format.questionCol]) {
-                structuredText += `  Question: ${row[format.questionCol].toString().trim()}\n`;
-            }
-            
-            // Handle your specific Excel format: A=Question, B=Correct, C/D/E=Wrong
-            const allAnswers = [];
-            const correctAnswerText = row[1] ? row[1].toString().trim() : ''; // Column B
-            const wrongAnswers = [];
-            
-            // Collect wrong answers from columns C, D, E (indices 2, 3, 4)
-            for (let i = 2; i <= 4; i++) {
-                if (row[i] && row[i].toString().trim()) {
-                    wrongAnswers.push(row[i].toString().trim());
-                }
-            }
-            
-            // Arrange answers: Correct answer first, then wrong answers
-            if (correctAnswerText) {
-                allAnswers.push(correctAnswerText);
-                wrongAnswers.forEach(wrong => allAnswers.push(wrong));
-                
-                // Output all options with correct answer first
-                allAnswers.forEach((answer, index) => {
-                    structuredText += `  Option ${index + 1}: ${answer}\n`;
-                });
-                
-                // Correct answer is always first (index 0)
-                const correctAnswerIndex = 0;
-                structuredText += `  CORRECT_ANSWER_INDEX: ${correctAnswerIndex}\n`;
-                logger.debug(`📝 Question ${questionNumber}: Column B="${correctAnswerText}" placed at index ${correctAnswerIndex}, all answers=[${allAnswers.join(', ')}]`);
-            } else {
-                // Fallback if no correct answer found
-                structuredText += `  ERROR: No correct answer found in Column B\n`;
-                logger.error(`📝 Question ${questionNumber}: No correct answer found in Column B`);
-            }
-            
-            structuredText += `\n`;
-            questionNumber++;
-        }
-        
-        structuredText += `\nINSTRUCTIONS FOR AI:\n`;
-        structuredText += `- Convert these existing questions to JSON format\n`;
-        structuredText += `- Copy ALL text EXACTLY as written - do not change any words\n`;
-        structuredText += `- Use CORRECT_ANSWER_INDEX number provided for each question\n`;
-        structuredText += `- Do NOT translate or modify the language\n`;
-        
-        return structuredText;
+        return excelQuestionParser.formatDataWithDetection(jsonData, filename, batchStart, batchSize);
     }
 
     async processGeneratedQuestions(questions, showAlerts = true) {
-        logger.debug('🔄 ProcessGeneratedQuestions - Starting with questions:', questions.length);
+        logger.debug('ProcessGeneratedQuestions - Starting with questions:', questions.length);
 
-        // Add questions to the main quiz
-        if (window.game && window.game.quizManager) {
+        const quizManager = this._getQuizManager();
+        if (quizManager) {
             let validCount = 0;
             let invalidCount = 0;
 
-            // Process questions SEQUENTIALLY to avoid race conditions with DOM creation
             for (let index = 0; index < questions.length; index++) {
                 const questionData = questions[index];
-                logger.debug(`🔄 ProcessGeneratedQuestions - Processing question ${index + 1}:`, {
+                logger.debug(`ProcessGeneratedQuestions - Processing question ${index + 1}:`, {
                     type: questionData.type,
                     hasQuestion: !!questionData.question,
                     hasOptions: !!questionData.options,
@@ -1793,58 +623,75 @@ Please respond with only valid JSON. Do not include explanations or additional t
                     imageType: questionData.imageType
                 });
 
-                // Generate image if AI provided image data
                 if (questionData.imageData && questionData.imageType) {
-                    logger.debug(`🖼️ Rendering ${questionData.imageType} image for question ${index + 1}`);
-                    try {
-                        const imageUrl = await this.renderImageData(questionData.imageData, questionData.imageType);
-                        if (imageUrl) {
-                            questionData.image = imageUrl;
-                            logger.debug(`✅ Image rendered successfully: ${imageUrl.substring(0, 50)}...`);
-                        }
-                    } catch (error) {
-                        logger.warn(`⚠️ Image rendering failed for question ${index + 1}:`, error.message);
-                        // Continue without image - don't fail the whole question
-                    }
-                    // Remove temporary fields
+                    logger.debug(`Rendering ${questionData.imageType} image for question ${index + 1}`);
+                    await errorHandler.safeExecute(
+                        async () => {
+                            const imageUrl = await this.renderImageData(questionData.imageData, questionData.imageType);
+                            if (imageUrl) {
+                                questionData.image = imageUrl;
+                                logger.debug(`Image rendered successfully: ${imageUrl.substring(0, 50)}...`);
+                            }
+                        },
+                        { operation: 'render-question-image', questionIndex: index + 1, imageType: questionData.imageType }
+                    );
                     delete questionData.imageData;
                     delete questionData.imageType;
                 }
 
-                // Validate and add each question
-                if (this.validateGeneratedQuestion(questionData)) {
-                    logger.debug(`✅ ProcessGeneratedQuestions - Question ${index + 1} is valid, adding to quiz`);
+                // Handle AI-generated Manim animation code
+                if (questionData.videoData && questionData.videoType === 'manim') {
+                    const placement = questionData.videoPlacement || 'question';
+                    await errorHandler.safeExecute(
+                        async () => {
+                            const videoPath = await this.renderManimCode(questionData.videoData);
+                            if (videoPath) {
+                                if (placement === 'explanation') {
+                                    questionData.explanationVideo = videoPath;
+                                    questionData.explanationVideoManimCode = questionData.videoData;
+                                } else {
+                                    questionData.video = videoPath;
+                                    questionData.videoManimCode = questionData.videoData;
+                                }
+                                logger.debug(`Manim animation rendered for ${placement}: ${videoPath}`);
+                            }
+                        },
+                        { operation: 'render-manim-animation', questionIndex: index + 1 }
+                    );
+                    delete questionData.videoData;
+                    delete questionData.videoType;
+                    delete questionData.videoPlacement;
+                }
 
-                    // Add question and wait for DOM updates to complete
+                if (this.validateGeneratedQuestion(questionData)) {
+                    logger.debug(`ProcessGeneratedQuestions - Question ${index + 1} is valid, adding to quiz`);
+
                     await new Promise(resolve => {
-                        // Check if this will create a new DOM element
                         const questionElements = document.querySelectorAll('.question-item');
                         const firstQuestion = questionElements[0];
-                        const needsNewElement = !(firstQuestion && window.game.quizManager.isEmptyQuestion(firstQuestion));
+                        const needsNewElement = !(firstQuestion && quizManager.isEmptyQuestion(firstQuestion));
 
-                        window.game.quizManager.addGeneratedQuestion(questionData, showAlerts);
+                        quizManager.addGeneratedQuestion(questionData, showAlerts);
 
-                        // Wait longer if we created a new DOM element
-                        const waitTime = needsNewElement ? 400 : 50;
+                        const waitTime = needsNewElement ? 400 : TIMING.DOM_READY_CHECK;
                         setTimeout(resolve, waitTime);
                     });
 
                     validCount++;
                 } else {
-                    logger.warn(`❌ ProcessGeneratedQuestions - Question ${index + 1} is invalid, skipping:`, questionData);
+                    logger.warn(`ProcessGeneratedQuestions - Question ${index + 1} is invalid, skipping:`, questionData);
                     invalidCount++;
                 }
             }
 
-            logger.debug('🔄 ProcessGeneratedQuestions - Summary:', {
+            logger.debug('ProcessGeneratedQuestions - Summary:', {
                 total: questions.length,
                 valid: validCount,
                 invalid: invalidCount
             });
 
         } else {
-            logger.warn('🔄 ProcessGeneratedQuestions - Window.game.quizManager not available, using fallback');
-            // Fallback: dispatch custom event
+            logger.warn('ProcessGeneratedQuestions - Window.game.quizManager not available, using fallback');
             const event = new CustomEvent('questionsGenerated', {
                 detail: { questions }
             });
@@ -1852,14 +699,8 @@ Please respond with only valid JSON. Do not include explanations or additional t
         }
     }
 
-    /**
-     * Render image data (SVG or Mermaid) to a data URL
-     * @param {string} imageData - SVG code or Mermaid syntax provided by AI
-     * @param {string} imageType - Type: 'svg' or 'mermaid'
-     * @returns {Promise<string>} - Data URL of the rendered image
-     */
     async renderImageData(imageData, imageType) {
-        logger.debug(`🖼️ renderImageData called: type=${imageType}`);
+        logger.debug(`renderImageData called: type=${imageType}`);
 
         try {
             if (imageType === 'mermaid') {
@@ -1877,17 +718,35 @@ Please respond with only valid JSON. Do not include explanations or additional t
     }
 
     /**
-     * Render Mermaid syntax to SVG data URL
-     * @param {string} mermaidCode - Mermaid diagram syntax provided by AI
-     * @returns {Promise<string>} - Data URL of the rendered SVG
+     * Render Manim code to MP4 via the server endpoint
+     * @param {string} manimCode - Manim Python source code
+     * @returns {Promise<string|null>} Video path or null on failure
      */
+    async renderManimCode(manimCode) {
+        try {
+            const response = await fetch(APIHelper.getApiUrl('api/manim/render'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: manimCode, quality: 'low' })
+            });
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                logger.warn(`Manim render failed: ${err.error || response.statusText}`);
+                return null;
+            }
+            const data = await response.json();
+            return data.videoPath || null;
+        } catch (error) {
+            logger.warn('Manim render request failed:', error.message);
+            return null;
+        }
+    }
+
     async renderMermaidToSVG(mermaidCode) {
-        logger.debug('🖼️ Rendering Mermaid diagram');
+        logger.debug('Rendering Mermaid diagram');
 
-        // Clean up the code (remove any markdown wrapping)
-        let cleanCode = mermaidCode.replace(/```mermaid/g, '').replace(/```/g, '').trim();
+        const cleanCode = mermaidCode.replace(/```mermaid/g, '').replace(/```/g, '').trim();
 
-        // Dynamically import Mermaid if not already loaded
         if (!window.mermaid) {
             logger.debug('Loading Mermaid library...');
             const script = document.createElement('script');
@@ -1898,40 +757,29 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 mermaid.initialize({ startOnLoad: false, theme: 'default' });
             `;
             document.head.appendChild(script);
-
-            // Wait for Mermaid to load
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, TIMING.STREAMING_INDICATOR));
         }
 
-        // Render Mermaid diagram to SVG
         const id = 'mermaid-' + Date.now();
         const { svg } = await window.mermaid.render(id, cleanCode);
-
-        // Convert SVG to data URL
         const dataUrl = this.svgToDataURL(svg);
 
-        logger.debug('✅ Mermaid diagram rendered successfully');
+        logger.debug('Mermaid diagram rendered successfully');
         return dataUrl;
     }
 
-    /**
-     * Convert SVG code to data URL
-     * @param {string} svgCode - SVG XML code
-     * @returns {string} - Data URL
-     */
     svgToDataURL(svgCode) {
-        // Ensure SVG has xmlns attribute
         if (!svgCode.includes('xmlns=')) {
             svgCode = svgCode.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
         }
 
-        // Convert to data URL
-        const encoded = btoa(unescape(encodeURIComponent(svgCode)));
+        const encoded = btoa(encodeURIComponent(svgCode).replace(/%([0-9A-F]{2})/g,
+            (_, p1) => String.fromCharCode(parseInt(p1, 16))));
         return 'data:image/svg+xml;base64,' + encoded;
     }
 
     validateGeneratedQuestion(question) {
-        logger.debug('🔍 ValidateGeneratedQuestion - Validating:', {
+        logger.debug('ValidateGeneratedQuestion - Validating:', {
             type: question.type,
             hasQuestion: !!question.question,
             hasOptions: !!question.options,
@@ -1939,78 +787,71 @@ Please respond with only valid JSON. Do not include explanations or additional t
             correctAnswer: question.correctAnswer,
             correctAnswers: question.correctAnswers
         });
-        
-        // Basic validation for generated questions
+
         if (!question.question || !question.type) {
-            logger.debug('❌ ValidateGeneratedQuestion - Missing basic fields');
+            logger.debug('ValidateGeneratedQuestion - Missing basic fields');
             return false;
         }
-        
-        // Type-specific validation
+
         if (question.type === 'multiple-choice') {
-            // Auto-fix: Ensure exactly 4 options for multiple-choice questions
             if (question.options && Array.isArray(question.options) && question.options.length < 4) {
-                logger.debug('🔧 ValidateGeneratedQuestion - Auto-fixing: padding options to 4');
+                logger.debug('ValidateGeneratedQuestion - Auto-fixing: padding options to 4');
                 const originalLength = question.options.length;
-                
-                // Add generic distractors to reach 4 options
+
                 const genericDistractors = [
                     'None of the above',
-                    'All of the above', 
+                    'All of the above',
                     'Not applicable',
                     'Cannot be determined',
                     'Not mentioned in the content',
                     'More information needed'
                 ];
-                
+
                 while (question.options.length < 4) {
-                    // Find a distractor that's not already in the options
                     let distractor = genericDistractors.find(d => !question.options.includes(d));
                     if (!distractor) {
                         distractor = `Option ${question.options.length + 1}`;
                     }
                     question.options.push(distractor);
                 }
-                
-                logger.debug(`🔧 Padded options from ${originalLength} to ${question.options.length}`);
+
+                logger.debug(`Padded options from ${originalLength} to ${question.options.length}`);
             }
-            
-            if (!question.options || !Array.isArray(question.options) || 
+
+            if (!question.options || !Array.isArray(question.options) ||
                 question.options.length !== 4 ||
-                question.correctAnswer === undefined || 
-                question.correctAnswer < 0 || 
+                question.correctAnswer === undefined ||
+                question.correctAnswer < 0 ||
                 question.correctAnswer >= question.options.length) {
-                logger.debug('❌ ValidateGeneratedQuestion - Multiple choice validation failed');
+                logger.debug('ValidateGeneratedQuestion - Multiple choice validation failed');
                 return false;
             }
         } else if (question.type === 'multiple-correct') {
-            // Auto-fix: If AI used "correctAnswer" instead of "correctAnswers"
             if (question.correctAnswer !== undefined && !question.correctAnswers) {
-                logger.debug('🔧 ValidateGeneratedQuestion - Auto-fixing: converting correctAnswer to correctAnswers array');
+                logger.debug('ValidateGeneratedQuestion - Auto-fixing: converting correctAnswer to correctAnswers array');
                 question.correctAnswers = Array.isArray(question.correctAnswer) ? question.correctAnswer : [question.correctAnswer];
                 delete question.correctAnswer;
             }
-            
+
             if (!question.options || !Array.isArray(question.options) ||
                 !question.correctAnswers || !Array.isArray(question.correctAnswers) ||
                 question.correctAnswers.length === 0) {
-                logger.debug('❌ ValidateGeneratedQuestion - Multiple correct validation failed');
+                logger.debug('ValidateGeneratedQuestion - Multiple correct validation failed');
                 return false;
             }
-            
-            // Validate that all correctAnswers indices are within bounds
-            const invalidIndices = question.correctAnswers.filter(index => 
+
+            const invalidIndices = question.correctAnswers.filter(index =>
                 index < 0 || index >= question.options.length
             );
             if (invalidIndices.length > 0) {
-                logger.debug('❌ ValidateGeneratedQuestion - Multiple correct has invalid indices:', invalidIndices);
+                logger.debug('ValidateGeneratedQuestion - Multiple correct has invalid indices:', invalidIndices);
                 return false;
             }
         } else if (question.type === 'true-false') {
-            if (!question.options || !Array.isArray(question.options) || 
+            if (!question.options || !Array.isArray(question.options) ||
                 question.options.length !== 2 ||
                 (question.correctAnswer !== 'true' && question.correctAnswer !== 'false')) {
-                logger.debug('❌ ValidateGeneratedQuestion - True/false validation failed', {
+                logger.debug('ValidateGeneratedQuestion - True/false validation failed', {
                     optionsLength: question.options?.length,
                     correctAnswer: question.correctAnswer,
                     correctAnswerType: typeof question.correctAnswer
@@ -2018,180 +859,160 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 return false;
             }
         } else if (question.type === 'numeric') {
-            // Auto-fix: Remove options array if AI incorrectly added it
             if (question.options) {
-                logger.debug('🔧 ValidateGeneratedQuestion - Auto-fixing: removing options from numeric question');
+                logger.debug('ValidateGeneratedQuestion - Auto-fixing: removing options from numeric question');
                 delete question.options;
             }
-            
-            // Auto-fix: Convert string numbers to actual numbers
+
             if (typeof question.correctAnswer === 'string' && !isNaN(question.correctAnswer)) {
-                logger.debug('🔧 ValidateGeneratedQuestion - Auto-fixing: converting string answer to number');
+                logger.debug('ValidateGeneratedQuestion - Auto-fixing: converting string answer to number');
                 question.correctAnswer = parseFloat(question.correctAnswer);
             }
-            
-            // Auto-fix: Add tolerance if missing
+
             if (question.tolerance === undefined) {
-                logger.debug('🔧 ValidateGeneratedQuestion - Auto-fixing: adding default tolerance 0');
+                logger.debug('ValidateGeneratedQuestion - Auto-fixing: adding default tolerance 0');
                 question.tolerance = 0;
             }
-            
+
             if (question.correctAnswer === undefined || isNaN(question.correctAnswer)) {
-                logger.debug('❌ ValidateGeneratedQuestion - Numeric validation failed');
+                logger.debug('ValidateGeneratedQuestion - Numeric validation failed');
+                return false;
+            }
+        } else if (question.type === 'ordering') {
+            if (!question.options || !Array.isArray(question.options) || question.options.length < 2) {
+                logger.debug('ValidateGeneratedQuestion - Ordering validation failed: invalid options');
+                return false;
+            }
+            if (!question.correctOrder || !Array.isArray(question.correctOrder)) {
+                logger.debug('ValidateGeneratedQuestion - Ordering validation failed: missing correctOrder');
+                return false;
+            }
+            if (question.correctOrder.length !== question.options.length) {
+                logger.debug('ValidateGeneratedQuestion - Ordering validation failed: correctOrder length mismatch');
+                return false;
+            }
+            const validIndices = question.correctOrder.every(idx =>
+                typeof idx === 'number' && idx >= 0 && idx < question.options.length
+            );
+            if (!validIndices) {
+                logger.debug('ValidateGeneratedQuestion - Ordering validation failed: invalid indices in correctOrder');
                 return false;
             }
         } else {
-            logger.debug('❌ ValidateGeneratedQuestion - Unknown question type:', question.type);
+            logger.debug('ValidateGeneratedQuestion - Unknown question type:', question.type);
             return false;
         }
-        
-        logger.debug('✅ ValidateGeneratedQuestion - Question is valid');
+
+        logger.debug('ValidateGeneratedQuestion - Question is valid');
         return true;
     }
 
     async openModal() {
-        const modal = document.getElementById('ai-generator-modal');
+        const modal = getModal('ai-generator-modal');
         if (modal) {
-            logger.debug('🚀 OpenModal - START');
-            modal.style.display = 'flex';
+            openModal(modal, { lockScroll: false });
 
-            // Set provider to 'ollama' immediately
-            const providerSelect = document.getElementById('ai-provider');
-            logger.debug('🚀 OpenModal - Provider select found:', !!providerSelect);
+            const providerSelect = dom.get('ai-provider');
             if (providerSelect) {
-                logger.debug('🚀 OpenModal - Provider select current value before:', providerSelect.value);
                 providerSelect.value = 'ollama';
-                logger.debug('🚀 OpenModal - Provider select set to:', providerSelect.value);
             }
 
-            // Clear API key input field to force fresh entry every time
-            const apiKeyInput = document.getElementById('ai-api-key');
+            const apiKeyInput = dom.get('ai-api-key');
             if (apiKeyInput) {
                 apiKeyInput.value = '';
                 apiKeyInput.placeholder = 'Enter your API key';
             }
 
-            // Show the model selection div immediately
-            const modelSelection = document.getElementById('model-selection');
-            logger.debug('🚀 OpenModal - Model selection div found:', !!modelSelection);
+            const modelSelection = dom.get('model-selection');
             if (modelSelection) {
-                logger.debug('🚀 OpenModal - Model selection current display before:', window.getComputedStyle(modelSelection).display);
                 modelSelection.classList.remove('hidden');
-                modelSelection.style.display = 'block';
-                logger.debug('🚀 OpenModal - Model selection set to block, computed style now:', window.getComputedStyle(modelSelection).display);
             }
 
-            // Show loading message immediately
-            const modelSelect = document.getElementById('ollama-model');
-            logger.debug('🚀 OpenModal - Model select found:', !!modelSelect);
+            const claudeModelSelection = dom.get('claude-model-selection');
+            if (claudeModelSelection) {
+                claudeModelSelection.classList.add('hidden');
+            }
+
+            const modelSelect = dom.get('ollama-model');
             if (modelSelect) {
-                logger.debug('🚀 OpenModal - Model select current innerHTML before:', modelSelect.innerHTML);
-                modelSelect.innerHTML = '<option value="">🔄 Loading models...</option>';
+                modelSelect.innerHTML = '<option value="">\u{1F504} Loading models...</option>';
                 modelSelect.disabled = true;
-                logger.debug('🚀 OpenModal - Model select set to loading, innerHTML now:', modelSelect.innerHTML);
-                logger.debug('🚀 OpenModal - Model select disabled:', modelSelect.disabled);
             }
 
-            // Clear previous content
-            const contentTextarea = document.getElementById('source-content');
+            const contentTextarea = dom.get('source-content');
             if (contentTextarea && !contentTextarea.value.trim()) {
-                contentTextarea.placeholder = 'Enter your content here (e.g., a passage of text, topics to generate questions about, or paste from a document). ..';
+                contentTextarea.placeholder = 'Enter your content here (e.g., a passage of text, topics to generate questions about, or paste from a document)...';
             }
 
-            // Reset question count to default
-            const questionCount = document.getElementById('question-count');
+            const questionCount = dom.get('question-count');
             if (questionCount) {
                 questionCount.value = AI.DEFAULT_QUESTION_COUNT;
             }
 
-            logger.debug('🚀 OpenModal - About to set timeout for delayed loading');
-            
-            // Trigger the actual model loading after a short delay to let everything settle
+            this.uiHelpers.updateOutputLanguageIndicator();
+
             setTimeout(async () => {
-                logger.debug('🚀 OpenModal - TIMEOUT TRIGGERED - Delayed model loading starting');
-                
-                // Debug current state before loading
-                const currentModelSelection = document.getElementById('model-selection');
-                const currentModelSelect = document.getElementById('ollama-model');
-                
-                logger.debug('🚀 TIMEOUT - Model selection div exists:', !!currentModelSelection);
-                logger.debug('🚀 TIMEOUT - Model selection computed display:', currentModelSelection ? window.getComputedStyle(currentModelSelection).display : 'NOT_FOUND');
-                logger.debug('🚀 TIMEOUT - Model select exists:', !!currentModelSelect);
-                logger.debug('🚀 TIMEOUT - Model select innerHTML:', currentModelSelect ? currentModelSelect.innerHTML : 'NOT_FOUND');
-                
-                await this.loadOllamaModels();
-                logger.debug('🚀 OpenModal - TIMEOUT COMPLETED - Model loading finished');
-            }, 100);
-            
-            logger.debug('🚀 OpenModal - END');
+                await this.uiHelpers.loadOllamaModels();
+            }, TIMING.DOM_UPDATE_DELAY);
         }
     }
 
-    closeModal() {
-        const modal = document.getElementById('ai-generator-modal');
+    closeModalMethod() {
+        const modal = getModal('ai-generator-modal');
         if (modal) {
-            modal.style.display = 'none';
+            closeModal(modal, { unlockScroll: false });
         }
     }
 
-    /**
-     * Show API key error popup with detailed information
-     * @param {string} provider - The AI provider name
-     * @param {string} errorType - Type of error: 'missing', 'invalid', or 'network'
-     * @param {string} specificMessage - Specific error message from the API
-     */
     showApiKeyErrorPopup(provider, errorType = 'missing', specificMessage = '') {
-        console.log('🔥 DEBUG: showApiKeyErrorPopup called', { provider, errorType, specificMessage });
-        
+        logger.debug('showApiKeyErrorPopup called', { provider, errorType, specificMessage });
+
         const providerName = this.providers[provider]?.name || provider;
         let title, message, icon;
 
         if (specificMessage) {
-            // Show the actual error message prominently
             title = `${providerName} Error`;
             message = specificMessage;
-            icon = '❌';
+            icon = '\u274C';
         } else if (errorType === 'missing') {
-            title = `API Key Required`;
+            title = 'API Key Required';
             message = `Please enter your API key for ${providerName}`;
-            icon = '🔑';
+            icon = '\uD83D\uDD11';
         } else {
             title = `${providerName} Error`;
             message = `There was an issue with ${providerName}. Please check your API key.`;
-            icon = '❌';
+            icon = '\u274C';
         }
 
-        // Create simple red error popup
         this.showSimpleErrorPopup(title, message, icon);
     }
 
-    /**
-     * Create and display a custom API key error modal
-     */
     showSimpleErrorPopup(title, message, icon) {
-        console.log('🔥 DEBUG: showSimpleErrorPopup called', { title, message, icon });
-        
-        // Remove any existing error modal
-        const existingModal = document.getElementById('simple-error-modal');
+        logger.debug('showSimpleErrorPopup called', { title, message, icon });
+
+        const existingModal = dom.get('simple-error-modal');
         if (existingModal) {
             existingModal.remove();
         }
 
-        // Create simple red error modal
+        const safeIcon = escapeHtml(icon || '\u274C');
+        const safeTitle = escapeHtml(title || 'Error');
+        const safeMessage = escapeHtml(message || '').replace(/\n/g, '<br>');
+
         const modalHTML = `
             <div id="simple-error-modal" class="modal" style="display: flex !important; z-index: 20000 !important; background: rgba(0,0,0,0.7) !important;">
                 <div class="modal-content" style="
-                    max-width: 400px !important; 
-                    margin: auto !important; 
-                    background: white !important; 
+                    max-width: 400px !important;
+                    margin: auto !important;
+                    background: white !important;
                     border-radius: 8px !important;
                     text-align: center !important;
                     padding: 30px !important;
                     border: 3px solid #dc2626 !important;
                 ">
-                    <div style="font-size: 3rem; margin-bottom: 15px;">${icon}</div>
-                    <h3 style="margin: 0 0 15px 0 !important; color: #dc2626 !important; font-size: 1.3rem;">${title}</h3>
-                    <p style="margin: 0 0 25px 0 !important; color: #dc2626 !important; font-size: 16px !important; font-weight: 500 !important;">${message}</p>
+                    <div style="font-size: 3rem; margin-bottom: 15px;">${safeIcon}</div>
+                    <h3 style="margin: 0 0 15px 0 !important; color: #dc2626 !important; font-size: 1.3rem;">${safeTitle}</h3>
+                    <p style="margin: 0 0 25px 0 !important; color: #dc2626 !important; font-size: 16px !important; font-weight: 500 !important;">${safeMessage}</p>
                     <button id="simple-error-ok" style="
                         background: #dc2626 !important;
                         color: white !important;
@@ -2207,40 +1028,37 @@ Please respond with only valid JSON. Do not include explanations or additional t
         `;
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
-        const modal = document.getElementById('simple-error-modal');
-        const okBtn = document.getElementById('simple-error-ok');
+
+        const modal = dom.get('simple-error-modal');
+        const okBtn = dom.get('simple-error-ok');
 
         if (!modal) {
-            console.error('Failed to create error modal');
+            logger.error('Failed to create error modal');
             alert(title + '\n\n' + message);
             return;
         }
 
-        // Close modal
-        const closeModal = () => {
+        const closeModalFn = () => {
             modal.remove();
             document.body.style.overflow = '';
         };
 
         if (okBtn) {
-            okBtn.addEventListener('click', closeModal);
+            okBtn.addEventListener('click', closeModalFn);
         }
 
-        // Close on overlay click or escape key
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeModal();
+            if (e.target === modal) closeModalFn();
         });
-        
+
         document.addEventListener('keydown', function escapeHandler(e) {
             if (e.key === 'Escape') {
-                closeModal();
+                closeModalFn();
                 document.removeEventListener('keydown', escapeHandler);
             }
         });
 
         document.body.style.overflow = 'hidden';
-        console.log('🔥 DEBUG: Simple error popup displayed');
+        logger.debug('Simple error popup displayed');
     }
 }
-

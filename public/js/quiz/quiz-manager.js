@@ -7,11 +7,42 @@ import { translationManager, showErrorAlert, showSuccessAlert } from '../utils/t
 import { createQuestionElement } from '../utils/question-utils.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
-import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
-import { logger } from '../core/config.js';
+import { logger, TIMING } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
-import { imagePathResolver } from '../utils/image-path-resolver.js';
+import { imagePathResolver, loadImageWithRetry as sharedLoadImageWithRetry } from '../utils/image-path-resolver.js';
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
+import { getJSON, setJSON, removeItem } from '../utils/storage-utils.js';
+import { EventListenerManager } from '../utils/event-listener-manager.js';
+import { dom, escapeHtml } from '../utils/dom.js';
+import { getFileManager } from '../ui/file-manager.js';
+import { openModal, closeModal } from '../utils/modal-utils.js';
+import { manimEditor } from './manim-editor.js';
+
+// Shared translation fallback map used for cleaning translation keys from loaded data
+const TRANSLATION_FALLBACKS = {
+    'multiple_choice': 'Multiple Choice',
+    'multiple_correct': 'Multiple Correct Answers',
+    'true_false': 'True/False',
+    'numeric': 'Numeric Answer',
+    'easy': 'Easy',
+    'medium': 'Medium',
+    'hard': 'Hard',
+    'time_seconds': 'Time (sec)',
+    'add_image': 'Add Image',
+    'remove_image': 'Remove Image',
+    'remove': 'Remove',
+    'a_is_correct': 'A is correct',
+    'b_is_correct': 'B is correct',
+    'c_is_correct': 'C is correct',
+    'd_is_correct': 'D is correct',
+    'true': 'True',
+    'false': 'False',
+    'question': 'Question',
+    'enter_question_preview': 'Enter your question above to see preview',
+    'enter_question_with_latex': 'Enter your question (supports LaTeX and code blocks)',
+    'toggle_live_preview': 'Live Preview',
+    'close_live_preview': 'Close Live Preview'
+};
 
 export class QuizManager {
     constructor(uiManager) {
@@ -19,31 +50,220 @@ export class QuizManager {
         this.mathRenderer = new MathRenderer();
         this.autoSaveTimeout = null;
         this.errorHandler = errorHandler; // Add ErrorHandler for future use
-        
-        // Memory management tracking
-        this.eventListeners = new Map();
-        this.documentListeners = [];
-        
-        // Bind cleanup methods
+
+        // Dependency injection properties
+        this._loadQuizHandler = null;
+        this._startPracticeModeHandler = null;
+        this._previewManager = null;
+        this._addQuestionFn = null;
+
+        // Memory management via EventListenerManager
+        this.listenerManager = new EventListenerManager('QuizManager');
+
+        // Initialize file manager for folder tree view
+        this.fileManager = getFileManager({
+            onLoadQuiz: (filename, data) => this.handleFileManagerLoad(filename, data),
+            onPracticeQuiz: (filename, data) => this.handleFileManagerPractice(filename, data)
+        });
+
+        // Bind cleanup method
         this.cleanup = this.cleanup.bind(this);
-        this.addDocumentListenerTracked = this.addDocumentListenerTracked.bind(this);
+
+        // Defer Manim init until DOM is fully loaded
+        const initVideo = () => this._initExistingVideoSections();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initVideo);
+        } else {
+            setTimeout(initVideo, 0);
+        }
+
+        // Also init video sections for questions added via the "Add Question" button
+        document.addEventListener('questionAdded', () => {
+            const container = document.getElementById('questions-container');
+            if (container?.lastElementChild) {
+                manimEditor.initVideoSection(container.lastElementChild);
+            }
+        });
+    }
+
+    /**
+     * Initialize video sections for questions already present in the HTML template.
+     */
+    async _initExistingVideoSections() {
+        const existing = document.querySelectorAll('.question-item');
+        for (const el of existing) {
+            try {
+                await manimEditor.initVideoSection(el);
+            } catch (err) {
+                logger.warn('Failed to init video section:', err);
+            }
+        }
+    }
+
+    /**
+     * Dependency injection: Set load quiz handler
+     * @param {Function} handler - Function to load a quiz by filename
+     */
+    setLoadQuizHandler(handler) {
+        this._loadQuizHandler = handler;
+    }
+
+    /**
+     * Dependency injection: Set start practice mode handler
+     * @param {Function} handler - Function to start practice mode by filename
+     */
+    setStartPracticeModeHandler(handler) {
+        this._startPracticeModeHandler = handler;
+    }
+
+    /**
+     * Dependency injection: Set preview manager reference
+     * @param {Object} previewManager - PreviewManager instance
+     */
+    setPreviewManager(previewManager) {
+        this._previewManager = previewManager;
+    }
+
+    /**
+     * Dependency injection: Set addQuestion function
+     * @param {Function} addQuestionFn - Function to add a new question
+     */
+    setAddQuestionFunction(addQuestionFn) {
+        this._addQuestionFn = addQuestionFn;
+    }
+
+    /**
+     * Get load quiz handler with fallback to window.game
+     * @returns {Function|null}
+     */
+    _getLoadQuizHandler() {
+        return this._loadQuizHandler || window.game?.loadQuiz || null;
+    }
+
+    /**
+     * Get start practice mode handler with fallback to window.game
+     * @returns {Function|null}
+     */
+    _getStartPracticeModeHandler() {
+        return this._startPracticeModeHandler || window.game?.startPracticeMode || null;
+    }
+
+    /**
+     * Get preview manager with fallback to window.game
+     * @returns {Object|null}
+     */
+    _getPreviewManager() {
+        return this._previewManager || window.game?.previewManager || null;
+    }
+
+    /**
+     * Get addQuestion function with fallback to window.game
+     * @returns {Function|null}
+     */
+    _getAddQuestionFn() {
+        return this._addQuestionFn || window.game?.addQuestion || null;
+    }
+
+    /**
+     * Handle quiz load from file manager
+     */
+    handleFileManagerLoad(filename, data) {
+        this.hideLoadQuizModal();
+        const loadQuiz = this._getLoadQuizHandler();
+        if (loadQuiz) {
+            loadQuiz(filename);
+        } else {
+            logger.error('No loadQuiz handler available');
+        }
+    }
+
+    /**
+     * Handle practice mode from file manager
+     */
+    handleFileManagerPractice(filename, data) {
+        this.hideLoadQuizModal();
+        const startPracticeMode = this._getStartPracticeModeHandler();
+        if (startPracticeMode) {
+            startPracticeMode(filename);
+        } else {
+            logger.error('No startPracticeMode handler available');
+        }
     }
 
     /**
      * Collect all questions from the quiz builder
      */
     collectQuestions() {
-        const questions = [];
-        const questionElements = document.querySelectorAll('.question-item');
-        
-        questionElements.forEach(questionElement => {
-            const questionData = this.extractQuestionData(questionElement);
-            if (questionData) {
-                questions.push(questionData);
-            }
-        });
-        
-        return questions;
+        return Array.from(document.querySelectorAll('.question-item'))
+            .map(el => this.extractQuestionData(el))
+            .filter(Boolean);
+    }
+
+    /**
+     * Check if a URL is empty or a base URL (not a meaningful image path)
+     */
+    isEmptyOrBaseUrl(url) {
+        if (!url || url === '') return true;
+        const origin = window.location.origin;
+        if (url === origin || url === origin + '/') return true;
+        return url.endsWith('/') && !url.includes('/uploads/');
+    }
+
+    /**
+     * Extract image URL from element, preferring dataset.url over src
+     */
+    extractImageUrl(imageElement) {
+        // Prefer dataset.url (where uploaded images are stored)
+        if (imageElement.dataset.url) {
+            return imageElement.dataset.url;
+        }
+
+        // Fall back to src if it's a meaningful URL
+        const srcUrl = imageElement.src;
+        return this.isEmptyOrBaseUrl(srcUrl) ? null : srcUrl;
+    }
+
+    /**
+     * Extract concept tags from question element
+     * @param {HTMLElement} questionElement - The question DOM element
+     * @returns {string[]} Array of concept strings
+     */
+    extractConceptTags(questionElement) {
+        const tagsList = questionElement.querySelector('.concept-tags-list');
+        if (!tagsList) return [];
+
+        const tags = tagsList.querySelectorAll('.concept-tag');
+        return Array.from(tags)
+            .map(tag => tag.dataset.concept || tag.textContent.replace('×', '').trim())
+            .filter(Boolean);
+    }
+
+    /**
+     * Extract and process image data from question element
+     */
+    extractQuestionImageData(questionElement, questionData) {
+        const imageElement = questionElement.querySelector('.question-image');
+        if (!imageElement) return;
+
+        const imageUrl = this.extractImageUrl(imageElement);
+        if (imageUrl?.trim()) {
+            logger.debug('Found image for question:', imageUrl);
+            // Handle data URIs or use path resolver for regular URLs
+            questionData.image = imageUrl.startsWith('data:')
+                ? imageUrl
+                : imagePathResolver.toStoragePath(imageUrl);
+        }
+
+        // Extract WebP version if available (for optimized loading)
+        const webpUrl = imageElement.dataset.webpUrl;
+        if (webpUrl?.trim()) {
+            questionData.imageWebp = imagePathResolver.toStoragePath(webpUrl);
+            logger.debug('Found WebP image for question:', questionData.imageWebp);
+        }
+
+        if (questionData.image) {
+            logger.debug('Processed image path for quiz save:', questionData.image, 'WebP:', questionData.imageWebp);
+        }
     }
 
     /**
@@ -53,67 +273,88 @@ export class QuizManager {
     extractQuestionData(questionElement) {
         const questionText = questionElement.querySelector('.question-text')?.value?.trim();
         const questionType = questionElement.querySelector('.question-type')?.value;
-        const questionTime = parseInt(questionElement.querySelector('.question-time-limit')?.value) || 30;
-        const questionDifficulty = questionElement.querySelector('.question-difficulty')?.value || 'medium';
-
         if (!questionText || !questionType) return null;
+
+        // Check if global time is enabled
+        const useGlobalTime = dom.get('use-global-time')?.checked;
+        const globalTimeLimit = parseInt(dom.get('global-time-limit')?.value);
+
+        // Use global time if enabled, otherwise use per-question time
+        let timeLimit;
+        if (useGlobalTime && !isNaN(globalTimeLimit)) {
+            timeLimit = globalTimeLimit;
+        } else {
+            timeLimit = parseInt(questionElement.querySelector('.question-time-limit')?.value) || 30;
+        }
 
         const questionData = {
             question: questionText,
             type: questionType,
-            time: questionTime,
-            difficulty: questionDifficulty
+            timeLimit: timeLimit,
+            difficulty: questionElement.querySelector('.question-difficulty')?.value || 'medium'
         };
 
-        // Use QuestionTypeRegistry for type-specific data extraction
-        const typeSpecificData = QuestionTypeRegistry.extractData(questionType, questionElement);
-        Object.assign(questionData, typeSpecificData);
-
-        // Extract image data - check both src and dataset.url
-        const imageElement = questionElement.querySelector('.question-image');
-        if (imageElement) {
-            // First check dataset.url (where uploaded images are stored)
-            let imageUrl = imageElement.dataset.url || imageElement.src;
-            
-            // Validate that we have a meaningful image URL
-            if (imageUrl && imageUrl.trim() !== '' && !imageUrl.endsWith('/') && imageUrl !== window.location.origin && imageUrl !== window.location.origin + '/') {
-                logger.debug('Found image for question:', imageUrl);
-                
-                // Handle data URIs (base64 images)
-                if (imageUrl.startsWith('data:')) {
-                    questionData.image = imageUrl;
-                } else {
-                    // Handle file paths - extract relative path from URL
-                    if (imageUrl.includes('/uploads/')) {
-                        // Extract just the filename from /uploads/filename.jpg or http://localhost:3000/uploads/filename.jpg
-                        const uploadsIndex = imageUrl.indexOf('/uploads/');
-                        questionData.image = imageUrl.substring(uploadsIndex); // Keep /uploads/filename.jpg
-                    } else if (imageUrl.startsWith('uploads/')) {
-                        // Already a relative path like uploads/filename.jpg
-                        questionData.image = '/' + imageUrl; // Make it /uploads/filename.jpg
-                    } else if (imageUrl.startsWith('/uploads/')) {
-                        // Already an absolute path like /uploads/filename.jpg
-                        questionData.image = imageUrl; 
-                    } else if (imageUrl.startsWith('http')) {
-                        // Full URL without uploads path - this indicates an error
-                        logger.warn('Invalid image URL format:', imageUrl);
-                        questionData.image = ''; // Clear invalid URL
-                    } else {
-                        // Assume it's a relative path and make it absolute
-                        questionData.image = '/uploads/' + imageUrl;
-                    }
-                }
-            } else if (imageUrl) {
-                logger.warn('Invalid image URL format:', imageUrl);
-                questionData.image = ''; // Clear invalid URL
-            }
-            
-            if (questionData.image) {
-                logger.debug('Processed image path for quiz save:', questionData.image);
-            }
+        // Extract optional explanation field
+        const explanation = questionElement.querySelector('.question-explanation')?.value?.trim();
+        if (explanation) {
+            questionData.explanation = explanation;
         }
-        
+
+        // Extract concept tags
+        const concepts = this.extractConceptTags(questionElement);
+        if (concepts.length > 0) {
+            questionData.concepts = concepts;
+        }
+
+        // Use QuestionTypeRegistry for type-specific data extraction
+        Object.assign(questionData, QuestionTypeRegistry.extractData(questionType, questionElement));
+
+        // Extract image data
+        this.extractQuestionImageData(questionElement, questionData);
+
+        // Extract video/Manim data
+        const videoData = manimEditor.collectVideoData(questionElement);
+        if (videoData.video) questionData.video = videoData.video;
+        if (videoData.videoManimCode) questionData.videoManimCode = videoData.videoManimCode;
+        if (videoData.explanationVideo) questionData.explanationVideo = videoData.explanationVideo;
+        if (videoData.explanationVideoManimCode) questionData.explanationVideoManimCode = videoData.explanationVideoManimCode;
+
         return questionData;
+    }
+
+    /**
+     * Validate type-specific question requirements
+     * @returns {string|null} Error translation key if invalid, null if valid
+     */
+    validateQuestionType(question) {
+        const hasMinOptions = question.options?.length >= 2;
+
+        switch (question.type) {
+            case 'multiple-choice': {
+                if (!hasMinOptions) return 'question_needs_two_options';
+                const correctIndex = question.correctIndex ?? question.correctAnswer;
+                if (correctIndex === undefined || correctIndex < 0 || correctIndex >= question.options.length) {
+                    return 'invalid_correct_answer';
+                }
+                break;
+            }
+            case 'multiple-correct': {
+                if (!hasMinOptions) return 'question_needs_two_options';
+                const correctIndices = question.correctIndices || question.correctAnswers;
+                if (!correctIndices?.length) return 'select_at_least_one_correct';
+                break;
+            }
+            case 'numeric':
+                if (isNaN(question.correctAnswer)) return 'invalid_numeric_answer';
+                break;
+            case 'ordering':
+                if (!hasMinOptions) return 'ordering_needs_two_items';
+                if (!question.correctOrder || question.correctOrder.length !== question.options?.length) {
+                    return 'invalid_ordering';
+                }
+                break;
+        }
+        return null;
     }
 
     /**
@@ -121,113 +362,190 @@ export class QuizManager {
      */
     validateQuestions(questions) {
         const errors = [];
-        
+
         questions.forEach((question, index) => {
             const questionNum = index + 1;
-            
+
             // Check for question text
-            if (!question.question || question.question.trim() === '') {
+            if (!question.question?.trim()) {
                 errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('question_missing_text')}`);
             }
-            
-            // LaTeX validation temporarily disabled to fix blocking error
-            logger.debug('Skipping LaTeX validation for question', questionNum);
-            
+
             // Type-specific validation
-            if (question.type === 'multiple-choice' || question.type === 'multiple-correct') {
-                if (!question.options || question.options.length < 2) {
-                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('question_needs_two_options')}`);
-                }
-
-                if (question.type === 'multiple-choice') {
-                    // Registry uses "correctIndex" not "correctAnswer"
-                    const correctIndex = question.correctIndex !== undefined ? question.correctIndex : question.correctAnswer;
-                    if (correctIndex === undefined || correctIndex < 0 || correctIndex >= question.options.length) {
-                        errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_correct_answer')}`);
-                    }
-                }
-
-                if (question.type === 'multiple-correct') {
-                    // Registry uses "correctIndices" not "correctAnswers"
-                    const correctIndices = question.correctIndices || question.correctAnswers;
-                    if (!correctIndices || correctIndices.length === 0) {
-                        errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('select_at_least_one_correct')}`);
-                    }
-                }
-            }
-            
-            if (question.type === 'numeric' && isNaN(question.correctAnswer)) {
-                errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_numeric_answer')}`);
-            }
-
-            if (question.type === 'ordering') {
-                if (!question.options || question.options.length < 2) {
-                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('ordering_needs_two_items')}`);
-                }
-                if (!question.correctOrder || question.correctOrder.length !== question.options?.length) {
-                    errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync('invalid_ordering')}`);
-                }
+            const typeError = this.validateQuestionType(question);
+            if (typeError) {
+                errors.push(`Question ${questionNum}: ${translationManager.getTranslationSync(typeError)}`);
             }
         });
-        
+
         return errors;
     }
 
     /**
-     * Save quiz to server
+     * Save quiz - shows modal for optional password
      */
     async saveQuiz() {
-        return await errorBoundary.safeNetworkOperation(async () => {
-            const title = document.getElementById('quiz-title')?.value?.trim();
-            if (!title) {
-                showErrorAlert('please_enter_quiz_title');
+        const title = dom.get('quiz-title')?.value?.trim();
+        if (!title) {
+            showErrorAlert('please_enter_quiz_title');
+            return;
+        }
+
+        const questions = this.collectQuestions();
+        if (questions.length === 0) {
+            showErrorAlert('please_add_one_question');
+            return;
+        }
+
+        // Validate questions
+        const validationErrors = this.validateQuestions(questions);
+        if (validationErrors.length > 0) {
+            translationManager.showAlert('error', validationErrors.join('\\n'));
+            return;
+        }
+
+        // Store for use in confirmSave
+        this.pendingSave = { title, questions };
+
+        // Show save modal for optional password
+        this.showSaveQuizModal();
+    }
+
+    /**
+     * Show save quiz modal
+     */
+    showSaveQuizModal() {
+        const modal = dom.get('save-quiz-modal');
+        if (!modal) {
+            // Fallback: save without password if modal doesn't exist
+            this.confirmSave('');
+            return;
+        }
+
+        // Reset password fields
+        const passwordInput = dom.get('save-quiz-password');
+        const confirmInput = dom.get('save-quiz-password-confirm');
+        const confirmGroup = dom.get('save-quiz-confirm-group');
+
+        if (passwordInput) passwordInput.value = '';
+        if (confirmInput) confirmInput.value = '';
+        if (confirmGroup) confirmGroup.style.display = 'none';
+
+        // Show confirm field when password is entered
+        if (passwordInput) {
+            passwordInput.oninput = () => {
+                if (confirmGroup) {
+                    confirmGroup.style.display = passwordInput.value ? 'block' : 'none';
+                }
+            };
+        }
+
+        // Setup button handlers
+        const cancelBtn = dom.get('cancel-save');
+        const confirmBtn = dom.get('confirm-save');
+
+        if (cancelBtn) {
+            cancelBtn.onclick = () => this.hideSaveQuizModal(true); // Clear pending on cancel
+        }
+
+        if (confirmBtn) {
+            confirmBtn.onclick = () => this.handleSaveConfirm();
+        }
+
+        // Show modal
+        openModal(modal);
+        modal.classList.remove('hidden');
+        modal.classList.add('visible-flex');
+    }
+
+    /**
+     * Hide save quiz modal
+     * @param {boolean} clearPending - Whether to clear pending save data (default: false)
+     */
+    hideSaveQuizModal(clearPending = false) {
+        const modal = dom.get('save-quiz-modal');
+        if (modal) {
+            closeModal(modal);
+            modal.classList.remove('visible-flex');
+            modal.classList.add('hidden');
+        }
+        // Only clear pendingSave if explicitly requested (e.g., on cancel)
+        if (clearPending) {
+            this.pendingSave = null;
+        }
+    }
+
+    /**
+     * Handle save confirmation from modal
+     */
+    handleSaveConfirm() {
+        const passwordInput = dom.get('save-quiz-password');
+        const confirmInput = dom.get('save-quiz-password-confirm');
+
+        const password = passwordInput?.value || '';
+        const confirmPassword = confirmInput?.value || '';
+
+        // Validate password if provided
+        if (password) {
+            if (password.length < 4) {
+                translationManager.showAlert('error', translationManager.getTranslationSync('password_too_short'));
                 return;
             }
-            
-            const questions = this.collectQuestions();
-            if (questions.length === 0) {
-                showErrorAlert('please_add_one_question');
+            if (password !== confirmPassword) {
+                translationManager.showAlert('error', translationManager.getTranslationSync('passwords_dont_match'));
                 return;
             }
-            
-            // Validate questions
-            const validationErrors = this.validateQuestions(questions);
-            if (validationErrors.length > 0) {
-                translationManager.showAlert('error', validationErrors.join('\\n'));
-                return;
-            }
-            
-            const response = await fetch(APIHelper.getApiUrl('api/save-quiz'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    title: title,
-                    questions: questions
-                })
+        }
+
+        this.hideSaveQuizModal();
+        this.confirmSave(password);
+    }
+
+    /**
+     * Actually save the quiz to server
+     */
+    async confirmSave(password) {
+        if (!this.pendingSave) return;
+
+        const { title, questions } = this.pendingSave;
+
+        try {
+            return await errorHandler.safeNetworkOperation(async () => {
+                logger.info('Saving quiz:', title, 'with', questions.length, 'questions');
+
+                const response = await APIHelper.fetchAPI('api/save-quiz', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, questions, password: password || null })
+                });
+
+                const data = await response.json();
+                logger.info('Save response:', response.status, data);
+
+                if (response.ok) {
+                    showSuccessAlert('quiz_saved_successfully');
+                    if (data.filename) {
+                        await this.fileManager.registerNewQuiz(data.filename, title);
+                    }
+                    this.autoSaveQuiz();
+                } else {
+                    const errorMsg = data.error || data.message || translationManager.getTranslationSync('failed_save_quiz');
+                    logger.error('Save quiz failed:', errorMsg);
+                    translationManager.showAlert('error', errorMsg);
+                }
+            }, 'quiz_save', () => {
+                translationManager.showAlert('error', 'Failed to save quiz due to network error. Please try again.');
             });
-            
-            const data = await response.json();
-            
-            if (response.ok) {
-                showSuccessAlert('quiz_saved_successfully');
-                
-                // Auto-save the current state
-                this.autoSaveQuiz();
-            } else {
-                translationManager.showAlert('error', data.message || translationManager.getTranslationSync('failed_save_quiz'));
-            }
-        }, 'quiz_save', () => {
-            translationManager.showAlert('error', 'Failed to save quiz due to network error. Please try again.');
-        });
+        } finally {
+            this.pendingSave = null;
+        }
     }
 
     /**
      * Show load quiz modal
      */
     async showLoadQuizModal() {
-        const modal = document.getElementById('load-quiz-modal');
+        const modal = dom.get('load-quiz-modal');
         if (!modal) {
             logger.error('Load quiz modal not found');
             return;
@@ -235,127 +553,227 @@ export class QuizManager {
 
         // Set up modal event handlers
         this.setupLoadQuizModalHandlers(modal);
-        
-        // Cache quiz list element for better performance
-        if (!this.cachedQuizListElement) {
-            this.cachedQuizListElement = document.getElementById('quiz-list');
+
+        // Check if tree view container exists (new folder tree UI)
+        const treeContainer = dom.get('quiz-tree-container');
+        if (treeContainer) {
+            // Use new folder tree view
+            await this.showFolderTreeView(treeContainer, modal);
+        } else {
+            // Fall back to flat list view for backward compatibility
+            await this.showFlatListView(modal);
         }
-        const quizList = this.cachedQuizListElement;
-        
-        // Load quizzes list with performance optimization
-        try {
-            const response = await fetch(APIHelper.getApiUrl('api/quizzes'));
-            const data = await response.json();
-            
-            if (quizList) {
-                // Use DocumentFragment for better performance with multiple DOM operations
-                const fragment = document.createDocumentFragment();
-                
-                // Check if data is directly an array or has a quizzes property
-                const quizzes = Array.isArray(data) ? data : data.quizzes;
-                
-                if (quizzes && quizzes.length > 0) {
-                    quizzes.forEach(quiz => {
-                        const quizItem = document.createElement('div');
-                        quizItem.className = 'quiz-item clickable';
-                        quizItem.style.cursor = 'pointer';
-                        quizItem.onclick = () => window.game.loadQuiz(quiz.filename);
-                        quizItem.innerHTML = `
-                            <div class="quiz-info">
-                                <h3>${this.escapeHtml(quiz.title)}</h3>
-                                <p>${quiz.questionCount} ${translationManager.getTranslationSync('questions')} • ${translationManager.getTranslationSync('created')}: ${new Date(quiz.created).toLocaleDateString()}</p>
-                            </div>
-                        `;
-                        fragment.appendChild(quizItem);
-                    });
-                } else {
-                    const noQuizzesDiv = document.createElement('div');
-                    noQuizzesDiv.className = 'no-quizzes';
-                    noQuizzesDiv.innerHTML = `<p>${translationManager.getTranslationSync('no_saved_quizzes')}</p>`;
-                    fragment.appendChild(noQuizzesDiv);
-                }
-                
-                // Batch DOM update for better performance
-                quizList.innerHTML = '';
-                quizList.appendChild(fragment);
-            }
-        } catch (error) {
-            this.errorHandler.log(error, { operation: 'loadQuizzes' });
-            if (quizList) {
-                quizList.innerHTML = `
+
+        // Show modal with requestAnimationFrame for smooth transition
+        requestAnimationFrame(() => {
+            modal.classList.remove('hidden');
+            modal.classList.add('visible-flex');
+        });
+    }
+
+    /**
+     * Show folder tree view in load quiz modal
+     */
+    async showFolderTreeView(container, modal) {
+        // Initialize tree in container if not done yet
+        if (!this.fileManager.getTree()) {
+            this.fileManager.initTree(container);
+        }
+
+        // Load tree data
+        await this.errorHandler.wrapAsyncOperation(async () => {
+            await this.fileManager.loadTree();
+        }, {
+            errorType: this.errorHandler.errorTypes.NETWORK,
+            context: { operation: 'loadQuizTree' },
+            fallback: () => {
+                container.innerHTML = `
                     <div class="no-quizzes">
                         <p>${translationManager.getTranslationSync('failed_load_quizzes')}</p>
                     </div>
                 `;
             }
-        }
-        
-        // Show modal with requestAnimationFrame for smooth transition
-        requestAnimationFrame(() => {
-            modal.style.display = 'flex';
-            modal.style.visibility = 'visible'; // Reset visibility that might have been set to 'hidden'
         });
+    }
+
+    /**
+     * Show flat list view in load quiz modal (backward compatibility)
+     */
+    async showFlatListView(modal) {
+        // Cache quiz list element for better performance (validate it's still in DOM)
+        if (!this.cachedQuizListElement || !document.contains(this.cachedQuizListElement)) {
+            this.cachedQuizListElement = dom.get('quiz-list');
+        }
+        const quizList = this.cachedQuizListElement;
+
+        // Load quizzes list with performance optimization
+        await this.errorHandler.wrapAsyncOperation(async () => {
+            const response = await fetch(APIHelper.getApiUrl('api/quizzes'));
+            const data = await response.json();
+
+            if (quizList) {
+                // Use DocumentFragment for better performance with multiple DOM operations
+                const fragment = document.createDocumentFragment();
+
+                // Check if data is directly an array or has a quizzes property
+                const quizzes = Array.isArray(data) ? data : data.quizzes;
+
+                if (quizzes && quizzes.length > 0) {
+                    quizzes.forEach(quiz => {
+                        const quizItem = document.createElement('div');
+                        quizItem.className = 'quiz-item';
+                        quizItem.innerHTML = `
+                            <div class="quiz-info">
+                                <h3>${escapeHtml(quiz.title)}</h3>
+                                <p>${quiz.questionCount} ${translationManager.getTranslationSync('questions')} • ${translationManager.getTranslationSync('created')}: ${new Date(quiz.created).toLocaleDateString()}</p>
+                            </div>
+                            <div class="quiz-actions">
+                                <button class="quiz-action-btn load-btn" data-filename="${escapeHtml(quiz.filename)}" title="${translationManager.getTranslationSync('load')}">
+                                    <span class="btn-icon">📂</span>
+                                    <span class="btn-text">${translationManager.getTranslationSync('load')}</span>
+                                </button>
+                                <button class="quiz-action-btn practice-btn" data-filename="${escapeHtml(quiz.filename)}" title="${translationManager.getTranslationSync('practice')}">
+                                    <span class="btn-icon">🎯</span>
+                                    <span class="btn-text">${translationManager.getTranslationSync('practice')}</span>
+                                </button>
+                            </div>
+                        `;
+
+                        // Wire up button handlers
+                        const loadBtn = quizItem.querySelector('.load-btn');
+                        const practiceBtn = quizItem.querySelector('.practice-btn');
+
+                        loadBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const loadQuiz = this._getLoadQuizHandler();
+                            if (loadQuiz) {
+                                loadQuiz(quiz.filename);
+                            }
+                        });
+
+                        practiceBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const startPracticeMode = this._getStartPracticeModeHandler();
+                            if (startPracticeMode) {
+                                startPracticeMode(quiz.filename);
+                            }
+                        });
+
+                        fragment.appendChild(quizItem);
+                    });
+                } else {
+                    const noQuizzesDiv = document.createElement('div');
+                    noQuizzesDiv.className = 'no-quizzes empty-state';
+                    noQuizzesDiv.innerHTML = `
+                        <div class="empty-state-icon">
+                            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="12" y="8" width="40" height="48" rx="4" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+                                <line x1="20" y1="20" x2="44" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+                                <line x1="20" y1="28" x2="38" y2="28" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+                                <line x1="20" y1="36" x2="42" y2="36" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+                                <circle cx="48" cy="48" r="12" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+                                <line x1="48" y1="42" x2="48" y2="54" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                                <line x1="42" y1="48" x2="54" y2="48" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                            </svg>
+                        </div>
+                        <p>${translationManager.getTranslationSync('no_saved_quizzes')}</p>
+                        <div class="empty-state-actions">
+                            <button class="btn primary empty-state-create-btn">${translationManager.getTranslationSync('create_first_quiz')}</button>
+                            <p class="empty-state-hint">${translationManager.getTranslationSync('try_ai_generation')}</p>
+                            <p class="empty-state-hint">${translationManager.getTranslationSync('import_quiz_hint')}</p>
+                        </div>
+                    `;
+                    // Wire up the create button to close dialog and go to editor
+                    const createBtn = noQuizzesDiv.querySelector('.empty-state-create-btn');
+                    createBtn?.addEventListener('click', () => {
+                        const modal = noQuizzesDiv.closest('.modal-overlay, .modal');
+                        if (modal) modal.classList.remove('visible');
+                        if (window.game?.uiManager) window.game.uiManager.showScreen('host-screen');
+                    });
+                    fragment.appendChild(noQuizzesDiv);
+                }
+
+                // Batch DOM update for better performance
+                quizList.innerHTML = '';
+                quizList.appendChild(fragment);
+            }
+        }, {
+            errorType: this.errorHandler.errorTypes.NETWORK,
+            context: { operation: 'loadQuizzes' },
+            fallback: () => {
+                if (quizList) {
+                    quizList.innerHTML = `
+                        <div class="no-quizzes">
+                            <p>${translationManager.getTranslationSync('failed_load_quizzes')}</p>
+                        </div>
+                    `;
+                }
+            }
+        });
+    }
+
+    /**
+     * Create a new folder (triggered from modal button)
+     */
+    createNewFolder() {
+        this.fileManager.handleAction('new-folder', 'root', null, null);
+    }
+
+    /**
+     * Hide a modal element using CSS classes
+     */
+    hideModalElement(modal) {
+        if (!modal) return;
+        modal.classList.remove('visible-flex');
+        modal.classList.add('hidden');
     }
 
     /**
      * Hide load quiz modal
      */
     hideLoadQuizModal() {
-        const modal = document.getElementById('load-quiz-modal');
-        if (modal) {
-            logger.debug('Hiding load quiz modal');
-            modal.style.display = 'none';
-            modal.style.visibility = 'hidden'; // Double insurance
-            
-            // Clean up event handlers
-            this.cleanupLoadQuizModalHandlers(modal);
-            
-            // Force DOM update with multiple approaches
-            modal.offsetHeight; // Force reflow
-            requestAnimationFrame(() => {
-                if (modal.style.display !== 'none') {
-                    modal.style.display = 'none';
-                }
-            });
-            
-            logger.debug('Load quiz modal hidden');
-        } else {
+        const modal = dom.get('load-quiz-modal');
+        if (!modal) {
             logger.warn('Load quiz modal not found when trying to hide');
+            return;
         }
+
+        logger.debug('Hiding load quiz modal');
+        this.hideModalElement(modal);
+        this.cleanupLoadQuizModalHandlers(modal);
+
+        // Force DOM update
+        modal.offsetHeight; // Force reflow
+        requestAnimationFrame(() => {
+            if (modal.style.display !== 'none') {
+                modal.style.display = 'none';
+            }
+        });
+
+        logger.debug('Load quiz modal hidden');
     }
 
     /**
      * Force close modal as last resort
      */
     forceCloseModal() {
-        try {
+        this.errorHandler.safeExecute(() => {
             logger.warn('Force closing modal as backup mechanism');
-            
+
             // Find and hide all possible modals
-            const possibleModals = [
-                document.getElementById('load-quiz-modal'),
-                document.querySelector('.modal'),
-                document.querySelector('[id*="modal"]'),
-                ...document.querySelectorAll('.modal, [id*="modal"]')
-            ];
-            
-            possibleModals.forEach(modal => {
-                if (modal && modal.style) {
-                    modal.style.display = 'none';
-                    modal.style.visibility = 'hidden';
-                    modal.style.opacity = '0';
-                }
+            const selectors = ['#load-quiz-modal', '.modal', '[id*="modal"]'];
+            selectors.forEach(selector => {
+                document.querySelectorAll(selector).forEach(modal => {
+                    this.hideModalElement(modal);
+                    if (modal?.style) modal.style.opacity = '0';
+                });
             });
-            
-            // Also remove any backdrop/overlay
-            document.querySelectorAll('.modal-backdrop, .overlay').forEach(backdrop => {
-                if (backdrop) backdrop.remove();
-            });
-            
+
+            // Remove any backdrop/overlay
+            document.querySelectorAll('.modal-backdrop, .overlay').forEach(el => el.remove());
+
             logger.debug('Force modal close completed');
-        } catch (error) {
-            logger.error('Error in force close modal:', error);
-        }
+        }, { operation: 'forceCloseModal' });
     }
 
     /**
@@ -364,15 +782,45 @@ export class QuizManager {
     updatePreviewSafely() {
         // Use setTimeout to completely separate this from the loading flow
         setTimeout(() => {
-            try {
+            this.errorHandler.safeExecute(() => {
                 logger.debug('Attempting safe preview update');
-                
-                if (window.previewManager && 
-                    typeof window.previewManager.isPreviewMode === 'function' && 
+
+                // Check for always-preview mode (desktop editor with split view)
+                const hostContainer = dom.get('host-container');
+                const isAlwaysPreview = hostContainer?.classList.contains('always-preview');
+
+                if (isAlwaysPreview) {
+                    logger.debug('Always-preview mode active, updating split preview and pagination');
+
+                    // Initialize pagination to show first question
+                    if (window.showQuestion) {
+                        window.showQuestion(0);
+                    }
+
+                    // Update split preview
+                    const previewManager = this._getPreviewManager();
+                    if (previewManager) {
+                        previewManager.currentPreviewQuestion = 0;
+                        if (typeof previewManager.updateSplitPreview === 'function') {
+                            previewManager.updateSplitPreview();
+                            logger.debug('Split preview updated successfully');
+                        }
+                    }
+                    return;
+                }
+
+                // Mobile: also initialize pagination after quiz load
+                if (window.innerWidth < 769 && window.showQuestion) {
+                    window.showQuestion(0);
+                }
+
+                // Legacy: Check for modal preview mode
+                if (window.previewManager &&
+                    typeof window.previewManager.isPreviewMode === 'function' &&
                     window.previewManager.isPreviewMode()) {
-                    
+
                     logger.debug('Preview mode is active, updating preview');
-                    
+
                     if (typeof window.previewManager.updatePreview === 'function') {
                         window.previewManager.updatePreview();
                         logger.debug('Preview updated successfully');
@@ -382,22 +830,24 @@ export class QuizManager {
                 } else {
                     logger.debug('Preview mode not active, skipping update');
                 }
-                
-            } catch (error) {
-                logger.warn('Preview update failed, but quiz loaded successfully:', error);
-                // Explicitly don't propagate this error - quiz is already loaded successfully
-            }
-        }, 200); // Give modal time to close before updating preview
+            }, {
+                operation: 'updatePreviewSafely',
+                silent: true // Don't show errors - quiz already loaded successfully
+            });
+        }, TIMING.SHORT_DELAY); // Give modal time to close before updating preview
     }
 
     /**
      * Set up event handlers for load quiz modal
      */
     setupLoadQuizModalHandlers(modal) {
-        // Store handler references for cleanup
-        if (!this.loadQuizModalHandlers) {
-            this.loadQuizModalHandlers = {};
+        // Clean up any existing handlers first to prevent accumulation
+        if (this.loadQuizModalHandlers) {
+            this.cleanupLoadQuizModalHandlers(modal);
         }
+
+        // Store handler references for cleanup
+        this.loadQuizModalHandlers = {};
 
         // Click outside to close
         this.loadQuizModalHandlers.modalClick = (e) => {
@@ -430,7 +880,7 @@ export class QuizManager {
             if (this.loadQuizModalHandlers.keydown) {
                 document.removeEventListener('keydown', this.loadQuizModalHandlers.keydown);
             }
-            
+
             // Clear handler references
             this.loadQuizModalHandlers = null;
         }
@@ -442,85 +892,93 @@ export class QuizManager {
     async loadQuiz(filename) {
         let modalClosed = false;
         let successShown = false;
-        
-        try {
+
+        await this.errorHandler.wrapAsyncOperation(async () => {
             logger.debug('Starting bulletproof quiz loading for:', filename);
-            
+
             // Basic fetch and structure check only
             const response = await fetch(APIHelper.getApiUrl(`api/quiz/${filename}`));
             const data = await response.json();
-            
+
             if (response.ok && data && data.questions && Array.isArray(data.questions)) {
                 logger.debug('Valid quiz structure found with', data.questions.length, 'questions');
-                
-                // Clean data (safe operation)
-                let cleanedData;
-                try {
-                    cleanedData = this.cleanQuizData(data) || data;
-                } catch (cleanError) {
-                    logger.warn('Data cleaning failed, using original data:', cleanError);
-                    cleanedData = data;
-                }
-                
-                // Load quiz (wrapped in comprehensive try-catch)
+
+                // Clean data with safe execution
+                const cleanedData = this.errorHandler.safeExecute(
+                    () => this.cleanQuizData(data) || data,
+                    { operation: 'cleanQuizData' },
+                    () => data
+                );
+
+                // Load quiz with safe execution
                 try {
                     await this.populateQuizBuilder(cleanedData);
                     logger.debug('Quiz populated successfully');
+
+                    // Dispatch quizLoaded event for editor question count update
+                    const event = new CustomEvent('quizLoaded', {
+                        detail: { questionCount: cleanedData.questions.length, title: cleanedData.title }
+                    });
+                    document.dispatchEvent(event);
                 } catch (populateError) {
                     logger.warn('Error in populateQuizBuilder, but continuing:', populateError);
                     // Continue anyway - don't let this break the flow
                 }
-                
+
                 // ALWAYS close modal and show success, regardless of any errors above
-                try {
-                    this.hideLoadQuizModal();
-                    modalClosed = true;
-                    logger.debug('Modal closed successfully');
-                } catch (modalError) {
-                    logger.error('Error closing modal:', modalError);
-                    // Force modal close as backup
-                    this.forceCloseModal();
-                    modalClosed = true;
-                }
-                
-                try {
-                    showSuccessAlert('quiz_loaded_successfully');
-                    successShown = true;
-                    logger.debug('Success alert shown');
-                } catch (alertError) {
-                    logger.warn('Error showing success alert:', alertError);
-                }
-                
+                modalClosed = this.errorHandler.safeExecute(
+                    () => {
+                        this.hideLoadQuizModal();
+                        logger.debug('Modal closed successfully');
+                        return true;
+                    },
+                    { operation: 'hideLoadQuizModal' },
+                    () => {
+                        this.forceCloseModal();
+                        return true;
+                    }
+                );
+
+                successShown = this.errorHandler.safeExecute(
+                    () => {
+                        showSuccessAlert('quiz_loaded_successfully');
+                        logger.debug('Success alert shown');
+                        return true;
+                    },
+                    { operation: 'showSuccessAlert' },
+                    () => false
+                );
+
                 // Update preview AFTER everything else (completely separate)
                 this.updatePreviewSafely();
-                
+
             } else {
                 // Only show error for truly invalid data structure
                 logger.error('Invalid quiz data structure for:', filename);
                 translationManager.showAlert('error', 'Invalid quiz file format. Please check the file.');
             }
-            
-        } catch (error) {
-            logger.error('Critical quiz loading error:', error);
-            
-            // Emergency cleanup - ensure modal closes and user gets feedback
-            if (!modalClosed) {
-                try {
-                    this.hideLoadQuizModal();
-                } catch (e) {
-                    this.forceCloseModal();
+        }, {
+            errorType: this.errorHandler.errorTypes.NETWORK,
+            context: { operation: 'loadQuiz', filename },
+            fallback: () => {
+                // Emergency cleanup - ensure modal closes and user gets feedback
+                if (!modalClosed) {
+                    this.errorHandler.safeExecute(
+                        () => this.hideLoadQuizModal(),
+                        { operation: 'emergencyModalClose' },
+                        () => this.forceCloseModal()
+                    );
+                }
+
+                if (!successShown) {
+                    this.errorHandler.safeExecute(
+                        () => showErrorAlert('failed_load_quiz'),
+                        { operation: 'showErrorAlert' },
+                        () => translationManager.showAlert('error', 'Failed to load quiz. Please try again.')
+                    );
                 }
             }
-            
-            if (!successShown) {
-                try {
-                    showErrorAlert('failed_load_quiz');
-                } catch (e) {
-                    // Last resort alert
-                    translationManager.showAlert('error', 'Failed to load quiz. Please try again.');
-                }
-            }
-        }
+        });
     }
 
     /**
@@ -528,32 +986,32 @@ export class QuizManager {
      */
     cleanQuizData(data) {
         if (!data || !data.questions) return data;
-        
+
         const cleanedData = JSON.parse(JSON.stringify(data)); // Deep copy
-        
+
         cleanedData.questions = cleanedData.questions.map(question => {
             const cleanedQuestion = { ...question };
-            
+
             // Clean question text
             if (cleanedQuestion.question && typeof cleanedQuestion.question === 'string') {
                 cleanedQuestion.question = cleanedQuestion.question.replace(/ and this is of the client.*$/g, '');
                 cleanedQuestion.question = cleanedQuestion.question.replace(/ if this means that we sorted the first task.*$/g, '');
             }
-            
+
             // Clean options
             if (cleanedQuestion.options && Array.isArray(cleanedQuestion.options)) {
                 cleanedQuestion.options = cleanedQuestion.options.map(option => {
                     if (typeof option === 'string') {
                         return option.replace(/ and this is of the client.*$/g, '')
-                                   .replace(/ if this means that we sorted the first task.*$/g, '');
+                            .replace(/ if this means that we sorted the first task.*$/g, '');
                     }
                     return option;
                 });
             }
-            
+
             return cleanedQuestion;
         });
-        
+
         return cleanedData;
     }
 
@@ -564,12 +1022,13 @@ export class QuizManager {
     renderMathForLoadedQuiz() {
         // CRITICAL: Only render MathJax for editor elements to prevent game element contamination
         this.mathRenderer.renderMathJaxForEditor();
-        
+
         // F5 RELOAD FIX: Wait for MathJax readiness before updating preview
         this.mathRenderer.waitForMathJaxReady(() => {
-            if (window.game && window.game.previewManager && window.game.previewManager.previewRenderer) {
+            const previewManager = this._getPreviewManager();
+            if (previewManager && previewManager.previewRenderer) {
                 logger.debug('🔄 Updating live preview after MathJax is ready');
-                window.game.previewManager.previewRenderer.renderMathJaxForPreview();
+                previewManager.previewRenderer.renderMathJaxForPreview();
             }
         });
     }
@@ -579,105 +1038,105 @@ export class QuizManager {
      */
     async populateQuizBuilder(quizData) {
         logger.debug('Starting bulletproof populateQuizBuilder');
-        
+
         try {
             // ========== CRITICAL OPERATIONS (must succeed) ==========
-            
+
             // Set quiz title (essential)
-            try {
-                const titleInput = document.getElementById('quiz-title');
-                if (titleInput) {
-                    titleInput.value = quizData.title || '';
-                }
-            } catch (error) {
-                logger.error('Critical: Failed to set quiz title:', error);
-                throw error; // This is critical enough to fail the whole operation
+            const titleInput = dom.get('quiz-title');
+            if (!titleInput) {
+                throw new Error('Quiz title input not found');
             }
-            
+            titleInput.value = quizData.title || '';
+
             // Clear existing questions (essential)
-            try {
-                const questionsContainer = document.getElementById('questions-container');
-                if (questionsContainer) {
-                    questionsContainer.innerHTML = '';
-                } else {
-                    logger.error('Critical: Questions container not found');
-                    throw new Error('Questions container not found');
-                }
-            } catch (error) {
-                logger.error('Critical: Failed to clear questions container:', error);
-                throw error;
+            const questionsContainer = dom.get('questions-container');
+            if (!questionsContainer) {
+                throw new Error('Questions container not found');
             }
-            
+            questionsContainer.innerHTML = '';
+
             // Add loaded questions (essential)
-            try {
-                if (quizData.questions && Array.isArray(quizData.questions)) {
-                    quizData.questions.forEach((questionData, index) => {
-                        try {
-                            this.addQuestionFromData(questionData);
-                        } catch (questionError) {
-                            logger.warn(`Failed to add question ${index + 1}, skipping:`, questionError);
-                            // Don't fail the whole operation for one bad question
-                        }
-                    });
-                }
-                logger.debug('Questions added successfully');
-            } catch (error) {
-                logger.error('Critical: Failed to add questions:', error);
-                throw error;
+            if (quizData.questions && Array.isArray(quizData.questions)) {
+                quizData.questions.forEach((questionData, index) => {
+                    this.errorHandler.safeExecute(
+                        () => this.addQuestionFromData(questionData),
+                        { operation: 'addQuestionFromData', questionIndex: index }
+                    );
+                });
             }
-            
+            logger.debug('Questions added successfully');
+
             // ========== NICE-TO-HAVE OPERATIONS (don't let these break the flow) ==========
-            
-            // Translation loading (nice to have)
-            try {
-                const currentLang = translationManager.getCurrentLanguage();
-                await translationManager.ensureLanguageLoaded(currentLang);
-                logger.debug('Translations loaded successfully');
-            } catch (error) {
-                logger.warn('Non-critical: Translation loading failed:', error);
-            }
-            
-            // Container translation (nice to have)
-            try {
-                const questionsContainer = document.getElementById('questions-container');
-                if (questionsContainer) {
-                    translationManager.translateContainer(questionsContainer);
-                }
-            } catch (error) {
-                logger.warn('Non-critical: Container translation failed:', error);
-            }
-            
-            // Page translation (nice to have)
-            try {
-                translationManager.translatePage();
-            } catch (error) {
-                logger.warn('Non-critical: Page translation failed:', error);
-            }
-            
-            // UI updates (nice to have)
-            try {
-                this.updateQuestionsUI();
-            } catch (error) {
-                logger.warn('Non-critical: UI update failed:', error);
-            }
-            
-            // MathJax rendering (nice to have)
-            try {
-                this.renderMathForLoadedQuiz();
-            } catch (error) {
-                logger.warn('Non-critical: MathJax rendering failed:', error);
-            }
-            
+
+            // Translation loading
+            await this.errorHandler.safeExecute(
+                async () => {
+                    const currentLang = translationManager.getCurrentLanguage();
+                    await translationManager.ensureLanguageLoaded(currentLang);
+                    logger.debug('Translations loaded successfully');
+                },
+                { operation: 'ensureLanguageLoaded' }
+            );
+
+            // Container translation
+            this.errorHandler.safeExecute(
+                () => {
+                    const container = dom.get('questions-container');
+                    if (container) {
+                        translationManager.translateContainer(container);
+                    }
+                },
+                { operation: 'translateContainer' }
+            );
+
+            // Page translation
+            this.errorHandler.safeExecute(
+                () => translationManager.translatePage(),
+                { operation: 'translatePage' }
+            );
+
+            // UI updates
+            this.errorHandler.safeExecute(
+                () => this.updateQuestionsUI(),
+                { operation: 'updateQuestionsUI' }
+            );
+
+            // MathJax rendering
+            this.errorHandler.safeExecute(
+                () => this.renderMathForLoadedQuiz(),
+                { operation: 'renderMathForLoadedQuiz' }
+            );
+
             logger.debug('populateQuizBuilder completed successfully');
-            
+
         } catch (error) {
             logger.error('Critical error in populateQuizBuilder:', error);
             // Only throw if a truly critical operation failed
             throw error;
         }
-        
+
         // NOTE: Preview update is now handled separately in updatePreviewSafely()
         // This ensures it can't break the quiz loading flow
+    }
+
+    /**
+     * Create or get remove button for a question item
+     */
+    ensureRemoveButton(questionItem) {
+        let removeButton = questionItem.querySelector('.remove-question');
+        if (removeButton) return removeButton;
+
+        removeButton = document.createElement('button');
+        removeButton.className = 'btn secondary remove-question';
+        removeButton.onclick = () => {
+            questionItem.remove();
+            this.updateQuestionsUI();
+        };
+        removeButton.setAttribute('data-translate', 'remove');
+        removeButton.textContent = translationManager.getTranslationSync('remove') || 'Remove';
+        questionItem.appendChild(removeButton);
+        return removeButton;
     }
 
     /**
@@ -685,273 +1144,116 @@ export class QuizManager {
      * Updates both remove button visibility and question numbering in single operation
      */
     updateQuestionsUI() {
-        const questionsContainer = document.getElementById('questions-container');
+        const questionsContainer = dom.get('questions-container');
         if (!questionsContainer) return;
-        
+
         const questionItems = questionsContainer.querySelectorAll('.question-item');
         const hasMultipleQuestions = questionItems.length > 1;
-        
+
         logger.debug(`updateQuestionsUI: Found ${questionItems.length} questions, hasMultipleQuestions: ${hasMultipleQuestions}`);
-        
+
         questionItems.forEach((questionItem, index) => {
             // Update data-question attribute only if needed
-            const currentDataQuestion = questionItem.getAttribute('data-question');
-            if (currentDataQuestion !== index.toString()) {
+            if (questionItem.getAttribute('data-question') !== index.toString()) {
                 questionItem.setAttribute('data-question', index);
-                
+
                 // Update the question heading with proper translation
                 const questionHeading = questionItem.querySelector('h3');
                 if (questionHeading) {
-                    const questionNumber = index + 1;
-                    questionHeading.innerHTML = `<span data-translate="question">Question</span> ${questionNumber}`;
+                    questionHeading.innerHTML = `<span data-translate="question">Question</span> ${index + 1}`;
                     translationManager.translateContainer(questionHeading);
                 }
             }
-            
-            // Handle remove button visibility - show only when multiple questions exist
-            let removeButton = questionItem.querySelector('.remove-question');
-            
-            // If remove button doesn't exist, create it
-            if (!removeButton) {
-                removeButton = document.createElement('button');
-                removeButton.className = 'btn secondary remove-question';
-                removeButton.onclick = () => {
-                    questionItem.remove();
-                    this.updateRemoveButtonVisibility();
-                    this.updateQuestionNumbering();
-                };
-                removeButton.setAttribute('data-translate', 'remove');
-                removeButton.textContent = translationManager.getTranslationSync('remove') || 'Remove';
-                questionItem.appendChild(removeButton);
-                logger.debug(`Question ${index + 1}: Created missing remove button`);
-            }
-            
-            const shouldShow = hasMultipleQuestions ? 'block' : 'none';
-            removeButton.style.display = shouldShow;
-            logger.debug(`Question ${index + 1}: Set removeButton display to "${shouldShow}"`);
-            
+
+            // Handle remove button visibility
+            const removeButton = this.ensureRemoveButton(questionItem);
+            removeButton.style.display = hasMultipleQuestions ? 'block' : 'none';
         });
-        
+
         logger.debug(`Updated questions UI for ${questionItems.length} questions`);
-    }
-
-    /**
-     * Update remove button visibility for all questions
-     * Show remove buttons when there are multiple questions, hide when only one
-     */
-    updateRemoveButtonVisibility() {
-        const questionsContainer = document.getElementById('questions-container');
-        if (!questionsContainer) return;
-        
-        const questionItems = questionsContainer.querySelectorAll('.question-item');
-        const hasMultipleQuestions = questionItems.length > 1;
-        
-        questionItems.forEach((questionItem, index) => {
-            let removeButton = questionItem.querySelector('.remove-question');
-            
-            // If remove button doesn't exist, create it
-            if (!removeButton) {
-                removeButton = document.createElement('button');
-                removeButton.className = 'btn secondary remove-question';
-                removeButton.onclick = () => {
-                    questionItem.remove();
-                    this.updateRemoveButtonVisibility();
-                    this.updateQuestionNumbering();
-                };
-                removeButton.setAttribute('data-translate', 'remove');
-                removeButton.textContent = translationManager.getTranslationSync('remove') || 'Remove';
-                questionItem.appendChild(removeButton);
-            }
-            
-            // Show remove button only when multiple questions exist
-            if (hasMultipleQuestions) {
-                removeButton.style.display = 'block';
-            } else {
-                removeButton.style.display = 'none';
-            }
-        });
-        
-        logger.debug(`Updated remove button visibility for ${questionItems.length} questions`);
-    }
-
-    /**
-     * Update question numbering after questions are added or removed
-     */
-    updateQuestionNumbering() {
-        const questionsContainer = document.getElementById('questions-container');
-        if (!questionsContainer) return;
-        
-        const questionItems = questionsContainer.querySelectorAll('.question-item');
-        
-        questionItems.forEach((questionItem, index) => {
-            // Update data-question attribute
-            questionItem.setAttribute('data-question', index);
-            
-            // Update the question heading text
-            const questionHeading = questionItem.querySelector('h3');
-            if (questionHeading) {
-                const questionNumber = index + 1;
-                // Use translation system instead of hardcoded English
-                const questionText = translationManager.getTranslationSync('question') || 'Question';
-                questionHeading.textContent = `${questionText} ${questionNumber}`;
-            }
-        });
-        
-        logger.debug(`Updated question numbering for ${questionItems.length} questions`);
     }
 
     /**
      * Add question from data object
      */
     addQuestionFromData(questionData) {
-        const questionsContainer = document.getElementById('questions-container');
+        const questionsContainer = dom.get('questions-container');
         if (!questionsContainer) return;
-        
+
         const questionElement = createQuestionElement(questionData);
         questionsContainer.appendChild(questionElement);
-        
+
+        // Initialize video section for the new question element
+        manimEditor.initVideoSection(questionElement);
+
         // Clean translation keys from text content WITHOUT using innerHTML
         // This preserves the DOM structure and form field values
         this.cleanTranslationKeysInElement(questionElement);
-        
+
         logger.debug('Cleaned translation keys from question element');
-        
-        // Populate the question data 
+
+        // Populate the question data
         this.populateQuestionElement(questionElement, questionData);
-        
+
         // Translate the individual question element after populating data
         translationManager.translateContainer(questionElement);
-        // logger.debug('Translated individual question element');
-        
-        // Debug: Check if translation keys are showing as actual text
-        const problemElements = questionElement.querySelectorAll('*');
-        problemElements.forEach(el => {
-            const text = el.textContent || '';
-            if (text.includes('add_image') || text.includes('time_seconds') || text.includes('multiple_choice')) {
-                logger.warn('Found translation key as text:', text, 'in element:', el.tagName, el.className);
+    }
+
+    /**
+     * Replace translation keys in text with fallback values
+     * @returns {string|null} Replaced text if changes made, null otherwise
+     */
+    replaceTranslationKeys(text) {
+        if (!text) return null;
+
+        let result = text;
+        let changed = false;
+
+        for (const [key, value] of Object.entries(TRANSLATION_FALLBACKS)) {
+            const regex = new RegExp(`\\b${key}\\b`, 'g');
+            if (regex.test(result)) {
+                result = result.replace(regex, value);
+                changed = true;
             }
-        });
+        }
+
+        return changed ? result : null;
     }
 
     /**
      * Clean translation keys from an element without destroying DOM structure
      */
     cleanTranslationKeysInElement(element) {
-        const translationMap = {
-            'multiple_choice': 'Multiple Choice',
-            'multiple_correct': 'Multiple Correct Answers', 
-            'true_false': 'True/False',
-            'numeric': 'Numeric Answer',
-            'easy': 'Easy',
-            'medium': 'Medium', 
-            'hard': 'Hard',
-            'time_seconds': 'Time (sec)',
-            'add_image': 'Add Image',
-            'remove_image': 'Remove Image',
-            'remove': 'Remove',
-            'a_is_correct': 'A is correct',
-            'b_is_correct': 'B is correct',
-            'c_is_correct': 'C is correct', 
-            'd_is_correct': 'D is correct',
-            'true': 'True',
-            'false': 'False',
-            'question': 'Question',
-            'enter_question_preview': 'Enter your question above to see preview',
-            'enter_question_with_latex': 'Enter your question (supports LaTeX)',
-            'toggle_live_preview': 'Live Preview',
-            'close_live_preview': 'Close Live Preview'
-        };
-        
         // Clean text content in text nodes (preserving DOM structure)
-        const walker = document.createTreeWalker(
-            element,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
-        
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+
         const textNodes = [];
         let node;
         while (node = walker.nextNode()) {
             textNodes.push(node);
         }
-        
+
         textNodes.forEach(textNode => {
-            let content = textNode.textContent;
-            let changed = false;
-            
-            for (const [key, value] of Object.entries(translationMap)) {
-                const regex = new RegExp(`\\b${key}\\b`, 'g');
-                if (regex.test(content)) {
-                    content = content.replace(regex, value);
-                    changed = true;
-                }
-            }
-            
-            if (changed) {
-                textNode.textContent = content;
+            const replaced = this.replaceTranslationKeys(textNode.textContent);
+            if (replaced) {
+                textNode.textContent = replaced;
             }
         });
-        
+
         // Clean placeholder attributes
         element.querySelectorAll('[placeholder]').forEach(el => {
-            const placeholder = el.getAttribute('placeholder');
-            let cleanedPlaceholder = placeholder;
-            let changed = false;
-            
-            for (const [key, value] of Object.entries(translationMap)) {
-                const regex = new RegExp(`\\b${key}\\b`, 'g');
-                if (regex.test(cleanedPlaceholder)) {
-                    cleanedPlaceholder = cleanedPlaceholder.replace(regex, value);
-                    changed = true;
-                }
-            }
-            
-            if (changed) {
-                el.setAttribute('placeholder', cleanedPlaceholder);
+            const replaced = this.replaceTranslationKeys(el.getAttribute('placeholder'));
+            if (replaced) {
+                el.setAttribute('placeholder', replaced);
             }
         });
     }
-    
+
     /**
      * Clean translation keys from loaded data (legacy method for backward compatibility)
      */
     cleanTranslationKeys(htmlString) {
-        if (!htmlString) return htmlString;
-        
-        // Map of translation keys to English text
-        const translationMap = {
-            'multiple_choice': 'Multiple Choice',
-            'multiple_correct': 'Multiple Correct Answers', 
-            'true_false': 'True/False',
-            'numeric': 'Numeric Answer',
-            'easy': 'Easy',
-            'medium': 'Medium', 
-            'hard': 'Hard',
-            'time_seconds': 'Time (sec)',
-            'add_image': 'Add Image',
-            'remove_image': 'Remove Image',
-            'remove': 'Remove',
-            'a_is_correct': 'A is correct',
-            'b_is_correct': 'B is correct',
-            'c_is_correct': 'C is correct', 
-            'd_is_correct': 'D is correct',
-            'true': 'True',
-            'false': 'False',
-            'question': 'Question',
-            'enter_question_preview': 'Enter your question above to see preview',
-            'enter_question_with_latex': 'Enter your question (supports LaTeX)',
-            'toggle_live_preview': 'Live Preview',
-            'close_live_preview': 'Close Live Preview'
-        };
-        
-        let cleaned = htmlString;
-        for (const [key, value] of Object.entries(translationMap)) {
-            // Replace translation keys that appear as standalone text
-            cleaned = cleaned.replace(new RegExp(`\\b${key}\\b`, 'g'), value);
-        }
-        
-        return cleaned;
+        return this.replaceTranslationKeys(htmlString) || htmlString;
     }
 
     /**
@@ -959,10 +1261,15 @@ export class QuizManager {
      */
     populateQuestionElement(questionElement, questionData) {
         logger.debug('Populating question element with data:', questionData);
-        
+
         this.populateBasicQuestionData(questionElement, questionData);
         this.populateQuestionImage(questionElement, questionData);
         this.populateTypeSpecificData(questionElement, questionData);
+
+        // Populate video/Manim data
+        if (questionData.video || questionData.videoManimCode || questionData.explanationVideo || questionData.explanationVideoManimCode) {
+            manimEditor.populateVideoData(questionElement, questionData);
+        }
     }
 
     /**
@@ -977,7 +1284,7 @@ export class QuizManager {
         } else {
             logger.warn('Question text element not found');
         }
-        
+
         // Set question type
         const questionType = questionElement.querySelector('.question-type');
         if (questionType) {
@@ -985,18 +1292,115 @@ export class QuizManager {
             // Trigger change event to update UI
             questionType.dispatchEvent(new Event('change'));
         }
-        
-        // Set question time
-        const questionTime = questionElement.querySelector('.question-time');
+
+        // Set question time (with NaN protection)
+        // Match the selector used in extractQuestionData: .question-time-limit
+        const questionTime = questionElement.querySelector('.question-time-limit');
         if (questionTime) {
-            questionTime.value = questionData.time || 30;
+            // Support both 'timeLimit' (new) and 'time' (old) for backward compatibility
+            const timeValue = parseInt(questionData.timeLimit || questionData.time, 10);
+            questionTime.value = !isNaN(timeValue) && timeValue > 0 ? timeValue : 30;
         }
-        
+
         // Set question difficulty
         const questionDifficulty = questionElement.querySelector('.question-difficulty');
         if (questionDifficulty) {
             questionDifficulty.value = questionData.difficulty || 'medium';
         }
+
+        // Set explanation (optional field from AI generator or manual entry)
+        const questionExplanation = questionElement.querySelector('.question-explanation');
+        if (questionExplanation && questionData.explanation) {
+            questionExplanation.value = questionData.explanation;
+            logger.debug('Set explanation:', questionData.explanation.substring(0, 50) + '...');
+        }
+
+        // Ensure concept container exists (for backward compatibility with old questions)
+        // and populate concept tags if present
+        this.ensureConceptTagsContainer(questionElement);
+        if (questionData.concepts && Array.isArray(questionData.concepts)) {
+            this.populateConceptTags(questionElement, questionData.concepts);
+        }
+    }
+
+    /**
+     * Ensure concept tags container exists in question element
+     * @param {HTMLElement} questionElement - The question DOM element
+     * @returns {HTMLElement|null} The concept-tags-list element
+     */
+    ensureConceptTagsContainer(questionElement) {
+        let tagsList = questionElement.querySelector('.concept-tags-list');
+        if (tagsList) return tagsList;
+
+        // Container doesn't exist - inject it (for backward compatibility with old questions)
+        const questionMeta = questionElement.querySelector('.question-meta');
+        if (!questionMeta) return null;
+
+        const container = document.createElement('div');
+        container.className = 'concept-tags-container';
+        container.innerHTML = `
+            <label data-translate="concepts">Concepts</label>
+            <div class="concept-tags-input">
+                <div class="concept-tags-list"></div>
+                <input type="text" class="concept-input" placeholder="Add concept..." data-translate-placeholder="add_concept" maxlength="30">
+            </div>
+            <div class="concept-hint" data-translate="concept_hint">Press Enter to add (max 5)</div>
+        `;
+
+        // Insert before time-limit-container
+        const timeContainer = questionMeta.querySelector('.time-limit-container');
+        if (timeContainer) {
+            questionMeta.insertBefore(container, timeContainer);
+        } else {
+            questionMeta.appendChild(container);
+        }
+
+        // Note: Event handling uses document-level delegation (see setupEventDelegation)
+        // so no specific listener setup needed for the new input
+
+        logger.debug('Injected concept-tags-container for backward compatibility');
+        return container.querySelector('.concept-tags-list');
+    }
+
+    /**
+     * Populate concept tags in question element
+     * @param {HTMLElement} questionElement - The question DOM element
+     * @param {string[]} concepts - Array of concept strings
+     */
+    populateConceptTags(questionElement, concepts) {
+        const tagsList = this.ensureConceptTagsContainer(questionElement);
+        if (!tagsList) return;
+
+        tagsList.innerHTML = '';
+        concepts.slice(0, 5).forEach(concept => {
+            this.createConceptTag(tagsList, concept, false);
+        });
+        logger.debug('Populated concept tags:', concepts);
+    }
+
+    /**
+     * Create a concept tag element and append to container
+     * @param {HTMLElement} tagsList - The container for tags
+     * @param {string} concept - The concept text
+     * @param {boolean} triggerAutoSave - Whether to trigger auto-save on removal
+     * @returns {HTMLElement} The created tag element
+     */
+    createConceptTag(tagsList, concept, triggerAutoSave = true) {
+        const tag = document.createElement('span');
+        tag.className = 'concept-tag';
+        tag.dataset.concept = concept;
+        tag.innerHTML = `${escapeHtml(concept)}<button type="button" class="concept-tag-remove" aria-label="Remove">×</button>`;
+
+        tag.querySelector('.concept-tag-remove').addEventListener('click', (e) => {
+            e.stopPropagation();
+            tag.remove();
+            if (triggerAutoSave) {
+                this.scheduleAutoSave();
+            }
+        });
+
+        tagsList.appendChild(tag);
+        return tag;
     }
 
     /**
@@ -1004,20 +1408,22 @@ export class QuizManager {
      */
     populateQuestionImage(questionElement, questionData) {
         if (!questionData.image) return;
-        
-        logger.debug('Populating image for question:', questionData.image);
+
+        logger.debug('Populating image for question:', questionData.image, 'WebP:', questionData.imageWebp);
         const imageElement = questionElement.querySelector('.question-image');
         const imagePreview = questionElement.querySelector('.image-preview');
-        
+
         if (!imageElement || !imagePreview) {
             logger.debug('Image elements not found in question DOM');
             return;
         }
-        
-        const imageSrc = this.resolveImageSource(questionData.image);
-        this.setupImageElement(imageElement, imageSrc, questionData.image);
+
+        // Use WebP version for display if available (better compression)
+        const displayImage = questionData.imageWebp || questionData.image;
+        const imageSrc = this.resolveImageSource(displayImage);
+        this.setupImageElement(imageElement, imageSrc, questionData.image, questionData.imageWebp);
         this.setupImageHandlers(imageElement, imagePreview, questionData.image);
-        
+
         imagePreview.style.display = 'block';
         logger.debug('Image populated:', imageElement.src);
     }
@@ -1032,10 +1438,17 @@ export class QuizManager {
 
     /**
      * Set up image element with source and data attributes
+     * @param {HTMLImageElement} imageElement - The image element
+     * @param {string} imageSrc - The display source URL
+     * @param {string} originalImageData - The original image storage path
+     * @param {string|null} webpImageData - The WebP image storage path (if available)
      */
-    setupImageElement(imageElement, imageSrc, originalImageData) {
+    setupImageElement(imageElement, imageSrc, originalImageData, webpImageData = null) {
         imageElement.src = imageSrc;
         imageElement.dataset.url = originalImageData;
+        if (webpImageData) {
+            imageElement.dataset.webpUrl = webpImageData;
+        }
     }
 
     /**
@@ -1047,7 +1460,7 @@ export class QuizManager {
             logger.debug('✅ Quiz builder image loaded successfully:', imageData);
             imagePreview.style.display = 'block';
         };
-        
+
         // Set up retry logic similar to preview renderer
         this.loadImageWithRetry(imageElement, imageElement.src, 3, 1, imagePreview, imageData);
     }
@@ -1058,52 +1471,31 @@ export class QuizManager {
     handleImageLoadError(imageElement, imagePreview, imageData) {
         // Prevent infinite loop - remove error handler after first failure
         imageElement.onerror = null;
-        
+
         logger.warn('⚠️ Quiz builder image failed to load:', imageData);
-        
+
         // Hide the broken image
         imageElement.style.display = 'none';
-        
+
         // Create or update error message
         this.showImageErrorMessage(imagePreview, imageData);
-        
+
         // Keep preview visible with error message
         imagePreview.style.display = 'block';
         logger.debug('Shown image error message in quiz builder');
     }
 
     /**
-     * Load image with retry logic for WSL environments (similar to preview renderer)
-     * @param {HTMLImageElement} img - Image element
-     * @param {string} src - Image source URL
-     * @param {number} maxRetries - Maximum retry attempts
-     * @param {number} attempt - Current attempt number
-     * @param {HTMLElement} imagePreview - Image preview container for error handling
-     * @param {string} imageData - Original image data for error display
+     * Load image with retry logic for WSL environments (delegates to shared utility)
      */
-    loadImageWithRetry(img, src, maxRetries = 3, attempt = 1, imagePreview = null, imageData = '') {
-        img.onerror = () => {
-            if (attempt < maxRetries) {
-                logger.warn(`Quiz builder image load failed, retrying (${attempt}/${maxRetries}): ${src}`);
-                // Progressive delay: 100ms, 200ms, 300ms for WSL file system delays
-                setTimeout(() => {
-                    this.loadImageWithRetry(img, src, maxRetries, attempt + 1, imagePreview, imageData);
-                }, 100 * attempt);
-            } else {
-                logger.error(`Quiz builder image failed to load after ${maxRetries} attempts: ${src}`);
+    loadImageWithRetry(img, src, maxRetries = 3, _attempt = 1, imagePreview = null, imageData = '') {
+        sharedLoadImageWithRetry(img, src, {
+            maxRetries,
+            useCacheBuster: true,
+            onError: () => {
                 this.handleImageLoadError(img, imagePreview, imageData || src);
             }
-        };
-        
-        // Set the source to trigger load/error event
-        if (attempt === 1) {
-            // Only set src on first attempt, subsequent attempts reuse existing src
-            img.src = src;
-        } else {
-            // Force reload by appending cache buster
-            const separator = src.includes('?') ? '&' : '?';
-            img.src = src + separator + '_retry=' + attempt + '&_t=' + Date.now();
-        }
+        });
     }
 
     /**
@@ -1126,30 +1518,75 @@ export class QuizManager {
             `;
             imagePreview.appendChild(errorMsg);
         }
-        
+
         errorMsg.innerHTML = `
-            <div style="margin-bottom: 6px;">📷 Image not found</div>
+            <div style="margin-bottom: 6px;">📷 ${translationManager.getTranslationSync('image_not_found')}</div>
             <div style="font-size: 0.75rem; opacity: 0.7;">${imageData}</div>
-            <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 3px;">Remove reference or upload file</div>
+            <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 3px;">${translationManager.getTranslationSync('image_remove_or_upload')}</div>
         `;
     }
 
     /**
      * Populate type-specific question data with proper timing
      * Uses QuestionTypeRegistry for centralized population logic
+     *
+     * Note: AI generator may use different property names than QuestionTypeRegistry expects:
+     * - AI uses correctAnswer/correctAnswers, registry expects correctIndex/correctIndices
      */
     populateTypeSpecificData(questionElement, questionData) {
         setTimeout(() => {
             logger.debug('Populating type-specific data for:', questionData.type);
-            QuestionTypeRegistry.populateQuestion(questionData.type, questionElement, questionData);
-        }, 100);
+
+            // Normalize property names from AI generator to match QuestionTypeRegistry expectations
+            const normalizedData = this.normalizeQuestionData(questionData);
+
+            QuestionTypeRegistry.populateQuestion(questionData.type, questionElement, normalizedData);
+        }, TIMING.DOM_UPDATE_DELAY);
+    }
+
+    /**
+     * Normalize question data property names
+     * Maps AI generator output to QuestionTypeRegistry expected format
+     */
+    normalizeQuestionData(questionData) {
+        const normalized = { ...questionData };
+
+        switch (questionData.type) {
+            case 'multiple-choice':
+                // AI uses correctAnswer (index), registry expects correctIndex
+                if (normalized.correctAnswer !== undefined && normalized.correctIndex === undefined) {
+                    normalized.correctIndex = normalized.correctAnswer;
+                    logger.debug('Normalized correctAnswer -> correctIndex:', normalized.correctIndex);
+                }
+                break;
+
+            case 'multiple-correct':
+                // AI uses correctAnswers (array), registry expects correctIndices
+                if (normalized.correctAnswers !== undefined && normalized.correctIndices === undefined) {
+                    normalized.correctIndices = normalized.correctAnswers;
+                    logger.debug('Normalized correctAnswers -> correctIndices:', normalized.correctIndices);
+                }
+                break;
+
+            case 'true-false':
+                // AI may use string "true"/"false", registry expects boolean
+                if (typeof normalized.correctAnswer === 'string') {
+                    normalized.correctAnswer = normalized.correctAnswer.toLowerCase() === 'true';
+                    logger.debug('Normalized true-false correctAnswer string -> boolean:', normalized.correctAnswer);
+                }
+                break;
+
+            // numeric already uses correctAnswer as number, which matches registry
+        }
+
+        return normalized;
     }
 
     /**
      * Import quiz from file
      */
     async importQuiz() {
-        const fileInput = document.getElementById('import-file-input');
+        const fileInput = dom.get('import-file-input');
         if (fileInput) {
             fileInput.click();
         }
@@ -1161,38 +1598,37 @@ export class QuizManager {
     async handleFileImport(event) {
         const file = event.target.files[0];
         if (!file) return;
-        
+
         if (!file.name.endsWith('.json')) {
             showErrorAlert('invalid_file_format');
             return;
         }
-        
-        try {
+
+        await this.errorHandler.wrapAsyncOperation(async () => {
             const text = await file.text();
             const quizData = JSON.parse(text);
-            
+
             // Validate quiz data structure
             if (!quizData.title || !quizData.questions || !Array.isArray(quizData.questions)) {
                 showErrorAlert('invalid_quiz_format');
                 return;
             }
-            
+
             // Validate questions
             const validationErrors = this.validateQuestions(quizData.questions);
             if (validationErrors.length > 0) {
                 translationManager.showAlert('error', translationManager.getTranslationSync('invalid_quiz_questions') + '\\n' + validationErrors.join('\\n'));
                 return;
             }
-            
+
             // Load the quiz
             await this.populateQuizBuilder(quizData);
             showSuccessAlert('quiz_imported_successfully');
-            
-        } catch (error) {
-            logger.error('Error importing quiz:', error);
-            showErrorAlert('failed_import_quiz');
-        }
-        
+        }, {
+            context: { operation: 'importQuiz', filename: file.name },
+            fallback: () => showErrorAlert('failed_import_quiz')
+        });
+
         // Clear file input
         event.target.value = '';
     }
@@ -1201,38 +1637,38 @@ export class QuizManager {
      * Export quiz to file
      */
     async exportQuiz() {
-        const title = document.getElementById('quiz-title')?.value?.trim();
+        const title = dom.get('quiz-title')?.value?.trim();
         if (!title) {
             showErrorAlert('please_enter_quiz_title');
             return;
         }
-        
+
         const questions = this.collectQuestions();
         if (questions.length === 0) {
             showErrorAlert('please_add_one_question');
             return;
         }
-        
+
         const quizData = {
             title: title,
             questions: questions,
             createdAt: new Date().toISOString()
         };
-        
-        try {
+
+        await this.errorHandler.wrapAsyncOperation(async () => {
             const dataStr = JSON.stringify(quizData, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            
+
             const link = document.createElement('a');
             link.href = URL.createObjectURL(dataBlob);
             link.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
             link.click();
-            
+
             showSuccessAlert('quiz_exported_successfully');
-        } catch (error) {
-            logger.error('Error exporting quiz:', error);
-            showErrorAlert('failed_export_quiz');
-        }
+        }, {
+            context: { operation: 'exportQuiz', title },
+            fallback: () => showErrorAlert('failed_export_quiz')
+        });
     }
 
     /**
@@ -1240,46 +1676,63 @@ export class QuizManager {
      * @param {Object} questionData - Generated question data
      * @param {boolean} showAlerts - Whether to show success alerts
      */
-    addGeneratedQuestion(questionData, showAlerts = true) {
+    addGeneratedQuestion(questionData, _showAlerts = true) {
         logger.debug('🔧 AddGeneratedQuestion - Starting with question:', {
             type: questionData.type,
             question: questionData.question?.substring(0, 50) + '...'
         });
-        
+
         const questionElements = document.querySelectorAll('.question-item');
         let targetElement = null;
-        
+
         // Check if there's an empty default question we can replace
         const firstQuestion = questionElements[0];
         if (firstQuestion && this.isEmptyQuestion(firstQuestion)) {
             logger.debug('🔧 AddGeneratedQuestion - Using existing empty question');
             targetElement = firstQuestion;
-            
+
             // Use same processing as addQuestionFromData for consistency
             this.cleanTranslationKeysInElement(targetElement);
             this.populateQuestionElement(targetElement, questionData);
             translationManager.translateContainer(targetElement);
+            // Update preview after populating (programmatic value changes don't fire input events)
+            this.updatePreviewSafely();
         } else {
             // Add a new question
             logger.debug('🔧 AddGeneratedQuestion - Creating new question element');
-            if (window.game && window.game.addQuestion) {
-                window.game.addQuestion();
-                
-                // Wait longer for DOM to update when creating new elements
-                setTimeout(() => {
+            const addQuestion = this._getAddQuestionFn();
+            if (addQuestion) {
+                const initialCount = questionElements.length;
+                addQuestion();
+
+                // Use retry mechanism instead of fixed timeout to handle varying DOM update speeds
+                const maxRetries = 10;
+                const retryDelay = TIMING.DOM_READY_CHECK;
+                let retryCount = 0;
+
+                const findAndPopulate = () => {
                     const updatedQuestionElements = document.querySelectorAll('.question-item');
-                    targetElement = updatedQuestionElements[updatedQuestionElements.length - 1];
-                    
-                    if (targetElement) {
+
+                    // Check if a new question was actually added
+                    if (updatedQuestionElements.length > initialCount) {
+                        targetElement = updatedQuestionElements[updatedQuestionElements.length - 1];
                         logger.debug('🔧 AddGeneratedQuestion - New element created, populating data');
                         // Use same processing as addQuestionFromData for consistency
                         this.cleanTranslationKeysInElement(targetElement);
                         this.populateQuestionElement(targetElement, questionData);
                         translationManager.translateContainer(targetElement);
+                        // Update preview after populating (programmatic value changes don't fire input events)
+                        this.updatePreviewSafely();
+                    } else if (retryCount < maxRetries) {
+                        retryCount++;
+                        setTimeout(findAndPopulate, retryDelay);
                     } else {
-                        logger.error('🔧 AddGeneratedQuestion - Failed to find new question element');
+                        logger.error('🔧 AddGeneratedQuestion - Failed to find new question element after retries');
                     }
-                }, 300); // Increased timeout to 300ms for DOM updates + any animations
+                };
+
+                // Start checking after initial delay
+                setTimeout(findAndPopulate, TIMING.DOM_READY_CHECK);
             } else {
                 logger.error('addQuestion function not available');
                 return;
@@ -1289,43 +1742,31 @@ export class QuizManager {
 
     /**
      * Check if a question element is empty/default
-     * @param {HTMLElement} questionElement - Question DOM element to check
-     * @returns {boolean} - True if question is empty
      */
     isEmptyQuestion(questionElement) {
         const questionText = questionElement.querySelector('.question-text')?.value?.trim();
+        if (questionText) return false;
+
         const options = questionElement.querySelectorAll('.option');
-        let hasEmptyOptions = true;
-        
-        // Check if all options are empty
-        options.forEach(option => {
-            if (option.value?.trim()) {
-                hasEmptyOptions = false;
-            }
-        });
-        
-        return !questionText && hasEmptyOptions;
+        return Array.from(options).every(opt => !opt.value?.trim());
     }
 
     /**
      * Auto-save quiz to localStorage
      */
     autoSaveQuiz() {
-        const title = document.getElementById('quiz-title')?.value?.trim();
+        const title = dom.get('quiz-title')?.value?.trim();
         const questions = this.collectQuestions();
-        
+
         if (title || questions.length > 0) {
             const autoSaveData = {
                 title: title,
                 questions: questions,
                 timestamp: Date.now()
             };
-            
-            try {
-                localStorage.setItem('quizAutoSave', JSON.stringify(autoSaveData));
+
+            if (setJSON('quizAutoSave', autoSaveData)) {
                 logger.debug('Auto-saved quiz data');
-            } catch (error) {
-                logger.error('Failed to auto-save quiz:', error);
             }
         }
     }
@@ -1334,27 +1775,20 @@ export class QuizManager {
      * Load auto-saved quiz
      */
     async loadAutoSave() {
-        try {
-            const autoSaveData = localStorage.getItem('quizAutoSave');
-            if (autoSaveData) {
-                const data = JSON.parse(autoSaveData);
-                
-                // Check if auto-save is recent (within 24 hours)
-                const hoursSinceAutoSave = (Date.now() - data.timestamp) / (1000 * 60 * 60);
-                if (hoursSinceAutoSave < 24) {
-                    // Validate data before loading to prevent corruption
-                    if (this.validateQuizData(data)) {
-                        await this.populateQuizBuilder(data);
-                        logger.debug('Loaded auto-saved quiz data');
-                    } else {
-                        logger.warn('Auto-save data appears corrupted, clearing localStorage');
-                        localStorage.removeItem('quizAutoSave');
-                    }
+        const data = getJSON('quizAutoSave');
+        if (data) {
+            // Check if auto-save is recent (within 24 hours)
+            const hoursSinceAutoSave = (Date.now() - data.timestamp) / (1000 * 60 * 60);
+            if (hoursSinceAutoSave < 24) {
+                // Validate data before loading to prevent corruption
+                if (this.validateQuizData(data)) {
+                    await this.populateQuizBuilder(data);
+                    logger.debug('Loaded auto-saved quiz data');
+                } else {
+                    logger.warn('Auto-save data appears corrupted, clearing localStorage');
+                    removeItem('quizAutoSave');
                 }
             }
-        } catch (error) {
-            logger.error('Failed to load auto-save:', error);
-            localStorage.removeItem('quizAutoSave');
         }
     }
 
@@ -1365,7 +1799,7 @@ export class QuizManager {
      */
     isCorruptedText(text) {
         if (!text || typeof text !== 'string') return false;
-        
+
         // Check for specific corruption pattern but be less restrictive
         return text.includes('if this means that we sorted the first task');
     }
@@ -1379,13 +1813,13 @@ export class QuizManager {
         if (!question || typeof question !== 'object') {
             return false;
         }
-        
+
         // Check for corrupted question text
         if (this.isCorruptedText(question.question)) {
             logger.warn('Found corrupted question text:', question.question);
             return false;
         }
-        
+
         // Validate options if present
         return this.validateQuestionOptions(question.options);
     }
@@ -1399,7 +1833,7 @@ export class QuizManager {
         if (!options || !Array.isArray(options)) {
             return true; // Options are optional, so null/undefined is valid
         }
-        
+
         // Check each option for corruption using early return
         for (const option of options) {
             if (this.isCorruptedText(option)) {
@@ -1407,7 +1841,7 @@ export class QuizManager {
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -1420,14 +1854,14 @@ export class QuizManager {
             logger.warn('Quiz validation failed: data is not an object');
             return false;
         }
-        
+
         if (!data.questions || !Array.isArray(data.questions)) {
             logger.warn('Quiz validation failed: questions not found or not an array');
             return false;
         }
-        
+
         logger.debug(`Validating quiz with ${data.questions.length} questions`);
-        
+
         // Validate each question using helper method (reduces nesting)
         const isValid = data.questions.every((question, index) => {
             const valid = this.validateQuestionStructure(question);
@@ -1436,75 +1870,109 @@ export class QuizManager {
             }
             return valid;
         });
-        
+
         logger.debug(`Quiz validation result: ${isValid}`);
         return isValid;
+    }
+
+    /**
+     * Schedule auto-save with debounce (5 second delay)
+     */
+    scheduleAutoSave() {
+        clearTimeout(this.autoSaveTimeout);
+        this.autoSaveTimeout = setTimeout(() => this.autoSaveQuiz(), TIMING.AUTO_SAVE_DELAY);
     }
 
     /**
      * Setup auto-save functionality
      */
     setupAutoSave() {
-        // Set up auto-save on quiz title change
-        const titleInput = document.getElementById('quiz-title');
+        // Auto-save on quiz title change
+        const titleInput = dom.get('quiz-title');
         if (titleInput) {
-            titleInput.addEventListener('input', () => {
-                clearTimeout(this.autoSaveTimeout);
-                this.autoSaveTimeout = setTimeout(() => {
-                    this.autoSaveQuiz();
-                }, 5000); // Auto-save after 5 seconds of inactivity
-            });
+            titleInput.addEventListener('input', () => this.scheduleAutoSave());
         }
-        
+
         // Auto-save on question changes with tracked listener
-        const questionInputHandler = (event) => {
+        this.addDocumentListenerTracked('input', (event) => {
             if (event.target.closest('.question')) {
-                clearTimeout(this.autoSaveTimeout);
-                this.autoSaveTimeout = setTimeout(() => {
-                    this.autoSaveQuiz();
-                }, 5000);
+                this.scheduleAutoSave();
             }
-        };
-        this.addDocumentListenerTracked('input', questionInputHandler);
+        });
+
+        // Setup concept tag input handlers
+        this.setupConceptTagHandlers();
     }
 
     /**
-     * Escape HTML to prevent XSS
+     * Setup event handlers for concept tag inputs
+     * Uses event delegation for dynamically added questions
      */
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    setupConceptTagHandlers() {
+        // Handle Enter key to add concept tags
+        this.addDocumentListenerTracked('keydown', (event) => {
+            if (event.key === 'Enter' && event.target.classList.contains('concept-input')) {
+                event.preventDefault();
+                this.handleConceptTagInput(event.target);
+            }
+        });
+
+        // Handle blur to add concept tag (if user clicks away after typing)
+        this.addDocumentListenerTracked('blur', (event) => {
+            if (event.target.classList.contains('concept-input')) {
+                this.handleConceptTagInput(event.target);
+            }
+        }, { capture: true });
+    }
+
+    /**
+     * Handle adding a concept tag from input
+     * @param {HTMLInputElement} input - The concept input element
+     */
+    handleConceptTagInput(input) {
+        const concept = input.value.trim();
+        if (!concept) return;
+
+        const container = input.closest('.concept-tags-container');
+        const tagsList = container?.querySelector('.concept-tags-list');
+        if (!tagsList) return;
+
+        // Check max 5 tags limit
+        const existingTags = tagsList.querySelectorAll('.concept-tag');
+        if (existingTags.length >= 5) {
+            input.value = '';
+            return;
+        }
+
+        // Check for duplicates
+        const isDuplicate = Array.from(existingTags).some(
+            tag => (tag.dataset.concept || '').toLowerCase() === concept.toLowerCase()
+        );
+        if (isDuplicate) {
+            input.value = '';
+            return;
+        }
+
+        this.createConceptTag(tagsList, concept, true);
+        input.value = '';
+        this.scheduleAutoSave();
     }
 
     // ==================== MEMORY MANAGEMENT METHODS ====================
+    // Delegated to EventListenerManager for centralized tracking
 
     /**
      * Add document-level event listener with tracking
      */
     addDocumentListenerTracked(event, handler, options = {}) {
-        document.addEventListener(event, handler, options);
-        this.documentListeners.push({ event, handler, options });
-        logger.debug(`QuizManager: Tracked document listener: ${event}`);
+        this.listenerManager.addDocumentListener(event, handler, options);
     }
 
     /**
      * Add element event listener with tracking
      */
     addEventListenerTracked(element, event, handler, options = {}) {
-        if (!element || typeof element.addEventListener !== 'function') {
-            logger.warn('QuizManager: Invalid element passed to addEventListenerTracked:', element);
-            return;
-        }
-
-        element.addEventListener(event, handler, options);
-        
-        if (!this.eventListeners.has(element)) {
-            this.eventListeners.set(element, []);
-        }
-        this.eventListeners.get(element).push({ event, handler, options });
-        
-        logger.debug(`QuizManager: Tracked event listener: ${event} on`, element);
+        this.listenerManager.addEventListenerTracked(element, event, handler, options);
     }
 
     /**
@@ -1512,45 +1980,18 @@ export class QuizManager {
      */
     cleanup() {
         logger.debug('QuizManager cleanup started');
-        
-        try {
+
+        this.errorHandler.safeExecute(() => {
             // Clear auto-save timeout
             if (this.autoSaveTimeout) {
                 clearTimeout(this.autoSaveTimeout);
                 this.autoSaveTimeout = null;
             }
 
-            // Clear all document-level listeners
-            let docListenerCount = 0;
-            this.documentListeners.forEach(({ event, handler }) => {
-                try {
-                    document.removeEventListener(event, handler);
-                    docListenerCount++;
-                } catch (error) {
-                    logger.warn('Error removing document listener:', error);
-                }
-            });
-            this.documentListeners = [];
-            logger.debug(`QuizManager: Cleaned up ${docListenerCount} document listeners`);
-
-            // Clear element-level listeners
-            let elementListenerCount = 0;
-            this.eventListeners.forEach((listeners, element) => {
-                listeners.forEach(({ event, handler }) => {
-                    try {
-                        element.removeEventListener(event, handler);
-                        elementListenerCount++;
-                    } catch (error) {
-                        logger.warn('Error removing element listener:', error);
-                    }
-                });
-            });
-            this.eventListeners.clear();
-            logger.debug(`QuizManager: Cleaned up ${elementListenerCount} element listeners`);
+            // Delegate to EventListenerManager for listener cleanup
+            this.listenerManager.cleanup();
 
             logger.debug('QuizManager cleanup completed successfully');
-        } catch (error) {
-            logger.error('Error during QuizManager cleanup:', error);
-        }
+        }, { operation: 'cleanup' });
     }
 }

@@ -1,0 +1,58 @@
+{
+  "title": "Demo: Matematyka i Nauki \u015acis\u0142e \u2013 Podstawy",
+  "id": "demo-quiz-pl",
+  "created": "2026-01-01T00:00:00.000Z",
+  "isDemo": true,
+  "questions": [
+    {
+      "question": "Jakie jest pole ko\u0142a o promieniu 5?",
+      "type": "multiple-choice",
+      "difficulty": "easy",
+      "options": [
+        "25\u03c0 \u2248 78,54",
+        "10\u03c0 \u2248 31,42",
+        "5\u03c0 \u2248 15,71",
+        "50\u03c0 \u2248 157,08"
+      ],
+      "correctAnswer": 0,
+      "timeLimit": 30,
+      "explanation": "Pole ko\u0142a to \u03c0r\u00b2. Dla r = 5: \u03c0 \u00d7 5\u00b2 = 25\u03c0 \u2248 78,54"
+    },
+    {
+      "question": "Woda wrze w 100\u00b0C na poziomie morza.",
+      "type": "true-false",
+      "difficulty": "easy",
+      "options": ["Prawda", "Fa\u0142sz"],
+      "correctAnswer": "true",
+      "timeLimit": 30,
+      "explanation": "Przy standardowym ci\u015bnieniu atmosferycznym (1 atm) woda wrze dok\u0142adnie w 100\u00b0C (212\u00b0F)."
+    },
+    {
+      "question": "Ile wynosi \u221a144?",
+      "type": "numeric",
+      "difficulty": "easy",
+      "correctAnswer": 12,
+      "tolerance": 0,
+      "timeLimit": 30,
+      "explanation": "\u221a144 = 12, poniewa\u017c 12 \u00d7 12 = 144."
+    },
+    {
+      "question": "Kt\u00f3re z tych liczb s\u0105 pierwsze? (Zaznacz wszystkie poprawne)",
+      "type": "multiple-correct",
+      "difficulty": "medium",
+      "options": ["2", "4", "7", "9", "11"],
+      "correctAnswers": [0, 2, 4],
+      "timeLimit": 30,
+      "explanation": "Liczby pierwsze s\u0105 podzielne tylko przez 1 i przez siebie. 2, 7 i 11 s\u0105 pierwsze. 4 = 2\u00d72 i 9 = 3\u00d73 nie s\u0105."
+    },
+    {
+      "question": "Uporz\u0105dkuj te planety wed\u0142ug odleg\u0142o\u015bci od S\u0142o\u0144ca (od najbli\u017cszej).",
+      "type": "ordering",
+      "difficulty": "medium",
+      "options": ["Merkury", "Wenus", "Ziemia", "Mars"],
+      "correctOrder": [0, 1, 2, 3],
+      "timeLimit": 30,
+      "explanation": "Kolejno\u015b\u0107 od S\u0142o\u0144ca: Merkury (0,39 AU), Wenus (0,72 AU), Ziemia (1 AU), Mars (1,52 AU)."
+    }
+  ]
+}

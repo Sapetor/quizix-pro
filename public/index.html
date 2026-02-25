@@ -4,20 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="/">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Preload critical CSS -->
-    <link rel="preload" href="css/main.bundle.css?v=11.4" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=11.4"></noscript>
+    <link rel="preload" href="css/main.bundle.css?v=38" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="css/main.bundle.css?v=38"></noscript>
     
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=18" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=18" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=18" as="script" crossorigin="anonymous">
     
     <!-- Optimized font loading for mobile performance -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Fallback fonts while Inter loads */
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
@@ -62,34 +64,9 @@
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
         
-        /* Mobile LaTeX FOUC Prevention */
-        .latex-content, .math-content, .has-math {
-            min-height: 1.2em;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-        
-        /* Show LaTeX content when MathJax is ready */
-        body.mathjax-ready .latex-content,
-        body.mathjax-ready .math-content,
-        body.mathjax-ready .has-math {
-            opacity: 1;
-        }
-        
-        /* Mobile-specific LaTeX loading indicator */
-        @media (max-width: 768px) {
-            .latex-content:not(.rendered)::after,
-            .math-content:not(.rendered)::after {
-                content: "⏳";
-                opacity: 0.6;
-                font-size: 0.8em;
-                animation: pulse 1.5s infinite;
-            }
-            
-            @keyframes pulse {
-                0%, 100% { opacity: 0.3; }
-                50% { opacity: 0.8; }
-            }
+        /* LaTeX FOUC Prevention - hide until MathJax processes */
+        .tex2jax_process:not(.MathJax_Processed) {
+            visibility: hidden;
         }
     </style>
     <!-- CSS loaded via preload above for better performance -->
@@ -101,6 +78,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Chart.js for results analytics visualizations - Fixed for ES6 compatibility -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <!-- jsPDF loaded on-demand when PDF export is requested -->
     <!-- Highlight.js for One Dark Pro syntax highlighting -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -370,6 +348,9 @@
     </style>
 </head>
 <body>
+    <!-- Skip link for keyboard users (A11Y-2) -->
+    <a href="#main-content" class="skip-link" data-translate="skip_to_content">Skip to main content</a>
+
     <div class="container">
         <header>
             <!-- Desktop Title -->
@@ -385,7 +366,7 @@
                 <!-- Mobile Controls in Header -->
                 <div class="mobile-header-controls">
                     <!-- Return to Main Button (only visible when not on main menu) -->
-                    <button id="mobile-return-to-main" class="mobile-control-btn mobile-header return-to-main-btn mobile-only" onclick="returnToMainFromHeader()" data-title-translate="return_to_main" style="display: none;">
+                    <button id="mobile-return-to-main" class="mobile-control-btn mobile-header return-to-main-btn mobile-only" onclick="returnToMainFromHeader()" data-translate-title="return_to_main" data-translate-aria-label="return_to_main" style="display: none;">
                         <span class="control-icon">🏠</span>
                         <span class="control-label" data-translate="return_to_main">Return to Main Menu</span>
                     </button>
@@ -440,9 +421,15 @@
                     </div>
                     
                     <!-- Theme Toggle -->
-                    <button id="theme-toggle-mobile-header" class="mobile-control-btn mobile-header" data-title-translate="toggle_dark_mode_tooltip">
-                        <span class="control-icon">☀️</span>
+                    <button id="theme-toggle-mobile-header" class="mobile-control-btn mobile-header" data-translate-title="toggle_dark_mode_tooltip" aria-label="Toggle dark mode" data-translate-aria-label="toggle_dark_mode_tooltip" aria-pressed="false">
+                        <span class="control-icon" aria-hidden="true">☀️</span>
                         <span class="control-label" data-translate="theme">theme</span>
+                    </button>
+
+                    <!-- Sound Toggle -->
+                    <button id="sound-toggle-mobile-header" class="mobile-control-btn mobile-header" data-translate-title="toggle_sound_tooltip" aria-label="Toggle sound" data-translate-aria-label="toggle_sound_tooltip" aria-pressed="true">
+                        <span class="control-icon" aria-hidden="true">🔊</span>
+                        <span class="control-label" data-translate="sound">sound</span>
                     </button>
                 </div>
             </div>
@@ -496,46 +483,46 @@
                         </div>
                     </div>
                 </div>
-                <button id="start-hosting-header-small" class="btn primary small start-game-header" style="display: none;" data-translate-title="start_quiz_tooltip"><span data-translate="create_lobby">Create Lobby</span></button>
+                <button id="start-hosting-header-small" class="btn primary small start-game-header hidden" data-translate-title="start_quiz_tooltip"><span data-translate="create_lobby">Create Lobby</span></button>
                 
                 <!-- Horizontal Toolbar (shown only in host editing mode) -->
-                <div class="horizontal-toolbar" id="horizontal-toolbar" style="display: none;">
-                    <div class="toolbar-group">
-                        <button class="toolbar-btn" id="toolbar-add-question" data-translate-title="add_question_tooltip">
-                            <span class="toolbar-icon">➕</span>
+                <div class="horizontal-toolbar hidden" id="horizontal-toolbar" role="toolbar" aria-label="Quiz editing tools">
+                    <div class="toolbar-group" role="group" aria-label="Question management">
+                        <button class="toolbar-btn" id="toolbar-add-question" data-translate-title="add_question_tooltip" aria-label="Add question" data-translate-aria-label="add_question_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">➕</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip">
-                            <span class="toolbar-icon">💾</span>
+                        <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip" aria-label="Save quiz" data-translate-aria-label="save_quiz_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">💾</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip">
-                            <span class="toolbar-icon">📂</span>
-                        </button>
-                    </div>
-                    
-                    <div class="toolbar-group">
-                        <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip">
-                            <span class="toolbar-icon">🤖</span>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-preview" data-translate-title="toggle_preview_tooltip">
-                            <span class="toolbar-icon">👁️</span>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_quiz_tooltip">
-                            <span class="toolbar-icon">📥</span>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-export" data-translate-title="export_quiz_tooltip">
-                            <span class="toolbar-icon">📤</span>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-results" data-translate-title="view_results_tooltip">
-                            <span class="toolbar-icon">📊</span>
+                        <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip" aria-label="Load quiz" data-translate-aria-label="load_quiz_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">📂</span>
                         </button>
                     </div>
-                    
-                    <div class="toolbar-group">
-                        <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip">
-                            <span class="toolbar-icon">⬆️</span>
+
+                    <div class="toolbar-group" role="group" aria-label="Tools">
+                        <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip" aria-label="AI question generator" data-translate-aria-label="ai_generator_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">🤖</span>
                         </button>
-                        <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip">
-                            <span class="toolbar-icon">⬇️</span>
+                        <button class="toolbar-btn" id="toolbar-settings" data-translate-title="quiz_settings_tooltip" aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip" onclick="openQuizSettingsModal()">
+                            <span class="toolbar-icon" aria-hidden="true">⚙️</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_quiz_tooltip" aria-label="Import quiz" data-translate-aria-label="import_quiz_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">📥</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-export" data-translate-title="export_quiz_tooltip" aria-label="Export quiz" data-translate-aria-label="export_quiz_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">📤</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-results" data-translate-title="view_results_tooltip" aria-label="View results" data-translate-aria-label="view_results_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">📊</span>
+                        </button>
+                    </div>
+
+                    <div class="toolbar-group" role="group" aria-label="Navigation">
+                        <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip" aria-label="Back to top" data-translate-aria-label="back_to_top_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">⬆️</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip" aria-label="Go to bottom" data-translate-aria-label="go_to_bottom_tooltip">
+                            <span class="toolbar-icon" aria-hidden="true">⬇️</span>
                         </button>
                     </div>
                 </div>
@@ -543,19 +530,21 @@
                 <!-- Desktop Theme and Controls (hidden on mobile) -->
                 <!-- Global Font Size Control (hidden on mobile) -->
                 <div class="font-size-control">
-                    <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size_tooltip" onclick="toggleGlobalFontSize();">
-                        <span id="font-size-icon">A</span>
+                    <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size_tooltip" aria-label="Adjust font size" data-translate-aria-label="adjust_font_size_tooltip" onclick="toggleGlobalFontSize();">
+                        <span id="font-size-icon" aria-hidden="true">A</span>
                     </button>
                 </div>
-                
-                <button id="desktop-return-to-main" class="theme-toggle desktop-only" data-translate-title="return_to_main" onclick="returnToMainFromHeader()" style="display: none;">
-                    <span class="control-icon">🏠</span>
+
+                <button id="desktop-return-to-main" class="theme-toggle desktop-only" data-translate-title="return_to_main" aria-label="Return to main menu" data-translate-aria-label="return_to_main" onclick="returnToMainFromHeader()" style="display: none;">
+                    <span class="control-icon" aria-hidden="true">🏠</span>
                 </button>
-                <button id="fullscreen-toggle" class="theme-toggle" data-translate-title="toggle_fullscreen_tooltip">⛶</button>
-                <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip">☀️</button>
+                <button id="fullscreen-toggle" class="theme-toggle" data-translate-title="toggle_fullscreen_tooltip" aria-label="Toggle fullscreen" data-translate-aria-label="toggle_fullscreen_tooltip" aria-pressed="false"><span aria-hidden="true">⛶</span></button>
+                <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip" aria-label="Toggle dark mode" data-translate-aria-label="toggle_dark_mode_tooltip" aria-pressed="false"><span aria-hidden="true">☀️</span></button>
+                <button id="sound-toggle" class="sound-toggle" data-translate-title="toggle_sound_tooltip" aria-label="Toggle sound" data-translate-aria-label="toggle_sound_tooltip" aria-pressed="true"><span aria-hidden="true">🔊</span></button>
             </div>
         </header>
 
+        <main id="main-content" role="main">
         <div id="main-menu" class="screen active">
             <!-- Original Desktop Menu Options (hidden on mobile) -->
             <div class="menu-options desktop-menu">
@@ -723,17 +712,58 @@
                     <button id="join-btn-mobile" class="btn secondary large-action-btn" data-translate="join_game">Join Game</button>
                 </div>
             </div>
+
+            <!-- App Version Display -->
+            <div class="app-version" id="app-version">
+                <span id="app-version-text">Loading version...</span>
+            </div>
         </div>
 
         <div id="host-screen" class="screen">
             <!-- Old vertical toolbar removed - now using horizontal toolbar in header -->
             
             <div class="host-container" id="host-container">
+                <!-- Vertical Editor Toolbar (Desktop always-preview mode) -->
+                <aside class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="Quiz editing tools">
+                    <button class="toolbar-btn" id="vtoolbar-add-question" data-translate-title="add_question_tooltip" aria-label="Add question" data-translate-aria-label="add_question_tooltip">
+                        <span class="toolbar-icon" aria-hidden="true">➕</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-save" data-translate-title="save_quiz_tooltip" aria-label="Save quiz" data-translate-aria-label="save_quiz_tooltip">
+                        <span class="toolbar-icon" aria-hidden="true">💾</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-load" data-translate-title="load_quiz_tooltip" aria-label="Load quiz" data-translate-aria-label="load_quiz_tooltip">
+                        <span class="toolbar-icon" aria-hidden="true">📂</span>
+                    </button>
+                    <div class="toolbar-divider"></div>
+                    <button class="toolbar-btn" id="vtoolbar-ai-gen" data-translate-title="ai_generator_tooltip" aria-label="AI question generator" data-translate-aria-label="ai_generator_tooltip">
+                        <span class="toolbar-icon" aria-hidden="true">🤖</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-settings" data-translate-title="quiz_settings_tooltip" aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip">
+                        <span class="toolbar-icon" aria-hidden="true">⚙️</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-import" data-translate-title="import_quiz_tooltip" aria-label="Import quiz" data-translate-aria-label="import_quiz_tooltip">
+                        <span class="toolbar-icon" aria-hidden="true">📥</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-export" data-translate-title="export_quiz_tooltip" aria-label="Export quiz" data-translate-aria-label="export_quiz_tooltip">
+                        <span class="toolbar-icon" aria-hidden="true">📤</span>
+                    </button>
+                    <button class="toolbar-btn" id="vtoolbar-results" data-translate-title="view_results_tooltip" aria-label="View results" data-translate-aria-label="view_results_tooltip">
+                        <span class="toolbar-icon" aria-hidden="true">📊</span>
+                    </button>
+                </aside>
+
                 <div class="quiz-editor-section" id="quiz-editor-section">
-                    <h2 data-translate="create_quiz">Create Your Quiz</h2>
-                    
+                    <div class="editor-heading-row">
+                        <h2 data-translate="create_quiz">Create Your Quiz</h2>
+                        <div class="editor-mode-toggle hidden" id="editor-mode-toggle">
+                            <button type="button" id="editor-mode-btn" class="editor-mode-btn" aria-label="Toggle editor mode">
+                                <span id="editor-mode-label" data-translate="editor_mode_basic">Basic</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="quiz-builder">
-                    <input type="text" id="quiz-title" placeholder="Quiz Title" class="input-field" data-translate-placeholder="quiz_title">
+                    <input type="text" id="quiz-title" placeholder="Quiz Title" class="input-field" data-translate-placeholder="quiz_title" aria-label="Quiz title" data-translate-aria-label="quiz_title">
                     
                     <div class="quiz-settings">
                         <div class="general-options">
@@ -749,25 +779,123 @@
                             <div id="global-time-container" class="time-setting-container" style="display: none;">
                                 <label class="time-input-label">
                                     <span data-translate="global_time_limit">Global time limit (seconds):</span>
-                                    <input type="number" id="global-time-limit" min="5" max="300" value="20" class="time-input">
+                                    <input type="number" id="global-time-limit" min="5" max="300" value="20" class="time-input" onchange="updateGlobalTime(this)">
                                 </label>
                             </div>
                         </div>
                         <div class="advanced-options">
                             <label class="manual-advancement-option" style="border: 2px solid #4299e1; border-radius: 8px; padding: 8px; background: rgba(66, 153, 225, 0.1);">
-                                <input type="checkbox" id="manual-advancement" checked data-translate-title="manual_advancement_tooltip"> <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
+                                <input type="checkbox" id="manual-advancement" data-translate-title="manual_advancement_tooltip"> <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
                             </label>
+                            <label class="power-ups-option" style="border: 2px solid #8b5cf6; border-radius: 8px; padding: 8px; background: rgba(139, 92, 246, 0.1); margin-top: 8px;">
+                                <input type="checkbox" id="enable-power-ups" data-translate-title="enable_power_ups_tooltip"> <strong>⚡ <span data-translate="enable_power_ups">Enable Power-Ups (50-50, +10s, 2x Points)</span></strong>
+                            </label>
+                            <label class="consensus-mode-option" style="border: 2px solid #10b981; border-radius: 8px; padding: 8px; background: rgba(16, 185, 129, 0.1); margin-top: 8px;">
+                                <input type="checkbox" id="consensus-mode" data-translate-title="consensus_mode_tooltip"> <strong>🤝 <span data-translate="consensus_mode">Consensus Mode (Team Collaboration)</span></strong>
+                            </label>
+                            <div class="consensus-settings hidden" id="consensus-settings">
+                                <div class="consensus-threshold-setting">
+                                    <label data-translate="consensus_threshold">Consensus Threshold:</label>
+                                    <select id="consensus-threshold">
+                                        <option value="50">50%</option>
+                                        <option value="66" selected>66%</option>
+                                        <option value="75">75%</option>
+                                        <option value="100" data-translate="unanimous">100% (Unanimous)</option>
+                                    </select>
+                                </div>
+                                <div class="discussion-time-setting">
+                                    <label data-translate="discussion_time">Discussion Time:</label>
+                                    <input type="number" id="discussion-time" value="30" min="10" max="300" step="5">
+                                    <span data-translate="seconds_short">sec</span>
+                                </div>
+                                <label class="allow-chat-option">
+                                    <input type="checkbox" id="allow-chat">
+                                    <span data-translate="allow_free_chat">Allow free-form chat (for trusted groups)</span>
+                                </label>
+                            </div>
                         </div>
-                        
+
+                        <!-- Scoring Settings (collapsible) -->
+                        <details class="scoring-settings-section">
+                            <summary class="scoring-settings-summary">
+                                <span data-translate="scoring_settings">📊 Scoring Settings</span>
+                            </summary>
+                            <div class="scoring-options">
+                                <label class="scoring-option">
+                                    <input type="checkbox" id="time-bonus-enabled" checked>
+                                    <span data-translate="enable_time_bonus">Enable time bonus (faster = more points)</span>
+                                </label>
+                                <div class="time-bonus-threshold-container">
+                                    <label class="threshold-label">
+                                        <span data-translate="time_bonus_threshold">Max points threshold:</span>
+                                        <input type="number" id="time-bonus-threshold" value="0" min="0" max="30" step="1">
+                                        <span class="threshold-unit" data-translate="seconds_short">sec</span>
+                                    </label>
+                                    <span class="threshold-hint" data-translate="time_bonus_threshold_hint">(0 = disabled, answers within threshold get max bonus)</span>
+                                </div>
+                                <label class="scoring-option host-breakdown-option">
+                                    <input type="checkbox" id="show-score-breakdown" checked>
+                                    <span data-translate="show_score_breakdown">Show score breakdown (host view)</span>
+                                </label>
+                                <div class="difficulty-multipliers">
+                                    <span class="multipliers-label" data-translate="difficulty_multipliers">Difficulty Multipliers:</span>
+                                    <div class="multiplier-inputs">
+                                        <label class="multiplier-input">
+                                            <span data-translate="easy">Easy</span>
+                                            <input type="number" id="easy-multiplier" value="1" min="0.5" max="5" step="0.5">
+                                        </label>
+                                        <label class="multiplier-input">
+                                            <span data-translate="medium">Medium</span>
+                                            <input type="number" id="medium-multiplier" value="2" min="0.5" max="5" step="0.5">
+                                        </label>
+                                        <label class="multiplier-input">
+                                            <span data-translate="hard">Hard</span>
+                                            <input type="number" id="hard-multiplier" value="3" min="0.5" max="5" step="0.5">
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+
                         <div class="preview-settings">
                         </div>
                     </div>
-                    
+
+                    <!-- Question Pagination Controls (Desktop only) -->
+                    <div class="question-pagination desktop-only" id="question-pagination">
+                        <button class="pagination-btn" id="prev-question-btn" onclick="goToPreviousQuestion()" disabled aria-label="Previous question" data-translate-aria-label="previous">
+                            ←
+                        </button>
+                        <span class="question-indicator" id="question-indicator">
+                            <span data-translate="question">Question</span> <span id="current-question-num">1</span> <span data-translate="of">of</span> <span id="total-question-num">1</span>
+                        </span>
+                        <button class="pagination-btn" id="next-question-btn" onclick="goToNextQuestion()" disabled aria-label="Next question" data-translate-aria-label="next">
+                            →
+                        </button>
+                    </div>
+
+                    <!-- Question count indicator (mobile only) -->
+                    <div class="editor-question-count mobile-only" id="editor-question-count">
+                        <span class="question-count-number" id="editor-question-count-number">1</span>
+                        <span class="question-count-label" data-translate="questions_total">Questions</span>
+                    </div>
+
                     <div id="questions-container">
                         <div class="question-item" data-question="0">
-                            <h3><span data-translate="question">Question</span> 1</h3>
-                            
+                            <div class="question-header" onclick="toggleQuestionCollapse(this.parentElement)">
+                                <span class="collapse-indicator"></span>
+                                <h3><span data-translate="question">Question</span> 1</h3>
+                                <div class="collapsed-meta">
+                                    <span class="collapsed-type-badge">Multiple</span>
+                                    <span class="collapsed-difficulty-badge">M</span>
+                                </div>
+                                <div class="question-header-actions">
+                                    <button type="button" class="btn-icon btn-remove" onclick="event.stopPropagation(); removeQuestion(this)" title="Remove question" data-translate-title="remove_question_tooltip">✕</button>
+                                </div>
+                            </div>
+                            <div class="question-body">
                             <div class="question-meta">
+                                <h4 class="question-meta-title" data-translate="question_settings">Question Settings</h4>
                                 <select class="question-type" onchange="updateQuestionType(this)">
                                     <option value="multiple-choice" data-translate="multiple_choice">Multiple Choice</option>
                                     <option value="multiple-correct" data-translate="multiple_correct">Multiple Correct Answers</option>
@@ -781,7 +909,16 @@
                                     <option value="medium" selected data-translate="medium">Medium (200 pts)</option>
                                     <option value="hard" data-translate="hard">Hard (300 pts)</option>
                                 </select>
-                                
+
+                                <div class="concept-tags-container">
+                                    <label data-translate="concepts">Concepts</label>
+                                    <div class="concept-tags-input">
+                                        <div class="concept-tags-list"></div>
+                                        <input type="text" class="concept-input" placeholder="Add concept..." data-translate-placeholder="add_concept" maxlength="30">
+                                    </div>
+                                    <div class="concept-hint" data-translate="concept_hint">Press Enter to add (max 5)</div>
+                                </div>
+
                                 <div class="time-limit-container">
                                     <label>
                                         <span data-translate="time_seconds">Time (sec):</span>
@@ -791,7 +928,7 @@
                             </div>
                             
                             <div class="question-content">
-                                <textarea class="question-text" placeholder="Enter your question (supports LaTeX: $x^2 + y^2 = z^2$)" data-translate-placeholder="enter_question"></textarea>
+                                <textarea class="question-text" placeholder="Enter your question (supports LaTeX: $x^2$ and code: ```python```)" data-translate-placeholder="enter_question"></textarea>
                                 
                                 <div class="image-upload">
                                     <label data-translate="add_image">Add Image (optional):</label>
@@ -799,6 +936,42 @@
                                     <div class="image-preview" style="display: none;">
                                         <img class="question-image" src="" alt="Question Image" style="max-width: 200px; max-height: 150px;">
                                         <button type="button" class="remove-image" onclick="removeImage(this)" data-translate="remove_image">Remove</button>
+                                    </div>
+                                </div>
+
+                                <div class="video-section hidden">
+                                    <div class="video-tabs">
+                                        <button type="button" class="video-tab active" data-target="question" data-translate="manim_question_animation_tab">Question Animation</button>
+                                        <button type="button" class="video-tab" data-target="explanation" data-translate="manim_explanation_animation_tab">Explanation Animation</button>
+                                        <button type="button" class="manim-help-btn" title="Manim Tutorial" data-translate-title="manim_tutorial_title">?</button>
+                                    </div>
+                                    <div class="video-panel" data-panel="question">
+                                        <div class="manim-code-editor">
+                                            <label data-translate="manim_code_label">Manim Code:</label>
+                                            <textarea class="manim-code question-manim-code" placeholder="from manim import *&#10;class MyScene(Scene):&#10;    def construct(self):&#10;        ..." rows="6"></textarea>
+                                            <div class="manim-actions">
+                                                <button type="button" class="render-manim-btn" data-placement="question" data-translate="render_animation">Render Animation</button>
+                                                <span class="render-status hidden"></span>
+                                            </div>
+                                        </div>
+                                        <div class="video-preview hidden">
+                                            <video class="question-video" controls preload="metadata"></video>
+                                            <button type="button" class="remove-video" data-placement="question" data-translate="remove_video">Remove Video</button>
+                                        </div>
+                                    </div>
+                                    <div class="video-panel hidden" data-panel="explanation">
+                                        <div class="manim-code-editor">
+                                            <label data-translate="manim_code_label">Manim Code:</label>
+                                            <textarea class="manim-code explanation-manim-code" placeholder="from manim import *&#10;class ExplainScene(Scene):&#10;    def construct(self):&#10;        ..." rows="6"></textarea>
+                                            <div class="manim-actions">
+                                                <button type="button" class="render-manim-btn" data-placement="explanation" data-translate="render_animation">Render Animation</button>
+                                                <span class="render-status hidden"></span>
+                                            </div>
+                                        </div>
+                                        <div class="video-preview hidden">
+                                            <video class="explanation-video" controls preload="metadata"></video>
+                                            <button type="button" class="remove-video" data-placement="explanation" data-translate="remove_video">Remove Video</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -866,6 +1039,14 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="explanation-section">
+                                <details>
+                                    <summary data-translate="explanation_optional">Explanation (optional)</summary>
+                                    <textarea class="question-explanation" placeholder="Explain why the correct answer is correct..." data-translate-placeholder="explanation_placeholder"></textarea>
+                                </details>
+                            </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -873,14 +1054,14 @@
                     <input type="file" id="import-file-input" accept=".csv,.json" style="display: none;">
                     
                     <!-- Back to Top Button -->
-                    <button id="back-to-top" class="back-to-top-btn" onclick="scrollToTop()" style="display: none;" title="Back to Top">
-                        ⬆️
+                    <button id="back-to-top" class="back-to-top-btn" onclick="scrollToTop()" style="display: none;" title="Back to Top" data-translate-title="back_to_top_tooltip" aria-label="Back to top" data-translate-aria-label="back_to_top_tooltip">
+                        <span aria-hidden="true">⬆️</span>
                     </button>
                     </div>
                 </div>
                 
                 <!-- Resizable Split Divider -->
-                <div class="split-resize-handle" id="split-resize-handle" style="display: none;">
+                <div class="split-resize-handle hidden" id="split-resize-handle">
                     <div class="resize-grip">
                         <div class="grip-dot"></div>
                         <div class="grip-dot"></div>
@@ -889,7 +1070,7 @@
                 </div>
                 
                 <!-- Live Preview Section -->
-                <div class="quiz-preview-section" id="quiz-preview-section" style="display: none;">
+                <div class="quiz-preview-section hidden" id="quiz-preview-section">
                     <div class="preview-header">
                         <h4 data-translate="live_preview">Live Preview</h4>
                         <div class="preview-header-controls">
@@ -899,12 +1080,19 @@
                     
                     <div class="preview-navigation-bar">
                         <div class="preview-nav-section">
-                            <button id="preview-prev-split" class="nav-btn">◀</button>
-                            <button id="preview-next-split" class="nav-btn">▶</button>
+                            <button id="preview-prev-split" class="nav-btn" data-translate-aria-label="previous">◀</button>
+                            <button id="preview-next-split" class="nav-btn" data-translate-aria-label="next">▶</button>
                         </div>
+                        <select id="preview-question-type" class="preview-type-selector" onchange="updateQuestionTypeFromPreview(this)">
+                            <option value="multiple-choice" data-translate="multiple_choice">Multiple Choice</option>
+                            <option value="multiple-correct" data-translate="multiple_correct">Multiple Correct</option>
+                            <option value="true-false" data-translate="true_false">True/False</option>
+                            <option value="numeric" data-translate="numeric">Numeric</option>
+                            <option value="ordering" data-translate="ordering">Ordering</option>
+                        </select>
                         <span id="preview-question-counter-split">Q1/1</span>
                         <div class="preview-nav-section">
-                            <button id="scroll-to-question" class="nav-btn edit-btn" onclick="scrollToCurrentQuestion()"><span data-translate="edit_question">Edit Question</span></button>
+                            <button id="scroll-to-question" class="nav-btn edit-btn" onclick="scrollToCurrentQuestion()"><span data-translate="edit_question">Edit</span></button>
                         </div>
                     </div>
                     
@@ -916,11 +1104,12 @@
                                 <div id="preview-question-image-split" style="display: none;">
                                     <img id="preview-question-img-split" src="" alt="Question Image">
                                 </div>
+                                <div id="preview-question-video-split" class="preview-video-container hidden"></div>
                             </div>
                             
                             <div id="preview-answer-area-split">
                                 <!-- Multiple Choice Preview -->
-                                <div id="preview-multiple-choice-split" class="preview-answer-type" style="display: none;">
+                                <div id="preview-multiple-choice-split" class="preview-answer-type hidden">
                                     <div class="player-options">
                                         <div class="player-option preview-option" data-option="0">A: Option 1</div>
                                         <div class="player-option preview-option" data-option="1">B: Option 2</div>
@@ -930,7 +1119,7 @@
                                 </div>
                                 
                                 <!-- Multiple Correct Preview -->
-                                <div id="preview-multiple-correct-split" class="preview-answer-type" style="display: none;">
+                                <div id="preview-multiple-correct-split" class="preview-answer-type hidden">
                                     <div class="player-checkbox-options">
                                         <div class="checkbox-option preview-checkbox" data-option="0">
                                             <input type="checkbox" disabled> A: Option 1
@@ -948,7 +1137,7 @@
                                 </div>
                                 
                                 <!-- True/False Preview -->
-                                <div id="preview-true-false-split" class="preview-answer-type" style="display: none;">
+                                <div id="preview-true-false-split" class="preview-answer-type hidden">
                                     <div class="true-false-options">
                                         <div class="tf-option preview-tf" data-option="true" data-translate="true">True</div>
                                         <div class="tf-option preview-tf" data-option="false" data-translate="false">False</div>
@@ -956,7 +1145,7 @@
                                 </div>
                                 
                                 <!-- Numeric Preview -->
-                                <div id="preview-numeric-split" class="preview-answer-type" style="display: none;">
+                                <div id="preview-numeric-split" class="preview-answer-type hidden">
                                     <div class="numeric-input-container">
                                         <input type="number" id="preview-numeric-input-split" placeholder="Enter your answer" disabled data-translate-placeholder="enter_answer">
                                         <button class="btn primary" disabled data-translate="submit">Submit</button>
@@ -964,7 +1153,7 @@
                                 </div>
 
                                 <!-- Ordering Preview -->
-                                <div id="preview-ordering-split" class="preview-answer-type" style="display: none;">
+                                <div id="preview-ordering-split" class="preview-answer-type hidden">
                                     <!-- Ordering options will be dynamically rendered here -->
                                 </div>
                             </div>
@@ -973,26 +1162,26 @@
                 </div>
             </div>
             
-            <!-- Floating Back to Top Button -->
-            <button id="back-to-top-float" class="back-to-top-float" onclick="scrollToTop()" style="display: none;">
-                ⬆️
-            </button>
-            
-            <!-- Mobile Quiz Management FAB -->
-            <button id="mobile-quiz-fab" class="mobile-quiz-fab" onclick="showMobileQuizSheet()" aria-label="Editing Tools">
-                🔧 <span data-translate="tools">Tools</span>
-            </button>
-            
         </div>
 
+        <!-- Floating Back to Top Button - Outside container to ensure position:fixed works on mobile -->
+        <button id="back-to-top-float" class="back-to-top-float" onclick="scrollToTop()" style="display: none;" aria-label="Back to top" data-translate-aria-label="back_to_top_tooltip">
+            <span aria-hidden="true">⬆️</span>
+        </button>
+
+        <!-- Mobile Quiz Management FAB - Outside container to ensure position:fixed works on mobile -->
+        <button id="mobile-quiz-fab" class="mobile-quiz-fab" onclick="showMobileQuizSheet()" aria-label="Editing Tools" data-translate-aria-label="tools">
+            🔧 <span data-translate="tools">Tools</span>
+        </button>
+
         <!-- Preview Modal Overlay -->
-        <div id="preview-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="preview-modal-overlay" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="preview-modal-title">
             <div id="preview-modal" class="preview-modal">
                 <div class="preview-modal-header">
                     <div class="preview-title-section">
-                        <h2>📱 <span data-translate="question_preview">Question Preview</span></h2>
+                        <h2 id="preview-modal-title"><span aria-hidden="true">📱</span> <span data-translate="question_preview">Question Preview</span></h2>
                     </div>
-                    <button id="close-preview" class="close-btn" onclick="closePreviewModal()">×</button>
+                    <button id="close-preview" class="close-btn" onclick="closePreviewModal()" data-translate-aria-label="close">×</button>
                 </div>
                 
                 <div class="preview-navigation-bar">
@@ -1016,7 +1205,7 @@
                         
                         <div id="preview-answer-area">
                             <!-- Multiple Choice Preview -->
-                            <div id="preview-multiple-choice" class="preview-answer-type" style="display: none;">
+                            <div id="preview-multiple-choice" class="preview-answer-type hidden">
                                 <div class="player-options">
                                     <div class="player-option preview-option" data-option="0">A: Option 1</div>
                                     <div class="player-option preview-option" data-option="1">B: Option 2</div>
@@ -1026,7 +1215,7 @@
                             </div>
                             
                             <!-- Multiple Correct Preview -->
-                            <div id="preview-multiple-correct" class="preview-answer-type" style="display: none;">
+                            <div id="preview-multiple-correct" class="preview-answer-type hidden">
                                 <div class="player-checkbox-options">
                                     <div class="checkbox-option preview-checkbox" data-option="0">
                                         <input type="checkbox" disabled> A: Option 1
@@ -1044,7 +1233,7 @@
                             </div>
                             
                             <!-- True/False Preview -->
-                            <div id="preview-true-false" class="preview-answer-type" style="display: none;">
+                            <div id="preview-true-false" class="preview-answer-type hidden">
                                 <div class="true-false-options">
                                     <div class="tf-option preview-tf" data-option="true" data-translate="true">True</div>
                                     <div class="tf-option preview-tf" data-option="false" data-translate="false">False</div>
@@ -1052,11 +1241,128 @@
                             </div>
                             
                             <!-- Numeric Preview -->
-                            <div id="preview-numeric" class="preview-answer-type" style="display: none;">
+                            <div id="preview-numeric" class="preview-answer-type hidden">
                                 <div class="numeric-input-container">
                                     <input type="number" id="preview-numeric-input" placeholder="Enter your answer" disabled data-translate-placeholder="enter_answer">
                                     <button class="btn primary" disabled data-translate="submit">Submit</button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Settings Modal (Desktop) -->
+        <div id="quiz-settings-modal" class="settings-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+            <div class="settings-modal">
+                <div class="settings-modal-header">
+                    <h3 id="settings-modal-title"><span aria-hidden="true">⚙️</span> <span data-translate="quiz_settings">Quiz Settings</span></h3>
+                    <button class="settings-modal-close" onclick="closeQuizSettingsModal()" aria-label="Close" data-translate-aria-label="close">&times;</button>
+                </div>
+                <div class="settings-modal-content">
+                    <!-- General Options -->
+                    <div class="settings-section">
+                        <h4 data-translate="general_options">General Options</h4>
+                        <label>
+                            <input type="checkbox" id="modal-randomize-questions">
+                            <span data-translate="randomize_questions">Randomize question order</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="modal-randomize-answers">
+                            <span data-translate="randomize_answers">Randomize answer positions</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="modal-use-global-time" onchange="toggleGlobalTimeModal()">
+                            <span data-translate="use_same_time">Use same time for all questions</span>
+                        </label>
+                        <div id="modal-global-time-container" class="time-setting-container" style="display: none;">
+                            <label class="time-input-label">
+                                <span data-translate="global_time_limit">Global time limit (seconds):</span>
+                                <input type="number" id="modal-global-time-limit" min="5" max="300" value="20" class="time-input">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <div class="settings-section">
+                        <h4 data-translate="advanced_options">Advanced Options</h4>
+                        <label class="manual-advancement-option">
+                            <input type="checkbox" id="modal-manual-advancement">
+                            <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
+                        </label>
+                        <div class="setting-with-help">
+                            <label class="power-ups-option">
+                                <input type="checkbox" id="modal-enable-power-ups">
+                                <strong>⚡ <span data-translate="enable_power_ups">Enable Power-Ups (50-50, +10s, 2x Points)</span></strong>
+                            </label>
+                            <button class="help-btn" type="button" aria-label="Help">?</button>
+                            <div class="help-popover hidden" data-translate="power_ups_help">Give players special abilities: 50-50 removes two wrong answers, +10s adds extra time, 2x doubles points for one question.</div>
+                        </div>
+                        <div class="setting-with-help">
+                            <label class="consensus-mode-option" style="border: 2px solid #10b981; border-radius: 8px; padding: 8px; background: rgba(16, 185, 129, 0.1); margin-top: 8px;">
+                                <input type="checkbox" id="modal-consensus-mode" data-translate-title="consensus_mode_tooltip" onchange="toggleConsensusModeModal()">
+                                <strong>🤝 <span data-translate="consensus_mode">Consensus Mode (Team Collaboration)</span></strong>
+                            </label>
+                            <button class="help-btn" type="button" aria-label="Help">?</button>
+                            <div class="help-popover hidden" data-translate="consensus_mode_help">Players discuss and vote together before answering. The team must reach the threshold to lock in an answer.</div>
+                        </div>
+                        <div class="consensus-settings hidden" id="modal-consensus-settings">
+                            <div class="form-group">
+                                <label data-translate="consensus_threshold">Consensus Threshold</label>
+                                <select id="modal-consensus-threshold">
+                                    <option value="50" data-translate="threshold_50">50% - Simple majority</option>
+                                    <option value="66" selected data-translate="threshold_66">66% - Two-thirds majority</option>
+                                    <option value="75" data-translate="threshold_75">75% - Strong consensus</option>
+                                    <option value="100" data-translate="threshold_100">100% - Unanimous</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label data-translate="discussion_time">Discussion Time (seconds)</label>
+                                <input type="number" id="modal-discussion-time" value="30" min="10" max="120" step="5">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="modal-allow-chat">
+                                    <span data-translate="allow_chat">Allow free-form chat</span>
+                                </label>
+                                <small data-translate="allow_chat_hint">Players can type messages in addition to quick responses</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Help & Tour -->
+                    <div class="settings-section">
+                        <h4 data-translate="help_and_tour">Help & Tour</h4>
+                        <button class="btn secondary" id="restart-tour-btn" data-translate="restart_tour">Restart Tour</button>
+                    </div>
+
+                    <!-- Scoring Options -->
+                    <div class="settings-section">
+                        <h4 data-translate="scoring_settings">Scoring Settings</h4>
+                        <label>
+                            <input type="checkbox" id="modal-time-bonus-enabled" checked>
+                            <span data-translate="enable_time_bonus">Enable time bonus (faster = more points)</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="modal-show-score-breakdown" checked>
+                            <span data-translate="show_score_breakdown">Show score breakdown (host view)</span>
+                        </label>
+                        <div class="difficulty-multipliers">
+                            <span class="multipliers-label" data-translate="difficulty_multipliers">Difficulty Multipliers:</span>
+                            <div class="multiplier-inputs">
+                                <label class="multiplier-input">
+                                    <span data-translate="easy">Easy</span>
+                                    <input type="number" id="modal-easy-multiplier" value="1" min="0.5" max="5" step="0.5">
+                                </label>
+                                <label class="multiplier-input">
+                                    <span data-translate="medium">Medium</span>
+                                    <input type="number" id="modal-medium-multiplier" value="2" min="0.5" max="5" step="0.5">
+                                </label>
+                                <label class="multiplier-input">
+                                    <span data-translate="hard">Hard</span>
+                                    <input type="number" id="modal-hard-multiplier" value="3" min="0.5" max="5" step="0.5">
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -1070,19 +1376,19 @@
                 <div class="lobby-layout">
                     <!-- Left Column: Players List -->
                     <div class="lobby-column left-column">
-                        <div class="lobby-card players-list-card" role="region" aria-label="Connected Players">
+                        <div class="lobby-card players-list-card" role="region" aria-label="Connected Players" data-translate-aria-label="players_joined">
                             <div class="card-header">
                                 <h3 class="card-title" data-translate="players_joined">Players Joined</h3>
                             </div>
                             <div class="card-content">
-                                <div id="players-list" class="players-grid"></div>
+                                <div id="players-list" class="players-grid" aria-live="polite" aria-relevant="additions removals"></div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Right Column: Combined Game Info with QR, PIN, Player Count, and Start Button -->
                     <div class="lobby-column right-column">
-                        <div class="lobby-card combined-info-card" role="region" aria-label="Game Information and Controls">
+                        <div class="lobby-card combined-info-card" role="region" aria-label="Game Information and Controls" data-translate-aria-label="game_info">
                             <div class="card-header">
                                 <h3 class="card-title" data-translate="game_info">Game Info</h3>
                             </div>
@@ -1094,7 +1400,7 @@
                                         <img id="qr-code-image" style="display: none;" alt="QR Code to join game">
                                     </div>
                                     <div class="pin-section">
-                                        <div id="game-pin" class="pin-display" role="button" tabindex="0" aria-label="Click to copy PIN">
+                                        <div id="game-pin" class="pin-display" role="button" tabindex="0" aria-label="Click to copy PIN" data-translate-aria-label="click_to_copy_pin">
                                             <div class="pin-text" data-translate="game_pin">Game PIN</div>
                                             <div class="pin-digits">------</div>
                                         </div>
@@ -1104,12 +1410,12 @@
                                 
                                 <!-- Start Game Section with Player Count -->
                                 <div class="action-section">
-                                    <div class="player-count-display">
-                                        <span class="player-icon">👥</span>
+                                    <div class="player-count-display" aria-live="polite">
+                                        <span class="player-icon" aria-hidden="true">👥</span>
                                         <span id="lobby-player-count" class="player-count-number">0</span>
                                         <span class="info-label" data-translate="players">players</span>
                                     </div>
-                                    <button id="start-game" class="btn primary large-start-btn" aria-label="Start the quiz game">
+                                    <button id="start-game" class="btn primary large-start-btn" aria-label="Start the quiz game" data-translate-aria-label="start_game">
                                         <span data-translate="start_game">Start Game</span>
                                     </button>
                                 </div>
@@ -1129,21 +1435,22 @@
             <div class="host-game-container">
                 <!-- Host-specific header with timer and counter -->
                 <div class="question-header">
-                    <span id="question-counter">Question 1 of 5</span>
-                    <div id="timer" class="timer">20</div>
+                    <span id="question-counter" aria-live="polite">Question 1 of 5</span>
+                    <div id="timer" class="timer" role="timer" aria-live="off" aria-label="Time remaining" data-translate-aria-label="time_remaining">20</div>
                 </div>
                 
                 <!-- Use client-style question display -->
                 <div id="host-question-display" class="player-question-area">
-                    <div id="question-image-display" class="question-image-container" style="display: none;">
+                    <div id="question-image-display" class="question-image-container hidden">
                         <img id="host-question-image" src="" alt="Question Image">
                     </div>
+                    <div id="question-video-display" class="question-video-container hidden"></div>
                     <h3 id="current-question" data-translate="question_will_appear_here">Question will appear here</h3>
                 </div>
                 
                     <!-- Real-time Answer Statistics -->
                     <!-- Moved above alternatives for better host visibility -->
-                    <div id="answer-statistics" class="answer-stats" style="display: none;">
+                    <div id="answer-statistics" class="answer-stats hidden" role="region" aria-label="Live answer statistics" data-translate-aria-label="live_answer_statistics">
                         <div class="stats-header">
                             <h3 data-translate="live_answer_statistics">Live Answer Statistics</h3>
                             <!-- Game control buttons for statistics phase - moved to top for visibility -->
@@ -1181,21 +1488,75 @@
                                 </div>
                                 <div class="stat-count" id="stat-count-3">0</div>
                             </div>
+                            <div class="stat-item hidden" id="stat-item-4">
+                                <div class="option-label">E</div>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" id="stat-fill-4" style="width: 0%"></div>
+                                </div>
+                                <div class="stat-count" id="stat-count-4">0</div>
+                            </div>
+                            <div class="stat-item hidden" id="stat-item-5">
+                                <div class="option-label">F</div>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" id="stat-fill-5" style="width: 0%"></div>
+                                </div>
+                                <div class="stat-count" id="stat-count-5">0</div>
+                            </div>
                         </div>
-                        <div class="response-summary" id="response-summary">
+                        <div class="response-summary" id="response-summary" aria-live="polite">
                             <span id="responses-count">0</span> <span data-translate="of">of</span> <span id="total-players">0</span> <span data-translate="players_have_answered">players have answered</span>
                         </div>
+                        <!-- Score Breakdown (host-only display) -->
+                        <div class="host-score-breakdown" id="host-score-breakdown" style="display: none;">
+                            <span class="breakdown-label" data-translate="scoring">Scoring:</span>
+                            <span class="breakdown-content" id="breakdown-content"></span>
+                        </div>
                     </div>
-                
+
+                <!-- Host Consensus Mode View (visible when consensus mode is enabled) -->
+                <div id="host-consensus-view" class="host-consensus-view hidden">
+                    <div class="host-consensus-header">
+                        <h3 data-translate="consensus_mode">Consensus Mode</h3>
+                        <div class="host-team-score">
+                            <span data-translate="team_score">Team Score:</span>
+                            <span id="host-team-score" class="team-score-value">0</span>
+                        </div>
+                    </div>
+                    <div class="host-proposal-view">
+                        <h4 data-translate="current_proposals">Current Proposals</h4>
+                        <div class="host-proposal-grid" id="host-proposal-grid">
+                            <!-- Proposal items with player names will be rendered here -->
+                        </div>
+                    </div>
+                    <div class="host-consensus-status">
+                        <div class="consensus-status-bar">
+                            <div class="consensus-progress-container">
+                                <div class="consensus-progress-bar" id="host-consensus-bar"></div>
+                            </div>
+                            <span id="host-consensus-percent">0%</span>
+                            <span class="consensus-threshold-label">
+                                / <span id="host-consensus-threshold">66%</span> <span data-translate="threshold">threshold</span>
+                            </span>
+                        </div>
+                        <button id="lock-consensus-btn" class="btn primary lock-consensus-btn" disabled data-translate="lock_consensus">Lock Consensus</button>
+                    </div>
+                    <div class="host-discussion-monitor" id="host-discussion-monitor">
+                        <h4 data-translate="discussion_activity">Discussion Activity</h4>
+                        <div class="discussion-activity-feed" id="host-discussion-feed">
+                            <!-- Discussion activity will appear here -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Use client-style options -->
                 <!-- Moved below statistics for better information hierarchy -->
                 <div id="host-multiple-choice" class="player-answer-type">
                     <div class="question-alternatives-header" data-translate="question_alternatives">Question Alternatives</div>
                     <div id="answer-options" class="player-options">
-                        <div class="player-option" data-option="0">A</div>
-                        <div class="player-option" data-option="1">B</div>
-                        <div class="player-option" data-option="2">C</div>
-                        <div class="player-option" data-option="3">D</div>
+                        <div class="option-display" data-option="0"></div>
+                        <div class="option-display" data-option="1"></div>
+                        <div class="option-display" data-option="2"></div>
+                        <div class="option-display" data-option="3"></div>
                     </div>
                 </div>
                 </div>
@@ -1205,8 +1566,9 @@
         <div id="join-screen" class="screen">
             <div class="join-container">
                 <h2 data-translate="join_game">Join Game</h2>
-                <input type="text" id="game-pin-input" placeholder="Enter Game PIN" class="input-field" data-translate-placeholder="enter_game_pin">
-                <input type="text" id="player-name" placeholder="Your Name" class="input-field" data-translate-placeholder="your_name">
+                <input type="text" id="game-pin-input" placeholder="Enter Game PIN" class="input-field" data-translate-placeholder="enter_game_pin" aria-label="Game PIN" data-translate-aria-label="game_pin" inputmode="numeric" pattern="[0-9]{6}" maxlength="6">
+                <p class="first-game-hint" data-translate="pin_format_hint">Enter the 6-digit PIN shown on the host's screen</p>
+                <input type="text" id="player-name" placeholder="Your Name" class="input-field" data-translate-placeholder="your_name" aria-label="Your name" data-translate-aria-label="your_name" autocomplete="nickname">
                 <button id="join-game" class="btn primary" data-translate="join_game">Join Game</button>
                 
                 <div class="join-divider">
@@ -1237,8 +1599,31 @@
         <div id="player-lobby" class="screen">
             <div class="player-lobby-container">
                 <h2 data-translate="waiting_for_game">Waiting for game to start...</h2>
-                <p id="player-info" data-translate="you_are_in">You're in!</p>
-                
+                <p class="first-game-hint" data-translate="waiting_hint">The host will start the game when all players have joined</p>
+
+                <!-- Player Name Display (default state) -->
+                <div id="player-name-display" class="player-name-section">
+                    <p id="player-info" data-translate="you_are_in">You're in!</p>
+                    <button id="edit-name-btn" class="btn secondary btn-sm edit-name-btn" title="Edit your name">
+                        <span data-translate="edit">Edit</span>
+                    </button>
+                </div>
+
+                <!-- Player Name Edit (hidden by default) -->
+                <div id="player-name-edit" class="player-name-section hidden">
+                    <input type="text"
+                           id="edit-name-input"
+                           class="input-field edit-name-input"
+                           maxlength="20"
+                           placeholder="Your Name"
+                           data-translate-placeholder="your_name"
+                           autocomplete="nickname">
+                    <div class="edit-name-actions">
+                        <button id="save-name-btn" class="btn primary btn-sm" data-translate="save">Save</button>
+                        <button id="cancel-name-btn" class="btn secondary btn-sm" data-translate="cancel">Cancel</button>
+                    </div>
+                </div>
+
                 <div class="lobby-info" id="lobby-info" style="display: none;">
                     <div class="lobby-detail">
                         <span class="lobby-detail-label">
@@ -1269,18 +1654,90 @@
         </div>
 
         <div id="player-game-screen" class="screen">
+            <!-- Practice Mode Indicator Badge -->
+            <div id="practice-mode-indicator" class="practice-mode-badge hidden">
+                <span class="badge-icon">🎯</span>
+                <span class="badge-text" data-translate="practice_mode">Practice Mode</span>
+                <button id="practice-home-btn" class="practice-home-btn" title="Exit to Home" data-translate-title="exit_to_home">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                </button>
+            </div>
+
             <div class="player-game-container">
                 <div class="question-info">
                     <span id="player-question-counter">Question 1 of 5</span>
                 </div>
                 
                 <div id="player-question-display" class="player-question-area">
-                    <div id="player-question-image" class="question-image-container" style="display: none;">
+                    <div id="player-question-image" class="question-image-container hidden">
                         <img id="player-question-img" src="" alt="Question Image">
                     </div>
+                    <div id="player-question-video" class="question-video-container hidden"></div>
                     <h3 id="player-question-text" data-translate="question_will_appear_here">Question will appear here</h3>
                 </div>
-                
+
+                <!-- Power-Ups Container (visible when enabled by host) -->
+                <div id="power-ups-container" class="power-ups-container hidden">
+                    <button id="power-up-fifty-fifty" class="power-up-btn" data-power-up="fifty-fifty" data-translate-title="fifty_fifty_tooltip">
+                        <span class="power-up-icon">½</span>
+                        <span class="power-up-label" data-translate="fifty_fifty">50-50</span>
+                    </button>
+                    <button id="power-up-extend-time" class="power-up-btn" data-power-up="extend-time" data-translate-title="extend_time_tooltip">
+                        <span class="power-up-icon">⏱️</span>
+                        <span class="power-up-label" data-translate="extend_time">+10s</span>
+                    </button>
+                    <button id="power-up-double-points" class="power-up-btn" data-power-up="double-points" data-translate-title="double_points_tooltip">
+                        <span class="power-up-icon">×2</span>
+                        <span class="power-up-label" data-translate="double_points">2× Points</span>
+                    </button>
+                </div>
+
+                <!-- Consensus Mode View (visible when consensus mode is enabled) -->
+                <div id="player-consensus-view" class="consensus-view hidden">
+                    <div class="consensus-header">
+                        <h4 data-translate="team_discussion">Team Discussion</h4>
+                        <div class="team-score-display">
+                            <span data-translate="team_score">Team Score:</span>
+                            <span id="player-team-score">0</span>
+                        </div>
+                    </div>
+                    <div class="proposal-distribution" id="proposal-distribution">
+                        <!-- Proposal bars will be rendered here dynamically -->
+                    </div>
+                    <div class="consensus-indicator" id="consensus-indicator">
+                        <div class="consensus-progress">
+                            <div class="consensus-bar" id="consensus-bar"></div>
+                        </div>
+                        <span id="consensus-percent">0%</span>
+                        <span data-translate="consensus_of">of</span>
+                        <span id="consensus-threshold-display">66%</span>
+                    </div>
+                    <div id="discussion-panel" class="discussion-panel">
+                        <div class="quick-responses">
+                            <button class="quick-response-btn" data-type="propose" data-translate="i_think_its">I think it's...</button>
+                            <button class="quick-response-btn" data-type="agree" data-translate="i_agree">I agree</button>
+                            <button class="quick-response-btn" data-type="unsure" data-translate="not_sure">Not sure</button>
+                            <button class="quick-response-btn" data-type="discuss" data-translate="lets_discuss">Let's discuss</button>
+                            <button class="quick-response-btn" data-type="ready" data-translate="ready_to_lock">Ready!</button>
+                        </div>
+                        <div class="discussion-feed" id="discussion-feed">
+                            <!-- Discussion messages will appear here -->
+                        </div>
+                        <div class="chat-input-container hidden" id="chat-input-container">
+                            <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200" data-translate-placeholder="type_message">
+                            <button id="send-chat-btn" class="btn-icon" data-translate-title="send_message">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="player-multiple-choice" class="player-answer-type">
                     <div class="player-options">
                         <button class="player-option" data-option="0">A</button>
@@ -1290,7 +1747,7 @@
                     </div>
                 </div>
                 
-                <div id="player-multiple-correct" class="player-answer-type" style="display: none;">
+                <div id="player-multiple-correct" class="player-answer-type hidden">
                     <div class="player-checkbox-options">
                         <label class="checkbox-option" data-option="0">
                             <input type="checkbox" class="option-checkbox"> A
@@ -1307,22 +1764,22 @@
                     </div>
                     <button id="submit-multiple" class="btn primary" data-translate="submit_answer">Submit Answer</button>
                 </div>
-                
-                <div id="player-true-false" class="player-answer-type" style="display: none;">
+
+                <div id="player-true-false" class="player-answer-type hidden">
                     <div class="true-false-options">
                         <button class="tf-option" data-answer="true" data-translate="true">TRUE</button>
                         <button class="tf-option" data-answer="false" data-translate="false">FALSE</button>
                     </div>
                 </div>
-                
-                <div id="player-numeric" class="player-answer-type" style="display: none;">
+
+                <div id="player-numeric" class="player-answer-type hidden">
                     <div class="numeric-input-container">
-                        <input type="number" id="numeric-answer-input" placeholder="Enter your answer" step="any" data-translate-placeholder="enter_answer">
+                        <input type="number" id="numeric-answer-input" placeholder="Enter your answer" step="any" data-translate-placeholder="enter_answer" aria-label="Numeric answer" data-translate-aria-label="numeric_answer">
                         <button id="submit-numeric" class="btn primary" data-translate="submit_answer">Submit Answer</button>
                     </div>
                 </div>
 
-                <div id="player-ordering" class="player-answer-type" style="display: none;">
+                <div id="player-ordering" class="player-answer-type hidden">
                     <div class="ordering-container">
                         <!-- Ordering options will be dynamically generated here -->
                     </div>
@@ -1339,12 +1796,12 @@
         <div id="leaderboard-screen" class="screen">
             <div class="leaderboard-container">
                 <div class="leaderboard-header">
-                    <h2 data-translate="leaderboard_title">🏆 Leaderboard</h2>
+                    <h2 data-translate="leaderboard_title"><span aria-hidden="true">🏆</span> Leaderboard</h2>
                     <div class="leaderboard-controls">
                         <button id="next-question" class="btn primary" style="display: none;" data-translate="next_question">Next Question</button>
                     </div>
                 </div>
-                <div id="leaderboard-list" class="leaderboard"></div>
+                <div id="leaderboard-list" class="leaderboard" role="list" aria-live="polite" aria-label="Player rankings" data-translate-aria-label="player_rankings"></div>
                 <div id="final-results" class="final-results hidden">
                     <h3 data-translate="game_complete">🎉 Game Complete!</h3>
                     <div class="final-actions">
@@ -1355,7 +1812,8 @@
                             </select>
                             <button id="download-selected" class="btn secondary" data-translate="download_csv">Download CSV</button>
                         </div>
-                        <button id="new-game" class="btn primary" data-translate="new_game">New Game</button>
+                        <button id="rematch-game" class="btn primary" data-translate="rematch">Rematch</button>
+                        <button id="new-game" class="btn secondary" data-translate="new_game">New Game</button>
                     </div>
                 </div>
             </div>
@@ -1363,35 +1821,70 @@
         
         <div id="player-final-screen" class="screen">
             <div class="player-final-container">
-                <h2 data-translate="quiz_complete">🎉 Quiz Complete!</h2>
-                <div id="player-final-rank" class="player-rank">
+                <h2 data-translate="quiz_complete"><span aria-hidden="true">🎉</span> Quiz Complete!</h2>
+                <div id="player-final-rank" class="player-rank" role="status" aria-live="polite">
                     <h3 data-translate="your_final_rank">Your Final Rank</h3>
                     <div id="final-position" class="final-position">#1</div>
                     <div id="final-score" class="final-score">0 <span data-translate="points">points</span></div>
                 </div>
                 <div id="top-players" class="top-players">
-                    <h3 data-translate="top_players">🏆 Top Players</h3>
-                    <div id="final-leaderboard" class="final-leaderboard"></div>
+                    <h3 data-translate="top_players"><span aria-hidden="true">🏆</span> Top Players</h3>
+                    <div id="final-leaderboard" class="final-leaderboard" role="list" aria-label="Top players" data-translate-aria-label="top_players"></div>
+                </div>
+                <div id="player-concept-mastery" class="player-concept-mastery hidden" role="region" aria-label="Your concept mastery" data-translate-aria-label="your_concept_mastery">
+                    <!-- Dynamically populated by LeaderboardManager -->
                 </div>
                 <button id="play-again" class="btn primary" data-translate="play_again">Play Again</button>
             </div>
         </div>
-        
+
+        <!-- Practice Mode Results Screen -->
+        <div id="practice-results" class="practice-results-overlay hidden">
+            <!-- Content dynamically populated by PracticeModeManager -->
+        </div>
+
         <!-- Load Quiz Modal -->
-        <div id="load-quiz-modal" class="modal" style="display: none;">
+        <div id="load-quiz-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="load-quiz-modal-title">
             <div class="modal-content">
-                <h3 data-translate="load_saved_quiz">Load Saved Quiz</h3>
-                <div id="quiz-list" class="quiz-list"></div>
+                <h3 id="load-quiz-modal-title" data-translate="load_saved_quiz">Load Saved Quiz</h3>
+                <!-- Folder tree view (new) - used when available -->
+                <div id="quiz-tree-container" class="quiz-tree-container"></div>
+                <p class="tree-hint" data-translate="right_click_hint">Right-click (or long-press on mobile) for more options</p>
+                <!-- Flat list view (legacy fallback) -->
+                <div id="quiz-list" class="quiz-list hidden"></div>
                 <div class="modal-actions">
+                    <button id="new-folder-btn" class="btn secondary" data-translate="new_folder" onclick="window.QM?.createNewFolder()">New Folder</button>
                     <button id="cancel-load" class="btn secondary" data-translate="cancel">Cancel</button>
                 </div>
             </div>
         </div>
-        
+
+        <!-- Save Quiz Modal -->
+        <div id="save-quiz-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="save-quiz-modal-title">
+            <div class="modal-content">
+                <h3 id="save-quiz-modal-title" data-translate="save_quiz">Save Quiz</h3>
+                <div class="save-quiz-form">
+                    <div class="form-group">
+                        <label for="save-quiz-password" data-translate="optional_password">Password (optional)</label>
+                        <input type="password" id="save-quiz-password" class="input-field" placeholder="Leave empty for no protection" data-translate-placeholder="password_placeholder">
+                        <p class="form-hint" data-translate="password_hint">If set, password will be required to load, edit, or delete this quiz.</p>
+                    </div>
+                    <div class="form-group" id="save-quiz-confirm-group" style="display: none;">
+                        <label for="save-quiz-password-confirm" data-translate="confirm_password">Confirm Password</label>
+                        <input type="password" id="save-quiz-password-confirm" class="input-field" placeholder="Confirm password" data-translate-placeholder="confirm_password_placeholder">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="cancel-save" class="btn secondary" data-translate="cancel">Cancel</button>
+                    <button id="confirm-save" class="btn primary" data-translate="save">Save</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Quiz Preview Modal -->
-        <div id="quiz-preview-modal" class="modal" style="display: none;">
+        <div id="quiz-preview-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="quiz-preview-modal-title">
             <div class="modal-content large">
-                <h3 data-translate="preview_quiz">Quiz Preview</h3>
+                <h3 id="quiz-preview-modal-title" data-translate="preview_quiz">Quiz Preview</h3>
                 <div id="preview-content" class="preview-content"></div>
                 <div class="modal-actions">
                     <button id="cancel-preview" class="btn secondary" data-translate="close">Close</button>
@@ -1400,12 +1893,124 @@
         </div>
         
 
-        <!-- AI Question Generator Modal -->
-        <div id="ai-generator-modal" class="modal" style="display: none;">
+        <!-- Manim Tutorial Modal -->
+        <div id="manim-tutorial-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="manim-tutorial-title">
             <div class="modal-content large">
                 <div class="modal-header">
-                    <h3>🤖 <span data-translate="ai_generator">AI Question Generator</span></h3>
-                    <button id="close-ai-generator" class="close-btn">&times;</button>
+                    <h3 id="manim-tutorial-title" data-translate="manim_tutorial_title">Manim Animation Tutorial</h3>
+                    <button id="close-manim-tutorial" class="close-btn" data-translate-aria-label="close">&times;</button>
+                </div>
+                <div class="manim-tutorial-body">
+                    <section class="tutorial-section">
+                        <h4 data-translate="manim_what_are_animations">What are Manim Animations?</h4>
+                        <p data-translate="manim_what_are_animations_desc">Manim lets you create mathematical animations using Python code. Attach animations to your quiz questions to make concepts visual and engaging.</p>
+                        <video class="tutorial-video" controls playsinline preload="metadata">
+                            <source src="assets/tutorial/manim-demo.mp4" type="video/mp4">
+                        </video>
+                    </section>
+
+                    <section class="tutorial-section">
+                        <h4 data-translate="manim_how_to_use">How to Use</h4>
+                        <video class="tutorial-video" controls playsinline preload="metadata">
+                            <source src="assets/tutorial/manim-steps.mp4" type="video/mp4">
+                        </video>
+                        <ol class="tutorial-steps">
+                            <li><strong data-translate="manim_question_animation_tab">Question Animation</strong> tab &mdash; plays alongside the question during the quiz</li>
+                            <li><strong data-translate="manim_explanation_animation_tab">Explanation Animation</strong> tab &mdash; plays after the answer is revealed</li>
+                            <li data-translate="manim_step_write_code">Write Manim Python code in the editor</li>
+                            <li data-translate="manim_step_click_render">Click <em>Render Animation</em> and wait a few seconds</li>
+                            <li data-translate="manim_step_preview_save">Preview the result, then save your quiz</li>
+                        </ol>
+                    </section>
+
+                    <section class="tutorial-section">
+                        <h4 data-translate="manim_code_examples">Code Examples</h4>
+                        <p data-translate="manim_code_examples_desc">Click any example to copy it to your clipboard.</p>
+
+                        <div class="tutorial-example">
+                            <h5 data-translate="manim_example_basic_shapes">Basic Shapes</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code" data-translate-aria-label="manim_copy_code_aria">from manim import *
+
+class ShapesScene(Scene):
+    def construct(self):
+        circle = Circle(color=BLUE, fill_opacity=0.5)
+        square = Square(color=GREEN, fill_opacity=0.5)
+        shapes = VGroup(circle, square).arrange(RIGHT, buff=1)
+        self.play(Create(circle), Create(square))
+        self.play(Rotate(square, PI/4))
+        self.wait(1)</pre>
+                        </div>
+
+                        <div class="tutorial-example">
+                            <h5 data-translate="manim_example_text">Text &amp; Annotations</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code" data-translate-aria-label="manim_copy_code_aria">from manim import *
+
+class TextScene(Scene):
+    def construct(self):
+        title = Text("Key Concept", font_size=48, color=YELLOW)
+        self.play(Write(title))
+        self.play(title.animate.to_edge(UP))
+
+        bullet1 = Text("- Point one", font_size=28)
+        bullet2 = Text("- Point two", font_size=28)
+        bullets = VGroup(bullet1, bullet2).arrange(DOWN, aligned_edge=LEFT)
+        self.play(FadeIn(bullets))
+        self.wait(1)</pre>
+                        </div>
+
+                        <div class="tutorial-example">
+                            <h5 data-translate="manim_example_number_line">Number Line</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code" data-translate-aria-label="manim_copy_code_aria">from manim import *
+
+class NumberLineScene(Scene):
+    def construct(self):
+        line = NumberLine(x_range=[-5, 5, 1], include_numbers=True)
+        self.play(Create(line))
+
+        dot = Dot(line.n2p(3), color=RED, radius=0.15)
+        label = Text("x = 3", font_size=24, color=RED)
+        label.next_to(dot, UP)
+        self.play(Create(dot), Write(label))
+        self.wait(1)</pre>
+                        </div>
+
+                        <div class="tutorial-example">
+                            <h5 data-translate="manim_example_graph">Graph / Function Plot</h5>
+                            <pre class="tutorial-code" tabindex="0" role="button" aria-label="Copy code" data-translate-aria-label="manim_copy_code_aria">from manim import *
+
+class GraphScene(Scene):
+    def construct(self):
+        axes = Axes(x_range=[-3, 3], y_range=[-1, 9], axis_config={"include_numbers": True})
+        graph = axes.plot(lambda x: x**2, color=BLUE)
+        label = axes.get_graph_label(graph, label="x^2")
+        self.play(Create(axes), Create(graph), Write(label))
+        self.wait(1)</pre>
+                        </div>
+                    </section>
+
+                    <section class="tutorial-section">
+                        <h4 data-translate="manim_tips">Tips</h4>
+                        <ul class="tutorial-tips">
+                            <li data-translate="manim_tip_keep_short">Keep animations short (2&ndash;5 seconds) for quiz flow</li>
+                            <li data-translate="manim_tip_use_wait">Use <code>self.wait(1)</code> to pause between steps</li>
+                            <li data-translate="manim_tip_scene_class">Your class must extend <code>Scene</code> (e.g. <code>class MyScene(Scene)</code>)</li>
+                            <li data-translate="manim_tip_import">Always start with <code>from manim import *</code></li>
+                            <li data-translate="manim_tip_mathtex">Use <code>Text()</code> for labels &mdash; <code>MathTex()</code> requires LaTeX installed</li>
+                        </ul>
+                    </section>
+                </div>
+                <div class="modal-actions">
+                    <button id="close-manim-tutorial-btn" class="btn secondary" data-translate="manim_tutorial_close">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Question Generator Modal -->
+        <div id="ai-generator-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="ai-generator-modal-title">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3 id="ai-generator-modal-title"><span aria-hidden="true">🤖</span> <span data-translate="ai_generator">AI Question Generator</span></h3>
+                    <button id="close-ai-generator" class="close-btn" data-translate-aria-label="close">&times;</button>
                 </div>
                 
                 <div class="ai-config-section">
@@ -1413,7 +2018,6 @@
                         <label for="ai-provider" data-translate="choose_ai_provider">Choose AI Provider:</label>
                         <select id="ai-provider" class="input-field">
                             <option value="ollama" data-translate="ollama_free_local">Ollama (Free, Local)</option>
-                            <option value="huggingface" data-translate="huggingface_free">Hugging Face (Free tier)</option>
                             <option value="openai" data-translate="openai_paid">OpenAI (Paid)</option>
                             <option value="claude" data-translate="claude_paid">Anthropic Claude (Paid)</option>
                             <option value="gemini" data-translate="gemini_paid">Google Gemini (Paid)</option>
@@ -1426,8 +2030,31 @@
                         </select>
                         <small data-translate="select_ollama_model">Select which Ollama model to use for generation</small>
                     </div>
-                    
-                    <div class="api-key-section" id="api-key-section" style="display: none;">
+
+                    <div class="model-selection hidden" id="claude-model-selection">
+                        <label for="claude-model" data-translate="choose_claude_model">Choose Claude Model:</label>
+                        <select id="claude-model" class="input-field">
+                            <option value="claude-sonnet-4-5" data-translate="claude_sonnet_45">Claude Sonnet 4.5 (Recommended)</option>
+                            <option value="claude-haiku-4-5" data-translate="claude_haiku_45">Claude Haiku 4.5 (Fast & Cheap)</option>
+                            <option value="claude-opus-4-5" data-translate="claude_opus_45">Claude Opus 4.5 (Most Capable)</option>
+                            <option value="claude-sonnet-4-0" data-translate="claude_sonnet_40">Claude Sonnet 4 (Legacy)</option>
+                        </select>
+                        <small data-translate="select_claude_model">Select which Claude model to use for generation</small>
+                    </div>
+
+                    <div class="model-selection hidden" id="gemini-model-selection">
+                        <label for="gemini-model" data-translate="choose_gemini_model">Choose Gemini Model:</label>
+                        <select id="gemini-model" class="input-field">
+                            <option value="gemini-2.5-flash" data-translate="gemini_25_flash">Gemini 2.5 Flash (Recommended)</option>
+                            <option value="gemini-2.5-pro" data-translate="gemini_25_pro">Gemini 2.5 Pro (Most Capable)</option>
+                            <option value="gemini-2.5-flash-lite" data-translate="gemini_25_flash_lite">Gemini 2.5 Flash Lite (Fast & Cheap)</option>
+                            <option value="gemini-3-flash-preview" data-translate="gemini_3_flash_preview">Gemini 3 Flash (Preview - Latest)</option>
+                            <option value="gemini-3-pro-preview" data-translate="gemini_3_pro_preview">Gemini 3 Pro (Preview - Most Advanced)</option>
+                        </select>
+                        <small data-translate="select_gemini_model">Select which Gemini model to use for generation</small>
+                    </div>
+
+                    <div class="api-key-section hidden" id="api-key-section">
                         <label for="ai-api-key" data-translate="api_key">API Key:</label>
                         <input type="password" id="ai-api-key" class="input-field" placeholder="Enter your API key" data-translate-placeholder="enter_api_key_placeholder">
                         <small data-translate="api_key_stored_locally">Your API key is stored locally and never sent to our servers</small>
@@ -1438,16 +2065,46 @@
                     <label for="source-content" data-translate="source_material">Source Material:</label>
                     <textarea id="source-content" class="input-field" rows="8" placeholder="Paste your text content here, or upload a file below..." data-translate-placeholder="paste_content_here"></textarea>
                     
-                    <div class="content-type-indicator" id="content-type-indicator" style="display: none;">
-                        <span class="content-type-label" data-translate="content_type_detected">Content type detected:</span>
-                        <span class="content-type-value" id="content-type-value">general</span>
-                        <span class="content-type-description" id="content-type-description">Questions will use standard formatting</span>
+                    <!-- Content Analysis Summary -->
+                    <div class="content-analysis-panel hidden" id="content-analysis-panel">
+                        <div class="analysis-header">
+                            <span class="analysis-icon">📊</span>
+                            <span data-translate="content_analysis">Content Analysis</span>
+                        </div>
+                        <div class="analysis-grid">
+                            <div class="analysis-item">
+                                <span class="analysis-label" data-translate="detected_type">Type:</span>
+                                <span class="analysis-value" id="detected-content-type">General</span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label" data-translate="formatting">Formatting:</span>
+                                <span class="analysis-value" id="detected-formatting">Standard</span>
+                            </div>
+                            <div class="analysis-item hidden" id="detected-language-item">
+                                <span class="analysis-label" data-translate="detected_language">Language:</span>
+                                <span class="analysis-value" id="detected-language">-</span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label" data-translate="content_mode">Mode:</span>
+                                <span class="analysis-value" id="detected-mode">Generate new</span>
+                            </div>
+                        </div>
+                        <div class="analysis-recommendation" id="analysis-recommendation"></div>
                     </div>
                     
                     <div class="file-upload-section">
                         <label for="content-file" data-translate="or_upload_file">Or upload a file:</label>
-                        <input type="file" id="content-file" accept=".txt,.pdf,.docx,.md,.xlsx,.xls" class="input-field">
-                        <small data-translate="supported_formats">Supported formats: TXT, PDF, DOCX, Markdown, Excel</small>
+                        <input type="file" id="content-file" accept=".txt,.pdf,.docx,.md,.xlsx,.xls,.pptx,.ppt" class="input-field">
+                        <small data-translate="supported_formats">Supported formats: TXT, PDF, DOCX, PPTX, Markdown, Excel</small>
+                    </div>
+
+                    <div class="url-input-section">
+                        <label for="source-url" data-translate="enter_url">Or enter a URL:</label>
+                        <div class="url-input-wrapper">
+                            <input type="url" id="source-url" class="input-field" placeholder="https://..." data-translate-placeholder="url_placeholder">
+                            <button id="fetch-url-btn" class="btn btn-secondary" data-translate="fetch_content">Fetch</button>
+                        </div>
+                        <small data-translate="url_hint">Web pages will be converted to text</small>
                     </div>
                 </div>
                 
@@ -1466,6 +2123,19 @@
                             <option value="hard" data-translate="hard">Hard</option>
                         </select>
                     </div>
+
+                    <div class="option-group">
+                        <label for="cognitive-level" data-translate="cognitive_level">Cognitive Level (Bloom's):</label>
+                        <select id="cognitive-level" class="input-field">
+                            <option value="mixed" data-translate="blooms_mixed">Mixed Levels</option>
+                            <option value="remember" data-translate="blooms_remember">Remember (Recall facts)</option>
+                            <option value="understand" data-translate="blooms_understand">Understand (Explain concepts)</option>
+                            <option value="apply" data-translate="blooms_apply">Apply (Use in new situations)</option>
+                            <option value="analyze" data-translate="blooms_analyze">Analyze (Break down, compare)</option>
+                            <option value="evaluate" data-translate="blooms_evaluate">Evaluate (Judge, critique)</option>
+                            <option value="create" data-translate="blooms_create">Create (Design, construct)</option>
+                        </select>
+                    </div>
                     
                     <div class="option-group">
                         <label data-translate="question_types">Question Types:</label>
@@ -1482,15 +2152,34 @@
                             <label class="checkbox-label">
                                 <input type="checkbox" id="type-numeric"> <span data-translate="numeric_answer_type">Numeric Answer</span>
                             </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="type-ordering"> <span data-translate="ordering_type">Ordering</span>
+                            </label>
                         </div>
                     </div>
                 </div>
-                
-                <div class="generation-status" id="generation-status" style="display: none;">
+
+                <!-- Cost Estimation -->
+                <div class="cost-estimation hidden" id="cost-estimation">
+                    <div class="cost-info">
+                        <span class="cost-icon">💰</span>
+                        <span class="cost-label" data-translate="estimated_cost">Estimated:</span>
+                        <span class="cost-value" id="estimated-cost">~$0.00</span>
+                        <span class="cost-tokens" id="estimated-tokens">(~0 tokens)</span>
+                    </div>
+                </div>
+
+                <div class="generation-status hidden" id="generation-status">
                     <div class="loading-spinner"></div>
                     <span data-translate="generating_questions">Generating questions...</span>
                 </div>
-                
+
+                <div class="language-indicator" id="output-language-indicator">
+                    <span class="indicator-icon">🌐</span>
+                    <span data-translate="questions_generated_in">Questions will be generated in:</span>
+                    <strong id="output-language-name">English</strong>
+                </div>
+
                 <div class="modal-actions">
                     <button id="cancel-ai-generator" class="btn secondary" data-translate="cancel">Cancel</button>
                     <button id="generate-questions" class="btn primary" data-translate="generate_questions_btn">Generate Questions</button>
@@ -1499,12 +2188,50 @@
         </div>
     </div>
 
-    <!-- Results Viewing Modal -->
-    <div id="results-viewing-modal" class="modal" style="display: none;">
+    <!-- Question Preview Modal -->
+    <div id="question-preview-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="question-preview-modal-title">
         <div class="modal-content large">
             <div class="modal-header">
-                <h3>📊 <span data-translate="view_quiz_results">Quiz Results History</span></h3>
-                <button id="close-results-viewer" class="close-btn">&times;</button>
+                <h3 id="question-preview-modal-title"><span aria-hidden="true">📝</span> <span data-translate="preview_generated_questions">Preview Generated Questions</span></h3>
+                <button id="close-question-preview" class="close-btn" data-translate-aria-label="close">&times;</button>
+            </div>
+
+            <div class="preview-instructions">
+                <p data-translate="preview_instructions">Review the generated questions below. Click to select which ones to add to your quiz.</p>
+            </div>
+
+            <div class="preview-actions-bar">
+                <button id="select-all-questions" class="btn secondary small" data-translate="select_all">Select All</button>
+                <button id="deselect-all-questions" class="btn secondary small" data-translate="deselect_all">Deselect All</button>
+            </div>
+
+            <div class="question-preview-list" id="question-preview-list">
+                <!-- Generated questions will be rendered here -->
+            </div>
+
+            <div class="preview-summary" id="preview-summary">
+                <span class="preview-summary-text">
+                    <span data-translate="selected_questions">Selected:</span>
+                    <span class="preview-summary-count" id="selected-count">0</span>
+                    <span data-translate="of">of</span>
+                    <span id="total-generated-count">0</span>
+                    <span data-translate="questions_label">questions</span>
+                </span>
+            </div>
+
+            <div class="modal-actions">
+                <button id="cancel-question-preview" class="btn secondary" data-translate="cancel">Cancel</button>
+                <button id="confirm-add-questions" class="btn primary" data-translate="add_selected_questions">Add Selected Questions</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Viewing Modal -->
+    <div id="results-viewing-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="results-viewing-modal-title">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="results-viewing-modal-title"><span aria-hidden="true">📊</span> <span data-translate="view_quiz_results">Quiz Results History</span></h3>
+                <button id="close-results-viewer" class="close-btn" data-translate-aria-label="close">&times;</button>
             </div>
             
             <div class="results-content">
@@ -1527,8 +2254,8 @@
                 
                 <div class="results-filters">
                     <div class="filter-group">
-                        <input type="text" id="search-results" class="input-field" placeholder="Search by quiz title..." data-translate-placeholder="search_quiz_title">
-                        <select id="sort-results" class="input-field">
+                        <input type="text" id="search-results" class="input-field" placeholder="Search by quiz title..." data-translate-placeholder="search_quiz_title" aria-label="Search results" data-translate-aria-label="search_results">
+                        <select id="sort-results" class="input-field" aria-label="Sort results" data-translate-aria-label="sort_results">
                             <option value="date-desc" data-translate="sort_newest_first">Newest First</option>
                             <option value="date-asc" data-translate="sort_oldest_first">Oldest First</option>
                             <option value="title-asc" data-translate="sort_title_az">Title A-Z</option>
@@ -1537,12 +2264,15 @@
                         <button id="refresh-results" class="btn secondary refresh-btn" data-translate="refresh" title="Refresh results list">
                             ↻ Refresh
                         </button>
+                        <button id="compare-sessions-btn" class="btn secondary" title="Compare multiple sessions of the same quiz" data-translate-title="compare_sessions_tooltip" onclick="window.resultsViewer?.showComparisonSelector()">
+                            <span data-translate="compare_sessions">Compare Sessions</span>
+                        </button>
                     </div>
                 </div>
                 
                 <div class="results-list" id="results-list">
                     <div class="loading-message" id="results-loading">
-                        <span>Loading quiz results...</span>
+                        <span data-translate="loading_quiz_results">Loading quiz results...</span>
                     </div>
                 </div>
             </div>
@@ -1554,11 +2284,11 @@
     </div>
 
     <!-- Results Detail Modal -->
-    <div id="result-detail-modal" class="modal" style="display: none;">
+    <div id="result-detail-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="result-detail-title">
         <div class="modal-content large">
             <div class="modal-header">
                 <h3 id="result-detail-title" data-translate="quiz_results_detail">Quiz Results Detail</h3>
-                <button id="close-result-detail" class="close-btn">&times;</button>
+                <button id="close-result-detail" class="close-btn" data-translate-aria-label="close">&times;</button>
             </div>
             
             <div class="result-detail-content">
@@ -1600,28 +2330,66 @@
     </div>
 
     <!-- Modal Feedback System -->
-    <div id="feedback-modal-overlay" class="feedback-modal-overlay">
+    <div id="feedback-modal-overlay" class="feedback-modal-overlay" role="alertdialog" aria-modal="true" aria-labelledby="modal-feedback-text" aria-live="assertive">
         <div id="feedback-modal" class="feedback-modal">
             <div class="feedback-message">
-                <span class="feedback-icon" id="feedback-icon"></span>
+                <span class="feedback-icon" id="feedback-icon" aria-hidden="true"></span>
                 <span id="modal-feedback-text"></span>
             </div>
             <div class="score-display" id="modal-score-display"></div>
+            <div class="modal-explanation" id="modal-explanation"></div>
         </div>
     </div>
 
     <!-- Mobile Quiz Actions Bottom Sheet -->
-    <div id="mobile-quiz-sheet-overlay" class="mobile-quiz-sheet-overlay" onclick="hideMobileQuizSheet()">
+    <div id="mobile-quiz-sheet-overlay" class="mobile-quiz-sheet-overlay" onclick="hideMobileQuizSheet()" role="dialog" aria-modal="true" aria-labelledby="mobile-quiz-sheet-title">
         <div id="mobile-quiz-sheet" class="mobile-quiz-sheet" onclick="event.stopPropagation()">
             <div class="mobile-quiz-sheet-header">
-                <div class="mobile-quiz-sheet-handle" onclick="hideMobileQuizSheet()"></div>
-                <h3 class="mobile-quiz-sheet-title" data-translate="quiz_actions">Quiz Actions</h3>
-                <button class="mobile-quiz-sheet-close" onclick="hideMobileQuizSheet()">×</button>
+                <div class="mobile-quiz-sheet-handle" onclick="hideMobileQuizSheet()" role="button" aria-label="Close sheet" data-translate-aria-label="close" tabindex="0"></div>
+                <h3 id="mobile-quiz-sheet-title" class="mobile-quiz-sheet-title" data-translate="quiz_actions">Quiz Actions</h3>
+                <button class="mobile-quiz-sheet-close" onclick="hideMobileQuizSheet()" data-translate-aria-label="close">×</button>
             </div>
             
             <div class="mobile-quiz-sheet-content">
+                <!-- Quiz Settings (Mobile Only) -->
+                <div class="mobile-quiz-settings-section">
+                    <div class="mobile-quiz-settings-title" data-translate="quiz_settings_title">Quiz Settings</div>
+
+                    <!-- Quiz Title -->
+                    <div class="mobile-quiz-title-row">
+                        <input type="text" id="mobile-quiz-title" placeholder="Quiz Title" class="mobile-quiz-title-input"
+                               data-translate-placeholder="quiz_title" oninput="syncMobileQuizTitle(this)">
+                    </div>
+
+                    <!-- Quick Toggles -->
+                    <div class="mobile-quiz-toggles">
+                        <label class="mobile-quiz-toggle">
+                            <input type="checkbox" id="mobile-randomize-questions" onchange="syncMobileToggle('randomize-questions', this.checked)">
+                            <span data-translate="randomize_questions_short">Randomize Questions</span>
+                        </label>
+                        <label class="mobile-quiz-toggle">
+                            <input type="checkbox" id="mobile-randomize-answers" onchange="syncMobileToggle('randomize-answers', this.checked)">
+                            <span data-translate="randomize_answers_short">Randomize Answers</span>
+                        </label>
+                        <label class="mobile-quiz-toggle">
+                            <input type="checkbox" id="mobile-manual-advancement" onchange="syncMobileToggle('manual-advancement', this.checked)">
+                            <span data-translate="manual_short">Host Control</span>
+                        </label>
+                        <label class="mobile-quiz-toggle">
+                            <input type="checkbox" id="mobile-power-ups" onchange="syncMobileToggle('enable-power-ups', this.checked)">
+                            <span data-translate="power_ups_short">Power-Ups</span>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Primary Actions -->
                 <div class="mobile-quiz-primary-actions">
+                    <button class="mobile-quiz-action-btn primary" onclick="handleMobileAddQuestion()">
+                        <div class="mobile-quiz-action-icon">➕</div>
+                        <div class="mobile-quiz-action-label" data-translate="add_question">Add Question</div>
+                        <div class="mobile-quiz-action-subtitle" data-translate="add_question_tooltip">Add a new question</div>
+                    </button>
+
                     <button class="mobile-quiz-action-btn primary" onclick="handleMobileLoadQuiz()">
                         <div class="mobile-quiz-action-icon">📂</div>
                         <div class="mobile-quiz-action-label" data-translate="load_quiz">Load Quiz</div>
@@ -1674,6 +2442,7 @@
                 </div>
             </div>
         </div>
+        </main>
     </div>
 
     <!-- Socket.IO CDN for better WSL compatibility - fallback to local if CDN fails -->
@@ -1682,6 +2451,136 @@
             onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
     </script>
     <!-- Modular ES6 Structure -->
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=18"></script>
+    <!-- Service Worker Registration for Static Asset Caching -->
+    <script>
+        // Fetch and display app version (always runs, even without service worker support)
+        window.addEventListener('load', () => {
+            // Use base path for Kubernetes/cloud deployments
+            const basePath = document.querySelector('base')?.getAttribute('href') || '/';
+            const swPath = basePath + 'sw.js';
+
+            // Fetch and display app version
+            console.log('[App] Fetching version from:', swPath);
+            fetch(swPath)
+                .then(response => {
+                    console.log('[App] sw.js fetch response:', response.status, response.ok);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(swContent => {
+                    console.log('[App] sw.js content length:', swContent.length);
+                    const versionMatch = swContent.match(/CACHE_VERSION = '([^']+)'/);
+                    console.log('[App] Version match:', versionMatch);
+                    if (versionMatch) {
+                        const version = versionMatch[1];
+                        const versionText = document.getElementById('app-version-text');
+                        if (versionText) {
+                            versionText.textContent = version;
+                            console.log('[App] Version displayed:', version);
+                        }
+                    } else {
+                        console.warn('[App] Could not find CACHE_VERSION in sw.js');
+                        const versionText = document.getElementById('app-version-text');
+                        if (versionText) {
+                            versionText.textContent = 'Unknown';
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('[App] Could not fetch version:', err);
+                    const versionText = document.getElementById('app-version-text');
+                    if (versionText) {
+                        versionText.textContent = 'Error';
+                    }
+                });
+        });
+
+        // Service Worker registration (only if supported)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // Use base path for Kubernetes/cloud deployments
+                const basePath = document.querySelector('base')?.getAttribute('href') || '/';
+                const swPath = basePath + 'sw.js';
+
+                // updateViaCache: 'none' forces the browser to always check the network for sw.js updates
+                // This bypasses HTTP cache and ensures new deployments are detected immediately
+                navigator.serviceWorker.register(swPath, { scope: basePath, updateViaCache: 'none' })
+                    .then((registration) => {
+                        console.log('[App] Service Worker registered with scope:', registration.scope);
+
+                        // Check for updates every hour
+                        setInterval(() => {
+                            registration.update();
+                        }, 60 * 60 * 1000);
+
+                        // Check for updates immediately
+                        registration.update();
+
+                        // Listen for new service worker waiting to activate
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New service worker is ready, refresh to use it
+                                    console.log('[App] New version available! Reloading...');
+                                    window.location.reload();
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.warn('[App] Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
+
+    <!-- Language Picker Overlay (First Visit) -->
+    <div id="language-picker-overlay" class="language-picker-overlay hidden">
+        <div class="language-picker-modal">
+            <h2 data-translate="choose_your_language">Choose Your Language</h2>
+            <div class="language-picker-grid">
+                <button class="language-picker-option" data-lang="en">
+                    <span class="language-picker-flag">🇬🇧</span>
+                    <span class="language-picker-name">English</span>
+                </button>
+                <button class="language-picker-option" data-lang="es">
+                    <span class="language-picker-flag">🇪🇸</span>
+                    <span class="language-picker-name">Español</span>
+                </button>
+                <button class="language-picker-option" data-lang="fr">
+                    <span class="language-picker-flag">🇫🇷</span>
+                    <span class="language-picker-name">Français</span>
+                </button>
+                <button class="language-picker-option" data-lang="de">
+                    <span class="language-picker-flag">🇩🇪</span>
+                    <span class="language-picker-name">Deutsch</span>
+                </button>
+                <button class="language-picker-option" data-lang="it">
+                    <span class="language-picker-flag">🇮🇹</span>
+                    <span class="language-picker-name">Italiano</span>
+                </button>
+                <button class="language-picker-option" data-lang="pt">
+                    <span class="language-picker-flag">🇧🇷</span>
+                    <span class="language-picker-name">Português</span>
+                </button>
+                <button class="language-picker-option" data-lang="pl">
+                    <span class="language-picker-flag">🇵🇱</span>
+                    <span class="language-picker-name">Polski</span>
+                </button>
+                <button class="language-picker-option" data-lang="ja">
+                    <span class="language-picker-flag">🇯🇵</span>
+                    <span class="language-picker-name">日本語</span>
+                </button>
+                <button class="language-picker-option" data-lang="zh">
+                    <span class="language-picker-flag">🇨🇳</span>
+                    <span class="language-picker-name">中文</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

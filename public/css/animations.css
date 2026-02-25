@@ -311,77 +311,6 @@
     }
 }
 
-/* Animation Utility Classes */
-.animate-fadeIn {
-    animation: fadeIn 0.3s ease-out;
-}
-
-.animate-fadeInUp {
-    animation: fadeInUp 0.5s ease-out;
-}
-
-.animate-slideInLeft {
-    animation: slideInLeft 0.3s ease-out;
-}
-
-.animate-slideInDown {
-    animation: slideInDown 0.3s ease-out;
-}
-
-.animate-spin {
-    animation: spin 1s linear infinite;
-}
-
-.animate-bounce {
-    animation: bounce 1s infinite;
-}
-
-.animate-pulse {
-    animation: pulseGlow 2s ease-in-out infinite;
-}
-
-.animate-heartbeat {
-    animation: heartbeat 1.5s ease-in-out infinite;
-}
-
-.animate-float {
-    animation: float 3s ease-in-out infinite;
-}
-
-.animate-wiggle {
-    animation: wiggle 1s ease-in-out;
-}
-
-.animate-shake {
-    animation: shake 0.5s ease-in-out;
-}
-
-/* Animation Control Classes */
-.animation-paused {
-    animation-play-state: paused !important;
-}
-
-.animation-delay-1 {
-    animation-delay: 0.1s;
-}
-
-.animation-delay-2 {
-    animation-delay: 0.2s;
-}
-
-.animation-delay-3 {
-    animation-delay: 0.3s;
-}
-
-/* Performance Optimizations */
-.will-animate {
-    will-change: transform, opacity;
-}
-
-.gpu-layer {
-    transform: translateZ(0);
-    backface-visibility: hidden;
-}
 
 /* === ENHANCED LOADING ANIMATIONS === */
 /* Skeleton loader shimmer effect */
@@ -456,58 +385,6 @@
     }
 }
 
-/* === LOADING UTILITY CLASSES === */
-.skeleton-loader {
-    background: linear-gradient(
-        90deg,
-        var(--glass-light) 25%,
-        var(--glass-medium) 50%,
-        var(--glass-light) 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
-    border-radius: var(--border-radius-small);
-}
-
-.pulse-loader {
-    animation: pulseLoading 1.5s ease-in-out infinite;
-}
-
-.stagger-item {
-    opacity: 0;
-    animation: staggerIn 0.4s ease-out forwards;
-}
-
-.stagger-item:nth-child(1) { animation-delay: 0.1s; }
-.stagger-item:nth-child(2) { animation-delay: 0.2s; }
-.stagger-item:nth-child(3) { animation-delay: 0.3s; }
-.stagger-item:nth-child(4) { animation-delay: 0.4s; }
-.stagger-item:nth-child(5) { animation-delay: 0.5s; }
-.stagger-item:nth-child(6) { animation-delay: 0.6s; }
-
-.content-reveal {
-    animation: contentReveal 0.3s ease-out;
-}
-
-.button-press {
-    animation: buttonPress 0.15s ease-out;
-}
-
-.smooth-spinner {
-    animation: smoothSpin 1.2s linear infinite;
-}
-
-/* === ENHANCED INTERACTIVE FEEDBACK === */
-.btn-feedback:active {
-    transform: scale(0.95);
-    transition: transform 0.1s ease;
-}
-
-.option-feedback:active {
-    transform: scale(0.98) translateY(1px);
-    transition: transform 0.1s ease;
-}
-
 /* === LOADING STATES === */
 .loading-container {
     display: flex;
@@ -530,17 +407,107 @@
     width: 95%;
 }
 
-.loading-button {
-    height: 44px;
-    width: 120px;
-    border-radius: var(--border-radius-small);
+/* === PREMIUM MOTION SYSTEM === */
+
+/* Premium Staggered Option Entrance */
+@keyframes optionSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.loading-option {
-    height: 48px;
-    width: 100%;
-    margin-bottom: 8px;
-    border-radius: var(--border-radius-small);
+/* Staggered entrance for player options */
+.player-option.animate-stagger,
+.tf-option.animate-stagger,
+.checkbox-option.animate-stagger {
+    animation: optionSlideIn var(--duration-slow, 400ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.player-option.animate-stagger:nth-child(1),
+.tf-option.animate-stagger:nth-child(1),
+.checkbox-option.animate-stagger:nth-child(1) { animation-delay: 0ms; }
+
+.player-option.animate-stagger:nth-child(2),
+.tf-option.animate-stagger:nth-child(2),
+.checkbox-option.animate-stagger:nth-child(2) { animation-delay: 75ms; }
+
+.player-option.animate-stagger:nth-child(3),
+.tf-option.animate-stagger:nth-child(3),
+.checkbox-option.animate-stagger:nth-child(3) { animation-delay: 150ms; }
+
+.player-option.animate-stagger:nth-child(4),
+.tf-option.animate-stagger:nth-child(4),
+.checkbox-option.animate-stagger:nth-child(4) { animation-delay: 225ms; }
+
+.player-option.animate-stagger:nth-child(5),
+.tf-option.animate-stagger:nth-child(5),
+.checkbox-option.animate-stagger:nth-child(5) { animation-delay: 300ms; }
+
+.player-option.animate-stagger:nth-child(6),
+.tf-option.animate-stagger:nth-child(6),
+.checkbox-option.animate-stagger:nth-child(6) { animation-delay: 375ms; }
+
+/* Premium Score Count Animation */
+@keyframes scoreCountUp {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Premium Timer Pulse - Final Seconds Warning */
+@keyframes timerPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px 8px rgba(239, 68, 68, 0.3);
+    }
+}
+
+.timer-critical {
+    animation: timerPulse 0.8s ease-in-out infinite;
+    color: var(--color-error-500) !important;
+}
+
+/* Premium Card Hover Lift */
+@keyframes cardLift {
+    from {
+        transform: translateY(0);
+        box-shadow: var(--shadow-md);
+    }
+    to {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+}
+
+/* Premium Confetti Burst (for celebrations) */
+@keyframes confettiBurst {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2) rotate(180deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1) rotate(360deg);
+        opacity: 0;
+    }
 }
 
 /* Reduced Motion Support */
@@ -553,9 +520,13 @@
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
     }
-    
+
     .skeleton-loader {
         animation: none;
         opacity: 0.7;
+    }
+
+    .timer-critical {
+        animation: none;
     }
 }

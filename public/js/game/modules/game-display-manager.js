@@ -1,10 +1,10 @@
 /**
- * Game Display Manager Module  
+ * Game Display Manager Module
  * Handles question display, UI rendering, and DOM manipulation
  * Extracted from game-manager.js for better separation of concerns
  */
 
-import { translationManager, getTranslation } from '../../utils/translation-manager.js';
+import { getTranslation } from '../../utils/translation-manager.js';
 import { logger } from '../../core/config.js';
 import { MathRenderer } from '../../utils/math-renderer.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
@@ -46,106 +46,162 @@ export class GameDisplayManager {
     }
 
     /**
-     * Update question counter display
+     * Update question counter display (generic method)
+     * @param {string} elementId - ID of the counter element
+     * @param {number} current - Current question number
+     * @param {number} total - Total questions
      */
-    updateQuestionCounter(current, total) {
-        const counterElement = document.getElementById('question-counter');
+    updateCounter(elementId, current, total) {
+        const counterElement = document.getElementById(elementId);
         if (counterElement) {
             counterElement.textContent = getTranslation('question_x_of_y', [current, total]);
-            logger.debug('Question counter updated:', current, 'of', total);
+            logger.debug(`Counter ${elementId} updated:`, current, 'of', total);
         }
+    }
+
+    /**
+     * Update host question counter display
+     */
+    updateQuestionCounter(current, total) {
+        this.updateCounter('question-counter', current, total);
     }
 
     /**
      * Update player question counter
      */
     updatePlayerQuestionCounter(current, total) {
-        const counterElement = document.getElementById('player-question-counter');
-        if (counterElement) {
-            counterElement.textContent = getTranslation('question_x_of_y', [current, total]);
-            logger.debug('Player question counter updated:', current, 'of', total);
-        }
+        this.updateCounter('player-question-counter', current, total);
     }
 
     /**
      * Update question image display for host or player
+     * Uses <picture> element for WebP with fallback support
      */
     updateQuestionImage(data, containerId) {
         const imageContainer = document.getElementById(containerId);
         if (!imageContainer) {
             return;
         }
-        
+
         // Validate image data first
         if (!data.image || !data.image.trim() || data.image === 'undefined' || data.image === 'null') {
             // Hide the container if no valid image
-            imageContainer.style.display = 'none';
+            imageContainer.classList.add('hidden');
             return;
         }
-        
+
         // Additional validation for invalid paths
         if (data.image.includes('nonexistent') || data.image === window.location.origin + '/') {
-            imageContainer.style.display = 'none';
+            imageContainer.classList.add('hidden');
             return;
         }
-        
-        // Create or update image element
-        let img = imageContainer.querySelector('img');
-        if (!img) {
-            img = document.createElement('img');
-            img.className = 'question-image';
-            img.style.maxWidth = '100%';
-            img.style.maxHeight = '300px';
-            img.style.height = 'auto';
-            img.style.borderRadius = '8px';
-            img.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-            img.style.margin = '15px 0';
-            imageContainer.appendChild(img);
-        }
-        
-        // Set image source using centralized path resolver
-        const imageSrc = imagePathResolver.toAbsoluteUrl(data.image);
+
+        // Get image sources
+        const originalSrc = imagePathResolver.toAbsoluteUrl(data.image);
+        const webpSrc = data.imageWebp ? imagePathResolver.toAbsoluteUrl(data.imageWebp) : null;
 
         // If no valid image URL, hide container
-        if (!imageSrc || imageSrc.trim() === '') {
-            imageContainer.style.display = 'none';
+        if (!originalSrc || originalSrc.trim() === '') {
+            imageContainer.classList.add('hidden');
             return;
         }
 
+        // Clear existing content and create <picture> element for WebP fallback
+        imageContainer.innerHTML = '';
+
+        const picture = document.createElement('picture');
+
+        // Add WebP source if available
+        if (webpSrc) {
+            const webpSource = document.createElement('source');
+            webpSource.srcset = webpSrc;
+            webpSource.type = 'image/webp';
+            picture.appendChild(webpSource);
+        }
+
+        // Create fallback img element
+        const img = document.createElement('img');
+        img.className = 'question-image';
+        img.src = originalSrc;
         img.alt = 'Question Image';
 
         // Silent error handling - hide container on load failure
         img.onerror = () => {
-            imageContainer.style.display = 'none';
+            imageContainer.classList.add('hidden');
         };
 
         img.onload = () => {
-            imageContainer.style.display = 'block';
+            imageContainer.classList.remove('hidden');
         };
 
-        // Set src last to trigger load/error events
-        img.src = imageSrc;
+        picture.appendChild(img);
+        imageContainer.appendChild(picture);
+    }
+
+    /**
+     * Update question video display for host or player
+     * @param {Object} data - Question data (expects data.video)
+     * @param {string} containerId - ID of the container element
+     */
+    updateQuestionVideo(data, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            return;
+        }
+
+        if (!data.video || !data.video.trim()) {
+            container.classList.add('hidden');
+            container.innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = '';
+
+        const video = document.createElement('video');
+        video.className = 'question-video-player';
+        video.controls = true;
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.preload = 'auto';
+        video.playsInline = true;
+
+        const source = document.createElement('source');
+        source.src = imagePathResolver.toAbsoluteUrl(data.video);
+        source.type = 'video/mp4';
+
+        video.appendChild(source);
+        container.appendChild(video);
+
+        video.onerror = () => container.classList.add('hidden');
+        video.onloadedmetadata = () => container.classList.remove('hidden');
     }
 
     /**
      * Render MathJax for question content with enhanced F5 handling
+     * @param {HTMLElement} element - Element to render MathJax in
+     * @param {number} delay - Delay in ms before rendering (to avoid concurrent render conflicts)
      */
     async renderQuestionMath(element, delay = 0) {
         if (!element) return;
-        
+
         try {
-            // No delay - render immediately for faster LaTeX display
-            
+            // Add delay to avoid concurrent rendering conflicts
+            // (SimpleMathJaxService has a renderingInProgress guard that skips concurrent calls)
+            if (delay > 0) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+
             // Check if element still exists in DOM
             if (!document.contains(element)) {
                 logger.debug('Element removed from DOM before MathJax rendering, skipping');
                 return;
             }
-            
+
             // Use the simplified SimpleMathJaxService
             await simpleMathJaxService.render([element]);
             logger.debug('MathJax rendering completed for question');
-            
+
         } catch (err) {
             logger.warn('MathJax question render error (non-blocking):', err);
             // Don't throw - let the game continue without LaTeX rendering
@@ -157,13 +213,17 @@ export class GameDisplayManager {
      */
     displayQuestionText(element, questionText) {
         if (!element) return;
-        
+
+        // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
+        element.classList.add('tex2jax_process');
+        element.classList.remove('MathJax_Processed');
+
         element.innerHTML = this.mathRenderer.formatCodeBlocks(questionText);
         logger.debug('Question text displayed');
-        
+
         // Apply syntax highlighting to code blocks
         this.mathRenderer.applySyntaxHighlighting(element);
-        
+
         // Render MathJax immediately after content update
         this.renderQuestionMath(element);
     }
@@ -175,24 +235,32 @@ export class GameDisplayManager {
      */
     clearQuestionDisplay() {
         const elements = this.getQuestionElements();
-        
+
         // Clear question text
         if (elements.hostQuestionElement) {
             elements.hostQuestionElement.innerHTML = '';
+            // Reset MathJax processing classes
+            elements.hostQuestionElement.classList.remove('tex2jax_process', 'MathJax_Processed');
         }
         if (elements.questionElement) {
             elements.questionElement.innerHTML = '';
+            // Reset MathJax processing classes
+            elements.questionElement.classList.remove('tex2jax_process', 'MathJax_Processed');
         }
-        
+
         // Clear options container
         if (elements.hostOptionsContainer) {
             elements.hostOptionsContainer.innerHTML = '';
         }
-        
+
         // Hide image containers
         this.updateQuestionImage({ image: '' }, 'question-image-display');
         this.updateQuestionImage({ image: '' }, 'player-question-image');
-        
+
+        // Hide video containers
+        this.updateQuestionVideo({ video: '' }, 'question-video-display');
+        this.updateQuestionVideo({ video: '' }, 'player-question-video');
+
         logger.debug('Question display cleared');
     }
 
@@ -202,7 +270,7 @@ export class GameDisplayManager {
      */
     clearHostQuestionContent(showLoading = false) {
         const elements = this.getQuestionElements();
-        
+
         // Clear or show loading message in host question element
         if (elements.hostQuestionElement) {
             if (showLoading) {
@@ -221,22 +289,21 @@ export class GameDisplayManager {
         // Clear and hide question image
         const questionImageDisplay = document.getElementById('question-image-display');
         if (questionImageDisplay) {
-            questionImageDisplay.style.display = 'none';
+            questionImageDisplay.classList.add('hidden');
         }
 
         // Clear host options container
         if (elements.hostOptionsContainer) {
             elements.hostOptionsContainer.innerHTML = '';
-            elements.hostOptionsContainer.style.display = 'none';
+            elements.hostOptionsContainer.classList.add('hidden');
         }
 
         // Reset host multiple choice container
         const hostMultipleChoice = document.getElementById('host-multiple-choice');
         if (hostMultipleChoice) {
-            hostMultipleChoice.style.display = 'block';
-            hostMultipleChoice.classList.remove('numeric-question-type');
+            hostMultipleChoice.classList.remove('hidden', 'numeric-question-type');
         }
-        
+
         logger.debug('Host question content cleared', { showLoading });
     }
 
@@ -252,7 +319,7 @@ export class GameDisplayManager {
                 <div class="loading-text">${message}</div>
             </div>
         `;
-        
+
         // Style the loading element
         Object.assign(loadingElement.style, {
             position: 'fixed',
@@ -266,7 +333,7 @@ export class GameDisplayManager {
             justifyContent: 'center',
             zIndex: '9999'
         });
-        
+
         document.body.appendChild(loadingElement);
     }
 
@@ -286,7 +353,7 @@ export class GameDisplayManager {
      */
     clearClientSelections() {
         const elements = this.getClientElements();
-        
+
         // Clear multiple choice selections
         elements.multipleChoiceOptions.forEach(option => {
             option.classList.remove('selected', 'correct', 'incorrect', 'disabled');
@@ -304,7 +371,7 @@ export class GameDisplayManager {
             option.style.backgroundColor = '';
         });
 
-        // Clear checkbox selections  
+        // Clear checkbox selections
         elements.checkboxOptions.forEach(option => {
             const checkbox = option.querySelector('input[type="checkbox"]');
             if (checkbox) {
@@ -325,11 +392,11 @@ export class GameDisplayManager {
             elements.submitButton.disabled = false;
             elements.submitButton.textContent = getTranslation('submit_answer');
         }
-        
+
         if (elements.multipleSubmitButton) {
             elements.multipleSubmitButton.disabled = false;
         }
-        
+
         logger.debug('Client selections cleared');
     }
 
@@ -339,18 +406,22 @@ export class GameDisplayManager {
      */
     updateClientQuestionDisplay(data) {
         const elements = this.getClientElements();
-        
+
         // Update question text
         if (elements.questionText) {
-            this.displayQuestionText(elements.questionText, data.question);
+            // Set className BEFORE displayQuestionText (which adds tex2jax_process for FOUC prevention)
             elements.questionText.className = `question-display player-question ${data.type}-question`;
             elements.questionText.setAttribute('data-question-type', data.type);
+            this.displayQuestionText(elements.questionText, data.question);
         }
 
         // Update question image
         if (data.image && elements.questionImage) {
             this.updateQuestionImage(data, 'player-question-image');
         }
+
+        // Update question video
+        this.updateQuestionVideo(data, 'player-question-video');
 
         // Update question counter
         if (data.questionNumber && data.totalQuestions) {

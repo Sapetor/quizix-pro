@@ -18,12 +18,33 @@ A sophisticated quiz platform that runs locally on your network, featuring LaTeX
 - **Multiple Correct Answers**: Select all that apply questions
 - **True/False**: Simple binary choice questions
 - **Numeric Input**: Mathematical calculations with tolerance settings
+- **Ordering**: Drag-and-drop sequence arrangement questions
 
 ### Rich Content Support
 - **LaTeX Equations**: Full mathematical notation support ($x^2 + y^2 = z^2$)
 - **Image Questions**: Upload and display images in questions
+- **Code Syntax Highlighting**: Display formatted code snippets in questions
 - **Enhanced Timing**: Automatic answer revelation when time expires
 - **No Spoilers**: Correct answers hidden until timer ends
+
+### AI Question Generation
+- **Claude API**: Generate questions using Anthropic's Claude models
+- **Ollama**: Local AI model support for offline generation
+- **HuggingFace**: Additional AI provider options
+- **Smart Formatting**: Auto-detect LaTeX and code content
+
+### Results & Analytics
+- **PDF Reports**: Generate formatted PDF summaries with per-question analysis
+- **Excel Export**: Export to XLSX with multiple sheets (Summary, Questions, Players, Wrong Answers)
+- **Session Comparison**: Compare results across multiple games of the same quiz
+- **Question Drill-down**: Click any question for detailed answer/time distribution
+- **Distribution Charts**: Histograms for numeric answers, bar charts for multiple-correct
+- **Print Styles**: Print-friendly CSS for analytics views
+- **CSV Export**: Simple and analytics-enhanced CSV formats
+
+### Multi-Language Support
+- **9 Languages**: English, Spanish, French, German, Italian, Portuguese, Polish, Japanese, Chinese
+- **Dynamic Switching**: Change language on-the-fly without reload
 
 ## 🛠️ Installation
 
@@ -111,22 +132,22 @@ The server binds to `0.0.0.0` by default, making it accessible from any device o
 ## 🎨 Customization
 
 ### Adding More Question Types
-Edit `server.js` to support additional question formats:
-- True/False questions
-- Image-based questions
-- Text input questions
+See `docs/ADD-QUESTION-TYPE.md` for a comprehensive guide. Key files:
+- `public/js/utils/question-type-registry.js` - Question type definitions
+- `server.js` - Server-side validation
+- `public/css/components.css` - Question styling
 
 ### Styling
-Modify `public/styles.css` to change:
-- Colors and themes
-- Fonts and layouts
-- Animations and effects
+Modify files in `public/css/` to change:
+- `variables.css` - Colors and themes
+- `components.css` - Component layouts
+- `animations.css` - Effects and transitions
 
-### Game Logic
-Update `public/script.js` to adjust:
-- Scoring algorithms
-- Timer settings
-- Game flow
+### Configuration
+Update `public/js/core/config.js` to adjust:
+- Scoring algorithms (`SCORING`)
+- Timer settings (`TIMING`)
+- Color palette (`COLORS`)
 
 ## 🐛 Troubleshooting
 
@@ -149,19 +170,46 @@ Update `public/script.js` to adjust:
 
 ## 🔒 Security Notes
 
-- This application is designed for local network use only
-- Don't expose it to the internet without proper security measures
-- No user data is permanently stored
-- All game data is cleared when the server restarts
+- This application is designed for local network use
+- Deploy on Railway or Kubernetes for cloud access with proper HTTPS
+- Quiz and results data can be persisted to disk (saved in `quizzes/` and `results/` folders)
+- API keys are encrypted with AES-GCM when stored client-side
+- Server-side API keys supported via `CLAUDE_API_KEY` environment variable
+- File uploads use cryptographically secure naming
+- Socket.IO connections are rate-limited to prevent abuse
+
+## 🏗️ Architecture & Code Quality
+
+This project follows modern best practices:
+- **Modular ES6**: Clean separation with ES6 modules and imports
+- **Service-Oriented**: Backend split into 8 specialized services
+- **Centralized Utilities**: Shared helpers for modals, storage, error handling
+- **CSS Architecture**: Utility-first classes with PostCSS bundling
+- **Type Safety**: Centralized constants and configuration
+- **Error Boundaries**: Unified error handling across codebase
+- **Memory Management**: Tracked event listeners and timer cleanup
+
+**Code Stats**:
+- ~1,866 lines removed through refactoring
+- 86% reduction in inline styles
+- Centralized constants in `config.js`
+- Unified error handling patterns
+
+See `REFACTORING_ROADMAP.md` and `simplify-tasks.md` for technical details.
 
 ## 🤝 Contributing
 
 Feel free to fork this project and add your own features:
-- Sound effects and music
-- More question types
-- Team-based gameplay
-- Save/load quiz functionality
-- Statistics and analytics
+- Team-based gameplay modes
+- Custom scoring algorithms
+- Additional AI providers for question generation
+- New question types (see `docs/ADD-QUESTION-TYPE.md`)
+- Custom themes and branding
+
+**Developer Documentation**:
+- `CLAUDE.md` - Complete development guide
+- `REFACTORING_ROADMAP.md` - Refactoring history and decisions
+- `simplify-tasks.md` - Code simplification details
 
 ## 📝 License
 

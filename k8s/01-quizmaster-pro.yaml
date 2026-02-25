@@ -71,17 +71,26 @@ metadata:
   namespace: quizmaster
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
+  progressDeadlineSeconds: 300
+  # Use Recreate strategy with RWO volumes to avoid Multi-Attach errors
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 1
+    type: Recreate
   selector:
     matchLabels: { app: quizmaster-pro }
   template:
     metadata:
       labels: { app: quizmaster-pro }
     spec:
+      # Pin to a specific node - eliminates Multi-Attach errors with RWO volumes
+      # Run: kubectl get nodes -l kubernetes.io/hostname -o name
+      # Pick a worker node with adequate disk space
+      nodeSelector:
+        kubernetes.io/hostname: k8s-worker-node2
+
+      # Give time for graceful shutdown and volume detachment
+      terminationGracePeriodSeconds: 60
+
       # Uncomment if your Docker Hub repo is private
       # imagePullSecrets:
       #   - name: dockerhub-cred
@@ -89,7 +98,7 @@ spec:
       # Init container to ensure directories exist
       initContainers:
         - name: init-dirs
-          image: busybox:1.36
+          image: gcr.io/google-containers/busybox:1.27
           command: ['sh', '-c', 'mkdir -p /app/quizzes /app/results /app/uploads && chown -R 1001:1001 /app/quizzes /app/results /app/uploads && chmod -R 755 /app/quizzes /app/results /app/uploads']
           volumeMounts:
             - name: quizzes
@@ -101,9 +110,10 @@ spec:
 
       containers:
         - name: quizmaster-pro
-          # TODO: Replace with your actual image
-          image: sapetor/quizmaster-pro:latest
-          imagePullPolicy: Always
+          image: ghcr.io/sapetor/quizmaster-pro:latest
+          # Use IfNotPresent to avoid Docker Hub rate limits
+          # Change to Always only when debugging image issues
+          imagePullPolicy: IfNotPresent
 
           envFrom:
             - configMapRef:
@@ -111,6 +121,18 @@ spec:
 
           ports:
             - containerPort: 3000
+
+          # Resource requests/limits - prevents BestEffort QoS (first to evict)
+          # Higher ephemeral-storage request = evicted later during disk pressure
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+              ephemeral-storage: "256Mi"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+              ephemeral-storage: "1Gi"
 
           # Liveness probe - restart if unhealthy
           livenessProbe:
@@ -150,3 +172,16 @@ spec:
         - name: uploads
           persistentVolumeClaim:
             claimName: quizmaster-uploads
+---
+# PodDisruptionBudget - protects against voluntary evictions (node drain, upgrades)
+# Note: Does NOT protect against disk pressure evictions (those are involuntary)
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: quizmaster-pdb
+  namespace: quizmaster
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: quizmaster-pro

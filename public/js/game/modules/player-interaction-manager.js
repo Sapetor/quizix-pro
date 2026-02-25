@@ -6,6 +6,7 @@
 
 import { translationManager, getTranslation, getTrueFalseText } from '../../utils/translation-manager.js';
 import { logger } from '../../core/config.js';
+import { QuestionTypeRegistry } from '../../utils/question-type-registry.js';
 
 export class PlayerInteractionManager {
     constructor(gameStateManager, gameDisplayManager, soundManager, socketManager) {
@@ -13,12 +14,54 @@ export class PlayerInteractionManager {
         this.gameDisplayManager = gameDisplayManager;
         this.soundManager = soundManager;
         this.socketManager = socketManager;
-        
+        this.eventBus = null; // Set by GameManager.setEventBus()
+
         // Bind methods to maintain context
         this.selectAnswer = this.selectAnswer.bind(this);
         this.submitMultipleCorrectAnswer = this.submitMultipleCorrectAnswer.bind(this);
         this.submitNumericAnswer = this.submitNumericAnswer.bind(this);
         this.submitOrderingAnswer = this.submitOrderingAnswer.bind(this);
+
+        // Store bound handlers for cleanup (prevents memory leaks)
+        this._handleMultipleChoiceClick = this._handleMultipleChoiceClick.bind(this);
+        this._handleTrueFalseClick = this._handleTrueFalseClick.bind(this);
+        this._handleNumericKeypress = this._handleNumericKeypress.bind(this);
+
+        // Track timeout IDs for cleanup
+        this._errorTimeoutId = null;
+    }
+
+    /**
+     * Handler for multiple choice option clicks (bound for cleanup)
+     */
+    _handleMultipleChoiceClick(event) {
+        const button = event.target.closest('.player-option');
+        if (button) {
+            const answer = parseInt(button.dataset.answer);
+            if (!isNaN(answer)) {
+                this.selectAnswer(answer);
+            }
+        }
+    }
+
+    /**
+     * Handler for true/false option clicks (bound for cleanup)
+     */
+    _handleTrueFalseClick(event) {
+        const button = event.target.closest('.tf-option');
+        if (button) {
+            const answer = button.dataset.answer === 'true';
+            this.selectAnswer(answer);
+        }
+    }
+
+    /**
+     * Handler for numeric input keypress (bound for cleanup)
+     */
+    _handleNumericKeypress(event) {
+        if (event.key === 'Enter') {
+            this.submitNumericAnswer();
+        }
     }
 
     /**
@@ -26,21 +69,21 @@ export class PlayerInteractionManager {
      */
     selectAnswer(answer) {
         const gameState = this.gameStateManager.getGameState();
-        
-        if (gameState.isHost || gameState.resultShown) {
-            logger.debug('Ignoring answer selection - host mode or result already shown');
+
+        if (gameState.isHost || gameState.resultShown || gameState.answerSubmitted) {
+            logger.debug('Ignoring answer selection - host mode, result shown, or already submitted');
             return;
         }
 
         this.gameStateManager.setSelectedAnswer(answer);
         this.highlightSelectedAnswer(answer);
-        
+
         // Auto-submit for multiple choice and true-false
-        if (gameState.currentQuestion && 
+        if (gameState.currentQuestion &&
             (gameState.currentQuestion.type === 'multiple-choice' || gameState.currentQuestion.type === 'true-false')) {
             this.submitAnswer(answer);
         }
-        
+
         logger.debug('Answer selected:', answer);
     }
 
@@ -49,27 +92,22 @@ export class PlayerInteractionManager {
      */
     highlightSelectedAnswer(answer) {
         logger.debug('Highlighting selected answer:', answer);
-        
-        // Remove previous selections
+
+        // Remove previous selections (CSS handles the styling via .selected class)
         document.querySelectorAll('.player-option, .tf-option').forEach(option => {
             option.classList.remove('selected');
-            option.style.background = '';
-            option.style.border = '';
-            option.style.transform = '';
         });
-        
-        // Highlight current selection with subtle border
+
+        // Highlight current selection (CSS .selected class handles border and styling)
         const selectedOption = document.querySelector(`[data-answer="${answer}"]`);
         if (selectedOption) {
             selectedOption.classList.add('selected');
-            selectedOption.style.border = '3px solid var(--color-primary-500)';
-            selectedOption.style.transition = 'all 0.2s ease';
-            
+
             // Play selection sound
-            if (this.soundManager && this.soundManager.soundsEnabled) {
+            if (this.soundManager?.isSoundsEnabled()) {
                 this.soundManager.playEnhancedSound(800, 0.1, 'sine', 0.1);
             }
-            
+
             logger.debug('Answer highlighted successfully');
         }
     }
@@ -82,42 +120,75 @@ export class PlayerInteractionManager {
     }
 
     /**
-     * Submit answer by type - consolidated method
-     * @param {string} type - Answer type: 'multiple-correct', 'numeric', or 'direct'
+     * Submit answer by type - consolidated method using registry
+     * @param {string} type - Answer type: 'multiple-correct', 'numeric', 'ordering', or 'direct'
      * @param {*} directAnswer - Direct answer value for 'direct' type
      */
     submitAnswerByType(type, directAnswer = null) {
+        const gameState = this.gameStateManager.getGameState();
+        const currentQuestion = gameState.currentQuestion;
+
+        if (!currentQuestion) {
+            logger.error('No current question available');
+            return;
+        }
+
         switch (type) {
-            case 'multiple-correct':
-                return this.submitMultipleCorrectAnswerInternal();
-            case 'numeric':
-                return this.submitNumericAnswerInternal();
-            case 'ordering':
-                return this.submitOrderingAnswerInternal();
+            case 'multiple-correct': {
+                const container = document.getElementById('player-multiple-correct');
+                if (!container) {
+                    this.showError(getTranslation('please_select_at_least_one'));
+                    return;
+                }
+                const answer = QuestionTypeRegistry.extractAnswer('multiple-correct', container);
+                if (!answer || answer.length === 0) {
+                    this.showError(getTranslation('please_select_at_least_one'));
+                    return;
+                }
+                logger.debug('Submitting multiple correct answers:', answer);
+                this.submitAnswer(answer);
+                break;
+            }
+
+            case 'numeric': {
+                const container = document.getElementById('player-numeric');
+                if (!container) {
+                    this.showError(getTranslation('please_enter_valid_number'));
+                    return;
+                }
+                const answer = QuestionTypeRegistry.extractAnswer('numeric', container);
+                if (answer === null || isNaN(answer)) {
+                    this.showError(getTranslation('please_enter_valid_number'));
+                    return;
+                }
+                logger.debug('Submitting numeric answer:', answer);
+                this.submitAnswer(answer);
+                break;
+            }
+
+            case 'ordering': {
+                const container = document.getElementById('player-ordering');
+                if (!container) {
+                    this.showError(getTranslation('please_arrange_items'));
+                    return;
+                }
+                const answer = QuestionTypeRegistry.extractAnswer('ordering', container);
+                if (!answer || answer.length === 0) {
+                    this.showError(getTranslation('please_arrange_items'));
+                    return;
+                }
+                logger.debug('Submitting ordering answer:', answer);
+                this.submitAnswer(answer);
+                break;
+            }
+
             case 'direct':
-                return this.submitAnswer(directAnswer);
+                this.submitAnswer(directAnswer);
+                break;
+
             default:
                 logger.error('Unknown answer submission type:', type);
         }
-    }
-
-    /**
-     * Submit multiple correct answers - internal implementation
-     */
-    submitMultipleCorrectAnswerInternal() {
-        const selectedCheckboxes = document.querySelectorAll('.option-checkbox:checked');
-        const selectedAnswers = Array.from(selectedCheckboxes).map(cb => {
-            const parentLabel = cb.closest('.checkbox-option');
-            return parseInt(parentLabel.getAttribute('data-option'));
-        });
-        
-        if (selectedAnswers.length === 0) {
-            this.showError(getTranslation('please_select_at_least_one'));
-            return;
-        }
-        
-        logger.debug('Submitting multiple correct answers:', selectedAnswers);
-        this.submitAnswer(selectedAnswers);
     }
 
     /**
@@ -128,26 +199,6 @@ export class PlayerInteractionManager {
     }
 
     /**
-     * Submit numeric answer - internal implementation
-     */
-    submitNumericAnswerInternal() {
-        const numericInput = document.getElementById('numeric-answer-input');
-        if (!numericInput) {
-            logger.error('Numeric input not found');
-            return;
-        }
-        
-        const answer = parseFloat(numericInput.value);
-        if (isNaN(answer)) {
-            this.showError(getTranslation('please_enter_valid_number'));
-            return;
-        }
-        
-        logger.debug('Submitting numeric answer:', answer);
-        this.submitAnswer(answer);
-    }
-
-    /**
      * Submit ordering answer
      */
     submitOrderingAnswer() {
@@ -155,59 +206,40 @@ export class PlayerInteractionManager {
     }
 
     /**
-     * Submit ordering answer - internal implementation
-     */
-    submitOrderingAnswerInternal() {
-        const container = document.getElementById('player-ordering-container');
-        if (!container) {
-            logger.error('Ordering container not found');
-            return;
-        }
-
-        // Get the current order of items
-        const items = container.querySelectorAll('.ordering-display-item');
-        const answer = Array.from(items).map(item => parseInt(item.dataset.originalIndex));
-
-        if (answer.length === 0) {
-            this.showError(getTranslation('please_arrange_items'));
-            return;
-        }
-
-        logger.debug('Submitting ordering answer:', answer);
-        this.submitAnswer(answer);
-    }
-
-    /**
-     * Submit answer to server
+     * Submit answer to server or local game session
      */
     submitAnswer(answer) {
         const gameState = this.gameStateManager.getGameState();
-        
+
         if (gameState.isHost || gameState.answerSubmitted) {
             logger.debug('Cannot submit answer - host mode or answer already submitted');
             return;
         }
 
-        if (!this.socketManager) {
-            logger.error('Socket manager not available for answer submission');
+        // Check for event bus first (practice mode), then socket manager (multiplayer)
+        if (!this.eventBus && !this.socketManager) {
+            logger.error('No event bus or socket manager available for answer submission');
             return;
         }
 
         logger.debug('Submitting answer:', answer);
-        
+
         // Mark answer as submitted to prevent double submission
         this.gameStateManager.markAnswerSubmitted();
-        
+
         // Store answer locally
         this.gameStateManager.storePlayerAnswer(gameState.playerName, answer);
-        
-        // Send to server
-        this.socketManager.submitAnswer(answer);
-        
-        // Feedback will be shown by the socket event response (original system)
-        
+
+        // Send via event bus (works for both practice and multiplayer modes)
+        if (this.eventBus) {
+            this.eventBus.emit('submit-answer', { answer });
+        } else if (this.socketManager) {
+            // Fallback to direct socket manager (backward compatibility)
+            this.socketManager.submitAnswer(answer);
+        }
+
         // Play submission sound
-        if (this.soundManager && this.soundManager.soundsEnabled) {
+        if (this.soundManager?.isSoundsEnabled()) {
             this.soundManager.playEnhancedSound(1000, 0.2, 'sine', 0.15);
         }
     }
@@ -218,11 +250,11 @@ export class PlayerInteractionManager {
     formatAnswerForDisplay(answer) {
         const gameState = this.gameStateManager.getGameState();
         const questionType = gameState.currentQuestion?.type;
-        
+
         if (questionType === 'multiple-choice') {
             return `${translationManager.getOptionLetter(answer)}: ${gameState.currentQuestion?.options?.[answer] || answer}`;
         } else if (questionType === 'multiple-correct') {
-            return Array.isArray(answer) 
+            return Array.isArray(answer)
                 ? answer.map(a => `${translationManager.getOptionLetter(a)}: ${gameState.currentQuestion?.options?.[a] || a}`).join(', ')
                 : answer;
         } else if (questionType === 'true-false') {
@@ -237,7 +269,13 @@ export class PlayerInteractionManager {
      */
     showError(message) {
         logger.error('Player interaction error:', message);
-        
+
+        // Clear any existing error timeout
+        if (this._errorTimeoutId) {
+            clearTimeout(this._errorTimeoutId);
+            this._errorTimeoutId = null;
+        }
+
         // Create error element
         const errorElement = document.createElement('div');
         errorElement.className = 'player-error-message';
@@ -247,7 +285,7 @@ export class PlayerInteractionManager {
                 <div class="error-text">${message}</div>
             </div>
         `;
-        
+
         // Style the error
         Object.assign(errorElement.style, {
             position: 'fixed',
@@ -262,59 +300,60 @@ export class PlayerInteractionManager {
             backdropFilter: 'blur(10px)',
             boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
         });
-        
+
         document.body.appendChild(errorElement);
-        
-        // Remove after delay
-        setTimeout(() => {
-            if (errorElement.parentNode) {
-                errorElement.parentNode.removeChild(errorElement);
+
+        // Remove after delay (tracked for cleanup)
+        this._errorTimeoutId = setTimeout(() => {
+            this._errorTimeoutId = null;
+            if (document.body.contains(errorElement)) {
+                errorElement.remove();
             }
         }, 3000);
+    }
+
+    /**
+     * Cleanup resources
+     */
+    cleanup() {
+        // Clear error timeout
+        if (this._errorTimeoutId) {
+            clearTimeout(this._errorTimeoutId);
+            this._errorTimeoutId = null;
+        }
+
+        // Remove event listeners
+        this.removeEventListeners();
+
+        logger.debug('PlayerInteractionManager cleanup completed');
     }
 
     /**
      * Setup event listeners for player interactions
      */
     setupEventListeners() {
-        // Multiple choice option clicks
-        document.addEventListener('click', (event) => {
-            if (event.target.classList.contains('player-option')) {
-                const answer = parseInt(event.target.dataset.answer);
-                if (!isNaN(answer)) {
-                    this.selectAnswer(answer);
-                }
-            }
-        });
-        
-        // True/false option clicks
-        document.addEventListener('click', (event) => {
-            if (event.target.classList.contains('tf-option')) {
-                const answer = event.target.dataset.answer === 'true';
-                this.selectAnswer(answer);
-            }
-        });
-        
+        // Multiple choice option clicks (using bound handler for cleanup)
+        document.addEventListener('click', this._handleMultipleChoiceClick);
+
+        // True/false option clicks (using bound handler for cleanup)
+        document.addEventListener('click', this._handleTrueFalseClick);
+
         // Multiple correct submit button
         const mcSubmitBtn = document.getElementById('submit-multiple-correct');
         if (mcSubmitBtn) {
             mcSubmitBtn.addEventListener('click', this.submitMultipleCorrectAnswer);
         }
-        
+
         // Numeric submit button
         const numericSubmitBtn = document.getElementById('submit-numeric');
         if (numericSubmitBtn) {
             numericSubmitBtn.addEventListener('click', this.submitNumericAnswer);
         }
 
-        // Enter key for numeric input
+        // Enter key for numeric input (using bound handler for cleanup)
         const numericInput = document.getElementById('numeric-answer-input');
         if (numericInput) {
-            numericInput.addEventListener('keypress', (event) => {
-                if (event.key === 'Enter') {
-                    this.submitNumericAnswer();
-                }
-            });
+            numericInput.addEventListener('keypress', this._handleNumericKeypress);
         }
 
         // Note: Ordering submit button is wired up in question-renderer.js setupPlayerOrderingOptions()
@@ -327,15 +366,24 @@ export class PlayerInteractionManager {
      * Remove event listeners
      */
     removeEventListeners() {
-        // Remove specific event listeners
+        // Remove document-level click listeners (prevents memory leaks)
+        document.removeEventListener('click', this._handleMultipleChoiceClick);
+        document.removeEventListener('click', this._handleTrueFalseClick);
+
+        // Remove specific element listeners
         const mcSubmitBtn = document.getElementById('submit-multiple-correct');
         if (mcSubmitBtn) {
             mcSubmitBtn.removeEventListener('click', this.submitMultipleCorrectAnswer);
         }
-        
+
         const numericSubmitBtn = document.getElementById('submit-numeric');
         if (numericSubmitBtn) {
             numericSubmitBtn.removeEventListener('click', this.submitNumericAnswer);
+        }
+
+        const numericInput = document.getElementById('numeric-answer-input');
+        if (numericInput) {
+            numericInput.removeEventListener('keypress', this._handleNumericKeypress);
         }
 
         // Note: Ordering submit button listener removed by GameManager tracked event cleanup
@@ -349,20 +397,21 @@ export class PlayerInteractionManager {
     reset() {
         // Use centralized client selection clearing from GameDisplayManager
         this.gameDisplayManager.clearClientSelections();
-        
-        // Additional cleanup for elements that might have styling (keeping some host-side cleanup)
+
+        // Additional cleanup for elements that might have styling (using CSS class for reset)
         document.querySelectorAll('[data-answer], .option-display').forEach(element => {
             element.classList.remove('selected', 'correct', 'incorrect');
-            element.style.transform = 'none';
-            element.style.animation = 'none';
-            element.style.filter = 'none';
+            // Temporarily add style-reset class to clear any lingering inline styles
+            element.classList.add('style-reset');
         });
-        
-        // Force a repaint to ensure styles are cleared
-        if (typeof window !== 'undefined') {
-            document.body.offsetHeight;
-        }
-        
+
+        // Remove style-reset class after a frame to allow CSS to apply
+        requestAnimationFrame(() => {
+            document.querySelectorAll('.style-reset').forEach(element => {
+                element.classList.remove('style-reset');
+            });
+        });
+
         logger.debug('Player interaction state reset via centralized method');
     }
 }

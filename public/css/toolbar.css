@@ -103,10 +103,6 @@
     }
 }
 
-/* Legacy support - Hide old vertical toolbar completely */
-.left-toolbar {
-    display: none !important;
-}
 
 /* Tooltip styling for better UX */
 .horizontal-toolbar .toolbar-btn[title] {
@@ -292,4 +288,132 @@ header.auto-hide-enabled.visible {
 [data-theme="light"] .toolbar-group {
     background: rgba(0, 0, 0, 0.02);
     border-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Dark mode toolbar button contrast improvement */
+[data-theme="dark"] .horizontal-toolbar .toolbar-btn {
+    color: white;
+}
+
+/* =============================================================================
+   VERTICAL EDITOR TOOLBAR - Left sidebar for desktop always-preview mode
+   ============================================================================= */
+
+.editor-toolbar {
+    display: none; /* Hidden by default, shown via JS in always-preview mode */
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 6px;
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border-right: 1px solid var(--glass-border);
+    width: 48px;
+    min-width: 48px;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* Show vertical toolbar in always-preview mode on desktop */
+@media (min-width: 769px) {
+    .host-container.always-preview .editor-toolbar {
+        display: flex;
+    }
+
+    /* Hide horizontal toolbar when vertical toolbar is shown */
+    body:has(.host-container.always-preview) .horizontal-toolbar {
+        display: none !important;
+    }
+}
+
+/* Vertical toolbar buttons */
+.editor-toolbar .toolbar-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-primary);
+}
+
+.editor-toolbar .toolbar-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-primary);
+}
+
+.editor-toolbar .toolbar-btn:active {
+    transform: scale(0.98);
+}
+
+/* Vertical toolbar icons */
+.editor-toolbar .toolbar-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+    display: block;
+}
+
+/* Vertical toolbar divider */
+.editor-toolbar .toolbar-divider {
+    width: 28px;
+    height: 1px;
+    background: var(--glass-border);
+    margin: 4px 0;
+    flex-shrink: 0;
+}
+
+/* Tooltip positioning for vertical toolbar (show on right side) */
+.editor-toolbar .toolbar-btn[title] {
+    position: relative;
+}
+
+.editor-toolbar .toolbar-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: var(--border-radius-small);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 200;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+}
+
+/* Dark theme adjustments for vertical toolbar */
+[data-theme="dark"] .editor-toolbar {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .editor-toolbar .toolbar-btn {
+    color: white;
+}
+
+/* Light theme adjustments for vertical toolbar */
+[data-theme="light"] .editor-toolbar {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .editor-toolbar .toolbar-divider {
+    background: rgba(0, 0, 0, 0.1);
 }

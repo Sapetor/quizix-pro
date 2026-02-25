@@ -4,6 +4,7 @@
  */
 
 import { logger } from '../core/config.js';
+import { isMobile, isTablet } from './dom.js';
 
 export class ContentDensityManager {
     constructor() {
@@ -17,11 +18,11 @@ export class ContentDensityManager {
      */
     initialize() {
         if (this.initialized) return;
-        
+
         this.setupMutationObserver();
         this.analyzeExistingContent();
         this.initialized = true;
-        
+
         logger.debug('Content Density Manager: Initialized smart spacing and sizing system');
     }
 
@@ -44,7 +45,7 @@ export class ContentDensityManager {
         // Observe the main content areas
         const contentSelectors = [
             '#current-question',
-            '#player-question-text', 
+            '#player-question-text',
             '.preview-content',
             '.preview-content-split',
             '.player-options',
@@ -101,36 +102,36 @@ export class ContentDensityManager {
     performContentAnalysis(element) {
         const text = element.textContent || '';
         const html = element.innerHTML || '';
-        
+
         const analysis = {
             // Content type detection
             hasLatex: this.detectLatex(html),
             hasCode: this.detectCode(html),
             hasImages: this.detectImages(html),
-            
+
             // Content complexity
             textLength: text.length,
             wordCount: text.split(/\s+/).filter(word => word.length > 0).length,
             lineCount: text.split('\n').length,
-            
+
             // Structural analysis
             hasManyOptions: this.detectManyOptions(element),
             hasLongOptions: this.detectLongOptions(element),
             hasNestedElements: this.detectNestedElements(element),
-            
+
             // Viewport analysis
             viewportWidth: window.innerWidth,
-            isMobile: window.innerWidth <= 768,
-            isTablet: window.innerWidth > 768 && window.innerWidth <= 1024,
+            isMobile: isMobile(),
+            isTablet: isTablet(),
             isDesktop: window.innerWidth > 1024,
-            
+
             // Content density score (0-100)
             densityScore: 0
         };
 
         // Calculate density score
         analysis.densityScore = this.calculateDensityScore(analysis);
-        
+
         return analysis;
     }
 
@@ -140,7 +141,7 @@ export class ContentDensityManager {
      * @returns {boolean}
      */
     detectLatex(html) {
-        return html.includes('mjx-container') || 
+        return html.includes('mjx-container') ||
                html.includes('MathJax') ||
                html.includes('$$') ||
                html.includes('\\(') ||
@@ -154,7 +155,7 @@ export class ContentDensityManager {
      * @returns {boolean}
      */
     detectCode(html) {
-        return html.includes('<pre') || 
+        return html.includes('<pre') ||
                html.includes('<code') ||
                html.includes('```');
     }
@@ -165,7 +166,7 @@ export class ContentDensityManager {
      * @returns {boolean}
      */
     detectImages(html) {
-        return html.includes('<img') || 
+        return html.includes('<img') ||
                html.includes('background-image');
     }
 
@@ -187,11 +188,11 @@ export class ContentDensityManager {
     detectLongOptions(element) {
         const options = element.querySelectorAll('.player-option, .checkbox-option, .tf-option');
         if (options.length === 0) return false;
-        
+
         const totalLength = Array.from(options).reduce((sum, option) => {
             return sum + (option.textContent?.length || 0);
         }, 0);
-        
+
         const averageLength = totalLength / options.length;
         return averageLength > 50;
     }
@@ -203,11 +204,11 @@ export class ContentDensityManager {
      */
     detectNestedElements(element) {
         const nestedSelectors = [
-            'pre', 'code', 'mjx-container', '.MathJax', 
+            'pre', 'code', 'mjx-container', '.MathJax',
             'table', 'ul', 'ol', 'blockquote'
         ];
-        
-        return nestedSelectors.some(selector => 
+
+        return nestedSelectors.some(selector =>
             element.querySelector(selector) !== null
         );
     }
@@ -220,25 +221,25 @@ export class ContentDensityManager {
      */
     calculateDensityScore(analysis) {
         let score = 0;
-        
+
         // Base text complexity (0-30 points)
         if (analysis.textLength > 500) score += 30;
         else if (analysis.textLength > 200) score += 20;
         else if (analysis.textLength > 100) score += 10;
-        
+
         // Content type complexity (0-40 points)
         if (analysis.hasCode) score += 20;
         if (analysis.hasLatex) score += 15;
         if (analysis.hasImages) score += 10;
         if (analysis.hasNestedElements) score += 10;
-        
+
         // Structural complexity (0-30 points)
         if (analysis.hasManyOptions) score += 15;
         if (analysis.hasLongOptions) score += 15;
-        
+
         // Viewport adjustments
         if (analysis.isMobile) score += 10; // Mobile needs more compact layout
-        
+
         return Math.min(score, 100);
     }
 
@@ -250,7 +251,7 @@ export class ContentDensityManager {
     applyDensityClasses(element, analysis) {
         // Remove existing density classes
         element.classList.remove('content-compact', 'content-spacious', 'long-content');
-        
+
         // Apply content type classes for smart sizing
         if (analysis.hasCode && analysis.hasLatex) {
             element.classList.add('mixed-content');
@@ -261,7 +262,7 @@ export class ContentDensityManager {
         } else {
             element.classList.add('text-content');
         }
-        
+
         // Apply density classes based on score
         if (analysis.densityScore >= 70) {
             // High density content - use compact spacing
@@ -273,9 +274,9 @@ export class ContentDensityManager {
             // Low density content on desktop - use spacious layout
             element.classList.add('content-spacious');
         }
-        
+
         // Special handling for option containers
-        if (element.classList.contains('player-options') || 
+        if (element.classList.contains('player-options') ||
             element.classList.contains('host-options')) {
             this.optimizeOptionContainer(element, analysis);
         }
@@ -302,40 +303,11 @@ export class ContentDensityManager {
             container.style.setProperty('grid-template-columns', 'repeat(auto-fit, minmax(250px, 1fr))', 'important');
             container.style.setProperty('gap', 'var(--option-gap-compact)', 'important');
         }
-        
+
         // For mobile with many options, keep single column but compact spacing
         if (analysis.hasManyOptions && analysis.isMobile) {
             container.style.setProperty('gap', 'var(--option-gap-compact)', 'important');
         }
-    }
-
-    /**
-     * Force re-analysis of all content (useful after major DOM changes)
-     */
-    refresh() {
-        this.contentAnalysis.clear();
-        this.analyzeExistingContent();
-        logger.debug('Content Density Manager: Refreshed all content analysis');
-    }
-
-    /**
-     * Get analysis for a specific element
-     * @param {Element} element - Element to get analysis for
-     * @returns {Object|null} Analysis or null if not found
-     */
-    getAnalysis(element) {
-        return this.contentAnalysis.get(element) || null;
-    }
-
-    /**
-     * Cleanup observers
-     */
-    destroy() {
-        this.observers.forEach(observer => observer.disconnect());
-        this.observers.clear();
-        this.contentAnalysis.clear();
-        this.initialized = false;
-        logger.debug('Content Density Manager: Destroyed');
     }
 }
 
@@ -351,7 +323,3 @@ if (document.readyState === 'loading') {
     contentDensityManager.initialize();
 }
 
-// Make available globally for debugging
-if (typeof window !== 'undefined') {
-    window.contentDensityManager = contentDensityManager;
-}

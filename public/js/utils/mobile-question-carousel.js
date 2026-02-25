@@ -4,6 +4,8 @@
  */
 
 import { getTranslation } from './translation-manager.js';
+import { logger } from '../core/config.js';
+import { isMobile } from './dom.js';
 
 class MobileQuestionCarousel {
     constructor() {
@@ -13,6 +15,16 @@ class MobileQuestionCarousel {
         this.carouselContainer = null;
         this.questionsWrapper = null;
         this.initialized = false;
+
+        // Track resources for cleanup
+        this._mutationObserver = null;
+        this._boundHandlers = {
+            addBtn: null,
+            prevBtn: null,
+            nextBtn: null,
+            dotClicks: []
+        };
+        this._syncListeners = []; // Track sync listeners for cleanup
     }
 
     /**
@@ -20,24 +32,24 @@ class MobileQuestionCarousel {
      */
     init() {
         if (this.initialized) return;
-        
+
         // Only initialize on mobile
-        if (window.innerWidth > 768) return;
-        
+        if (!isMobile()) return;
+
         this.createCarouselStructure();
         this.setupEventListeners();
         this.isCarouselActive = true; // Always active on mobile
         this.initialized = true;
-        
+
         // Auto-activate carousel on mobile
         document.body.classList.add('mobile-carousel-active');
-        
+
         // Delay initial update to ensure DOM is ready
         setTimeout(() => {
             this.updateCarousel();
         }, 100);
-        
-        console.debug('Mobile Question Carousel initialized and activated');
+
+        logger.debug('Mobile Question Carousel initialized and activated');
     }
 
     /**
@@ -92,33 +104,37 @@ class MobileQuestionCarousel {
         // Add Question button
         const addBtn = document.getElementById('mobile-add-question-btn');
         if (addBtn) {
-            addBtn.addEventListener('click', () => this.addQuestion());
+            this._boundHandlers.addBtn = () => this.addQuestion();
+            addBtn.addEventListener('click', this._boundHandlers.addBtn);
         }
-        
+
         // Navigation buttons - use setTimeout to ensure they exist
         setTimeout(() => {
             const prevBtn = document.getElementById('mobile-prev-btn');
             const nextBtn = document.getElementById('mobile-next-btn');
-            
+
             if (prevBtn) {
-                prevBtn.addEventListener('click', () => this.previousQuestion());
+                this._boundHandlers.prevBtn = () => this.previousQuestion();
+                prevBtn.addEventListener('click', this._boundHandlers.prevBtn);
             }
-            
+
             if (nextBtn) {
-                nextBtn.addEventListener('click', () => this.nextQuestion());
+                this._boundHandlers.nextBtn = () => this.nextQuestion();
+                nextBtn.addEventListener('click', this._boundHandlers.nextBtn);
             }
         }, 100);
 
         // Listen for question changes in the main editor
         const questionsContainer = document.getElementById('questions-container');
         if (questionsContainer) {
-            const observer = new MutationObserver(() => {
+            // Store observer reference for cleanup
+            this._mutationObserver = new MutationObserver(() => {
                 if (this.isCarouselActive) {
                     setTimeout(() => this.updateCarousel(), 50);
                 }
             });
-            
-            observer.observe(questionsContainer, {
+
+            this._mutationObserver.observe(questionsContainer, {
                 childList: true,
                 subtree: true
             });
@@ -130,15 +146,14 @@ class MobileQuestionCarousel {
      * Add a new question
      */
     addQuestion() {
-        // Use the global addQuestion function or trigger the main add question button
-        if (window.game && window.game.addQuestionAndScrollToIt) {
-            window.game.addQuestionAndScrollToIt();
-        } else if (document.getElementById('toolbar-add-question')) {
-            document.getElementById('toolbar-add-question').click();
+        // Trigger the main add question button (decoupled from window.game)
+        const addBtn = document.getElementById('toolbar-add-question');
+        if (addBtn) {
+            addBtn.click();
         } else {
-            console.warn('Add question functionality not found');
+            logger.warn('Add question button not found');
         }
-        
+
         // Update carousel after adding question
         setTimeout(() => {
             this.updateCarousel();
@@ -161,7 +176,7 @@ class MobileQuestionCarousel {
 
         if (this.questions.length === 0) {
             // If no questions, show a placeholder
-            this.questionsWrapper.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No questions yet. Click + to add one!</div>';
+            this.questionsWrapper.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">${getTranslation('no_questions_yet')}</div>`;
             this.updateIndicators();
             this.updateNavigation();
             return;
@@ -187,6 +202,12 @@ class MobileQuestionCarousel {
         const indicators = document.getElementById('mobile-question-indicators');
         if (!indicators) return;
 
+        // Clean up old dot listeners before recreating
+        this._boundHandlers.dotClicks.forEach(({ dot, handler }) => {
+            dot.removeEventListener('click', handler);
+        });
+        this._boundHandlers.dotClicks = [];
+
         indicators.innerHTML = '';
 
         this.questions.forEach((_, index) => {
@@ -195,8 +216,10 @@ class MobileQuestionCarousel {
             if (index === this.currentIndex) {
                 dot.classList.add('active');
             }
-            
-            dot.addEventListener('click', () => this.navigateToQuestion(index));
+
+            const handler = () => this.navigateToQuestion(index);
+            dot.addEventListener('click', handler);
+            this._boundHandlers.dotClicks.push({ dot, handler });
             indicators.appendChild(dot);
         });
     }
@@ -212,11 +235,11 @@ class MobileQuestionCarousel {
         if (prevBtn) {
             prevBtn.disabled = this.currentIndex === 0;
         }
-        
+
         if (nextBtn) {
             nextBtn.disabled = this.currentIndex === this.questions.length - 1;
         }
-        
+
         if (title) {
             title.textContent = getTranslation('question_x_of_y', [this.currentIndex + 1, this.questions.length]);
         }
@@ -238,23 +261,23 @@ class MobileQuestionCarousel {
         // Get the current question from original container
         const currentQuestion = this.questions[this.currentIndex];
         if (!currentQuestion) {
-            console.warn(`Question at index ${this.currentIndex} not found`);
+            logger.warn(`Question at index ${this.currentIndex} not found`);
             return;
         }
 
         // Clone the current question and add it to carousel
         const clonedQuestion = currentQuestion.cloneNode(true);
         clonedQuestion.classList.add('mobile-question-active');
-        
+
         // Copy form values from original to clone
         this.syncFormValues(currentQuestion, clonedQuestion);
-        
+
         // Set up two-way sync between original and clone
         this.setupTwoWaySync(currentQuestion, clonedQuestion);
 
         this.questionsWrapper.appendChild(clonedQuestion);
 
-        console.debug(`Showing question ${this.currentIndex + 1} of ${this.questions.length}`);
+        logger.debug(`Showing question ${this.currentIndex + 1} of ${this.questions.length}`);
     }
 
     /**
@@ -263,7 +286,7 @@ class MobileQuestionCarousel {
     syncFormValues(original, clone) {
         const originalInputs = original.querySelectorAll('input, textarea, select');
         const cloneInputs = clone.querySelectorAll('input, textarea, select');
-        
+
         originalInputs.forEach((input, index) => {
             if (cloneInputs[index]) {
                 if (input.type === 'checkbox' || input.type === 'radio') {
@@ -273,7 +296,7 @@ class MobileQuestionCarousel {
                 }
             }
         });
-        
+
         // Additional sync for question options that might not be captured above
         // Specifically sync multiple choice options
         const originalOptions = original.querySelectorAll('.option');
@@ -283,24 +306,23 @@ class MobileQuestionCarousel {
                 cloneOptions[index].value = option.value;
             }
         });
-        
-        console.debug('Form values synced from original to clone, including question options');
+
+        logger.debug('Form values synced from original to clone, including question options');
     }
 
     /**
      * Set up two-way synchronization between original and clone
      */
     setupTwoWaySync(original, clone) {
+        // Clean up previous sync listeners before adding new ones
+        this._cleanupSyncListeners();
+
         const originalInputs = original.querySelectorAll('input, textarea, select');
         const cloneInputs = clone.querySelectorAll('input, textarea, select');
-        
+
         cloneInputs.forEach((cloneInput, index) => {
             const originalInput = originalInputs[index];
             if (!originalInput) return;
-
-            // Remove any existing listeners to avoid duplicates
-            cloneInput.removeEventListener('input', this.syncToOriginal);
-            cloneInput.removeEventListener('change', this.syncToOriginal);
 
             // Create sync function for this specific pair
             const syncToOriginal = () => {
@@ -316,7 +338,23 @@ class MobileQuestionCarousel {
             // Add event listeners for real-time sync
             cloneInput.addEventListener('input', syncToOriginal);
             cloneInput.addEventListener('change', syncToOriginal);
+
+            // Track for cleanup
+            this._syncListeners.push(
+                { element: cloneInput, type: 'input', handler: syncToOriginal },
+                { element: cloneInput, type: 'change', handler: syncToOriginal }
+            );
         });
+    }
+
+    /**
+     * Clean up sync listeners from previous question
+     */
+    _cleanupSyncListeners() {
+        this._syncListeners.forEach(({ element, type, handler }) => {
+            element.removeEventListener(type, handler);
+        });
+        this._syncListeners = [];
     }
 
     /**
@@ -326,7 +364,7 @@ class MobileQuestionCarousel {
         if (!this.questions || index < 0 || index >= this.questions.length) return;
 
         this.currentIndex = index;
-        
+
         // Show the selected question
         this.showCurrentQuestion();
 
@@ -339,7 +377,7 @@ class MobileQuestionCarousel {
         // Update navigation
         this.updateNavigation();
 
-        console.debug(`Navigated to question ${index + 1} of ${this.questions.length}`);
+        logger.debug(`Navigated to question ${index + 1} of ${this.questions.length}`);
     }
 
     /**
@@ -379,6 +417,57 @@ class MobileQuestionCarousel {
      */
     isActive() {
         return this.isCarouselActive;
+    }
+
+    /**
+     * Destroy carousel and clean up all resources
+     */
+    destroy() {
+        // Disconnect mutation observer
+        if (this._mutationObserver) {
+            this._mutationObserver.disconnect();
+            this._mutationObserver = null;
+        }
+
+        // Clean up sync listeners
+        this._cleanupSyncListeners();
+
+        // Remove button event listeners
+        const addBtn = document.getElementById('mobile-add-question-btn');
+        if (addBtn && this._boundHandlers.addBtn) {
+            addBtn.removeEventListener('click', this._boundHandlers.addBtn);
+        }
+
+        const prevBtn = document.getElementById('mobile-prev-btn');
+        if (prevBtn && this._boundHandlers.prevBtn) {
+            prevBtn.removeEventListener('click', this._boundHandlers.prevBtn);
+        }
+
+        const nextBtn = document.getElementById('mobile-next-btn');
+        if (nextBtn && this._boundHandlers.nextBtn) {
+            nextBtn.removeEventListener('click', this._boundHandlers.nextBtn);
+        }
+
+        // Remove dot click listeners
+        this._boundHandlers.dotClicks.forEach(({ dot, handler }) => {
+            dot.removeEventListener('click', handler);
+        });
+        this._boundHandlers.dotClicks = [];
+
+        // Remove carousel container from DOM
+        this.carouselContainer?.remove();
+
+        // Reset state
+        this.carouselContainer = null;
+        this.questionsWrapper = null;
+        this.questions = [];
+        this.currentIndex = 0;
+        this.isCarouselActive = false;
+        this.initialized = false;
+
+        document.body.classList.remove('mobile-carousel-active');
+
+        logger.debug('MobileQuestionCarousel destroyed and cleaned up');
     }
 }
 

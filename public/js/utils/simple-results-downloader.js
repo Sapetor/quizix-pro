@@ -4,7 +4,6 @@
  */
 
 import { translationManager, showErrorAlert, showSuccessAlert } from './translation-manager.js';
-import { unifiedErrorHandler as errorHandler } from './unified-error-handler.js';
 import { logger } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
@@ -12,12 +11,12 @@ import { APIHelper } from './api-helper.js';
 export class SimpleResultsDownloader {
     constructor() {
         this.currentExportFormat = 'simple'; // Default to simple format for this tool
-        
+
         // Listen to results service updates
         resultsManagerService.addListener((event, data) => {
             this.handleServiceUpdate(event, data);
         });
-        
+
         logger.debug('🔧 SimpleResultsDownloader initialized');
     }
 
@@ -50,49 +49,12 @@ export class SimpleResultsDownloader {
     }
 
     /**
-     * Fetch with retry logic for handling temporary server issues
-     */
-    async fetchWithRetry(url, maxRetries = 3, delay = 1000) {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                logger.debug(`📊 Fetch attempt ${attempt}/${maxRetries} for ${url}`);
-                const response = await fetch(url);
-                
-                if (response.ok) {
-                    logger.debug(`📊 Fetch successful on attempt ${attempt}`);
-                    return response;
-                }
-                
-                // If it's a 404 and we have more attempts, wait and retry
-                if (response.status === 404 && attempt < maxRetries) {
-                    logger.warn(`📊 404 error on attempt ${attempt}, retrying in ${delay}ms...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    continue;
-                }
-                
-                // Return the response for other status codes or last attempt
-                return response;
-                
-            } catch (error) {
-                logger.error(`📊 Fetch attempt ${attempt} failed:`, error);
-                
-                if (attempt === maxRetries) {
-                    throw error;
-                }
-                
-                // Wait before retrying
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
-    }
-
-    /**
      * Initialize the dropdown with available results using the service
      */
     async initializeDropdown() {
         const dropdown = document.getElementById('results-dropdown');
         const downloadButton = document.getElementById('download-selected');
-        
+
         if (!dropdown) {
             logger.warn('Results dropdown not found');
             return;
@@ -101,31 +63,31 @@ export class SimpleResultsDownloader {
         try {
             // Clear existing options except the first placeholder
             dropdown.innerHTML = '<option value="" data-translate="select_results">Select results to download...</option>';
-            
+
             // Fetch available results using the service
             logger.debug('📊 Fetching results via service...');
             const results = await resultsManagerService.fetchResults();
-            
+
             this.populateDropdownWithResults(results);
-            
+
             // Setup download button handler
             if (downloadButton) {
                 downloadButton.onclick = () => this.downloadSelected();
                 downloadButton.disabled = results.length === 0;
                 downloadButton.textContent = translationManager.getTranslationSync('download_csv') || 'Download CSV';
             }
-            
+
         } catch (error) {
             logger.error('❌ Error initializing results dropdown:', error);
             showErrorAlert('failed_fetch_results');
-            
+
             // Show error in dropdown
             const errorOption = document.createElement('option');
             errorOption.value = '';
             errorOption.textContent = translationManager.getTranslationSync('error_loading_results') || 'Error loading results';
             errorOption.disabled = true;
             dropdown.appendChild(errorOption);
-            
+
             if (downloadButton) {
                 downloadButton.disabled = true;
             }
@@ -138,7 +100,7 @@ export class SimpleResultsDownloader {
     populateDropdownWithResults(results) {
         const dropdown = document.getElementById('results-dropdown');
         const downloadButton = document.getElementById('download-selected');
-        
+
         if (!dropdown) return;
 
         // Clear existing options except the first placeholder
@@ -156,25 +118,25 @@ export class SimpleResultsDownloader {
             noResultsOption.textContent = translationManager.getTranslationSync('no_results_found') || 'No results found';
             noResultsOption.disabled = true;
             dropdown.appendChild(noResultsOption);
-            
+
             if (downloadButton) {
                 downloadButton.disabled = true;
             }
             return;
         }
-        
+
         // Populate dropdown with results (most recent first)
         results.forEach(result => {
             const option = document.createElement('option');
             option.value = result.filename;
-            option.textContent = `${result.quizTitle} (PIN: ${result.gamePin}) - ${this.formatDate(result.saved)}`;
+            option.textContent = `${result.quizTitle} (${translationManager.getTranslationSync('pin_label')}${result.gamePin}) - ${this.formatDate(result.saved)}`;
             dropdown.appendChild(option);
         });
-        
+
         if (downloadButton) {
             downloadButton.disabled = false;
         }
-        
+
         logger.debug(`📊 Populated dropdown with ${results.length} results`);
     }
 
@@ -184,35 +146,35 @@ export class SimpleResultsDownloader {
     async downloadSelected() {
         const dropdown = document.getElementById('results-dropdown');
         const downloadButton = document.getElementById('download-selected');
-        
+
         if (!dropdown || !dropdown.value) {
-            showErrorAlert('Please select a result to download');
+            showErrorAlert(translationManager.getTranslationSync('select_result_download') || 'Please select a result to download');
             return;
         }
-        
+
         const filename = dropdown.value;
-        
+
         try {
             if (downloadButton) {
                 downloadButton.disabled = true;
                 downloadButton.textContent = translationManager.getTranslationSync('loading') || 'Loading...';
             }
-            
+
             logger.debug(`📊 Downloading result: ${filename}`);
 
             // Simple direct API call - no over-engineered service layer
             const response = await fetch(APIHelper.getApiUrl(`api/results/${filename}/export/csv`));
-            
+
             if (!response.ok) {
                 throw new Error(`Download failed: ${response.status}`);
             }
-            
+
             // Create download
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const gamePin = filename.match(/results_(\d+)_/)?.[1] || 'unknown';
             const downloadFilename = `quiz_results_${gamePin}.csv`;
-            
+
             const link = document.createElement('a');
             link.href = url;
             link.download = downloadFilename;
@@ -220,12 +182,12 @@ export class SimpleResultsDownloader {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            
+
             logger.debug(`📊 Download completed: ${downloadFilename}`);
-            
+
         } catch (error) {
             logger.error('❌ Download failed:', error);
-            showErrorAlert('Download failed. Please try again.');
+            showErrorAlert(translationManager.getTranslationSync('download_failed') || 'Download failed. Please try again.');
         } finally {
             if (downloadButton) {
                 downloadButton.disabled = false;
@@ -239,11 +201,11 @@ export class SimpleResultsDownloader {
      */
     formatDate(dateString) {
         if (!dateString) return 'Unknown';
-        
+
         try {
             const date = new Date(dateString);
             return date.toLocaleString();
-        } catch (error) {
+        } catch (_error) {
             return dateString;
         }
     }
@@ -286,7 +248,7 @@ export class SimpleResultsDownloader {
             cursor: pointer;
             font-size: 14px;
         `;
-        
+
         viewAllBtn.addEventListener('click', () => {
             this.openFullResultsViewer();
         });
@@ -303,7 +265,7 @@ export class SimpleResultsDownloader {
      */
     async openFullResultsViewer() {
         logger.debug('📊 Opening full results viewer from simple downloader');
-        
+
         try {
             // Lazy load results viewer if not already loaded
             if (!window.resultsViewer) {
@@ -312,13 +274,13 @@ export class SimpleResultsDownloader {
                 window.resultsViewer = resultsViewer;
                 logger.debug('Results Viewer lazy loaded from simple downloader');
             }
-            
+
             // Open the results viewer modal
             window.resultsViewer.showModal();
-            
+
         } catch (error) {
             logger.error('Failed to load results viewer:', error);
-            showErrorAlert('Could not open detailed results viewer');
+            showErrorAlert(translationManager.getTranslationSync('results_viewer_error') || 'Could not open detailed results viewer');
         }
     }
 
@@ -338,5 +300,3 @@ export const simpleResultsDownloader = new SimpleResultsDownloader();
 
 // Make available globally
 window.simpleResultsDownloader = simpleResultsDownloader;
-
-export default simpleResultsDownloader;

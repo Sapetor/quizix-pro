@@ -1,0 +1,7 @@
+node_modules/
+public/css/main.bundle.css
+test-results/
+playwright-report/
+coverage/
+*.min.js
+*.min.css

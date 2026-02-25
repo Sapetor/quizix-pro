@@ -5,7 +5,6 @@
  */
 
 const fs = require('fs').promises;
-const fsSync = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
@@ -43,7 +42,46 @@ class QuizService {
      */
     async saveQuiz(title, questions) {
         if (!title || !questions || !Array.isArray(questions)) {
-            throw new Error('Invalid quiz data');
+            const err = new Error('Invalid quiz data');
+            err.messageKey = 'error_invalid_quiz_data';
+            throw err;
+        }
+
+        // Input length validation
+        if (title.length > 200) {
+            const err = new Error('Quiz title must be less than 200 characters');
+            err.messageKey = 'error_quiz_title_too_long';
+            throw err;
+        }
+
+        if (questions.length > 100) {
+            const err = new Error('Maximum 100 questions allowed per quiz');
+            err.messageKey = 'error_too_many_questions';
+            throw err;
+        }
+
+        // Validate individual question content lengths
+        for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            if (q.question && q.question.length > 5000) {
+                const err = new Error(`Question ${i + 1} text exceeds 5000 characters`);
+                err.messageKey = 'error_question_too_long';
+                throw err;
+            }
+            if (q.explanation && q.explanation.length > 2000) {
+                const err = new Error(`Question ${i + 1} explanation exceeds 2000 characters`);
+                err.messageKey = 'error_explanation_too_long';
+                throw err;
+            }
+            if (q.options && Array.isArray(q.options)) {
+                for (let j = 0; j < q.options.length; j++) {
+                    if (q.options[j] && q.options[j].length > 1000) {
+                        const err = new Error(`Question ${i + 1}, option ${j + 1} exceeds 1000 characters`);
+                        err.messageKey = 'error_option_too_long';
+                        throw err;
+                    }
+                }
+            }
         }
 
         // Sanitize filename to prevent path traversal
@@ -112,26 +150,57 @@ class QuizService {
     }
 
     /**
+     * Validate filename and resolve the full path, throwing on invalid input
+     * @param {string} filename - Filename to validate
+     * @returns {string} Resolved file path
+     */
+    resolveQuizPath(filename) {
+        if (!this.validateFilename(filename) || !filename.endsWith('.json')) {
+            const err = new Error('Invalid filename');
+            err.messageKey = 'error_invalid_filename';
+            throw err;
+        }
+        return path.join(this.quizzesDir, filename);
+    }
+
+    /**
      * Load a specific quiz
      */
     async loadQuiz(filename) {
-        // Validate filename to prevent path traversal
-        if (!this.validateFilename(filename)) {
-            throw new Error('Invalid filename');
+        const filePath = this.resolveQuizPath(filename);
+
+        try {
+            await fs.access(filePath);
+        } catch {
+            const err = new Error('Quiz not found');
+            err.messageKey = 'error_quiz_not_found';
+            throw err;
         }
 
-        if (!filename.endsWith('.json')) {
-            throw new Error('Invalid filename');
+        return JSON.parse(await fs.readFile(filePath, 'utf8'));
+    }
+
+    /**
+     * Delete a quiz file
+     */
+    async deleteQuiz(filename) {
+        const filePath = this.resolveQuizPath(filename);
+
+        try {
+            await fs.access(filePath);
+        } catch {
+            const err = new Error('Quiz not found');
+            err.messageKey = 'error_quiz_not_found';
+            throw err;
         }
 
-        const filePath = path.join(this.quizzesDir, filename);
+        await this.wslMonitor.trackFileOperation(
+            () => fs.unlink(filePath),
+            `Quiz delete: ${filename}`
+        );
 
-        if (!fsSync.existsSync(filePath)) {
-            throw new Error('Quiz not found');
-        }
-
-        const data = JSON.parse(fsSync.readFileSync(filePath, 'utf8'));
-        return data;
+        this.logger.debug(`Quiz deleted successfully: ${filename}`);
+        return { success: true, filename };
     }
 }
 

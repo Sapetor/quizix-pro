@@ -1,0 +1,58 @@
+{
+  "title": "Demo: Math & Science Basics",
+  "id": "demo-quiz-en",
+  "created": "2026-01-01T00:00:00.000Z",
+  "isDemo": true,
+  "questions": [
+    {
+      "question": "What is the area of a circle with radius 5?",
+      "type": "multiple-choice",
+      "difficulty": "easy",
+      "options": [
+        "25\u03c0 \u2248 78.54",
+        "10\u03c0 \u2248 31.42",
+        "5\u03c0 \u2248 15.71",
+        "50\u03c0 \u2248 157.08"
+      ],
+      "correctAnswer": 0,
+      "timeLimit": 30,
+      "explanation": "The area of a circle is \u03c0r\u00b2. With r = 5: \u03c0 \u00d7 5\u00b2 = 25\u03c0 \u2248 78.54"
+    },
+    {
+      "question": "Water boils at 100\u00b0C at sea level.",
+      "type": "true-false",
+      "difficulty": "easy",
+      "options": ["True", "False"],
+      "correctAnswer": "true",
+      "timeLimit": 30,
+      "explanation": "At standard atmospheric pressure (1 atm), water boils at exactly 100\u00b0C (212\u00b0F)."
+    },
+    {
+      "question": "What is \u221a144?",
+      "type": "numeric",
+      "difficulty": "easy",
+      "correctAnswer": 12,
+      "tolerance": 0,
+      "timeLimit": 30,
+      "explanation": "\u221a144 = 12 because 12 \u00d7 12 = 144."
+    },
+    {
+      "question": "Which of these are prime numbers? (Select all that apply)",
+      "type": "multiple-correct",
+      "difficulty": "medium",
+      "options": ["2", "4", "7", "9", "11"],
+      "correctAnswers": [0, 2, 4],
+      "timeLimit": 30,
+      "explanation": "Prime numbers are only divisible by 1 and themselves. 2, 7, and 11 are prime. 4 = 2\u00d72 and 9 = 3\u00d73 are not."
+    },
+    {
+      "question": "Order these planets by distance from the Sun (closest first).",
+      "type": "ordering",
+      "difficulty": "medium",
+      "options": ["Mercury", "Venus", "Earth", "Mars"],
+      "correctOrder": [0, 1, 2, 3],
+      "timeLimit": 30,
+      "explanation": "The order from the Sun: Mercury (0.39 AU), Venus (0.72 AU), Earth (1 AU), Mars (1.52 AU)."
+    }
+  ]
+}

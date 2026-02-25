@@ -23,3 +23,28 @@ quizzes/*
 !quizzes/diagn_sitco_1_min215_1754684197392.json
 !quizzes/diagn_stico_2_min215_1754684320217.json
 results/
+
+# Test artifacts (regenerable)
+playwright-report/
+test-results/
+.playwright-mcp/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Backup directories
+.claude.backup-*/
+.serena.backup-*/
+.serena/cache/
+
+# Temporary files
+*.tmp
+*.temp

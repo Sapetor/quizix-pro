@@ -105,6 +105,20 @@ data:
   NETWORK_IP: "your-cluster-ip"
 ```
 
+For sensitive values like API keys, use Kubernetes Secrets:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: quizmaster-secrets
+  namespace: quizmaster
+type: Opaque
+stringData:
+  CLAUDE_API_KEY: "sk-ant-xxxxx"  # Optional: Server-side Claude API key
+  CLAUDE_MODEL: "claude-sonnet-4-5"
+```
+
 ### Resource Limits
 
 Default resource allocation in `k8s/deployment.yaml`:
@@ -384,6 +398,9 @@ kubectl run restore -n quizmaster --image=busybox --restart=Never --rm -it \
 4. **Network Policies**: Consider adding for production
 5. **RBAC**: Use least-privilege service accounts
 6. **Secrets**: Store API keys in Kubernetes Secrets, not ConfigMaps
+7. **Rate Limiting**: Built-in Socket.IO rate limiting (10 events/second per client)
+8. **Cryptographic File Names**: Uploaded files use secure random names (`crypto.randomBytes()`)
+9. **Server-Side API Keys**: Use `CLAUDE_API_KEY` env var so keys never reach clients
 
 ### Example NetworkPolicy
 

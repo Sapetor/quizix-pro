@@ -15,13 +15,30 @@ export class ConnectionStatus {
         this.pingInterval = null;
         this.socket = null;
         this.callbacks = new Set();
-        
+
         // Initialize UI elements
         this.initializeUI();
         this.bindEvents();
         this.startMonitoring();
-        
+
         logger.debug('Connection status manager initialized');
+    }
+
+    /**
+     * Create an abort signal with timeout (fallback for older browsers)
+     * @param {number} ms - Timeout in milliseconds
+     * @returns {AbortSignal} - Abort signal that triggers after timeout
+     */
+    createTimeoutSignal(ms) {
+        // Use native AbortSignal.timeout if available
+        if (typeof AbortSignal.timeout === 'function') {
+            return AbortSignal.timeout(ms);
+        }
+
+        // Fallback for older browsers
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), ms);
+        return controller.signal;
     }
 
     /**
@@ -68,14 +85,14 @@ export class ConnectionStatus {
         // Add click handler for details toggle
         const indicator = statusElement.querySelector('.connection-indicator');
         const details = statusElement.querySelector('.connection-details');
-        
+
         indicator.addEventListener('click', () => {
             const isVisible = details.style.display !== 'none';
             details.style.display = isVisible ? 'none' : 'block';
         });
 
         // Add hover tooltip
-        indicator.title = 'Click to view connection details';
+        indicator.title = translationManager.getTranslationSync('click_connection_details');
 
         logger.debug('Connection status UI initialized');
     }
@@ -134,7 +151,7 @@ export class ConnectionStatus {
         this.isOnline = isOnline;
         this.updateUI();
         this.notifyCallbacks();
-        
+
         logger.info(`Network status changed: ${isOnline ? 'online' : 'offline'}`);
     }
 
@@ -143,13 +160,13 @@ export class ConnectionStatus {
      */
     async checkConnection() {
         const startTime = Date.now();
-        
+
         try {
             // Ping the server with a lightweight request
             const response = await fetch(APIHelper.getApiUrl('api/ping'), {
                 method: 'GET',
                 cache: 'no-cache',
-                signal: AbortSignal.timeout(5000) // 5 second timeout
+                signal: this.createTimeoutSignal(5000) // 5 second timeout
             });
 
             const pingTime = Date.now() - startTime;
@@ -162,7 +179,7 @@ export class ConnectionStatus {
                 this.isOnline = false;
                 this.connectionQuality = 'poor';
             }
-        } catch (error) {
+        } catch (_error) {
             // Fallback: try a simple connectivity check
             try {
                 const fallbackResponse = await fetch(window.location.origin, {
@@ -170,7 +187,7 @@ export class ConnectionStatus {
                     cache: 'no-cache',
                     signal: AbortSignal.timeout(3000)
                 });
-                
+
                 const pingTime = Date.now() - startTime;
                 this.lastPingTime = pingTime;
                 this.isOnline = fallbackResponse.ok;
@@ -223,36 +240,42 @@ export class ConnectionStatus {
 
         // Update details
         if (statusValue) {
-            statusValue.textContent = this.isOnline ? 
-                translationManager.getTranslationSync('connected') : 
+            statusValue.textContent = this.isOnline ?
+                translationManager.getTranslationSync('connected') :
                 translationManager.getTranslationSync('offline');
         }
-        
+
         if (pingValue) {
             pingValue.textContent = this.lastPingTime ? `${this.lastPingTime}ms` : '-';
         }
-        
+
+        const qualityText = this.getQualityText();
+
         if (qualityValue) {
-            const qualityText = this.connectionQuality === 'excellent' ? translationManager.getTranslationSync('connection_excellent') :
-                              this.connectionQuality === 'good' ? translationManager.getTranslationSync('connection_good') :
-                              this.connectionQuality === 'fair' ? translationManager.getTranslationSync('connection_fair') :
-                              this.connectionQuality === 'poor' ? translationManager.getTranslationSync('connection_poor') : 
-                              this.connectionQuality === 'offline' ? translationManager.getTranslationSync('offline') : '-';
-            qualityValue.textContent = qualityText;
+            qualityValue.textContent = qualityText || '-';
         }
 
         // Update tooltip
         const indicator = statusElement.querySelector('.connection-indicator');
         if (indicator) {
-            const qualityText = this.connectionQuality === 'excellent' ? translationManager.getTranslationSync('connection_excellent') :
-                              this.connectionQuality === 'good' ? translationManager.getTranslationSync('connection_good') :
-                              this.connectionQuality === 'fair' ? translationManager.getTranslationSync('connection_fair') :
-                              this.connectionQuality === 'poor' ? translationManager.getTranslationSync('connection_poor') : 
-                              translationManager.getTranslationSync('offline');
-            
             const connectionLabel = translationManager.getTranslationSync('connection');
             indicator.title = `${connectionLabel}: ${qualityText}${this.lastPingTime ? ` (${this.lastPingTime}ms)` : ''}`;
         }
+    }
+
+    /**
+     * Get translated quality text for current connection quality
+     */
+    getQualityText() {
+        const qualityMap = {
+            'excellent': 'connection_excellent',
+            'good': 'connection_good',
+            'fair': 'connection_fair',
+            'poor': 'connection_poor',
+            'offline': 'offline'
+        };
+        const key = qualityMap[this.connectionQuality];
+        return key ? translationManager.getTranslationSync(key) : translationManager.getTranslationSync('offline');
     }
 
     /**
@@ -260,7 +283,7 @@ export class ConnectionStatus {
      */
     onStatusChange(callback) {
         this.callbacks.add(callback);
-        
+
         // Return unsubscribe function
         return () => {
             this.callbacks.delete(callback);
@@ -291,7 +314,7 @@ export class ConnectionStatus {
      */
     setSocket(socket) {
         this.socket = socket;
-        
+
         if (socket) {
             socket.on('connect', () => {
                 this.handleNetworkChange(true);
@@ -331,5 +354,3 @@ export const connectionStatus = new ConnectionStatus();
 
 // Make globally available for translation updates
 window.connectionStatus = connectionStatus;
-
-export default connectionStatus;

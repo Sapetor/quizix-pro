@@ -3,9 +3,19 @@
  * Provides mobile-friendly interface for quiz management actions
  */
 
+import { logger } from '../core/config.js';
+import { dom } from './dom.js';
+
+// Animation and gesture timing constants
+const SHEET_OPEN_DELAY_MS = 10;
+const SHEET_ANIMATION_MS = 200;
+const SHEET_CLOSE_ANIMATION_MS = 300;
+const ACTION_DELAY_MS = 100;
+const SWIPE_CLOSE_THRESHOLD_PX = 80;
+
 // Mobile quiz sheet state management
-let mobileQuizSheetVisible = false;
-let isShowingSheet = false; // Prevent double-clicks
+let mobileQuizSheetVisible = false;  // True when sheet is fully visible
+let isShowingSheet = false;          // True during opening animation (prevents double-clicks)
 
 /**
  * Show the mobile quiz actions bottom sheet
@@ -13,43 +23,46 @@ let isShowingSheet = false; // Prevent double-clicks
 function showMobileQuizSheet() {
     // Prevent rapid successive clicks
     if (isShowingSheet) {
-        console.debug('Sheet already opening, ignoring click');
+        logger.debug('Sheet already opening, ignoring click');
         return;
     }
-    
-    const overlay = document.getElementById('mobile-quiz-sheet-overlay');
-    const sheet = document.getElementById('mobile-quiz-sheet');
-    const fab = document.getElementById('mobile-quiz-fab');
-    
+
+    const overlay = dom.get('mobile-quiz-sheet-overlay');
+    const sheet = dom.get('mobile-quiz-sheet');
+    const fab = dom.get('mobile-quiz-fab');
+
     if (!overlay || !sheet) {
-        console.warn('Mobile quiz sheet elements not found');
+        logger.warn('Mobile quiz sheet elements not found');
         return;
     }
-    
+
     // Mark as opening and disable FAB temporarily
     isShowingSheet = true;
     if (fab) {
         fab.classList.add('clicking');
     }
-    
+
     // Show overlay first
     overlay.classList.add('active');
-    
+
     // Add active class after a small delay for smooth animation
     setTimeout(() => {
         sheet.classList.add('active');
-        
+
         // Reset the click protection after animation
         setTimeout(() => {
             isShowingSheet = false;
             if (fab) {
                 fab.classList.remove('clicking');
             }
-        }, 200);
-    }, 10);
-    
+        }, SHEET_ANIMATION_MS);
+    }, SHEET_OPEN_DELAY_MS);
+
     mobileQuizSheetVisible = true;
-    
+
+    // Sync mobile settings from main editor
+    syncMobileSettingsFromMain();
+
     // Update translations for the mobile quiz sheet
     if (typeof translationManager !== 'undefined' && translationManager.updateGameTranslations) {
         // Use setTimeout to ensure DOM is fully rendered before translation updates
@@ -57,7 +70,7 @@ function showMobileQuizSheet() {
             translationManager.updateGameTranslations();
         }, 50);
     }
-    
+
     // Prevent body scroll when sheet is open
     document.body.style.overflow = 'hidden';
 }
@@ -66,32 +79,32 @@ function showMobileQuizSheet() {
  * Hide the mobile quiz actions bottom sheet
  */
 function hideMobileQuizSheet() {
-    const overlay = document.getElementById('mobile-quiz-sheet-overlay');
-    const sheet = document.getElementById('mobile-quiz-sheet');
-    const fab = document.getElementById('mobile-quiz-fab');
-    
+    const overlay = dom.get('mobile-quiz-sheet-overlay');
+    const sheet = dom.get('mobile-quiz-sheet');
+    const fab = dom.get('mobile-quiz-fab');
+
     if (!overlay || !sheet) return;
-    
+
     // Reset click protection
     isShowingSheet = false;
     if (fab) {
         fab.classList.remove('clicking');
     }
-    
+
     // Clear any active/focus states from buttons
     const activeButtons = sheet.querySelectorAll('.mobile-quiz-action-btn:focus, .mobile-quiz-secondary-btn:focus');
     activeButtons.forEach(btn => btn.blur());
-    
+
     // Remove active class from sheet first
     sheet.classList.remove('active');
-    
+
     // Remove overlay after animation completes
     setTimeout(() => {
         overlay.classList.remove('active');
-    }, 300);
-    
+    }, SHEET_CLOSE_ANIMATION_MS);
+
     mobileQuizSheetVisible = false;
-    
+
     // Restore body scroll
     document.body.style.overflow = '';
 }
@@ -121,24 +134,45 @@ function clearButtonStates() {
 }
 
 /**
+ * Handle mobile add question action
+ */
+function handleMobileAddQuestion() {
+    clearButtonStates();
+    hideMobileQuizSheet();
+
+    // Small delay to ensure sheet is hidden before adding question
+    setTimeout(() => {
+        // Use existing add question functionality
+        const addBtn = document.getElementById('toolbar-add-question');
+        if (addBtn) {
+            addBtn.click();
+        } else if (typeof addQuestion === 'function') {
+            addQuestion();
+        } else {
+            logger.warn('Add question functionality not available');
+        }
+    }, ACTION_DELAY_MS);
+}
+
+/**
  * Handle mobile load quiz action
  */
 function handleMobileLoadQuiz() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Small delay to ensure sheet is hidden before showing modal
     setTimeout(() => {
         // Use existing load quiz functionality
         if (typeof showLoadQuizModal === 'function') {
             showLoadQuizModal();
-        } else if (document.getElementById('toolbar-load')) {
+        } else if (dom.get('toolbar-load')) {
             // Trigger the existing load button click
-            document.getElementById('toolbar-load').click();
+            dom.get('toolbar-load').click();
         } else {
-            console.warn('Load quiz functionality not available');
+            logger.warn('Load quiz functionality not available');
         }
-    }, 100);
+    }, ACTION_DELAY_MS);
 }
 
 /**
@@ -147,15 +181,15 @@ function handleMobileLoadQuiz() {
 function handleMobileSaveQuiz() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing save quiz functionality
     if (typeof saveQuiz === 'function') {
         saveQuiz();
-    } else if (document.getElementById('toolbar-save')) {
+    } else if (dom.get('toolbar-save')) {
         // Trigger the existing save button click
-        document.getElementById('toolbar-save').click();
+        dom.get('toolbar-save').click();
     } else {
-        console.warn('Save quiz functionality not available');
+        logger.warn('Save quiz functionality not available');
     }
 }
 
@@ -165,35 +199,35 @@ function handleMobileSaveQuiz() {
 function handleMobileStartGame() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Check if we have questions first
     const questions = document.querySelectorAll('.question-item');
     if (questions.length === 0) {
         alert(translationManager.getTranslationSync('please_add_question_alert') || 'Please add at least one question before starting the game.');
         return;
     }
-    
+
     // Check if quiz has a title
-    const quizTitle = document.getElementById('quiz-title');
+    const quizTitle = dom.get('quiz-title');
     if (quizTitle && !quizTitle.value.trim()) {
         if (!confirm(translationManager.getTranslationSync('confirm_start_without_title') || 'Your quiz doesn\'t have a title. Start anyway?')) {
             return;
         }
     }
-    
+
     // Use existing start game functionality
     if (typeof startHosting === 'function') {
         startHosting();
-    } else if (document.getElementById('start-hosting-header-small')) {
+    } else if (dom.get('start-hosting-header-small')) {
         // Trigger the existing start game button
-        document.getElementById('start-hosting-header-small').click();
+        dom.get('start-hosting-header-small').click();
     } else {
         // Look for any start game button
         const startButton = document.querySelector('[data-translate="create_lobby"], [onclick*="startHosting"], .start-game-header');
         if (startButton) {
             startButton.click();
         } else {
-            console.warn('Start game functionality not available');
+            logger.warn('Start game functionality not available');
         }
     }
 }
@@ -204,14 +238,14 @@ function handleMobileStartGame() {
 function handleMobilePreview() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing preview functionality
     if (typeof togglePreviewMode === 'function') {
         togglePreviewMode();
-    } else if (document.getElementById('toolbar-preview')) {
-        document.getElementById('toolbar-preview').click();
+    } else if (dom.get('toolbar-preview')) {
+        dom.get('toolbar-preview').click();
     } else {
-        console.warn('Preview functionality not available');
+        logger.warn('Preview functionality not available');
     }
 }
 
@@ -221,12 +255,12 @@ function handleMobilePreview() {
 function handleMobileAI() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing AI generator functionality
-    if (document.getElementById('toolbar-ai-gen')) {
-        document.getElementById('toolbar-ai-gen').click();
+    if (dom.get('toolbar-ai-gen')) {
+        dom.get('toolbar-ai-gen').click();
     } else {
-        console.warn('AI generator not available');
+        logger.warn('AI generator not available');
     }
 }
 
@@ -236,14 +270,14 @@ function handleMobileAI() {
 function handleMobileImport() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing import functionality
-    if (document.getElementById('toolbar-import')) {
-        document.getElementById('toolbar-import').click();
-    } else if (document.getElementById('import-file-input')) {
-        document.getElementById('import-file-input').click();
+    if (dom.get('toolbar-import')) {
+        dom.get('toolbar-import').click();
+    } else if (dom.get('import-file-input')) {
+        dom.get('import-file-input').click();
     } else {
-        console.warn('Import functionality not available');
+        logger.warn('Import functionality not available');
     }
 }
 
@@ -253,12 +287,12 @@ function handleMobileImport() {
 function handleMobileExport() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing export functionality
-    if (document.getElementById('toolbar-export')) {
-        document.getElementById('toolbar-export').click();
+    if (dom.get('toolbar-export')) {
+        dom.get('toolbar-export').click();
     } else {
-        console.warn('Export functionality not available');
+        logger.warn('Export functionality not available');
     }
 }
 
@@ -268,12 +302,12 @@ function handleMobileExport() {
 function handleMobileResults() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Use existing results functionality
-    if (document.getElementById('toolbar-results')) {
-        document.getElementById('toolbar-results').click();
+    if (dom.get('toolbar-results')) {
+        dom.get('toolbar-results').click();
     } else {
-        console.warn('Results functionality not available');
+        logger.warn('Results functionality not available');
     }
 }
 
@@ -283,7 +317,7 @@ function handleMobileResults() {
 function scrollToBottom() {
     clearButtonStates();
     hideMobileQuizSheet();
-    
+
     // Scroll to the bottom of the page
     window.scrollTo({
         top: document.body.scrollHeight,
@@ -296,23 +330,23 @@ function scrollToBottom() {
  */
 function initializeMobileQuizControls() {
     // Add event listeners for swipe to close on the sheet
-    const sheet = document.getElementById('mobile-quiz-sheet');
+    const sheet = dom.get('mobile-quiz-sheet');
     if (sheet) {
         let startY = 0;
         let currentY = 0;
         let isDragging = false;
-        
+
         sheet.addEventListener('touchstart', (e) => {
             startY = e.touches[0].clientY;
             isDragging = true;
         }, { passive: true });
-        
+
         sheet.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
-            
+
             currentY = e.touches[0].clientY;
             const deltaY = currentY - startY;
-            
+
             // Only allow downward swipe to close
             if (deltaY > 0) {
                 const progress = Math.min(deltaY / 100, 1);
@@ -320,36 +354,36 @@ function initializeMobileQuizControls() {
                 sheet.style.opacity = 1 - (progress * 0.3);
             }
         }, { passive: true });
-        
+
         sheet.addEventListener('touchend', () => {
             if (!isDragging) return;
-            
+
             const deltaY = currentY - startY;
-            
-            // If swiped down more than 80px, close the sheet
-            if (deltaY > 80) {
+
+            // If swiped down past threshold, close the sheet
+            if (deltaY > SWIPE_CLOSE_THRESHOLD_PX) {
                 hideMobileQuizSheet();
             } else {
                 // Snap back to original position
                 sheet.style.transform = '';
                 sheet.style.opacity = '';
             }
-            
+
             isDragging = false;
             startY = 0;
             currentY = 0;
         }, { passive: true });
     }
-    
+
     // Close sheet when clicking outside
     document.addEventListener('click', (e) => {
-        if (mobileQuizSheetVisible && 
-            !e.target.closest('#mobile-quiz-sheet') && 
+        if (mobileQuizSheetVisible &&
+            !e.target.closest('#mobile-quiz-sheet') &&
             !e.target.closest('#mobile-quiz-fab')) {
             hideMobileQuizSheet();
         }
     });
-    
+
     // Handle escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && mobileQuizSheetVisible) {
@@ -358,10 +392,64 @@ function initializeMobileQuizControls() {
     });
 }
 
+/**
+ * Sync mobile quiz title to main editor
+ */
+function syncMobileQuizTitle(input) {
+    const mainTitle = dom.get('quiz-title');
+    if (mainTitle) {
+        mainTitle.value = input.value;
+        // Trigger input event for any listeners
+        mainTitle.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+}
+
+/**
+ * Sync mobile toggle to main editor checkbox
+ */
+function syncMobileToggle(targetId, checked) {
+    const mainCheckbox = dom.get(targetId);
+    if (mainCheckbox) {
+        mainCheckbox.checked = checked;
+        // Trigger change event for any listeners
+        mainCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+}
+
+/**
+ * Initialize mobile settings from main editor values
+ * Called when showing the bottom sheet
+ */
+function syncMobileSettingsFromMain() {
+    // Sync title
+    const mainTitle = dom.get('quiz-title');
+    const mobileTitle = dom.get('mobile-quiz-title');
+    if (mainTitle && mobileTitle) {
+        mobileTitle.value = mainTitle.value;
+    }
+
+    // Sync checkboxes
+    const checkboxes = [
+        ['randomize-questions', 'mobile-randomize-questions'],
+        ['randomize-answers', 'mobile-randomize-answers'],
+        ['manual-advancement', 'mobile-manual-advancement'],
+        ['enable-power-ups', 'mobile-power-ups']
+    ];
+
+    checkboxes.forEach(([mainId, mobileId]) => {
+        const main = dom.get(mainId);
+        const mobile = dom.get(mobileId);
+        if (main && mobile) {
+            mobile.checked = main.checked;
+        }
+    });
+}
+
 // Make functions globally available
 window.showMobileQuizSheet = showMobileQuizSheet;
 window.hideMobileQuizSheet = hideMobileQuizSheet;
 window.toggleMobileQuizSheet = toggleMobileQuizSheet;
+window.handleMobileAddQuestion = handleMobileAddQuestion;
 window.handleMobileLoadQuiz = handleMobileLoadQuiz;
 window.handleMobileSaveQuiz = handleMobileSaveQuiz;
 window.handleMobileStartGame = handleMobileStartGame;
@@ -371,6 +459,9 @@ window.handleMobileImport = handleMobileImport;
 window.handleMobileExport = handleMobileExport;
 window.handleMobileResults = handleMobileResults;
 window.scrollToBottom = scrollToBottom;
+window.syncMobileQuizTitle = syncMobileQuizTitle;
+window.syncMobileToggle = syncMobileToggle;
+window.syncMobileSettingsFromMain = syncMobileSettingsFromMain;
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
@@ -383,6 +474,7 @@ export {
     showMobileQuizSheet,
     hideMobileQuizSheet,
     toggleMobileQuizSheet,
+    handleMobileAddQuestion,
     handleMobileLoadQuiz,
     handleMobileSaveQuiz,
     handleMobileStartGame,
@@ -392,5 +484,8 @@ export {
     handleMobileExport,
     handleMobileResults,
     scrollToBottom,
-    initializeMobileQuizControls
+    initializeMobileQuizControls,
+    syncMobileQuizTitle,
+    syncMobileToggle,
+    syncMobileSettingsFromMain
 };

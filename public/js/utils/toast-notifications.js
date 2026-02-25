@@ -4,13 +4,14 @@
  */
 
 import { logger } from '../core/config.js';
+import { escapeHtml } from './dom.js';
 
 export class ToastNotifications {
     constructor() {
         this.toasts = [];
         this.container = null;
         this.initializeContainer();
-        
+
         logger.debug('🍞 Toast Notification System initialized');
     }
 
@@ -20,7 +21,7 @@ export class ToastNotifications {
     initializeContainer() {
         // Check if container already exists
         this.container = document.getElementById('toast-container');
-        
+
         if (!this.container) {
             // Create container
             this.container = document.createElement('div');
@@ -33,7 +34,7 @@ export class ToastNotifications {
     /**
      * Show a toast notification
      * @param {string} message - Message to display
-     * @param {string} type - Type: 'success', 'error', 'info', 'warning' 
+     * @param {string} type - Type: 'success', 'error', 'info', 'warning'
      * @param {number} duration - Duration in ms (default: 3000)
      */
     show(message, type = 'info', duration = 3000) {
@@ -42,14 +43,16 @@ export class ToastNotifications {
         // Create toast element
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
-        
+
         // Add icon based on type
         const icon = this.getIcon(type);
-        
+
+        // Escape message to prevent XSS attacks
+        const safeMessage = escapeHtml(message);
         toast.innerHTML = `
             <div class="toast-content">
                 <span class="toast-icon">${icon}</span>
-                <span class="toast-message">${message}</span>
+                <span class="toast-message">${safeMessage}</span>
             </div>
         `;
 
@@ -62,19 +65,23 @@ export class ToastNotifications {
             toast.classList.add('toast-show');
         });
 
-        // Auto-dismiss
-        const dismissTimer = setTimeout(() => {
+        // Auto-dismiss - store timer on element for cleanup
+        toast._dismissTimer = setTimeout(() => {
+            toast._dismissTimer = null;
             this.dismiss(toast);
         }, duration);
 
         // Allow manual dismissal by clicking
         toast.addEventListener('click', () => {
-            clearTimeout(dismissTimer);
+            if (toast._dismissTimer) {
+                clearTimeout(toast._dismissTimer);
+                toast._dismissTimer = null;
+            }
             this.dismiss(toast);
         });
 
         logger.debug(`🍞 Toast shown: ${type} - ${message}`);
-        
+
         return toast;
     }
 
@@ -86,7 +93,7 @@ export class ToastNotifications {
     getIcon(type) {
         const icons = {
             success: '✅',
-            error: '❌', 
+            error: '❌',
             warning: '⚠️',
             info: 'ℹ️'
         };
@@ -100,15 +107,28 @@ export class ToastNotifications {
     dismiss(toast) {
         if (!toast || !toast.parentNode) return;
 
+        // Clear any pending dismiss timer
+        if (toast._dismissTimer) {
+            clearTimeout(toast._dismissTimer);
+            toast._dismissTimer = null;
+        }
+
+        // Clear any pending animation timer
+        if (toast._animTimer) {
+            clearTimeout(toast._animTimer);
+            toast._animTimer = null;
+        }
+
         // Trigger exit animation
         toast.classList.add('toast-hide');
 
-        // Remove after animation completes
-        setTimeout(() => {
+        // Remove after animation completes - track this timer too
+        toast._animTimer = setTimeout(() => {
+            toast._animTimer = null;
             if (toast.parentNode) {
                 toast.parentNode.removeChild(toast);
             }
-            
+
             // Remove from tracking array
             const index = this.toasts.indexOf(toast);
             if (index > -1) {
@@ -128,7 +148,7 @@ export class ToastNotifications {
 
     /**
      * Show error toast
-     * @param {string} message - Error message  
+     * @param {string} message - Error message
      * @param {number} duration - Duration in ms (default: 4000)
      */
     error(message, duration = 4000) {

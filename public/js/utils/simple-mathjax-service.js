@@ -10,10 +10,13 @@ export class SimpleMathJaxService {
         this.isReady = false;
         this.renderingInProgress = false;
         this.initializationAttempted = false;
-        
+
         // Simple cache for rendered content
         this.renderCache = new Map();
-        
+
+        // Queue for pending render requests (instead of skipping)
+        this.pendingRenders = [];
+
         this.initializeMathJax();
     }
 
@@ -40,14 +43,14 @@ export class SimpleMathJaxService {
                         this.handleMathJaxReady();
                     }
                 });
-                
+
                 // Simple timeout fallback
                 setTimeout(() => {
                     if (!this.isReady && document.body) {
                         document.body.classList.add('mathjax-ready');
                     }
                 }, 3000);
-                
+
             } catch (error) {
                 logger.error('MathJax initialization error:', error);
             }
@@ -62,7 +65,7 @@ export class SimpleMathJaxService {
         if (document.body) {
             document.body.classList.add('mathjax-ready');
         }
-        
+
         if (window.MathJax && window.MathJax.typesetPromise) {
             logger.debug('MathJax ready for rendering');
         } else {
@@ -96,53 +99,117 @@ export class SimpleMathJaxService {
 
             const elementArray = Array.isArray(elements) ? elements : [elements];
             const validElements = elementArray.filter(el => el && el.nodeType === Node.ELEMENT_NODE);
-            
+
             if (validElements.length === 0) {
                 return Promise.resolve();
             }
 
-            // Add mobile-friendly LaTeX classes for FOUC prevention
-            validElements.forEach(element => {
-                if (this.containsLaTeX(element.textContent || element.innerHTML)) {
-                    element.classList.add('has-math');
-                    // Remove rendered class to show loading indicator on mobile
-                    element.classList.remove('rendered');
-                }
-            });
-
-            if (!this.isAvailable()) {
-                logger.debug('MathJax not available, content will show without LaTeX rendering');
-                // Mark as rendered even without MathJax to show content
-                validElements.forEach(el => el.classList.add('rendered'));
+            // Queue renders instead of skipping to prevent missing renders
+            if (this.renderingInProgress) {
+                logger.debug('MathJax rendering in progress, queueing elements');
+                this.pendingRenders.push(...validElements);
                 return Promise.resolve();
             }
 
-            // Clear previous typeset data
+            if (!this.isAvailable()) {
+                logger.debug('MathJax not available, marking elements as processed for visibility');
+                // CRITICAL: Still add MathJax_Processed to prevent FOUC hiding content forever
+                validElements.forEach(el => {
+                    el.classList.add('MathJax_Processed');
+                    el.querySelectorAll('.tex2jax_process').forEach(child => {
+                        child.classList.add('MathJax_Processed');
+                    });
+                });
+                return Promise.resolve();
+            }
+
+            // CRITICAL: Skip elements that already have rendered MathJax to prevent nested rendering
+            // This fixes the double-render bug where mjx-assistive-mml contains mjx-container
+            const elementsToRender = validElements.filter(element => {
+                const existingContainers = element.querySelectorAll(':scope > mjx-container');
+                if (existingContainers.length > 0) {
+                    logger.debug(`Skipping element - already has ${existingContainers.length} MathJax containers`);
+                    return false; // Skip this element
+                }
+                return true;
+            });
+
+            if (elementsToRender.length === 0) {
+                logger.debug('All elements already rendered, ensuring children are marked');
+                // CRITICAL: Still mark child elements that may have been added after initial render
+                validElements.forEach(el => {
+                    el.querySelectorAll('.tex2jax_process:not(.MathJax_Processed)').forEach(child => {
+                        child.classList.add('MathJax_Processed');
+                    });
+                });
+                return Promise.resolve();
+            }
+
+            // Clear previous typeset data for elements we're going to render
             if (window.MathJax.typesetClear) {
-                window.MathJax.typesetClear(validElements);
+                window.MathJax.typesetClear(elementsToRender);
             }
 
             this.renderingInProgress = true;
-            
+
             if (window.MathJax.typesetPromise) {
-                logger.debug(`Rendering MathJax for ${validElements.length} elements`);
-                await window.MathJax.typesetPromise(validElements);
-                logger.debug('MathJax rendering completed');
-                
-                // Mark elements as rendered to hide loading indicators
-                validElements.forEach(element => {
-                    element.classList.add('rendered');
+                logger.debug(`Rendering MathJax for ${elementsToRender.length} elements`);
+                await window.MathJax.typesetPromise(elementsToRender);
+
+                // Mark elements as processed so CSS unhides them
+                // Also mark ALL child elements with tex2jax_process to prevent FOUC
+                elementsToRender.forEach(el => {
+                    el.classList.add('MathJax_Processed');
+                    // Find and mark all child elements with tex2jax_process
+                    el.querySelectorAll('.tex2jax_process').forEach(child => {
+                        child.classList.add('MathJax_Processed');
+                    });
                 });
+
+                logger.debug('MathJax rendering completed');
             }
-            
+
             return Promise.resolve();
-            
+
         } catch (error) {
             logger.warn('MathJax rendering error (non-blocking):', error);
             return Promise.resolve();
         } finally {
             this.renderingInProgress = false;
+            // Process any queued renders
+            this.processQueue();
         }
+    }
+
+    /**
+     * Process queued render requests
+     */
+    async processQueue() {
+        if (this.pendingRenders.length === 0) {
+            return;
+        }
+
+        // Safety: if rendering stuck for >10s, reset flag
+        if (this.renderingInProgress) {
+            if (this._renderStartTime && (Date.now() - this._renderStartTime > 10000)) {
+                logger.warn('MathJax rendering appears stuck, resetting');
+                this.renderingInProgress = false;
+            } else {
+                return;
+            }
+        }
+
+        // Track render start time
+        this._renderStartTime = Date.now();
+
+        // Take all pending elements and clear the queue
+        const elementsToProcess = [...this.pendingRenders];
+        this.pendingRenders = [];
+
+        logger.debug(`Processing ${elementsToProcess.length} queued MathJax renders`);
+
+        // Render the queued elements
+        await this.render(elementsToProcess);
     }
 
     /**
@@ -151,21 +218,21 @@ export class SimpleMathJaxService {
     async waitForMathJax(timeout = 1000) {
         return new Promise((resolve) => {
             const startTime = Date.now();
-            
+
             const checkReady = () => {
                 if (this.isAvailable()) {
                     resolve(true);
                     return;
                 }
-                
+
                 if (Date.now() - startTime >= timeout) {
                     resolve(false);
                     return;
                 }
-                
+
                 setTimeout(checkReady, 50);
             };
-            
+
             checkReady();
         });
     }
@@ -178,7 +245,7 @@ export class SimpleMathJaxService {
             if (!container || !container.querySelectorAll) {
                 return Promise.resolve();
             }
-            
+
             const elements = container.querySelectorAll('.tex2jax_process, [data-latex="true"]');
             if (elements.length > 0) {
                 logger.debug(`renderAll: processing ${elements.length} elements`);

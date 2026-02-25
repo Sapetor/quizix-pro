@@ -5,7 +5,7 @@
 
 import { translationManager } from '../utils/translation-manager.js';
 import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
-import { logger } from '../core/config.js';
+import { logger, UI } from '../core/config.js';
 import { uiStateManager } from '../utils/ui-state-manager.js';
 
 export class SocketManager {
@@ -15,9 +15,85 @@ export class SocketManager {
         this.uiManager = uiManager;
         this.soundManager = soundManager;
         this.currentPlayerName = null; // Store current player name for language updates
-        
+        this.abortController = new AbortController(); // For cleanup of event listeners
+
+        // Cached DOM element references (lazy-loaded)
+        this._cachedElements = {};
+
         this.initializeSocketListeners();
         this.initializeLanguageListener();
+    }
+
+    /**
+     * Get cached DOM element by ID (lazy-load and cache)
+     * @param {string} id - Element ID
+     * @returns {HTMLElement|null}
+     */
+    _getElement(id) {
+        if (!this._cachedElements[id]) {
+            this._cachedElements[id] = document.getElementById(id);
+        }
+        return this._cachedElements[id];
+    }
+
+    /**
+     * Get cached DOM element by selector (lazy-load and cache)
+     * @param {string} selector - CSS selector
+     * @returns {HTMLElement|null}
+     */
+    _getElementBySelector(selector) {
+        const key = `sel:${selector}`;
+        if (!this._cachedElements[key]) {
+            this._cachedElements[key] = document.querySelector(selector);
+        }
+        return this._cachedElements[key];
+    }
+
+    /**
+     * Clear cached DOM elements (call on screen transitions)
+     */
+    clearCache() {
+        this._cachedElements = {};
+        logger.debug('SocketManager cache cleared');
+    }
+
+    /**
+     * Reset button to default styles (clear any inline overrides)
+     * @param {HTMLElement} button - Button element to reset
+     */
+    _resetButtonStyles(button) {
+        if (!button) return;
+        button.onclick = null;
+        const stylesToReset = [
+            'position', 'bottom', 'right', 'zIndex', 'backgroundColor',
+            'color', 'border', 'padding', 'borderRadius', 'fontSize',
+            'cursor', 'boxShadow'
+        ];
+        stylesToReset.forEach(prop => { button.style[prop] = ''; });
+    }
+
+    /**
+     * Resolve a server-sent message to a translated string.
+     * Prefers data.messageKey (translation key) over data.message (raw string),
+     * with an optional fallbackKey if neither produces a usable result.
+     * @param {object} data - Socket event data object
+     * @param {string} [fallbackKey] - Translation key to use as last resort
+     * @returns {string}
+     */
+    _resolveServerMessage(data, fallbackKey) {
+        if (data?.messageKey) {
+            const translated = translationManager.getTranslationSync(data.messageKey);
+            if (translated && translated !== data.messageKey) {
+                return translated;
+            }
+        }
+        if (fallbackKey) {
+            const fallback = translationManager.getTranslationSync(fallbackKey);
+            if (fallback && fallback !== fallbackKey) {
+                return fallback;
+            }
+        }
+        return data?.message || data?.error || translationManager.getTranslationSync('error_occurred') || 'An error occurred';
     }
 
     /**
@@ -31,6 +107,10 @@ export class SocketManager {
 
         this.socket.on('disconnect', () => {
             logger.debug('Disconnected from server');
+            // Stop active timers to prevent phantom timer updates while disconnected
+            if (this.gameManager) {
+                this.gameManager.stopTimer();
+            }
         });
 
         // Game creation and joining
@@ -41,7 +121,7 @@ export class SocketManager {
             this.gameManager.setPlayerInfo('Host', true);
             this.uiManager.updateGamePin(data.pin);
             this.uiManager.loadQRCode(data.pin);
-            
+
             // Update quiz title in lobby
             if (data.title) {
                 logger.debug('Calling updateQuizTitle with:', data.title);
@@ -49,14 +129,15 @@ export class SocketManager {
             } else {
                 logger.warn('No quiz title received from server');
             }
-            
+
             // 🔧 FIX: Initialize empty player list for new lobby to prevent phantom players
             this.gameManager.updatePlayersList([]);
+            this._lastPlayerCount = 0; // Reset player count tracking for join sounds
             logger.debug('🧹 Initialized empty player list for new lobby');
-            
+
             this.uiManager.showScreen('game-lobby');
         });
-        
+
         // Listen for new games becoming available
         this.socket.on('game-available', (data) => {
             logger.debug('New game available:', data);
@@ -68,16 +149,16 @@ export class SocketManager {
             logger.debug('Player joined:', data);
             logger.debug('data.players:', data.players);
             logger.debug('data keys:', Object.keys(data));
-            
+
             // Set player info correctly - player is NOT a host
             logger.debug('PlayerJoined', { playerName: data.playerName, gamePin: data.gamePin });
             if (data.playerName && data.gamePin) {
                 this.gameManager.setPlayerInfo(data.playerName, false);
                 this.gameManager.setGamePin(data.gamePin);
-                
+
                 // Update lobby display with game information
                 this.updatePlayerLobbyDisplay(data.gamePin, data.players);
-                
+
                 // Update "You're in!" message with player name
                 this.updatePlayerWelcomeMessage(data.playerName);
             } else {
@@ -87,11 +168,41 @@ export class SocketManager {
             this.uiManager.showScreen('player-lobby');
         });
 
+        // Handle player name change response
+        this.socket.on('name-changed', (data) => {
+            logger.debug('Name changed:', data);
+            if (data.success) {
+                // Update local state
+                this.currentPlayerName = data.newName;
+                this.gameManager.setPlayerInfo(data.newName, false);
+
+                // Update welcome message
+                this.updatePlayerWelcomeMessage(data.newName);
+
+                // Hide edit mode, show display mode
+                this.hideNameEditMode();
+
+                // Show success toast
+                if (window.toastNotifications) {
+                    const message = translationManager.getTranslationSync('name_changed_success') || 'Name updated!';
+                    window.toastNotifications.show(message, 'success', 2000);
+                }
+            }
+        });
+
         // Game flow events
         this.socket.on('game-started', (data) => {
             logger.debug('Game started:', data);
-            const isHost = this.gameManager.stateManager ? this.gameManager.stateManager.getGameState().isHost : false;
-            
+            const isHost = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
+
+            // Clear stale content from any previous game before showing game screen
+            this.gameManager.clearGameDisplayContent();
+
+            // Initialize power-ups for players (not host)
+            if (!isHost && data.powerUpsEnabled) {
+                this.gameManager.initializePowerUps(true);
+            }
+
             if (isHost) {
                 this.uiManager.showScreen('host-game-screen');
             } else {
@@ -99,26 +210,39 @@ export class SocketManager {
             }
         });
 
+        // Power-up result handler
+        this.socket.on('power-up-result', (data) => {
+            logger.debug('Power-up result:', data);
+            if (data.success) {
+                // Handle specific power-up effects
+                if (data.type === 'fifty-fifty' && data.hiddenOptions) {
+                    // Apply 50-50 effect from server
+                    this.gameManager.getPowerUpManager()?.applyFiftyFiftyToOptions(
+                        this.gameManager.stateManager.getGameState().currentQuestion?.correctAnswer
+                    );
+                } else if (data.type === 'extend-time' && data.extraSeconds) {
+                    // Extend time effect is handled locally
+                    this.gameManager.timerManager?.extendTime(data.extraSeconds);
+                }
+                // double-points is handled automatically in scoring
+            } else {
+                logger.warn('Power-up failed:', data.error);
+            }
+        });
+
         this.socket.on('question-start', errorBoundary.safeSocketHandler((data) => {
             logger.debug('Question started:', data);
-            logger.debug('Question timeLimit value:', data.timeLimit, 'Type:', typeof data.timeLimit);
-            logger.debug('Question image data:', JSON.stringify(data.image), 'Has image:', !!data.image);
-            logger.debug('Full question data received:', JSON.stringify(data, null, 2));
-            
-            
+
             // Switch to playing state for immersive gameplay
-            if (uiStateManager && typeof uiStateManager.setState === 'function') {
-                uiStateManager.setState('playing');
-            }
-            
+            uiStateManager?.setState?.('playing');
+
             this.gameManager.displayQuestion(data);
-            
-            // Ensure timer has valid duration
-            const timerDuration = data.timeLimit && !isNaN(data.timeLimit) ? data.timeLimit * 1000 : 30000; // Default 30 seconds
-            // logger.debug('Timer duration calculated:', timerDuration);
-            this.gameManager.startTimer(timerDuration);
-            
-            if (this.soundManager.isEnabled()) {
+
+            // Ensure timer has valid duration (convert seconds to ms)
+            const timeLimit = data.timeLimit && !isNaN(data.timeLimit) ? data.timeLimit : UI.DEFAULT_TIMER_SECONDS;
+            this.gameManager.startTimer(timeLimit * 1000);
+
+            if (this.soundManager?.isEnabled()) {
                 this.soundManager.playQuestionStartSound();
             }
         }, 'question-start'));
@@ -126,7 +250,7 @@ export class SocketManager {
         this.socket.on('question-end', (data) => {
             logger.debug('Question ended:', data);
             this.gameManager.stopTimer();
-            
+
             // New flow: question-end now shows statistics first, not leaderboard
             if (data && data.showStatistics) {
                 // Stay on host-game-screen to show statistics with new control buttons
@@ -137,14 +261,14 @@ export class SocketManager {
         this.socket.on('question-timeout', (data) => {
             logger.debug('Question timed out:', data);
             this.gameManager.stopTimer();
-            
+
             if (this.gameManager.timer) {
                 clearInterval(this.gameManager.timer);
                 this.gameManager.timer = null;
             }
-            
+
             // Show correct answer on host side
-            const isHost = this.gameManager.stateManager ? this.gameManager.stateManager.getGameState().isHost : false;
+            const isHost = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
             if (isHost) {
                 this.gameManager.showCorrectAnswer(data);
             }
@@ -152,108 +276,107 @@ export class SocketManager {
 
         this.socket.on('show-next-button', (data) => {
             logger.debug('Showing next question button', data);
-            
-            // Show buttons in leaderboard screen (original buttons)
-            const nextButton = document.getElementById('next-question');
+
+            // Determine if this is the last question
+            const gameState = this.gameManager.stateManager?.getGameState();
+            const currentQuestion = gameState?.currentQuestion;
+            const isLastQuestion = data?.isLastQuestion ||
+                (currentQuestion?.questionNumber >= currentQuestion?.totalQuestions);
+
+            const buttonText = isLastQuestion
+                ? (translationManager.getTranslationSync('finish_quiz') || 'Finish Quiz')
+                : (translationManager.getTranslationSync('next_question') || 'Next Question');
+
+            // Show buttons in leaderboard screen
+            const nextButton = this._getElement('next-question');
             if (nextButton) {
                 nextButton.style.display = 'block';
-                
-                // Update button text based on whether it's the last question
-                // Check both data.isLastQuestion and current question number vs total questions
-                const gameState = this.gameManager.stateManager.getGameState();
-                const currentQuestion = gameState.currentQuestion;
-                const isLastQuestion = (data && data.isLastQuestion) || 
-                                     (currentQuestion && currentQuestion.questionNumber >= currentQuestion.totalQuestions);
-                
-                if (isLastQuestion) {
-                    nextButton.textContent = translationManager.getTranslationSync('finish_quiz') || 'Finish Quiz';
-                } else {
-                    nextButton.textContent = translationManager.getTranslationSync('next_question') || 'Next Question';
-                }
-                // Clear any existing onclick handler and styling
-                nextButton.onclick = null;
-                nextButton.style.position = '';
-                nextButton.style.bottom = '';
-                nextButton.style.right = '';
-                nextButton.style.zIndex = '';
-                nextButton.style.backgroundColor = '';
-                nextButton.style.color = '';
-                nextButton.style.border = '';
-                nextButton.style.padding = '';
-                nextButton.style.borderRadius = '';
-                nextButton.style.fontSize = '';
-                nextButton.style.cursor = '';
-                nextButton.style.boxShadow = '';
+                nextButton.textContent = buttonText;
+                this._resetButtonStyles(nextButton);
             }
-            
-            // Also show buttons in host-game-screen (for statistics phase) - now in stats header
-            const statsControls = document.querySelector('.stats-controls');
-            const nextButtonStats = document.getElementById('next-question-stats');
+
+            // Also show buttons in host-game-screen (for statistics phase)
+            const statsControls = this._getElementBySelector('.stats-controls');
+            const nextButtonStats = this._getElement('next-question-stats');
             if (statsControls && nextButtonStats) {
                 statsControls.style.display = 'flex';
                 nextButtonStats.style.display = 'block';
-                
-                // Update stats button text as well
-                if (data && data.isLastQuestion) {
-                    nextButtonStats.textContent = translationManager.getTranslationSync('finish_quiz') || 'Finish Quiz';
-                } else {
-                    nextButtonStats.textContent = translationManager.getTranslationSync('next_question') || 'Next Question';
-                }
+                nextButtonStats.textContent = buttonText;
             }
         });
 
         this.socket.on('hide-next-button', () => {
             logger.debug('Hiding next question button');
-            
-            // Hide button in leaderboard screen
-            const nextButton = document.getElementById('next-question');
-            if (nextButton) {
-                nextButton.style.display = 'none';
-                nextButton.onclick = null; // Clear onclick handler
-            }
-            
-            // Hide buttons in host-game-screen - now in stats header
-            const statsControls = document.querySelector('.stats-controls');
-            const nextButtonStats = document.getElementById('next-question-stats');
-            if (statsControls && nextButtonStats) {
-                statsControls.style.display = 'none';
-                nextButtonStats.style.display = 'none';
-            }
-        });
 
-        this.socket.on('game-end', (data) => {
-            logger.debug('CLIENT: game-end event received!', data);
-            logger.debug('🎉 Game ended - triggering final results:', data);
-            
-            // Switch to results state for leaderboard and celebration
-            if (window.uiStateManager && typeof window.uiStateManager.setState === 'function') {
-                window.uiStateManager.setState('results');
-                logger.debug('CLIENT: Set game state to results');
-            }
-            
-            // Hide manual advancement button
-            const nextButton = document.getElementById('next-question');
+            // Hide button in leaderboard screen
+            const nextButton = this._getElement('next-question');
             if (nextButton) {
                 nextButton.style.display = 'none';
                 nextButton.onclick = null;
-                logger.debug('CLIENT: Hid next question button');
             }
-            
-            // Clear any remaining timers
+
+            // Hide buttons in host-game-screen
+            const statsControls = this._getElementBySelector('.stats-controls');
+            const nextButtonStats = this._getElement('next-question-stats');
+            if (statsControls) statsControls.style.display = 'none';
+            if (nextButtonStats) nextButtonStats.style.display = 'none';
+        });
+
+        this.socket.on('game-end', (data) => {
+            logger.debug('Game ended - triggering final results:', data);
+
+            // Switch to results state for leaderboard and celebration
+            if (window.uiStateManager?.setState) {
+                window.uiStateManager.setState('results');
+            }
+
+            // Hide manual advancement button
+            const nextButton = this._getElement('next-question');
+            if (nextButton) {
+                nextButton.style.display = 'none';
+                nextButton.onclick = null;
+            }
+
+            // Clear any remaining timers and show final results
             this.gameManager.stopTimer();
-            logger.debug('CLIENT: Stopped timer');
-            
-            // Show final results immediately (server already has delay)
-            logger.debug('CLIENT: About to call showFinalResults with leaderboard:', data.finalLeaderboard);
-            logger.debug('🎉 Calling showFinalResults with leaderboard:', data.finalLeaderboard);
-            this.gameManager.showFinalResults(data.finalLeaderboard);
-            logger.debug('CLIENT: showFinalResults called');
+            this.gameManager.showFinalResults(data.finalLeaderboard, data.conceptMastery);
+
+            // Mark player as having completed a game (hides first-game hints on next visit)
+            localStorage.setItem('quiz_player_first_game', 'done');
+        });
+
+        // Handle game reset for rematch
+        this.socket.on('game-reset', (data) => {
+            logger.debug('Game reset for rematch:', data);
+
+            // Stop timers and reset game state
+            this.gameManager.stopTimer();
+            this.gameManager.resetGameState?.();
+
+            // Determine if this client is the host
+            const isHost = data.hostSocketId === this.socket.id;
+            const uiState = isHost ? 'hostLobby' : 'playerWaiting';
+            const screen = isHost ? 'game-lobby' : 'player-lobby';
+
+            window.uiStateManager?.setState?.(uiState);
+
+            if (isHost) {
+                this.gameManager.stateManager?.updateState?.({ isHost: true });
+                this.uiManager.updateQuizTitle(data.title);
+                this._lastPlayerCount = data.players?.length || 0;
+            } else {
+                this.updatePlayerLobbyDisplay(data.pin, data.players);
+            }
+
+            this.gameManager.updatePlayersList(data.players);
+            this.uiManager.showScreen(screen);
+
+            logger.info(`Game reset for rematch (isHost: ${isHost})`);
         });
 
         // Player-specific events
         this.socket.on('player-result', errorBoundary.safeSocketHandler((data) => {
-            logger.debug('🎯 Player result event received:', data);
-            logger.debug('🎯 Calling gameManager.showPlayerResult...');
+            logger.debug('Player result received:', data);
             this.gameManager.showPlayerResult(data);
         }, 'player-result'));
 
@@ -262,94 +385,163 @@ export class SocketManager {
             this.gameManager.showAnswerSubmitted(data.answer);
         });
 
-        // Statistics and updates
-        this.socket.on('statistics-update', (data) => {
-            logger.debug('Statistics updated:', data);
-            this.updateStatistics(data);
+        this.socket.on('answer-rejected', (data) => {
+            logger.warn('Answer rejected:', data);
+            this.gameManager.showAnswerRejected(this._resolveServerMessage(data, 'error_answer_rejected'));
         });
 
-        this.socket.on('leaderboard-update', (data) => {
-            logger.debug('Leaderboard updated:', data);
-            this.gameManager.showLeaderboard(data.leaderboard);
-            // Note: Removed fanfare from here - it should only play at final game end
-        });
-
-        // Show leaderboard (new event for improved flow)
+        // Show leaderboard
         this.socket.on('show-leaderboard', (data) => {
             logger.debug('Showing leaderboard:', data);
             this.gameManager.showLeaderboard(data.leaderboard);
         });
 
-        // Answer statistics updates
+        // Live answer count updates (during question)
+        this.socket.on('answer-count-update', (data) => {
+            logger.debug('Live answer count update:', data);
+            this.gameManager.updateLiveAnswerCount(data);
+        });
+
+        // Answer statistics updates (after question ends)
         this.socket.on('answer-statistics', (data) => {
             logger.debug('Answer statistics received:', data);
             this.gameManager.updateAnswerStatistics(data);
         });
 
-        this.socket.on('players-update', (data) => {
-            logger.debug('Players updated:', data);
-            this.gameManager.updatePlayersList(data.players);
-        });
-
         this.socket.on('player-list-update', (data) => {
             logger.debug('Player list updated:', data);
+
+            // Track previous count to detect new players
+            const previousCount = this._lastPlayerCount || 0;
+            const newCount = data.players ? data.players.length : 0;
+            this._lastPlayerCount = newCount;
+
+            // Play join sound if player count increased (only for host)
+            if (newCount > previousCount && this.gameManager.stateManager?.getGameState().isHost) {
+                if (this.soundManager && this.soundManager.isSoundsEnabled()) {
+                    this.soundManager.playPlayerJoinSound();
+                }
+            }
+
             this.gameManager.updatePlayersList(data.players);
-            
+
             // Update player count in lobby if we're in player lobby
             if (this.uiManager.currentScreen === 'player-lobby') {
-                const lobbyPlayerCount = document.getElementById('lobby-player-count');
+                const lobbyPlayerCount = this._getElement('lobby-player-count');
                 if (lobbyPlayerCount && data.players) {
                     lobbyPlayerCount.textContent = data.players.length;
                 }
             }
         });
 
+        // ==================== CONSENSUS MODE EVENTS ====================
+
+        // Proposal distribution update
+        this.socket.on('proposal-update', (data) => {
+            logger.debug('Proposal update received:', data);
+            if (this.gameManager.consensusManager) {
+                this.gameManager.consensusManager.handleProposalUpdate(data);
+            }
+        });
+
+        // Consensus threshold met notification
+        this.socket.on('consensus-threshold-met', (data) => {
+            logger.debug('Consensus threshold met:', data);
+            // Visual feedback that threshold is met
+        });
+
+        // Consensus reached and locked
+        this.socket.on('consensus-reached', (data) => {
+            logger.debug('Consensus reached:', data);
+            if (this.gameManager.consensusManager) {
+                this.gameManager.consensusManager.showConsensusReached(data);
+            }
+        });
+
+        // Quick response from another player
+        this.socket.on('quick-response', (data) => {
+            logger.debug('Quick response received:', data);
+            if (this.gameManager.discussionManager) {
+                this.gameManager.discussionManager.handleQuickResponse(data);
+            }
+        });
+
+        // Chat message from another player
+        this.socket.on('chat-message', (data) => {
+            logger.debug('Chat message received:', data);
+            if (this.gameManager.discussionManager) {
+                this.gameManager.discussionManager.handleChatMessage(data);
+            }
+        });
+
+        // Team score update
+        this.socket.on('team-score-update', (data) => {
+            logger.debug('Team score update:', data);
+            if (this.gameManager.consensusManager) {
+                this.gameManager.consensusManager.handleTeamScoreUpdate(data);
+            }
+        });
+
+        // ==================== END CONSENSUS MODE EVENTS ====================
+
         // Error handling
         this.socket.on('error', (data) => {
             logger.error('Socket error:', data);
-            translationManager.showAlert('error', data.message || 'An error occurred');
+            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_occurred'));
         });
 
         this.socket.on('game-not-found', (data) => {
             logger.error('Game not found:', data);
-            translationManager.showAlert('error', data.message || 'Game not found');
+            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_game_not_found'));
         });
 
         this.socket.on('player-limit-reached', (data) => {
             logger.error('Player limit reached:', data);
-            translationManager.showAlert('error', data.message || 'Player limit reached');
+            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_player_limit'));
         });
 
         this.socket.on('invalid-pin', (data) => {
             logger.error('Invalid PIN:', data);
-            translationManager.showAlert('error', data.message || 'Invalid game PIN');
+            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_invalid_pin'));
         });
 
         this.socket.on('name-taken', (data) => {
             logger.error('Name taken:', data);
-            translationManager.showAlert('error', data.message || 'Name is already taken');
-        });
-
-        // Host-specific events
-        this.socket.on('host-statistics', (data) => {
-            logger.debug('Host statistics:', data);
-            this.updateHostStatistics(data);
+            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_name_taken'));
         });
 
         this.socket.on('player-disconnected', (data) => {
             logger.debug('Player disconnected:', data);
+
+            // Play leave sound (only for host)
+            if (this.gameManager.stateManager?.getGameState().isHost) {
+                if (this.soundManager && this.soundManager.isSoundsEnabled()) {
+                    this.soundManager.playPlayerLeaveSound();
+                }
+            }
+
+            // Update player count tracking
+            this._lastPlayerCount = data.players ? data.players.length : 0;
+
             this.gameManager.updatePlayersList(data.players);
         });
 
-        this.socket.on('all-players-answered', (data) => {
-            logger.debug('All players answered:', data);
-            // Could show visual feedback that all players have answered
+        // Handle game-ended (emitted when host disconnects mid-game)
+        this.socket.on('game-ended', (data) => {
+            logger.debug('Game ended (host disconnected):', data);
+            this.gameManager.stopTimer();
+            this.gameManager.resetGameState();
+            this.uiManager.showScreen('main-menu');
+            const reason = data?.reason || 'The game has ended';
+            translationManager.showAlert('info', reason);
         });
 
         // Special events
         this.socket.on('force-disconnect', (data) => {
             logger.debug('Force disconnect:', data);
-            translationManager.showAlert('info', data.message || 'You have been disconnected');
+            this.gameManager.stopTimer();
+            this.gameManager.resetGameState();
+            translationManager.showAlert('info', this._resolveServerMessage(data, 'error_host_disconnected'));
             this.uiManager.showScreen('main-menu');
         });
 
@@ -368,101 +560,20 @@ export class SocketManager {
     }
 
     /**
-     * Update game statistics display
-     */
-    updateStatistics(data) {
-        if (!data.statistics) return;
-        
-        const statsContainer = document.getElementById('game-statistics');
-        if (!statsContainer) return;
-        
-        // Clear previous statistics
-        statsContainer.innerHTML = '';
-        
-        // Show answer distribution
-        if (data.statistics.answerDistribution) {
-            const distributionDiv = document.createElement('div');
-            distributionDiv.className = 'answer-distribution';
-            distributionDiv.innerHTML = '<h4>Answer Distribution</h4>';
-            
-            Object.entries(data.statistics.answerDistribution).forEach(([answer, count]) => {
-                const answerDiv = document.createElement('div');
-                answerDiv.className = 'answer-stat';
-                answerDiv.innerHTML = `
-                    <span class="answer-label">${answer}</span>
-                    <span class="answer-count">${count}</span>
-                `;
-                distributionDiv.appendChild(answerDiv);
-            });
-            
-            statsContainer.appendChild(distributionDiv);
-        }
-        
-        // Show response time statistics
-        if (data.statistics.averageResponseTime) {
-            const responseTimeDiv = document.createElement('div');
-            responseTimeDiv.className = 'response-time-stat';
-            responseTimeDiv.innerHTML = `
-                <h4>Average Response Time</h4>
-                <span class="time-value">${data.statistics.averageResponseTime.toFixed(1)}s</span>
-            `;
-            statsContainer.appendChild(responseTimeDiv);
-        }
-        
-        // Show participation rate
-        if (data.statistics.participationRate !== undefined) {
-            const participationDiv = document.createElement('div');
-            participationDiv.className = 'participation-stat';
-            participationDiv.innerHTML = `
-                <h4>Participation Rate</h4>
-                <span class="participation-value">${(data.statistics.participationRate * 100).toFixed(1)}%</span>
-            `;
-            statsContainer.appendChild(participationDiv);
-        }
-    }
-
-    /**
-     * Update host-specific statistics
-     */
-    updateHostStatistics(data) {
-        // Update host dashboard with detailed statistics
-        const hostStats = document.getElementById('host-statistics');
-        if (!hostStats) return;
-        
-        hostStats.innerHTML = `
-            <div class="host-stat-grid">
-                <div class="host-stat-item">
-                    <h4>Total Players</h4>
-                    <span class="stat-value">${data.totalPlayers || 0}</span>
-                </div>
-                <div class="host-stat-item">
-                    <h4>Answered</h4>
-                    <span class="stat-value">${data.playersAnswered || 0}</span>
-                </div>
-                <div class="host-stat-item">
-                    <h4>Correct</h4>
-                    <span class="stat-value">${data.correctAnswers || 0}</span>
-                </div>
-                <div class="host-stat-item">
-                    <h4>Avg Time</h4>
-                    <span class="stat-value">${data.averageTime ? data.averageTime.toFixed(1) + 's' : 'N/A'}</span>
-                </div>
-            </div>
-        `;
-    }
-
-    /**
      * Join game by PIN
      */
     joinGame(pin, playerName) {
-        logger.debug('Attempting to join game with PIN:', pin, 'Name:', playerName);
-        
-        
-        this.socket.emit('player-join', {
-            pin: pin,
-            name: playerName
-        });
-        logger.debug('Emitted player-join event');
+        logger.debug('Joining game:', { pin, playerName });
+        this.socket.emit('player-join', { pin, name: playerName });
+    }
+
+    /**
+     * Request to change player name while in lobby
+     * @param {string} newName - The new player name
+     */
+    changePlayerName(newName) {
+        logger.debug('Requesting name change to:', newName);
+        this.socket.emit('player-change-name', { newName });
     }
 
     /**
@@ -470,19 +581,19 @@ export class SocketManager {
      */
     updatePlayerLobbyDisplay(gamePin, players) {
         // Update game PIN display
-        const lobbyPinDisplay = document.getElementById('lobby-pin-display');
+        const lobbyPinDisplay = this._getElement('lobby-pin-display');
         if (lobbyPinDisplay && gamePin) {
             lobbyPinDisplay.textContent = gamePin;
         }
 
         // Update player count
-        const lobbyPlayerCount = document.getElementById('lobby-player-count');
+        const lobbyPlayerCount = this._getElement('lobby-player-count');
         if (lobbyPlayerCount && players) {
             lobbyPlayerCount.textContent = players.length;
         }
 
         // Show the lobby info section
-        const lobbyInfo = document.getElementById('lobby-info');
+        const lobbyInfo = this._getElement('lobby-info');
         if (lobbyInfo) {
             lobbyInfo.style.display = 'flex';
         }
@@ -495,14 +606,14 @@ export class SocketManager {
      * @param {string} playerName - The name of the player who joined
      */
     updatePlayerWelcomeMessage(playerName) {
-        const playerInfo = document.getElementById('player-info');
+        const playerInfo = this._getElement('player-info');
         if (playerInfo && playerName && playerName !== 'Host') {
             // Store the player name for language updates
             this.currentPlayerName = playerName;
-            
+
             // Remove the data-translate attribute to prevent automatic translation override
             playerInfo.removeAttribute('data-translate');
-            
+
             // Use the already imported translation manager from the top of the file
             const translatedMessage = translationManager.getTranslationSync('you_are_in_name');
             if (translatedMessage && translatedMessage !== 'you_are_in_name') {
@@ -518,43 +629,67 @@ export class SocketManager {
     }
 
     /**
+     * Show the name edit UI and hide display mode
+     */
+    showNameEditMode() {
+        const displaySection = this._getElement('player-name-display');
+        const editSection = this._getElement('player-name-edit');
+        const editInput = this._getElement('edit-name-input');
+
+        if (displaySection) displaySection.classList.add('hidden');
+        if (editSection) editSection.classList.remove('hidden');
+
+        // Pre-fill with current name and focus
+        if (editInput && this.currentPlayerName) {
+            editInput.value = this.currentPlayerName;
+            editInput.focus();
+            editInput.select();
+        }
+    }
+
+    /**
+     * Hide the name edit UI and show display mode
+     */
+    hideNameEditMode() {
+        const displaySection = this._getElement('player-name-display');
+        const editSection = this._getElement('player-name-edit');
+
+        if (displaySection) displaySection.classList.remove('hidden');
+        if (editSection) editSection.classList.add('hidden');
+    }
+
+    /**
      * Initialize language change listener for updating personalized messages
      */
     initializeLanguageListener() {
         // Listen for language change events to update personalized messages
-        document.addEventListener('languageChanged', (event) => {
+        // Use AbortController signal for proper cleanup on disconnect
+        document.addEventListener('languageChanged', () => {
             logger.debug('Language changed, updating personalized messages');
-            
+
             // Update the player welcome message if we have a current player name
             if (this.currentPlayerName) {
                 this.updatePlayerWelcomeMessage(this.currentPlayerName);
             }
-        });
+        }, { signal: this.abortController.signal });
     }
 
     /**
      * Create game
      */
     createGame(quizData) {
-        logger.debug('SocketManager.createGame called with:', quizData);
-        logger.debug('Socket connected:', this.socket.connected);
-        
-        // Set quiz title in GameManager for results saving
-        if (quizData?.quiz?.title && this.gameManager) {
-            this.gameManager.setQuizTitle(quizData.quiz.title);
-        }
-        
-        // Set full quiz data for detailed analytics export
+        logger.debug('Creating game with quiz:', quizData?.quiz?.title);
+
+        // Set quiz data in GameManager for results saving and analytics
         if (quizData?.quiz && this.gameManager) {
+            this.gameManager.setQuizTitle(quizData.quiz.title);
             this.gameManager.setQuizData(quizData.quiz);
         }
-        
+
         try {
-            logger.debug('About to emit host-join with data:', JSON.stringify(quizData, null, 2));
             this.socket.emit('host-join', quizData);
-            logger.debug('Emitted host-join event successfully');
         } catch (error) {
-            logger.error('Error emitting host-join:', error);
+            logger.error('Error creating game:', error);
         }
     }
 
@@ -562,22 +697,18 @@ export class SocketManager {
      * Start game
      */
     startGame() {
-        logger.debug('Attempting to start game...');
-        logger.debug('Socket connected:', this.socket.connected);
-        
+        logger.debug('Starting game');
+
         // Play game start sound
-        if (this.soundManager && this.soundManager.isEnabled()) {
+        if (this.soundManager?.isEnabled()) {
             this.soundManager.playGameStartSound();
         }
-        
+
         // Mark game start time in GameManager for results saving
-        if (this.gameManager) {
-            this.gameManager.markGameStartTime();
-        }
-        
+        this.gameManager?.markGameStartTime();
+
         try {
             this.socket.emit('start-game');
-            logger.debug('Emitted start-game event successfully');
         } catch (error) {
             logger.error('Error starting game:', error);
         }
@@ -598,9 +729,8 @@ export class SocketManager {
      * Request next question (manual advancement)
      */
     nextQuestion() {
-        logger.debug('CLIENT: socketManager.nextQuestion() called - emitting next-question event');
+        logger.debug('Requesting next question');
         this.socket.emit('next-question');
-        logger.debug('CLIENT: next-question event emitted');
     }
 
     /**
@@ -628,6 +758,14 @@ export class SocketManager {
      * Disconnect from server
      */
     disconnect() {
+        // Clean up event listeners
+        this.abortController.abort();
+
+        // Clean up game state when intentionally disconnecting
+        if (this.gameManager) {
+            this.gameManager.cleanup();
+        }
+
         this.socket.disconnect();
     }
 }

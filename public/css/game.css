@@ -40,11 +40,12 @@
 }
 
 .game-pin {
+    font-family: var(--font-mono);
     font-size: calc(48px * var(--global-font-scale));
     font-weight: 700;
     color: var(--accent-primary);
     margin: 20px 0;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
 }
 
 .qr-code-container {
@@ -214,7 +215,7 @@
     justify-content: center;
     text-align: center;
     line-height: 1;
-    height: 48px; /* Match timer height for perfect alignment */
+    min-height: var(--counter-height); /* Scales with font for accessibility */
 }
 
 #timer {
@@ -233,7 +234,7 @@
     justify-content: center;
     text-align: center;
     line-height: 1;
-    height: 48px; /* Fixed height for consistent alignment */
+    min-height: var(--timer-height); /* Scales with font for accessibility */
 }
 
 #timer.warning {
@@ -343,14 +344,25 @@
     color: white;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
-    align-items: center;
+    align-items: center; /* Center single-line content, multi-line handled by word-wrap */
     justify-content: flex-start;
     min-height: 70px;
     cursor: default;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* Changed from hidden to allow full content display */
     width: 100%;
     max-width: 100%;
+}
+
+/* FOUC Prevention for host option display - ensure LaTeX is hidden before MathJax renders */
+.option-display.tex2jax_process:not(.MathJax_Processed) {
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+.option-display.tex2jax_process.MathJax_Processed {
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 /* === COLORFUL HOST OPTIONS SYSTEM === */
@@ -638,7 +650,7 @@
     min-height: 70px;
     text-align: left;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* Changed from hidden to prevent text truncation on mobile */
     border: none;
     outline: none;
     width: 100%;
@@ -665,35 +677,54 @@
 }
 
 /* Player Option Hover Effects - Enhanced for Colorful Design */
+/* NOTE: No scale() - causes blurry text. Use translateY for lift effect only. */
 .player-option:hover {
-    transform: translateY(-3px) scale(1.02);
+    transform: translateY(-3px);
     filter: brightness(1.1);
 }
 
 /* Player option hover colors now consolidated in variables.css */
 
 .player-option:active {
-    transform: translateY(-1px) scale(1.01);
+    transform: translateY(-1px);
 }
 
 /* Selected state - keep original color but add emphasis */
-.player-option.selected {
-    transform: translateY(-4px) scale(1.05);
+/* NOTE: No scale() - causes blurry text */
+.player-option.selected,
+.tf-option.selected {
+    transform: translateY(-4px);
     filter: brightness(1.2) saturate(1.2);
     box-shadow: 0 16px 50px rgba(0, 0, 0, 0.3);
+    border: 3px solid var(--color-primary-500);
+    transition: all 0.2s ease;
     animation: selectedPulse 1.5s ease-in-out infinite;
 }
 
-/* Correct/Incorrect states override colors */
+/* Style reset class for clearing interaction states */
+.style-reset {
+    transform: none !important;
+    animation: none !important;
+    filter: none !important;
+}
+
+/* Temporary highlight effect for auto-scroll target */
+.auto-scroll-highlight {
+    background: rgba(255, 215, 0, 0.2) !important;
+    transform: scale(1.02);
+    transition: all 0.3s ease;
+}
+
+/* Correct/Incorrect states override colors - WCAG AA accessible */
 .player-option.correct {
-    background: linear-gradient(135deg, var(--color-success-500), #10b981) !important;
-    box-shadow: 0 12px 40px rgba(16, 185, 129, 0.6) !important;
+    background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end)) !important;
+    box-shadow: 0 12px 40px var(--true-shadow-hover) !important;
     animation: correctPulse 2s ease-in-out infinite;
 }
 
 .player-option.incorrect {
-    background: linear-gradient(135deg, var(--color-error-500), #dc2626) !important;
-    box-shadow: 0 12px 40px rgba(239, 68, 68, 0.6) !important;
+    background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end)) !important;
+    box-shadow: 0 12px 40px var(--false-shadow-hover) !important;
     filter: brightness(0.8);
 }
 
@@ -779,17 +810,8 @@
     box-shadow: var(--shadow-soft);
 }
 
-/* Player Options - Ensure Vertical Layout Consistency */
-.player-options {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin: 20px auto 0 auto;
-    align-items: center;
-    max-width: 600px;
-}
-
 /* Legacy player-option styling removed - conflicts with modern colorful design above */
+/* Note: .player-options rules consolidated at line ~614 */
 
 /* === ANSWER STATISTICS (HOST) === */
 .answer-stats {
@@ -857,23 +879,28 @@
 /* Responsive design for statistics display */
 @media (max-width: 768px) {
     .answer-stats .stats-grid {
-        flex-direction: column;
-        gap: 8px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
-    
+
     .answer-stats .stat-item {
-        min-width: 100%;
-        max-width: 100%;
+        min-width: auto;
+        max-width: none;
+        min-height: auto;
+        padding: 12px 8px;
     }
-    
+
     .stats-header {
         flex-direction: column;
         align-items: stretch;
         text-align: center;
     }
-    
+
     .stats-controls {
         justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 }
 
@@ -941,6 +968,50 @@
     font-weight: 500;
     color: var(--text-secondary);
     margin-top: 8px;
+}
+
+/* Host Score Breakdown Display */
+.host-score-breakdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-top: 0.5rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.15));
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    color: var(--text-color, #fff);
+}
+
+.host-score-breakdown .breakdown-label {
+    font-weight: 600;
+    color: var(--accent-color, #8b5cf6);
+}
+
+.host-score-breakdown .breakdown-content {
+    font-family: var(--font-mono, monospace);
+    color: var(--text-secondary, #9ca3af);
+}
+
+[data-theme="light"] .host-score-breakdown {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+    border-color: rgba(139, 92, 246, 0.25);
+    color: #1f2937;
+}
+
+[data-theme="light"] .host-score-breakdown .breakdown-content {
+    color: #4b5563;
+}
+
+@media (max-width: 768px) {
+    .host-score-breakdown {
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
 }
 
 /* === TRUE/FALSE OPTIONS === */
@@ -1025,13 +1096,13 @@
     overflow: hidden;
 }
 
-#player-true-false .tf-option[data-answer="0"] {
+#player-true-false .tf-option[data-answer="true"] {
     background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end)) !important;
     border-color: var(--true-color-start) !important;
     box-shadow: 0 4px 20px var(--true-shadow) !important;
 }
 
-#player-true-false .tf-option[data-answer="1"] {
+#player-true-false .tf-option[data-answer="false"] {
     background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end)) !important;
     border-color: var(--false-color-start) !important;
     box-shadow: 0 4px 20px var(--false-shadow) !important;
@@ -1042,11 +1113,11 @@
     filter: brightness(1.1);
 }
 
-#player-true-false .tf-option[data-answer="0"]:hover {
+#player-true-false .tf-option[data-answer="true"]:hover {
     box-shadow: 0 8px 32px var(--true-shadow-hover) !important;
 }
 
-#player-true-false .tf-option[data-answer="1"]:hover {
+#player-true-false .tf-option[data-answer="false"]:hover {
     box-shadow: 0 8px 32px var(--false-shadow-hover) !important;
 }
 
@@ -1056,15 +1127,16 @@
     animation: selectedPulse 1.5s ease-in-out infinite;
 }
 
+/* WCAG AA accessible colors for correct/incorrect states */
 #player-true-false .tf-option.correct {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-    box-shadow: 0 12px 40px rgba(16, 185, 129, 0.6) !important;
+    background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end)) !important;
+    box-shadow: 0 12px 40px var(--true-shadow-hover) !important;
     animation: correctPulse 2s ease-in-out infinite;
 }
 
 #player-true-false .tf-option.incorrect {
-    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-    box-shadow: 0 12px 40px rgba(239, 68, 68, 0.6) !important;
+    background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end)) !important;
+    box-shadow: 0 12px 40px var(--false-shadow-hover) !important;
     filter: brightness(0.8);
 }
 
@@ -1699,6 +1771,58 @@
     }
 }
 
+/* === QUESTION EXPLANATION DISPLAY === */
+.question-explanation-display {
+    margin: 16px 0;
+    display: flex;
+    justify-content: center;
+    animation: fadeInUp 0.6s ease-out 0.3s both; /* Delayed to appear after correct answer */
+}
+
+.explanation-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 20px;
+    max-width: 600px;
+    background: linear-gradient(135deg,
+        rgba(59, 130, 246, 0.1) 0%,
+        rgba(59, 130, 246, 0.05) 100%);
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    border-radius: var(--border-radius-large);
+    backdrop-filter: var(--blur-medium);
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
+}
+
+.explanation-icon {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+}
+
+.explanation-text {
+    font-size: 1rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+    text-align: left;
+}
+
+/* Mobile responsive for explanation */
+@media (max-width: 768px) {
+    .explanation-content {
+        padding: 12px 16px;
+        gap: 10px;
+    }
+
+    .explanation-icon {
+        font-size: 1.1rem;
+    }
+
+    .explanation-text {
+        font-size: 0.9rem;
+    }
+}
+
 /* Mobile responsive for numeric correct answer */
 @media (max-width: 768px) {
     .numeric-correct-answer-content {
@@ -2056,6 +2180,85 @@
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Player Concept Mastery Section */
+.player-concept-mastery {
+    width: 100%;
+    max-width: 600px;
+    background: var(--glass-strong);
+    backdrop-filter: var(--blur-strong);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-large);
+    padding: 24px;
+    margin-top: 8px;
+}
+
+.player-concept-mastery.hidden {
+    display: none;
+}
+
+.player-concept-mastery h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.concept-mastery-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.concept-mastery-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 50px;
+    align-items: center;
+    gap: 12px;
+}
+
+.concept-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.concept-bar-container {
+    height: 20px;
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.concept-bar {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.8s ease-out;
+}
+
+.mastery-excellent { background: linear-gradient(90deg, #10b981, #34d399); }
+.mastery-good { background: linear-gradient(90deg, #eab308, #facc15); }
+.mastery-fair { background: linear-gradient(90deg, #f97316, #fb923c); }
+.mastery-needs-work { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+.concept-percent {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: left;
+}
+
+@media (max-width: 480px) {
+    .player-concept-mastery { padding: 16px; }
+    .concept-mastery-row { grid-template-columns: 80px 1fr 40px; gap: 8px; }
+    .concept-name, .concept-percent { font-size: 0.8rem; }
+    .concept-bar-container { height: 16px; }
+}
+
 /* Result Feedback */
 /* === MODERN ANSWER FEEDBACK SYSTEM === */
 
@@ -2358,10 +2561,37 @@
 }
 
 .feedback-modal.incorrect::before {
-    background: linear-gradient(135deg, 
-        rgba(239, 68, 68, 0.2) 0%, 
+    background: linear-gradient(135deg,
+        rgba(239, 68, 68, 0.2) 0%,
         rgba(220, 38, 38, 0.1) 100%);
     opacity: 1;
+}
+
+/* Partially correct state (ordering questions with partial credit) */
+.feedback-modal.partial {
+    border-color: var(--color-warning-500, #f59e0b);
+    box-shadow: 0 20px 60px rgba(245, 158, 11, 0.4);
+}
+
+.feedback-modal.partial::before {
+    background: linear-gradient(135deg,
+        rgba(245, 158, 11, 0.2) 0%,
+        rgba(217, 119, 6, 0.1) 100%);
+    opacity: 1;
+}
+
+.feedback-modal.partial .feedback-message {
+    color: var(--color-warning-500, #f59e0b);
+}
+
+.feedback-modal.partial .feedback-icon {
+    color: var(--color-warning-500, #f59e0b);
+}
+
+.feedback-modal.partial .score-display {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: var(--color-warning-500, #f59e0b);
 }
 
 /* Modal feedback message styling */
@@ -2419,9 +2649,14 @@
     font-weight: 700;
     margin-top: 16px;
     color: var(--text-primary);
-    display: inline-block;
+    display: none;
     min-width: 140px;
     box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Show score when has-score class is present */
+.feedback-modal.has-score .score-display {
+    display: inline-block;
 }
 
 .feedback-modal.correct .score-display {
@@ -2434,6 +2669,56 @@
     background: rgba(239, 68, 68, 0.15);
     border-color: rgba(239, 68, 68, 0.4);
     color: var(--color-error-500);
+}
+
+/* Modal explanation display */
+.feedback-modal .modal-explanation {
+    display: none;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-top: 16px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    text-align: left;
+    max-width: 400px;
+    word-wrap: break-word;
+}
+
+.feedback-modal .modal-explanation .explanation-label {
+    margin-right: 6px;
+}
+
+.feedback-modal.has-explanation .modal-explanation {
+    display: block;
+}
+
+/* Mobile optimization for explanation */
+@media (max-width: 768px) {
+    .feedback-modal .modal-explanation {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        max-width: 280px;
+        margin-top: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .feedback-modal .modal-explanation {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        max-width: 240px;
+    }
+}
+
+/* Dark theme explanation */
+[data-theme="dark"] .feedback-modal .modal-explanation {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.4);
 }
 
 /* Modal animations - feedbackBounce removed, confetti provides celebration */
@@ -2458,6 +2743,18 @@
         transform: translateY(-30px) rotate(360deg);
         opacity: 0;
     }
+}
+
+/* Confetti canvas overlay - positioned above modal with max z-index */
+.confetti-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2147483647;
+    pointer-events: none;
+    background: transparent;
 }
 
 /* Dark theme modal adjustments */
@@ -2502,6 +2799,17 @@
     color: #f87171;
 }
 
+[data-theme="dark"] .feedback-modal.partial .feedback-message,
+[data-theme="dark"] .feedback-modal.partial .feedback-icon {
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .feedback-modal.partial .score-display {
+    background: rgba(251, 191, 36, 0.2);
+    border-color: rgba(251, 191, 36, 0.4);
+    color: #fbbf24;
+}
+
 /* Light theme modal adjustments */
 [data-theme="light"] .feedback-modal {
     background: rgba(255, 255, 255, 0.95);
@@ -2543,6 +2851,17 @@
     background: rgba(254, 242, 242, 0.9);
     border-color: rgba(220, 38, 38, 0.3);
     color: #dc2626;
+}
+
+[data-theme="light"] .feedback-modal.partial .feedback-message,
+[data-theme="light"] .feedback-modal.partial .feedback-icon {
+    color: #d97706;
+}
+
+[data-theme="light"] .feedback-modal.partial .score-display {
+    background: rgba(255, 251, 235, 0.9);
+    border-color: rgba(217, 119, 6, 0.3);
+    color: #d97706;
 }
 
 /* Mobile optimizations for modal feedback */
@@ -2624,8 +2943,28 @@
     
     .question-header {
         flex-direction: column;
-        gap: 16px;
+        align-items: center;
+        gap: 12px;
         text-align: center;
+        padding: 12px 16px;
+    }
+
+    .question-header .question-counter {
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    /* Timer - More prominent on mobile */
+    .question-header #timer,
+    #timer {
+        font-size: 1.6rem;
+        padding: 12px 20px;
+        min-width: 70px;
+        border-radius: 50%;
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     /* Compact leaderboard header for mobile */
@@ -2661,16 +3000,49 @@
     }
     
     /* === HOST CODE BLOCKS MOBILE === */
-    
-    /* Host question code blocks inherit base styles on mobile */
-    
+
+    /* Host question code blocks on mobile - improved readability */
+    /* Must use theme selectors to override dark mode !important rules */
+    :not([data-theme="light"]) #current-question pre,
+    [data-theme="light"] #current-question pre,
+    #current-question pre {
+        font-size: 0.68rem !important;
+        padding: 12px !important;
+        margin: 12px auto !important;
+        max-width: calc(100vw - 48px) !important;
+        overflow-x: auto !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Add scroll indicator shadow for code blocks */
+    #current-question pre::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 20px;
+        background: linear-gradient(to right, transparent, rgba(0,0,0,0.3));
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    #current-question:has(pre) {
+        position: relative;
+    }
+
     /* Host option code blocks on mobile */
     .option-display pre {
-        font-size: 0.75rem;
-        padding: 12px;
-        margin: 10px 0;
+        font-size: 0.7rem;
+        padding: 10px;
+        margin: 8px 0;
         max-width: calc(100vw - 80px);
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
     /* Layout adjustments for code-heavy questions on mobile */
@@ -2743,20 +3115,30 @@
         max-width: 100%;
     }
     
-    /* Answer Statistics Mobile */
+    /* Answer Statistics Mobile - Compact 2x2 grid */
     .answer-stats {
-        padding: 24px 16px;
-        margin: 16px 10px;
+        padding: 16px 12px;
+        margin: 12px 8px;
     }
-    
+
     .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
-    
+
     .stat-item {
-        padding: 16px;
-        min-height: 100px;
+        padding: 12px 8px;
+        min-height: auto;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .stat-item .stat-letter {
+        font-size: 1.1rem;
+    }
+
+    .stat-item .stat-count {
+        font-size: 1.3rem;
     }
     
     /* Leaderboard Mobile */
@@ -2807,15 +3189,23 @@
     }
     
     /* === ULTRA-MOBILE HOST CODE BLOCKS === */
-    
-    /* Host question code blocks inherit base styles on small screens */
-    
+
+    /* Host question code blocks on very small screens */
+    #current-question pre {
+        font-size: 0.58rem;
+        padding: 10px;
+        margin: 10px auto;
+        max-width: calc(100vw - 24px);
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
     /* Host option code blocks on very small screens */
     .option-display pre {
-        font-size: 0.65rem;
-        padding: 10px;
-        margin: 8px 0;
-        max-width: calc(100vw - 60px);
+        font-size: 0.6rem;
+        padding: 8px;
+        margin: 6px 0;
+        max-width: calc(100vw - 48px);
     }
     
     /* Ultra-compact layout for code-heavy questions */
@@ -3143,10 +3533,9 @@
         }
         
         /* 🎯 ULTRATHINK SMART SOLUTION: Content-aware mobile layout */
-        
-        /* Hide ALL interfering elements during mobile gameplay */
+
+        /* Hide interfering elements during mobile gameplay (but NOT feedback modal!) */
         .container.game-state-playing,
-        .game-state-playing #feedback-modal-overlay,
         .game-state-playing header,
         .game-state-playing .horizontal-toolbar,
         .game-state-playing .left-toolbar,
@@ -3264,8 +3653,8 @@
     }
     
     .floating-control-btn {
-        width: 48px;
-        height: 48px;
+        width: var(--input-min-height); /* Scales with font for accessibility */
+        height: var(--input-min-height); /* Scales with font for accessibility */
         font-size: 20px;
     }
 }

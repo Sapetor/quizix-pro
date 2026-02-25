@@ -86,6 +86,12 @@
     .quiz-editor-section {
         padding: 30px 0 30px 45px; /* Slightly reduced for tablets but maintain left spacing */
     }
+
+    /* Hide resize handle on tablet/mobile - layout is single column, no split to resize */
+    .split-resize-handle {
+        display: none !important;
+        pointer-events: none !important;
+    }
 }
 
 /* Mobile and Small Tablet (768px and below) */
@@ -94,7 +100,8 @@
     .language-selector,
     .font-size-control,
     #fullscreen-toggle,
-    #theme-toggle {
+    #theme-toggle,
+    #sound-toggle {
         display: none !important;
     }
     
@@ -407,7 +414,7 @@
     .large-action-btn {
         padding: 12px 24px !important; /* Reduced from 16px 28px for compact design */
         font-size: 1.05em !important; /* Slightly reduced from 1.1em */
-        min-height: 44px !important; /* Reduced from 50px */
+        min-height: var(--button-min-height) !important; /* Scales with font for accessibility */
         font-weight: 600;
         display: flex !important;
         align-items: center !important;
@@ -438,7 +445,7 @@
     .quiz-editor-section select {
         padding: 10px 12px !important; /* More compact */
         font-size: 0.9rem !important; /* Denser text */
-        min-height: 40px !important; /* Compact but touch-friendly */
+        min-height: calc(40px * var(--global-font-scale)) !important; /* Scales with font for accessibility */
         border-radius: 8px !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
         background: rgba(255, 255, 255, 0.05) !important;
@@ -452,14 +459,13 @@
         border-color: var(--accent-primary) !important;
         background: rgba(59, 130, 246, 0.05) !important;
         box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
-        transform: scale(1.02) !important;
     }
     
     /* Mobile dropdown improvements for better text visibility */
     .quiz-editor-section select {
         font-size: 1rem !important; /* Slightly larger for readability */
         padding: 14px 12px !important; /* More vertical padding for better text visibility */
-        min-height: 48px !important; /* Taller for better touch and text visibility */
+        min-height: var(--input-min-height) !important; /* Scales with font for accessibility */
         appearance: none; /* Remove default styling */
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
         background-repeat: no-repeat;
@@ -467,11 +473,11 @@
         background-size: 16px;
         padding-right: 40px !important; /* Space for custom arrow */
     }
-    
+
     .quiz-editor-section textarea {
         padding: 8px 10px !important; /* Ultra-compact for text areas */
         line-height: 1.3 !important; /* Tighter line spacing */
-        min-height: 60px !important; /* Much smaller minimum height */
+        min-height: calc(60px * var(--global-font-scale)) !important; /* Scales with font for accessibility */
         resize: vertical !important;
         font-family: 'Inter', sans-serif !important;
     }
@@ -536,14 +542,14 @@
     .quiz-editor-section .btn {
         padding: 10px 16px !important;
         font-size: 0.9rem !important;
-        min-height: 40px !important; /* Touch-friendly but compact */
+        min-height: calc(40px * var(--global-font-scale)) !important; /* Scales with font for accessibility */
         border-radius: 6px;
     }
-    
+
     .quiz-editor-section .btn.small {
         padding: 8px 12px !important;
         font-size: 0.85rem !important;
-        min-height: 36px;
+        min-height: calc(36px * var(--global-font-scale)); /* Scales with font for accessibility */
     }
     
     /* Phase 5: Ultra-compact mobile spacing */
@@ -557,48 +563,72 @@
         flex-wrap: wrap !important;
     }
     
-    /* Clean mobile question meta layout - Type and Time compact */
+    /* Hide question meta title on mobile to save vertical space */
+    .quiz-editor-section .question-meta .question-meta-title {
+        display: none !important;
+    }
+
+    /* Clean mobile question meta layout - Type, Difficulty, Time (concepts hidden) */
     .quiz-editor-section .question-meta {
         display: grid !important;
-        grid-template-columns: calc(100% - 80px) 80px !important; /* Type takes available space, Time gets 80px */
-        gap: 6px !important;
-        margin-bottom: 6px !important;
-        padding: 8px !important;
+        grid-template-columns: auto auto auto !important;
+        gap: 4px !important;
+        margin-bottom: 4px !important;
+        padding: 4px 6px !important;
         background: rgba(255, 255, 255, 0.04) !important;
-        border-radius: 6px !important;
+        border-radius: 4px !important;
         border: 1px solid rgba(255, 255, 255, 0.12) !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
     }
-    
-    /* Question type selector */
+
+    /* Question type selector - Ultra compact on mobile */
     .quiz-editor-section .question-meta .question-type {
-        font-size: 0.75rem !important;
-        padding: 6px 4px !important;
-        height: 32px !important;
+        display: block !important;
+        font-size: 0.65rem !important;
+        padding: 2px 4px !important;
+        height: 24px !important;
         background: rgba(255, 255, 255, 0.06) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 6px !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        min-width: 0 !important;
+        border-radius: 4px !important;
+        min-width: 50px !important;
     }
-    
-    /* Question difficulty selector - Hidden on mobile */
+
+    /* Question difficulty selector - Ultra compact on mobile */
     .quiz-editor-section .question-meta .question-difficulty {
+        font-size: 0.65rem !important;
+        padding: 2px 4px !important;
+        height: 24px !important;
+        background: rgba(255, 255, 255, 0.06) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 4px !important;
+        min-width: 50px !important;
+    }
+
+    /* Concept tags - hidden on mobile to reduce vertical space */
+    .quiz-editor-section .question-meta .concept-tags-container {
         display: none !important;
     }
     
-    /* Time container - Very compact */
+    /* Time container - Ultra compact */
     .quiz-editor-section .question-meta .time-container {
         display: flex !important;
-        flex-direction: column !important;
+        flex-direction: row !important;
         justify-content: center !important;
         align-items: center !important;
-        gap: 1px !important;
+        gap: 2px !important;
+    }
+
+    .quiz-editor-section .question-meta .time-container input {
+        width: 36px !important;
+        height: 24px !important;
+        font-size: 0.65rem !important;
+        padding: 2px !important;
+        text-align: center !important;
+    }
+
+    .quiz-editor-section .question-meta .time-container label {
+        font-size: 0.6rem !important;
     }
     
     /* Light mode question meta */
@@ -618,57 +648,39 @@
         color: rgba(30, 41, 59, 0.9) !important;
     }
     
-    /* Time input container styling is now handled in the main .question-meta rule above */
-    
-    .quiz-editor-section .question-meta .time-container label {
-        font-size: 0.55rem !important;
-        margin-bottom: 1px !important;
-        color: var(--text-secondary) !important;
-        font-weight: 500 !important;
+    /* Time limit container mobile styling - compact */
+    .quiz-editor-section .time-limit-container {
+        display: flex !important;
+        align-items: center !important;
     }
-    
-    .quiz-editor-section .question-meta .time-container input {
-        width: 70px !important;
-        max-width: 70px !important;
-        padding: 4px 6px !important;
+
+    .quiz-editor-section .time-limit-container label {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 2px !important;
+    }
+
+    .quiz-editor-section .time-limit-container label span {
+        font-size: 0.55rem !important;
+        color: var(--text-secondary) !important;
+    }
+
+    .quiz-editor-section .time-limit-container input {
+        width: 55px !important;
         height: 28px !important;
+        padding: 4px !important;
         font-size: 0.7rem !important;
         text-align: center !important;
         background: rgba(255, 255, 255, 0.06) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
         border-radius: 4px !important;
-        font-weight: 600 !important;
-        box-sizing: border-box !important;
-    }
-    
-    /* Make dropdowns full width on mobile for better visibility */
-    .quiz-editor-section .question-type,
-    .quiz-editor-section .question-difficulty {
-        width: 100% !important;
-        max-width: none !important;
-        font-size: 0.8rem !important; /* Smaller font for better text display */
-    }
-    
-    /* Time limit container mobile styling */
-    .quiz-editor-section .time-limit-container {
-        width: 100% !important;
-    }
-    
-    .quiz-editor-section .time-limit-container label {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 6px !important;
-    }
-    
-    .quiz-editor-section .time-limit-container input {
-        width: 100% !important;
-        max-width: 70px !important;
     }
     
     /* Ultra-compact question sections with better visual appeal */
     .quiz-editor-section .question-item {
-        margin-bottom: 12px !important; /* Further reduced */
-        padding: 10px 6px !important; /* More compact */
+        margin-bottom: 8px !important;
+        padding: 6px 6px !important;
         border: 1px solid rgba(59, 130, 246, 0.2) !important;
         border-radius: 10px !important;
         background: linear-gradient(135deg, rgba(59, 130, 246, 0.03) 0%, rgba(147, 51, 234, 0.02) 100%) !important;
@@ -690,35 +702,29 @@
     
     /* Question content improvements */
     .quiz-editor-section .question-content {
-        margin-bottom: 12px !important;
-    }
-    
-    .quiz-editor-section .question-text {
-        margin-bottom: 8px !important;
-        min-height: 80px !important; /* Reduced height for mobile */
-    }
-    
-    /* Image upload section */
-    .quiz-editor-section .image-upload {
-        margin-bottom: 12px !important;
-    }
-    
-    .quiz-editor-section .image-upload label {
-        display: block !important;
         margin-bottom: 6px !important;
-        font-weight: 500 !important;
     }
-    
+
+    .quiz-editor-section .question-text {
+        margin-bottom: 4px !important;
+        min-height: calc(60px * var(--global-font-scale)) !important;
+    }
+
+    /* Image upload - hidden on mobile to reduce vertical space */
+    .quiz-editor-section .image-upload {
+        display: none !important;
+    }
+
     /* Answer options mobile layout */
     .quiz-editor-section .answer-options {
-        margin-top: 12px !important;
+        margin-top: 6px !important;
     }
-    
+
     .quiz-editor-section .options {
         display: flex !important;
         flex-direction: column !important;
-        gap: 8px !important;
-        margin-bottom: 12px !important;
+        gap: 4px !important;
+        margin-bottom: 6px !important;
     }
     
     /* Correct answer selector full width */
@@ -891,13 +897,12 @@
         font-weight: 600 !important;
     }
     
-    /* Mobile input focus improvements */
+    /* Mobile input focus improvements - no outline-offset to prevent clipping */
     .quiz-editor-section input:focus,
     .quiz-editor-section textarea:focus,
     .quiz-editor-section select:focus {
-        outline: 2px solid var(--accent-primary) !important;
-        outline-offset: 2px !important;
         border-color: var(--accent-primary) !important;
+        box-shadow: inset 0 0 0 1px var(--accent-primary) !important;
     }
     
     /* Mobile button improvements in quiz editor */
@@ -931,21 +936,21 @@
         margin-bottom: 16px !important;
     }
     
-    /* Mobile Question Navigation Header */
+    /* Mobile Question Navigation Header - Ultra compact */
     .mobile-question-nav {
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
-        padding: 8px 12px !important;
+        padding: 4px 8px !important;
         background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.08)) !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
     }
     
-    /* Mobile Add Question Button */
+    /* Mobile Add Question Button - Compact */
     .mobile-add-question-btn {
-        width: 36px !important;
-        height: 32px !important;
-        border-radius: 8px !important;
+        width: 28px !important;
+        height: 24px !important;
+        border-radius: 4px !important;
         border: 1px solid rgba(59, 130, 246, 0.4) !important;
         background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) !important;
         color: white !important;
@@ -953,9 +958,9 @@
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 1.2rem !important;
+        font-size: 0.9rem !important;
         transition: all 0.2s ease !important;
-        margin-right: 8px !important;
+        margin-right: 4px !important;
     }
     
     .mobile-add-question-btn:hover {
@@ -969,7 +974,7 @@
         text-align: center !important;
         color: var(--text-primary) !important;
         font-weight: 600 !important;
-        font-size: 0.95rem !important;
+        font-size: 0.8rem !important;
         margin: 0 !important;
     }
     
@@ -1066,13 +1071,13 @@
         transform: scale(1.2) !important;
     }
     
-    /* Mobile - Always show carousel, hide original questions container */
+    /* Mobile - Show questions container (carousel removed for simplicity) */
     #questions-container {
-        display: none !important;
-    }
-    
-    .mobile-carousel-container {
         display: block !important;
+    }
+
+    .mobile-carousel-container {
+        display: none !important;
     }
     
     /* Mobile question navigation bar */
@@ -1160,7 +1165,8 @@
         left: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
-        z-index: 999999 !important; /* Extremely high z-index to cover everything */
+        /* High z-index to cover everything (reduced from 999999 to avoid screenshot rendering bugs) */
+        z-index: 50000 !important;
         background: var(--background-primary) !important;
         backdrop-filter: none !important; /* Remove any transparency effects */
         -webkit-backdrop-filter: none !important;
@@ -1348,14 +1354,25 @@
         margin: 10px 5px;
     } */
     
-    /* Code blocks in mobile */
+    /* Code blocks in mobile - wrap long lines to prevent horizontal scroll */
+    /* Must use theme selectors with !important to override dark mode rules */
+    :not([data-theme="light"]) #player-question-text pre,
+    :not([data-theme="light"]) #current-question pre,
+    :not([data-theme="light"]) .player-option pre,
+    [data-theme="light"] #player-question-text pre,
+    [data-theme="light"] #current-question pre,
+    [data-theme="light"] .player-option pre,
     #player-question-text pre,
-    #current-question pre, /* Match host-side with client-side mobile styling */
+    #current-question pre,
     .player-option pre {
-        font-size: 0.7em;
-        padding: 12px;
-        max-width: calc(95vw - 20px);
-        overflow-x: auto;
+        font-size: 0.68rem !important;
+        padding: 12px !important;
+        max-width: calc(100vw - 48px) !important;
+        overflow-x: auto !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        -webkit-overflow-scrolling: touch;
     }
     
     .player-option:has(pre) {
@@ -1976,6 +1993,26 @@
         min-height: unset !important;
         font-size: 0px !important;
         line-height: 0 !important;
+        /* MOB-2: Enable invisible touch target positioning */
+        position: relative !important;
+    }
+
+    /* MOB-2: Invisible 44x44px touch targets for carousel dots */
+    .carousel-dots .carousel-dot::before,
+    button.carousel-dot::before,
+    .carousel-dot[data-slide]::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        /* Invisible but captures touch events */
+        background: transparent !important;
     }
 }
 
@@ -2239,9 +2276,9 @@
 /* Mobile Quiz Management FAB - Only visible in quiz editor on mobile */
 @media (max-width: 768px) {
     .mobile-quiz-fab {
-        position: fixed;
-        bottom: 30px;
-        right: 20px;
+        position: fixed !important;
+        bottom: 30px !important;
+        right: 20px !important;
         width: auto;
         min-width: 85px;
         height: 56px;
@@ -2254,7 +2291,7 @@
         justify-content: center;
         box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
         cursor: pointer;
-        z-index: 1000;
+        z-index: 99999 !important;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         color: white;
         font-size: 0.95rem;
@@ -2265,8 +2302,9 @@
         touch-action: manipulation; /* Improve touch response */
     }
 
-    /* Show FAB only when in host-screen (quiz editor) */
-    .container:has(#host-screen.screen.active) .mobile-quiz-fab {
+    /* Show FAB only when in host-screen (quiz editor) - use JavaScript fallback for Safari */
+    body:has(#host-screen.screen.active) .mobile-quiz-fab,
+    #host-screen.screen.active ~ .mobile-quiz-fab {
         display: flex !important;
     }
 
@@ -2425,8 +2463,9 @@
         transform: translateY(0);
     }
 
-    /* Remove persistent highlight states on mobile */
-    .mobile-quiz-action-btn:focus {
+    /* Remove persistent highlight states on mobile touch interactions */
+    /* Uses :focus:not(:focus-visible) to preserve keyboard focus indicators */
+    .mobile-quiz-action-btn:focus:not(:focus-visible) {
         outline: none;
         border-color: var(--accent-primary);
     }
@@ -2516,7 +2555,7 @@
         user-select: none;
     }
 
-    .mobile-quiz-secondary-btn:focus {
+    .mobile-quiz-secondary-btn:focus:not(:focus-visible) {
         outline: none;
         border-color: var(--accent-primary);
     }
@@ -2820,6 +2859,23 @@
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
         user-select: none;
+        /* MOB-2: Enable invisible touch target positioning */
+        position: relative;
+    }
+
+    /* MOB-2: Invisible 44x44px touch targets for preview carousel dots */
+    .preview-carousel-dot::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 50%;
+        background: transparent;
     }
     
     .preview-carousel-dot.active {
@@ -2906,6 +2962,28 @@
         border: none !important;
         background: rgba(255, 255, 255, 0.4) !important;
         transform: none !important; /* Reset any transforms */
+        /* MOB-2: Enable invisible touch target positioning */
+        position: relative !important;
+    }
+
+    /* MOB-2: Invisible 44x44px touch targets for preview carousel dots (nuclear option) */
+    .mobile-preview-showcase .preview-carousel-dots .preview-carousel-dot::before,
+    .mobile-preview-showcase button.preview-carousel-dot::before,
+    .mobile-preview-showcase .preview-carousel-dot[data-slide]::before,
+    .mobile-preview-showcase .preview-carousel-dot[data-index]::before,
+    div.mobile-preview-showcase .preview-carousel-dots button.preview-carousel-dot::before,
+    div.mobile-preview-showcase button.preview-carousel-dot[data-index]::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        background: transparent !important;
     }
     
     /* Active state for preview carousel dots - Ultra high specificity */
@@ -2930,8 +3008,25 @@
         margin: 0 !important;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
         background: rgba(255, 255, 255, 0.4) !important;
+        /* MOB-2: Enable invisible touch target positioning */
+        position: relative !important;
     }
-    
+
+    /* MOB-2: Invisible 44x44px touch targets for bottom carousel dots */
+    button.preview-carousel-dot[data-index]::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        background: transparent !important;
+    }
+
     button.preview-carousel-dot[data-index].active {
         background: #3b82f6 !important;
         box-shadow: 0 0 12px rgba(59, 130, 246, 0.4) !important;
@@ -2954,11 +3049,29 @@
         border: none !important;
         font-size: 0 !important;
         line-height: 0 !important;
+        /* MOB-2: Enable invisible touch target positioning */
+        position: relative !important;
     }
-    
+
     .mobile-preview-showcase .preview-carousel-navigation button[class*="preview-carousel-dot"].active {
         background: #3b82f6 !important;
         transform: scale(1.3) !important;
+    }
+
+    /* MOB-2: Invisible 44x44px touch targets for preview carousel dots */
+    .mobile-preview-showcase .preview-carousel-navigation button[class*="preview-carousel-dot"]::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        /* Invisible but captures touch events */
+        background: transparent !important;
     }
 }
 
@@ -3024,7 +3137,7 @@
     /* Ensure all interactive elements meet 44x44px minimum touch target */
     
     /* Universal button touch targets */
-    button,
+    button:not(.onboarding-dot):not(.carousel-dot):not(.preview-carousel-dot),
     .btn,
     .player-option,
     .checkbox-option,
@@ -3033,15 +3146,41 @@
     .mobile-quiz-secondary-btn,
     .carousel-nav,
     .nav-btn {
-        min-height: 44px !important;
-        min-width: 44px !important;
+        min-height: var(--button-min-height) !important; /* Scales with font for accessibility */
+        min-width: var(--button-min-height) !important;
         padding: 12px 16px !important;
         border-radius: 8px !important;
         touch-action: manipulation; /* Prevent double-tap zoom */
         cursor: pointer;
         position: relative;
     }
-    
+
+    /* Onboarding dots - keep small with invisible touch targets */
+    .onboarding-dot {
+        width: 8px !important;
+        height: 8px !important;
+        min-width: 8px !important;
+        min-height: 8px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        position: relative !important;
+    }
+
+    /* Invisible 44x44 touch target for onboarding dots */
+    .onboarding-dot::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        background: transparent !important;
+    }
+
     /* Enhanced touch feedback for mobile */
     button:active,
     .btn:active,
@@ -3052,69 +3191,70 @@
         transition: transform 0.1s ease;
         background-color: rgba(255, 255, 255, 0.1);
     }
-    
+
     /* Form element touch targets */
     input[type="text"],
     input[type="number"],
     input[type="email"],
     textarea,
     select {
-        min-height: 44px !important;
+        min-height: var(--button-min-height) !important; /* Scales with font for accessibility */
         padding: 12px 16px !important;
         font-size: 16px !important; /* Prevent zoom on iOS */
         border-radius: 8px !important;
         touch-action: manipulation;
     }
-    
+
     /* Checkbox and radio touch areas */
     input[type="checkbox"],
     input[type="radio"] {
-        min-width: 24px !important;
-        min-height: 24px !important;
+        min-width: calc(24px * var(--global-font-scale)) !important;
+        min-height: calc(24px * var(--global-font-scale)) !important;
         margin: 10px !important; /* Creates 44x44 touch area */
     }
-    
+
     /* Touch-friendly quiz options */
     .quiz-editor-section .player-option,
     .quiz-editor-section .checkbox-option {
-        min-height: 48px !important;
+        min-height: var(--input-min-height) !important; /* Scales with font for accessibility */
         padding: 14px 16px !important;
         margin: 6px 0 !important;
         font-size: 16px !important;
         line-height: 1.3 !important;
     }
-    
+
     /* Navigation and control buttons */
     .theme-toggle,
+    .sound-toggle,
     .language-selector,
     .preview-nav-btn,
     .carousel-nav-btn,
     .close-btn {
-        min-height: 44px !important;
-        min-width: 44px !important;
+        min-height: var(--button-min-height) !important; /* Scales with font for accessibility */
+        min-width: var(--button-min-height) !important;
         padding: 10px !important;
         border-radius: 8px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
     }
-    
+
     /* Mobile-specific enhancements */
     .mobile-menu-btn,
     .mobile-back-btn,
     .mobile-save-btn {
-        min-height: 48px !important;
-        min-width: 48px !important;
+        min-height: var(--input-min-height) !important; /* Scales with font for accessibility */
+        min-width: var(--input-min-height) !important;
         font-size: 16px !important;
         font-weight: 600 !important;
         border-radius: 12px !important;
     }
-    
+
     /* AI Generator and toolbar buttons */
     .ai-generator-btn,
     .toolbar-btn,
     .quiz-action-btn {
-        min-height: 44px !important;
+        min-height: var(--button-min-height) !important; /* Scales with font for accessibility */
         padding: 12px 20px !important;
         font-size: 16px !important;
         white-space: nowrap !important;
@@ -3158,4 +3298,212 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         transition: var(--theme-transition-fast);
     }
+}
+
+/* ============================================
+   MOBILE QUIZ SETTINGS IN BOTTOM SHEET
+   ============================================ */
+
+/* Hide quiz config section on mobile - now in bottom sheet */
+@media (max-width: 768px) {
+    .quiz-editor-section .quiz-builder > #quiz-title,
+    .quiz-editor-section .quiz-settings {
+        display: none !important;
+    }
+
+    /* Compact question header on mobile EDITOR (not game) */
+    .quiz-editor-section .question-header {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        padding: 4px 8px !important;
+        margin: -8px -8px 4px -8px !important;
+        gap: 6px !important;
+        min-height: auto !important;
+    }
+
+    .quiz-editor-section .question-header h3 {
+        font-size: 0.75rem !important;
+        flex: 1 !important;
+        margin: 0 !important;
+    }
+
+    .quiz-editor-section .question-header .collapse-indicator {
+        font-size: 8px !important;
+    }
+
+    .quiz-editor-section .question-header-actions {
+        display: flex !important;
+        gap: 4px !important;
+    }
+
+    .quiz-editor-section .question-header-actions .btn-icon {
+        width: 20px !important;
+        height: 20px !important;
+        font-size: 0.7rem !important;
+        padding: 0 !important;
+    }
+
+    .quiz-editor-section .collapsed-type-badge,
+    .quiz-editor-section .collapsed-difficulty-badge {
+        font-size: 0.55rem !important;
+        padding: 1px 3px !important;
+    }
+
+    /* Hide question count banner on mobile - takes too much space */
+    .editor-question-count {
+        display: none !important;
+    }
+
+    /* Keep h2 title visible but compact */
+    .quiz-editor-section > h2 {
+        font-size: 1rem !important;
+        margin-bottom: 8px !important;
+    }
+
+    /* Show question pagination on mobile (override desktop-only) */
+    .quiz-editor-section .question-pagination.desktop-only {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 8px !important;
+        padding: 6px 12px !important;
+        margin-bottom: 8px !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 8px !important;
+    }
+
+    /* Compact pagination buttons */
+    .quiz-editor-section .question-pagination .pagination-btn {
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        font-size: 1rem !important;
+        min-width: 32px !important;
+    }
+
+    /* Compact question indicator - just "1/5" style */
+    .quiz-editor-section .question-pagination .question-indicator {
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
+    }
+
+    /* Hide verbose text, show compact format */
+    .quiz-editor-section .question-pagination .question-indicator [data-translate="question"],
+    .quiz-editor-section .question-pagination .question-indicator [data-translate="of"] {
+        display: none !important;
+    }
+
+    /* Style the numbers as "X / Y" */
+    .quiz-editor-section .question-pagination #current-question-num::after {
+        content: " / " !important;
+    }
+
+    /* Hide "Question X" from question header since it's now in pagination */
+    .quiz-editor-section .question-header h3 {
+        display: none !important;
+    }
+
+    /* Make collapse indicator clickable for the whole header */
+    .quiz-editor-section .question-header .collapse-indicator {
+        font-size: 12px !important;
+    }
+
+    /* Mobile: One question at a time (pagination mode) */
+    .quiz-editor-section #questions-container .question-item {
+        display: none !important;
+    }
+
+    .quiz-editor-section #questions-container .question-item.active-question {
+        display: block !important;
+    }
+}
+
+/* Mobile Quiz Settings in Bottom Sheet */
+.mobile-quiz-settings-section {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 12px;
+}
+
+.mobile-quiz-settings-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.mobile-quiz-title-row {
+    margin-bottom: 12px;
+}
+
+.mobile-quiz-title-input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+}
+
+.mobile-quiz-title-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.mobile-quiz-toggles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.mobile-quiz-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+}
+
+.mobile-quiz-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+    margin: 0 !important;
+    accent-color: #6366f1;
+}
+
+.mobile-quiz-toggle:active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Light mode adjustments for mobile quiz settings */
+[data-theme="light"] .mobile-quiz-settings-section {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .mobile-quiz-settings-title {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .mobile-quiz-title-input {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #1e293b;
+}
+
+[data-theme="light"] .mobile-quiz-title-input::placeholder {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .mobile-quiz-toggle {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1e293b;
 }

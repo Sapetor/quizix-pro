@@ -34,9 +34,13 @@ This guide provides instructions for deploying Quizix Pro in a Docker container 
    # GitLab Configuration
    GITLAB_URL=http://your-gitlab-server:8080
    GITLAB_TOKEN=your-gitlab-token
-   
+
    # Network Configuration
    CORS_ORIGINS=http://192.168.1.*,http://10.0.0.*
+
+   # AI Integration (optional - for server-side API key)
+   CLAUDE_API_KEY=sk-ant-xxxxx
+   CLAUDE_MODEL=claude-sonnet-4-5
    ```
 
 ### GitLab Integration
@@ -311,6 +315,18 @@ deploy:
      - "traefik.enable=true"
      - "traefik.http.routers.quizmaster.tls=true"
    ```
+
+### Application Security
+
+1. **Server-side API keys (recommended for production):**
+   ```bash
+   # In .env file - key never exposed to clients
+   CLAUDE_API_KEY=sk-ant-xxxxx
+   ```
+
+2. **Built-in rate limiting:** Socket.IO events limited to 10/second per client
+
+3. **Cryptographic file naming:** Uploaded files use `crypto.randomBytes()` for unpredictable names
 
 ### Container Security
 

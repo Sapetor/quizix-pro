@@ -48,9 +48,44 @@ public/css/
 
 ### CSS Specificity Calculation
 - Inline styles: 1,0,0,0
-- IDs: 0,1,0,0  
+- IDs: 0,1,0,0
 - Classes/attributes/pseudo-classes: 0,0,1,0
 - Elements/pseudo-elements: 0,0,0,1
+
+### Theme-Specific Selector Specificity
+
+**Critical Issue**: Dark mode rules use `:not([data-theme="light"])` selector with `!important`, creating high specificity that blocks simple mobile overrides.
+
+**Example** (from `game.css`):
+```css
+/* Dark mode rule - Specificity: 0,2,1,1 (pseudo-class + attribute + ID + element) */
+:not([data-theme="light"]) #current-question pre {
+    white-space: pre !important;
+}
+
+/* Simple mobile override - Specificity: 0,1,0,1 (ID + element) - FAILS */
+@media (max-width: 768px) {
+    #current-question pre {
+        white-space: pre-wrap !important;  /* Won't override! */
+    }
+}
+```
+
+**Solution**: Mobile overrides MUST include theme selectors to match specificity:
+```css
+@media (max-width: 768px) {
+    :not([data-theme="light"]) #current-question pre,
+    [data-theme="light"] #current-question pre,
+    #current-question pre {
+        white-space: pre-wrap !important;  /* Now overrides! */
+    }
+}
+```
+
+**Key Files with Theme Selectors**:
+- `game.css` lines 497-515: Dark mode code block styles
+- `game.css` lines 455-493: Light mode code block styles
+- `responsive.css` lines 1352-1371: Mobile code block overrides
 
 ## Checkbox Options Architecture
 
@@ -105,14 +140,17 @@ Multiple correct questions should display as **simple checkbox lists**, NOT styl
 3. **True/False**: Styled buttons (`.tf-option`)
 4. **Numeric**: Input field
 
-### Colorful Preview System
-The preview system includes colorful options for visual distinction:
-- Option A: Blue (`#3b82f6`)
-- Option B: Green (`#10b981`)
-- Option C: Orange (`#f59e0b`)
-- Option D: Red (`#ef4444`)
-- Option E: Purple (`#8b5cf6`)
-- Option F: Cyan (`#06b6d4`)
+### Colorful Preview System (WCAG AA Accessible)
+The preview system includes colorful options for visual distinction.
+All colors meet WCAG AA contrast requirements (≥4.5:1) with white text:
+- Option A: Blue (`#2563eb` → `#1d4ed8`) - 5.17:1 / 6.70:1
+- Option B: Green (`#047857` → `#065f46`) - 5.48:1 / 7.68:1
+- Option C: Orange (`#b45309` → `#92400e`) - 5.02:1 / 7.09:1
+- Option D: Red (`#dc2626` → `#b91c1c`) - 4.83:1 / 6.47:1
+- Option E: Purple (`#7c3aed` → `#6d28d9`) - 5.70:1 / 7.10:1
+- Option F: Cyan (`#0e7490` → `#155e75`) - 5.36:1 / 7.27:1
+
+**CSS Variables**: Use `--option-N-start` and `--option-N-end` from `variables.css`.
 
 **Important**: Checkbox options should NOT use these colors - they should remain neutral.
 
@@ -152,10 +190,13 @@ CSS changes may not appear due to browser caching. The project uses version-base
 
 **In index.html**:
 ```html
-<link rel="stylesheet" href="css/main.css?v=modular-4.1">
+<link rel="stylesheet" href="css/main.bundle.css?v=11.6">
 ```
 
-Update the version number when making significant CSS changes.
+**Important**: Update the version number when making CSS changes:
+1. Edit `public/index.html` (two places: preload and noscript)
+2. Increment version (e.g., `v=11.6` to `v=11.7`)
+3. Test with hard refresh or incognito window
 
 ## File Organization Best Practices
 
@@ -254,3 +295,170 @@ When modifying checkbox styling:
 - Always test both split-screen and modal preview modes
 - MathJax rendering requires proper timing after DOM updates
 - Question navigation needs robust bounds checking
+
+## Code Block Mobile Styling
+
+### Problem: Code Blocks Overflow on Mobile
+Code blocks with syntax highlighting were cut off horizontally on mobile host view, requiring horizontal scroll.
+
+### Root Cause
+1. Base styles set `white-space: pre` to preserve code formatting
+2. Dark mode rules in `game.css` used `:not([data-theme="light"])` with `!important`
+3. Simple mobile media query selectors couldn't override due to lower specificity
+
+### Solution
+Mobile overrides in `responsive.css` and `game.css` must:
+1. Use theme-specific selectors to match specificity
+2. Set `white-space: pre-wrap` to allow line wrapping
+3. Set `word-break: break-word` for long identifiers
+
+**Implemented Pattern** (in `responsive.css`):
+```css
+@media (max-width: 768px) {
+    :not([data-theme="light"]) #current-question pre,
+    :not([data-theme="light"]) #player-question-text pre,
+    :not([data-theme="light"]) .player-option pre,
+    [data-theme="light"] #current-question pre,
+    [data-theme="light"] #player-question-text pre,
+    [data-theme="light"] .player-option pre,
+    #current-question pre,
+    #player-question-text pre,
+    .player-option pre {
+        font-size: 0.68rem !important;
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+        max-width: calc(100vw - 48px) !important;
+    }
+}
+```
+
+### Testing Checklist
+When modifying code block styling:
+- [ ] Code wraps properly on mobile (no horizontal scroll)
+- [ ] Syntax highlighting colors preserved
+- [ ] Works in both dark and light themes
+- [ ] Font size readable on mobile (~0.68rem)
+- [ ] Long lines wrap at word boundaries when possible
+
+## UI Elements Hidden in JavaScript Templates
+
+### Problem: Element Disappears When Loading Quiz or Adding Questions
+
+**Symptoms**: A UI element (like a dropdown or button) is visible when the page first loads, but disappears when:
+- Loading an existing quiz
+- Adding a new question
+- Any action that recreates DOM elements from JavaScript templates
+
+**Root Cause**: There are TWO sources of truth for question HTML:
+1. `public/index.html` - The initial template shown on page load
+2. `public/js/utils/question-utils.js` - The template used when creating questions programmatically
+
+If these templates differ, elements may appear/disappear inconsistently.
+
+### Real Example: Question Type Selector (Feb 2026)
+
+**What happened:**
+- Question type dropdown was visible on initial page load (from `index.html`)
+- Dropdown disappeared when loading a quiz (template from `question-utils.js` had `style="display: none;"`)
+- Root cause: Commit moved type selector to preview panel, hid it in JS template, but later the preview nav bar was also hidden in always-preview mode
+
+**The hidden inline style:**
+```javascript
+// WRONG - Hidden in JS template but visible in index.html
+<select class="question-type" style="display: none;" onchange="updateQuestionType(this)">
+```
+
+### Investigation Checklist
+
+When a UI element disappears after an action:
+
+1. **Check both template sources:**
+   - `public/index.html` - Initial HTML template
+   - `public/js/utils/question-utils.js` - JavaScript template for new questions
+
+2. **Search for inline styles:**
+   ```bash
+   grep -rn "element-class.*display.*none" public/js/
+   grep -rn "element-class.*hidden" public/js/
+   grep -rn 'style="display: none"' public/js/
+   ```
+
+3. **Check CSS hiding rules:**
+   - `always-preview` mode rules in `preview.css` and `layout.css`
+   - Responsive breakpoint rules in `responsive.css`
+   - Grid column changes that exclude elements
+
+4. **Verify grid layouts match:**
+   - If element should be in a CSS Grid, ensure grid-template-columns includes it
+   - Check both desktop (components.css) and mobile (responsive.css) grids
+
+### Prevention Rules
+
+1. **Keep templates synchronized**: When changing `index.html` question structure, update `question-utils.js` to match
+2. **Never use inline `style="display: none"` for layout purposes**: Use CSS classes instead
+3. **Document intentionally hidden elements**: If hiding something for "system compatibility", add a comment explaining WHY and WHERE it's controlled from
+4. **Test quiz loading after any editor UI changes**: The initial view and post-load view must match
+
+### Files to Check for Question/Editor UI Issues
+
+| File | Contains |
+|------|----------|
+| `public/index.html` | Initial question template (lines ~880-980) |
+| `public/js/utils/question-utils.js` | JS template for new questions |
+| `public/css/components.css` | `.question-meta` grid layout |
+| `public/css/responsive.css` | Mobile `.question-meta` overrides |
+| `public/css/preview.css` | Preview panel visibility rules |
+| `public/css/layout.css` | `always-preview` mode rules |
+
+## Service Worker Cache Issues
+
+### Problem: CSS Changes Not Appearing Despite Correct Code
+
+**Symptoms**: You've verified:
+- The CSS rule exists in `responsive.css` with correct selector
+- The CSS bundle was rebuilt (`npm run build`)
+- The selector specificity is higher than competing rules
+- Browser DevTools shows the rule should match
+
+But the browser still applies the old styles.
+
+**Root Cause**: Service Worker caching. The browser's service worker (`public/sw.js`) caches CSS files aggressively. Even after rebuilding the bundle, browsers serve the cached version.
+
+### Solution: Bump CACHE_VERSION
+
+After any CSS changes:
+
+1. **Rebuild the bundle**:
+   ```bash
+   npm run build
+   ```
+
+2. **Update service worker cache version** in `public/sw.js`:
+   ```javascript
+   // Change this to force cache invalidation
+   const CACHE_VERSION = 'v20260205-your-change-description';
+   ```
+
+3. **Hard refresh** the browser (Ctrl+Shift+R) or test in incognito
+
+### Debugging Checklist
+
+When CSS changes don't apply:
+
+1. [ ] Bundle rebuilt? (`npm run build`)
+2. [ ] Cache version bumped? (check `public/sw.js` line 13)
+3. [ ] Browser showing new version? (check footer version string)
+4. [ ] Tried hard refresh? (Ctrl+Shift+R)
+5. [ ] Tried incognito window?
+
+### Real Example: Question Header flex-direction (Feb 2026)
+
+**What happened:**
+- Added `.quiz-editor-section .question-header { flex-direction: row !important; }` to responsive.css
+- Rule existed in bundle, selector matched, specificity was correct
+- But browser kept showing `flex-direction: column`
+- Padding from the same rule WAS being applied (partial cache issue)
+
+**Fix:** Updated `CACHE_VERSION` from `v20260204-type-selector-fix` to `v20260205-question-header-fix`
+
+**Key insight:** Service worker cache can cause partial application of CSS rules - some properties update while others don't. Always bump the version after CSS changes.

@@ -114,14 +114,25 @@ async function captureScreenshots() {
                         }, screen.id);
                         
                         await page.waitForTimeout(1000); // Wait for screen transition
-                        
+
+                        // Enable screenshot mode to disable stacking context properties
+                        await page.evaluate(() => {
+                            document.documentElement.classList.add('screenshot-mode');
+                        });
+                        await page.waitForTimeout(100); // Allow styles to apply
+
                         // Take screenshot
                         const filename = `${screen.id}_${viewportName}_${theme}.png`;
                         const filepath = path.join(CONFIG.outputDir, filename);
-                        
+
                         await page.screenshot({
                             path: filepath,
                             fullPage: true
+                        });
+
+                        // Disable screenshot mode
+                        await page.evaluate(() => {
+                            document.documentElement.classList.remove('screenshot-mode');
                         });
                         
                         screenshots.push({

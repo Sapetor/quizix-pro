@@ -9,16 +9,16 @@ export class BrowserOptimizer {
     constructor() {
         this.browserInfo = this.detectBrowser();
         this.initializeBasicOptimizations();
-        
+
         logger.debug('🚀 Browser Optimizer initialized:', this.browserInfo.browser);
     }
-    
+
     /**
      * Detect browser type
      */
     detectBrowser() {
         const ua = navigator.userAgent;
-        
+
         let browser = 'unknown';
         if (/Chrome/.test(ua) && /Google Inc/.test(navigator.vendor)) {
             browser = 'chrome';
@@ -29,14 +29,14 @@ export class BrowserOptimizer {
         } else if (/Safari/.test(ua) && !/Chrome/.test(ua)) {
             browser = 'safari';
         }
-        
+
         return {
             browser,
             platform: navigator.platform,
             mobile: /Mobi|Android/i.test(ua)
         };
     }
-    
+
     /**
      * Initialize basic optimizations
      */
@@ -47,21 +47,21 @@ export class BrowserOptimizer {
             passiveEvents.forEach(event => {
                 document.addEventListener(event, function() {}, { passive: true });
             });
-            
+
             // Simple memory cleanup on page unload
             window.addEventListener('beforeunload', () => {
                 if (window.mathJaxCache) {
                     window.mathJaxCache.clear();
                 }
             });
-            
+
             logger.debug('✅ Basic browser optimizations applied');
-            
+
         } catch (error) {
             logger.error('Browser optimization failed:', error);
         }
     }
-    
+
     /**
      * Get basic optimization status
      */
@@ -71,7 +71,7 @@ export class BrowserOptimizer {
             optimizationsApplied: ['passive-events', 'memory-cleanup']
         };
     }
-    
+
     /**
      * Cleanup
      */
@@ -87,10 +87,5 @@ export const browserOptimizer = new BrowserOptimizer();
 window.addEventListener('beforeunload', () => {
     browserOptimizer.cleanup();
 });
-
-// Make available globally for debugging
-if (typeof window !== 'undefined') {
-    window.browserOptimizer = browserOptimizer;
-}
 
 export default browserOptimizer;
