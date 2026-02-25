@@ -75,7 +75,6 @@ class QRService {
      */
     _getGameUrl(pin, req) {
         const isCloudDeployment = process.env.RAILWAY_ENVIRONMENT === 'production' ||
-                                  process.env.NODE_ENV === 'production' ||
                                   process.env.VERCEL_ENV ||
                                   process.env.HEROKU_APP_NAME;
 
