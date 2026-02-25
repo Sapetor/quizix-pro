@@ -30,7 +30,9 @@ class CORSValidationService {
             /^https:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/,
             // Properly constrained 172.16.0.0/12 range
             /^http:\/\/172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}(:\d+)?$/,
-            /^https:\/\/172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}(:\d+)?$/
+            /^https:\/\/172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}(:\d+)?$/,
+            // mDNS .local hostnames (avahi/bonjour)
+            /^https?:\/\/[a-zA-Z0-9-]+\.local(:\d+)?$/
         ];
 
         // Cloud platform patterns for production deployment
