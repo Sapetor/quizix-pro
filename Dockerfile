@@ -41,6 +41,8 @@ COPY --from=production-deps --chown=nodejs:nodejs /app/node_modules ./node_modul
 COPY --from=builder --chown=nodejs:nodejs /app/server.js ./
 COPY --from=builder --chown=nodejs:nodejs /app/public ./public/
 COPY --from=builder --chown=nodejs:nodejs /app/services ./services/
+COPY --from=builder --chown=nodejs:nodejs /app/config ./config/
+COPY --from=builder --chown=nodejs:nodejs /app/seeds ./seeds/
 
 # Create directories for persistent data with proper permissions
 RUN mkdir -p quizzes results public/uploads && \
