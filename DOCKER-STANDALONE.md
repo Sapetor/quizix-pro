@@ -98,8 +98,9 @@ curl -s http://localhost:3000/health
 ```
 
 From any device on the network:
-- **Host (laptop):** `http://quizix-server.local:3000`
-- **Players (phones):** Scan the QR code in the lobby, or use `http://<server-ip>:3000`
+- **Same VLAN (wired):** `http://quizix-server.local:3000`
+- **Different VLAN (WiFi):** `http://<server-ip>:3000` (`.local` doesn't work across VLANs)
+- **Players (phones):** Scan the QR code in the lobby — it auto-detects the correct IP
 
 ## How It Works
 
@@ -131,6 +132,32 @@ docker compose up -d --build
 | Check status | `docker compose ps` |
 | Restart | `docker compose down && docker compose up -d` |
 | Check server IP | `hostname -I` |
+
+## Auto-Publish Server IP
+
+If the host accesses the app from a different VLAN (e.g., WiFi laptop reaching a wired server), `.local` hostnames won't resolve. This script automatically pushes the server's current IP to the GitHub repo so anyone can look it up.
+
+**On the server, create the script:**
+
+```bash
+cat > ~/update-ip.sh << 'SCRIPT'
+#!/bin/bash
+cd /home/sapet/quizix-pro
+IP=$(hostname -I | awk '{print $1}')
+echo "http://${IP}:3000" > SERVER_URL.txt
+git add SERVER_URL.txt
+git diff --cached --quiet || git commit -m "auto: update server IP to ${IP}" && git push origin main
+SCRIPT
+chmod +x ~/update-ip.sh
+```
+
+**Add to cron (runs on boot + every hour):**
+
+```bash
+(crontab -l 2>/dev/null; echo "@reboot sleep 30 && /home/sapet/update-ip.sh"; echo "0 * * * * /home/sapet/update-ip.sh") | crontab -
+```
+
+**Host workflow:** Bookmark `https://github.com/Sapetor/quizix-pro/blob/main/SERVER_URL.txt` — it always shows the current server URL.
 
 ## Troubleshooting
 
