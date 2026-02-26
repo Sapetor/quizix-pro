@@ -262,9 +262,9 @@
 
     /* Light Theme Variables - Critical for theme switching */
     --bg-primary: linear-gradient(135deg, #fafafa 0%, #f5f5f7 50%, #ebebef 100%);
-    --bg-secondary: rgba(99, 102, 241, 0.05);
+    --bg-secondary: rgba(99, 102, 241, 0.15);
     --text-primary: #1e293b;
-    --text-secondary: #6366f1;
+    --text-secondary: #4338ca;
     --modal-bg: rgba(255, 255, 255, 0.98);
     --modal-text: #1e293b;
     --card-bg: rgba(255, 255, 255, 0.85);
@@ -282,7 +282,7 @@
     --input-bg: rgba(0, 0, 0, 0.03);
     --input-border: rgba(0, 0, 0, 0.15);
     --input-color: #1e293b;
-    --input-placeholder: rgba(0, 0, 0, 0.5);
+    --input-placeholder: rgba(0, 0, 0, 0.65);
     
     /* Checkbox Options */
     --checkbox-bg: rgba(0, 0, 0, 0.03);

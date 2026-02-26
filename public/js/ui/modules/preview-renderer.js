@@ -425,7 +425,7 @@ export class PreviewRenderer {
 
             const optionLetter = translationManager.getOptionLetter(index);
             const hasLatex = this.hasLatexContent(option);
-            const formattedContent = `${optionLetter}: ${this.formatCodeBlocks(option)}`;
+            const formattedContent = `<span class="option-text">${optionLetter}: ${this.formatCodeBlocks(option)}</span>`;
 
             this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
         });
@@ -471,7 +471,7 @@ export class PreviewRenderer {
 
             const optionLetter = translationManager.getOptionLetter(index);
             const hasLatex = this.hasLatexContent(option);
-            const formattedContent = `<input type="checkbox" ${isCorrect ? 'checked' : ''} disabled> ${optionLetter}: ${this.formatCodeBlocks(option)}`;
+            const formattedContent = `<input type="checkbox" ${isCorrect ? 'checked' : ''} disabled> <span class="option-text">${optionLetter}: ${this.formatCodeBlocks(option)}</span>`;
 
             this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
         });
@@ -839,7 +839,7 @@ export class PreviewRenderer {
 
             const optionLetter = translationManager.getOptionLetter(index);
             const hasLatex = this.hasLatexContent(option);
-            const formattedContent = `${optionLetter}: ${this.formatCodeBlocks(option)}`;
+            const formattedContent = `<span class="option-text">${optionLetter}: ${this.formatCodeBlocks(option)}</span>`;
 
             this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
         });
@@ -889,7 +889,7 @@ export class PreviewRenderer {
 
             const optionLetter = translationManager.getOptionLetter(index);
             const hasLatex = this.hasLatexContent(option);
-            const formattedContent = `${optionLetter}: ${this.formatCodeBlocks(option)}`;
+            const formattedContent = `<span class="option-text">${optionLetter}: ${this.formatCodeBlocks(option)}</span>`;
 
             optionDiv.appendChild(checkbox);
             optionDiv.insertAdjacentHTML('beforeend', ' ' + formattedContent);

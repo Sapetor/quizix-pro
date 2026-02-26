@@ -40,13 +40,22 @@
 }
 
 @keyframes screenFadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
-    .screen.active { animation: none; }
+    .screen.active {
+        animation: none;
+    }
 }
 
 /* Header Layout */
@@ -87,6 +96,7 @@ header {
 
 /* Desktop: prevent header wrapping for single-line layout */
 @media (min-width: 769px) {
+
     header,
     .header-controls {
         flex-wrap: nowrap;
@@ -106,36 +116,43 @@ header {
 .host-container:not(.split-screen) {
     display: flex;
     justify-content: center;
-    padding: 25px; /* Increased from 15px for better outer spacing */
-    min-height: calc(100dvh - 50px); /* Account for compact sticky header */
+    padding: 25px;
+    /* Increased from 15px for better outer spacing */
+    min-height: calc(100dvh - 50px);
+    /* Account for compact sticky header */
 }
 
 .host-container:not(.split-screen) .quiz-editor-section {
     max-width: 1400px;
     width: 100%;
-    padding: 50px 45px; /* Generous padding when live preview is closed for better readability */
+    padding: 50px 45px;
+    /* Generous padding when live preview is closed for better readability */
     margin: 0 auto;
 }
 
 /* Additional spacing for form elements when live preview is closed */
 .host-container:not(.split-screen) .quiz-editor-section .question-item {
-    margin-bottom: 35px; /* Increased from 24px for better separation */
+    margin-bottom: 35px;
+    /* Increased from 24px for better separation */
 }
 
 .host-container:not(.split-screen) .quiz-editor-section input,
 .host-container:not(.split-screen) .quiz-editor-section textarea,
 .host-container:not(.split-screen) .quiz-editor-section select {
-    margin-bottom: 20px; /* Add vertical spacing between form elements */
+    margin-bottom: 20px;
+    /* Add vertical spacing between form elements */
 }
 
 /* Responsive padding adjustments for mobile devices */
 @media (max-width: 768px) {
     .host-container:not(.split-screen) {
-        padding: 15px; /* Reduce outer padding on mobile */
+        padding: 15px;
+        /* Reduce outer padding on mobile */
     }
-    
+
     .host-container:not(.split-screen) .quiz-editor-section {
-        padding: 30px 25px; /* Reduce interior padding on mobile while maintaining good spacing */
+        padding: 30px 25px;
+        /* Reduce interior padding on mobile while maintaining good spacing */
     }
 }
 
@@ -154,11 +171,11 @@ header {
 }
 
 /* Ensure only editor and preview participate in the grid */
-.host-container.split-screen > .quiz-editor-section {
+.host-container.split-screen>.quiz-editor-section {
     grid-column: 1;
 }
 
-.host-container.split-screen > .quiz-preview-section {
+.host-container.split-screen>.quiz-preview-section {
     grid-column: 2;
 }
 
@@ -167,7 +184,8 @@ header {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 40px 30px; /* Balanced padding for better text alignment */
+    padding: 40px 30px;
+    /* Balanced padding for better text alignment */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -184,7 +202,8 @@ header {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 15px; /* Reduced from 30px for better space utilization */
+    padding: 15px;
+    /* Reduced from 30px for better space utilization */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     overflow-y: auto;
     display: flex;
@@ -192,7 +211,8 @@ header {
     position: relative;
     /* Ensure full width usage in split-screen mode */
     width: 100%;
-    min-width: 0; /* Allow shrinking if needed */
+    min-width: 0;
+    /* Allow shrinking if needed */
 }
 
 /* When in non-split mode, hide preview section styling */
@@ -212,8 +232,10 @@ header {
     position: absolute;
     top: 0;
     bottom: 0;
-    left: 50%; /* Start at center, will be updated by JavaScript */
-    width: 12px; /* Wider for better grab target */
+    left: 50%;
+    /* Start at center, will be updated by JavaScript */
+    width: 12px;
+    /* Wider for better grab target */
     cursor: col-resize;
     background: transparent;
     border: none;
@@ -332,7 +354,8 @@ header {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 30px;
     max-width: min(800px, 90vw);
-    margin: 80px auto 0 auto; /* Added top margin to move buttons lower */
+    margin: 80px auto 0 auto;
+    /* Added top margin to move buttons lower */
 }
 
 .join-container {
@@ -357,44 +380,50 @@ header {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.1) 0%,
-        rgba(255, 255, 255, 0.05) 50%,
-        rgba(255, 255, 255, 0.1) 100%
-    );
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.1) 0%,
+            rgba(255, 255, 255, 0.05) 50%,
+            rgba(255, 255, 255, 0.1) 100%);
     pointer-events: none;
 }
 
 .lobby-container {
     text-align: center;
-    max-width: 1000px; /* Increased for side-by-side layout */
+    max-width: 1000px;
+    /* Increased for side-by-side layout */
     margin: 0 auto;
-    padding: 20px 20px 20px; /* Reduced top padding since we're now managing space via negative margins */
+    padding: 20px 20px 20px;
+    /* Reduced top padding since we're now managing space via negative margins */
     margin-top: 0;
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Gap between main content and quiz name */
-    height: 100%; /* Take up full available height */
+    gap: 15px;
+    /* Gap between main content and quiz name */
+    height: 100%;
+    /* Take up full available height */
 }
 
 /* New 2-Column Layout */
 .lobby-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px; /* Reduced gap */
+    gap: 15px;
+    /* Reduced gap */
     padding: 0;
     background: transparent;
     border: none;
     box-shadow: none;
-    flex: 1; /* Take up all available height */
-    min-height: 0; /* Allow flex shrinking */
+    flex: 1;
+    /* Take up all available height */
+    min-height: 0;
+    /* Allow flex shrinking */
 }
 
 .lobby-column {
     display: flex;
     flex-direction: column;
-    min-height: 0; /* Allow flex shrinking */
+    min-height: 0;
+    /* Allow flex shrinking */
 }
 
 /* Both columns should match in height and fill available space */
@@ -410,19 +439,23 @@ header {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 24px; /* Increased padding */
+    padding: 24px;
+    /* Increased padding */
     box-shadow: var(--shadow-sm);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    min-height: calc(160px * var(--global-font-scale)); /* Scales with font for accessibility */
+    min-height: calc(160px * var(--global-font-scale));
+    /* Scales with font for accessibility */
 }
 
 /* Bottom cards with increased heights for better space usage */
 .info-card,
 .action-card {
-    min-height: calc(100px * var(--global-font-scale)); /* Scales with font for accessibility */
-    padding: 20px; /* Increased from 12px */
+    min-height: calc(100px * var(--global-font-scale));
+    /* Scales with font for accessibility */
+    padding: 20px;
+    /* Increased from 12px */
 }
 
 
@@ -473,25 +506,29 @@ header {
 .players-list-card {
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.1));
     border-color: rgba(245, 158, 11, 0.2);
-    flex: 1; /* Take up all available height in left column */
+    flex: 1;
+    /* Take up all available height in left column */
     display: flex;
     flex-direction: column;
 }
 
 .players-list-card .players-grid {
-    min-height: calc(100px * var(--global-font-scale)); /* Scales with font for accessibility */
+    min-height: calc(100px * var(--global-font-scale));
+    /* Scales with font for accessibility */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 8px;
     padding: 4px;
-    flex: 1; /* Take up all available space */
+    flex: 1;
+    /* Take up all available space */
 }
 
 .players-list-card .card-content {
     align-items: stretch;
     justify-content: stretch;
-    flex: 1; /* Take up available space in the card */
+    flex: 1;
+    /* Take up available space in the card */
     display: flex;
     flex-direction: column;
 }
@@ -500,7 +537,8 @@ header {
 .combined-info-card {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1));
     border-color: rgba(59, 130, 246, 0.2);
-    flex: 1; /* Take up all available height to match left column */
+    flex: 1;
+    /* Take up all available height to match left column */
     display: flex;
     flex-direction: column;
 }
@@ -508,8 +546,10 @@ header {
 .combined-content {
     display: flex;
     flex-direction: column;
-    gap: 10px; /* Reduced gap to save space */
-    flex: 1; /* Take up all available space */
+    gap: 10px;
+    /* Reduced gap to save space */
+    flex: 1;
+    /* Take up all available space */
 }
 
 /* QR Code and PIN combined section */
@@ -555,7 +595,8 @@ header {
 }
 
 #qr-code-image {
-    max-width: 100px; /* Smaller since it's now inline with PIN */
+    max-width: 100px;
+    /* Smaller since it's now inline with PIN */
     height: auto;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -572,8 +613,10 @@ header {
 
 /* Quiz Name Section at Bottom */
 .quiz-name-section {
-    margin-top: auto; /* Push to bottom */
-    padding: 8px 0; /* Reduced from 15px to make it smaller */
+    margin-top: auto;
+    /* Push to bottom */
+    padding: 8px 0;
+    /* Reduced from 15px to make it smaller */
     border-top: 1px solid var(--border-color);
     background: rgba(var(--accent-primary-rgb), 0.03);
     border-radius: 8px;
@@ -582,8 +625,10 @@ header {
 
 .quiz-title-display {
     margin: 0;
-    font-size: 1rem; /* Reduced from 1.2rem */
-    font-weight: 500; /* Reduced from 600 for less visual weight */
+    font-size: 1rem;
+    /* Reduced from 1.2rem */
+    font-weight: 500;
+    /* Reduced from 600 for less visual weight */
     color: var(--text-primary);
     text-align: center;
 }
@@ -696,7 +741,8 @@ header {
     width: 100%;
     font-size: 1.1rem;
     padding: 16px 24px;
-    min-height: calc(56px * var(--global-font-scale)); /* Scales with font for accessibility */
+    min-height: calc(56px * var(--global-font-scale));
+    /* Scales with font for accessibility */
 }
 
 /* General Players Grid Styling (now used in card) */
@@ -716,7 +762,8 @@ header {
     border: 1px solid rgba(59, 130, 246, 0.3);
     border-radius: 6px;
     transition: all 0.2s ease;
-    min-width: 0; /* Allow text truncation */
+    min-width: 0;
+    /* Allow text truncation */
 }
 
 .player-item:hover {
@@ -733,7 +780,8 @@ header {
 
 .player-name {
     font-weight: 500;
-    font-size: 0.55rem; /* Much smaller to show more of the name */
+    font-size: 0.55rem;
+    /* Much smaller to show more of the name */
     color: var(--text-primary);
     flex: 1;
     text-align: left;
@@ -750,25 +798,27 @@ header {
         padding: 10px 15px;
         gap: 15px;
     }
-    
+
     .lobby-layout {
         grid-template-columns: 1fr;
         gap: 15px;
     }
-    
+
     .lobby-column {
         gap: 10px;
     }
-    
+
     .lobby-card {
         padding: 15px;
-        min-height: calc(100px * var(--global-font-scale)); /* Scales with font for accessibility */
+        min-height: calc(100px * var(--global-font-scale));
+        /* Scales with font for accessibility */
     }
 
     /* Bottom cards (Game Info and Ready to Start) maintain reduced height on mobile */
     .info-card,
     .action-card {
-        min-height: calc(70px * var(--global-font-scale)); /* Scales with font for accessibility */
+        min-height: calc(70px * var(--global-font-scale));
+        /* Scales with font for accessibility */
         padding: 12px;
     }
 
@@ -791,8 +841,10 @@ header {
 
     .players-list-card .players-grid {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        min-height: calc(60px * var(--global-font-scale)); /* Scales with font for accessibility */
-        max-height: calc(80px * var(--global-font-scale)); /* Scales with font for accessibility */
+        min-height: calc(60px * var(--global-font-scale));
+        /* Scales with font for accessibility */
+        max-height: calc(80px * var(--global-font-scale));
+        /* Scales with font for accessibility */
     }
 }
 
@@ -801,11 +853,11 @@ header {
     .lobby-layout {
         gap: 15px;
     }
-    
+
     .lobby-card {
         padding: 18px;
     }
-    
+
     .players-list-card .players-grid {
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     }
@@ -822,12 +874,14 @@ header {
     }
 
     .lobby-card {
-        min-height: calc(140px * var(--global-font-scale)); /* Scales with font for accessibility */
+        min-height: calc(140px * var(--global-font-scale));
+        /* Scales with font for accessibility */
     }
 }
 
 .game-url {
-    margin-top: 8px; /* Reduce spacing after QR code */
+    margin-top: 8px;
+    /* Reduce spacing after QR code */
 }
 
 /* Game Layouts */
@@ -848,7 +902,8 @@ header {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 24px;
-    margin-top: 20px; /* Reduced from 30px for tighter spacing */
+    margin-top: 20px;
+    /* Reduced from 30px for tighter spacing */
 }
 
 .players-list {
@@ -903,7 +958,8 @@ header {
 }
 
 .host-container.split-screen .quiz-editor-section:has(.question-item pre) {
-    flex: 1.2; /* Give more space to editor when code is present */
+    flex: 1.2;
+    /* Give more space to editor when code is present */
 }
 
 /* Removed overly wide container rules for code questions
@@ -972,6 +1028,7 @@ header {
 
 /* Desktop: Always show preview in split-screen mode */
 @media (min-width: 769px) {
+
     /* Force split-screen layout on host-container when in editor */
     /* 4-column grid: toolbar (48px) | editor | resize (16px) | preview */
     .host-container.always-preview {
@@ -982,7 +1039,8 @@ header {
         gap: 0;
         max-width: none;
         width: 100%;
-        height: calc(100dvh - 50px); /* Reduced header height (was 65px) */
+        height: calc(100dvh - 50px);
+        /* Reduced header height (was 65px) */
         padding: 0;
         margin: 0;
         overflow: hidden !important;
@@ -1035,7 +1093,7 @@ header {
     }
 
     /* Hide "Create Your Quiz" heading - context is obvious in always-preview mode */
-    .host-container.always-preview .quiz-editor-section > h2 {
+    .host-container.always-preview .quiz-editor-section>h2 {
         display: none;
     }
 
@@ -1051,7 +1109,8 @@ header {
     .host-container.always-preview #quiz-title {
         flex-shrink: 0;
         margin-bottom: 8px;
-        padding: 10px 14px; /* Slightly reduced */
+        padding: 10px 14px;
+        /* Slightly reduced */
     }
 
     /* Quiz settings - collapsed by default in always-preview mode */
@@ -1079,7 +1138,8 @@ header {
         flex: 1;
         overflow: hidden !important;
         position: relative;
-        min-height: 0; /* Important for flex overflow */
+        min-height: 0;
+        /* Important for flex overflow */
     }
 
     /* Individual question items - fill container, compact padding */
@@ -1089,10 +1149,13 @@ header {
         left: 0;
         right: 0;
         bottom: 0;
-        overflow: hidden !important; /* No scroll on container */
-        display: none; /* Hidden by default, shown via pagination */
+        overflow: hidden !important;
+        /* No scroll on container */
+        display: none;
+        /* Hidden by default, shown via pagination */
         flex-direction: column;
-        padding: 12px; /* Compact padding (was 24px default) */
+        padding: 12px;
+        /* Compact padding (was 24px default) */
         margin-bottom: 0;
     }
 
@@ -1103,10 +1166,13 @@ header {
     /* Question header - compact styling */
     .host-container.always-preview .question-item .question-header {
         flex-shrink: 0;
-        cursor: default; /* Remove pointer cursor since collapse is disabled */
+        cursor: default;
+        /* Remove pointer cursor since collapse is disabled */
         overflow: hidden !important;
-        margin: -12px -12px 10px -12px; /* Match reduced padding */
-        padding: 6px 10px; /* Compact header padding */
+        margin: -12px -12px 10px -12px;
+        /* Match reduced padding */
+        padding: 6px 10px;
+        /* Compact header padding */
     }
 
     /* Question body - ONLY this should scroll */
@@ -1114,8 +1180,10 @@ header {
         flex: 1;
         overflow-y: auto !important;
         overflow-x: hidden !important;
-        padding: 8px; /* Reduced from 16px */
-        min-height: 0; /* Important for flex overflow */
+        padding: 8px;
+        /* Reduced from 16px */
+        min-height: 0;
+        /* Important for flex overflow */
     }
 
     /* Multiple correct options - align checkbox with text input */
@@ -1195,7 +1263,7 @@ header {
     }
 
     /* Hide the label */
-    .host-container.always-preview .question-content .image-upload > label {
+    .host-container.always-preview .question-content .image-upload>label {
         display: none !important;
     }
 
@@ -1287,7 +1355,8 @@ header {
         flex-direction: column;
         height: 100%;
         overflow: hidden !important;
-        padding: 8px; /* Reduced from 12px */
+        padding: 8px;
+        /* Reduced from 12px */
         box-sizing: border-box;
     }
 
@@ -1323,7 +1392,7 @@ header {
     }
 
     /* Hide the "Create Your Quiz" heading on desktop in always-preview */
-    .host-container.always-preview .quiz-editor-section > h2 {
+    .host-container.always-preview .quiz-editor-section>h2 {
         display: none;
     }
 
@@ -1345,7 +1414,8 @@ header {
 
     body:has(.host-container.always-preview) #host-screen {
         overflow: hidden !important;
-        height: calc(100dvh - 50px); /* Reduced header height (was 65px) */
+        height: calc(100dvh - 50px);
+        /* Reduced header height (was 65px) */
     }
 }
 
@@ -1765,9 +1835,9 @@ header {
     bottom: 8px;
     right: 8px;
     font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.7);
     font-family: 'Courier New', monospace;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.5);
     padding: 4px 8px;
     border-radius: 4px;
     backdrop-filter: blur(4px);
@@ -1775,6 +1845,11 @@ header {
     pointer-events: none;
     user-select: none;
     transition: opacity 0.3s ease;
+}
+
+[data-theme="light"] .app-version {
+    color: #4a5568;
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .app-version:hover {

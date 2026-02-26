@@ -199,7 +199,7 @@ const QUESTION_TYPES = {
                         // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
                         option.classList.add('tex2jax_process');
                         option.classList.remove('MathJax_Processed');
-                        option.innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
+                        option.innerHTML = `<span class="option-text">${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}</span>`;
                         option.classList.remove('hidden');
                     } else {
                         option.classList.add('hidden');
@@ -238,7 +238,7 @@ const QUESTION_TYPES = {
                         // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
                         button.classList.add('tex2jax_process');
                         button.classList.remove('MathJax_Processed');
-                        button.innerHTML = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${formatCodeBlocks(safeOption)}`;
+                        button.innerHTML = `<span class="option-text"><span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${formatCodeBlocks(safeOption)}</span>`;
                         button.setAttribute('data-answer', index.toString());
                         button.classList.remove('selected', 'disabled', 'hidden');
                     } else {
@@ -410,7 +410,7 @@ const QUESTION_TYPES = {
                         // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
                         option.classList.add('tex2jax_process');
                         option.classList.remove('MathJax_Processed');
-                        option.innerHTML = `${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}`;
+                        option.innerHTML = `<span class="option-text">${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}</span>`;
                         option.classList.remove('hidden');
                     } else {
                         option.classList.add('hidden');
@@ -430,7 +430,7 @@ const QUESTION_TYPES = {
                     // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
                     label.classList.add('tex2jax_process');
                     label.classList.remove('MathJax_Processed');
-                    label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${translationManager.getOptionLetter(index)}: ${formattedOption}`;
+                    label.innerHTML = `<input type="checkbox" class="option-checkbox"> <span class="option-text">${translationManager.getOptionLetter(index)}: ${formattedOption}</span>`;
                     label.setAttribute('data-option', index);
                     label.classList.remove('hidden');
                 } else {
@@ -509,8 +509,8 @@ const QUESTION_TYPES = {
                 : { true: translationManager.getTranslationSync?.('true') || 'True', false: translationManager.getTranslationSync?.('false') || 'False' };
             container.innerHTML = `
                 <div class="true-false-options">
-                    <div class="tf-option true-btn" data-answer="true">${tfText.true}</div>
-                    <div class="tf-option false-btn" data-answer="false">${tfText.false}</div>
+                    <div class="tf-option true-btn" data-answer="true"><span class="option-text">${tfText.true}</span></div>
+                    <div class="tf-option false-btn" data-answer="false"><span class="option-text">${tfText.false}</span></div>
                 </div>
             `;
             container.classList.remove('hidden');

@@ -15,12 +15,10 @@
 /* === PREMIUM PREVIEW LOADING SKELETON === */
 .preview-loading .preview-question-text,
 .preview-loading #preview-question-text-split {
-    background: linear-gradient(
-        90deg,
-        rgba(255,255,255,0.03) 0%,
-        rgba(255,255,255,0.08) 50%,
-        rgba(255,255,255,0.03) 100%
-    );
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            rgba(255, 255, 255, 0.08) 50%,
+            rgba(255, 255, 255, 0.03) 100%);
     background-size: 200% 100%;
     animation: previewShimmer 1.5s infinite;
     min-height: 60px;
@@ -31,12 +29,10 @@
 .preview-loading .player-option,
 .preview-loading .checkbox-option,
 .preview-loading .tf-option {
-    background: linear-gradient(
-        90deg,
-        rgba(255,255,255,0.03) 0%,
-        rgba(255,255,255,0.06) 50%,
-        rgba(255,255,255,0.03) 100%
-    ) !important;
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            rgba(255, 255, 255, 0.06) 50%,
+            rgba(255, 255, 255, 0.03) 100%) !important;
     background-size: 200% 100%;
     animation: previewShimmer 1.5s infinite;
     color: transparent !important;
@@ -44,8 +40,13 @@
 }
 
 @keyframes previewShimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
 }
 
 /* MathJax rendered state */
@@ -54,8 +55,13 @@
 }
 
 @keyframes previewFadeIn {
-    from { opacity: 0.7; }
-    to { opacity: 1; }
+    from {
+        opacity: 0.7;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .modal-overlay {
@@ -108,7 +114,7 @@
 .preview-title-section h2 {
     margin: 0;
     font-size: 1.8rem;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .preview-device-toggle {
@@ -118,7 +124,7 @@
 
 .device-btn {
     background: var(--border-color);
-    border: 2px solid rgba(255,255,255,0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     color: white;
     padding: 8px 16px;
     border-radius: 25px;
@@ -129,14 +135,14 @@
 }
 
 .device-btn:hover {
-    background: rgba(255,255,255,0.3);
+    background: rgba(255, 255, 255, 0.3);
     transform: translateY(-2px);
 }
 
 .device-btn.active {
-    background: rgba(255,255,255,0.9);
+    background: rgba(255, 255, 255, 0.9);
     color: var(--accent-primary);
-    border-color: rgba(255,255,255,0.9);
+    border-color: rgba(255, 255, 255, 0.9);
     font-weight: bold;
 }
 
@@ -293,14 +299,14 @@
     padding: 40px;
     color: white;
     position: relative;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .mobile-viewport .preview-content {
     max-width: 375px;
     border-radius: 25px;
     border: 3px solid #333;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     margin: 0 auto;
 }
 
@@ -345,7 +351,7 @@
     max-width: 100%;
     max-height: 300px;
     border-radius: var(--border-radius-medium);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* Preview Answer Types */
@@ -353,7 +359,8 @@
     margin-top: 30px;
 }
 
-.preview-option, .preview-tf {
+.preview-option,
+.preview-tf {
     pointer-events: none;
     opacity: 0.95;
     margin: 8px 0;
@@ -429,10 +436,10 @@
     font-size: 1.3rem;
     border: none;
     border-radius: var(--border-radius-medium);
-    background: rgba(255,255,255,0.9);
+    background: rgba(255, 255, 255, 0.9);
     color: #333;
     text-align: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .preview-content .player-checkbox-options,
@@ -440,23 +447,34 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-width: 95%; /* Use maximum available width for optimal space usage */
-    margin: 0 auto; /* Center the container like multiple-choice */
-    align-items: center; /* Center the checkboxes like multiple-choice */
-    width: 100%; /* Match multiple-choice width */
+    max-width: 95%;
+    /* Use maximum available width for optimal space usage */
+    margin: 0 auto;
+    /* Center the container like multiple-choice */
+    align-items: center;
+    /* Center the checkboxes like multiple-choice */
+    width: 100%;
+    /* Match multiple-choice width */
 }
 
 /* Checkbox options inherit base styling from .checkbox-option in components.css */
 /* Sizing adjustments to match multiple-choice options */
 .preview-content .checkbox-option.preview-checkbox,
 .preview-content-split .checkbox-option.preview-checkbox {
-    padding: 15px 20px; /* Match .player-option padding */
-    font-size: 1.1rem; /* Match .player-option font size */
-    font-weight: 600; /* Match .player-option font weight */
-    min-height: 55px; /* Match .player-option min-height (vs default 45px) */
-    width: 100%; /* Match .player-option width */
-    max-width: 95%; /* Match .player-option max-width */
-    margin: 8px 0; /* Match .player-option margin */
+    padding: 15px 20px;
+    /* Match .player-option padding */
+    font-size: 1.1rem;
+    /* Match .player-option font size */
+    font-weight: 600;
+    /* Match .player-option font weight */
+    min-height: 55px;
+    /* Match .player-option min-height (vs default 45px) */
+    width: 100%;
+    /* Match .player-option width */
+    max-width: 95%;
+    /* Match .player-option max-width */
+    margin: 8px 0;
+    /* Match .player-option margin */
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -464,7 +482,8 @@
 
 .preview-content .player-checkbox-options,
 .preview-content-split .player-checkbox-options {
-    max-width: 700px; /* Updated to match above */
+    max-width: 700px;
+    /* Updated to match above */
 }
 
 /* LaTeX Processing States */
@@ -488,8 +507,8 @@
 
 /* Code Formatting */
 code {
-    background: rgba(0, 0, 0, 0.3);
-    color: #FFD700;
+    background: #1e293b;
+    color: #e2e8f0;
     padding: 3px 6px;
     border-radius: 4px;
     font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
@@ -499,7 +518,7 @@ code {
 }
 
 pre {
-    background: rgba(0, 0, 0, 0.4);
+    background: #1e293b;
     color: #f8f8f2;
     padding: 15px;
     border-radius: 8px;
@@ -533,21 +552,22 @@ pre code {
 .question-text pre,
 .option pre,
 .player-option pre {
-    background: rgba(0, 0, 0, 0.9);
+    background: #1e293b;
     color: #f8f8f2;
     margin: 10px 0;
     padding: 15px;
     border-radius: 6px;
     font-size: 0.85em;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace; /* CRITICAL FIX: Ensure consistent monospace font with host-side */
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+    /* CRITICAL FIX: Ensure consistent monospace font with host-side */
 }
 
 .question-text code,
 .option code,
 .player-option code {
-    background: rgba(0, 0, 0, 0.4);
-    color: #FFD700;
+    background: #1e293b;
+    color: #e2e8f0;
     padding: 2px 5px;
     border-radius: 3px;
     font-weight: 500;
@@ -558,7 +578,8 @@ pre code {
 .question-item:has(pre),
 .player-option:has(pre),
 .preview-question:has(pre) {
-    min-width: 0; /* Allow flex shrinking */
+    min-width: 0;
+    /* Allow flex shrinking */
     overflow: visible;
 }
 
@@ -568,9 +589,11 @@ pre code {
 .player-option pre,
 .preview-content pre,
 .preview-content-split pre {
-    font-size: 0.75em; /* Slightly smaller in constrained spaces */
+    font-size: 0.75em;
+    /* Slightly smaller in constrained spaces */
     padding: 12px;
-    max-width: calc(100vw - 40px); /* Ensure it doesn't exceed viewport */
+    max-width: calc(100vw - 40px);
+    /* Ensure it doesn't exceed viewport */
 }
 
 /* For split screen mode, allow more horizontal space for code */
@@ -580,7 +603,8 @@ pre code {
 }
 
 .host-container.split-screen .quiz-editor-section:has(.question-item pre) {
-    flex: 1.2; /* Give more space to editor when code is present */
+    flex: 1.2;
+    /* Give more space to editor when code is present */
 }
 
 /* Removed overly wide container rules for code questions
@@ -594,15 +618,17 @@ pre code {
 
 .player-question-area:has(pre) {
     padding: 15px 20px;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 /* Player code blocks get more space */
 #player-question-text pre,
 .player-option pre {
-    font-size: 0.8em; /* Slightly larger than other constrained spaces */
+    font-size: 0.8em;
+    /* Slightly larger than other constrained spaces */
     padding: 15px;
-    max-width: 100%; /* Use container width instead of viewport width */
+    max-width: 100%;
+    /* Use container width instead of viewport width */
     margin: 15px auto;
     border-radius: 8px;
 }
@@ -612,7 +638,8 @@ pre code {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    max-width: 600px; /* Use same width as normal player options */
+    max-width: 600px;
+    /* Use same width as normal player options */
     margin: 0 auto;
 }
 
@@ -627,7 +654,7 @@ pre code {
 @media (max-width: 768px) {
     /* Removed overly wide mobile container rules for code questions
        Code questions should use same width as LaTeX questions */
-    
+
     /* .player-game-container:has(pre) {
         max-width: 95vw;
         padding: 10px 5px;
@@ -637,7 +664,7 @@ pre code {
         padding: 10px 15px;
         margin: 10px 5px;
     } */
-    
+
     #player-question-text pre,
     .player-option pre {
         font-size: 0.7em;
@@ -645,7 +672,7 @@ pre code {
         max-width: calc(95vw - 20px);
         overflow-x: auto;
     }
-    
+
     .player-option:has(pre) {
         padding: 12px 15px;
         font-size: 0.95rem;
@@ -655,7 +682,8 @@ pre code {
 /* True/False and Numeric input areas with code */
 .tf-options:has(pre),
 .numeric-input-container:has(pre) {
-    max-width: 600px; /* Use same width as normal options */
+    max-width: 600px;
+    /* Use same width as normal options */
     margin: 0 auto;
 }
 
@@ -673,7 +701,8 @@ pre code {
 }
 
 .checkbox-option:has(pre) input[type="checkbox"] {
-    margin-top: 5px; /* Align with first line of code */
+    margin-top: 5px;
+    /* Align with first line of code */
     flex-shrink: 0;
 }
 
@@ -708,6 +737,7 @@ pre code {
    ============================================================================= */
 
 @media (min-width: 769px) {
+
     .host-container.always-preview .preview-header,
     .host-container.always-preview .preview-navigation-bar {
         display: none !important;
@@ -718,25 +748,30 @@ pre code {
         height: 100%;
         border-radius: 12px;
         flex: 1;
-        padding: 16px; /* Reduced from 40px desktop default */
+        padding: 16px;
+        /* Reduced from 40px desktop default */
     }
 
     /* Preview content - compact padding */
     .host-container.always-preview .preview-content-split {
-        padding: 20px; /* Reduced from 40px */
+        padding: 20px;
+        /* Reduced from 40px */
         height: 100%;
         box-sizing: border-box;
     }
 
     /* Compact question area in preview */
     .host-container.always-preview .preview-content-split .player-question-area {
-        padding: 12px 16px; /* Reduced padding */
-        margin-bottom: 16px; /* Reduced gap */
+        padding: 12px 16px;
+        /* Reduced padding */
+        margin-bottom: 16px;
+        /* Reduced gap */
     }
 
     /* Compact answer options spacing */
     .host-container.always-preview .preview-content-split .player-options {
-        gap: 10px; /* Tighter spacing between options */
+        gap: 10px;
+        /* Tighter spacing between options */
     }
 }
 
@@ -994,19 +1029,23 @@ pre code {
 .preview-content-split {
     background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary-gradient) 100%);
     border-radius: var(--border-radius-medium);
-    padding: 12px; /* Further reduced for maximum content space utilization */
+    padding: 12px;
+    /* Further reduced for maximum content space utilization */
     color: white;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    width: 100%; /* Ensure full width usage */
-    margin: 0; /* Remove any default margins */
-    box-sizing: border-box; /* Include padding in width calculation */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    /* Ensure full width usage */
+    margin: 0;
+    /* Remove any default margins */
+    box-sizing: border-box;
+    /* Include padding in width calculation */
 }
 
 [data-theme="dark"] .preview-content,
 [data-theme="dark"] .preview-content-split {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
     border: 2px solid rgba(96, 165, 250, 0.2);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
 /* Enhanced Preview Player Options - Increased width for better layout */
@@ -1015,7 +1054,8 @@ pre code {
     display: flex;
     flex-direction: column;
     align-items: center;
-    max-width: 95%; /* Use maximum available width for better space utilization */
+    max-width: 95%;
+    /* Use maximum available width for better space utilization */
     margin: 0 auto;
     width: 100%;
 }
@@ -1024,63 +1064,74 @@ pre code {
 .preview-content-split .player-option {
     padding: 15px 20px;
     color: white;
-    border: 2px solid rgba(255,255,255,0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: var(--border-radius-small);
     cursor: pointer;
     font-size: 1.1rem;
     font-weight: 600;
     transition: all 0.3s ease;
     margin: 8px 0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    min-height: 44px; /* WCAG touch target minimum */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-height: 44px;
+    /* WCAG touch target minimum */
     width: 100%;
     max-width: 95%;
     display: flex;
-    align-items: center; /* Center content vertically */
+    align-items: center;
+    /* Center content vertically */
     justify-content: flex-start;
     text-align: left;
     line-height: 1.4;
     position: relative;
-    overflow: visible; /* CRITICAL: Don't clip content - matches game.css */
-    word-break: break-word; /* Allow long words to wrap */
+    overflow: visible;
+    /* CRITICAL: Don't clip content - matches game.css */
+    word-break: break-word;
+    /* Allow long words to wrap */
 }
 
 /* === COLORFUL PREVIEW OPTIONS === */
 /* WCAG AA Accessible Colors: All meet ≥4.5:1 contrast with white text */
 .preview-content .player-option:nth-child(1),
 .preview-content-split .player-option:nth-child(1) {
-    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%); /* Blue 5.17:1 */
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%);
+    /* Blue 5.17:1 */
 }
 
 .preview-content .player-option:nth-child(2),
 .preview-content-split .player-option:nth-child(2) {
-    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%); /* Green 5.48:1 */
+    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%);
+    /* Green 5.48:1 */
 }
 
 .preview-content .player-option:nth-child(3),
 .preview-content-split .player-option:nth-child(3) {
-    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%); /* Orange 5.02:1 */
+    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%);
+    /* Orange 5.02:1 */
 }
 
 .preview-content .player-option:nth-child(4),
 .preview-content-split .player-option:nth-child(4) {
-    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%); /* Red 4.83:1 */
+    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%);
+    /* Red 4.83:1 */
 }
 
 .preview-content .player-option:nth-child(5),
 .preview-content-split .player-option:nth-child(5) {
-    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%); /* Purple 5.70:1 */
+    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%);
+    /* Purple 5.70:1 */
 }
 
 .preview-content .player-option:nth-child(6),
 .preview-content-split .player-option:nth-child(6) {
-    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%); /* Cyan 5.36:1 */
+    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%);
+    /* Cyan 5.36:1 */
 }
 
 /* Dark theme multicolored options - use CSS variables for accessible colors */
 [data-theme="dark"] .preview-content .player-option:nth-child(1),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(1) {
-    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%); /* Blue */
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%);
+    /* Blue */
     border: 2px solid var(--option-0-shadow);
     color: #f8fafc;
     box-shadow: 0 4px 12px var(--option-0-shadow);
@@ -1088,7 +1139,8 @@ pre code {
 
 [data-theme="dark"] .preview-content .player-option:nth-child(2),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(2) {
-    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%); /* Green */
+    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%);
+    /* Green */
     border: 2px solid var(--option-1-shadow);
     color: #f8fafc;
     box-shadow: 0 4px 12px var(--option-1-shadow);
@@ -1096,7 +1148,8 @@ pre code {
 
 [data-theme="dark"] .preview-content .player-option:nth-child(3),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(3) {
-    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%); /* Orange */
+    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%);
+    /* Orange */
     border: 2px solid var(--option-2-shadow);
     color: #f8fafc;
     box-shadow: 0 4px 12px var(--option-2-shadow);
@@ -1104,7 +1157,8 @@ pre code {
 
 [data-theme="dark"] .preview-content .player-option:nth-child(4),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(4) {
-    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%); /* Red */
+    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%);
+    /* Red */
     border: 2px solid var(--option-3-shadow);
     color: #f8fafc;
     box-shadow: 0 4px 12px var(--option-3-shadow);
@@ -1112,7 +1166,8 @@ pre code {
 
 [data-theme="dark"] .preview-content .player-option:nth-child(5),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(5) {
-    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%); /* Purple */
+    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%);
+    /* Purple */
     border: 2px solid var(--option-4-shadow);
     color: #f8fafc;
     box-shadow: 0 4px 12px var(--option-4-shadow);
@@ -1120,7 +1175,8 @@ pre code {
 
 [data-theme="dark"] .preview-content .player-option:nth-child(6),
 [data-theme="dark"] .preview-content-split .player-option:nth-child(6) {
-    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%); /* Cyan */
+    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%);
+    /* Cyan */
     border: 2px solid var(--option-5-shadow);
     color: #f8fafc;
     box-shadow: 0 4px 12px var(--option-5-shadow);
@@ -1138,8 +1194,8 @@ pre code {
 .preview-content .player-option:hover,
 .preview-content-split .player-option:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-    border-color: rgba(255,255,255,0.5);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
 /* Light theme multicolored checkbox options - match multiple choice colors */
@@ -1148,8 +1204,9 @@ pre code {
 .preview-content-split .player-checkbox-options .checkbox-option:nth-child(1),
 .preview-content .checkbox-option.preview-checkbox:nth-child(1),
 .preview-content-split .checkbox-option.preview-checkbox:nth-child(1) {
-    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%) !important; /* Blue */
-    border: 2px solid rgba(255,255,255,0.3) !important;
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%) !important;
+    /* Blue */
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
     color: white !important;
     box-shadow: 0 4px 12px var(--option-0-shadow) !important;
 }
@@ -1197,7 +1254,8 @@ pre code {
 /* Dark theme multicolored checkbox options - use CSS variables for accessible colors */
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(1),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(1) {
-    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%); /* Blue */
+    background: linear-gradient(135deg, var(--option-0-start) 0%, var(--option-0-end) 100%);
+    /* Blue */
     border: 2px solid var(--option-0-shadow);
     color: #f8fafc;
     box-shadow: 0 4px 12px var(--option-0-shadow);
@@ -1205,35 +1263,40 @@ pre code {
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(2),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(2) {
-    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%); /* Green */
+    background: linear-gradient(135deg, var(--option-1-start) 0%, var(--option-1-end) 100%);
+    /* Green */
     border: 2px solid var(--option-1-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(3),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(3) {
-    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%); /* Orange */
+    background: linear-gradient(135deg, var(--option-2-start) 0%, var(--option-2-end) 100%);
+    /* Orange */
     border: 2px solid var(--option-2-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(4),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(4) {
-    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%); /* Red */
+    background: linear-gradient(135deg, var(--option-3-start) 0%, var(--option-3-end) 100%);
+    /* Red */
     border: 2px solid var(--option-3-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(5),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(5) {
-    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%); /* Purple */
+    background: linear-gradient(135deg, var(--option-4-start) 0%, var(--option-4-end) 100%);
+    /* Purple */
     border: 2px solid var(--option-4-shadow);
     color: #f8fafc;
 }
 
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(6),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(6) {
-    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%); /* Cyan */
+    background: linear-gradient(135deg, var(--option-5-start) 0%, var(--option-5-end) 100%);
+    /* Cyan */
     border: 2px solid var(--option-5-shadow);
     color: #f8fafc;
 }
@@ -1249,7 +1312,7 @@ pre code {
 .preview-content-split .player-option.correct {
     border: 4px solid #22c55e !important;
     box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
-                0 4px 20px rgba(34, 197, 94, 0.5) !important;
+        0 4px 20px rgba(34, 197, 94, 0.5) !important;
     outline: 2px solid rgba(34, 197, 94, 0.6);
     outline-offset: 2px;
     font-weight: 700 !important;
@@ -1262,7 +1325,7 @@ pre code {
 .preview-content-split .player-checkbox-options .checkbox-option.correct-preview {
     border: 4px solid #22c55e !important;
     box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
-                0 4px 20px rgba(34, 197, 94, 0.5) !important;
+        0 4px 20px rgba(34, 197, 94, 0.5) !important;
     outline: 2px solid rgba(34, 197, 94, 0.6);
     outline-offset: 2px;
     font-weight: 700 !important;
@@ -1284,7 +1347,7 @@ pre code {
 .preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(6) {
     border: 4px solid #22c55e !important;
     box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
-                0 4px 20px rgba(34, 197, 94, 0.5) !important;
+        0 4px 20px rgba(34, 197, 94, 0.5) !important;
     outline: 2px solid rgba(34, 197, 94, 0.6);
     outline-offset: 2px;
     font-weight: 700 !important;
@@ -1308,7 +1371,7 @@ pre code {
 .preview-content-split .player-checkbox-options .checkbox-option.correct-preview:hover {
     border-color: #16a34a !important;
     box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.4),
-                0 6px 24px rgba(34, 197, 94, 0.6) !important;
+        0 6px 24px rgba(34, 197, 94, 0.6) !important;
     outline-color: rgba(34, 197, 94, 0.8);
     /* transform: scale removed - causes blurry text */
 }
@@ -1327,7 +1390,8 @@ pre code {
     display: flex;
     gap: 15px;
     justify-content: center;
-    max-width: 95%; /* Use maximum available width for consistent layout */
+    max-width: 95%;
+    /* Use maximum available width for consistent layout */
     margin: 0 auto;
     width: 100%;
 }
@@ -1335,26 +1399,32 @@ pre code {
 /* Enhanced True/False buttons with default colors - matched to multiple-choice sizing */
 .preview-content .tf-option,
 .preview-content-split .tf-option {
-    padding: 15px 20px; /* Match .player-option */
-    font-size: 1.1rem; /* Match .player-option */
+    padding: 15px 20px;
+    /* Match .player-option */
+    font-size: 1.1rem;
+    /* Match .player-option */
     font-weight: 700;
-    border: 3px solid rgba(255,255,255,0.4);
+    border: 3px solid rgba(255, 255, 255, 0.4);
     border-radius: var(--border-radius-medium);
     cursor: pointer;
     transition: all 0.3s ease;
-    margin: 8px 0; /* Match .player-option */
-    min-height: 55px; /* Match .player-option */
+    margin: 8px 0;
+    /* Match .player-option */
+    min-height: 55px;
+    /* Match .player-option */
     flex: 1;
-    max-width: 350px; /* Keep wider for True/False horizontal layout */
+    max-width: 350px;
+    /* Keep wider for True/False horizontal layout */
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
     line-height: 1.4;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
     color: white;
     letter-spacing: 0.5px;
-    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); /* Default gray */
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    /* Default gray */
 }
 
 [data-theme="dark"] .preview-content .tf-option,
@@ -1362,14 +1432,15 @@ pre code {
     border: 3px solid rgba(96, 165, 250, 0.5);
     box-shadow: 0 5px 15px rgba(30, 64, 175, 0.3);
     color: #f8fafc;
-    background: linear-gradient(135deg, #374151 0%, #1f2937 100%); /* Default dark gray */
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    /* Default dark gray */
 }
 
 .preview-content .tf-option:hover,
 .preview-content-split .tf-option:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-    border-color: rgba(255,255,255,0.6);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    border-color: rgba(255, 255, 255, 0.6);
 }
 
 [data-theme="dark"] .preview-content .tf-option:hover,
@@ -1458,7 +1529,7 @@ pre code {
     margin: 20px 0 30px;
     text-align: center;
     color: white;
-    text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
     max-width: 100%;
     border: 2px solid transparent;
     /* Removed: min-height, display:flex, padding, background, backdrop-filter */
@@ -1472,7 +1543,7 @@ pre code {
     background: rgba(15, 23, 42, 0.8);
     border: 2px solid rgba(96, 165, 250, 0.3);
     color: #f8fafc;
-    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
 /* Enhanced Preview Numeric Input */
@@ -1481,12 +1552,12 @@ pre code {
     width: 100%;
     padding: 20px;
     font-size: 1.4rem;
-    border: 3px solid rgba(255,255,255,0.3);
+    border: 3px solid rgba(255, 255, 255, 0.3);
     border-radius: var(--border-radius-medium);
-    background: rgba(255,255,255,0.95);
+    background: rgba(255, 255, 255, 0.95);
     color: #1e293b;
     text-align: center;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
     font-weight: 600;
     transition: all 0.3s ease;
 }
@@ -1519,7 +1590,8 @@ pre code {
 
 /* Mobile Responsiveness for Toolbar Space */
 @media (max-width: 1024px) {
-    .host-container, 
+
+    .host-container,
     #host-screen .host-container {
         margin-left: 0 !important;
     }
@@ -1536,7 +1608,7 @@ pre code {
 [data-theme="light"] input,
 [data-theme="light"] textarea,
 [data-theme="light"] select {
-    background: rgba(255,255,255,0.95);
+    background: rgba(255, 255, 255, 0.95);
     color: var(--text-contrast);
     border: 2px solid rgba(37, 99, 235, 0.3);
 }
@@ -1545,7 +1617,7 @@ pre code {
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: white;
     border: 2px solid rgba(37, 99, 235, 0.5);
-    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="light"] .btn.secondary {
@@ -1558,7 +1630,7 @@ pre code {
 
 /* Preview Modal Header - Modern Glass Morphism */
 .preview-modal-header {
-    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border-color);
@@ -1577,37 +1649,45 @@ pre code {
     font-size: 1.8rem;
     font-weight: 700;
     color: white;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     margin: 0;
     letter-spacing: -0.02em;
 }
 
 [data-theme="dark"] .preview-title-section h2 {
     color: #f8fafc;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 /* Enhanced Preview Navigation Bar - Fixed layout and spacing */
 /* Enhanced Preview Navigation Bar - Fixed layout and clipping prevention */
 .preview-navigation-bar {
-    background: rgba(0,0,0,0.08);
+    background: rgba(0, 0, 0, 0.08);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid var(--bg-glass-light);
     border-radius: var(--border-radius-small);
-    padding: 6px 8px; /* Further reduced padding to prevent overflow */
+    padding: 6px 8px;
+    /* Further reduced padding to prevent overflow */
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px; /* Minimal gap to maximize space usage */
-    margin: 0 5px; /* Minimal margins for maximum content width */
+    gap: 8px;
+    /* Minimal gap to maximize space usage */
+    margin: 0 5px;
+    /* Minimal margins for maximum content width */
     margin-bottom: 8px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-    min-height: 40px; /* Reduced minimum height for better space efficiency */
-    flex-wrap: nowrap; /* Prevent wrapping to maintain layout */
-    overflow: hidden; /* Prevent content from overflowing container */
-    width: calc(100% - 10px); /* Ensure full width utilization minus margins */
-    box-sizing: border-box; /* Include padding and border in width calculation */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    min-height: 40px;
+    /* Reduced minimum height for better space efficiency */
+    flex-wrap: nowrap;
+    /* Prevent wrapping to maintain layout */
+    overflow: hidden;
+    /* Prevent content from overflowing container */
+    width: calc(100% - 10px);
+    /* Ensure full width utilization minus margins */
+    box-sizing: border-box;
+    /* Include padding and border in width calculation */
 }
 
 /* Responsive navigation for smaller preview areas */
@@ -1618,19 +1698,19 @@ pre code {
         margin: 0 2px;
         font-size: 0.7rem;
     }
-    
+
     .nav-btn {
         padding: 3px 6px;
         font-size: 0.7rem;
         border-radius: 3px;
     }
-    
+
     .nav-btn.edit-btn {
         max-width: none;
         min-width: 80px;
         flex-shrink: 0;
     }
-    
+
     #preview-question-counter-split {
         padding: 3px 8px;
         font-size: 0.7rem;
@@ -1667,19 +1747,26 @@ pre code {
 .preview-nav-section {
     display: flex;
     align-items: center;
-    gap: 4px; /* Reduced gap for better space utilization */
-    min-width: 0; /* Allow flex shrinking */
-    flex: 1; /* Allow sections to grow and use available space */
-    justify-content: flex-start; /* Left navigation section */
+    gap: 4px;
+    /* Reduced gap for better space utilization */
+    min-width: 0;
+    /* Allow flex shrinking */
+    flex: 1;
+    /* Allow sections to grow and use available space */
+    justify-content: flex-start;
+    /* Left navigation section */
 }
 
 .preview-nav-section:last-child {
-    justify-content: flex-end; /* Right navigation section */
+    justify-content: flex-end;
+    /* Right navigation section */
 }
 
 .preview-nav-section.center {
-    justify-content: center; /* Center section for question counter */
-    flex: 2; /* Give more space to center section */
+    justify-content: center;
+    /* Center section for question counter */
+    flex: 2;
+    /* Give more space to center section */
 }
 
 [data-theme="dark"] .preview-navigation-bar {
@@ -1689,10 +1776,10 @@ pre code {
 
 /* Enhanced Navigation Buttons - Ultra compact to prevent overflow */
 .nav-btn {
-    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     color: white;
     padding: 4px 8px;
     border-radius: 4px;
@@ -1719,8 +1806,8 @@ pre code {
 
 .nav-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    border-color: rgba(255,255,255,0.5);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
 [data-theme="dark"] .nav-btn:hover {
@@ -1740,7 +1827,8 @@ pre code {
     border: 1px solid rgba(255, 193, 7, 0.4);
     color: #ffd700;
     font-weight: 700;
-    max-width: 120px; /* Prevent excessive width */
+    max-width: 120px;
+    /* Prevent excessive width */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1776,15 +1864,15 @@ pre code {
 
 /* Smooth LaTeX reveal animation for preview */
 @keyframes previewMathFadeIn {
-    from { 
+    from {
         opacity: 0;
         transform: scale(0.98);
     }
-    to { 
+
+    to {
         opacity: 1;
         transform: scale(1);
     }
 }
 
 /* Removed opacity fade that was causing transparency issues */
-

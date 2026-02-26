@@ -7,13 +7,17 @@
 /* === BASE HIGHLIGHT.JS INTEGRATION === */
 /* Override default Highlight.js styling to integrate with Quizix Pro themes */
 .hljs {
-    background: none !important; /* Use our code-blocks.css background */
-    color: inherit !important; /* Use our text colors */
-    padding: 0 !important; /* Use our padding from code-blocks.css */
+    background: none !important;
+    /* Use our code-blocks.css background */
+    color: inherit !important;
+    /* Use our text colors */
+    padding: 0 !important;
+    /* Use our padding from code-blocks.css */
     display: block !important;
     overflow-x: auto !important;
     font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace !important;
-    font-weight: 400 !important; /* Ensure base weight is consistent */
+    font-weight: 400 !important;
+    /* Ensure base weight is consistent */
 }
 
 /* Ensure all syntax elements inherit the monospace font */
@@ -22,142 +26,74 @@
 }
 
 /* === ONE DARK PRO COLOR SCHEME === */
-/* Dark theme (default) - One Dark Pro colors */
-[data-theme="dark"] .hljs,
-:not([data-theme="light"]) .hljs {
-    color: #abb2bf !important; /* Default text color */
+/* Darkness theme colors for all environments (since pre blocks are always dark) */
+.hljs {
+    color: #abb2bf !important;
+    /* Default text color */
 }
 
 /* Keywords (if, for, class, function, etc.) */
-[data-theme="dark"] .hljs-keyword,
-[data-theme="dark"] .hljs-built_in,
-[data-theme="dark"] .hljs-type,
-[data-theme="dark"] .hljs-literal,
-:not([data-theme="light"]) .hljs-keyword,
-:not([data-theme="light"]) .hljs-built_in,
-:not([data-theme="light"]) .hljs-type,
-:not([data-theme="light"]) .hljs-literal {
-    color: #c678dd !important; /* Purple */
+.hljs-keyword,
+.hljs-built_in,
+.hljs-type,
+.hljs-literal {
+    color: #c678dd !important;
+    /* Purple */
     font-weight: bold !important;
 }
 
 /* Strings and quotes */
-[data-theme="dark"] .hljs-string,
-[data-theme="dark"] .hljs-char,
-:not([data-theme="light"]) .hljs-string,
-:not([data-theme="light"]) .hljs-char {
-    color: #98c379 !important; /* Green */
+.hljs-string,
+.hljs-char {
+    color: #98c379 !important;
+    /* Green */
 }
 
 /* Comments */
-[data-theme="dark"] .hljs-comment,
-[data-theme="dark"] .hljs-quote,
-:not([data-theme="light"]) .hljs-comment,
-:not([data-theme="light"]) .hljs-quote {
-    color: #5c6370 !important; /* Gray */
+.hljs-comment,
+.hljs-quote {
+    color: #5c6370 !important;
+    /* Gray */
     font-style: italic !important;
 }
 
 /* Functions and methods */
-[data-theme="dark"] .hljs-function,
-[data-theme="dark"] .hljs-title,
-[data-theme="dark"] .hljs-params,
-:not([data-theme="light"]) .hljs-function,
-:not([data-theme="light"]) .hljs-title,
-:not([data-theme="light"]) .hljs-params {
-    color: #61afef !important; /* Blue */
+.hljs-function,
+.hljs-title,
+.hljs-params {
+    color: #61afef !important;
+    /* Blue */
 }
 
 /* Numbers */
-[data-theme="dark"] .hljs-number,
-:not([data-theme="light"]) .hljs-number {
-    color: #d19a66 !important; /* Orange */
+.hljs-number {
+    color: #d19a66 !important;
+    /* Orange */
 }
 
 /* Variables and attributes */
-[data-theme="dark"] .hljs-variable,
-[data-theme="dark"] .hljs-attr,
-[data-theme="dark"] .hljs-property,
-:not([data-theme="light"]) .hljs-variable,
-:not([data-theme="light"]) .hljs-attr,
-:not([data-theme="light"]) .hljs-property {
-    color: #e06c75 !important; /* Red */
+.hljs-variable,
+.hljs-attr,
+.hljs-property {
+    color: #e06c75 !important;
+    /* Red */
 }
 
 /* Operators and punctuation */
-[data-theme="dark"] .hljs-operator,
-[data-theme="dark"] .hljs-punctuation,
-:not([data-theme="light"]) .hljs-operator,
-:not([data-theme="light"]) .hljs-punctuation {
-    color: #56b6c2 !important; /* Cyan */
+.hljs-operator,
+.hljs-punctuation {
+    color: #56b6c2 !important;
+    /* Cyan */
 }
 
 /* Tags (HTML/XML) */
-[data-theme="dark"] .hljs-tag,
-[data-theme="dark"] .hljs-name,
-:not([data-theme="light"]) .hljs-tag,
-:not([data-theme="light"]) .hljs-name {
-    color: #e06c75 !important; /* Red */
+.hljs-tag,
+.hljs-name {
+    color: #e06c75 !important;
+    /* Red */
 }
 
-/* === LIGHT THEME INTEGRATION === */
-/* Light theme - Adjusted One Dark Pro for light backgrounds */
-[data-theme="light"] .hljs {
-    color: #383a42 !important; /* Darker text for light background */
-}
-
-/* Keywords in light theme */
-[data-theme="light"] .hljs-keyword,
-[data-theme="light"] .hljs-built_in,
-[data-theme="light"] .hljs-type,
-[data-theme="light"] .hljs-literal {
-    color: #a626a4 !important; /* Darker purple */
-    font-weight: bold !important;
-}
-
-/* Strings in light theme */
-[data-theme="light"] .hljs-string,
-[data-theme="light"] .hljs-char {
-    color: #50a14f !important; /* Darker green */
-}
-
-/* Comments in light theme */
-[data-theme="light"] .hljs-comment,
-[data-theme="light"] .hljs-quote {
-    color: #a0a1a7 !important; /* Light gray */
-    font-style: italic !important;
-}
-
-/* Functions in light theme */
-[data-theme="light"] .hljs-function,
-[data-theme="light"] .hljs-title,
-[data-theme="light"] .hljs-params {
-    color: #4078f2 !important; /* Darker blue */
-}
-
-/* Numbers in light theme */
-[data-theme="light"] .hljs-number {
-    color: #986801 !important; /* Darker orange */
-}
-
-/* Variables in light theme */
-[data-theme="light"] .hljs-variable,
-[data-theme="light"] .hljs-attr,
-[data-theme="light"] .hljs-property {
-    color: #e45649 !important; /* Darker red */
-}
-
-/* Operators in light theme */
-[data-theme="light"] .hljs-operator,
-[data-theme="light"] .hljs-punctuation {
-    color: #0184bc !important; /* Darker cyan */
-}
-
-/* Tags in light theme */
-[data-theme="light"] .hljs-tag,
-[data-theme="light"] .hljs-name {
-    color: #e45649 !important; /* Darker red */
-}
+/* Light theme integration removed: All pre blocks have a dark background, so One Dark Pro dark theme colors should apply universally to ensure high contrast legibility. */
 
 /* === ACCESSIBILITY AND HIGH CONTRAST === */
 /* High contrast mode support */
@@ -166,28 +102,32 @@
         background: #000000 !important;
         color: #ffffff !important;
     }
-    
+
     .hljs-keyword,
     .hljs-built_in,
     .hljs-type,
     .hljs-literal {
-        color: #ffff00 !important; /* Bright yellow for keywords */
+        color: #ffff00 !important;
+        /* Bright yellow for keywords */
         font-weight: bold !important;
     }
-    
+
     .hljs-string,
     .hljs-char {
-        color: #00ff00 !important; /* Bright green for strings */
+        color: #00ff00 !important;
+        /* Bright green for strings */
     }
-    
+
     .hljs-comment,
     .hljs-quote {
-        color: #888888 !important; /* Gray for comments */
+        color: #888888 !important;
+        /* Gray for comments */
         font-style: italic !important;
     }
-    
+
     .hljs-number {
-        color: #ff8800 !important; /* Bright orange for numbers */
+        color: #ff8800 !important;
+        /* Bright orange for numbers */
     }
 }
 
@@ -195,7 +135,8 @@
 /* Mobile optimizations */
 @media (max-width: 768px) {
     .hljs {
-        font-size: inherit !important; /* Use parent font size from code-blocks.css */
+        font-size: inherit !important;
+        /* Use parent font size from code-blocks.css */
         line-height: inherit !important;
     }
 }
@@ -216,11 +157,13 @@ pre .hljs {
 /* === FONT CONSISTENCY OVERRIDES === */
 /* Ensure consistent font rendering across all syntax elements */
 .hljs-strong {
-    font-weight: bold !important; /* Override CDN's font-weight: 700 */
+    font-weight: bold !important;
+    /* Override CDN's font-weight: 700 */
 }
 
 .hljs-emphasis {
-    font-style: italic !important; /* Ensure consistent italic rendering */
+    font-style: italic !important;
+    /* Ensure consistent italic rendering */
 }
 
 /* === INTEGRATION WITH EXISTING CLASSES === */
@@ -237,17 +180,20 @@ pre code.hljs {
 /* Language-specific adjustments */
 .hljs.language-javascript .hljs-keyword,
 .hljs.language-js .hljs-keyword {
-    color: inherit; /* Use theme colors defined above */
+    color: inherit;
+    /* Use theme colors defined above */
 }
 
 .hljs.language-python .hljs-keyword {
-    color: inherit; /* Use theme colors defined above */
+    color: inherit;
+    /* Use theme colors defined above */
 }
 
 .hljs.language-java .hljs-keyword,
 .hljs.language-cpp .hljs-keyword,
 .hljs.language-c .hljs-keyword {
-    color: inherit; /* Use theme colors defined above */
+    color: inherit;
+    /* Use theme colors defined above */
 }
 
 /* === COMPATIBILITY WITH EXISTING SYSTEM === */
