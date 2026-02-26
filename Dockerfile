@@ -22,10 +22,17 @@ RUN npm run build:prod
 FROM base AS production-deps
 RUN npm ci --only=production
 
-# Stage 4: Final production image
+# Stage 4: Manim venv (built on Alpine so C extensions are musl-compatible)
+FROM node:18-alpine AS manim-builder
+RUN apk add --no-cache python3 py3-pip python3-dev ffmpeg \
+    cairo-dev pango-dev gcc g++ musl-dev pkgconf
+RUN python3 -m venv /opt/manim-env && \
+    /opt/manim-env/bin/pip install --no-cache-dir manim
+
+# Stage 5: Final production image
 FROM node:18-alpine AS production
 
-# Install dumb-init + Manim runtime deps (Python, ffmpeg, cairo, pango)
+# Install dumb-init + Manim runtime deps
 RUN apk add --no-cache dumb-init python3 ffmpeg cairo pango
 
 # Create non-root user for security
@@ -33,6 +40,9 @@ RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
 WORKDIR /app
+
+# Copy Manim venv from builder stage
+COPY --from=manim-builder /opt/manim-env /opt/manim-env
 
 # Copy dependencies from production-deps stage
 COPY --from=production-deps --chown=nodejs:nodejs /app/node_modules ./node_modules
@@ -53,7 +63,6 @@ COPY --from=builder --chown=nodejs:nodejs /app/seeds ./seeds/
 RUN mkdir -p quizzes results public/uploads && \
     chown -R nodejs:nodejs quizzes results public/uploads
 
-
 # Switch to non-root user
 USER nodejs
 
@@ -62,7 +71,8 @@ EXPOSE 3000
 
 # Set environment variables
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=3000 \
+    MANIM_VENV_PATH=/opt/manim-env
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
