@@ -793,6 +793,18 @@ export default {
     manim_tip_mathtex: 'ラベルにはText()を使用 — MathTex()にはLaTeXのインストールが必要',
     manim_tutorial_help_tooltip: 'Open Manim animation tutorial',
     manim_copy_code_aria: 'Copy code to clipboard',
+    manim_ai_describe: 'アニメーションを説明してください：',
+    manim_ai_placeholder: '例：半径2の円を描き、その面積の公式を表示する',
+    manim_ai_generate: 'AIで生成',
+    manim_ai_regenerate: '再生成',
+    manim_ai_settings: 'AI設定',
+    manim_ai_provider: 'プロバイダー：',
+    manim_ai_model: 'モデル：',
+    manim_ai_key_shared: '（問題生成器と共有）',
+    manim_ai_enter_description: 'まずアニメーションの説明を入力してください',
+    manim_ai_generating: 'コードを生成中...',
+    manim_ai_generated: 'コードが正常に生成されました！',
+    manim_ai_failed: '生成に失敗しました',
 
     // Results/Analytics
     results_failed_load: 'Failed to load results',

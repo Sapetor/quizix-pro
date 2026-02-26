@@ -7006,6 +7006,187 @@ html {
     cursor: not-allowed;
 }
 
+/* ---- Manim AI Generation Section ---- */
+
+.manim-ai-section {
+    margin-bottom: 12px;
+    padding: 10px;
+    border-radius: var(--border-radius-small, 6px);
+    background: var(--glass-light, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--glass-medium, rgba(255, 255, 255, 0.1));
+}
+
+.manim-ai-description {
+    margin-bottom: 8px;
+}
+
+.manim-ai-description label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #a0a0a0);
+}
+
+.manim-ai-input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: var(--border-radius-small, 6px);
+    border: 1px solid var(--glass-medium, rgba(255, 255, 255, 0.15));
+    background: var(--bg-secondary, #1a1a2e);
+    color: var(--text-primary, #e0e0e0);
+    font-size: 0.85rem;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.4;
+}
+
+.manim-ai-input::placeholder {
+    color: var(--text-muted, rgba(255, 255, 255, 0.35));
+}
+
+.manim-ai-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.generate-manim-btn,
+.regenerate-manim-btn {
+    padding: 6px 14px;
+    border-radius: var(--border-radius-small, 6px);
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 0.82rem;
+    transition: opacity 0.2s;
+}
+
+.generate-manim-btn {
+    background: var(--color-primary-500, #6366f1);
+}
+
+.generate-manim-btn:hover {
+    opacity: 0.9;
+}
+
+.generate-manim-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.regenerate-manim-btn {
+    background: var(--glass-medium, rgba(255, 255, 255, 0.15));
+}
+
+.regenerate-manim-btn:hover {
+    opacity: 0.85;
+}
+
+.manim-ai-config-toggle {
+    padding: 4px 8px;
+    border-radius: var(--border-radius-small, 6px);
+    border: 1px solid var(--glass-medium, rgba(255, 255, 255, 0.15));
+    background: transparent;
+    color: var(--text-secondary, #a0a0a0);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.manim-ai-config-toggle:hover {
+    color: var(--text-primary, #e0e0e0);
+}
+
+.manim-ai-status {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #a0a0a0);
+}
+
+.manim-ai-status.generating {
+    color: var(--color-primary-400, #818cf8);
+}
+
+.manim-ai-status.success {
+    color: var(--color-accent, #10b981);
+}
+
+.manim-ai-status.error {
+    color: var(--color-error, #ef4444);
+}
+
+.manim-ai-config {
+    margin-top: 8px;
+    padding: 8px;
+    border-radius: var(--border-radius-small, 6px);
+    background: var(--bg-secondary, #1a1a2e);
+    border: 1px solid var(--glass-light, rgba(255, 255, 255, 0.05));
+}
+
+.manim-ai-config-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.manim-ai-config-row:last-child {
+    margin-bottom: 0;
+}
+
+.manim-ai-config-row label {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #a0a0a0);
+    min-width: 60px;
+}
+
+.manim-ai-provider-select,
+.manim-ai-model-select {
+    flex: 1;
+    padding: 4px 8px;
+    border-radius: var(--border-radius-small, 6px);
+    border: 1px solid var(--glass-medium, rgba(255, 255, 255, 0.15));
+    background: var(--bg-primary, #0f0f23);
+    color: var(--text-primary, #e0e0e0);
+    font-size: 0.8rem;
+}
+
+.manim-ai-key-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted, rgba(255, 255, 255, 0.35));
+    font-style: italic;
+}
+
+/* Hide AI section in basic editor mode */
+[data-editor-mode="basic"] .manim-ai-section {
+    display: none !important;
+}
+
+/* Light theme */
+[data-theme="light"] .manim-ai-section {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .manim-ai-input {
+    background: #fff;
+    color: #1a1a2e;
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .manim-ai-config {
+    background: #f9f9fb;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .manim-ai-provider-select,
+[data-theme="light"] .manim-ai-model-select {
+    background: #fff;
+    color: #1a1a2e;
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
 .render-status {
     font-size: 0.8rem;
 }

@@ -57,6 +57,10 @@ export class QuizManager {
         this._previewManager = null;
         this._addQuestionFn = null;
 
+        // Track the filename and title of the currently loaded quiz so saves overwrite it
+        this._loadedFilename = null;
+        this._loadedTitle = null;
+
         // Memory management via EventListenerManager
         this.listenerManager = new EventListenerManager('QuizManager');
 
@@ -404,8 +408,10 @@ export class QuizManager {
             return;
         }
 
-        // Store for use in confirmSave
-        this.pendingSave = { title, questions };
+        // Only overwrite the loaded file if the title hasn't changed.
+        // Changed title = user wants a new quiz, so skip filename to trigger conflict resolution.
+        const shouldOverwrite = this._loadedFilename && this._loadedTitle === title;
+        this.pendingSave = { title, questions, filename: shouldOverwrite ? this._loadedFilename : null };
 
         // Show save modal for optional password
         this.showSaveQuizModal();
@@ -507,7 +513,7 @@ export class QuizManager {
     async confirmSave(password) {
         if (!this.pendingSave) return;
 
-        const { title, questions } = this.pendingSave;
+        const { title, questions, filename: loadedFilename } = this.pendingSave;
 
         try {
             return await errorHandler.safeNetworkOperation(async () => {
@@ -516,16 +522,25 @@ export class QuizManager {
                 const response = await APIHelper.fetchAPI('api/save-quiz', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, questions, password: password || null })
+                    body: JSON.stringify({ title, questions, password: password || null, filename: loadedFilename || undefined })
                 });
 
                 const data = await response.json();
                 logger.info('Save response:', response.status, data);
 
                 if (response.ok) {
-                    showSuccessAlert('quiz_saved_successfully');
+                    const savedTitle = data.title || title;
+                    showSuccessAlert('quiz_saved_successfully', [savedTitle]);
                     if (data.filename) {
-                        await this.fileManager.registerNewQuiz(data.filename, title);
+                        // Keep loaded state in sync so subsequent saves still overwrite
+                        this._loadedFilename = data.filename;
+                        this._loadedTitle = savedTitle;
+                        // If server resolved a title conflict, update the input field
+                        if (data.title && data.title !== title) {
+                            const titleInput = dom.get('quiz-title');
+                            if (titleInput) titleInput.value = data.title;
+                        }
+                        await this.fileManager.registerNewQuiz(data.filename, savedTitle);
                     }
                     this.autoSaveQuiz();
                 } else {
@@ -915,6 +930,10 @@ export class QuizManager {
                     await this.populateQuizBuilder(cleanedData);
                     logger.debug('Quiz populated successfully');
 
+                    // Track which file is loaded so saves overwrite it
+                    this._loadedFilename = filename;
+                    this._loadedTitle = cleanedData.title || null;
+
                     // Dispatch quizLoaded event for editor question count update
                     const event = new CustomEvent('quizLoaded', {
                         detail: { questionCount: cleanedData.questions.length, title: cleanedData.title }
@@ -941,7 +960,7 @@ export class QuizManager {
 
                 successShown = this.errorHandler.safeExecute(
                     () => {
-                        showSuccessAlert('quiz_loaded_successfully');
+                        showSuccessAlert('quiz_loaded_successfully', [cleanedData.title || filename]);
                         logger.debug('Success alert shown');
                         return true;
                     },
@@ -1621,8 +1640,10 @@ export class QuizManager {
                 return;
             }
 
-            // Load the quiz
+            // Load the quiz — imported quizzes are new, clear loaded state
             await this.populateQuizBuilder(quizData);
+            this._loadedFilename = null;
+            this._loadedTitle = null;
             showSuccessAlert('quiz_imported_successfully');
         }, {
             context: { operation: 'importQuiz', filename: file.name },

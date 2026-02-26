@@ -39,8 +39,12 @@ class QuizService {
 
     /**
      * Save a quiz
+     * @param {string} title - Quiz title
+     * @param {Array} questions - Quiz questions
+     * @param {string} [existingFilename] - If provided and valid, overwrite this file instead of creating a new one
      */
-    async saveQuiz(title, questions) {
+    async saveQuiz(titleArg, questions, existingFilename) {
+        let title = titleArg;
         if (!title || !questions || !Array.isArray(questions)) {
             const err = new Error('Invalid quiz data');
             err.messageKey = 'error_invalid_quiz_data';
@@ -84,16 +88,53 @@ class QuizService {
             }
         }
 
-        // Sanitize filename to prevent path traversal
-        const safeTitle = title.replace(/[^a-z0-9\-_]/gi, '_').toLowerCase().substring(0, 50);
-        const filename = `${safeTitle}_${Date.now()}.json`;
+        // Only check for title conflicts on new saves (not overwrites)
+        if (!existingFilename) {
+            const originalTitle = title;
+            title = await this._resolveNameConflict(title);
+            if (title !== originalTitle) {
+                this.logger.info(`Title conflict resolved: "${originalTitle}" → "${title}"`);
+            }
+        } else {
+            this.logger.info(`Overwriting existing file: ${existingFilename}`);
+        }
 
-        const quizData = {
-            title,
-            questions,
-            created: new Date().toISOString(),
-            id: uuidv4()
-        };
+        // Determine filename: reuse existing if valid and the file exists, otherwise generate new
+        let filename;
+        if (existingFilename && this.validateFilename(existingFilename) && existingFilename.endsWith('.json')) {
+            const existingPath = path.join(this.quizzesDir, existingFilename);
+            try {
+                await fs.access(existingPath);
+                filename = existingFilename;
+            } catch {
+                // File doesn't exist on disk, generate a new name
+                const safeTitle = title.replace(/[^a-z0-9\-_]/gi, '_').toLowerCase().substring(0, 50);
+                filename = `${safeTitle}_${Date.now()}.json`;
+            }
+        } else {
+            const safeTitle = title.replace(/[^a-z0-9\-_]/gi, '_').toLowerCase().substring(0, 50);
+            filename = `${safeTitle}_${Date.now()}.json`;
+        }
+
+        // Build quiz data, preserving created/id when overwriting an existing file
+        let quizData;
+        if (existingFilename && filename === existingFilename) {
+            try {
+                const existingContent = await fs.readFile(path.join(this.quizzesDir, filename), 'utf8');
+                const existing = JSON.parse(existingContent);
+                quizData = {
+                    title,
+                    questions,
+                    created: existing.created || new Date().toISOString(),
+                    id: existing.id || uuidv4(),
+                    modified: new Date().toISOString()
+                };
+            } catch {
+                quizData = { title, questions, created: new Date().toISOString(), id: uuidv4() };
+            }
+        } else {
+            quizData = { title, questions, created: new Date().toISOString(), id: uuidv4() };
+        }
 
         // Write file with WSL performance monitoring
         await this.wslMonitor.trackFileOperation(
@@ -110,6 +151,7 @@ class QuizService {
         return {
             success: true,
             filename,
+            title,
             id: quizData.id
         };
     }
@@ -178,6 +220,63 @@ class QuizService {
         }
 
         return JSON.parse(await fs.readFile(filePath, 'utf8'));
+    }
+
+    /**
+     * Resolve title conflicts for new saves.
+     * If a quiz with the same title already exists, appends a date suffix.
+     * If that also conflicts, appends a counter.
+     * @param {string} title - Proposed quiz title
+     * @returns {Promise<string>} - Possibly modified title
+     */
+    async _resolveNameConflict(title) {
+        let files;
+        try {
+            const allFiles = await fs.readdir(this.quizzesDir);
+            files = allFiles.filter(f => f.endsWith('.json') && f !== 'quiz-metadata.json');
+        } catch {
+            // If we can't read the directory, skip conflict checking
+            return title;
+        }
+
+        // Collect all existing titles
+        const existingTitles = new Set();
+        await Promise.all(files.map(async (file) => {
+            try {
+                const data = JSON.parse(await fs.readFile(path.join(this.quizzesDir, file), 'utf8'));
+                if (data.title) {
+                    existingTitles.add(data.title);
+                }
+            } catch {
+                // Ignore unreadable files
+            }
+        }));
+
+        this.logger.info(`[NameConflict] Checking "${title}" against ${existingTitles.size} existing titles`);
+
+        if (!existingTitles.has(title)) {
+            this.logger.info(`[NameConflict] No conflict found for "${title}"`);
+            return title;
+        }
+
+        this.logger.info(`[NameConflict] Conflict found for "${title}", adding date suffix`);
+
+        // Conflict exists — append date suffix
+        const now = new Date();
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const dateSuffix = `${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+        const titledWithDate = `${title} (${dateSuffix})`;
+
+        if (!existingTitles.has(titledWithDate)) {
+            return titledWithDate;
+        }
+
+        // Date suffix also conflicts — append incrementing counter
+        let counter = 2;
+        while (existingTitles.has(`${titledWithDate} (${counter})`)) {
+            counter++;
+        }
+        return `${titledWithDate} (${counter})`;
     }
 
     /**

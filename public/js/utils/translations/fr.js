@@ -815,6 +815,18 @@ export default {
     manim_tip_mathtex: 'Utilisez Text() pour les étiquettes — MathTex() nécessite LaTeX installé',
     manim_tutorial_help_tooltip: 'Open Manim animation tutorial',
     manim_copy_code_aria: 'Copy code to clipboard',
+    manim_ai_describe: 'Décrivez votre animation :',
+    manim_ai_placeholder: 'ex., Montrez un cercle de rayon 2 en train d\'être dessiné, puis affichez la formule de son aire',
+    manim_ai_generate: 'Générer avec l\'IA',
+    manim_ai_regenerate: 'Régénérer',
+    manim_ai_settings: 'Paramètres IA',
+    manim_ai_provider: 'Fournisseur :',
+    manim_ai_model: 'Modèle :',
+    manim_ai_key_shared: '(partagée avec le générateur de questions)',
+    manim_ai_enter_description: 'Veuillez d\'abord entrer une description de l\'animation',
+    manim_ai_generating: 'Génération du code...',
+    manim_ai_generated: 'Code généré avec succès !',
+    manim_ai_failed: 'La génération a échoué',
 
     // Results/Analytics
     results_failed_load: 'Failed to load results',

@@ -21,10 +21,11 @@ function createAIGenerationRoutes(options) {
         claudeGenerateSchema,
         geminiGenerateSchema,
         extractUrlSchema,
+        aiCompleteSchema,
         isProduction
     } = options;
 
-    const required = { logger, validateBody, claudeGenerateSchema, geminiGenerateSchema, extractUrlSchema };
+    const required = { logger, validateBody, claudeGenerateSchema, geminiGenerateSchema, extractUrlSchema, aiCompleteSchema };
     for (const [name, value] of Object.entries(required)) {
         if (!value) throw new Error(`${name} is required for AI generation routes`);
     }
@@ -543,6 +544,132 @@ function createAIGenerationRoutes(options) {
         } catch (error) {
             logger.error('URL extraction error:', error);
             res.status(500).json({ error: 'Failed to extract content from URL: ' + error.message, messageKey: 'error_url_extraction_failed' });
+        }
+    });
+
+    // ==================== GENERAL-PURPOSE AI COMPLETION ====================
+
+    router.post('/ai/complete', validateBody(aiCompleteSchema), async (req, res) => {
+        try {
+            const { provider, prompt, system, model, apiKey: clientApiKey, maxTokens } = req.validatedBody;
+
+            // Determine API key: server-side env var, then client-provided
+            const envKeyName = provider === 'claude' ? 'CLAUDE_API_KEY' : 'GEMINI_API_KEY';
+            const serverApiKey = process.env[envKeyName];
+            const apiKey = serverApiKey || clientApiKey;
+
+            // BYOK rate limiting
+            if (!serverApiKey && clientApiKey) {
+                const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+                const rateCheck = byokLimiter.check(clientIP);
+
+                if (!rateCheck.allowed) {
+                    logger.warn(`BYOK rate limit exceeded for IP: ${clientIP}`);
+                    return res.status(429).json({
+                        error: 'Rate limit exceeded',
+                        messageKey: 'error_rate_limited',
+                        message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
+                        retryAfter: rateCheck.retryAfter
+                    });
+                }
+
+                res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
+            }
+
+            if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
+                return res.status(400).json({
+                    error: 'API key is required',
+                    messageKey: 'error_api_key_required',
+                    hint: serverApiKey ? undefined : `Set ${envKeyName} environment variable or provide key in request`
+                });
+            }
+
+            logger.debug(`AI complete: provider=${provider}, model=${model || 'default'}`);
+
+            let responseText;
+
+            if (provider === 'claude') {
+                const selectedModel = model || process.env.CLAUDE_MODEL || 'claude-sonnet-4-5';
+
+                const requestBody = {
+                    model: selectedModel,
+                    max_tokens: maxTokens,
+                    system: system,
+                    messages: [
+                        { role: 'user', content: prompt }
+                    ]
+                };
+
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    logger.error('Claude AI complete error:', response.status);
+                    return res.status(response.status).json({
+                        error: `Claude API error: ${response.status}`,
+                        messageKey: 'error_claude_api',
+                        details: isProduction ? undefined : errorText
+                    });
+                }
+
+                const data = await response.json();
+                responseText = data.content?.[0]?.text || '';
+
+            } else if (provider === 'gemini') {
+                const selectedModel = model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
+                const requestBody = {
+                    systemInstruction: {
+                        parts: [{ text: system }]
+                    },
+                    contents: [
+                        { parts: [{ text: prompt }] }
+                    ],
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: maxTokens
+                    }
+                };
+
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody)
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    logger.error('Gemini AI complete error:', response.status);
+                    return res.status(response.status).json({
+                        error: `Gemini API error: ${response.status}`,
+                        messageKey: 'error_gemini_api',
+                        details: isProduction ? undefined : errorText
+                    });
+                }
+
+                const data = await response.json();
+                responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            }
+
+            res.json({ text: responseText });
+        } catch (error) {
+            logger.error('AI complete proxy error:', error.message);
+            res.status(500).json({
+                error: 'Failed to complete AI request',
+                messageKey: 'error_ai_complete',
+                details: isProduction ? undefined : error.message
+            });
         }
     });
 

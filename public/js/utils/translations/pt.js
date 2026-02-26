@@ -793,6 +793,18 @@ export default {
     manim_tip_mathtex: 'Use Text() para rótulos — MathTex() requer LaTeX instalado',
     manim_tutorial_help_tooltip: 'Open Manim animation tutorial',
     manim_copy_code_aria: 'Copy code to clipboard',
+    manim_ai_describe: 'Descreva sua animação:',
+    manim_ai_placeholder: 'ex., Mostre um círculo com raio 2 sendo desenhado, depois exiba a fórmula da área',
+    manim_ai_generate: 'Gerar com IA',
+    manim_ai_regenerate: 'Regenerar',
+    manim_ai_settings: 'Configurações de IA',
+    manim_ai_provider: 'Provedor:',
+    manim_ai_model: 'Modelo:',
+    manim_ai_key_shared: '(compartilhada com o gerador de perguntas)',
+    manim_ai_enter_description: 'Por favor, insira uma descrição da animação primeiro',
+    manim_ai_generating: 'Gerando código...',
+    manim_ai_generated: 'Código gerado com sucesso!',
+    manim_ai_failed: 'A geração falhou',
 
     // Results/Analytics
     results_failed_load: 'Failed to load results',

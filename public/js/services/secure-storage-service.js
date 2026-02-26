@@ -12,6 +12,10 @@ export class SecureStorageService {
         this.keyLength = 256;
         this.isSupported = this.constructor.isSupported();
 
+        // Clear API keys when a new browser session starts (tab/browser closed and reopened).
+        // sessionStorage survives page refreshes but is cleared when the tab/browser closes.
+        this._clearApiKeysOnNewSession();
+
         // Only initialize encryption if Web Crypto API is supported
         if (this.isSupported) {
             this.initializeMasterKey().catch(error => {
@@ -21,6 +25,29 @@ export class SecureStorageService {
         } else {
             logger.warn('Web Crypto API not supported - API keys will not be encrypted');
         }
+    }
+
+    /**
+     * Clear stored API keys when a new browser session starts.
+     * Uses sessionStorage as a session marker — it persists across page
+     * refreshes but is wiped when the tab or browser is closed.
+     */
+    _clearApiKeysOnNewSession() {
+        const SESSION_MARKER = 'quizix_session_active';
+        if (sessionStorage.getItem(SESSION_MARKER)) {
+            return; // Same session — keys are fine
+        }
+
+        // New session — clear all API keys from localStorage
+        const keysToRemove = Object.keys(localStorage).filter(
+            key => key.startsWith(this.keyPrefix) && key.includes('api_key')
+        );
+        if (keysToRemove.length > 0) {
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            logger.info(`Cleared ${keysToRemove.length} API key(s) from previous session`);
+        }
+
+        sessionStorage.setItem(SESSION_MARKER, '1');
     }
 
     /**

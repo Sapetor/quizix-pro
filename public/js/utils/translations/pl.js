@@ -808,6 +808,18 @@ export default {
     manim_tip_mathtex: 'Użyj Text() do etykiet — MathTex() wymaga zainstalowanego LaTeX',
     manim_tutorial_help_tooltip: 'Open Manim animation tutorial',
     manim_copy_code_aria: 'Copy code to clipboard',
+    manim_ai_describe: 'Opisz swoją animację:',
+    manim_ai_placeholder: 'np., Pokaż okrąg o promieniu 2 podczas rysowania, następnie wyświetl wzór na pole',
+    manim_ai_generate: 'Generuj z AI',
+    manim_ai_regenerate: 'Regeneruj',
+    manim_ai_settings: 'Ustawienia AI',
+    manim_ai_provider: 'Dostawca:',
+    manim_ai_model: 'Model:',
+    manim_ai_key_shared: '(współdzielony z generatorem pytań)',
+    manim_ai_enter_description: 'Najpierw wprowadź opis animacji',
+    manim_ai_generating: 'Generowanie kodu...',
+    manim_ai_generated: 'Kod wygenerowany pomyślnie!',
+    manim_ai_failed: 'Generowanie nie powiodło się',
 
     // Results/Analytics
     results_failed_load: 'Failed to load results',

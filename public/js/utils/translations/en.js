@@ -814,6 +814,18 @@ export default {
     manim_tip_mathtex: 'Use Text() for labels — MathTex() requires LaTeX installed',
     manim_tutorial_help_tooltip: 'Open Manim animation tutorial',
     manim_copy_code_aria: 'Copy code to clipboard',
+    manim_ai_describe: 'Describe your animation:',
+    manim_ai_placeholder: 'e.g., Show a circle with radius 2 being drawn, then display its area formula',
+    manim_ai_generate: 'Generate with AI',
+    manim_ai_regenerate: 'Regenerate',
+    manim_ai_settings: 'AI Settings',
+    manim_ai_provider: 'Provider:',
+    manim_ai_model: 'Model:',
+    manim_ai_key_shared: '(shared with question generator)',
+    manim_ai_enter_description: 'Please enter an animation description first',
+    manim_ai_generating: 'Generating code...',
+    manim_ai_generated: 'Code generated successfully!',
+    manim_ai_failed: 'Generation failed',
 
     // Results/Analytics
     results_failed_load: 'Failed to load results',

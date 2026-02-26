@@ -26,6 +26,7 @@ const {
     claudeGenerateSchema,
     geminiGenerateSchema,
     extractUrlSchema,
+    aiCompleteSchema,
     createFolderSchema,
     renameFolderSchema,
     moveFolderSchema,
@@ -329,6 +330,7 @@ app.use('/api', createAIGenerationRoutes({
     claudeGenerateSchema,
     geminiGenerateSchema,
     extractUrlSchema,
+    aiCompleteSchema,
     isProduction
 }));
 
@@ -340,8 +342,8 @@ app.use('/api', createManimRoutes({ logger, manimRenderService }));
 // Save quiz endpoint
 app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {
     try {
-        const { title, questions, password } = req.validatedBody;
-        const result = await quizService.saveQuiz(title, questions);
+        const { title, questions, password, filename } = req.validatedBody;
+        const result = await quizService.saveQuiz(title, questions, filename);
 
         // Register quiz in metadata and optionally set password
         if (result.filename) {

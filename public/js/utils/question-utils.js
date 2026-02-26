@@ -80,9 +80,40 @@ export class QuestionUtils {
                         <button type="button" class="manim-help-btn" title="Manim Tutorial">?</button>
                     </div>
                     <div class="video-panel" data-panel="question">
+                        <div class="manim-ai-section">
+                            <div class="manim-ai-description">
+                                <label data-translate="manim_ai_describe">Describe your animation:</label>
+                                <textarea class="manim-ai-input" rows="3" placeholder="e.g., Show a circle with radius 2 being drawn, then display its area formula" data-translate-placeholder="manim_ai_placeholder"></textarea>
+                            </div>
+                            <div class="manim-ai-actions">
+                                <button type="button" class="generate-manim-btn" data-placement="question" data-translate="manim_ai_generate">Generate with AI</button>
+                                <button type="button" class="regenerate-manim-btn hidden" data-placement="question" data-translate="manim_ai_regenerate">Regenerate</button>
+                                <button type="button" class="manim-ai-config-toggle" title="AI Settings" data-translate-title="manim_ai_settings">⚙</button>
+                                <span class="manim-ai-status hidden"></span>
+                            </div>
+                            <div class="manim-ai-config hidden">
+                                <div class="manim-ai-config-row">
+                                    <label data-translate="manim_ai_provider">Provider:</label>
+                                    <select class="manim-ai-provider-select">
+                                        <option value="ollama">Ollama (Local)</option>
+                                        <option value="openai">OpenAI</option>
+                                        <option value="claude">Claude</option>
+                                        <option value="gemini">Gemini</option>
+                                    </select>
+                                </div>
+                                <div class="manim-ai-config-row">
+                                    <label data-translate="manim_ai_model">Model:</label>
+                                    <select class="manim-ai-model-select"></select>
+                                </div>
+                                <div class="manim-ai-config-row manim-ai-key-row hidden">
+                                    <label>API Key:</label>
+                                    <span class="manim-ai-key-hint" data-translate="manim_ai_key_shared">(shared with question generator)</span>
+                                </div>
+                            </div>
+                        </div>
                         <div class="manim-code-editor">
                             <label>Manim Code:</label>
-                            <textarea class="manim-code question-manim-code" placeholder="from manim import *&#10;class MyScene(Scene):&#10;    def construct(self):&#10;        ..." rows="6"></textarea>
+                            <textarea class="manim-code question-manim-code" spellcheck="false" data-gramm="false" placeholder="from manim import *&#10;class MyScene(Scene):&#10;    def construct(self):&#10;        ..." rows="6"></textarea>
                             <div class="manim-actions">
                                 <button type="button" class="render-manim-btn" data-placement="question">Render Animation</button>
                                 <span class="render-status hidden"></span>
@@ -94,9 +125,40 @@ export class QuestionUtils {
                         </div>
                     </div>
                     <div class="video-panel hidden" data-panel="explanation">
+                        <div class="manim-ai-section">
+                            <div class="manim-ai-description">
+                                <label data-translate="manim_ai_describe">Describe your animation:</label>
+                                <textarea class="manim-ai-input" rows="3" placeholder="e.g., Show a circle with radius 2 being drawn, then display its area formula" data-translate-placeholder="manim_ai_placeholder"></textarea>
+                            </div>
+                            <div class="manim-ai-actions">
+                                <button type="button" class="generate-manim-btn" data-placement="explanation" data-translate="manim_ai_generate">Generate with AI</button>
+                                <button type="button" class="regenerate-manim-btn hidden" data-placement="explanation" data-translate="manim_ai_regenerate">Regenerate</button>
+                                <button type="button" class="manim-ai-config-toggle" title="AI Settings" data-translate-title="manim_ai_settings">⚙</button>
+                                <span class="manim-ai-status hidden"></span>
+                            </div>
+                            <div class="manim-ai-config hidden">
+                                <div class="manim-ai-config-row">
+                                    <label data-translate="manim_ai_provider">Provider:</label>
+                                    <select class="manim-ai-provider-select">
+                                        <option value="ollama">Ollama (Local)</option>
+                                        <option value="openai">OpenAI</option>
+                                        <option value="claude">Claude</option>
+                                        <option value="gemini">Gemini</option>
+                                    </select>
+                                </div>
+                                <div class="manim-ai-config-row">
+                                    <label data-translate="manim_ai_model">Model:</label>
+                                    <select class="manim-ai-model-select"></select>
+                                </div>
+                                <div class="manim-ai-config-row manim-ai-key-row hidden">
+                                    <label>API Key:</label>
+                                    <span class="manim-ai-key-hint" data-translate="manim_ai_key_shared">(shared with question generator)</span>
+                                </div>
+                            </div>
+                        </div>
                         <div class="manim-code-editor">
                             <label>Manim Code:</label>
-                            <textarea class="manim-code explanation-manim-code" placeholder="from manim import *&#10;class ExplainScene(Scene):&#10;    def construct(self):&#10;        ..." rows="6"></textarea>
+                            <textarea class="manim-code explanation-manim-code" spellcheck="false" data-gramm="false" placeholder="from manim import *&#10;class ExplainScene(Scene):&#10;    def construct(self):&#10;        ..." rows="6"></textarea>
                             <div class="manim-actions">
                                 <button type="button" class="render-manim-btn" data-placement="explanation">Render Animation</button>
                                 <span class="render-status hidden"></span>

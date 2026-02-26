@@ -9,6 +9,14 @@ const { z } = require('zod');
 // Question Schemas
 // ============================================================================
 
+// Shared video/Manim fields for all question types
+const videoFields = {
+    video: z.string().optional(),
+    videoManimCode: z.string().optional(),
+    explanationVideo: z.string().optional(),
+    explanationVideoManimCode: z.string().optional()
+};
+
 const multipleChoiceQuestionSchema = z.object({
     type: z.literal('multiple-choice'),
     question: z.string().min(1, 'Question text is required'),
@@ -18,7 +26,8 @@ const multipleChoiceQuestionSchema = z.object({
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
     image: z.string().optional(),
-    concepts: z.array(z.string()).max(5).optional().default([])
+    concepts: z.array(z.string()).max(5).optional().default([]),
+    ...videoFields
 });
 
 const multipleCorrectQuestionSchema = z.object({
@@ -30,7 +39,8 @@ const multipleCorrectQuestionSchema = z.object({
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
     image: z.string().optional(),
-    concepts: z.array(z.string()).max(5).optional().default([])
+    concepts: z.array(z.string()).max(5).optional().default([]),
+    ...videoFields
 });
 
 const trueFalseQuestionSchema = z.object({
@@ -41,7 +51,8 @@ const trueFalseQuestionSchema = z.object({
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
     image: z.string().optional(),
-    concepts: z.array(z.string()).max(5).optional().default([])
+    concepts: z.array(z.string()).max(5).optional().default([]),
+    ...videoFields
 });
 
 const numericQuestionSchema = z.object({
@@ -53,7 +64,8 @@ const numericQuestionSchema = z.object({
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
     image: z.string().optional(),
-    concepts: z.array(z.string()).max(5).optional().default([])
+    concepts: z.array(z.string()).max(5).optional().default([]),
+    ...videoFields
 });
 
 const orderingQuestionSchema = z.object({
@@ -65,7 +77,8 @@ const orderingQuestionSchema = z.object({
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
     image: z.string().optional(),
-    concepts: z.array(z.string()).max(5).optional().default([])
+    concepts: z.array(z.string()).max(5).optional().default([]),
+    ...videoFields
 });
 
 // Union of all question types
@@ -98,7 +111,8 @@ const saveQuizSchema = z.object({
     title: z.string().min(1, 'Quiz title is required').max(200),
     questions: z.array(questionSchema).min(1, 'At least one question is required'),
     settings: quizSettingsSchema,
-    password: z.string().min(4).max(100).nullable().optional()
+    password: z.string().min(4).max(100).nullable().optional(),
+    filename: z.string().regex(/^[a-zA-Z0-9._-]+\.json$/).optional()
 });
 
 // ============================================================================
@@ -127,6 +141,15 @@ const extractUrlSchema = z.object({
             // Only allow http and https protocols
             return url.startsWith('http://') || url.startsWith('https://');
         }, 'Only HTTP and HTTPS URLs are allowed')
+});
+
+const aiCompleteSchema = z.object({
+    provider: z.enum(['claude', 'gemini']),
+    prompt: z.string().min(1, 'Prompt is required'),
+    system: z.string().min(1, 'System prompt is required'),
+    model: z.string().optional(),
+    apiKey: z.string().optional(),
+    maxTokens: z.number().int().min(100).max(32000).optional().default(4096)
 });
 
 // ============================================================================
@@ -500,6 +523,7 @@ module.exports = {
     claudeGenerateSchema,
     geminiGenerateSchema,
     extractUrlSchema,
+    aiCompleteSchema,
     joinGameSchema,
     submitAnswerSchema,
     quizFilenameSchema,

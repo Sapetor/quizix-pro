@@ -798,6 +798,18 @@ export default {
     manim_tip_mathtex: 'Usa Text() per le etichette — MathTex() richiede LaTeX installato',
     manim_tutorial_help_tooltip: 'Open Manim animation tutorial',
     manim_copy_code_aria: 'Copy code to clipboard',
+    manim_ai_describe: 'Descrivi la tua animazione:',
+    manim_ai_placeholder: 'es., Mostra un cerchio con raggio 2 che viene disegnato, poi visualizza la formula dell\'area',
+    manim_ai_generate: 'Genera con IA',
+    manim_ai_regenerate: 'Rigenera',
+    manim_ai_settings: 'Impostazioni IA',
+    manim_ai_provider: 'Provider:',
+    manim_ai_model: 'Modello:',
+    manim_ai_key_shared: '(condivisa con il generatore di domande)',
+    manim_ai_enter_description: 'Inserisci prima una descrizione dell\'animazione',
+    manim_ai_generating: 'Generazione del codice...',
+    manim_ai_generated: 'Codice generato con successo!',
+    manim_ai_failed: 'Generazione fallita',
 
     // Results/Analytics
     results_failed_load: 'Failed to load results',

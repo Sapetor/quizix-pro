@@ -794,6 +794,18 @@ export default {
     manim_tip_mathtex: '使用Text()作为标签 — MathTex()需要安装LaTeX',
     manim_tutorial_help_tooltip: 'Open Manim animation tutorial',
     manim_copy_code_aria: 'Copy code to clipboard',
+    manim_ai_describe: '描述您的动画：',
+    manim_ai_placeholder: '例如，画一个半径为2的圆，然后显示面积公式',
+    manim_ai_generate: '用AI生成',
+    manim_ai_regenerate: '重新生成',
+    manim_ai_settings: 'AI设置',
+    manim_ai_provider: '提供商：',
+    manim_ai_model: '模型：',
+    manim_ai_key_shared: '（与题目生成器共享）',
+    manim_ai_enter_description: '请先输入动画描述',
+    manim_ai_generating: '正在生成代码...',
+    manim_ai_generated: '代码生成成功！',
+    manim_ai_failed: '生成失败',
 
     // Results/Analytics
     results_failed_load: 'Failed to load results',

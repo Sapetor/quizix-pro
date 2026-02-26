@@ -801,6 +801,18 @@ export default {
     manim_tip_mathtex: 'Verwenden Sie Text() für Beschriftungen — MathTex() erfordert eine LaTeX-Installation',
     manim_tutorial_help_tooltip: 'Open Manim animation tutorial',
     manim_copy_code_aria: 'Copy code to clipboard',
+    manim_ai_describe: 'Beschreiben Sie Ihre Animation:',
+    manim_ai_placeholder: 'z.B., Zeige einen Kreis mit Radius 2, der gezeichnet wird, dann die Flächenformel anzeigen',
+    manim_ai_generate: 'Mit KI generieren',
+    manim_ai_regenerate: 'Neu generieren',
+    manim_ai_settings: 'KI-Einstellungen',
+    manim_ai_provider: 'Anbieter:',
+    manim_ai_model: 'Modell:',
+    manim_ai_key_shared: '(mit dem Fragengenerator geteilt)',
+    manim_ai_enter_description: 'Bitte geben Sie zuerst eine Animationsbeschreibung ein',
+    manim_ai_generating: 'Code wird generiert...',
+    manim_ai_generated: 'Code erfolgreich generiert!',
+    manim_ai_failed: 'Generierung fehlgeschlagen',
 
     // Results/Analytics
     results_failed_load: 'Failed to load results',

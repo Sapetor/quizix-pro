@@ -3,6 +3,7 @@ import { APIHelper } from '../utils/api-helper.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
 import { openModal, closeModal, createModalBindings } from '../utils/modal-utils.js';
 import { getTranslation } from '../utils/translation-manager.js';
+import { manimAIGenerator } from './manim-ai-generator.js';
 
 /**
  * ManimEditor - Manages Manim animation code editing for quiz questions
@@ -91,6 +92,11 @@ export class ManimEditor {
         if (helpBtn) {
             helpBtn.addEventListener('click', () => this.openTutorial());
         }
+
+        // AI generation — one per panel
+        videoSection.querySelectorAll('.video-panel').forEach(panel => {
+            this.initAIGeneration(panel, questionElement);
+        });
     }
 
     /**
@@ -226,6 +232,198 @@ export class ManimEditor {
         }
 
         logger.debug(`ManimEditor: video removed for placement "${placement}"`);
+    }
+
+    // -------------------------------------------------------------------------
+    // AI-assisted code generation
+    // -------------------------------------------------------------------------
+
+    /**
+     * Initialise AI generation controls for a single video panel.
+     * @param {HTMLElement} panel - A .video-panel element
+     * @param {HTMLElement} questionElement - The parent .question-item
+     */
+    initAIGeneration(panel, questionElement) {
+        const placement = panel.dataset.panel; // 'question' or 'explanation'
+
+        // Generate button
+        const generateBtn = panel.querySelector('.generate-manim-btn');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', () => this.handleAIGenerate(panel, questionElement, placement));
+        }
+
+        // Regenerate button (same handler)
+        const regenerateBtn = panel.querySelector('.regenerate-manim-btn');
+        if (regenerateBtn) {
+            regenerateBtn.addEventListener('click', () => this.handleAIGenerate(panel, questionElement, placement));
+        }
+
+        // Config toggle
+        const configToggle = panel.querySelector('.manim-ai-config-toggle');
+        const configPanel = panel.querySelector('.manim-ai-config');
+        if (configToggle && configPanel) {
+            configToggle.addEventListener('click', () => {
+                configPanel.classList.toggle('hidden');
+                if (!configPanel.classList.contains('hidden')) {
+                    this.updateAIConfigUI(panel);
+                }
+            });
+        }
+
+        // Provider change
+        const providerSelect = panel.querySelector('.manim-ai-provider-select');
+        if (providerSelect) {
+            providerSelect.value = manimAIGenerator.getProvider();
+            providerSelect.addEventListener('change', () => {
+                manimAIGenerator.setProvider(providerSelect.value);
+                this.updateAIConfigUI(panel);
+            });
+        }
+
+        // Model change
+        const modelSelect = panel.querySelector('.manim-ai-model-select');
+        if (modelSelect) {
+            modelSelect.addEventListener('change', () => {
+                manimAIGenerator.setModel(modelSelect.value);
+            });
+        }
+    }
+
+    /**
+     * Handle the "Generate with AI" / "Regenerate" button click.
+     * @param {HTMLElement} panel
+     * @param {HTMLElement} questionElement
+     * @param {'question'|'explanation'} placement
+     */
+    async handleAIGenerate(panel, questionElement, placement) {
+        const input = panel.querySelector('.manim-ai-input');
+        const description = input?.value?.trim();
+
+        if (!description) {
+            this.setAIStatus(panel, 'error', getTranslation('manim_ai_enter_description'));
+            return;
+        }
+
+        const generateBtn = panel.querySelector('.generate-manim-btn');
+        const regenerateBtn = panel.querySelector('.regenerate-manim-btn');
+
+        // Gather question context
+        const questionText = questionElement.querySelector('.question-text')?.value || '';
+        const questionType = questionElement.querySelector('.question-type')?.value || 'multiple-choice';
+        const options = Array.from(questionElement.querySelectorAll('.multiple-choice-options .option'))
+            .map(o => o.value).filter(Boolean);
+        const correctSelect = questionElement.querySelector('.multiple-choice-options .correct-answer');
+        const correctAnswer = correctSelect ? options[parseInt(correctSelect.value, 10)] || '' : '';
+
+        // Disable buttons, show status
+        if (generateBtn) generateBtn.disabled = true;
+        if (regenerateBtn) regenerateBtn.disabled = true;
+        this.setAIStatus(panel, 'generating', getTranslation('manim_ai_generating'));
+
+        try {
+            const code = await manimAIGenerator.generateCode(description, {
+                questionText,
+                questionType,
+                options,
+                correctAnswer,
+                placement
+            });
+
+            // Populate the code textarea
+            const textarea = panel.querySelector(`.${placement}-manim-code`);
+            if (textarea) {
+                textarea.value = code;
+            }
+
+            // Show regenerate, update status
+            if (regenerateBtn) regenerateBtn.classList.remove('hidden');
+            this.setAIStatus(panel, 'success', getTranslation('manim_ai_generated'));
+        } catch (err) {
+            logger.error('ManimEditor: AI generation failed', err);
+            this.setAIStatus(panel, 'error', `${getTranslation('manim_ai_failed')}: ${err.message}`);
+        } finally {
+            if (generateBtn) generateBtn.disabled = false;
+            if (regenerateBtn) regenerateBtn.disabled = false;
+        }
+    }
+
+    /**
+     * Update the AI config UI (model dropdown, API key hint) for the current provider.
+     * @param {HTMLElement} panel
+     */
+    async updateAIConfigUI(panel) {
+        const provider = manimAIGenerator.getProvider();
+        const modelSelect = panel.querySelector('.manim-ai-model-select');
+        const keyRow = panel.querySelector('.manim-ai-key-row');
+
+        // Show/hide API key hint + check if key is stored (client OR server)
+        if (keyRow) {
+            if (manimAIGenerator.requiresApiKey(provider)) {
+                keyRow.classList.remove('hidden');
+                const hintEl = keyRow.querySelector('.manim-ai-key-hint');
+                if (hintEl) {
+                    let hasKey = await manimAIGenerator.hasApiKey(provider);
+
+                    // Also check if server has the key configured via env var
+                    if (!hasKey) {
+                        try {
+                            if (!this._serverAIConfig) {
+                                const resp = await fetch(APIHelper.getApiUrl('api/ai/config'));
+                                if (resp.ok) this._serverAIConfig = await resp.json();
+                            }
+                            const cfg = this._serverAIConfig;
+                            if (cfg) {
+                                if (provider === 'claude' && cfg.claudeKeyConfigured) hasKey = true;
+                                if (provider === 'gemini' && cfg.geminiKeyConfigured) hasKey = true;
+                            }
+                        } catch (_) { /* ignore — indicator just stays ✘ */ }
+                    }
+
+                    hintEl.textContent = hasKey
+                        ? `\u2714 ${getTranslation('manim_ai_key_shared')}`
+                        : `\u2718 ${getTranslation('manim_ai_key_shared')}`;
+                    hintEl.style.color = hasKey ? 'var(--color-accent, #10b981)' : 'var(--color-error, #ef4444)';
+                }
+            } else {
+                keyRow.classList.add('hidden');
+            }
+        }
+
+        // Populate model dropdown
+        if (modelSelect) {
+            modelSelect.innerHTML = '';
+            const models = await manimAIGenerator.getModelsForProvider(provider);
+            const currentModel = manimAIGenerator.getModel();
+
+            if (models.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = provider === 'ollama' ? 'No models found' : 'Loading...';
+                modelSelect.appendChild(opt);
+            } else {
+                models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    opt.textContent = m.name;
+                    if (m.id === currentModel) opt.selected = true;
+                    modelSelect.appendChild(opt);
+                });
+            }
+        }
+    }
+
+    /**
+     * Set AI generation status message.
+     * @param {HTMLElement} panel
+     * @param {'generating'|'success'|'error'} type
+     * @param {string} message
+     */
+    setAIStatus(panel, type, message) {
+        const statusEl = panel.querySelector('.manim-ai-status');
+        if (!statusEl) return;
+        statusEl.textContent = message;
+        statusEl.className = `manim-ai-status ${type}`;
+        statusEl.classList.remove('hidden');
     }
 
     // -------------------------------------------------------------------------
