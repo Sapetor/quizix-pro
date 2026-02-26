@@ -25,8 +25,8 @@ RUN npm ci --only=production
 # Stage 4: Final production image
 FROM node:18-alpine AS production
 
-# Install dumb-init
-RUN apk add --no-cache dumb-init
+# Install dumb-init + Manim runtime deps (Python, ffmpeg, cairo, pango)
+RUN apk add --no-cache dumb-init python3 ffmpeg cairo pango
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -52,6 +52,7 @@ COPY --from=builder --chown=nodejs:nodejs /app/seeds ./seeds/
 # Create directories for persistent data with proper permissions
 RUN mkdir -p quizzes results public/uploads && \
     chown -R nodejs:nodejs quizzes results public/uploads
+
 
 # Switch to non-root user
 USER nodejs

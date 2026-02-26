@@ -62,6 +62,38 @@ class ManimRenderService {
     }
 
     // -------------------------------------------------------------------------
+    // Venv helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Find the venv's site-packages directory.
+     * @returns {string|null}
+     */
+    _findSitePackages() {
+        const libDir = path.join(this.venvPath, 'lib');
+        if (!fs.existsSync(libDir)) return null;
+        try {
+            const pythonDir = fs.readdirSync(libDir).find(d => d.startsWith('python'));
+            if (!pythonDir) return null;
+            const sp = path.join(libDir, pythonDir, 'site-packages');
+            return fs.existsSync(sp) ? sp : null;
+        } catch { return null; }
+    }
+
+    /**
+     * Build env vars so system python3 can find the venv's packages.
+     * @returns {object}
+     */
+    _venvEnv() {
+        const sitePackages = this._findSitePackages();
+        return {
+            VIRTUAL_ENV: this.venvPath,
+            PYTHONPATH: sitePackages || '',
+            PATH: `${path.join(this.venvPath, 'bin')}:${process.env.PATH || ''}`,
+        };
+    }
+
+    // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
 
@@ -120,15 +152,18 @@ class ManimRenderService {
      * @returns {Promise<{ available: boolean, version: string|null, error: string|null }>}
      */
     async checkAvailability() {
-        const manimBin = path.join(this.venvPath, 'bin', 'manim');
-
-        if (!fs.existsSync(manimBin)) {
-            this.logger.warn(`Manim binary not found at: ${manimBin}`);
-            return { available: false, version: null, error: `Manim binary not found: ${manimBin}` };
+        // Check that the venv's site-packages exist (proof manim is installed)
+        const sitePackages = this._findSitePackages();
+        if (!sitePackages) {
+            this.logger.warn(`Manim venv site-packages not found under: ${this.venvPath}`);
+            return { available: false, version: null, error: `Manim venv not found: ${this.venvPath}` };
         }
 
         return new Promise((resolve) => {
-            execFile(manimBin, ['--version'], { timeout: 5000 }, (err, stdout, stderr) => {
+            execFile('python3', ['-m', 'manim', '--version'], {
+                timeout: 5000,
+                env: { ...process.env, ...this._venvEnv() },
+            }, (err, stdout, stderr) => {
                 if (err) {
                     const msg = err.message || String(err);
                     this.logger.warn(`Manim version check failed: ${msg}`);
@@ -211,15 +246,14 @@ class ManimRenderService {
                 sceneClassName,
             ];
 
-            const pythonBin = path.join(this.venvPath, 'bin', 'python');
-            this.logger.debug(`Executing: ${pythonBin} ${args.join(' ')}`);
+            this.logger.debug(`Executing: python3 ${args.join(' ')}`);
 
-            // Spawn the render process
+            // Spawn the render process using system python3 with venv packages
             await new Promise((resolve, reject) => {
                 const proc = execFile(
-                    pythonBin,
+                    'python3',
                     args,
-                    { timeout: this.renderTimeout, cwd: tempDir },
+                    { timeout: this.renderTimeout, cwd: tempDir, env: { ...process.env, ...this._venvEnv() } },
                     (err, stdout, stderr) => {
                         if (err) {
                             // execFile sets err.killed = true on timeout
