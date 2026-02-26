@@ -990,7 +990,9 @@ export class AIQuestionGenerator {
     showSimpleErrorPopup(title, message, icon) {
         logger.debug('showSimpleErrorPopup called', { title, message, icon });
 
-        const existingModal = dom.get('simple-error-modal');
+        // Use document.getElementById directly (not dom.get) because these are
+        // ephemeral elements — the dom cache returns stale removed elements
+        const existingModal = document.getElementById('simple-error-modal');
         if (existingModal) {
             existingModal.remove();
         }
@@ -1029,8 +1031,8 @@ export class AIQuestionGenerator {
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-        const modal = dom.get('simple-error-modal');
-        const okBtn = dom.get('simple-error-ok');
+        const modal = document.getElementById('simple-error-modal');
+        const okBtn = document.getElementById('simple-error-ok');
 
         if (!modal) {
             logger.error('Failed to create error modal');

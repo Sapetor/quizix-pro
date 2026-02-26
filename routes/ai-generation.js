@@ -120,7 +120,6 @@ function createAIGenerationRoutes(options) {
     // Fetch available Ollama models endpoint
     router.get('/ollama/models', async (req, res) => {
         try {
-            const { default: fetch } = await import('node-fetch');
             const response = await fetch(`${OLLAMA_URL}/api/tags`);
 
             if (!response.ok) {
@@ -185,9 +184,6 @@ function createAIGenerationRoutes(options) {
 
             logger.debug(`Using ${serverApiKey ? 'server-side' : 'client-provided'} Claude API key`);
 
-            // Import node-fetch for HTTP requests
-            const { default: fetchFunction } = await import('node-fetch');
-
             // Calculate max_tokens based on number of questions
             // ~2000 tokens per question to allow for LaTeX, explanations, and safety margin
             const questionCount = Math.max(1, Math.min(numQuestions || 5, 20));
@@ -213,7 +209,7 @@ function createAIGenerationRoutes(options) {
                 ]
             };
 
-            const response = await fetchFunction('https://api.anthropic.com/v1/messages', {
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -301,9 +297,6 @@ function createAIGenerationRoutes(options) {
 
             logger.debug(`Using ${serverApiKey ? 'server-side' : 'client-provided'} Gemini API key`);
 
-            // Import node-fetch for HTTP requests
-            const { default: fetchFunction } = await import('node-fetch');
-
             // Calculate max_tokens based on number of questions (matching Claude's allocation)
             // ~2000 tokens per question to allow for LaTeX, explanations, and safety margin
             const questionCount = Math.max(1, Math.min(numQuestions || 5, 20));
@@ -337,7 +330,7 @@ function createAIGenerationRoutes(options) {
                 }
             };
 
-            const response = await fetchFunction(
+            const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
@@ -433,14 +426,12 @@ function createAIGenerationRoutes(options) {
                 });
             }
 
-            // Dynamic import of dependencies
-            let fetchFunction, cheerio;
+            // Dynamic import of cheerio
+            let cheerio;
             try {
-                const nodeFetch = await import('node-fetch');
-                fetchFunction = nodeFetch.default;
                 cheerio = require('cheerio');
             } catch (err) {
-                logger.warn('Required packages not installed for URL extraction');
+                logger.warn('cheerio not installed for URL extraction');
                 return res.status(501).json({
                     error: 'URL extraction not available',
                     messageKey: 'error_url_extraction_not_available',
@@ -453,11 +444,9 @@ function createAIGenerationRoutes(options) {
             const timeoutId = setTimeout(() => controller.abort(), URL_FETCH_TIMEOUT_MS);
 
             try {
-                const response = await fetchFunction(url, {
+                const response = await fetch(url, {
                     signal: controller.signal,
                     redirect: 'follow',
-                    follow: 3, // Max 3 redirects
-                    size: MAX_RESPONSE_SIZE,
                     headers: {
                         'User-Agent': 'Mozilla/5.0 (compatible; QuizixBot/1.0; +https://quizix.pro)',
                         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',

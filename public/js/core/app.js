@@ -93,7 +93,7 @@ export class QuizGame {
         window.game = this;
         
         // Expose QuizManager globally for inline onclick handlers
-        window.QM = this.quizManager;
+        window.quizManager = this.quizManager;
 
         // Wire up dependency injection for QuizManager
         this.quizManager.setLoadQuizHandler((filename) => this.loadQuiz(filename));
