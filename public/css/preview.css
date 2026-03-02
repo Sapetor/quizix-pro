@@ -1027,12 +1027,13 @@ pre code {
 /* Enhanced Preview Content Background - Maximized space for content */
 .preview-content,
 .preview-content-split {
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary-gradient) 100%);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-medium);
-    padding: 12px;
-    /* Further reduced for maximum content space utilization */
-    color: white;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    padding: 16px;
+    /* Clean, structured padding */
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px var(--shadow-light);
     width: 100%;
     /* Ensure full width usage */
     margin: 0;
@@ -1043,9 +1044,9 @@ pre code {
 
 [data-theme="dark"] .preview-content,
 [data-theme="dark"] .preview-content-split {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-    border: 2px solid rgba(96, 165, 250, 0.2);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px var(--shadow-dark);
 }
 
 /* Enhanced Preview Player Options - Increased width for better layout */
@@ -1630,54 +1631,42 @@ pre code {
 
 /* Preview Modal Header - Modern Glass Morphism */
 .preview-modal-header {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border-color);
+    background: transparent;
+    border-bottom: 1px solid var(--border-color);
     border-radius: 20px 20px 0 0;
     padding: 20px 30px;
-    box-shadow: 0 8px 32px var(--shadow-light);
 }
 
 [data-theme="dark"] .preview-modal-header {
-    background: linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(15, 23, 42, 0.8) 100%);
-    border: 1px solid rgba(96, 165, 250, 0.3);
+    background: transparent;
+    border-bottom: 1px solid var(--border-color);
 }
 
 /* Preview Title Section */
 .preview-title-section h2 {
     font-size: 1.8rem;
     font-weight: 700;
-    color: white;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    color: var(--text-primary);
     margin: 0;
     letter-spacing: -0.02em;
 }
 
 [data-theme="dark"] .preview-title-section h2 {
-    color: #f8fafc;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    color: var(--text-primary);
 }
 
-/* Enhanced Preview Navigation Bar - Fixed layout and spacing */
 /* Enhanced Preview Navigation Bar - Fixed layout and clipping prevention */
 .preview-navigation-bar {
-    background: rgba(0, 0, 0, 0.08);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--bg-glass-light);
-    border-radius: var(--border-radius-small);
-    padding: 6px 8px;
-    /* Further reduced padding to prevent overflow */
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+    padding: 10px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    /* Minimal gap to maximize space usage */
-    margin: 0 5px;
-    /* Minimal margins for maximum content width */
-    margin-bottom: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    gap: 12px;
+    margin: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
     min-height: 40px;
     /* Reduced minimum height for better space efficiency */
     flex-wrap: nowrap;

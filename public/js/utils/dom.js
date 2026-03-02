@@ -338,26 +338,46 @@ export function escapeHtmlPreservingLatex(text) {
 /**
  * Format code blocks in text content
  * Converts markdown-style code blocks to HTML with proper escaping
+ * Also handles basic newline preservation for regular text
  * @param {string} text - Text containing code blocks
  * @returns {string} - Formatted text with HTML code blocks
  */
 export function formatCodeBlocks(text) {
     if (!text) return text;
 
-    // Convert code blocks (```language ... ```)
-    text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, language, code) => {
-        // SECURITY: Sanitize language to prevent XSS via class attribute injection
-        // Only allow alphanumeric characters and common language names
+    // Temporary placeholder for code blocks to avoid messing with their newlines
+    const codeBlocks = [];
+
+    // Convert block code (```language ... ```)
+    let processedText = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, language, code) => {
         const rawLang = language || 'text';
         const lang = rawLang.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 30) || 'text';
-        const trimmedCode = code.trim();
-        return `<pre><code class="language-${lang}">${escapeHtml(trimmedCode)}</code></pre>`;
+
+        // Fix literal "\n" character sequences that might be injected by JSON strings/browser agents
+        let cleanedCode = code.trim().replace(/\\n/g, '\n');
+
+        const html = `<pre><code class="language-${lang}">${escapeHtml(cleanedCode)}</code></pre>`;
+        codeBlocks.push(html);
+        return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
     });
 
-    // Convert inline code (`code`) - escape HTML to prevent XSS
-    text = text.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
+    // Convert inline code (`code`)
+    processedText = processedText.replace(/`([^`]+)`/g, (_, code) => {
+        const cleanedCode = code.replace(/\\n/g, '\n');
+        const html = `<code>${escapeHtml(cleanedCode)}</code>`;
+        codeBlocks.push(html);
+        return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+    });
 
-    return text;
+    // Convert remaining standard newlines to <br> for regular text paragraph flow
+    processedText = processedText.replace(/\n/g, '<br>');
+
+    // Restore the code blocks
+    codeBlocks.forEach((html, index) => {
+        processedText = processedText.replace(`__CODE_BLOCK_${index}__`, html);
+    });
+
+    return processedText;
 }
 
 /**
@@ -404,7 +424,7 @@ export function isTablet() {
  */
 export function debounce(func, wait) {
     let timeout;
-    const executedFunction = function(...args) {
+    const executedFunction = function (...args) {
         const later = () => {
             clearTimeout(timeout);
             timeout = null;

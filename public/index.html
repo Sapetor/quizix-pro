@@ -118,10 +118,35 @@
             // Apply theme immediately to prevent color shift
             document.documentElement.setAttribute('data-theme', initialTheme);
 
-            // Set theme and update icons when DOM is ready
+            // FOUC: Editor Layout Split Ratio
+            const savedRatioStr = localStorage.getItem('splitRatio');
+            let ratio = 70; // Default fallback to 70/30
+            if (savedRatioStr) {
+                const parsed = parseFloat(savedRatioStr);
+                // MIN_RATIO and MAX_RATIO from split-layout-manager.js
+                if (!isNaN(parsed) && parsed >= 20 && parsed <= 85) {
+                    ratio = parsed;
+                }
+            }
+            document.documentElement.style.setProperty('--split-left', `${ratio}fr`);
+            document.documentElement.style.setProperty('--split-right', `${100 - ratio}fr`);
+
+            // FOUC: Editor Mode
+            let initialEditorMode = 'basic';
+            if (savedQuizSettings) {
+                try {
+                    const settings = JSON.parse(savedQuizSettings);
+                    if (settings.editorMode) initialEditorMode = settings.editorMode;
+                } catch (e) {
+                    // Ignore parse errors
+                }
+            }
+
+            // Set theme, layout attributes, and update icons when DOM is ready
             document.addEventListener('DOMContentLoaded', () => {
                 if (document.body) {
                     document.body.setAttribute('data-theme', initialTheme);
+                    document.body.setAttribute('data-editor-mode', initialEditorMode);
                     // Ensure both html and body have the same theme for consistent CSS matching
                     document.documentElement.setAttribute('data-theme', initialTheme);
                 }
@@ -512,50 +537,110 @@
                         <button class="toolbar-btn" id="toolbar-add-question"
                             data-translate-title="add_question_tooltip" aria-label="Add question"
                             data-translate-aria-label="add_question_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">➕</span>
+                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
                         </button>
                         <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip"
                             aria-label="Save quiz" data-translate-aria-label="save_quiz_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">💾</span>
+                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                <polyline points="7 3 7 8 15 8"></polyline>
+                            </svg>
                         </button>
                         <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip"
                             aria-label="Load quiz" data-translate-aria-label="load_quiz_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">📂</span>
+                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                                </path>
+                            </svg>
                         </button>
                     </div>
 
                     <div class="toolbar-group" role="group" aria-label="Tools">
                         <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip"
                             aria-label="AI question generator" data-translate-aria-label="ai_generator_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">🤖</span>
+                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M12 8V4H8"></path>
+                                <rect x="4" y="8" width="16" height="12" rx="2" ry="2"></rect>
+                                <path d="M2 14h2"></path>
+                                <path d="M20 14h2"></path>
+                                <path d="M15 13v2"></path>
+                                <path d="M9 13v2"></path>
+                            </svg>
                         </button>
                         <button class="toolbar-btn" id="toolbar-settings" data-translate-title="quiz_settings_tooltip"
                             aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip"
                             onclick="openQuizSettingsModal()">
-                            <span class="toolbar-icon" aria-hidden="true">⚙️</span>
+                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path
+                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                                </path>
+                            </svg>
                         </button>
                         <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_quiz_tooltip"
                             aria-label="Import quiz" data-translate-aria-label="import_quiz_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">📥</span>
+                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
                         </button>
                         <button class="toolbar-btn" id="toolbar-export" data-translate-title="export_quiz_tooltip"
                             aria-label="Export quiz" data-translate-aria-label="export_quiz_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">📤</span>
+                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
                         </button>
                         <button class="toolbar-btn" id="toolbar-results" data-translate-title="view_results_tooltip"
                             aria-label="View results" data-translate-aria-label="view_results_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">📊</span>
+                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="18" y1="20" x2="18" y2="10"></line>
+                                <line x1="12" y1="20" x2="12" y2="4"></line>
+                                <line x1="6" y1="20" x2="6" y2="14"></line>
+                            </svg>
                         </button>
                     </div>
 
                     <div class="toolbar-group" role="group" aria-label="Navigation">
                         <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip"
                             aria-label="Back to top" data-translate-aria-label="back_to_top_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">⬆️</span>
+                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="12" y1="19" x2="12" y2="5"></line>
+                                <polyline points="5 12 12 5 19 12"></polyline>
+                            </svg>
                         </button>
                         <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip"
                             aria-label="Go to bottom" data-translate-aria-label="go_to_bottom_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">⬇️</span>
+                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <polyline points="19 12 12 19 5 12"></polyline>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -1088,18 +1173,29 @@
                                                 <div class="video-panel" data-panel="question">
                                                     <div class="manim-ai-section">
                                                         <div class="manim-ai-description">
-                                                            <label data-translate="manim_ai_describe">Describe your animation:</label>
-                                                            <textarea class="manim-ai-input" rows="3" placeholder="e.g., Show a circle with radius 2 being drawn, then display its area formula" data-translate-placeholder="manim_ai_placeholder"></textarea>
+                                                            <label data-translate="manim_ai_describe">Describe your
+                                                                animation:</label>
+                                                            <textarea class="manim-ai-input" rows="3"
+                                                                placeholder="e.g., Show a circle with radius 2 being drawn, then display its area formula"
+                                                                data-translate-placeholder="manim_ai_placeholder"></textarea>
                                                         </div>
                                                         <div class="manim-ai-actions">
-                                                            <button type="button" class="generate-manim-btn" data-placement="question" data-translate="manim_ai_generate">Generate with AI</button>
-                                                            <button type="button" class="regenerate-manim-btn hidden" data-placement="question" data-translate="manim_ai_regenerate">Regenerate</button>
-                                                            <button type="button" class="manim-ai-config-toggle" title="AI Settings" data-translate-title="manim_ai_settings">⚙</button>
+                                                            <button type="button" class="generate-manim-btn"
+                                                                data-placement="question"
+                                                                data-translate="manim_ai_generate">Generate with
+                                                                AI</button>
+                                                            <button type="button" class="regenerate-manim-btn hidden"
+                                                                data-placement="question"
+                                                                data-translate="manim_ai_regenerate">Regenerate</button>
+                                                            <button type="button" class="manim-ai-config-toggle"
+                                                                title="AI Settings"
+                                                                data-translate-title="manim_ai_settings">⚙</button>
                                                             <span class="manim-ai-status hidden"></span>
                                                         </div>
                                                         <div class="manim-ai-config hidden">
                                                             <div class="manim-ai-config-row">
-                                                                <label data-translate="manim_ai_provider">Provider:</label>
+                                                                <label
+                                                                    data-translate="manim_ai_provider">Provider:</label>
                                                                 <select class="manim-ai-provider-select">
                                                                     <option value="ollama">Ollama (Local)</option>
                                                                     <option value="openai">OpenAI</option>
@@ -1113,7 +1209,9 @@
                                                             </div>
                                                             <div class="manim-ai-config-row manim-ai-key-row hidden">
                                                                 <label>API Key:</label>
-                                                                <span class="manim-ai-key-hint" data-translate="manim_ai_key_shared">(shared with question generator)</span>
+                                                                <span class="manim-ai-key-hint"
+                                                                    data-translate="manim_ai_key_shared">(shared with
+                                                                    question generator)</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1142,18 +1240,29 @@
                                                 <div class="video-panel hidden" data-panel="explanation">
                                                     <div class="manim-ai-section">
                                                         <div class="manim-ai-description">
-                                                            <label data-translate="manim_ai_describe">Describe your animation:</label>
-                                                            <textarea class="manim-ai-input" rows="3" placeholder="e.g., Show a circle with radius 2 being drawn, then display its area formula" data-translate-placeholder="manim_ai_placeholder"></textarea>
+                                                            <label data-translate="manim_ai_describe">Describe your
+                                                                animation:</label>
+                                                            <textarea class="manim-ai-input" rows="3"
+                                                                placeholder="e.g., Show a circle with radius 2 being drawn, then display its area formula"
+                                                                data-translate-placeholder="manim_ai_placeholder"></textarea>
                                                         </div>
                                                         <div class="manim-ai-actions">
-                                                            <button type="button" class="generate-manim-btn" data-placement="explanation" data-translate="manim_ai_generate">Generate with AI</button>
-                                                            <button type="button" class="regenerate-manim-btn hidden" data-placement="explanation" data-translate="manim_ai_regenerate">Regenerate</button>
-                                                            <button type="button" class="manim-ai-config-toggle" title="AI Settings" data-translate-title="manim_ai_settings">⚙</button>
+                                                            <button type="button" class="generate-manim-btn"
+                                                                data-placement="explanation"
+                                                                data-translate="manim_ai_generate">Generate with
+                                                                AI</button>
+                                                            <button type="button" class="regenerate-manim-btn hidden"
+                                                                data-placement="explanation"
+                                                                data-translate="manim_ai_regenerate">Regenerate</button>
+                                                            <button type="button" class="manim-ai-config-toggle"
+                                                                title="AI Settings"
+                                                                data-translate-title="manim_ai_settings">⚙</button>
                                                             <span class="manim-ai-status hidden"></span>
                                                         </div>
                                                         <div class="manim-ai-config hidden">
                                                             <div class="manim-ai-config-row">
-                                                                <label data-translate="manim_ai_provider">Provider:</label>
+                                                                <label
+                                                                    data-translate="manim_ai_provider">Provider:</label>
                                                                 <select class="manim-ai-provider-select">
                                                                     <option value="ollama">Ollama (Local)</option>
                                                                     <option value="openai">OpenAI</option>
@@ -1167,7 +1276,9 @@
                                                             </div>
                                                             <div class="manim-ai-config-row manim-ai-key-row hidden">
                                                                 <label>API Key:</label>
-                                                                <span class="manim-ai-key-hint" data-translate="manim_ai_key_shared">(shared with question generator)</span>
+                                                                <span class="manim-ai-key-hint"
+                                                                    data-translate="manim_ai_key_shared">(shared with
+                                                                    question generator)</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1469,7 +1580,8 @@
                 <div id="preview-content" class="preview-content">
                     <div class="player-question-area">
                         <div id="preview-question-counter-display"><span data-translate="question">Question</span> 1
-                            <span data-translate="of">of</span> 1</div>
+                            <span data-translate="of">of</span> 1
+                        </div>
                         <div id="preview-question-text" data-translate="select_question_preview">Select a question to
                             preview</div>
                         <div id="preview-question-image" style="display: none;">
@@ -2344,10 +2456,12 @@ class GraphScene(Scene):
                         <li data-translate="manim_tip_use_wait">Use <code>self.wait(1)</code> to pause between steps
                         </li>
                         <li data-translate="manim_tip_scene_class">Your class must extend <code>Scene</code> (e.g.
-                            <code>class MyScene(Scene)</code>)</li>
+                            <code>class MyScene(Scene)</code>)
+                        </li>
                         <li data-translate="manim_tip_import">Always start with <code>from manim import *</code></li>
                         <li data-translate="manim_tip_mathtex">Use <code>Text()</code> for labels &mdash;
-                            <code>MathTex()</code> requires LaTeX installed</li>
+                            <code>MathTex()</code> requires LaTeX installed
+                        </li>
                     </ul>
                 </section>
             </div>

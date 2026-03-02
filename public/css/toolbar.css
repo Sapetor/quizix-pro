@@ -69,9 +69,10 @@
 
 /* Toolbar Icons - Proportional scaling */
 .horizontal-toolbar .toolbar-icon {
-    font-size: 1.2rem;
-    line-height: 1;
+    width: 20px;
+    height: 20px;
     display: block;
+    flex-shrink: 0;
 }
 
 /* Hide on mobile (same as old toolbar) */
@@ -87,17 +88,17 @@
         gap: 16px;
         padding: 10px 16px;
     }
-    
+
     .toolbar-group {
         gap: 6px;
         padding: 0 8px;
     }
-    
+
     .horizontal-toolbar .toolbar-btn {
         width: 36px;
         height: 36px;
     }
-    
+
     .horizontal-toolbar .toolbar-icon {
         font-size: 1.1rem;
     }
@@ -135,7 +136,8 @@ header .horizontal-toolbar {
 
 /* Auto-hide functionality for header - try different approach with negative margins */
 header.auto-hide-enabled {
-    position: fixed; /* Changed from relative to fixed to prevent clipping */
+    position: fixed;
+    /* Changed from relative to fixed to prevent clipping */
     top: 0;
     left: 0;
     right: 0;
@@ -144,7 +146,8 @@ header.auto-hide-enabled {
     pointer-events: none;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
     z-index: 1000;
-    margin-bottom: -100px; /* Negative margin to pull content up - adjust as needed */
+    margin-bottom: -100px;
+    /* Negative margin to pull content up - adjust as needed */
 }
 
 /* Hide the app title when header is in auto-hide mode to prevent clipping */
@@ -154,14 +157,16 @@ header.auto-hide-enabled h1[data-translate="app_title"] {
 
 /* When header is auto-hide enabled, pull content up but leave more breathing room */
 body.header-auto-hide-mode .container {
-    margin-top: -20px !important; /* Further reduced since header is now shorter without title */
+    margin-top: -20px !important;
+    /* Further reduced since header is now shorter without title */
 }
 
 header.auto-hide-enabled.visible {
     transform: translateY(0);
     opacity: 1;
     pointer-events: auto;
-    z-index: 1001; /* Ensure header appears above content when visible */
+    z-index: 1001;
+    /* Ensure header appears above content when visible */
 }
 
 /* When auto-hide is active on lobby, move content up to fill header space */
@@ -172,7 +177,8 @@ header.auto-hide-enabled.visible {
 }
 
 #game-lobby.header-auto-hide-active .container {
-    padding-top: 50px !important; /* Increased to ensure header doesn't clip frames when hovering */
+    padding-top: 50px !important;
+    /* Increased to ensure header doesn't clip frames when hovering */
     padding-left: 12px !important;
     padding-right: 12px !important;
     padding-bottom: 12px !important;
@@ -180,7 +186,8 @@ header.auto-hide-enabled.visible {
 }
 
 #game-lobby.header-auto-hide-active .lobby-container {
-    padding-top: 20px !important; /* Increased padding to ensure proper spacing */
+    padding-top: 20px !important;
+    /* Increased padding to ensure proper spacing */
     margin-top: 0 !important;
 }
 
@@ -196,7 +203,8 @@ header.auto-hide-enabled.visible {
     padding: 4px 16px;
     font-size: 0.75rem;
     color: var(--text-secondary);
-    z-index: 999; /* Just below header */
+    z-index: 999;
+    /* Just below header */
     opacity: 0;
     pointer-events: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -246,6 +254,7 @@ header.auto-hide-enabled.visible {
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -258,6 +267,7 @@ header.auto-hide-enabled.visible {
         transform: translateY(-100%);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -300,7 +310,8 @@ header.auto-hide-enabled.visible {
    ============================================================================= */
 
 .editor-toolbar {
-    display: none; /* Hidden by default, shown via JS in always-preview mode */
+    display: none;
+    /* Hidden by default, shown via JS in always-preview mode */
     flex-direction: column;
     align-items: center;
     gap: 8px;
