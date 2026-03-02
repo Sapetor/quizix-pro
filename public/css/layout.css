@@ -1403,16 +1403,17 @@ header {
         display: none !important;
     }
 
-    /* Prevent body/main scroll when always-preview is active */
-    body:has(.host-container.always-preview) {
+    /* Prevent body/main scroll when always-preview is active AND editor is visible */
+    /* Scoped to #host-screen.active so game/leaderboard screens can scroll */
+    body:has(#host-screen.active .host-container.always-preview) {
         overflow: hidden !important;
     }
 
-    body:has(.host-container.always-preview) main {
+    body:has(#host-screen.active .host-container.always-preview) main {
         overflow: hidden !important;
     }
 
-    body:has(.host-container.always-preview) #host-screen {
+    body:has(#host-screen.active .host-container.always-preview) #host-screen {
         overflow: hidden !important;
         height: calc(100dvh - 50px);
         /* Reduced header height (was 65px) */

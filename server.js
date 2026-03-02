@@ -516,13 +516,41 @@ const NETWORK_IP = process.env.NETWORK_IP;
 
 /**
  * Detect local network IP address
- * Prioritizes 192.168.x.x (home networks), then 10.x.x.x (corporate), then any non-internal IPv4
+ * In WSL2, queries Windows for the actual LAN IP since os.networkInterfaces()
+ * only sees the virtual adapter (172.x.x.x) which other devices can't reach.
  */
 function detectLocalIP() {
+    // Check if running in WSL
+    let isWSL = false;
+    try {
+        const procVersion = fs.readFileSync('/proc/version', 'utf8');
+        isWSL = procVersion.toLowerCase().includes('microsoft');
+    } catch { /* not Linux or can't read */ }
+
+    if (isWSL) {
+        try {
+            const { execSync } = require('child_process');
+            const output = execSync('cmd.exe /c ipconfig', { timeout: 5000, encoding: 'utf8' });
+            const lines = output.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                // Skip vEthernet (WSL) adapter sections
+                if (lines[i].match(/vEthernet/i)) {
+                    while (i < lines.length && !lines[i + 1]?.match(/^\S/)) i++;
+                    continue;
+                }
+                const ipMatch = lines[i].match(/IPv4.*?:\s*(\d+\.\d+\.\d+\.\d+)/);
+                if (ipMatch && !ipMatch[1].startsWith('127.')) {
+                    logger.debug('WSL: Detected Windows LAN IP via ipconfig:', ipMatch[1]);
+                    return ipMatch[1];
+                }
+            }
+        } catch { /* ipconfig unavailable, fall through to standard detection */ }
+    }
+
+    // Standard detection (non-WSL or WSL fallback)
     const interfaces = Object.values(os.networkInterfaces()).flat();
     const isIPv4External = (iface) => iface.family === 'IPv4' && !iface.internal;
 
-    // Priority order: 192.168.x.x > 10.x.x.x > any external IPv4
     const prefixes = ['192.168.', '10.', ''];
     for (const prefix of prefixes) {
         const match = interfaces.find(iface =>

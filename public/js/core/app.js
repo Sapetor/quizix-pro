@@ -334,22 +334,12 @@ export class QuizGame {
         // Screen navigation
         bindElement('host-btn', 'click', () => {
             this.uiManager.showScreen('host-screen');
-            // Show horizontal toolbar when entering host mode
-            const horizontalToolbar = dom.get('horizontal-toolbar');
-            if (horizontalToolbar) {
-                horizontalToolbar.style.display = 'flex';
-            }
         });
         bindElement('join-btn', 'click', () => this.uiManager.showScreen('join-screen'));
 
         // Mobile button handlers (same functionality as desktop)
         bindElement('host-btn-mobile', 'click', () => {
             this.uiManager.showScreen('host-screen');
-            // Show horizontal toolbar when entering host mode
-            const horizontalToolbar = dom.get('horizontal-toolbar');
-            if (horizontalToolbar) {
-                horizontalToolbar.style.display = 'flex';
-            }
         });
         bindElement('join-btn-mobile', 'click', () => this.uiManager.showScreen('join-screen'));
         bindElement('browse-games', 'click', () => this.uiManager.showGameBrowser());

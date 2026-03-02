@@ -111,9 +111,7 @@ spec:
       containers:
         - name: quizmaster-pro
           image: ghcr.io/sapetor/quizmaster-pro:latest
-          # Use IfNotPresent to avoid Docker Hub rate limits
-          # Change to Always only when debugging image issues
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
 
           envFrom:
             - configMapRef:

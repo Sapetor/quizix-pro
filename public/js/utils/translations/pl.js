@@ -1100,7 +1100,7 @@ export default {
     image_failed_load: 'Image failed to load',
     image_check_exists: 'Please check that the image file exists',
     enter_numeric_placeholder: 'Enter a number...',
-    no_ordering_options: 'No ordering options available',
+    no_ordering_options: 'Brak opcji porządkowania',
     resize_split_view: 'Resize split view',
     pin_copied: 'PIN copied to clipboard!',
     pin_label: 'PIN:',

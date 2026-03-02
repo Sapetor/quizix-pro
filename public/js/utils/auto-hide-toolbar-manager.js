@@ -10,6 +10,8 @@ let autoHideTimeout = null;
 let isAutoHideEnabled = false;
 let headerElement = null;
 let hintElement = null;
+let mouseEnterHandler = null;
+let mouseLeaveHandler = null;
 
 const HIDE_DELAY_KEYBOARD = 5000; // 5 seconds when summoned by keyboard
 const HIDE_DELAY_MOUSE = 2000;    // 2 seconds after mouse leaves
@@ -141,16 +143,13 @@ export function initializeAutoHideToolbar() {
     createHintElement();
     hideToolbar();
 
-    // Add event listeners
+    // Add event listeners (store references for removal in disable)
     document.addEventListener('keydown', handleKeyDown);
 
-    headerElement.addEventListener('mouseenter', () => {
-        clearHideTimeout();
-    });
-
-    headerElement.addEventListener('mouseleave', () => {
-        startHideTimer();
-    });
+    mouseEnterHandler = () => { clearHideTimeout(); };
+    mouseLeaveHandler = () => { startHideTimer(); };
+    headerElement.addEventListener('mouseenter', mouseEnterHandler);
+    headerElement.addEventListener('mouseleave', mouseLeaveHandler);
 
     logger.debug('Auto-hide header initialized successfully');
 }
@@ -164,6 +163,12 @@ export function disableAutoHideToolbar() {
     logger.debug('Disabling auto-hide header');
 
     document.removeEventListener('keydown', handleKeyDown);
+    if (headerElement && mouseEnterHandler) {
+        headerElement.removeEventListener('mouseenter', mouseEnterHandler);
+        headerElement.removeEventListener('mouseleave', mouseLeaveHandler);
+    }
+    mouseEnterHandler = null;
+    mouseLeaveHandler = null;
     clearHideTimeout();
 
     // Remove CSS classes

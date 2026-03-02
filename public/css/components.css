@@ -4712,6 +4712,65 @@ html {
     color: #1e293b;
 }
 
+/* Host ordering display: items are display-only, not draggable */
+.host-game-container .ordering-display-item {
+    cursor: default;
+    user-select: auto;
+}
+
+.host-game-container .ordering-display-item:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.host-game-container .ordering-display-item:active {
+    cursor: default;
+    transform: none;
+}
+
+/* Swap animation for player ordering drag-and-drop */
+.ordering-display-item.swap-up {
+    animation: orderSwapUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ordering-display-item.swap-down {
+    animation: orderSwapDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes orderSwapUp {
+    0% {
+        transform: translateY(20px);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: translateY(-4px);
+        opacity: 0.9;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes orderSwapDown {
+    0% {
+        transform: translateY(-20px);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: translateY(4px);
+        opacity: 0.9;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 /* Ordering question instruction for players */
 .ordering-player-instruction {
     text-align: center;

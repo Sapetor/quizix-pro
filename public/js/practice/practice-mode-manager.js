@@ -107,6 +107,7 @@ export class PracticeModeManager {
 
         } catch (error) {
             logger.error('[PracticeModeManager] Failed to start practice mode:', error);
+            this.updateUIForPracticeMode(false);
             this.cleanup();
             return false;
         }

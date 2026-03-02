@@ -138,6 +138,10 @@ export class UIStateManager {
         gestureElement.addEventListener('touchmove', (e) => {
             if (this.currentState !== 'playing') return;
 
+            // Only apply gesture navigation on player game screen (not host)
+            const playerGameScreen = document.getElementById('player-game-screen');
+            if (!playerGameScreen?.classList.contains('active')) return;
+
             const currentY = e.touches[0].clientY;
             const deltaY = currentY - this.gestureStartY;
 

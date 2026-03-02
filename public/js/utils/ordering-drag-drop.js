@@ -201,18 +201,30 @@ export class OrderingDragDrop {
             return;
         }
 
-        // Swap in DOM
         const fromItem = items[fromIndex];
         const toItem = items[toIndex];
 
+        // Add swap animation classes
+        const direction = fromIndex < toIndex ? 1 : -1;
+        fromItem.classList.add(direction > 0 ? 'swap-down' : 'swap-up');
+        toItem.classList.add(direction > 0 ? 'swap-up' : 'swap-down');
+
+        // Swap in DOM
         if (fromIndex < toIndex) {
             toItem.parentNode.insertBefore(fromItem, toItem.nextSibling);
         } else {
             toItem.parentNode.insertBefore(fromItem, toItem);
         }
 
-        // Update indices
+        // Update indices and position numbers
         this.updateIndices();
+        this.updatePositionNumbers();
+
+        // Remove animation classes after animation completes
+        setTimeout(() => {
+            fromItem.classList.remove('swap-up', 'swap-down');
+            toItem.classList.remove('swap-up', 'swap-down');
+        }, 300);
 
         // Call callback if provided
         if (typeof this.options.onOrderChange === 'function') {
@@ -225,6 +237,16 @@ export class OrderingDragDrop {
         const items = this.container.querySelectorAll(this.options.itemSelector);
         items.forEach((item, index) => {
             item.dataset.orderIndex = index;
+        });
+    }
+
+    updatePositionNumbers() {
+        const items = this.container.querySelectorAll(this.options.itemSelector);
+        items.forEach((item, index) => {
+            const numberEl = item.querySelector('.ordering-item-number');
+            if (numberEl) {
+                numberEl.textContent = index + 1;
+            }
         });
     }
 

@@ -356,8 +356,7 @@ export class PlayerInteractionManager {
             numericInput.addEventListener('keypress', this._handleNumericKeypress);
         }
 
-        // Note: Ordering submit button is wired up in question-renderer.js setupPlayerOrderingOptions()
-        // to match the pattern used by numeric questions
+        // Note: Ordering submit button is wired up in question-renderer.js initializePlayerOrderingDragDrop()
 
         logger.debug('Player interaction event listeners setup');
     }
@@ -386,7 +385,7 @@ export class PlayerInteractionManager {
             numericInput.removeEventListener('keypress', this._handleNumericKeypress);
         }
 
-        // Note: Ordering submit button listener removed by GameManager tracked event cleanup
+        // Note: Ordering submit button listener removed when container innerHTML is replaced
 
         logger.debug('Player interaction event listeners removed');
     }

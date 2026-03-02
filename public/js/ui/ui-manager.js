@@ -79,6 +79,20 @@ export class UIManager {
             return;
         }
 
+        // Centralized cleanup: runs for ALL transitions (including host-screen)
+        // to prevent CSS classes and state from leaking between screens
+        if (isAutoHideToolbarActive()) {
+            disableAutoHideToolbar();
+        }
+
+        // Remove always-preview overflow:hidden when leaving editor
+        if (screenId !== 'host-screen') {
+            const hostContainer = dom.get('host-container');
+            if (hostContainer) {
+                hostContainer.classList.remove('always-preview');
+            }
+        }
+
         // Special handling for host-screen: prepare-then-fade pattern
         if (screenId === 'host-screen') {
             this.showHostScreen(targetScreen);
@@ -135,16 +149,11 @@ export class UIManager {
                     mobileQuizFab.classList.remove('visible-flex');
                 }
 
-                // Disable auto-hide when leaving lobby/host screens
-                if (isAutoHideToolbarActive()) {
-                    disableAutoHideToolbar();
-                } else {
-                    // Remove transition classes for non-game screens
-                    if (!['host-game-screen', 'player-game-screen'].includes(screenId)) {
-                        const container = document.querySelector('.container');
-                        if (container) {
-                            container.classList.remove('game-state-transition-host');
-                        }
+                // Remove transition classes for non-game screens
+                if (!['host-game-screen', 'player-game-screen'].includes(screenId)) {
+                    const container = document.querySelector('.container');
+                    if (container) {
+                        container.classList.remove('game-state-transition-host');
                     }
                 }
             }

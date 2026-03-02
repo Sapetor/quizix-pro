@@ -28,6 +28,8 @@ describe('QRService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         qrService = new QRService(mockLogger, '/');
+        // Disable WSL detection so tests exercise the standard code path
+        qrService._isWSL = false;
         // Reset caches
         qrService.qrCache.clear();
         qrService.cachedIP = null;
@@ -151,6 +153,7 @@ describe('QRService', () => {
 
         test('should include basePath in URL', () => {
             const serviceWithBasePath = new QRService(mockLogger, '/quizmaster');
+            serviceWithBasePath._isWSL = false;
             delete process.env.RAILWAY_ENVIRONMENT;
 
             os.networkInterfaces.mockReturnValue({

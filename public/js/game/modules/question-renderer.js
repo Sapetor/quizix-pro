@@ -210,6 +210,14 @@ export class QuestionRenderer {
                 }
             });
 
+            // Wire up the submit button (created dynamically by renderPlayerOptions)
+            const submitBtn = document.getElementById('submit-ordering');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', () => {
+                    this.gameManager.submitOrderingAnswer();
+                });
+            }
+
             logger.debug('Player ordering drag-drop initialized');
         }).catch(err => {
             logger.error('Failed to load ordering drag-drop module:', err);

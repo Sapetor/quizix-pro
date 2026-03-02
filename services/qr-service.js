@@ -6,6 +6,8 @@
 
 const QRCode = require('qrcode');
 const os = require('os');
+const fs = require('fs');
+const { execSync } = require('child_process');
 
 class QRService {
     constructor(logger, basePath = '/') {
@@ -20,6 +22,45 @@ class QRService {
         this.cachedIP = null;
         this.ipCacheTime = null;
         this.ipCacheDuration = 5 * 60 * 1000;
+
+        // Detect WSL once at startup
+        this._isWSL = this._detectWSL();
+    }
+
+    _detectWSL() {
+        try {
+            const procVersion = fs.readFileSync('/proc/version', 'utf8');
+            return procVersion.toLowerCase().includes('microsoft');
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Get the Windows host's LAN IP from within WSL2.
+     * Parses `ipconfig` output, skipping vEthernet (WSL virtual) adapters.
+     */
+    _getWindowsLanIP() {
+        try {
+            const output = execSync('cmd.exe /c ipconfig', { timeout: 5000, encoding: 'utf8' });
+            const lines = output.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                // Skip vEthernet (WSL) adapter sections
+                if (lines[i].match(/vEthernet/i)) {
+                    while (i < lines.length && !lines[i + 1]?.match(/^\S/)) i++;
+                    continue;
+                }
+                const ipMatch = lines[i].match(/IPv4.*?:\s*(\d+\.\d+\.\d+\.\d+)/);
+                if (ipMatch && !ipMatch[1].startsWith('127.')) {
+                    this.logger.debug('WSL: Detected Windows LAN IP via ipconfig:', ipMatch[1]);
+                    return ipMatch[1];
+                }
+            }
+        } catch (err) {
+            this.logger.debug('WSL: ipconfig IP detection failed:', err.message);
+        }
+
+        return null;
     }
 
     /**
@@ -40,27 +81,19 @@ class QRService {
         if (NETWORK_IP) {
             localIP = NETWORK_IP;
             this.logger.debug('Using manual IP from environment:', localIP);
+        } else if (this._isWSL) {
+            // WSL2: os.networkInterfaces() only sees the virtual adapter (172.x.x.x).
+            // Ask Windows for the actual LAN IP so phones can connect.
+            const winIP = this._getWindowsLanIP();
+            if (winIP) {
+                localIP = winIP;
+            } else {
+                this.logger.warn('WSL: Could not detect Windows LAN IP. Set NETWORK_IP env var manually.');
+                // Fall through to standard detection as last resort
+                localIP = this._detectFromInterfaces();
+            }
         } else {
-            const networkInterfaces = os.networkInterfaces();
-            const interfaces = Object.values(networkInterfaces).flat();
-
-            // Prefer 192.168.x.x (typical home network) over 172.x.x.x (WSL internal)
-            localIP = interfaces.find(iface =>
-                iface.family === 'IPv4' &&
-                !iface.internal &&
-                iface.address.startsWith('192.168.')
-            )?.address ||
-            interfaces.find(iface =>
-                iface.family === 'IPv4' &&
-                !iface.internal &&
-                iface.address.startsWith('10.')
-            )?.address ||
-            interfaces.find(iface =>
-                iface.family === 'IPv4' &&
-                !iface.internal
-            )?.address || 'localhost';
-
-            this.logger.debug('Detected network IP:', localIP);
+            localIP = this._detectFromInterfaces();
         }
 
         // Update cache
@@ -68,6 +101,30 @@ class QRService {
         this.ipCacheTime = now;
 
         return localIP;
+    }
+
+    _detectFromInterfaces() {
+        const networkInterfaces = os.networkInterfaces();
+        const interfaces = Object.values(networkInterfaces).flat();
+
+        // Prefer 192.168.x.x (typical home network) over 172.x.x.x (WSL internal)
+        const ip = interfaces.find(iface =>
+            iface.family === 'IPv4' &&
+            !iface.internal &&
+            iface.address.startsWith('192.168.')
+        )?.address ||
+        interfaces.find(iface =>
+            iface.family === 'IPv4' &&
+            !iface.internal &&
+            iface.address.startsWith('10.')
+        )?.address ||
+        interfaces.find(iface =>
+            iface.family === 'IPv4' &&
+            !iface.internal
+        )?.address || 'localhost';
+
+        this.logger.debug('Detected network IP:', ip);
+        return ip;
     }
 
     /**

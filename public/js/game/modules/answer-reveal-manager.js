@@ -224,11 +224,21 @@ export class AnswerRevealManager {
                 this.applyCorrectAnswerStyle(options[correctIndex]);
             }
         } else if (questionType === 'ordering') {
-            // For ordering, highlight all items in correct order
-            const orderItems = document.querySelectorAll('.ordering-item');
-            orderItems.forEach(item => {
-                this.applyCorrectAnswerStyle(item);
+            // For ordering, highlight items with correct/incorrect per-position feedback
+            const orderItems = document.querySelectorAll('.ordering-display-item');
+            const correctOrder = data.correctAnswer || data.correctOrder || [];
+            orderItems.forEach((item, displayIndex) => {
+                const originalIndex = parseInt(item.dataset.originalIndex);
+                if (correctOrder[displayIndex] === originalIndex) {
+                    item.classList.add('correct');
+                } else {
+                    item.classList.add('incorrect');
+                }
             });
+            // If no per-item data available, just highlight all as correct
+            if (correctOrder.length === 0) {
+                orderItems.forEach(item => this.applyCorrectAnswerStyle(item));
+            }
         } else {
             // Multiple choice
             const correctIndex = data.correctAnswer;

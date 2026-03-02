@@ -1,0 +1,62 @@
+# Slim Dockerfile for QuizMaster Pro (no Manim)
+# Use for K8s/cloud deployments where disk space is limited
+# For full image with Manim, use: Dockerfile
+#
+# Build: docker build -f Dockerfile.slim -t ghcr.io/sapetor/quizmaster-pro:latest .
+
+# Stage 1: Base image with dependencies
+FROM node:18-alpine AS base
+RUN apk add --no-cache dumb-init git
+WORKDIR /app
+COPY package*.json ./
+
+# Stage 2: Build stage (CSS bundling + cache busting)
+FROM base AS builder
+RUN npm ci
+COPY . .
+RUN npm run build:prod
+
+# Stage 3: Production dependencies only
+FROM base AS production-deps
+RUN npm ci --only=production
+
+# Stage 4: Final production image
+FROM node:18-alpine AS production
+RUN apk add --no-cache dumb-init
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+WORKDIR /app
+
+# Copy dependencies from production-deps stage
+COPY --from=production-deps --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+# Copy application code from builder (with cache-busted versions)
+COPY --from=builder --chown=nodejs:nodejs /app/server.js ./
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/public ./public/
+COPY --from=builder --chown=nodejs:nodejs /app/services ./services/
+COPY --from=builder --chown=nodejs:nodejs /app/config ./config/
+COPY --from=builder --chown=nodejs:nodejs /app/utils ./utils/
+COPY --from=builder --chown=nodejs:nodejs /app/middleware ./middleware/
+COPY --from=builder --chown=nodejs:nodejs /app/routes ./routes/
+COPY --from=builder --chown=nodejs:nodejs /app/socket ./socket/
+COPY --from=builder --chown=nodejs:nodejs /app/seeds ./seeds/
+
+# Create directories for persistent data with proper permissions
+RUN mkdir -p quizzes results public/uploads && \
+    chown -R nodejs:nodejs quizzes results public/uploads
+
+USER nodejs
+EXPOSE 3000
+
+ENV NODE_ENV=production \
+    PORT=3000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "server.js"]
