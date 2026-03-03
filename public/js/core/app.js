@@ -53,7 +53,7 @@ export class QuizGame {
                     this.toggleTheme();
                 },
                 toggleFullscreen: () => logger.debug('Fullscreen toggle not available'),
-                initializeEventListeners: () => {},
+                initializeEventListeners: () => { },
                 getSetting: () => null
             };
             logger.warn('Using fallback SettingsManager');
@@ -91,7 +91,7 @@ export class QuizGame {
 
         // Make preview manager globally accessible for onclick handlers
         window.game = this;
-        
+
         // Expose QuizManager globally for inline onclick handlers
         window.quizManager = this.quizManager;
 
@@ -895,6 +895,40 @@ export class QuizGame {
                 logger.debug(`Connected toolbar button: ${id}`);
             }
         });
+
+        // Initialize "More" dropdown menu
+        const moreBtn = document.getElementById('vtoolbar-more');
+        const moreMenu = document.getElementById('vtoolbar-more-menu');
+
+        if (moreBtn && moreMenu) {
+            moreBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isHidden = moreMenu.classList.contains('hidden');
+
+                if (isHidden) {
+                    moreMenu.classList.remove('hidden');
+                    moreBtn.setAttribute('aria-expanded', 'true');
+                } else {
+                    moreMenu.classList.add('hidden');
+                    moreBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!moreBtn.contains(e.target) && !moreMenu.contains(e.target)) {
+                    moreMenu.classList.add('hidden');
+                    moreBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            // Close menu when clicking an item inside it
+            moreMenu.addEventListener('click', () => {
+                moreMenu.classList.add('hidden');
+                moreBtn.setAttribute('aria-expanded', 'false');
+            });
+        }
     }
 
     /**

@@ -322,9 +322,10 @@ header.auto-hide-enabled.visible {
     width: 48px;
     min-width: 48px;
     height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible;
     box-sizing: border-box;
+    position: relative;
+    z-index: 50;
 }
 
 /* Show vertical toolbar in always-preview mode on desktop */
@@ -427,4 +428,81 @@ header.auto-hide-enabled.visible {
 
 [data-theme="light"] .editor-toolbar .toolbar-divider {
     background: rgba(0, 0, 0, 0.1);
+}
+
+/* Toolbar Divider */
+.toolbar-divider {
+    height: 1px;
+    width: 60%;
+    background-color: var(--color-gray-600);
+    margin: 4px 0;
+}
+
+/* Toolbar More Menu (Dropdown) */
+.toolbar-more-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.toolbar-more-menu {
+    position: absolute;
+    left: calc(100% + 5px);
+    /* Position completely outside the toolbar */
+    top: -50%;
+    /* Center roughly against the "More" button */
+    background: var(--bg-primary, rgba(15, 15, 20, 0.95));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    padding: 8px 0;
+    min-width: 150px;
+    box-shadow: var(--shadow-xl);
+    z-index: 1000;
+    /* Ensure it's above other elements */
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    /* Override display:none when hidden class is removed */
+    flex-direction: column;
+}
+
+.toolbar-more-menu:not(.hidden) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+}
+
+.more-menu-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: var(--color-gray-200);
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    gap: 12px;
+}
+
+.more-menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.more-menu-icon {
+    font-size: 16px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.more-menu-text {
+    font-weight: 500;
 }

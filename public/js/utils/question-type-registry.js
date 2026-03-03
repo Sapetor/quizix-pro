@@ -89,9 +89,9 @@ const QUESTION_TYPES = {
                 }
             });
 
-            // Get correct answer from <select class="correct-answer">
-            const correctAnswerElement = optionsContainer.querySelector('.correct-answer');
-            const originalCorrectIndex = correctAnswerElement ? parseInt(correctAnswerElement.value) : 0;
+            // Get correct answer from checked radio button
+            const correctAnswerElement = optionsContainer.querySelector('.correct-option:checked');
+            const originalCorrectIndex = correctAnswerElement ? parseInt(correctAnswerElement.value || correctAnswerElement.dataset.option) : 0;
 
             // Remap correct index to filtered array position
             let correctIndex = indexMap.indexOf(originalCorrectIndex);
@@ -115,13 +115,12 @@ const QUESTION_TYPES = {
             if (!optionsContainer) return;
 
             const optionInputs = optionsContainer.querySelectorAll('.option');
-            const correctAnswerSelect = optionsContainer.querySelector('.correct-answer');
 
             data.options.forEach((optionText, index) => {
                 if (optionInputs[index]) {
                     optionInputs[index].value = optionText;
 
-                    // Mark correct answer
+                    // Mark correct answer conceptually (not used for logic with radios, but good for styling)
                     if (index === data.correctIndex) {
                         optionInputs[index].classList.add('correct');
                     } else {
@@ -130,10 +129,11 @@ const QUESTION_TYPES = {
                 }
             });
 
-            // Set the correct-answer select dropdown to the correct index
-            if (correctAnswerSelect && data.correctIndex !== undefined) {
-                correctAnswerSelect.value = String(data.correctIndex);
-                logger.debug('Set correct-answer select to index:', data.correctIndex);
+            // Set the correct radio button
+            const correctRadio = optionsContainer.querySelector(`.correct-option[data-option="${data.correctIndex}"]`);
+            if (correctRadio) {
+                correctRadio.checked = true;
+                logger.debug('Set correct radio to index:', data.correctIndex);
             }
         },
 
@@ -238,7 +238,18 @@ const QUESTION_TYPES = {
                         // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
                         button.classList.add('tex2jax_process');
                         button.classList.remove('MathJax_Processed');
-                        button.innerHTML = `<span class="option-text"><span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${formatCodeBlocks(safeOption)}</span>`;
+                        button.classList.add('option-wrapper'); // Add option-wrapper class
+
+                        // Map index to shape logic
+                        const shapes = ['triangle', 'diamond', 'circle', 'square'];
+                        const icons = ['▲', '◆', '●', '■'];
+                        const shapeClass = shapes[index % shapes.length];
+                        const shapeIcon = icons[index % icons.length];
+
+                        button.innerHTML = `
+                            <span class="option-shape" data-shape="${shapeClass}">${shapeIcon}</span>
+                            <span class="option-text">${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOption)}</span>
+                        `;
                         button.setAttribute('data-answer', index.toString());
                         button.classList.remove('selected', 'disabled', 'hidden');
                     } else {
@@ -430,7 +441,19 @@ const QUESTION_TYPES = {
                     // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
                     label.classList.add('tex2jax_process');
                     label.classList.remove('MathJax_Processed');
-                    label.innerHTML = `<input type="checkbox" class="option-checkbox"> <span class="option-text">${translationManager.getOptionLetter(index)}: ${formattedOption}</span>`;
+                    label.classList.add('option-wrapper'); // Add option-wrapper class
+
+                    // Map index to shape logic
+                    const shapes = ['triangle', 'diamond', 'circle', 'square'];
+                    const icons = ['▲', '◆', '●', '■'];
+                    const shapeClass = shapes[index % shapes.length];
+                    const shapeIcon = icons[index % icons.length];
+
+                    label.innerHTML = `
+                        <input type="checkbox" class="option-checkbox">
+                        <span class="option-shape" data-shape="${shapeClass}">${shapeIcon}</span>
+                        <span class="option-text">${translationManager.getOptionLetter(index)}: ${formattedOption}</span>
+                    `;
                     label.setAttribute('data-option', index);
                     label.classList.remove('hidden');
                 } else {
