@@ -173,18 +173,28 @@ export class QuestionUtils {
             </div>
             
             <div class="answer-options multiple-choice-options">
-                <div class="options">
-                    <input type="text" class="option" data-option="0" placeholder="Option A" data-translate-placeholder="option_a">
-                    <input type="text" class="option" data-option="1" placeholder="Option B" data-translate-placeholder="option_b">
-                    <input type="text" class="option" data-option="2" placeholder="Option C" data-translate-placeholder="option_c">
-                    <input type="text" class="option" data-option="3" placeholder="Option D" data-translate-placeholder="option_d">
+                <div class="options-checkboxes">
+                    <label class="option-wrapper" data-option="0">
+                        <input type="radio" class="correct-option" name="mc-correct-${questionCount}" data-option="0" checked>
+                        <span class="option-shape" data-shape="triangle">▲</span>
+                        <input type="text" class="option" placeholder="Option A" data-translate-placeholder="option_a">
+                    </label>
+                    <label class="option-wrapper" data-option="1">
+                        <input type="radio" class="correct-option" name="mc-correct-${questionCount}" data-option="1">
+                        <span class="option-shape" data-shape="diamond">◆</span>
+                        <input type="text" class="option" placeholder="Option B" data-translate-placeholder="option_b">
+                    </label>
+                    <label class="option-wrapper" data-option="2">
+                        <input type="radio" class="correct-option" name="mc-correct-${questionCount}" data-option="2">
+                        <span class="option-shape" data-shape="circle">●</span>
+                        <input type="text" class="option" placeholder="Option C" data-translate-placeholder="option_c">
+                    </label>
+                    <label class="option-wrapper" data-option="3">
+                        <input type="radio" class="correct-option" name="mc-correct-${questionCount}" data-option="3">
+                        <span class="option-shape" data-shape="square">■</span>
+                        <input type="text" class="option" placeholder="Option D" data-translate-placeholder="option_d">
+                    </label>
                 </div>
-                <select class="correct-answer">
-                    <option value="0" data-translate="a_is_correct">A is correct</option>
-                    <option value="1" data-translate="b_is_correct">B is correct</option>
-                    <option value="2" data-translate="c_is_correct">C is correct</option>
-                    <option value="3" data-translate="d_is_correct">D is correct</option>
-                </select>
             </div>
             
             <div class="answer-options multiple-correct-options" style="display: none;">

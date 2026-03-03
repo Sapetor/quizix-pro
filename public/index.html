@@ -11,15 +11,15 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Preload critical CSS -->
-    <link rel="preload" href="css/main.bundle.css?v=38" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="css/main.bundle.css?v=42" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript>
-        <link rel="stylesheet" href="css/main.bundle.css?v=38">
+        <link rel="stylesheet" href="css/main.bundle.css?v=42">
     </noscript>
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=19" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=19" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=19" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=42" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=42" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=42" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
@@ -882,17 +882,20 @@
                 <div class="host-container" id="host-container">
                     <!-- Vertical Editor Toolbar (Desktop always-preview mode) -->
                     <aside class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="Quiz editing tools">
-                        <button class="toolbar-btn" id="vtoolbar-add-question"
+                        <!-- Primary Actions -->
+                        <button class="toolbar-btn primary-action" id="vtoolbar-add-question"
                             data-translate-title="add_question_tooltip" aria-label="Add question"
                             data-translate-aria-label="add_question_tooltip">
                             <span class="toolbar-icon" aria-hidden="true">➕</span>
                         </button>
-                        <button class="toolbar-btn" id="vtoolbar-save" data-translate-title="save_quiz_tooltip"
-                            aria-label="Save quiz" data-translate-aria-label="save_quiz_tooltip">
+                        <button class="toolbar-btn primary-action" id="vtoolbar-save"
+                            data-translate-title="save_quiz_tooltip" aria-label="Save quiz"
+                            data-translate-aria-label="save_quiz_tooltip">
                             <span class="toolbar-icon" aria-hidden="true">💾</span>
                         </button>
-                        <button class="toolbar-btn" id="vtoolbar-load" data-translate-title="load_quiz_tooltip"
-                            aria-label="Load quiz" data-translate-aria-label="load_quiz_tooltip">
+                        <button class="toolbar-btn primary-action" id="vtoolbar-load"
+                            data-translate-title="load_quiz_tooltip" aria-label="Load quiz"
+                            data-translate-aria-label="load_quiz_tooltip">
                             <span class="toolbar-icon" aria-hidden="true">📂</span>
                         </button>
                         <div class="toolbar-divider"></div>
@@ -900,22 +903,32 @@
                             aria-label="AI question generator" data-translate-aria-label="ai_generator_tooltip">
                             <span class="toolbar-icon" aria-hidden="true">🤖</span>
                         </button>
-                        <button class="toolbar-btn" id="vtoolbar-settings" data-translate-title="quiz_settings_tooltip"
-                            aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">⚙️</span>
-                        </button>
-                        <button class="toolbar-btn" id="vtoolbar-import" data-translate-title="import_quiz_tooltip"
-                            aria-label="Import quiz" data-translate-aria-label="import_quiz_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">📥</span>
-                        </button>
-                        <button class="toolbar-btn" id="vtoolbar-export" data-translate-title="export_quiz_tooltip"
-                            aria-label="Export quiz" data-translate-aria-label="export_quiz_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">📤</span>
-                        </button>
-                        <button class="toolbar-btn" id="vtoolbar-results" data-translate-title="view_results_tooltip"
-                            aria-label="View results" data-translate-aria-label="view_results_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">📊</span>
-                        </button>
+
+                        <!-- Secondary Actions (More Menu) -->
+                        <div class="toolbar-more-container">
+                            <button class="toolbar-btn more-btn" id="vtoolbar-more" data-translate-title="more_options"
+                                aria-label="More options" aria-haspopup="true" aria-expanded="false">
+                                <span class="toolbar-icon" aria-hidden="true">⋮</span>
+                            </button>
+                            <div class="toolbar-more-menu hidden" id="vtoolbar-more-menu">
+                                <button class="more-menu-item" id="vtoolbar-settings">
+                                    <span class="more-menu-icon" aria-hidden="true">⚙️</span>
+                                    <span class="more-menu-text" data-translate="quiz_settings_tooltip">Settings</span>
+                                </button>
+                                <button class="more-menu-item" id="vtoolbar-import">
+                                    <span class="more-menu-icon" aria-hidden="true">📥</span>
+                                    <span class="more-menu-text" data-translate="import_quiz_tooltip">Import</span>
+                                </button>
+                                <button class="more-menu-item" id="vtoolbar-export">
+                                    <span class="more-menu-icon" aria-hidden="true">📤</span>
+                                    <span class="more-menu-text" data-translate="export_quiz_tooltip">Export</span>
+                                </button>
+                                <button class="more-menu-item" id="vtoolbar-results">
+                                    <span class="more-menu-icon" aria-hidden="true">📊</span>
+                                    <span class="more-menu-text" data-translate="view_results_tooltip">Results</span>
+                                </button>
+                            </div>
+                        </div>
                     </aside>
 
                     <div class="quiz-editor-section" id="quiz-editor-section">
@@ -1308,38 +1321,64 @@
                                         </div>
 
                                         <div class="answer-options multiple-choice-options">
-                                            <div class="options">
-                                                <input type="text" class="option" data-option="0" placeholder="Option A"
-                                                    data-translate-placeholder="option_a">
-                                                <input type="text" class="option" data-option="1" placeholder="Option B"
-                                                    data-translate-placeholder="option_b">
-                                                <input type="text" class="option" data-option="2" placeholder="Option C"
-                                                    data-translate-placeholder="option_c">
-                                                <input type="text" class="option" data-option="3" placeholder="Option D"
-                                                    data-translate-placeholder="option_d">
+                                            <div class="options-checkboxes">
+                                                <label class="option-wrapper" data-option="0">
+                                                    <input type="radio" class="correct-option" name="mc-correct-initial"
+                                                        data-option="0" checked>
+                                                    <span class="option-shape" data-shape="triangle">▲</span>
+                                                    <input type="text" class="option" placeholder="Option A"
+                                                        data-translate-placeholder="option_a">
+                                                </label>
+                                                <label class="option-wrapper" data-option="1">
+                                                    <input type="radio" class="correct-option" name="mc-correct-initial"
+                                                        data-option="1">
+                                                    <span class="option-shape" data-shape="diamond">◆</span>
+                                                    <input type="text" class="option" placeholder="Option B"
+                                                        data-translate-placeholder="option_b">
+                                                </label>
+                                                <label class="option-wrapper" data-option="2">
+                                                    <input type="radio" class="correct-option" name="mc-correct-initial"
+                                                        data-option="2">
+                                                    <span class="option-shape" data-shape="circle">●</span>
+                                                    <input type="text" class="option" placeholder="Option C"
+                                                        data-translate-placeholder="option_c">
+                                                </label>
+                                                <label class="option-wrapper" data-option="3">
+                                                    <input type="radio" class="correct-option" name="mc-correct-initial"
+                                                        data-option="3">
+                                                    <span class="option-shape" data-shape="square">■</span>
+                                                    <input type="text" class="option" placeholder="Option D"
+                                                        data-translate-placeholder="option_d">
+                                                </label>
                                             </div>
-                                            <select class="correct-answer">
-                                                <option value="0" data-translate="a_is_correct">A is correct</option>
-                                                <option value="1" data-translate="b_is_correct">B is correct</option>
-                                                <option value="2" data-translate="c_is_correct">C is correct</option>
-                                                <option value="3" data-translate="d_is_correct">D is correct</option>
-                                            </select>
                                         </div>
 
                                         <div class="answer-options multiple-correct-options" style="display: none;">
                                             <div class="options-checkboxes">
-                                                <label><input type="checkbox" class="correct-option" data-option="0">
+                                                <label class="option-wrapper" data-option="0">
+                                                    <input type="checkbox" class="correct-option" data-option="0">
+                                                    <span class="option-shape" data-shape="triangle">▲</span>
                                                     <input type="text" class="option" placeholder="Option A"
-                                                        data-translate-placeholder="option_a"></label>
-                                                <label><input type="checkbox" class="correct-option" data-option="1">
+                                                        data-translate-placeholder="option_a">
+                                                </label>
+                                                <label class="option-wrapper" data-option="1">
+                                                    <input type="checkbox" class="correct-option" data-option="1">
+                                                    <span class="option-shape" data-shape="diamond">◆</span>
                                                     <input type="text" class="option" placeholder="Option B"
-                                                        data-translate-placeholder="option_b"></label>
-                                                <label><input type="checkbox" class="correct-option" data-option="2">
+                                                        data-translate-placeholder="option_b">
+                                                </label>
+                                                <label class="option-wrapper" data-option="2">
+                                                    <input type="checkbox" class="correct-option" data-option="2">
+                                                    <span class="option-shape" data-shape="circle">●</span>
                                                     <input type="text" class="option" placeholder="Option C"
-                                                        data-translate-placeholder="option_c"></label>
-                                                <label><input type="checkbox" class="correct-option" data-option="3">
+                                                        data-translate-placeholder="option_c">
+                                                </label>
+                                                <label class="option-wrapper" data-option="3">
+                                                    <input type="checkbox" class="correct-option" data-option="3">
+                                                    <span class="option-shape" data-shape="square">■</span>
                                                     <input type="text" class="option" placeholder="Option D"
-                                                        data-translate-placeholder="option_d"></label>
+                                                        data-translate-placeholder="option_d">
+                                                </label>
                                             </div>
                                         </div>
 
@@ -1482,28 +1521,52 @@
                                     <!-- Multiple Choice Preview -->
                                     <div id="preview-multiple-choice-split" class="preview-answer-type hidden">
                                         <div class="player-options">
-                                            <div class="player-option preview-option" data-option="0">A: Option 1</div>
-                                            <div class="player-option preview-option" data-option="1">B: Option 2</div>
-                                            <div class="player-option preview-option" data-option="2">C: Option 3</div>
-                                            <div class="player-option preview-option" data-option="3">D: Option 4</div>
+                                            <div class="player-option preview-option option-wrapper" data-option="0">
+                                                <span class="option-shape" data-shape="triangle">▲</span>
+                                                <span class="option-text">A: Option 1</span>
+                                            </div>
+                                            <div class="player-option preview-option option-wrapper" data-option="1">
+                                                <span class="option-shape" data-shape="diamond">◆</span>
+                                                <span class="option-text">B: Option 2</span>
+                                            </div>
+                                            <div class="player-option preview-option option-wrapper" data-option="2">
+                                                <span class="option-shape" data-shape="circle">●</span>
+                                                <span class="option-text">C: Option 3</span>
+                                            </div>
+                                            <div class="player-option preview-option option-wrapper" data-option="3">
+                                                <span class="option-shape" data-shape="square">■</span>
+                                                <span class="option-text">D: Option 4</span>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <!-- Multiple Correct Preview -->
                                     <div id="preview-multiple-correct-split" class="preview-answer-type hidden">
                                         <div class="player-checkbox-options">
-                                            <div class="checkbox-option preview-checkbox" data-option="0">
-                                                <input type="checkbox" disabled> A: Option 1
-                                            </div>
-                                            <div class="checkbox-option preview-checkbox" data-option="1">
-                                                <input type="checkbox" disabled> B: Option 2
-                                            </div>
-                                            <div class="checkbox-option preview-checkbox" data-option="2">
-                                                <input type="checkbox" disabled> C: Option 3
-                                            </div>
-                                            <div class="checkbox-option preview-checkbox" data-option="3">
-                                                <input type="checkbox" disabled> D: Option 4
-                                            </div>
+                                            <label class="checkbox-option preview-checkbox option-wrapper"
+                                                data-option="0">
+                                                <input type="checkbox" disabled>
+                                                <span class="option-shape" data-shape="triangle">▲</span>
+                                                <span class="option-text">A: Option 1</span>
+                                            </label>
+                                            <label class="checkbox-option preview-checkbox option-wrapper"
+                                                data-option="1">
+                                                <input type="checkbox" disabled>
+                                                <span class="option-shape" data-shape="diamond">◆</span>
+                                                <span class="option-text">B: Option 2</span>
+                                            </label>
+                                            <label class="checkbox-option preview-checkbox option-wrapper"
+                                                data-option="2">
+                                                <input type="checkbox" disabled>
+                                                <span class="option-shape" data-shape="circle">●</span>
+                                                <span class="option-text">C: Option 3</span>
+                                            </label>
+                                            <label class="checkbox-option preview-checkbox option-wrapper"
+                                                data-option="3">
+                                                <input type="checkbox" disabled>
+                                                <span class="option-shape" data-shape="square">■</span>
+                                                <span class="option-text">D: Option 4</span>
+                                            </label>
                                         </div>
                                     </div>
                                 </div>
@@ -1593,28 +1656,48 @@
                         <!-- Multiple Choice Preview -->
                         <div id="preview-multiple-choice" class="preview-answer-type hidden">
                             <div class="player-options">
-                                <div class="player-option preview-option" data-option="0">A: Option 1</div>
-                                <div class="player-option preview-option" data-option="1">B: Option 2</div>
-                                <div class="player-option preview-option" data-option="2">C: Option 3</div>
-                                <div class="player-option preview-option" data-option="3">D: Option 4</div>
+                                <div class="player-option preview-option option-wrapper" data-option="0">
+                                    <span class="option-shape" data-shape="triangle">▲</span>
+                                    <span class="option-text">A: Option 1</span>
+                                </div>
+                                <div class="player-option preview-option option-wrapper" data-option="1">
+                                    <span class="option-shape" data-shape="diamond">◆</span>
+                                    <span class="option-text">B: Option 2</span>
+                                </div>
+                                <div class="player-option preview-option option-wrapper" data-option="2">
+                                    <span class="option-shape" data-shape="circle">●</span>
+                                    <span class="option-text">C: Option 3</span>
+                                </div>
+                                <div class="player-option preview-option option-wrapper" data-option="3">
+                                    <span class="option-shape" data-shape="square">■</span>
+                                    <span class="option-text">D: Option 4</span>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Multiple Correct Preview -->
                         <div id="preview-multiple-correct" class="preview-answer-type hidden">
                             <div class="player-checkbox-options">
-                                <div class="checkbox-option preview-checkbox" data-option="0">
-                                    <input type="checkbox" disabled> A: Option 1
-                                </div>
-                                <div class="checkbox-option preview-checkbox" data-option="1">
-                                    <input type="checkbox" disabled> B: Option 2
-                                </div>
-                                <div class="checkbox-option preview-checkbox" data-option="2">
-                                    <input type="checkbox" disabled> C: Option 3
-                                </div>
-                                <div class="checkbox-option preview-checkbox" data-option="3">
-                                    <input type="checkbox" disabled> D: Option 4
-                                </div>
+                                <label class="checkbox-option preview-checkbox option-wrapper" data-option="0">
+                                    <input type="checkbox" disabled>
+                                    <span class="option-shape" data-shape="triangle">▲</span>
+                                    <span class="option-text">A: Option 1</span>
+                                </label>
+                                <label class="checkbox-option preview-checkbox option-wrapper" data-option="1">
+                                    <input type="checkbox" disabled>
+                                    <span class="option-shape" data-shape="diamond">◆</span>
+                                    <span class="option-text">B: Option 2</span>
+                                </label>
+                                <label class="checkbox-option preview-checkbox option-wrapper" data-option="2">
+                                    <input type="checkbox" disabled>
+                                    <span class="option-shape" data-shape="circle">●</span>
+                                    <span class="option-text">C: Option 3</span>
+                                </label>
+                                <label class="checkbox-option preview-checkbox option-wrapper" data-option="3">
+                                    <input type="checkbox" disabled>
+                                    <span class="option-shape" data-shape="square">■</span>
+                                    <span class="option-text">D: Option 4</span>
+                                </label>
                             </div>
                         </div>
 
@@ -2174,26 +2257,26 @@
 
             <div id="player-multiple-choice" class="player-answer-type">
                 <div class="player-options">
-                    <button class="player-option" data-option="0">A</button>
-                    <button class="player-option" data-option="1">B</button>
-                    <button class="player-option" data-option="2">C</button>
-                    <button class="player-option" data-option="3">D</button>
+                    <button class="player-option" data-option="0"><span class="option-shape">▲</span></button>
+                    <button class="player-option" data-option="1"><span class="option-shape">◆</span></button>
+                    <button class="player-option" data-option="2"><span class="option-shape">●</span></button>
+                    <button class="player-option" data-option="3"><span class="option-shape">■</span></button>
                 </div>
             </div>
 
             <div id="player-multiple-correct" class="player-answer-type hidden">
                 <div class="player-checkbox-options">
                     <label class="checkbox-option" data-option="0">
-                        <input type="checkbox" class="option-checkbox"> A
+                        <input type="checkbox" class="option-checkbox"> <span class="option-shape">▲</span>
                     </label>
                     <label class="checkbox-option" data-option="1">
-                        <input type="checkbox" class="option-checkbox"> B
+                        <input type="checkbox" class="option-checkbox"> <span class="option-shape">◆</span>
                     </label>
                     <label class="checkbox-option" data-option="2">
-                        <input type="checkbox" class="option-checkbox"> C
+                        <input type="checkbox" class="option-checkbox"> <span class="option-shape">●</span>
                     </label>
                     <label class="checkbox-option" data-option="3">
-                        <input type="checkbox" class="option-checkbox"> D
+                        <input type="checkbox" class="option-checkbox"> <span class="option-shape">■</span>
                     </label>
                 </div>
                 <button id="submit-multiple" class="btn primary" data-translate="submit_answer">Submit Answer</button>
@@ -2974,7 +3057,7 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=19"></script>
+    <script type="module" src="js/main.js?v=42"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // Fetch and display app version (always runs, even without service worker support)

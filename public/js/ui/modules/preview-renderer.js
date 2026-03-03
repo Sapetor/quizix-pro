@@ -423,9 +423,18 @@ export class PreviewRenderer {
                 optionDiv.classList.add('correct');
             }
 
-            const optionLetter = translationManager.getOptionLetter(index);
+            const shapes = ['triangle', 'diamond', 'circle', 'square'];
+            const icons = ['▲', '◆', '●', '■'];
+            const shape = index < 4 ? shapes[index] : shapes[0];
+            const icon = index < 4 ? icons[index] : icons[0];
+
             const hasLatex = this.hasLatexContent(option);
-            const formattedContent = `<span class="option-text">${optionLetter}: ${this.formatCodeBlocks(option)}</span>`;
+            const formattedContent = `
+                <div class="option-wrapper">
+                    <span class="option-shape" data-shape="${shape}">${icon}</span>
+                    <span class="option-text">${this.formatCodeBlocks(option)}</span>
+                </div>
+            `;
 
             this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
         });
@@ -469,9 +478,19 @@ export class PreviewRenderer {
                 optionDiv.classList.add('correct-preview');
             }
 
-            const optionLetter = translationManager.getOptionLetter(index);
+            const shapes = ['triangle', 'diamond', 'circle', 'square'];
+            const icons = ['▲', '◆', '●', '■'];
+            const shape = index < 4 ? shapes[index] : shapes[0];
+            const icon = index < 4 ? icons[index] : icons[0];
+
             const hasLatex = this.hasLatexContent(option);
-            const formattedContent = `<input type="checkbox" ${isCorrect ? 'checked' : ''} disabled> <span class="option-text">${optionLetter}: ${this.formatCodeBlocks(option)}</span>`;
+            const formattedContent = `
+                <label class="option-wrapper">
+                    <input type="checkbox" ${isCorrect ? 'checked' : ''} disabled>
+                    <span class="option-shape" data-shape="${shape}">${icon}</span>
+                    <span class="option-text">${this.formatCodeBlocks(option)}</span>
+                </label>
+            `;
 
             this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
         });
@@ -837,9 +856,18 @@ export class PreviewRenderer {
                 optionDiv.classList.add('correct');
             }
 
-            const optionLetter = translationManager.getOptionLetter(index);
+            const shapes = ['triangle', 'diamond', 'circle', 'square'];
+            const icons = ['▲', '◆', '●', '■'];
+            const shape = index < 4 ? shapes[index] : shapes[0];
+            const icon = index < 4 ? icons[index] : icons[0];
+
             const hasLatex = this.hasLatexContent(option);
-            const formattedContent = `<span class="option-text">${optionLetter}: ${this.formatCodeBlocks(option)}</span>`;
+            const formattedContent = `
+                <div class="option-wrapper">
+                    <span class="option-shape" data-shape="${shape}">${icon}</span>
+                    <span class="option-text">${this.formatCodeBlocks(option)}</span>
+                </div>
+            `;
 
             this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
         });
@@ -887,9 +915,19 @@ export class PreviewRenderer {
                 checkbox.checked = true;
             }
 
-            const optionLetter = translationManager.getOptionLetter(index);
+            const shapes = ['triangle', 'diamond', 'circle', 'square'];
+            const icons = ['▲', '◆', '●', '■'];
+            const shape = index < 4 ? shapes[index] : shapes[0];
+            const icon = index < 4 ? icons[index] : icons[0];
+
             const hasLatex = this.hasLatexContent(option);
-            const formattedContent = `<span class="option-text">${optionLetter}: ${this.formatCodeBlocks(option)}</span>`;
+            // Don't inject the checkbox here, it's appended separately at line 913
+            const formattedContent = `
+                <div class="option-wrapper">
+                    <span class="option-shape" data-shape="${shape}">${icon}</span>
+                    <span class="option-text">${this.formatCodeBlocks(option)}</span>
+                </div>
+            `;
 
             optionDiv.appendChild(checkbox);
             optionDiv.insertAdjacentHTML('beforeend', ' ' + formattedContent);

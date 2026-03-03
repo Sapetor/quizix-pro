@@ -123,7 +123,7 @@
 }
 
 .btn:active {
-    transform: translateY(0);
+    transform: translateY(1px) scale(0.98);
     box-shadow: var(--shadow-sm);
 }
 
@@ -276,8 +276,8 @@
 }
 
 .btn.large-start-btn:active {
-    transform: translateY(-1px) scale(1.01);
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3), 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(1px) scale(0.98);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Secondary button variant */
@@ -501,6 +501,11 @@ button:focus-visible {
     outline-offset: 3px;
     box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.15), var(--shadow-lg);
     transform: translateY(-2px) scale(1.02);
+}
+
+.player-option:active,
+.tf-option:active {
+    transform: scale(0.98);
 }
 
 /* Form element focus enhancements */
@@ -805,6 +810,64 @@ button:disabled:focus-visible {
     height: auto;
 }
 
+/* Option Content Wrapper */
+.option-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+/* Geometric Shape Identifiers */
+.option-shape {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.player-option:hover .option-shape,
+.checkbox-option:hover .option-shape {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* Shape-specific styling (reusing game show colors) */
+.option-shape[data-shape="triangle"] {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    /* Red */
+}
+
+.option-shape[data-shape="diamond"] {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    /* Blue */
+}
+
+.option-shape[data-shape="circle"] {
+    background: linear-gradient(135deg, #f59e0b, #b45309);
+    /* Yellow/Orange */
+}
+
+.option-shape[data-shape="square"] {
+    background: linear-gradient(135deg, #10b981, #047857);
+    /* Green */
+}
+
+/* Adjust text container to take remaining space */
+.option-wrapper .option-text {
+    flex: 1;
+    text-align: left;
+    word-break: break-word;
+}
+
+
 /* Override all colorful preview rules to use neutral styling - MAXIMUM SPECIFICITY */
 /* Consolidated checkbox option styling for all preview contexts */
 .preview-content .checkbox-option,
@@ -843,6 +906,12 @@ button:disabled:focus-visible {
 .preview-content-split .checkbox-option:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: var(--color-primary-500);
+}
+
+.quiz-editor .checkbox-option:active,
+.preview-content .checkbox-option:active,
+.preview-content-split .checkbox-option:active {
+    transform: scale(0.98);
 }
 
 /* Checkbox input styling */
@@ -1280,8 +1349,8 @@ button:disabled:focus-visible {
 }
 
 .header-controls .start-game-header:active {
-    transform: translateY(-1px) scale(1.01);
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25), 0 2px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(1px) scale(0.98);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Breathing glow animation for blue header button */
