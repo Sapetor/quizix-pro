@@ -10,7 +10,7 @@
 
 // IMPORTANT: Update this version when deploying new code to force cache refresh
 // Format: YYYYMMDD-HHMM or use a build hash
-const CACHE_VERSION = 'v20260302-ordering-fixes';
+const CACHE_VERSION = 'v20260303-codebase-cleanup';
 const CACHE_NAME = `quizix-static-${CACHE_VERSION}`;
 const OFFLINE_CACHE_NAME = 'quizix-offline-data';
 

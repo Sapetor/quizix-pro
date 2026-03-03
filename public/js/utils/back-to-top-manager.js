@@ -104,24 +104,38 @@ export function initializeBackToTopButton() {
     }
 
     // Listen for editor section scroll
+    let editorScrollTicking = false;
     editorSection.addEventListener('scroll', () => {
-        const scrollTop = editorSection.scrollTop;
+        if (!editorScrollTicking) {
+            requestAnimationFrame(() => {
+                const scrollTop = editorSection.scrollTop;
 
-        if (scrollTop > TIMING.SCROLL_THRESHOLD) {
-            showBackToTopButtons(floatingBtn, editorBtn);
-        } else {
-            hideBackToTopButtons(floatingBtn, editorBtn);
+                if (scrollTop > TIMING.SCROLL_THRESHOLD) {
+                    showBackToTopButtons(floatingBtn, editorBtn);
+                } else {
+                    hideBackToTopButtons(floatingBtn, editorBtn);
+                }
+                editorScrollTicking = false;
+            });
+            editorScrollTicking = true;
         }
     });
 
     // Listen for window scroll as fallback
+    let windowScrollTicking = false;
     window.addEventListener('scroll', () => {
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        if (!windowScrollTicking) {
+            requestAnimationFrame(() => {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
-        if (scrollTop > TIMING.SCROLL_THRESHOLD) {
-            showBackToTopButtons(floatingBtn, editorBtn);
-        } else {
-            hideBackToTopButtons(floatingBtn, editorBtn);
+                if (scrollTop > TIMING.SCROLL_THRESHOLD) {
+                    showBackToTopButtons(floatingBtn, editorBtn);
+                } else {
+                    hideBackToTopButtons(floatingBtn, editorBtn);
+                }
+                windowScrollTicking = false;
+            });
+            windowScrollTicking = true;
         }
     });
 

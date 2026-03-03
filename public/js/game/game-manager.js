@@ -840,9 +840,9 @@ export class GameManager {
         // Show the answer in the question display area (top frame)
         const questionDisplay = dom.get('host-question-display');
         if (questionDisplay) {
-            let answerText = `${getTranslation('correct_answer')}: ${correctAnswer}`;
+            let answerText = `${getTranslation('correct_answer')}: ${escapeHtml(String(correctAnswer))}`;
             if (tolerance) {
-                answerText += ` (±${tolerance})`;
+                answerText += ` (±${escapeHtml(String(tolerance))})`;
             }
 
             // Create the correct answer display
@@ -1056,7 +1056,7 @@ export class GameManager {
         const percentage = totalAnswers > 0 ? Math.round((count / totalAnswers) * 100) : 0;
         return `
                         <div class="numeric-answer-item">
-                            <span class="answer-value">${answer}</span>
+                            <span class="answer-value">${escapeHtml(String(answer))}</span>
                             <div class="answer-bar-container">
                                 <div class="answer-bar" style="width: ${percentage}%"></div>
                                 <span class="answer-count">${count}</span>
@@ -1771,6 +1771,10 @@ export class GameManager {
                 clearInterval(this.timer);
                 this.timer = null;
             }
+
+            // Clean up interaction and timer managers
+            this.interactionManager?.cleanup();
+            this.timerManager?.cleanup();
 
             // Clean up power-ups
             if (this.powerUpManager) {

@@ -8,7 +8,7 @@ import { getTranslation } from '../../utils/translation-manager.js';
 import { logger } from '../../core/config.js';
 import { modalFeedback } from '../../utils/modal-feedback.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
-import { dom, escapeHtmlPreservingLatex } from '../../utils/dom.js';
+import { dom, escapeHtml, escapeHtmlPreservingLatex } from '../../utils/dom.js';
 
 export class AnswerRevealManager {
     /**
@@ -174,9 +174,9 @@ export class AnswerRevealManager {
 
         const questionDisplay = document.getElementById('host-question-display');
         if (questionDisplay) {
-            let answerText = `${getTranslation('correct_answer')}: ${correctAnswer}`;
+            let answerText = `${getTranslation('correct_answer')}: ${escapeHtml(String(correctAnswer))}`;
             if (tolerance) {
-                answerText += ` (±${tolerance})`;
+                answerText += ` (±${escapeHtml(String(tolerance))})`;
             }
 
             const correctAnswerDiv = document.createElement('div');
@@ -226,7 +226,8 @@ export class AnswerRevealManager {
         } else if (questionType === 'ordering') {
             // For ordering, highlight items with correct/incorrect per-position feedback
             const orderItems = document.querySelectorAll('.ordering-display-item');
-            const correctOrder = data.correctAnswer || data.correctOrder || [];
+            const rawOrder = data.correctAnswer ?? data.correctOrder ?? null;
+            const correctOrder = Array.isArray(rawOrder) ? rawOrder : [];
             orderItems.forEach((item, displayIndex) => {
                 const originalIndex = parseInt(item.dataset.originalIndex);
                 if (correctOrder[displayIndex] === originalIndex) {

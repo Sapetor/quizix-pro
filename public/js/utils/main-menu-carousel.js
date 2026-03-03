@@ -4,6 +4,7 @@
  */
 
 import { BaseCarousel } from './base-carousel.js';
+import { debounce } from './dom.js';
 
 class MainMenuCarousel extends BaseCarousel {
     constructor() {
@@ -59,16 +60,12 @@ setTimeout(() => {
 }, 500);
 
 // Reinitialize on window resize
-let resizeTimeout;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
-        if (mainMenuCarousel) {
-            mainMenuCarousel.destroy();
-            mainMenuCarousel = null;
-            initMainMenuCarousel();
-        }
-    }, 250);
-});
+window.addEventListener('resize', debounce(() => {
+    if (mainMenuCarousel) {
+        mainMenuCarousel.destroy();
+        mainMenuCarousel = null;
+        initMainMenuCarousel();
+    }
+}, 200));
 
 export { MainMenuCarousel };

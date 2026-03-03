@@ -97,18 +97,6 @@ export class DOMManager {
     }
 
     /**
-     * Show/hide element
-     */
-    setVisibility(elementId, visible) {
-        const element = this.get(elementId);
-        if (element) {
-            element.style.display = visible ? 'block' : 'none';
-            return true;
-        }
-        return false;
-    }
-
-    /**
      * Add class to element
      */
     addClass(elementId, className) {
@@ -315,9 +303,12 @@ export const dom = new DOMManager();
  */
 export function escapeHtml(text) {
     if (text === null || text === undefined) return '';
-    const div = document.createElement('div');
-    div.textContent = String(text);
-    return div.innerHTML;
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 /**

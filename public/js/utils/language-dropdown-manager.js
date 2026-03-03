@@ -5,7 +5,7 @@
 
 import { translationManager } from './translation-manager.js';
 import { logger, LANGUAGES } from '../core/config.js';
-import { isMobile } from './dom.js';
+import { isMobile, debounce } from './dom.js';
 
 /**
  * Update welcome text with proper translation for the selected language
@@ -246,7 +246,7 @@ export function initializeDropdownListeners() {
     });
 
     // Reposition on window resize
-    window.addEventListener('resize', () => {
+    window.addEventListener('resize', debounce(() => {
         const dropdown = document.getElementById('language-selector');
         if (!dropdown || !dropdown.classList.contains('open')) return;
 
@@ -258,14 +258,21 @@ export function initializeDropdownListeners() {
                 resetDropdownStyles(dropdownOptions);
             }
         }
-    });
+    }, 200));
 
     // Close on scroll (mobile)
+    let scrollTicking = false;
     window.addEventListener('scroll', () => {
-        const dropdown = document.getElementById('language-selector');
-        if (dropdown && dropdown.classList.contains('open') && isMobile()) {
-            dropdown.classList.remove('open');
-            restoreDropdownToOriginalPosition(dropdown);
+        if (!scrollTicking) {
+            requestAnimationFrame(() => {
+                const dropdown = document.getElementById('language-selector');
+                if (dropdown && dropdown.classList.contains('open') && isMobile()) {
+                    dropdown.classList.remove('open');
+                    restoreDropdownToOriginalPosition(dropdown);
+                }
+                scrollTicking = false;
+            });
+            scrollTicking = true;
         }
     });
 

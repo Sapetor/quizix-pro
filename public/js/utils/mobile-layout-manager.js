@@ -5,7 +5,7 @@
  */
 
 import { logger } from '../core/config.js';
-import { isMobile } from './dom.js';
+import { isMobile, debounce } from './dom.js';
 
 export class MobileLayoutManager {
     constructor() {
@@ -31,7 +31,7 @@ export class MobileLayoutManager {
         });
 
         // Listen for window resize
-        window.addEventListener('resize', () => {
+        window.addEventListener('resize', debounce(() => {
             this.viewportHeight = window.innerHeight;
             this.enabled = isMobile();
             this.contentHeightThreshold = window.innerHeight * 0.85;
@@ -39,7 +39,7 @@ export class MobileLayoutManager {
             if (this.enabled) {
                 this.analyzeAndAdaptLayout();
             }
-        });
+        }, 200));
 
         // Listen for content updates
         document.addEventListener('question-content-updated', () => {

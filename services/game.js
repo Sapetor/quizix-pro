@@ -551,17 +551,18 @@ class Game {
      * Sorts by score (descending), then by total time (ascending) as tiebreaker
      */
     updateLeaderboard() {
-        this.leaderboard = Array.from(this.players.values())
+        const playersWithTime = Array.from(this.players.values()).map(player => ({
+            player,
+            totalTime: Object.values(player.answers).reduce((sum, ans) => sum + (ans.timeMs || 0), 0)
+        }));
+        this.leaderboard = playersWithTime
             .sort((a, b) => {
                 // Primary sort: higher score wins
-                if (b.score !== a.score) {
-                    return b.score - a.score;
-                }
+                if (b.player.score !== a.player.score) return b.player.score - a.player.score;
                 // Tiebreaker: faster total response time wins
-                const aTotalTime = Object.values(a.answers).reduce((sum, ans) => sum + (ans.timeMs || 0), 0);
-                const bTotalTime = Object.values(b.answers).reduce((sum, ans) => sum + (ans.timeMs || 0), 0);
-                return aTotalTime - bTotalTime;
+                return a.totalTime - b.totalTime;
             })
+            .map(({ player }) => player)
             .slice(0, 10);
     }
 

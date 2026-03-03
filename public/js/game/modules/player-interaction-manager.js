@@ -23,8 +23,7 @@ export class PlayerInteractionManager {
         this.submitOrderingAnswer = this.submitOrderingAnswer.bind(this);
 
         // Store bound handlers for cleanup (prevents memory leaks)
-        this._handleMultipleChoiceClick = this._handleMultipleChoiceClick.bind(this);
-        this._handleTrueFalseClick = this._handleTrueFalseClick.bind(this);
+        this._handleOptionClick = this._handleOptionClick.bind(this);
         this._handleNumericKeypress = this._handleNumericKeypress.bind(this);
 
         // Track timeout IDs for cleanup
@@ -32,25 +31,18 @@ export class PlayerInteractionManager {
     }
 
     /**
-     * Handler for multiple choice option clicks (bound for cleanup)
+     * Handler for option clicks - covers both multiple choice and true/false (bound for cleanup)
      */
-    _handleMultipleChoiceClick(event) {
-        const button = event.target.closest('.player-option');
-        if (button) {
-            const answer = parseInt(button.dataset.answer);
-            if (!isNaN(answer)) {
-                this.selectAnswer(answer);
-            }
+    _handleOptionClick(event) {
+        const mcButton = event.target.closest('.player-option');
+        if (mcButton) {
+            const answer = parseInt(mcButton.dataset.answer);
+            if (!isNaN(answer)) this.selectAnswer(answer);
+            return;
         }
-    }
-
-    /**
-     * Handler for true/false option clicks (bound for cleanup)
-     */
-    _handleTrueFalseClick(event) {
-        const button = event.target.closest('.tf-option');
-        if (button) {
-            const answer = button.dataset.answer === 'true';
+        const tfButton = event.target.closest('.tf-option');
+        if (tfButton) {
+            const answer = tfButton.dataset.answer === 'true';
             this.selectAnswer(answer);
         }
     }
@@ -332,11 +324,8 @@ export class PlayerInteractionManager {
      * Setup event listeners for player interactions
      */
     setupEventListeners() {
-        // Multiple choice option clicks (using bound handler for cleanup)
-        document.addEventListener('click', this._handleMultipleChoiceClick);
-
-        // True/false option clicks (using bound handler for cleanup)
-        document.addEventListener('click', this._handleTrueFalseClick);
+        // Option clicks for multiple choice and true/false (single handler)
+        document.addEventListener('click', this._handleOptionClick);
 
         // Multiple correct submit button
         const mcSubmitBtn = document.getElementById('submit-multiple-correct');
@@ -365,9 +354,8 @@ export class PlayerInteractionManager {
      * Remove event listeners
      */
     removeEventListeners() {
-        // Remove document-level click listeners (prevents memory leaks)
-        document.removeEventListener('click', this._handleMultipleChoiceClick);
-        document.removeEventListener('click', this._handleTrueFalseClick);
+        // Remove document-level click listener (prevents memory leaks)
+        document.removeEventListener('click', this._handleOptionClick);
 
         // Remove specific element listeners
         const mcSubmitBtn = document.getElementById('submit-multiple-correct');

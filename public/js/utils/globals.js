@@ -393,10 +393,15 @@ export function initializeQuestionPagination() {
     logger.debug('Question pagination initialized');
 }
 
+// Guard against duplicate keydown listener registration
+let keyNavAttached = false;
+
 /**
  * Setup keyboard navigation for question pagination
  */
 function setupPaginationKeyboardNav() {
+    if (keyNavAttached) return;
+    keyNavAttached = true;
     document.addEventListener('keydown', handlePaginationKeyNav);
 }
 

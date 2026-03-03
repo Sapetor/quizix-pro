@@ -120,11 +120,7 @@ export class PracticeModeManager {
      */
     async loadQuiz(filename) {
         try {
-            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${encodeURIComponent(filename)}`));
-            if (!response.ok) {
-                throw new Error(`Failed to load quiz: ${response.statusText}`);
-            }
-            const quiz = await response.json();
+            const quiz = await APIHelper.fetchAPIJSON(`api/quiz/${encodeURIComponent(filename)}`);
             logger.debug('[PracticeModeManager] Quiz loaded:', quiz.title);
             return quiz;
         } catch (error) {

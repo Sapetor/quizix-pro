@@ -7,6 +7,8 @@
 import { logger } from '../core/config.js';
 
 export class OrderingDragDrop {
+    static SWAP_ANIMATION_MS = 300;
+
     constructor(containerSelector, options = {}) {
         this.container = typeof containerSelector === 'string'
             ? document.querySelector(containerSelector)
@@ -205,9 +207,9 @@ export class OrderingDragDrop {
         const toItem = items[toIndex];
 
         // Add swap animation classes
-        const direction = fromIndex < toIndex ? 1 : -1;
-        fromItem.classList.add(direction > 0 ? 'swap-down' : 'swap-up');
-        toItem.classList.add(direction > 0 ? 'swap-up' : 'swap-down');
+        const movingDown = fromIndex < toIndex;
+        fromItem.classList.add(movingDown ? 'swap-down' : 'swap-up');
+        toItem.classList.add(movingDown ? 'swap-up' : 'swap-down');
 
         // Swap in DOM
         if (fromIndex < toIndex) {
@@ -216,15 +218,15 @@ export class OrderingDragDrop {
             toItem.parentNode.insertBefore(fromItem, toItem);
         }
 
-        // Update indices and position numbers
-        this.updateIndices();
-        this.updatePositionNumbers();
+        // Update indices and position numbers (reuse cached items list)
+        this.updateIndices(items);
+        this.updatePositionNumbers(items);
 
         // Remove animation classes after animation completes
         setTimeout(() => {
             fromItem.classList.remove('swap-up', 'swap-down');
             toItem.classList.remove('swap-up', 'swap-down');
-        }, 300);
+        }, OrderingDragDrop.SWAP_ANIMATION_MS);
 
         // Call callback if provided
         if (typeof this.options.onOrderChange === 'function') {
@@ -233,15 +235,15 @@ export class OrderingDragDrop {
         }
     }
 
-    updateIndices() {
-        const items = this.container.querySelectorAll(this.options.itemSelector);
+    updateIndices(items) {
+        items ??= this.container.querySelectorAll(this.options.itemSelector);
         items.forEach((item, index) => {
             item.dataset.orderIndex = index;
         });
     }
 
-    updatePositionNumbers() {
-        const items = this.container.querySelectorAll(this.options.itemSelector);
+    updatePositionNumbers(items) {
+        items ??= this.container.querySelectorAll(this.options.itemSelector);
         items.forEach((item, index) => {
             const numberEl = item.querySelector('.ordering-item-number');
             if (numberEl) {

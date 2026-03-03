@@ -11,6 +11,7 @@ export class TimerManager {
     constructor() {
         this.timer = null;
         this.trackedTimers = new Set(); // Track timers for cleanup
+        this.timerElement = document.getElementById('timer');
     }
 
     /**
@@ -88,7 +89,7 @@ export class TimerManager {
      * Update timer display in the UI
      */
     updateTimerDisplay(timeRemaining) {
-        const timerElement = document.getElementById('timer');
+        const timerElement = this.timerElement;
 
         if (timerElement) {
             const seconds = Math.max(0, Math.ceil(timeRemaining / 1000));
@@ -108,7 +109,7 @@ export class TimerManager {
      */
     setStaticTimerDisplay(seconds) {
         try {
-            const timerElement = document.getElementById('timer');
+            const timerElement = this.timerElement;
             if (timerElement) {
                 timerElement.textContent = seconds.toString();
                 timerElement.classList.add('error-state');
@@ -132,7 +133,7 @@ export class TimerManager {
     getRemainingTime() {
         if (!this.timer) return 0;
 
-        const timerElement = document.getElementById('timer');
+        const timerElement = this.timerElement;
         if (timerElement) {
             const seconds = parseInt(timerElement.textContent) || 0;
             return seconds * 1000;
@@ -152,7 +153,7 @@ export class TimerManager {
             return;
         }
 
-        const timerElement = document.getElementById('timer');
+        const timerElement = this.timerElement;
         if (timerElement) {
             const currentSeconds = parseInt(timerElement.textContent) || 0;
             const newSeconds = currentSeconds + extraSeconds;

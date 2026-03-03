@@ -3,7 +3,7 @@
  * Handles password entry and creation for protected items
  */
 
-import { logger } from '../../core/config.js';
+import { logger, COLORS } from '../../core/config.js';
 import { translationManager } from '../../utils/translation-manager.js';
 import { openModal, closeModal, createModalBindings } from '../../utils/modal-utils.js';
 
@@ -175,16 +175,16 @@ export class PasswordModal {
 
         if (strength <= 25) {
             text = t('password_weak') || 'Weak';
-            color = '#dc3545';
+            color = COLORS.ERROR;
         } else if (strength <= 50) {
             text = t('password_fair') || 'Fair';
-            color = '#ffc107';
+            color = COLORS.WARNING;
         } else if (strength <= 75) {
             text = t('password_good') || 'Good';
-            color = '#28a745';
+            color = COLORS.SUCCESS;
         } else {
             text = t('password_strong') || 'Strong';
-            color = '#17a2b8';
+            color = COLORS.INFO;
         }
 
         strengthBar.style.width = `${strength}%`;

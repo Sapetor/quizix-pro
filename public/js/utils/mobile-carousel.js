@@ -4,7 +4,7 @@
  */
 
 import { BaseCarousel } from './base-carousel.js';
-import { isMobile } from './dom.js';
+import { isMobile, debounce } from './dom.js';
 
 class MobileCarousel extends BaseCarousel {
     constructor(containerSelector) {
@@ -54,17 +54,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Re-initialize on window resize
-let resizeTimeout;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
-        if (isMobile() && !window.mobileCarousel) {
-            window.mobileCarousel = new MobileCarousel('.carousel-container');
-        } else if (!isMobile() && window.mobileCarousel) {
-            window.mobileCarousel.destroy();
-            window.mobileCarousel = null;
-        }
-    }, 250);
-});
+window.addEventListener('resize', debounce(() => {
+    if (isMobile() && !window.mobileCarousel) {
+        window.mobileCarousel = new MobileCarousel('.carousel-container');
+    } else if (!isMobile() && window.mobileCarousel) {
+        window.mobileCarousel.destroy();
+        window.mobileCarousel = null;
+    }
+}, 200));
 
 export { MobileCarousel };

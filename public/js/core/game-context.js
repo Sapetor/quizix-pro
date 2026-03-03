@@ -2,6 +2,8 @@
  * GameContext - Dependency injection container for game managers
  * Reduces coupling on window.game global
  */
+import { logger } from './config.js';
+
 export class GameContext {
     constructor() {
         this.managers = new Map();
@@ -15,7 +17,7 @@ export class GameContext {
      */
     register(name, manager) {
         if (this.managers.has(name)) {
-            console.warn(`GameContext: Overwriting existing manager '${name}'`);
+            logger.warn(`GameContext: Overwriting existing manager '${name}'`);
         }
         this.managers.set(name, manager);
     }
@@ -28,7 +30,7 @@ export class GameContext {
     get(name) {
         const manager = this.managers.get(name);
         if (!manager) {
-            console.warn(`GameContext: Manager '${name}' not found`);
+            logger.warn(`GameContext: Manager '${name}' not found`);
         }
         return manager;
     }

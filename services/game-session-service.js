@@ -16,6 +16,7 @@ class GameSessionService {
         this.logger = logger;
         this.config = config;
         this.games = new Map();
+        this.hostIdToPin = new Map();
         this.cleanupInterval = null;
         this.socketBatchService = null; // Injected via setSocketBatchService()
 
@@ -98,6 +99,7 @@ class GameSessionService {
             const game = this.games.get(pin);
             if (game) {
                 game.clearTimers();
+                this.hostIdToPin.delete(game.hostId);
                 this.games.delete(pin);
                 this.logger.info(`Cleaned up stale game ${pin} (${reason})`);
             }
@@ -125,6 +127,7 @@ class GameSessionService {
 
         const game = new Game(hostId, quiz, this.logger, this.config, this.limits);
         this.games.set(game.pin, game);
+        this.hostIdToPin.set(hostId, game.pin);
         this.logger.info(`Game created with PIN: ${game.pin} (${this.games.size}/${this.limits.MAX_CONCURRENT_GAMES} games)`);
         return game;
     }
@@ -152,7 +155,8 @@ class GameSessionService {
    * @returns {Object|undefined} Game instance or undefined
    */
     findGameByHost(hostId) {
-        return Array.from(this.games.values()).find(g => g.hostId === hostId);
+        const pin = this.hostIdToPin.get(hostId);
+        return pin ? this.games.get(pin) : undefined;
     }
 
     /**
@@ -169,6 +173,7 @@ class GameSessionService {
                 this.socketBatchService.cleanupRoom(`game-${pin}`);
             }
 
+            this.hostIdToPin.delete(game.hostId);
             this.games.delete(pin);
             this.logger.info(`Game ${pin} deleted`);
         }
