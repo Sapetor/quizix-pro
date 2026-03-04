@@ -477,26 +477,10 @@ export class AIQuestionValidator {
 
                 if (!Array.isArray(question.correctOrder) ||
                     question.correctOrder.length !== question.options.length) {
-                    // AI was told to list options in correct order and omit correctOrder.
-                    // Auto-generate: shuffle options and build the correctOrder mapping.
-                    const n = question.options.length;
-                    const correctOptions = [...question.options]; // original = correct order
-                    const indices = correctOptions.map((_, i) => i);
-                    // Fisher-Yates shuffle for display order
-                    for (let i = indices.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [indices[i], indices[j]] = [indices[j], indices[i]];
-                    }
-                    // Reorder options to shuffled order
-                    question.options = indices.map(i => correctOptions[i]);
-                    // correctOrder[position] = index in shuffled options[] for that position
-                    // Position p in correct sequence = correctOptions[p] = shuffled index where that item landed
-                    const shuffledPositionOf = new Array(n);
-                    for (let i = 0; i < n; i++) {
-                        shuffledPositionOf[indices[i]] = i; // original index -> shuffled index
-                    }
-                    // correctOrder[p] = shuffled index of the item that belongs at position p
-                    question.correctOrder = Array.from({ length: n }, (_, p) => shuffledPositionOf[p]);
+                    // AI listed options in correct order and omitted correctOrder.
+                    // Generate identity mapping — options stay in correct order for the editor.
+                    // The player renderer (renderPlayerOptions) shuffles independently.
+                    question.correctOrder = question.options.map((_, i) => i);
                     break;
                 }
 
