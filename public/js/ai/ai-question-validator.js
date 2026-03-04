@@ -80,13 +80,19 @@ export class AIQuestionValidator {
                 cleanText = cleanText.substring(startBracket, endBracket + 1);
             }
 
-            // Fix common JSON issues
-            cleanText = this.fixCommonJsonIssues(cleanText);
-
-            logger.debug('ParseAIResponse - Clean text for parsing:', cleanText.substring(0, 300) + '...');
-
-            // Parse JSON (LaTeX escape collisions already handled in fixCommonJsonIssues)
-            const parsed = JSON.parse(cleanText);
+            // Try parsing as-is first — properly escaped JSON (Gemini 3, Claude, OpenAI)
+            // will parse cleanly. Only apply fixCommonJsonIssues as fallback, because
+            // its LaTeX escape fixer double-escapes already-escaped backslashes.
+            let parsed;
+            try {
+                parsed = JSON.parse(cleanText);
+                logger.debug('ParseAIResponse - JSON parsed on first try (no fixes needed)');
+            } catch (_firstError) {
+                logger.debug('ParseAIResponse - First parse failed, applying JSON fixes');
+                cleanText = this.fixCommonJsonIssues(cleanText);
+                logger.debug('ParseAIResponse - Clean text for parsing:', cleanText.substring(0, 300) + '...');
+                parsed = JSON.parse(cleanText);
+            }
             logger.debug('ParseAIResponse - JSON parsed successfully');
 
             // Handle both single object and array
