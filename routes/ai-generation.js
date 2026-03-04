@@ -399,14 +399,14 @@ function createAIGenerationRoutes(options) {
 
             logger.debug(`Using ${serverApiKey ? 'server-side' : 'client-provided'} Gemini API key`);
 
-            // Calculate max_tokens based on number of questions (matching Claude's allocation)
-            // ~2000 tokens per question to allow for LaTeX, explanations, and safety margin
+            // Calculate max_tokens based on number of questions
+            // ~3500 tokens per question for LaTeX, explanations, optionFeedback, concepts
             const questionCount = Math.max(1, Math.min(numQuestions || 5, 20));
-            const calculatedMaxTokens = Math.max(8192, questionCount * 2000);
+            const calculatedMaxTokens = Math.max(16384, questionCount * 3500);
 
             // Use model from request, fall back to env var, then default
             const selectedModel = model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-            logger.info(`Using Gemini model: ${selectedModel}`);
+            logger.info(`Using Gemini model: ${selectedModel}, maxOutputTokens: ${calculatedMaxTokens}`);
 
             // Gemini API request format
             const requestBody = {
@@ -431,6 +431,16 @@ function createAIGenerationRoutes(options) {
                     maxOutputTokens: calculatedMaxTokens
                 }
             };
+
+            // For thinking models (2.5+, 3.x), set thinking budget so it doesn't
+            // squeeze output token space. thinkingConfig is silently ignored by
+            // non-thinking models.
+            const isThinkingModel = /gemini-(2\.5|3[.-])/.test(selectedModel);
+            if (isThinkingModel) {
+                requestBody.generationConfig.thinkingConfig = {
+                    thinkingBudget: 2048
+                };
+            }
 
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
@@ -474,6 +484,15 @@ function createAIGenerationRoutes(options) {
             }
 
             const data = await response.json();
+
+            // Check finishReason — if MAX_TOKENS, the response was truncated
+            const finishReason = data.candidates?.[0]?.finishReason;
+            if (finishReason && finishReason !== 'STOP') {
+                logger.warn(`Gemini finishReason: ${finishReason} (model: ${selectedModel}, maxOutputTokens: ${calculatedMaxTokens})`);
+            }
+            // Relay finishReason to client so it can detect truncation
+            data._finishReason = finishReason || null;
+
             res.json(data);
         } catch (error) {
             logger.error('Gemini proxy error:', error.message);

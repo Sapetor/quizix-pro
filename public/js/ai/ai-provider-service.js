@@ -404,6 +404,12 @@ export class AIProviderService {
                 throw new Error('No content received from Gemini API');
             }
 
+            // Check for truncation via finishReason relayed by server
+            const finishReason = data._finishReason || data.candidates[0].finishReason;
+            if (finishReason === 'MAX_TOKENS') {
+                logger.warn('Gemini response was truncated (MAX_TOKENS) — JSON may be incomplete');
+            }
+
             return content;
 
         }, {

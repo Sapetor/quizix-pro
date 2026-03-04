@@ -154,7 +154,7 @@ export class AIQuestionValidator {
         // Fix missing quotes around property names
         fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
 
-        // Fix incomplete JSON
+        // Fix incomplete JSON (truncated response from MAX_TOKENS etc.)
         if (fixed.includes('[') && !fixed.endsWith(']')) {
             logger.debug('Detected incomplete JSON, attempting to fix');
 
@@ -164,9 +164,9 @@ export class AIQuestionValidator {
             const closeBraces = (fixed.match(/\}/g) || []).length;
 
             if (openBrackets > closeBrackets || openBraces > closeBraces) {
-                // Extract complete question objects
-                const completeObjectPattern = /\{[^}]*"question"[^}]*"type"[^}]*\}/g;
-                const completeObjects = fixed.match(completeObjectPattern) || [];
+                // Extract complete question objects using brace-depth tracking
+                // (the old regex [^}]* can't handle nested arrays/objects in options)
+                const completeObjects = this.extractCompleteObjects(fixed);
 
                 if (completeObjects.length > 0) {
                     fixed = '[' + completeObjects.join(',') + ']';
@@ -199,6 +199,53 @@ export class AIQuestionValidator {
     }
 
     /**
+     * Extract complete top-level JSON objects from a (possibly truncated) string.
+     * Uses brace-depth tracking so nested arrays/objects (e.g. options) are handled.
+     * Only returns objects that contain both "question" and "type" keys.
+     * @param {string} text - Raw JSON text (may be truncated)
+     * @returns {string[]} Array of complete JSON object strings
+     */
+    extractCompleteObjects(text) {
+        const objects = [];
+        let depth = 0;
+        let inString = false;
+        let escape = false;
+        let start = -1;
+
+        for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+
+            if (escape) { escape = false; continue; }
+            if (ch === '\\' && inString) { escape = true; continue; }
+            if (ch === '"') { inString = !inString; continue; }
+            if (inString) continue;
+
+            if (ch === '{') {
+                if (depth === 0 || (depth === 1 && start === -1)) {
+                    // Track outermost objects (depth 1 inside the root array, or depth 0 if no array)
+                    if (depth === 0 && text.trimStart()[0] === '[') {
+                        depth++;
+                        continue;
+                    }
+                    start = i;
+                }
+                depth++;
+            } else if (ch === '}') {
+                depth--;
+                if (depth <= 1 && start !== -1) {
+                    const obj = text.substring(start, i + 1);
+                    if (obj.includes('"question"') && obj.includes('"type"')) {
+                        objects.push(obj);
+                    }
+                    start = -1;
+                }
+            }
+        }
+
+        return objects;
+    }
+
+    /**
      * Extract questions manually when JSON parsing fails
      * @param {string} responseText - Raw response text
      * @returns {Array} Array of question objects
@@ -206,21 +253,17 @@ export class AIQuestionValidator {
     extractQuestionsManually(responseText) {
         logger.debug('Manual extraction attempting to find questions in text');
 
-        // Try to extract individual JSON objects
-        const jsonObjectPattern = /\{[\s\S]*?"question"\s*:\s*"[^"]*?"[\s\S]*?"type"\s*:\s*"[^"]*?"[\s\S]*?\}/g;
-        const jsonObjects = responseText.match(jsonObjectPattern);
+        // Try to extract individual JSON objects using brace-depth tracking
+        const jsonObjects = this.extractCompleteObjects(responseText);
 
-        if (jsonObjects && jsonObjects.length > 0) {
+        if (jsonObjects.length > 0) {
             logger.debug(`Found ${jsonObjects.length} JSON-like objects, attempting to parse each`);
             const questions = [];
 
             for (const objText of jsonObjects) {
                 errorHandler.safeExecute(
                     () => {
-                        let fixedObj = objText;
-                        fixedObj = fixedObj.replace(/,(\s*\})/g, '$1');
-                        fixedObj = fixedObj.replace(/'/g, '"');
-
+                        let fixedObj = this.fixCommonJsonIssues(objText);
                         const parsed = JSON.parse(fixedObj);
 
                         if (parsed.question && parsed.type) {
