@@ -176,6 +176,7 @@ element.style.display = 'block';  // Don't do this
 14. **Navigating away from game screens MUST use `resetAndReturnToMenu()`** - never call `uiManager.showScreen('main-menu')` directly from a game context. Direct calls skip `resetGameState()`, leaving socket connections active, game state dirty, and DOM content stale
 15. **Socket events must have client handlers for ALL server emits** - verify that every `io.emit('event-name')` on the server has a matching `socket.on('event-name')` on the client. Missing handlers leave users stuck (e.g., `game-ended` vs `game-end` are different events)
 16. **Inline `style="display: none"` in HTML cannot be toggled with `classList`** - if an element uses `style="display: none"` in the HTML, you must use `element.style.display = ''` to show it. `classList.remove('hidden')` won't work because inline styles have higher specificity. Prefer using the `hidden` CSS class consistently (see Critical Pattern #8)
+17. **Gemini thinking models return multiple `parts`** — Gemini 2.5+/3.x responses have `parts[0]` as the thinking/reasoning text (with `thought: true`) and the actual output in a later part. Always iterate parts in reverse to find the last non-thought part. Never hardcode `parts[0]`. Also: Gemini 3 uses `thinkingLevel` (string), Gemini 2.5 uses `thinkingBudget` (int) — they cannot be mixed
 
 ---
 
