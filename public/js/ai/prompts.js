@@ -30,7 +30,7 @@ const TYPE_EXAMPLES = {
     'true-false': '{"question": "Statement to verify.", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20, "explanation": "Why true", "difficulty": "easy", "concepts": ["topic1"]}',
     'multiple-correct': '{"question": "Select all that apply:", "type": "multiple-correct", "options": ["A", "B", "C", "D"], "correctAnswers": [0, 2], "timeLimit": 35, "explanation": "A and C are correct", "difficulty": "medium", "concepts": ["topic1", "topic2"]}',
     'numeric': '{"question": "Calculate the value:", "type": "numeric", "correctAnswer": 42, "tolerance": 0, "timeLimit": 25, "explanation": "The answer is 42", "difficulty": "medium", "concepts": ["calculation", "topic1"]}',
-    'ordering': '{"question": "Arrange in order:", "type": "ordering", "options": ["First", "Second", "Third"], "correctOrder": [0, 1, 2], "timeLimit": 40, "explanation": "Correct sequence", "difficulty": "medium", "concepts": ["sequencing", "topic1"]}'
+    'ordering': '{"question": "Arrange in order:", "type": "ordering", "options": ["First", "Second", "Third"], "timeLimit": 40, "explanation": "Correct sequence", "difficulty": "medium", "concepts": ["sequencing", "topic1"]}'
 };
 
 /**
@@ -41,7 +41,7 @@ const MINIMAL_TYPE_EXAMPLES = {
     'true-false': '{"question":"Statement.","type":"true-false","options":["True","False"],"correctAnswer":"true","timeLimit":20,"difficulty":"easy"}',
     'multiple-correct': '{"question":"Select all.","type":"multiple-correct","options":["A","B","C","D"],"correctAnswers":[0,2],"timeLimit":35,"difficulty":"medium"}',
     'numeric': '{"question":"Calculate.","type":"numeric","correctAnswer":42,"tolerance":0,"timeLimit":25,"difficulty":"medium"}',
-    'ordering': '{"question":"Order these.","type":"ordering","options":["B","A","C"],"correctOrder":[1,0,2],"timeLimit":40,"difficulty":"medium"}'
+    'ordering': '{"question":"Order these.","type":"ordering","options":["A","B","C"],"timeLimit":40,"difficulty":"medium"}'
 };
 
 /**
@@ -252,7 +252,7 @@ function buildStructureExamples(selectedTypes, contentInfo) {
     }
 
     if (selectedTypes.includes('ordering')) {
-        structureExamples.push('{"question": "Arrange the following steps in the correct order:", "type": "ordering", "options": ["Step B", "Step D", "Step A", "Step C"], "correctOrder": [2, 0, 3, 1], "timeLimit": 40, "explanation": "The correct sequence is Step A, Step B, Step C, Step D", "difficulty": "medium"}');
+        structureExamples.push('{"question": "Arrange the following steps in the correct order:", "type": "ordering", "options": ["Step A", "Step B", "Step C", "Step D"], "timeLimit": 40, "explanation": "The correct sequence is Step A, Step B, Step C, Step D", "difficulty": "medium"}');
     }
 
     return structureExamples;
@@ -300,7 +300,7 @@ export function buildMainPrompt(params) {
         typeDescription += '\n- Some questions should have numeric answers';
     }
     if (selectedTypes.includes('ordering')) {
-        typeDescription += '\n- Some questions should ask to arrange items in correct order (use "correctOrder" array with indices)';
+        typeDescription += '\n- Some questions should ask to arrange items in correct order. IMPORTANT: List the "options" array IN THE CORRECT ORDER (first item = correct first position). Do NOT include a "correctOrder" field — it will be auto-generated.';
     }
 
     // Build structure examples

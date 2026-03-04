@@ -474,16 +474,45 @@ export class AIQuestionValidator {
                     issues.push('ordering requires at least 2 options');
                     break;
                 }
+
                 if (!Array.isArray(question.correctOrder) ||
                     question.correctOrder.length !== question.options.length) {
-                    issues.push('correctOrder length must match options length');
+                    // AI was told to list options in correct order and omit correctOrder.
+                    // Auto-generate: shuffle options and build the correctOrder mapping.
+                    const n = question.options.length;
+                    const correctOptions = [...question.options]; // original = correct order
+                    const indices = correctOptions.map((_, i) => i);
+                    // Fisher-Yates shuffle for display order
+                    for (let i = indices.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [indices[i], indices[j]] = [indices[j], indices[i]];
+                    }
+                    // Reorder options to shuffled order
+                    question.options = indices.map(i => correctOptions[i]);
+                    // correctOrder[position] = index in shuffled options[] for that position
+                    // Position p in correct sequence = correctOptions[p] = shuffled index where that item landed
+                    const shuffledPositionOf = new Array(n);
+                    for (let i = 0; i < n; i++) {
+                        shuffledPositionOf[indices[i]] = i; // original index -> shuffled index
+                    }
+                    // correctOrder[p] = shuffled index of the item that belongs at position p
+                    question.correctOrder = Array.from({ length: n }, (_, p) => shuffledPositionOf[p]);
                     break;
                 }
-                const allValid = question.correctOrder.every(
-                    idx => typeof idx === 'number' && idx >= 0 && idx < question.options.length
-                );
+
+                // Validate existing correctOrder is a valid permutation
+                const n = question.options.length;
+                const seen = new Set();
+                let allValid = true;
+                for (const idx of question.correctOrder) {
+                    if (typeof idx !== 'number' || idx < 0 || idx >= n || seen.has(idx)) {
+                        allValid = false;
+                        break;
+                    }
+                    seen.add(idx);
+                }
                 if (!allValid) {
-                    issues.push('correctOrder contains invalid indices');
+                    issues.push('correctOrder must be a valid permutation (unique indices 0 to N-1)');
                 }
                 break;
             }
