@@ -85,16 +85,8 @@ export class AIQuestionValidator {
 
             logger.debug('ParseAIResponse - Clean text for parsing:', cleanText.substring(0, 300) + '...');
 
-            // Parse JSON - try normal parse first, then aggressive LaTeX escape fix
-            let parsed;
-            try {
-                parsed = JSON.parse(cleanText);
-            } catch (firstError) {
-                logger.debug('ParseAIResponse - First parse failed, trying aggressive LaTeX escape fix');
-                // Also fix \b,\f,\n,\r,\t before letters (likely LaTeX \bar,\frac,\neq,\right,\text)
-                const aggressiveFixed = cleanText.replace(/\\([bfnrt])(?=[a-zA-Z])/g, '\\\\$1');
-                parsed = JSON.parse(aggressiveFixed);
-            }
+            // Parse JSON (LaTeX escape collisions already handled in fixCommonJsonIssues)
+            const parsed = JSON.parse(cleanText);
             logger.debug('ParseAIResponse - JSON parsed successfully');
 
             // Handle both single object and array
@@ -148,6 +140,11 @@ export class AIQuestionValidator {
             fixed = fixed.replace(/,\s*'/g, ',"');
             logger.debug('Fixed single-quote JSON delimiters');
         }
+
+        // Fix LaTeX commands that collide with JSON escape sequences:
+        // \b(ar), \f(rac), \n(eq), \r(ight), \t(ext) — when followed by a letter,
+        // these are LaTeX, not JSON control characters. Double-escape them first.
+        fixed = fixed.replace(/\\([bfnrt])(?=[a-zA-Z])/g, '\\\\$1');
 
         // Fix invalid JSON escape sequences (common with LaTeX like \frac, \int, \sqrt)
         // Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX

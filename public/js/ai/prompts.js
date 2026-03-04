@@ -192,6 +192,12 @@ ${langHint}
 
     // Add explanation and wrong answer feedback instructions
     instructions += `
+TEXT FORMATTING:
+- For math/science content, ALWAYS use LaTeX ($...$) instead of markdown bold/italic
+- Use **bold** only for emphasis in non-math text (e.g., key terms, important words)
+- Use *italic* sparingly for definitions or foreign terms
+- Do NOT use markdown headers (#), lists (-), or links in question text
+
 QUESTION QUALITY & FEEDBACK:
 - Add an "explanation" field with a BRIEF explanation (1-2 sentences max) of why the correct answer is right
 - Add a "difficulty" field with value "easy", "medium", or "hard" based on content complexity

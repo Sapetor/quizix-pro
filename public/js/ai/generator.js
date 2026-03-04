@@ -657,16 +657,7 @@ export class AIQuestionGenerator {
                 if (validationResult.valid) {
                     logger.debug(`ProcessGeneratedQuestions - Question ${index + 1} is valid, adding to quiz`);
 
-                    await new Promise(resolve => {
-                        const questionElements = document.querySelectorAll('.question-item');
-                        const firstQuestion = questionElements[0];
-                        const needsNewElement = !(firstQuestion && quizManager.isEmptyQuestion(firstQuestion));
-
-                        quizManager.addGeneratedQuestion(questionData, showAlerts);
-
-                        const waitTime = needsNewElement ? 400 : TIMING.DOM_READY_CHECK;
-                        setTimeout(resolve, waitTime);
-                    });
+                    await quizManager.addGeneratedQuestion(questionData, showAlerts);
 
                     validCount++;
                 } else {

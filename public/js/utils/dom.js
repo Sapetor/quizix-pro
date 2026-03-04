@@ -360,6 +360,11 @@ export function formatCodeBlocks(text) {
         return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
     });
 
+    // Bold: **text** → <strong>text</strong> (must run before italic)
+    processedText = processedText.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Italic: *text* → <em>text</em> (lone asterisks, not part of **)
+    processedText = processedText.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+
     // Convert remaining standard newlines to <br> for regular text paragraph flow
     processedText = processedText.replace(/\n/g, '<br>');
 

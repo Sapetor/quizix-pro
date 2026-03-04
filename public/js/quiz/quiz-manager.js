@@ -1704,61 +1704,62 @@ export class QuizManager {
         });
 
         const questionElements = document.querySelectorAll('.question-item');
-        let targetElement = null;
 
         // Check if there's an empty default question we can replace
         const firstQuestion = questionElements[0];
         if (firstQuestion && this.isEmptyQuestion(firstQuestion)) {
             logger.debug('🔧 AddGeneratedQuestion - Using existing empty question');
-            targetElement = firstQuestion;
 
             // Use same processing as addQuestionFromData for consistency
-            this.cleanTranslationKeysInElement(targetElement);
-            this.populateQuestionElement(targetElement, questionData);
-            translationManager.translateContainer(targetElement);
+            this.cleanTranslationKeysInElement(firstQuestion);
+            this.populateQuestionElement(firstQuestion, questionData);
+            translationManager.translateContainer(firstQuestion);
             // Update preview after populating (programmatic value changes don't fire input events)
             this.updatePreviewSafely();
-        } else {
-            // Add a new question
+            return Promise.resolve();
+        }
+
+        // Add a new question — return a Promise that resolves when population is done
+        return new Promise((resolve, reject) => {
             logger.debug('🔧 AddGeneratedQuestion - Creating new question element');
             const addQuestion = this._getAddQuestionFn();
-            if (addQuestion) {
-                const initialCount = questionElements.length;
-                addQuestion();
-
-                // Use retry mechanism instead of fixed timeout to handle varying DOM update speeds
-                const maxRetries = 10;
-                const retryDelay = TIMING.DOM_READY_CHECK;
-                let retryCount = 0;
-
-                const findAndPopulate = () => {
-                    const updatedQuestionElements = document.querySelectorAll('.question-item');
-
-                    // Check if a new question was actually added
-                    if (updatedQuestionElements.length > initialCount) {
-                        targetElement = updatedQuestionElements[updatedQuestionElements.length - 1];
-                        logger.debug('🔧 AddGeneratedQuestion - New element created, populating data');
-                        // Use same processing as addQuestionFromData for consistency
-                        this.cleanTranslationKeysInElement(targetElement);
-                        this.populateQuestionElement(targetElement, questionData);
-                        translationManager.translateContainer(targetElement);
-                        // Update preview after populating (programmatic value changes don't fire input events)
-                        this.updatePreviewSafely();
-                    } else if (retryCount < maxRetries) {
-                        retryCount++;
-                        setTimeout(findAndPopulate, retryDelay);
-                    } else {
-                        logger.error('🔧 AddGeneratedQuestion - Failed to find new question element after retries');
-                    }
-                };
-
-                // Start checking after initial delay
-                setTimeout(findAndPopulate, TIMING.DOM_READY_CHECK);
-            } else {
+            if (!addQuestion) {
                 logger.error('addQuestion function not available');
+                reject(new Error('addQuestion function not available'));
                 return;
             }
-        }
+
+            const initialCount = questionElements.length;
+            addQuestion();
+
+            // Use retry mechanism to find the newly added DOM element
+            const maxRetries = 10;
+            const retryDelay = TIMING.DOM_READY_CHECK;
+            let retryCount = 0;
+
+            const findAndPopulate = () => {
+                const updatedQuestionElements = document.querySelectorAll('.question-item');
+
+                if (updatedQuestionElements.length > initialCount) {
+                    const targetElement = updatedQuestionElements[updatedQuestionElements.length - 1];
+                    logger.debug('🔧 AddGeneratedQuestion - New element created, populating data');
+                    this.cleanTranslationKeysInElement(targetElement);
+                    this.populateQuestionElement(targetElement, questionData);
+                    translationManager.translateContainer(targetElement);
+                    this.updatePreviewSafely();
+                    resolve();
+                } else if (retryCount < maxRetries) {
+                    retryCount++;
+                    setTimeout(findAndPopulate, retryDelay);
+                } else {
+                    logger.error('🔧 AddGeneratedQuestion - Failed to find new question element after retries');
+                    resolve(); // Resolve anyway to not block remaining questions
+                }
+            };
+
+            // Start checking after initial delay
+            setTimeout(findAndPopulate, TIMING.DOM_READY_CHECK);
+        });
     }
 
     /**
