@@ -170,14 +170,15 @@ async function cacheFirst(request) {
 /**
  * Network-first strategy
  * Tries network first, falls back to cache if offline
- * Uses cache: 'no-store' to bypass the browser's HTTP cache (which may hold
- * stale files due to long max-age headers) and always hit the server.
+ * Uses request.url (not the Request object) with cache: 'no-store' to reliably
+ * bypass the browser's HTTP cache. Passing a Request object with init options
+ * doesn't reliably override the cache mode in all Chrome versions.
  */
 async function networkFirst(request) {
     const cache = await caches.open(CACHE_NAME);
 
     try {
-        const networkResponse = await fetch(request, { cache: 'no-store' });
+        const networkResponse = await fetch(request.url, { cache: 'no-store' });
 
         // Cache successful responses (skip 206 partial responses)
         if (networkResponse.ok && networkResponse.status !== 206) {
