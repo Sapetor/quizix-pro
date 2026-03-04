@@ -3,14 +3,14 @@
  * Provides static asset caching for faster repeat loads
  *
  * Strategy:
- * - Cache-first for static assets (JS, CSS, images, sounds, fonts)
- * - Cache-first for CDN resources (MathJax, Chart.js, etc.)
+ * - Network-first for local static assets (always fresh on LAN, cache as offline fallback)
+ * - Cache-first for CDN resources (MathJax, Chart.js, etc. — slow to fetch, rarely change)
  * - Network-only for API calls, Socket.IO, and user uploads
  */
 
 // IMPORTANT: Update this version when deploying new code to force cache refresh
 // Format: YYYYMMDD-HHMM or use a build hash
-const CACHE_VERSION = 'v20260303-ollama-proxy';
+const CACHE_VERSION = 'v20260303-network-first';
 const CACHE_NAME = `quizix-static-${CACHE_VERSION}`;
 const OFFLINE_CACHE_NAME = 'quizix-offline-data';
 
@@ -54,18 +54,6 @@ const CACHEABLE_CDN_HOSTS = [
  */
 function isNetworkOnly(url) {
     return NETWORK_ONLY_PATTERNS.some(pattern => pattern.test(url.pathname));
-}
-
-/**
- * Check if a request is for a cacheable static asset
- */
-function isCacheableAsset(url) {
-    // Cache assets from our origin that match the pattern
-    if (url.origin === self.location.origin) {
-        return CACHEABLE_ASSET_PATTERN.test(url.pathname);
-    }
-    // Cache all resources from trusted CDNs
-    return CACHEABLE_CDN_HOSTS.includes(url.host);
 }
 
 /**
@@ -137,13 +125,19 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Cache-first strategy for static assets
-    if (isCacheableAsset(url)) {
+    // Cache-first for CDN resources (slow to fetch, rarely change)
+    if (CACHEABLE_CDN_HOSTS.includes(url.host)) {
         event.respondWith(cacheFirst(event.request));
         return;
     }
 
-    // For HTML pages (navigation requests), use network-first with cache fallback
+    // Network-first for local static assets (LAN app — always fresh, cache as fallback)
+    if (url.origin === self.location.origin && CACHEABLE_ASSET_PATTERN.test(url.pathname)) {
+        event.respondWith(networkFirst(event.request));
+        return;
+    }
+
+    // Network-first for HTML navigation requests
     if (event.request.mode === 'navigate') {
         event.respondWith(networkFirst(event.request));
         return;
