@@ -309,6 +309,10 @@ const serveIndexHtml = (req, res) => {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
+        // Force browser to clear its HTTP cache for this origin (one-time migration
+        // from long max-age to short max-age). Safe to leave permanently — only
+        // clears the network cache, not storage or cookies.
+        res.setHeader('Clear-Site-Data', '"cache"');
         res.send(modifiedHtml);
     });
 };
