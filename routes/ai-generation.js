@@ -784,7 +784,16 @@ function createAIGenerationRoutes(options) {
                 }
 
                 const data = await response.json();
-                responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                // For thinking models, skip thought parts and get the actual output
+                const parts = data.candidates?.[0]?.content?.parts || [];
+                responseText = '';
+                for (let i = parts.length - 1; i >= 0; i--) {
+                    if (!parts[i].thought && parts[i].text) {
+                        responseText = parts[i].text;
+                        break;
+                    }
+                }
+                if (!responseText) responseText = parts[0]?.text || '';
             }
 
             res.json({ text: responseText });

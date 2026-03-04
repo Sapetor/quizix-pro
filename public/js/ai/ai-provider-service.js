@@ -398,7 +398,21 @@ export class AIProviderService {
                 throw new Error('Invalid Gemini API response structure');
             }
 
-            const content = data.candidates[0].content.parts[0].text;
+            // For thinking models (Gemini 2.5+, 3.x), the response may contain
+            // multiple parts: thought parts (with thought:true) and the actual output.
+            // We need the last non-thought part, not parts[0] which is the thinking.
+            const parts = data.candidates[0].content.parts;
+            let content = null;
+            for (let i = parts.length - 1; i >= 0; i--) {
+                if (!parts[i].thought && parts[i].text) {
+                    content = parts[i].text;
+                    break;
+                }
+            }
+            // Fallback to parts[0] if no non-thought part found
+            if (!content) {
+                content = parts[0]?.text;
+            }
 
             if (!content) {
                 throw new Error('No content received from Gemini API');
