@@ -373,10 +373,16 @@ export class AIQuestionGenerator {
                     questions = await this.batchProcessor.generateWithProvider(provider, currentPrompt);
 
                     if (questions && questions.length > 0) {
-                        if (attempt > 1) {
-                            logger.debug(`Retry successful on attempt ${attempt}`);
+                        if (questions.length >= questionCount || attempt === maxRetries) {
+                            if (attempt > 1) {
+                                logger.debug(`Retry successful on attempt ${attempt}`);
+                            }
+                            break;
                         }
-                        break;
+                        // Got some questions but fewer than requested — retry for full count
+                        logger.debug(`Got ${questions.length}/${questionCount} questions, retrying for full count`);
+                        await new Promise(resolve => setTimeout(resolve, TIMING.RETRY_DELAY));
+                        continue;
                     }
 
                 } catch (providerError) {
