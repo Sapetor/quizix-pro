@@ -186,7 +186,8 @@ export class AIProviderService {
                     options: {
                         temperature: AI.DEFAULT_TEMPERATURE,
                         seed: randomSeed,
-                        num_predict: 16384
+                        num_predict: 32768,
+                        num_ctx: 32768
                     }
                 })
             });
@@ -200,6 +201,14 @@ export class AIProviderService {
             }
 
             const data = await response.json();
+
+            if (data.done_reason === 'length') {
+                logger.warn('Ollama response truncated (hit num_predict limit). eval_count:', data.eval_count);
+            }
+            if (data.response && data.response.includes('<think>')) {
+                logger.warn('Ollama model used thinking despite /no_think — thinking tokens consumed output budget');
+            }
+
             return data.response;
         }, {
             context: 'ollama-generation',
