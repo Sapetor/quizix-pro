@@ -150,15 +150,20 @@ export class AIQuestionValidator {
             logger.debug('Fixed single-quote JSON delimiters');
         }
 
-        // Fix LaTeX commands that collide with JSON escape sequences:
+        // Fix LaTeX backslashes that collide with JSON escape sequences.
+        // Strategy: preserve already-valid \\ pairs first, fix lone backslashes, restore.
+        const BS_PLACEHOLDER = '\x00BS\x00';
+        fixed = fixed.replace(/\\\\/g, BS_PLACEHOLDER);
+
         // \b(ar), \f(rac), \n(eq), \r(ight), \t(ext) — when followed by a letter,
-        // these are LaTeX, not JSON control characters. Double-escape them first.
+        // these are LaTeX, not JSON control characters. Double-escape them.
         fixed = fixed.replace(/\\([bfnrt])(?=[a-zA-Z])/g, '\\\\$1');
 
-        // Fix invalid JSON escape sequences (common with LaTeX like \frac, \int, \sqrt)
-        // Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
-        // Replace invalid \X sequences with \\X (double-escape for JSON)
+        // Any remaining \X where X is not a valid JSON escape char → double-escape
         fixed = fixed.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+
+        // Restore preserved \\ pairs
+        fixed = fixed.replace(/\x00BS\x00/g, '\\\\');
 
         // Fix missing quotes around property names
         fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
@@ -342,6 +347,9 @@ export class AIQuestionValidator {
         if (!question.question) issues.push('missing "question" text');
         if (!question.type) issues.push('missing "type"');
         if (issues.length > 0) return { valid: false, question, issues };
+
+        // 1.5. Normalize double-escaped LaTeX (\\begin → \begin, etc.)
+        this._normalizeLatexFields(question);
 
         // 2. Normalize type: lowercase, underscores/spaces → hyphens
         question.type = question.type.toLowerCase().replace(/[\s_]+/g, '-');
@@ -551,6 +559,29 @@ export class AIQuestionValidator {
         }
 
         return warnings;
+    }
+
+    /**
+     * Normalize double-escaped LaTeX commands in all text fields of a question.
+     * Models (especially Qwen) sometimes output \\begin instead of \begin,
+     * causing KaTeX "Misplaced &" errors in matrix environments.
+     * @param {Object} question - Question object (mutated in place)
+     */
+    _normalizeLatexFields(question) {
+        const fix = (text) => {
+            if (!text || typeof text !== 'string') return text;
+            // \\commandname → \commandname (2+ letters = LaTeX command, not row separator)
+            return text.replace(/\\\\([a-zA-Z]{2,})/g, '\\$1');
+        };
+
+        if (question.question) question.question = fix(question.question);
+        if (question.explanation) question.explanation = fix(question.explanation);
+        if (Array.isArray(question.options)) {
+            question.options = question.options.map(opt => typeof opt === 'string' ? fix(opt) : opt);
+        }
+        if (typeof question.correctAnswer === 'string') {
+            question.correctAnswer = fix(question.correctAnswer);
+        }
     }
 }
 
