@@ -733,7 +733,7 @@ export default {
 
     // Ollama-specific
     ollama_not_running: 'El servidor Ollama no está ejecutándose. Por favor inicia Ollama e intenta de nuevo.',
-    ollama_connection_error: 'No se puede conectar a Ollama. Asegúrate de que Ollama esté ejecutándose en localhost:11434',
+    ollama_connection_error: 'No se puede conectar a Ollama. Asegúrate de que el servidor Ollama esté configurado y en ejecución.',
     ollama_not_available: 'Ollama no disponible',
     ollama_loading_models: 'Cargando modelos...',
     ollama_no_models: 'No se encontraron modelos',

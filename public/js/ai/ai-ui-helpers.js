@@ -379,7 +379,7 @@ export class AIUIHelpers {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-                const response = await fetch(AI.OLLAMA_TAGS_ENDPOINT, {
+                const response = await fetch(APIHelper.getApiUrl('api/ollama/models'), {
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);

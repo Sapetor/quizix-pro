@@ -108,6 +108,7 @@ function createAIGenerationRoutes(options) {
 
     const byokLimiter = createRateLimiter(10);
     const urlLimiter = createRateLimiter(5);
+    const ollamaLimiter = createRateLimiter(20);
 
     // ==================== SSRF PROTECTION ====================
     // Check if an IP address is private (SSRF protection)
@@ -171,6 +172,75 @@ function createAIGenerationRoutes(options) {
         } catch (error) {
             logger.error('Ollama models fetch error:', error);
             res.status(500).json({ error: 'Failed to connect to Ollama', messageKey: 'error_ollama_connect' });
+        }
+    });
+
+    // Ollama generate proxy endpoint - forwards generation requests to Ollama server
+    router.post('/ollama/generate', async (req, res) => {
+        try {
+            const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+            const rateCheck = ollamaLimiter.check(clientIP);
+
+            if (!rateCheck.allowed) {
+                logger.warn(`Ollama rate limit exceeded for IP: ${clientIP}`);
+                return res.status(429).json({
+                    error: 'Rate limit exceeded',
+                    messageKey: 'error_rate_limited',
+                    message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
+                    retryAfter: rateCheck.retryAfter
+                });
+            }
+
+            res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
+
+            const { model, prompt, stream, options } = req.body;
+
+            if (!model || !prompt) {
+                return res.status(400).json({ error: 'model and prompt are required', messageKey: 'error_invalid_request' });
+            }
+
+            const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model, prompt, stream: stream ?? false, options })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                logger.error('Ollama generate error:', response.status);
+                return res.status(response.status).json({
+                    error: `Ollama error: ${response.status}`,
+                    messageKey: 'error_ollama_generate',
+                    details: isProduction ? undefined : errorText
+                });
+            }
+
+            const data = await response.json();
+            res.json(data);
+        } catch (error) {
+            logger.error('Ollama generate proxy error:', error.message);
+            res.status(500).json({
+                error: 'Failed to connect to Ollama',
+                messageKey: 'error_ollama_connect',
+                details: isProduction ? undefined : error.message
+            });
+        }
+    });
+
+    // Ollama health check endpoint
+    router.get('/ollama/health', async (req, res) => {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+            const response = await fetch(`${OLLAMA_URL}/api/tags`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            res.json({ running: response.ok });
+        } catch {
+            res.json({ running: false });
         }
     });
 
@@ -719,7 +789,7 @@ function createAIGenerationRoutes(options) {
     });
 
     // Cleanup intervals on router destruction (prevents memory leaks)
-    router._cleanupIntervals = [byokLimiter.cleanupInterval, urlLimiter.cleanupInterval];
+    router._cleanupIntervals = [byokLimiter.cleanupInterval, urlLimiter.cleanupInterval, ollamaLimiter.cleanupInterval];
 
     return router;
 }

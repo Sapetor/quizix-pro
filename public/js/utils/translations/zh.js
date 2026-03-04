@@ -711,7 +711,7 @@ export default {
 
     // Ollama-specific
     ollama_not_running: 'Ollama服务器未运行。请启动Ollama并重试。',
-    ollama_connection_error: '无法连接到Ollama。请确保Ollama正在localhost:11434上运行',
+    ollama_connection_error: '无法连接到Ollama。请确保Ollama服务器已配置并正在运行。',
     ollama_not_available: 'Ollama不可用',
     ollama_loading_models: '正在加载模型...',
     ollama_no_models: '未找到模型',

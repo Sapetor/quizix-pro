@@ -18,7 +18,7 @@ const PROVIDERS = {
     ollama: {
         name: 'Ollama (Local)',
         apiKey: false,
-        endpoint: AI.OLLAMA_ENDPOINT,
+        endpoint: 'api/ollama/generate',
         models: ['llama3.2:latest', 'codellama:13b-instruct', 'codellama:7b-instruct', 'codellama:7b-code']
     },
     openai: {
@@ -174,7 +174,7 @@ export class AIProviderService {
             // Enhanced prompt specifically for Ollama
             const enhancedPrompt = buildOllamaEnhancedPrompt(prompt);
 
-            const response = await fetch(AI.OLLAMA_ENDPOINT, {
+            const response = await fetch(APIHelper.getApiUrl('api/ollama/generate'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -193,8 +193,6 @@ export class AIProviderService {
             if (!response.ok) {
                 if (response.status === 404) {
                     throw new Error('Ollama server not running. Please start Ollama and try again.');
-                } else if (response.status === 0) {
-                    throw new Error('Cannot connect to Ollama. Make sure Ollama is running on localhost:11434');
                 } else {
                     throw new Error(`Ollama error: ${response.status} - ${response.statusText}`);
                 }
@@ -204,7 +202,7 @@ export class AIProviderService {
             return data.response;
         }, {
             context: 'ollama-generation',
-            userMessage: 'Failed to generate questions with Ollama. Please ensure Ollama is running and try again.',
+            userMessage: 'Failed to generate questions with Ollama. Please ensure the Ollama server is configured and running.',
             retryable: true
         });
     }
@@ -421,7 +419,7 @@ export class AIProviderService {
      */
     async loadOllamaModels() {
         return await errorHandler.safeNetworkOperation(async () => {
-            const response = await fetch(`${AI.OLLAMA_ENDPOINT.replace('/api/generate', '/api/tags')}`);
+            const response = await fetch(APIHelper.getApiUrl('api/ollama/models'));
 
             if (!response.ok) {
                 if (response.status === 404 || response.status === 0) {
@@ -450,11 +448,12 @@ export class AIProviderService {
      */
     async isOllamaRunning() {
         try {
-            const response = await fetch(`${AI.OLLAMA_ENDPOINT.replace('/api/generate', '/api/tags')}`, {
-                method: 'GET',
+            const response = await fetch(APIHelper.getApiUrl('api/ollama/health'), {
                 signal: AbortSignal.timeout(3000)
             });
-            return response.ok;
+            if (!response.ok) return false;
+            const data = await response.json();
+            return data.running === true;
         } catch {
             return false;
         }

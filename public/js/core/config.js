@@ -298,9 +298,7 @@ export const AI = {
     DEFAULT_QUESTION_COUNT: 1,
     DEFAULT_TEMPERATURE: 0.7,
 
-    // API endpoints and models (configurable for K8s/Docker deployments)
-    OLLAMA_ENDPOINT: window.QUIZIX_CONFIG?.OLLAMA_ENDPOINT || 'http://localhost:11434/api/generate',
-    OLLAMA_TAGS_ENDPOINT: window.QUIZIX_CONFIG?.OLLAMA_TAGS_ENDPOINT || 'http://localhost:11434/api/tags',
+    // Models (Ollama calls are proxied through the server via /api/ollama/* routes)
     OLLAMA_DEFAULT_MODEL: 'llama3.2:latest',
     OPENAI_MODEL: 'gpt-4o-mini',
     GEMINI_MODEL: 'gemini-2.5-flash',

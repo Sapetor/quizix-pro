@@ -716,7 +716,7 @@ export default {
 
     // Ollama-specific
     ollama_not_running: 'Serwer Ollama nie jest uruchomiony. Uruchom Ollama i spróbuj ponownie.',
-    ollama_connection_error: 'Nie można połączyć się z Ollama. Upewnij się, że Ollama działa na localhost:11434',
+    ollama_connection_error: 'Nie można połączyć się z Ollama. Upewnij się, że serwer Ollama jest skonfigurowany i uruchomiony.',
     ollama_not_available: 'Ollama niedostępna',
     ollama_loading_models: 'Ładowanie modeli...',
     ollama_no_models: 'Nie znaleziono modeli',

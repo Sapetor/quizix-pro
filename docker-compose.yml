@@ -10,6 +10,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - BASE_PATH=/
+      - OLLAMA_URL=http://SapTop.local:11434
     volumes:
       - quizzes-data:/app/quizzes
       - results-data:/app/results

@@ -713,7 +713,7 @@ export default {
 
     // Ollama-specific
     ollama_not_running: 'Ollamaサーバーが実行されていません。Ollamaを起動して再試行してください。',
-    ollama_connection_error: 'Ollamaに接続できません。Ollamaがlocalhost:11434で実行されていることを確認してください',
+    ollama_connection_error: 'Ollamaに接続できません。Ollamaサーバーが設定され、実行されていることを確認してください。',
     ollama_not_available: 'Ollamaは利用できません',
     ollama_loading_models: 'モデルを読み込み中...',
     ollama_no_models: 'モデルが見つかりません',

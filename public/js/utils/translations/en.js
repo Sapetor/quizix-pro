@@ -570,7 +570,7 @@ export default {
 
     // AI Generator error messages
     ollama_not_running: 'Ollama server not running. Please start Ollama and try again.',
-    ollama_connection_error: 'Cannot connect to Ollama. Make sure Ollama is running on localhost:11434',
+    ollama_connection_error: 'Cannot connect to Ollama. Please ensure the Ollama server is configured and running.',
     ollama_not_available: 'Ollama not available',
     ollama_loading_models: 'Loading models...',
     ollama_no_models: 'No models found',

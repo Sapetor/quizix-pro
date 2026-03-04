@@ -4,7 +4,7 @@
  * Independent AI provider/model config from the question generator.
  */
 
-import { logger, AI } from '../core/config.js';
+import { logger } from '../core/config.js';
 import { secureStorage } from '../services/secure-storage-service.js';
 import { aiProviderService } from '../ai/ai-provider-service.js';
 import { APIHelper } from '../utils/api-helper.js';
@@ -177,7 +177,7 @@ class ManimAIGenerator {
      * @returns {Promise<string>}
      */
     async _generateWithOllama(prompt, model) {
-        const response = await fetch(AI.OLLAMA_ENDPOINT, {
+        const response = await fetch(APIHelper.getApiUrl('api/ollama/generate'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
