@@ -428,8 +428,7 @@ function createAIGenerationRoutes(options) {
                 ],
                 generationConfig: {
                     temperature: 0.7,
-                    maxOutputTokens: calculatedMaxTokens,
-                    responseMimeType: 'application/json'
+                    maxOutputTokens: calculatedMaxTokens
                 }
             };
 
@@ -737,8 +736,7 @@ function createAIGenerationRoutes(options) {
                     ],
                     generationConfig: {
                         temperature: 0.7,
-                        maxOutputTokens: maxTokens,
-                        responseMimeType: 'application/json'
+                        maxOutputTokens: maxTokens
                     }
                 };
 
