@@ -3109,46 +3109,47 @@ class GraphScene(Scene):
             window.addEventListener('load', () => {
                 const basePath = document.querySelector('base')?.getAttribute('href') || '/';
                 const swPath = basePath + 'sw.js';
-                const SW_VERSION = 'v20260304-bypass-http-cache';
+                const SW_VERSION = 'v20260304-2';
                 const storedVersion = localStorage.getItem('quizix-sw-version');
 
-                // If there's an existing SW with a different version, nuke it and reload
-                if (navigator.serviceWorker.controller && storedVersion !== SW_VERSION) {
-                    console.log('[App] Stale service worker detected, cleaning up...');
-                    navigator.serviceWorker.getRegistrations().then(regs => {
-                        return Promise.all(regs.map(r => r.unregister()));
-                    }).then(() => {
-                        return caches.keys();
-                    }).then(names => {
-                        return Promise.all(names.map(n => caches.delete(n)));
-                    }).then(() => {
-                        localStorage.setItem('quizix-sw-version', SW_VERSION);
-                        console.log('[App] Cleanup done, reloading...');
-                        window.location.reload();
-                    });
-                    return;
-                }
-
-                localStorage.setItem('quizix-sw-version', SW_VERSION);
-
-                // Reload once when a new service worker takes control
-                let refreshing = false;
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (refreshing) return;
-                    refreshing = true;
-                    console.log('[App] New service worker activated, reloading for fresh content...');
-                    window.location.reload();
+                // Detect stale SWs - check registrations (not just controller,
+                // because hard refresh sets controller to null while SW stays registered)
+                navigator.serviceWorker.getRegistrations().then(regs => {
+                    if (regs.length > 0 && storedVersion !== SW_VERSION) {
+                        console.log('[App] Stale service worker detected, cleaning up...');
+                        return Promise.all(regs.map(r => r.unregister()))
+                            .then(() => caches.keys())
+                            .then(names => Promise.all(names.map(n => caches.delete(n))))
+                            .then(() => {
+                                localStorage.setItem('quizix-sw-version', SW_VERSION);
+                                console.log('[App] Cleanup done, reloading...');
+                                window.location.reload();
+                            });
+                    }
+                    localStorage.setItem('quizix-sw-version', SW_VERSION);
+                    registerServiceWorker();
                 });
 
-                navigator.serviceWorker.register(swPath, { scope: basePath, updateViaCache: 'none' })
-                    .then((registration) => {
-                        console.log('[App] Service Worker registered with scope:', registration.scope);
-                        setInterval(() => { registration.update(); }, 60 * 60 * 1000);
-                        registration.update();
-                    })
-                    .catch((error) => {
-                        console.warn('[App] Service Worker registration failed:', error);
+                function registerServiceWorker() {
+                    // Reload once when a new service worker takes control
+                    let refreshing = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (refreshing) return;
+                        refreshing = true;
+                        console.log('[App] New service worker activated, reloading for fresh content...');
+                        window.location.reload();
                     });
+
+                    navigator.serviceWorker.register(swPath, { scope: basePath, updateViaCache: 'none' })
+                        .then((registration) => {
+                            console.log('[App] Service Worker registered with scope:', registration.scope);
+                            setInterval(() => { registration.update(); }, 60 * 60 * 1000);
+                            registration.update();
+                        })
+                        .catch((error) => {
+                            console.warn('[App] Service Worker registration failed:', error);
+                        });
+                }
             });
         }
     </script>
