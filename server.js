@@ -285,6 +285,12 @@ app.use('/debug', express.static('debug', createDebugStaticConfig()));
     logger.debug('Required directories verified');
 })();
 
+// Cache-busting version stamp — changes on each server start so browsers
+// fetch fresh JS/CSS even if their HTTP cache has stale copies from a
+// previous deployment with long max-age headers.
+const ASSET_VERSION = Date.now().toString(36);
+logger.info(`Asset cache-bust version: ${ASSET_VERSION}`);
+
 // Dynamic index.html serving with environment-specific base path
 // This route serves index.html with the correct <base> tag for the environment
 const serveIndexHtml = (req, res) => {
@@ -297,10 +303,13 @@ const serveIndexHtml = (req, res) => {
         }
 
         // Replace the base href with the environment-specific value
-        const modifiedHtml = data.replace(
+        let modifiedHtml = data.replace(
             /<base href="[^"]*">/,
             `<base href="${BASE_PATH}">`
         );
+
+        // Replace static ?v=NN cache-bust params with dynamic server-start version
+        modifiedHtml = modifiedHtml.replace(/\?v=\d+/g, `?v=${ASSET_VERSION}`);
 
         logger.debug(`Serving index.html with base path: ${BASE_PATH}`);
 
@@ -309,10 +318,6 @@ const serveIndexHtml = (req, res) => {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
-        // Force browser to clear its HTTP cache for this origin (one-time migration
-        // from long max-age to short max-age). Safe to leave permanently — only
-        // clears the network cache, not storage or cookies.
-        res.setHeader('Clear-Site-Data', '"cache"');
         res.send(modifiedHtml);
     });
 };
