@@ -262,6 +262,28 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Conditional caching based on environment
 app.use(createCacheControlMiddleware(isProduction));
 
+// Cache-busting version stamp — changes on each server start so browsers
+// detect a new service worker and fetch fresh JS/CSS.
+const ASSET_VERSION = Date.now().toString(36);
+logger.info(`Asset cache-bust version: ${ASSET_VERSION}`);
+
+// Dynamic sw.js route — injects ASSET_VERSION into CACHE_VERSION so browsers
+// detect a new service worker on every server restart, triggering cache purge.
+// Must be defined BEFORE express.static so it takes priority.
+app.get('/sw.js', (req, res) => {
+    const swPath = path.join(__dirname, 'public', 'sw.js');
+    fs.readFile(swPath, 'utf8', (err, data) => {
+        if (err) {
+            logger.error('Error reading sw.js:', err);
+            return res.status(500).send('Error loading service worker');
+        }
+        const modifiedSw = data.replace(/__CACHE_VERSION__/g, ASSET_VERSION);
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        res.send(modifiedSw);
+    });
+});
+
 // Static file serving with mobile-optimized caching headers and proper MIME types
 // NOTE: Serve from root - Kubernetes Ingress strips the base path before forwarding
 // Only the <base> tag in HTML uses the full path
@@ -285,12 +307,6 @@ app.use('/debug', express.static('debug', createDebugStaticConfig()));
     logger.debug('Required directories verified');
 })();
 
-// Cache-busting version stamp — changes on each server start so browsers
-// fetch fresh JS/CSS even if their HTTP cache has stale copies from a
-// previous deployment with long max-age headers.
-const ASSET_VERSION = Date.now().toString(36);
-logger.info(`Asset cache-bust version: ${ASSET_VERSION}`);
-
 // Dynamic index.html serving with environment-specific base path
 // This route serves index.html with the correct <base> tag for the environment
 const serveIndexHtml = (req, res) => {
@@ -310,6 +326,9 @@ const serveIndexHtml = (req, res) => {
 
         // Replace static ?v=NN cache-bust params with dynamic server-start version
         modifiedHtml = modifiedHtml.replace(/\?v=\d+/g, `?v=${ASSET_VERSION}`);
+
+        // Inject dynamic SW_VERSION so stale SW detection fires on every server restart
+        modifiedHtml = modifiedHtml.replace(/__SW_VERSION__/g, ASSET_VERSION);
 
         logger.debug(`Serving index.html with base path: ${BASE_PATH}`);
 

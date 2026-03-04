@@ -8,9 +8,9 @@
  * - Network-only for API calls, Socket.IO, and user uploads
  */
 
-// IMPORTANT: Update this version when deploying new code to force cache refresh
-// Format: YYYYMMDD-HHMM or use a build hash
-const CACHE_VERSION = 'v20260304-bypass-http-cache';
+// IMPORTANT: This placeholder is replaced by the server with a dynamic version
+// on each server start, ensuring browsers always detect SW updates.
+const CACHE_VERSION = '__CACHE_VERSION__';
 const CACHE_NAME = `quizix-static-${CACHE_VERSION}`;
 const OFFLINE_CACHE_NAME = 'quizix-offline-data';
 

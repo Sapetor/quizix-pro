@@ -3109,7 +3109,7 @@ class GraphScene(Scene):
             window.addEventListener('load', () => {
                 const basePath = document.querySelector('base')?.getAttribute('href') || '/';
                 const swPath = basePath + 'sw.js';
-                const SW_VERSION = 'v20260304-2';
+                const SW_VERSION = '__SW_VERSION__';
                 const storedVersion = localStorage.getItem('quizix-sw-version');
 
                 // Detect stale SWs - check registrations (not just controller,
