@@ -185,7 +185,8 @@ export class AIProviderService {
                     stream: false,
                     options: {
                         temperature: AI.DEFAULT_TEMPERATURE,
-                        seed: randomSeed
+                        seed: randomSeed,
+                        num_predict: 16384
                     }
                 })
             });

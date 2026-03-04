@@ -445,5 +445,5 @@ OLLAMA SPECIFIC REQUIREMENTS:
 - If you cannot think of 4 good options, create plausible distractors related to the content
 - Example: "options": ["Correct answer", "Related but wrong", "Plausible distractor", "Another distractor"]
 
-Please respond with only valid JSON. Do not include explanations or additional text.`;
+Please respond with only valid JSON. Do not include explanations or additional text. /no_think`;
 }

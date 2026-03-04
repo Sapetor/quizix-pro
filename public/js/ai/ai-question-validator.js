@@ -32,6 +32,9 @@ export class AIQuestionValidator {
         try {
             let cleanText = responseText.trim();
 
+            // Strip thinking model output (Qwen 3.x, QwQ, etc. wrap reasoning in <think> tags)
+            cleanText = cleanText.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
             // Remove common code comments
             cleanText = cleanText.replace(/^\/\/[^\n]*\n?/gm, ''); // // comments
             cleanText = cleanText.replace(/^\/\*[\s\S]*?\*\/\n?/gm, ''); // /* */ comments
