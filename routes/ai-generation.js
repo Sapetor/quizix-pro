@@ -432,11 +432,16 @@ function createAIGenerationRoutes(options) {
                 }
             };
 
-            // For thinking models (2.5+, 3.x), set thinking budget so it doesn't
-            // squeeze output token space. thinkingConfig is silently ignored by
-            // non-thinking models.
-            const isThinkingModel = /gemini-(2\.5|3[.-])/.test(selectedModel);
-            if (isThinkingModel) {
+            // For thinking models (2.5+, 3.x), constrain thinking so it doesn't
+            // squeeze output token space. Gemini 2.5 uses thinkingBudget (int),
+            // Gemini 3.x uses thinkingLevel (string). Cannot mix them.
+            const isGemini3 = /gemini-3/.test(selectedModel);
+            const isGemini25 = /gemini-2\.5/.test(selectedModel);
+            if (isGemini3) {
+                requestBody.generationConfig.thinkingConfig = {
+                    thinkingLevel: 'low'
+                };
+            } else if (isGemini25) {
                 requestBody.generationConfig.thinkingConfig = {
                     thinkingBudget: 2048
                 };

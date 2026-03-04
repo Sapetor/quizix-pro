@@ -212,6 +212,11 @@ export class AIQuestionValidator {
         let escape = false;
         let start = -1;
 
+        // If text is wrapped in [...], question objects live at depth 1.
+        // If text is bare {}{}, they live at depth 0.
+        const isArray = text.trimStart()[0] === '[';
+        const objectDepth = isArray ? 1 : 0;
+
         for (let i = 0; i < text.length; i++) {
             const ch = text[i];
 
@@ -220,19 +225,14 @@ export class AIQuestionValidator {
             if (ch === '"') { inString = !inString; continue; }
             if (inString) continue;
 
-            if (ch === '{') {
-                if (depth === 0 || (depth === 1 && start === -1)) {
-                    // Track outermost objects (depth 1 inside the root array, or depth 0 if no array)
-                    if (depth === 0 && text.trimStart()[0] === '[') {
-                        depth++;
-                        continue;
-                    }
+            if (ch === '{' || ch === '[') {
+                if (ch === '{' && depth === objectDepth && start === -1) {
                     start = i;
                 }
                 depth++;
-            } else if (ch === '}') {
+            } else if (ch === '}' || ch === ']') {
                 depth--;
-                if (depth <= 1 && start !== -1) {
+                if (ch === '}' && depth === objectDepth && start !== -1) {
                     const obj = text.substring(start, i + 1);
                     if (obj.includes('"question"') && obj.includes('"type"')) {
                         objects.push(obj);
