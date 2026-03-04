@@ -75,6 +75,37 @@ function createAIGenerationRoutes(options) {
         return { check, cleanupInterval };
     }
 
+    // ==================== DYNAMIC SYSTEM PROMPT ====================
+
+    /**
+     * Build a system prompt for AI quiz generation based on content flags.
+     * When contentFlags is null (old client or unknown content), include ALL rules
+     * for backward compatibility. When flags are provided, include only relevant rules.
+     * @param {Object|null} contentFlags - { needsLatex, needsCodeBlocks, language }
+     * @returns {string} System prompt
+     */
+    function buildSystemPrompt(contentFlags) {
+        const parts = ['You are a quiz question generator.'];
+
+        // Always include JSON output rule
+        parts.push('OUTPUT FORMAT: Always output valid JSON arrays starting with [ and ending with ].');
+
+        const includeAll = !contentFlags;
+        const needsLatex = includeAll || contentFlags?.needsLatex;
+        const needsCode = includeAll || contentFlags?.needsCodeBlocks;
+
+        if (needsLatex) {
+            parts.push('MATHEMATICAL EXPRESSIONS: For ALL mathematical expressions, equations, formulas, or symbols, you MUST use LaTeX syntax wrapped in $ or $$ delimiters. Examples: inline math like $E = mc^2$ or $\\frac{x+1}{2}$, display math like $$\\int_0^\\infty e^{-x} dx = 1$$. NEVER output math as plain text.');
+        }
+
+        if (needsCode) {
+            const langHint = contentFlags?.language ? ` Primary language: ${contentFlags.language}.` : '';
+            parts.push(`CODE SNIPPETS: For ALL code snippets, you MUST use markdown code blocks with language specification. Format: \`\`\`language\\ncode here\\n\`\`\`. Use inline code \`like this\` for variable names, function names, and keywords. NEVER output code as plain text.${langHint}`);
+        }
+
+        return parts.join('\n\n');
+    }
+
     const byokLimiter = createRateLimiter(10);
     const urlLimiter = createRateLimiter(5);
 
@@ -151,7 +182,7 @@ function createAIGenerationRoutes(options) {
     // 2. BYOK (Bring Your Own Key): Client provides key in request body
     router.post('/claude/generate', validateBody(claudeGenerateSchema), async (req, res) => {
         try {
-            const { prompt, apiKey: clientApiKey, numQuestions, model } = req.validatedBody;
+            const { prompt, apiKey: clientApiKey, numQuestions, model, contentFlags } = req.validatedBody;
 
             // Use server-side API key if available, otherwise require client key
             const serverApiKey = process.env.CLAUDE_API_KEY;
@@ -197,7 +228,7 @@ function createAIGenerationRoutes(options) {
             const requestBody = {
                 model: selectedModel,
                 max_tokens: calculatedMaxTokens,
-                system: 'You are a quiz question generator. CRITICAL FORMATTING RULES:\n\n1. MATHEMATICAL EXPRESSIONS: For ALL mathematical expressions, equations, formulas, or symbols, you MUST use LaTeX syntax wrapped in $ or $$ delimiters. Examples: inline math like $E = mc^2$ or $\\frac{x+1}{2}$, display math like $$\\int_0^\\infty e^{-x} dx = 1$$. NEVER output math as plain text.\n\n2. CODE SNIPPETS: For ALL code snippets, you MUST use markdown code blocks with language specification. Format: ```language\\ncode here\\n```. Examples: ```python\\nprint("hello")\\n```, ```javascript\\nconst x = 5;\\n```. Use inline code `like this` for variable names, function names, and keywords. NEVER output code as plain text.\n\n3. OUTPUT FORMAT: Always output valid JSON arrays starting with [ and ending with ].',
+                system: buildSystemPrompt(contentFlags || null),
                 messages: [
                     {
                         role: 'user',
@@ -264,7 +295,7 @@ function createAIGenerationRoutes(options) {
     // 2. BYOK (Bring Your Own Key): Client provides key in request body
     router.post('/gemini/generate', validateBody(geminiGenerateSchema), async (req, res) => {
         try {
-            const { prompt, apiKey: clientApiKey, numQuestions, model } = req.validatedBody;
+            const { prompt, apiKey: clientApiKey, numQuestions, model, contentFlags } = req.validatedBody;
 
             // Use server-side API key if available, otherwise require client key
             const serverApiKey = process.env.GEMINI_API_KEY;
@@ -312,7 +343,7 @@ function createAIGenerationRoutes(options) {
                 systemInstruction: {
                     parts: [
                         {
-                            text: 'You are a quiz question generator. CRITICAL FORMATTING RULES:\n\n1. MATHEMATICAL EXPRESSIONS: For ALL mathematical expressions, equations, formulas, or symbols, you MUST use LaTeX syntax wrapped in $ or $$ delimiters. Examples: inline math like $E = mc^2$ or $\\frac{x+1}{2}$, display math like $$\\int_0^\\infty e^{-x} dx = 1$$. NEVER output math as plain text.\n\n2. CODE SNIPPETS: For ALL code snippets, you MUST use markdown code blocks with language specification. Format: ```language\\ncode here\\n```. Examples: ```python\\nprint("hello")\\n```, ```javascript\\nconst x = 5;\\n```. Use inline code `like this` for variable names, function names, and keywords. NEVER output code as plain text.\n\n3. OUTPUT FORMAT: Always output valid JSON arrays starting with [ and ending with ].'
+                            text: buildSystemPrompt(contentFlags || null)
                         }
                     ]
                 },
@@ -327,7 +358,8 @@ function createAIGenerationRoutes(options) {
                 ],
                 generationConfig: {
                     temperature: 0.7,
-                    maxOutputTokens: calculatedMaxTokens
+                    maxOutputTokens: calculatedMaxTokens,
+                    responseMimeType: 'application/json'
                 }
             };
 
@@ -635,7 +667,8 @@ function createAIGenerationRoutes(options) {
                     ],
                     generationConfig: {
                         temperature: 0.7,
-                        maxOutputTokens: maxTokens
+                        maxOutputTokens: maxTokens,
+                        responseMimeType: 'application/json'
                     }
                 };
 

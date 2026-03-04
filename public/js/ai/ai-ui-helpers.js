@@ -14,6 +14,7 @@ import { getItem, setItem } from '../utils/storage-utils.js';
 import { dom } from '../utils/dom.js';
 
 // Import extracted services
+import { aiProviderService } from './ai-provider-service.js';
 import { excelQuestionParser } from './excel-question-parser.js';
 
 // Import language names from prompts
@@ -304,7 +305,7 @@ export class AIUIHelpers {
                 if (!apiKeySection || !modelSelection) return;
 
                 // Show/hide API key section based on provider requirements
-                const needsApiKey = this.generator.providers[provider]?.apiKey;
+                const needsApiKey = aiProviderService.requiresApiKey(provider);
                 if (needsApiKey) {
                     apiKeySection.classList.remove('hidden');
                     const apiKeyInput = dom.get('ai-api-key');
@@ -429,7 +430,7 @@ export class AIUIHelpers {
                 const modelSelect = dom.get('ollama-model');
                 if (!modelSelect) return;
 
-                const fallbackModels = this.generator.providers.ollama.models;
+                const fallbackModels = aiProviderService.getProviderFallbackModels('ollama');
                 if (fallbackModels && fallbackModels.length > 0) {
                     modelSelect.innerHTML = '';
                     fallbackModels.forEach(modelName => {

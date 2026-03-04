@@ -12,6 +12,7 @@ import { APIHelper } from '../utils/api-helper.js';
 import { toastNotifications } from '../utils/toast-notifications.js';
 import { openModal, closeModal } from '../utils/modal-utils.js';
 import { dom } from '../utils/dom.js';
+import { aiQuestionValidator } from './ai-question-validator.js';
 
 // Import prompt templates
 import { buildSingleQuestionPrompt } from './prompts.js';
@@ -124,74 +125,16 @@ export class AIQuestionPreview {
      * @param {Array} questions - Array of generated question objects
      */
     showQuestionPreview(questions) {
-        // Filter out malformed questions (missing required fields) with detailed logging
+        // Validate and auto-fix all questions via consolidated validator
         const validQuestions = [];
         const malformedQuestions = [];
 
         questions.forEach((q, i) => {
-            const issues = [];
-            if (!q) issues.push('question is null/undefined');
-            else {
-                if (!q.question) issues.push('missing "question" text');
-                if (!q.type) issues.push('missing "type"');
-
-                // Only check for options on question types that require them
-                const typesRequiringOptions = ['multiple-choice', 'multiple-correct', 'true-false', 'ordering'];
-                if (typesRequiringOptions.includes(q.type)) {
-                    if (!Array.isArray(q.options)) issues.push('missing or invalid "options" array');
-                    else if (q.options.length === 0) issues.push('"options" array is empty');
-                }
-
-                // Auto-fix: multiple-correct with correctAnswer instead of correctAnswers
-                if (q.type === 'multiple-correct' && q.correctAnswer !== undefined && !q.correctAnswers) {
-                    logger.debug(`Auto-fixing question ${i + 1}: converting correctAnswer to correctAnswers array`);
-                    q.correctAnswers = Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswer];
-                    delete q.correctAnswer;
-                }
-
-                // Auto-fix: correctAnswers might be letters ["A", "C"] instead of indices [0, 2]
-                if (q.type === 'multiple-correct' && Array.isArray(q.correctAnswers) && q.correctAnswers.length > 0) {
-                    const firstAnswer = q.correctAnswers[0];
-                    if (typeof firstAnswer === 'string' && /^[A-Fa-f]$/.test(firstAnswer)) {
-                        logger.debug(`Auto-fixing question ${i + 1}: converting letter answers to indices`);
-                        q.correctAnswers = q.correctAnswers.map(letter =>
-                            letter.toUpperCase().charCodeAt(0) - 65
-                        );
-                    }
-                }
-
-                // Auto-fix: multiple-choice correctAnswer might be letter "A" instead of index 0
-                if ((q.type === 'multiple-choice' || q.type === 'true-false') &&
-                    typeof q.correctAnswer === 'string' && /^[A-Fa-f]$/.test(q.correctAnswer)) {
-                    logger.debug(`Auto-fixing question ${i + 1}: converting letter answer "${q.correctAnswer}" to index`);
-                    q.correctAnswer = q.correctAnswer.toUpperCase().charCodeAt(0) - 65;
-                }
-
-                // Validate correct answer based on question type
-                if (q.type === 'multiple-choice') {
-                    if (q.correctAnswer === undefined) {
-                        issues.push('missing "correctAnswer" for multiple-choice');
-                    }
-                } else if (q.type === 'true-false') {
-                    // true-false can have correctAnswer as number (0/1) or string ("true"/"false")
-                    if (q.correctAnswer === undefined) {
-                        issues.push('missing "correctAnswer" for true-false');
-                    }
-                } else if (q.type === 'multiple-correct') {
-                    if (!Array.isArray(q.correctAnswers) || q.correctAnswers.length === 0) {
-                        issues.push('missing or empty "correctAnswers" array for multiple-correct');
-                    }
-                } else if (q.type === 'numeric') {
-                    if (q.correctAnswer === undefined) {
-                        issues.push('missing "correctAnswer" for numeric');
-                    }
-                }
-            }
-
-            if (issues.length === 0) {
-                validQuestions.push(q);
+            const result = aiQuestionValidator.validateAndFixQuestion(q);
+            if (result.valid) {
+                validQuestions.push(result.question);
             } else {
-                malformedQuestions.push({ index: i, issues, data: q });
+                malformedQuestions.push({ index: i, issues: result.issues, data: q });
             }
         });
 
@@ -257,6 +200,24 @@ export class AIQuestionPreview {
         // Build options HTML and full card using template functions
         const optionsHtml = buildOptionsHtml(question);
         div.innerHTML = buildQuestionCardHtml(question, index, optionsHtml);
+
+        // Add formatting compliance warning badges
+        const contentInfo = this.generator.lastContentInfo;
+        if (contentInfo) {
+            const complianceWarnings = aiQuestionValidator.checkFormattingCompliance(question, contentInfo);
+            if (complianceWarnings.length > 0) {
+                const badgesContainer = div.querySelector('.ai-preview-badges');
+                if (badgesContainer) {
+                    complianceWarnings.forEach(warning => {
+                        const badge = document.createElement('span');
+                        badge.className = 'ai-format-warning-badge';
+                        badge.textContent = warning;
+                        badge.title = 'Expected formatting not detected in this question';
+                        badgesContainer.appendChild(badge);
+                    });
+                }
+            }
+        }
 
         // Add click handler for checkbox
         const checkbox = div.querySelector('input[type="checkbox"]');

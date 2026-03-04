@@ -119,18 +119,26 @@ const saveQuizSchema = z.object({
 // AI Generation Schemas
 // ============================================================================
 
+const contentFlagsSchema = z.object({
+    needsLatex: z.boolean().optional().default(false),
+    needsCodeBlocks: z.boolean().optional().default(false),
+    language: z.string().nullable().optional().default(null)
+}).optional().nullable();
+
 const claudeGenerateSchema = z.object({
     prompt: z.string().min(10, 'Prompt must be at least 10 characters'),
     apiKey: z.string().optional(),
     numQuestions: z.number().int().min(1).max(50).optional().default(5),
-    model: z.string().optional().default('claude-sonnet-4-5')
+    model: z.string().optional().default('claude-sonnet-4-5'),
+    contentFlags: contentFlagsSchema
 });
 
 const geminiGenerateSchema = z.object({
     prompt: z.string().min(10, 'Prompt must be at least 10 characters'),
     apiKey: z.string().optional(),
     numQuestions: z.number().int().min(1).max(50).optional().default(5),
-    model: z.string().optional().default('gemini-2.5-flash')
+    model: z.string().optional().default('gemini-2.5-flash'),
+    contentFlags: contentFlagsSchema
 });
 
 // URL extraction schema

@@ -44,38 +44,6 @@ import { AIUIHelpers } from './ai-ui-helpers.js';
 
 export class AIQuestionGenerator {
     constructor() {
-        this.providers = {
-            ollama: {
-                name: 'Ollama (Local)',
-                apiKey: false,
-                endpoint: AI.OLLAMA_ENDPOINT,
-                models: ['llama3.2:latest', 'codellama:13b-instruct', 'codellama:7b-instruct', 'codellama:7b-code']
-            },
-            openai: {
-                name: 'OpenAI',
-                apiKey: true,
-                endpoint: 'https://api.openai.com/v1/chat/completions',
-                models: [AI.OPENAI_MODEL, 'gpt-4']
-            },
-            claude: {
-                name: 'Anthropic Claude',
-                apiKey: true,
-                endpoint: 'https://api.anthropic.com/v1/messages',
-                models: [
-                    { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5 (Recommended)' },
-                    { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5 (Fast & Cheap)' },
-                    { id: 'claude-opus-4-5', name: 'Claude Opus 4.5 (Most Capable)' },
-                    { id: 'claude-sonnet-4-0', name: 'Claude Sonnet 4 (Legacy)' }
-                ]
-            },
-            gemini: {
-                name: 'Google Gemini',
-                apiKey: true,
-                endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
-                models: [AI.GEMINI_MODEL, 'gemini-2.0-flash', 'gemini-1.5-pro']
-            }
-        };
-
         this.isGenerating = false;
         this.eventHandlers = {};
         this.batchInfo = null;
@@ -361,8 +329,7 @@ export class AIQuestionGenerator {
 
         this.requestedQuestionCount = questionCount;
 
-        const needsApiKey = this.providers[provider]?.apiKey;
-        if (needsApiKey) {
+        if (aiProviderService.requiresApiKey(provider)) {
             const apiKey = await secureStorage.getSecureItem(`api_key_${provider}`);
             if (!apiKey || apiKey.trim().length === 0) {
                 logger.warn(`Missing or empty API key for provider: ${provider}`);
@@ -477,6 +444,7 @@ export class AIQuestionGenerator {
         }
 
         const contentInfo = this.uiHelpers.detectContentType(content);
+        this.lastContentInfo = contentInfo;
         const cognitiveLevel = dom.get('cognitive-level')?.value || 'mixed';
 
         return buildMainPrompt({
@@ -520,7 +488,13 @@ export class AIQuestionGenerator {
     }
 
     async generateWithOpenAI(prompt) {
-        const rawResponse = await aiProviderService.generateWithOpenAI(prompt);
+        const rawResponse = await aiProviderService.generateWithOpenAI(prompt, {
+            contentFlags: this.lastContentInfo ? {
+                needsLatex: this.lastContentInfo.needsLatex,
+                needsCodeBlocks: this.lastContentInfo.needsCodeBlocks,
+                language: this.lastContentInfo.language
+            } : null
+        });
         return this.parseAIResponse(rawResponse);
     }
 
@@ -533,7 +507,12 @@ export class AIQuestionGenerator {
 
             const rawResponse = await aiProviderService.generateWithClaude(prompt, {
                 model: selectedModel,
-                numQuestions: this.requestedQuestionCount || 5
+                numQuestions: this.requestedQuestionCount || 5,
+                contentFlags: this.lastContentInfo ? {
+                    needsLatex: this.lastContentInfo.needsLatex,
+                    needsCodeBlocks: this.lastContentInfo.needsCodeBlocks,
+                    language: this.lastContentInfo.language
+                } : null
             });
 
             return this.parseAIResponse(rawResponse);
@@ -554,7 +533,12 @@ export class AIQuestionGenerator {
 
             const rawResponse = await aiProviderService.generateWithGemini(prompt, {
                 model: selectedModel,
-                numQuestions: this.requestedQuestionCount || 5
+                numQuestions: this.requestedQuestionCount || 5,
+                contentFlags: this.lastContentInfo ? {
+                    needsLatex: this.lastContentInfo.needsLatex,
+                    needsCodeBlocks: this.lastContentInfo.needsCodeBlocks,
+                    language: this.lastContentInfo.language
+                } : null
             });
 
             return this.parseAIResponse(rawResponse);
@@ -612,6 +596,12 @@ export class AIQuestionGenerator {
 
             for (let index = 0; index < questions.length; index++) {
                 const questionData = questions[index];
+
+                // Normalize type: AI uses underscores (multiple_choice), DOM uses hyphens (multiple-choice)
+                if (questionData.type) {
+                    questionData.type = questionData.type.replace(/_/g, '-');
+                }
+
                 logger.debug(`ProcessGeneratedQuestions - Processing question ${index + 1}:`, {
                     type: questionData.type,
                     hasQuestion: !!questionData.question,
@@ -663,7 +653,8 @@ export class AIQuestionGenerator {
                     delete questionData.videoPlacement;
                 }
 
-                if (this.validateGeneratedQuestion(questionData)) {
+                const validationResult = aiQuestionValidator.validateAndFixQuestion(questionData);
+                if (validationResult.valid) {
                     logger.debug(`ProcessGeneratedQuestions - Question ${index + 1} is valid, adding to quiz`);
 
                     await new Promise(resolve => {
@@ -778,135 +769,6 @@ export class AIQuestionGenerator {
         return 'data:image/svg+xml;base64,' + encoded;
     }
 
-    validateGeneratedQuestion(question) {
-        logger.debug('ValidateGeneratedQuestion - Validating:', {
-            type: question.type,
-            hasQuestion: !!question.question,
-            hasOptions: !!question.options,
-            optionsLength: question.options?.length,
-            correctAnswer: question.correctAnswer,
-            correctAnswers: question.correctAnswers
-        });
-
-        if (!question.question || !question.type) {
-            logger.debug('ValidateGeneratedQuestion - Missing basic fields');
-            return false;
-        }
-
-        if (question.type === 'multiple-choice') {
-            if (question.options && Array.isArray(question.options) && question.options.length < 4) {
-                logger.debug('ValidateGeneratedQuestion - Auto-fixing: padding options to 4');
-                const originalLength = question.options.length;
-
-                const genericDistractors = [
-                    'None of the above',
-                    'All of the above',
-                    'Not applicable',
-                    'Cannot be determined',
-                    'Not mentioned in the content',
-                    'More information needed'
-                ];
-
-                while (question.options.length < 4) {
-                    let distractor = genericDistractors.find(d => !question.options.includes(d));
-                    if (!distractor) {
-                        distractor = `Option ${question.options.length + 1}`;
-                    }
-                    question.options.push(distractor);
-                }
-
-                logger.debug(`Padded options from ${originalLength} to ${question.options.length}`);
-            }
-
-            if (!question.options || !Array.isArray(question.options) ||
-                question.options.length !== 4 ||
-                question.correctAnswer === undefined ||
-                question.correctAnswer < 0 ||
-                question.correctAnswer >= question.options.length) {
-                logger.debug('ValidateGeneratedQuestion - Multiple choice validation failed');
-                return false;
-            }
-        } else if (question.type === 'multiple-correct') {
-            if (question.correctAnswer !== undefined && !question.correctAnswers) {
-                logger.debug('ValidateGeneratedQuestion - Auto-fixing: converting correctAnswer to correctAnswers array');
-                question.correctAnswers = Array.isArray(question.correctAnswer) ? question.correctAnswer : [question.correctAnswer];
-                delete question.correctAnswer;
-            }
-
-            if (!question.options || !Array.isArray(question.options) ||
-                !question.correctAnswers || !Array.isArray(question.correctAnswers) ||
-                question.correctAnswers.length === 0) {
-                logger.debug('ValidateGeneratedQuestion - Multiple correct validation failed');
-                return false;
-            }
-
-            const invalidIndices = question.correctAnswers.filter(index =>
-                index < 0 || index >= question.options.length
-            );
-            if (invalidIndices.length > 0) {
-                logger.debug('ValidateGeneratedQuestion - Multiple correct has invalid indices:', invalidIndices);
-                return false;
-            }
-        } else if (question.type === 'true-false') {
-            if (!question.options || !Array.isArray(question.options) ||
-                question.options.length !== 2 ||
-                (question.correctAnswer !== 'true' && question.correctAnswer !== 'false')) {
-                logger.debug('ValidateGeneratedQuestion - True/false validation failed', {
-                    optionsLength: question.options?.length,
-                    correctAnswer: question.correctAnswer,
-                    correctAnswerType: typeof question.correctAnswer
-                });
-                return false;
-            }
-        } else if (question.type === 'numeric') {
-            if (question.options) {
-                logger.debug('ValidateGeneratedQuestion - Auto-fixing: removing options from numeric question');
-                delete question.options;
-            }
-
-            if (typeof question.correctAnswer === 'string' && !isNaN(question.correctAnswer)) {
-                logger.debug('ValidateGeneratedQuestion - Auto-fixing: converting string answer to number');
-                question.correctAnswer = parseFloat(question.correctAnswer);
-            }
-
-            if (question.tolerance === undefined) {
-                logger.debug('ValidateGeneratedQuestion - Auto-fixing: adding default tolerance 0');
-                question.tolerance = 0;
-            }
-
-            if (question.correctAnswer === undefined || isNaN(question.correctAnswer)) {
-                logger.debug('ValidateGeneratedQuestion - Numeric validation failed');
-                return false;
-            }
-        } else if (question.type === 'ordering') {
-            if (!question.options || !Array.isArray(question.options) || question.options.length < 2) {
-                logger.debug('ValidateGeneratedQuestion - Ordering validation failed: invalid options');
-                return false;
-            }
-            if (!question.correctOrder || !Array.isArray(question.correctOrder)) {
-                logger.debug('ValidateGeneratedQuestion - Ordering validation failed: missing correctOrder');
-                return false;
-            }
-            if (question.correctOrder.length !== question.options.length) {
-                logger.debug('ValidateGeneratedQuestion - Ordering validation failed: correctOrder length mismatch');
-                return false;
-            }
-            const validIndices = question.correctOrder.every(idx =>
-                typeof idx === 'number' && idx >= 0 && idx < question.options.length
-            );
-            if (!validIndices) {
-                logger.debug('ValidateGeneratedQuestion - Ordering validation failed: invalid indices in correctOrder');
-                return false;
-            }
-        } else {
-            logger.debug('ValidateGeneratedQuestion - Unknown question type:', question.type);
-            return false;
-        }
-
-        logger.debug('ValidateGeneratedQuestion - Question is valid');
-        return true;
-    }
-
     async openModal() {
         const modal = getModal('ai-generator-modal');
         if (modal) {
@@ -915,6 +777,11 @@ export class AIQuestionGenerator {
             const providerSelect = dom.get('ai-provider');
             if (providerSelect) {
                 providerSelect.value = 'ollama';
+            }
+
+            const apiKeySection = dom.get('api-key-section');
+            if (apiKeySection) {
+                apiKeySection.classList.add('hidden');
             }
 
             const apiKeyInput = dom.get('ai-api-key');
@@ -931,6 +798,11 @@ export class AIQuestionGenerator {
             const claudeModelSelection = dom.get('claude-model-selection');
             if (claudeModelSelection) {
                 claudeModelSelection.classList.add('hidden');
+            }
+
+            const geminiModelSelection = dom.get('gemini-model-selection');
+            if (geminiModelSelection) {
+                geminiModelSelection.classList.add('hidden');
             }
 
             const modelSelect = dom.get('ollama-model');
@@ -967,7 +839,7 @@ export class AIQuestionGenerator {
     showApiKeyErrorPopup(provider, errorType = 'missing', specificMessage = '') {
         logger.debug('showApiKeyErrorPopup called', { provider, errorType, specificMessage });
 
-        const providerName = this.providers[provider]?.name || provider;
+        const providerName = aiProviderService.getProviderName(provider);
         let title, message, icon;
 
         if (specificMessage) {

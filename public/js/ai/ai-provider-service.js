@@ -76,6 +76,24 @@ export class AIProviderService {
     }
 
     /**
+     * Get display name for a provider
+     * @param {string} provider - Provider key
+     * @returns {string} Display name
+     */
+    getProviderName(provider) {
+        return this.providers[provider]?.name || provider;
+    }
+
+    /**
+     * Get fallback model list for a provider
+     * @param {string} provider - Provider key
+     * @returns {Array} Fallback models array
+     */
+    getProviderFallbackModels(provider) {
+        return this.providers[provider]?.models || [];
+    }
+
+    /**
      * Check if provider requires an API key
      * @param {string} provider - Provider name
      * @returns {boolean} True if API key required
@@ -91,6 +109,33 @@ export class AIProviderService {
      */
     async getApiKey(provider) {
         return await secureStorage.getSecureItem(`api_key_${provider}`);
+    }
+
+    /**
+     * Build a system prompt for AI quiz generation based on content flags.
+     * Client-side mirror of the server helper (needed for OpenAI direct calls).
+     * @param {Object|null} contentFlags - { needsLatex, needsCodeBlocks, language }
+     * @returns {string} System prompt
+     */
+    buildSystemPrompt(contentFlags) {
+        const parts = ['You are a quiz question generator.'];
+
+        parts.push('OUTPUT FORMAT: Always output valid JSON arrays starting with [ and ending with ].');
+
+        const includeAll = !contentFlags;
+        const needsLatex = includeAll || contentFlags?.needsLatex;
+        const needsCode = includeAll || contentFlags?.needsCodeBlocks;
+
+        if (needsLatex) {
+            parts.push('MATHEMATICAL EXPRESSIONS: For ALL mathematical expressions, equations, formulas, or symbols, you MUST use LaTeX syntax wrapped in $ or $$ delimiters. Examples: inline math like $E = mc^2$ or $\\frac{x+1}{2}$, display math like $$\\int_0^\\infty e^{-x} dx = 1$$. NEVER output math as plain text.');
+        }
+
+        if (needsCode) {
+            const langHint = contentFlags?.language ? ` Primary language: ${contentFlags.language}.` : '';
+            parts.push(`CODE SNIPPETS: For ALL code snippets, you MUST use markdown code blocks with language specification. Format: \`\`\`language\\ncode here\\n\`\`\`. Use inline code \`like this\` for variable names, function names, and keywords. NEVER output code as plain text.${langHint}`);
+        }
+
+        return parts.join('\n\n');
     }
 
     /**
@@ -182,10 +227,16 @@ export class AIProviderService {
                 },
                 body: JSON.stringify({
                     model: options.model || AI.OPENAI_MODEL,
-                    messages: [{
-                        role: 'user',
-                        content: prompt
-                    }],
+                    messages: [
+                        {
+                            role: 'system',
+                            content: this.buildSystemPrompt(options.contentFlags || null)
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
                     temperature: options.temperature || AI.DEFAULT_TEMPERATURE
                 })
             });
@@ -239,7 +290,8 @@ export class AIProviderService {
                 prompt: prompt,
                 apiKey: apiKey,
                 numQuestions: options.numQuestions || 5,
-                model: selectedModel
+                model: selectedModel,
+                contentFlags: options.contentFlags || null
             })
         });
 
@@ -315,7 +367,8 @@ export class AIProviderService {
                     prompt: prompt,
                     apiKey: apiKey,
                     numQuestions: options.numQuestions || 5,
-                    model: selectedModel
+                    model: selectedModel,
+                    contentFlags: options.contentFlags || null
                 })
             });
 

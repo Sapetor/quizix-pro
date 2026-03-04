@@ -5299,6 +5299,16 @@ html {
     font-weight: 500;
 }
 
+.ai-format-warning-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(234, 179, 8, 0.15);
+    color: #b45309;
+    font-weight: 600;
+    cursor: help;
+}
+
 .ai-preview-question-text {
     font-size: 16px;
     line-height: 1.6;
@@ -5385,6 +5395,11 @@ html {
 
 [data-theme="dark"] .ai-time-badge {
     background: rgba(107, 114, 128, 0.25);
+}
+
+[data-theme="dark"] .ai-format-warning-badge {
+    background: rgba(234, 179, 8, 0.25);
+    color: #fbbf24;
 }
 
 /* === AI PREVIEW ACTION BUTTONS === */

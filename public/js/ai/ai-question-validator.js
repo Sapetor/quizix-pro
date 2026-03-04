@@ -85,8 +85,16 @@ export class AIQuestionValidator {
 
             logger.debug('ParseAIResponse - Clean text for parsing:', cleanText.substring(0, 300) + '...');
 
-            // Parse JSON
-            const parsed = JSON.parse(cleanText);
+            // Parse JSON - try normal parse first, then aggressive LaTeX escape fix
+            let parsed;
+            try {
+                parsed = JSON.parse(cleanText);
+            } catch (firstError) {
+                logger.debug('ParseAIResponse - First parse failed, trying aggressive LaTeX escape fix');
+                // Also fix \b,\f,\n,\r,\t before letters (likely LaTeX \bar,\frac,\neq,\right,\text)
+                const aggressiveFixed = cleanText.replace(/\\([bfnrt])(?=[a-zA-Z])/g, '\\\\$1');
+                parsed = JSON.parse(aggressiveFixed);
+            }
             logger.debug('ParseAIResponse - JSON parsed successfully');
 
             // Handle both single object and array
@@ -140,6 +148,11 @@ export class AIQuestionValidator {
             fixed = fixed.replace(/,\s*'/g, ',"');
             logger.debug('Fixed single-quote JSON delimiters');
         }
+
+        // Fix invalid JSON escape sequences (common with LaTeX like \frac, \int, \sqrt)
+        // Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+        // Replace invalid \X sequences with \\X (double-escape for JSON)
+        fixed = fixed.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
 
         // Fix missing quotes around property names
         fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
@@ -267,118 +280,215 @@ export class AIQuestionValidator {
     }
 
     /**
-     * Validate a generated question object
-     * @param {Object} question - Question to validate
-     * @returns {Object} Validation result with isValid and errors
+     * Consolidated validate-and-fix for a single AI-generated question.
+     * Replaces both the inline preview validation and validateGeneratedQuestion().
+     * @param {Object} question - Raw question from AI
+     * @returns {{ valid: boolean, question: Object, issues: string[] }}
      */
-    validateQuestion(question) {
-        const errors = [];
+    validateAndFixQuestion(question) {
+        const issues = [];
 
-        // Check required fields
-        if (!question.question || typeof question.question !== 'string') {
-            errors.push('Missing or invalid question text');
-        }
+        // 1. Null / missing basic fields
+        if (!question) return { valid: false, question, issues: ['question is null/undefined'] };
+        if (!question.question) issues.push('missing "question" text');
+        if (!question.type) issues.push('missing "type"');
+        if (issues.length > 0) return { valid: false, question, issues };
 
-        if (!question.type || typeof question.type !== 'string') {
-            errors.push('Missing or invalid question type');
-        }
+        // 2. Normalize type: lowercase, underscores/spaces → hyphens
+        question.type = question.type.toLowerCase().replace(/[\s_]+/g, '-');
 
-        // Type-specific validation
-        const type = question.type;
-
-        if (type === 'multiple_choice' || type === 'multiple_correct') {
-            if (!Array.isArray(question.options) || question.options.length < 2) {
-                errors.push('Multiple choice questions need at least 2 options');
-            }
-
-            if (type === 'multiple_choice') {
-                if (typeof question.correctAnswer !== 'number' || question.correctAnswer < 0) {
-                    errors.push('Multiple choice needs a valid correctAnswer index');
-                } else if (question.options && question.correctAnswer >= question.options.length) {
-                    errors.push('correctAnswer index out of bounds');
+        // 3. Type-specific validation & auto-fix
+        switch (question.type) {
+            case 'multiple-choice': {
+                // Letter correctAnswer ("A"-"F") → index
+                if (typeof question.correctAnswer === 'string' && /^[A-Fa-f]$/.test(question.correctAnswer)) {
+                    question.correctAnswer = question.correctAnswer.toUpperCase().charCodeAt(0) - 65;
                 }
+
+                // Ensure options is an array
+                if (!Array.isArray(question.options)) {
+                    issues.push('missing or invalid "options" array');
+                    break;
+                }
+
+                // Pad options to 4 with generic distractors if < 4
+                if (question.options.length < 4) {
+                    const genericDistractors = [
+                        'None of the above', 'All of the above', 'Not applicable',
+                        'Cannot be determined', 'Not mentioned in the content', 'More information needed'
+                    ];
+                    while (question.options.length < 4) {
+                        const distractor = genericDistractors.find(d => !question.options.includes(d))
+                            || `Option ${question.options.length + 1}`;
+                        question.options.push(distractor);
+                    }
+                }
+
+                // Truncate to 4 if > 4
+                if (question.options.length > 4) {
+                    question.options = question.options.slice(0, 4);
+                    if (typeof question.correctAnswer === 'number' && question.correctAnswer >= 4) {
+                        question.correctAnswer = 0;
+                    }
+                }
+
+                // Validate correctAnswer is integer 0-3 and in bounds
+                if (typeof question.correctAnswer !== 'number' || !Number.isInteger(question.correctAnswer) ||
+                    question.correctAnswer < 0 || question.correctAnswer >= question.options.length) {
+                    issues.push('invalid correctAnswer for multiple-choice');
+                }
+                break;
             }
 
-            if (type === 'multiple_correct') {
+            case 'true-false': {
+                // Ensure options = ["True", "False"]
+                question.options = ['True', 'False'];
+
+                // Normalize correctAnswer: boolean/number/letter → string "true"/"false"
+                const ca = question.correctAnswer;
+                if (ca === true || ca === 1 || ca === '1') {
+                    question.correctAnswer = 'true';
+                } else if (ca === false || ca === 0 || ca === '0') {
+                    question.correctAnswer = 'false';
+                } else if (typeof ca === 'string') {
+                    const lower = ca.toLowerCase();
+                    if (lower === 'a' || lower === 'true') {
+                        question.correctAnswer = 'true';
+                    } else if (lower === 'b' || lower === 'false') {
+                        question.correctAnswer = 'false';
+                    }
+                }
+
+                if (question.correctAnswer !== 'true' && question.correctAnswer !== 'false') {
+                    issues.push('invalid correctAnswer for true-false');
+                }
+                break;
+            }
+
+            case 'multiple-correct': {
+                // Convert correctAnswer → correctAnswers if needed
+                if (question.correctAnswer !== undefined && !question.correctAnswers) {
+                    question.correctAnswers = Array.isArray(question.correctAnswer)
+                        ? question.correctAnswer : [question.correctAnswer];
+                    delete question.correctAnswer;
+                }
+
+                if (!Array.isArray(question.options) || question.options.length === 0) {
+                    issues.push('missing or empty options for multiple-correct');
+                    break;
+                }
+
                 if (!Array.isArray(question.correctAnswers) || question.correctAnswers.length === 0) {
-                    errors.push('Multiple correct needs a correctAnswers array');
+                    issues.push('missing or empty correctAnswers for multiple-correct');
+                    break;
                 }
+
+                // Letter answers → indices
+                if (typeof question.correctAnswers[0] === 'string' && /^[A-Fa-f]$/.test(question.correctAnswers[0])) {
+                    question.correctAnswers = question.correctAnswers.map(
+                        letter => letter.toUpperCase().charCodeAt(0) - 65
+                    );
+                }
+
+                // Validate all indices in bounds
+                const outOfBounds = question.correctAnswers.filter(
+                    idx => typeof idx !== 'number' || idx < 0 || idx >= question.options.length
+                );
+                if (outOfBounds.length > 0) {
+                    issues.push('correctAnswers contains out-of-bounds indices');
+                }
+                break;
             }
-        }
 
-        if (type === 'true_false') {
-            if (typeof question.correctAnswer !== 'boolean' &&
-                question.correctAnswer !== 'true' &&
-                question.correctAnswer !== 'false' &&
-                question.correctAnswer !== 0 &&
-                question.correctAnswer !== 1) {
-                errors.push('True/false needs a boolean correctAnswer');
+            case 'numeric': {
+                // Delete stray options
+                if (question.options) delete question.options;
+
+                // String correctAnswer → parseFloat
+                if (typeof question.correctAnswer === 'string' && !isNaN(question.correctAnswer)) {
+                    question.correctAnswer = parseFloat(question.correctAnswer);
+                }
+
+                // Default tolerance
+                if (question.tolerance === undefined) question.tolerance = 0;
+
+                // Require finite number
+                if (question.correctAnswer === undefined || typeof question.correctAnswer !== 'number' ||
+                    !isFinite(question.correctAnswer)) {
+                    issues.push('invalid or missing correctAnswer for numeric');
+                }
+                break;
             }
-        }
 
-        if (type === 'numeric') {
-            if (question.correctAnswer === undefined || question.correctAnswer === null) {
-                errors.push('Numeric questions need a correctAnswer value');
+            case 'ordering': {
+                if (!Array.isArray(question.options) || question.options.length < 2) {
+                    issues.push('ordering requires at least 2 options');
+                    break;
+                }
+                if (!Array.isArray(question.correctOrder) ||
+                    question.correctOrder.length !== question.options.length) {
+                    issues.push('correctOrder length must match options length');
+                    break;
+                }
+                const allValid = question.correctOrder.every(
+                    idx => typeof idx === 'number' && idx >= 0 && idx < question.options.length
+                );
+                if (!allValid) {
+                    issues.push('correctOrder contains invalid indices');
+                }
+                break;
             }
+
+            default:
+                issues.push(`unknown question type: ${question.type}`);
+                break;
         }
 
-        if (type === 'ordering') {
-            if (!Array.isArray(question.items) || question.items.length < 2) {
-                errors.push('Ordering questions need at least 2 items');
-            }
-        }
-
-        return {
-            isValid: errors.length === 0,
-            errors: errors
-        };
-    }
-
-    /**
-     * Auto-fix common question issues
-     * @param {Object} question - Question to fix
-     * @returns {Object} Fixed question
-     */
-    autoFixQuestion(question) {
-        const fixed = { ...question };
-
-        // Normalize type
-        if (fixed.type) {
-            fixed.type = fixed.type.toLowerCase().replace(/\s+/g, '_');
-        }
-
-        // Fix correctAnswer for multiple choice
-        if (fixed.type === 'multiple_choice' && typeof fixed.correctAnswer === 'string') {
-            // Convert letter to index
-            const match = fixed.correctAnswer.match(/[A-D]/i);
-            if (match) {
-                fixed.correctAnswer = match[0].toUpperCase().charCodeAt(0) - 65;
-            }
-        }
-
-        // Fix correctAnswer for true/false
-        if (fixed.type === 'true_false') {
-            if (fixed.correctAnswer === 'true' || fixed.correctAnswer === 1) {
-                fixed.correctAnswer = true;
-            } else if (fixed.correctAnswer === 'false' || fixed.correctAnswer === 0) {
-                fixed.correctAnswer = false;
-            }
-        }
-
-        // Ensure difficulty exists
-        if (!fixed.difficulty) {
-            fixed.difficulty = 'medium';
-        }
-
-        // Normalize difficulty
+        // Defaults for missing metadata
+        if (!question.difficulty) question.difficulty = 'medium';
         const validDifficulties = ['easy', 'medium', 'hard'];
-        if (!validDifficulties.includes(fixed.difficulty.toLowerCase())) {
-            fixed.difficulty = 'medium';
+        if (!validDifficulties.includes(question.difficulty.toLowerCase())) {
+            question.difficulty = 'medium';
         } else {
-            fixed.difficulty = fixed.difficulty.toLowerCase();
+            question.difficulty = question.difficulty.toLowerCase();
+        }
+        if (!question.timeLimit) question.timeLimit = 30;
+
+        return { valid: issues.length === 0, question, issues };
+    }
+    /**
+     * Check if a question's text complies with expected formatting.
+     * Returns an array of warning strings (empty = compliant).
+     * @param {Object} question - Validated question
+     * @param {Object|null} contentInfo - Content detection result
+     * @returns {string[]} Warning messages
+     */
+    checkFormattingCompliance(question, contentInfo) {
+        if (!contentInfo || !question) return [];
+
+        const warnings = [];
+        // Collect all text fields to check
+        const textFields = [
+            question.question,
+            ...(question.options || []),
+            question.explanation || ''
+        ].join(' ');
+
+        if (contentInfo.needsLatex) {
+            const hasLatex = /\$[^$]+\$/.test(textFields);
+            if (!hasLatex) {
+                warnings.push('Missing LaTeX formatting');
+            }
         }
 
-        return fixed;
+        if (contentInfo.needsCodeBlocks) {
+            const hasCode = /```[\s\S]*?```/.test(textFields) || /`[^`]+`/.test(textFields);
+            if (!hasCode) {
+                warnings.push('Missing code formatting');
+            }
+        }
+
+        return warnings;
     }
 }
 
