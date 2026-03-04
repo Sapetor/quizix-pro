@@ -425,6 +425,10 @@ export class AIQuestionGenerator {
                 if (questions.length > this.requestedQuestionCount) {
                     questions = questions.slice(0, this.requestedQuestionCount);
                 }
+                if (questions.length < questionCount) {
+                    logger.warn(`Generated ${questions.length}/${questionCount} questions`);
+                    this.showSimpleErrorPopup('Partial Results', `The AI generated ${questions.length} out of ${questionCount} requested questions.\n\nTip: Try again or use shorter/simpler content for better results.`, '\u26A0\uFE0F');
+                }
                 this.questionPreview.showQuestionPreview(questions);
                 this.isGenerating = false;
             } else {
