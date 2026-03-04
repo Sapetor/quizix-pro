@@ -10,7 +10,7 @@
 
 // IMPORTANT: Update this version when deploying new code to force cache refresh
 // Format: YYYYMMDD-HHMM or use a build hash
-const CACHE_VERSION = 'v20260303-network-first';
+const CACHE_VERSION = 'v20260304-bypass-http-cache';
 const CACHE_NAME = `quizix-static-${CACHE_VERSION}`;
 const OFFLINE_CACHE_NAME = 'quizix-offline-data';
 
@@ -170,12 +170,14 @@ async function cacheFirst(request) {
 /**
  * Network-first strategy
  * Tries network first, falls back to cache if offline
+ * Uses cache: 'no-store' to bypass the browser's HTTP cache (which may hold
+ * stale files due to long max-age headers) and always hit the server.
  */
 async function networkFirst(request) {
     const cache = await caches.open(CACHE_NAME);
 
     try {
-        const networkResponse = await fetch(request);
+        const networkResponse = await fetch(request, { cache: 'no-store' });
 
         // Cache successful responses (skip 206 partial responses)
         if (networkResponse.ok && networkResponse.status !== 206) {
