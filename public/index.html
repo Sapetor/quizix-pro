@@ -3107,13 +3107,31 @@ class GraphScene(Scene):
         // Service Worker registration (only if supported)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Use base path for Kubernetes/cloud deployments
                 const basePath = document.querySelector('base')?.getAttribute('href') || '/';
                 const swPath = basePath + 'sw.js';
+                const SW_VERSION = 'v20260304-bypass-http-cache';
+                const storedVersion = localStorage.getItem('quizix-sw-version');
 
-                // updateViaCache: 'none' forces the browser to always check the network for sw.js updates
-                // This bypasses HTTP cache and ensures new deployments are detected immediately
-                // Reload once when a new service worker takes control (skipWaiting + clients.claim)
+                // If there's an existing SW with a different version, nuke it and reload
+                if (navigator.serviceWorker.controller && storedVersion !== SW_VERSION) {
+                    console.log('[App] Stale service worker detected, cleaning up...');
+                    navigator.serviceWorker.getRegistrations().then(regs => {
+                        return Promise.all(regs.map(r => r.unregister()));
+                    }).then(() => {
+                        return caches.keys();
+                    }).then(names => {
+                        return Promise.all(names.map(n => caches.delete(n)));
+                    }).then(() => {
+                        localStorage.setItem('quizix-sw-version', SW_VERSION);
+                        console.log('[App] Cleanup done, reloading...');
+                        window.location.reload();
+                    });
+                    return;
+                }
+
+                localStorage.setItem('quizix-sw-version', SW_VERSION);
+
+                // Reload once when a new service worker takes control
                 let refreshing = false;
                 navigator.serviceWorker.addEventListener('controllerchange', () => {
                     if (refreshing) return;
@@ -3125,13 +3143,7 @@ class GraphScene(Scene):
                 navigator.serviceWorker.register(swPath, { scope: basePath, updateViaCache: 'none' })
                     .then((registration) => {
                         console.log('[App] Service Worker registered with scope:', registration.scope);
-
-                        // Check for updates every hour
-                        setInterval(() => {
-                            registration.update();
-                        }, 60 * 60 * 1000);
-
-                        // Check for updates immediately
+                        setInterval(() => { registration.update(); }, 60 * 60 * 1000);
                         registration.update();
                     })
                     .catch((error) => {
