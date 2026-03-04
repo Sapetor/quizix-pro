@@ -23,17 +23,21 @@ const DEFAULT_MODELS = {
 const MANIM_SYSTEM_PROMPT = `You are an expert Manim animation coder. Given a description of a mathematical animation, generate working Manim Community Edition Python code.
 
 STRICT RULES:
-1. Output ONLY valid Python code. No explanations, no markdown.
-2. Always start with: from manim import *
-3. Define exactly ONE class that inherits from Scene.
-4. The class MUST have a construct(self) method.
-5. Keep animations between 3-10 seconds total duration.
-6. Use only safe, standard Manim APIs: Create, Write, FadeIn, FadeOut, Transform, MoveToTarget, Indicate, self.play(), self.wait(), etc.
-7. Use Text() for labels (NOT MathTex — LaTeX may not be installed).
-8. Do NOT use external files, network calls, or os/subprocess imports.
-9. Do NOT use deprecated APIs.
+1. Output ONLY valid Python code. No explanations, no markdown, no commentary.
+2. Do NOT wrap code in markdown code fences (\`\`\`python ... \`\`\`).
+3. Always start with: from manim import *
+4. Define exactly ONE class that inherits from Scene.
+5. The class MUST have a construct(self) method.
+6. Keep animations between 3-10 seconds total duration.
+7. Keep code under 80 lines.
+8. Use only safe, standard Manim APIs: Create, Write, FadeIn, FadeOut, Transform, MoveToTarget, Indicate, self.play(), self.wait(), etc.
+9. Use Text() for labels (NOT MathTex — LaTeX may not be installed).
+10. Do NOT use external files, network calls, or os/subprocess imports.
+11. Do NOT use deprecated APIs.
 
-EXAMPLE OUTPUT:
+IMPORTANT: Your response must be ONLY Python code. No thinking, no reasoning, no explanation — just code starting with "from manim import *".
+
+EXAMPLE 1 — Shape animation:
 from manim import *
 
 class MyScene(Scene):
@@ -41,6 +45,30 @@ class MyScene(Scene):
         circle = Circle(radius=2, color=BLUE)
         self.play(Create(circle))
         self.wait(1)
+
+EXAMPLE 2 — Text animation:
+from manim import *
+
+class TextScene(Scene):
+    def construct(self):
+        title = Text("Pythagorean Theorem", font_size=48, color=YELLOW)
+        formula = Text("a² + b² = c²", font_size=36, color=WHITE)
+        formula.next_to(title, DOWN, buff=0.5)
+        self.play(FadeIn(title))
+        self.play(FadeIn(formula, shift=UP))
+        self.wait(2)
+
+EXAMPLE 3 — Graph/axes animation:
+from manim import *
+
+class GraphScene(Scene):
+    def construct(self):
+        axes = Axes(x_range=[-3, 3], y_range=[-1.5, 1.5], x_length=6, y_length=3)
+        graph = axes.plot(lambda x: np.sin(x), color=BLUE)
+        label = Text("sin(x)", font_size=24, color=BLUE).next_to(axes, UP)
+        self.play(Create(axes))
+        self.play(Create(graph), FadeIn(label))
+        self.wait(2)
 `;
 
 class ManimAIGenerator {
@@ -182,17 +210,29 @@ class ManimAIGenerator {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: model || 'llama3.2:latest',
-                prompt: MANIM_SYSTEM_PROMPT + '\n\n' + prompt,
+                prompt: MANIM_SYSTEM_PROMPT + '\n\n' + prompt + '\n/no_think',
                 stream: false,
-                options: { temperature: 0.7 }
+                options: {
+                    temperature: 0.7,
+                    num_predict: 8192,
+                    num_ctx: 8192
+                }
             })
         });
 
         if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Ollama is not running or the model is not available. Start Ollama and pull the model first.');
+            }
             throw new Error(`Ollama error: ${response.status}`);
         }
 
         const data = await response.json();
+
+        if (data.done_reason === 'length') {
+            logger.warn('Manim AI: Ollama response truncated (hit token limit)');
+        }
+
         return data.response;
     }
 
@@ -280,6 +320,9 @@ class ManimAIGenerator {
         }
 
         let code = raw.trim();
+
+        // Strip thinking model output (Qwen 3.x, QwQ wrap reasoning in <think> tags)
+        code = code.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
         // Strip markdown code fences
         code = code.replace(/^```(?:python)?\s*\n?/gm, '');
