@@ -23,8 +23,9 @@ function isMobileDevice(userAgent) {
  * @returns {number} - Max age in seconds
  */
 function getAssetMaxAge(isProduction, isMobile) {
-    // production: 48h mobile, 24h desktop; dev: 5 minutes
-    return isProduction ? (isMobile ? 172800 : 86400) : 300;
+    // Short max-age: the service worker handles caching via its own Cache Storage.
+    // Long HTTP cache max-age causes stale files when SW transitions happen.
+    return 0;
 }
 
 /**
@@ -35,8 +36,8 @@ function getAssetMaxAge(isProduction, isMobile) {
 function createStaticFilesConfig(isProduction) {
     return {
         index: false,         // Disable automatic index.html serving
-        // Balanced caching for mobile and WSL performance
-        maxAge: isProduction ? '1y' : '4h', // Increased dev cache for mobile
+        // Short max-age: SW handles caching, HTTP cache just needs ETags for revalidation
+        maxAge: 0,
         etag: true,           // Enable ETags for efficient cache validation
         lastModified: true,   // Include Last-Modified headers
         cacheControl: true,   // Enable Cache-Control headers
@@ -153,7 +154,7 @@ function createJsFileHandler(logger, isProduction, baseDir) {
             // Set proper headers for JavaScript files
             res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
             res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-            res.setHeader('Cache-Control', isProduction ? 'public, max-age=86400, must-revalidate' : 'no-cache');
+            res.setHeader('Cache-Control', 'no-cache, must-revalidate');
 
             // Read and send file directly to avoid express.static issues
             fs.readFile(filePath, 'utf8', (err, data) => {
