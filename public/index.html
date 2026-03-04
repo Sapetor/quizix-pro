@@ -3113,6 +3113,15 @@ class GraphScene(Scene):
 
                 // updateViaCache: 'none' forces the browser to always check the network for sw.js updates
                 // This bypasses HTTP cache and ensures new deployments are detected immediately
+                // Reload once when a new service worker takes control (skipWaiting + clients.claim)
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (refreshing) return;
+                    refreshing = true;
+                    console.log('[App] New service worker activated, reloading for fresh content...');
+                    window.location.reload();
+                });
+
                 navigator.serviceWorker.register(swPath, { scope: basePath, updateViaCache: 'none' })
                     .then((registration) => {
                         console.log('[App] Service Worker registered with scope:', registration.scope);
@@ -3124,18 +3133,6 @@ class GraphScene(Scene):
 
                         // Check for updates immediately
                         registration.update();
-
-                        // Listen for new service worker waiting to activate
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // New service worker is ready, refresh to use it
-                                    console.log('[App] New version available! Reloading...');
-                                    window.location.reload();
-                                }
-                            });
-                        });
                     })
                     .catch((error) => {
                         console.warn('[App] Service Worker registration failed:', error);
