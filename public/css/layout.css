@@ -434,6 +434,11 @@ header {
     flex-direction: column;
 }
 
+/* Right column anchors to top so Start Game button stays visible as player list grows */
+.right-column {
+    align-self: start;
+}
+
 /* Individual Lobby Cards - Increased sizes for better space utilization */
 .lobby-card {
     background: var(--card-bg);
@@ -531,6 +536,8 @@ header {
     /* Take up available space in the card */
     display: flex;
     flex-direction: column;
+    max-height: 420px;
+    overflow-y: auto;
 }
 
 /* Combined info card should match left column height */
@@ -559,10 +566,12 @@ header {
     gap: 15px;
     justify-content: center;
     flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
 .qr-container {
-    flex-shrink: 0;
+    flex-shrink: 1;
+    min-width: 0;
 }
 
 .pin-section {
@@ -595,8 +604,8 @@ header {
 }
 
 #qr-code-image {
-    max-width: 100px;
-    /* Smaller since it's now inline with PIN */
+    width: 100%;
+    max-width: 280px;
     height: auto;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -843,8 +852,8 @@ header {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         min-height: calc(60px * var(--global-font-scale));
         /* Scales with font for accessibility */
-        max-height: calc(80px * var(--global-font-scale));
-        /* Scales with font for accessibility */
+        max-height: 240px;
+        /* Fixed cap so player list scrolls rather than pushing content down */
     }
 }
 
@@ -876,6 +885,10 @@ header {
     .lobby-card {
         min-height: calc(140px * var(--global-font-scale));
         /* Scales with font for accessibility */
+    }
+
+    #qr-code-image {
+        max-width: 350px;
     }
 }
 

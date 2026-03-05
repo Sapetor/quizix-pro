@@ -895,3 +895,45 @@
     }
 }
 
+/* ==================== Reconnection Overlay ==================== */
+
+.reconnection-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    backdrop-filter: blur(4px);
+}
+
+.reconnection-overlay.hidden {
+    display: none !important;
+}
+
+.reconnection-content {
+    text-align: center;
+    color: #fff;
+    padding: 2rem;
+}
+
+.reconnection-content p {
+    margin-top: 1rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.reconnection-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+

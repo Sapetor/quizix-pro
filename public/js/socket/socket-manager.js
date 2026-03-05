@@ -105,11 +105,17 @@ export class SocketManager {
             logger.debug('Connected to server');
         });
 
-        this.socket.on('disconnect', () => {
-            logger.debug('Disconnected from server');
+        this.socket.on('disconnect', (reason) => {
+            logger.debug('Disconnected from server:', reason);
             // Stop active timers to prevent phantom timer updates while disconnected
             if (this.gameManager) {
                 this.gameManager.stopTimer();
+            }
+
+            // Show reconnection overlay for non-host players in active games
+            const gameState = this.gameManager?.stateManager?.getGameState();
+            if (gameState && !gameState.isHost && gameState.gamePin) {
+                this._showReconnectionOverlay();
             }
         });
 
@@ -155,6 +161,19 @@ export class SocketManager {
             if (data.playerName && data.gamePin) {
                 this.gameManager.setPlayerInfo(data.playerName, false);
                 this.gameManager.setGamePin(data.gamePin);
+
+                // Store reconnection info in sessionStorage
+                if (data.sessionToken) {
+                    try {
+                        sessionStorage.setItem('quizix_reconnect', JSON.stringify({
+                            pin: data.gamePin,
+                            playerName: data.playerName,
+                            sessionToken: data.sessionToken
+                        }));
+                    } catch (e) {
+                        logger.warn('Failed to store reconnection data:', e);
+                    }
+                }
 
                 // Update lobby display with game information
                 this.updatePlayerLobbyDisplay(data.gamePin, data.players);
@@ -324,6 +343,9 @@ export class SocketManager {
 
         this.socket.on('game-end', (data) => {
             logger.debug('Game ended - triggering final results:', data);
+
+            // Clear reconnection data — game is over
+            this._clearReconnectionData();
 
             // Switch to results state for leaderboard and celebration
             if (window.uiStateManager?.setState) {
@@ -529,6 +551,7 @@ export class SocketManager {
         // Handle game-ended (emitted when host disconnects mid-game)
         this.socket.on('game-ended', (data) => {
             logger.debug('Game ended (host disconnected):', data);
+            this._clearReconnectionData();
             this.gameManager.stopTimer();
             this.gameManager.resetGameState();
             this.uiManager.showScreen('main-menu');
@@ -539,6 +562,7 @@ export class SocketManager {
         // Special events
         this.socket.on('force-disconnect', (data) => {
             logger.debug('Force disconnect:', data);
+            this._clearReconnectionData();
             this.gameManager.stopTimer();
             this.gameManager.resetGameState();
             translationManager.showAlert('info', this._resolveServerMessage(data, 'error_host_disconnected'));
@@ -546,7 +570,9 @@ export class SocketManager {
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
-            logger.debug('Reconnecting attempt:', attemptNumber);
+            logger.debug('Reconnected after attempt:', attemptNumber);
+            // Attempt to rejoin using stored session token
+            this._attemptRejoin();
         });
 
         this.socket.on('reconnect_error', (error) => {
@@ -555,7 +581,46 @@ export class SocketManager {
 
         this.socket.on('reconnect_failed', () => {
             logger.error('Reconnection failed');
-            translationManager.showAlert('error', 'Failed to reconnect to server');
+            this._hideReconnectionOverlay();
+            this._clearReconnectionData();
+            translationManager.showAlert('error',
+                translationManager.getTranslationSync('error_reconnect_failed') || 'Failed to reconnect to server');
+        });
+
+        // Handle successful rejoin
+        this.socket.on('rejoin-success', (data) => {
+            logger.info('Rejoin successful:', data);
+            this._hideReconnectionOverlay();
+
+            // Restore player state
+            this.gameManager.setPlayerInfo(data.playerName, false);
+            this.gameManager.setGamePin(data.gamePin);
+            this.currentPlayerName = data.playerName;
+
+            // Show appropriate screen based on game status
+            if (data.gameStatus === 'lobby') {
+                this.uiManager.showScreen('player-lobby');
+            } else {
+                // Game is in progress — show game screen
+                this.uiManager.showScreen('player-game-screen');
+            }
+
+            if (window.toastNotifications) {
+                const msg = translationManager.getTranslationSync('reconnected_successfully') || 'Reconnected!';
+                window.toastNotifications.show(msg, 'success', 2000);
+            }
+        });
+
+        // Handle failed rejoin
+        this.socket.on('rejoin-failed', (data) => {
+            logger.warn('Rejoin failed:', data);
+            this._hideReconnectionOverlay();
+            this._clearReconnectionData();
+
+            // Reset state and go to main menu
+            this.gameManager.stopTimer();
+            this.gameManager.resetGameState();
+            this.uiManager.showScreen('main-menu');
         });
     }
 
@@ -737,6 +802,7 @@ export class SocketManager {
      * Leave game
      */
     leaveGame() {
+        this._clearReconnectionData();
         this.socket.emit('leave-game');
     }
 
@@ -752,6 +818,59 @@ export class SocketManager {
      */
     reconnect() {
         this.socket.connect();
+    }
+
+    /**
+     * Attempt to rejoin a game using stored session token
+     */
+    _attemptRejoin() {
+        try {
+            const raw = sessionStorage.getItem('quizix_reconnect');
+            if (!raw) return;
+
+            const reconnectData = JSON.parse(raw);
+            if (reconnectData.pin && reconnectData.sessionToken) {
+                logger.info('Attempting rejoin with session token:', { pin: reconnectData.pin });
+                this.socket.emit('player-rejoin', {
+                    pin: reconnectData.pin,
+                    sessionToken: reconnectData.sessionToken
+                });
+            }
+        } catch (e) {
+            logger.warn('Failed to parse reconnection data:', e);
+            this._clearReconnectionData();
+        }
+    }
+
+    /**
+     * Clear stored reconnection data from sessionStorage
+     */
+    _clearReconnectionData() {
+        try {
+            sessionStorage.removeItem('quizix_reconnect');
+        } catch (e) {
+            logger.warn('Failed to clear reconnection data:', e);
+        }
+    }
+
+    /**
+     * Show the reconnection overlay
+     */
+    _showReconnectionOverlay() {
+        const overlay = document.getElementById('reconnection-overlay');
+        if (overlay) {
+            overlay.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * Hide the reconnection overlay
+     */
+    _hideReconnectionOverlay() {
+        const overlay = document.getElementById('reconnection-overlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+        }
     }
 
     /**

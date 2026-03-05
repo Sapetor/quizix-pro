@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <base href="/">
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
@@ -3196,6 +3196,13 @@ class GraphScene(Scene):
                     <span class="language-picker-name">中文</span>
                 </button>
             </div>
+        </div>
+    </div>
+    <!-- Reconnection overlay -->
+    <div id="reconnection-overlay" class="reconnection-overlay hidden">
+        <div class="reconnection-content">
+            <div class="reconnection-spinner"></div>
+            <p data-translate="reconnecting">Reconnecting...</p>
         </div>
     </div>
 </body>

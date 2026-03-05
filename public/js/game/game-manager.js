@@ -528,8 +528,8 @@ export class GameManager {
                 modalFeedback.showIncorrect(feedbackMessage, earnedPoints, displayDuration, explanation);
             }
 
-            // Show correct answer if player was wrong (preserve existing functionality)
-            if (!isCorrect && (data.correctAnswer !== undefined || data.correctAnswers !== undefined)) {
+            // Show correct answer to ALL players (not just wrong ones) after a short delay
+            if (data.correctAnswer !== undefined || data.correctAnswers !== undefined) {
                 // Delay to allow modal to appear first
                 setTimeout(() => {
                     // Handle multiple-correct questions (array) or single answer
@@ -885,11 +885,11 @@ export class GameManager {
         dom.setContent('responses-count', data.answeredPlayers || 0);
         dom.setContent('total-players', data.totalPlayers || 0);
 
-        // Show the statistics container
+        // Show the statistics container (clear inline style first so classList works)
         const container = dom.get('answer-statistics');
         if (container) {
+            container.style.display = '';
             container.classList.remove('hidden');
-            container.style.display = 'block';
         }
     }
 
@@ -907,9 +907,9 @@ export class GameManager {
             return;
         }
 
-        // Show statistics container
+        // Show statistics container (clear inline style first so classList works)
+        statisticsContainer.style.display = '';
         statisticsContainer.classList.remove('hidden');
-        statisticsContainer.style.display = 'block';
 
         // Update response counts
         dom.setContent('responses-count', data.answeredPlayers || 0);

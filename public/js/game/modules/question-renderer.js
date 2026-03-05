@@ -125,13 +125,29 @@ export class QuestionRenderer {
 
 
     /**
-     * Hide answer statistics during question display
+     * Hide answer statistics during question display and clear stale content
      */
     hideAnswerStatistics() {
         const statisticsContainer = document.getElementById('answer-statistics');
         if (statisticsContainer) {
-            statisticsContainer.style.display = 'none';
+            // Clear inline style first so classList toggle works (Critical Pattern #8)
+            statisticsContainer.style.display = '';
+            statisticsContainer.classList.add('hidden');
         }
+
+        // Reset stat bars and counts to prevent stale data from previous question
+        for (let i = 0; i < 6; i++) {
+            const fill = document.getElementById(`stat-fill-${i}`);
+            if (fill) fill.style.width = '0%';
+            const count = document.getElementById(`stat-count-${i}`);
+            if (count) count.textContent = '0';
+        }
+
+        // Reset response counts
+        const responsesCount = document.getElementById('responses-count');
+        if (responsesCount) responsesCount.textContent = '0';
+        const totalPlayers = document.getElementById('total-players');
+        if (totalPlayers) totalPlayers.textContent = '0';
     }
 
     /**

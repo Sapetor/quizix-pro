@@ -3094,9 +3094,9 @@
     }
     
     #qr-code-image {
-        max-width: 120px !important;
-        width: 120px !important;
-        height: 120px !important;
+        max-width: 200px !important;
+        width: 100% !important;
+        height: auto !important;
     }
     
     /* Mobile player list improvements */

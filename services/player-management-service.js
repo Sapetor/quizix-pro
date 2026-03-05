@@ -13,6 +13,7 @@ class PlayerManagementService {
         this.logger = logger;
         this.config = config;
         this.players = new Map(); // Global player registry: socketId -> { gamePin, name }
+        this.disconnectTimers = new Map(); // sessionToken -> timeoutId for grace period removal
     }
 
     /**
@@ -80,22 +81,29 @@ class PlayerManagementService {
                 error: addResult.error
             };
         }
+
+        // Generate session token for reconnection
+        const crypto = require('crypto');
+        const sessionToken = crypto.randomUUID();
+        const player = game.players.get(socketId);
+        if (player) {
+            player.sessionToken = sessionToken;
+        }
+
         this.players.set(socketId, { gamePin: pin, name });
 
         // Join socket room
         socket.join(`game-${pin}`);
 
         // Get current player list
-        const currentPlayers = Array.from(game.players.values()).map(p => ({
-            id: p.id,
-            name: p.name
-        }));
+        const currentPlayers = this._getPlayerListForBroadcast(game);
 
-        // Emit success to joining player
+        // Emit success to joining player (includes sessionToken for reconnection)
         socket.emit('player-joined', {
             gamePin: pin,
             playerName: name,
-            players: currentPlayers
+            players: currentPlayers,
+            sessionToken
         });
 
         // Broadcast updated player list to all players in the game
@@ -117,45 +125,199 @@ class PlayerManagementService {
    * @param {Object} game - Game instance (if player was in a game)
    * @param {Object} io - Socket.IO instance
    */
-    handlePlayerDisconnect(socketId, game, io) {
+    handlePlayerDisconnect(socketId, game, io, intentional = false) {
         const playerData = this.players.get(socketId);
 
         if (playerData && game) {
-            game.removePlayer(socketId);
+            const gamePlayer = game.players.get(socketId);
 
-            const currentPlayers = Array.from(game.players.values()).map(p => ({
-                id: p.id,
-                name: p.name
-            }));
+            // If game is active (not lobby) and disconnect is not intentional,
+            // mark player as disconnected instead of removing them
+            if (!intentional && gamePlayer && gamePlayer.sessionToken && game.gameState !== 'lobby') {
+                gamePlayer.disconnected = true;
+                gamePlayer.disconnectedAt = Date.now();
+                gamePlayer.oldSocketId = socketId;
 
-            // Broadcast updated player list
-            io.to(`game-${playerData.gamePin}`).emit('player-list-update', {
-                players: currentPlayers
-            });
+                const sessionToken = gamePlayer.sessionToken;
 
-            // Emit player-disconnected event for audio feedback
-            io.to(`game-${playerData.gamePin}`).emit('player-disconnected', {
-                playerName: playerData.name,
-                players: currentPlayers
-            });
+                // Set grace period timer (2 minutes) — after which, truly remove them
+                const gracePeriodMs = 2 * 60 * 1000;
+                const timerId = setTimeout(() => {
+                    this._finalizePlayerRemoval(sessionToken, game, io);
+                }, gracePeriodMs);
+                this.disconnectTimers.set(sessionToken, timerId);
+
+                // Broadcast updated player list (with disconnected flag)
+                const currentPlayers = this._getPlayerListForBroadcast(game);
+                io.to(`game-${playerData.gamePin}`).emit('player-list-update', {
+                    players: currentPlayers
+                });
+
+                // Emit player-disconnected event for audio feedback
+                io.to(`game-${playerData.gamePin}`).emit('player-disconnected', {
+                    playerName: playerData.name,
+                    players: currentPlayers
+                });
+
+                this.logger.info(`Player ${playerData.name} marked as disconnected in game ${playerData.gamePin} (grace period started)`);
+            } else {
+                // Lobby or intentional leave: remove immediately
+                game.removePlayer(socketId);
+
+                const currentPlayers = this._getPlayerListForBroadcast(game);
+
+                io.to(`game-${playerData.gamePin}`).emit('player-list-update', {
+                    players: currentPlayers
+                });
+
+                io.to(`game-${playerData.gamePin}`).emit('player-disconnected', {
+                    playerName: playerData.name,
+                    players: currentPlayers
+                });
+
+                this.logger.info(`Player ${playerData.name} removed from game ${playerData.gamePin}`);
+            }
 
             // Update live answer count if game is in question state
             if (game.gameState === 'question' && game.hostId) {
-                const totalPlayers = game.players.size;
-                const answeredPlayers = Array.from(game.players.values())
+                const activePlayers = Array.from(game.players.values())
+                    .filter(p => !p.disconnected);
+                const answeredPlayers = activePlayers
                     .filter(player => player.answers && player.answers[game.currentQuestion]).length;
 
                 io.to(game.hostId).emit('answer-count-update', {
                     answeredPlayers: answeredPlayers,
-                    totalPlayers: totalPlayers
+                    totalPlayers: activePlayers.length
                 });
             }
-
-            this.logger.info(`Player ${playerData.name} disconnected from game ${playerData.gamePin}`);
         }
 
         // Remove from global player registry
         this.players.delete(socketId);
+    }
+
+    /**
+     * Finalize removal of a disconnected player after grace period expires
+     * @param {string} sessionToken - The player's session token
+     * @param {Object} game - Game instance
+     * @param {Object} io - Socket.IO instance
+     */
+    _finalizePlayerRemoval(sessionToken, game, io) {
+        this.disconnectTimers.delete(sessionToken);
+
+        if (!game || game.gameState === 'ended') return;
+
+        // Find the player by session token
+        for (const [playerId, player] of game.players) {
+            if (player.sessionToken === sessionToken && player.disconnected) {
+                game.removePlayer(playerId);
+                this.players.delete(playerId);
+
+                const currentPlayers = this._getPlayerListForBroadcast(game);
+                io.to(`game-${game.pin}`).emit('player-list-update', {
+                    players: currentPlayers
+                });
+
+                this.logger.info(`Player ${player.name} removed after grace period expired in game ${game.pin}`);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Handle player rejoin via session token
+     * @param {string} newSocketId - New socket ID of the reconnecting player
+     * @param {string} pin - Game PIN
+     * @param {string} sessionToken - Session token from previous connection
+     * @param {Object} game - Game instance
+     * @param {Object} socket - Socket instance
+     * @param {Object} io - Socket.IO instance
+     * @returns {Object} Result object with success status
+     */
+    handlePlayerRejoin(newSocketId, pin, sessionToken, game, socket, io) {
+        if (!pin || !sessionToken) {
+            return { success: false, error: 'PIN and session token are required' };
+        }
+
+        if (!game) {
+            return { success: false, error: 'Game not found', messageKey: 'error_game_not_found' };
+        }
+
+        // Find the disconnected player by session token
+        let foundPlayerId = null;
+        let foundPlayer = null;
+        for (const [playerId, player] of game.players) {
+            if (player.sessionToken === sessionToken && player.disconnected) {
+                foundPlayerId = playerId;
+                foundPlayer = player;
+                break;
+            }
+        }
+
+        if (!foundPlayer) {
+            return { success: false, error: 'Session not found or expired', messageKey: 'rejoin_failed' };
+        }
+
+        // Clear the grace period timer
+        const timerId = this.disconnectTimers.get(sessionToken);
+        if (timerId) {
+            clearTimeout(timerId);
+            this.disconnectTimers.delete(sessionToken);
+        }
+
+        // Reassign player data to new socket ID
+        game.players.delete(foundPlayerId);
+        foundPlayer.id = newSocketId;
+        foundPlayer.disconnected = false;
+        foundPlayer.disconnectedAt = null;
+        delete foundPlayer.oldSocketId;
+        game.players.set(newSocketId, foundPlayer);
+
+        // Update answer mappings if they exist
+        if (game.answerMappings.has(foundPlayerId)) {
+            const mapping = game.answerMappings.get(foundPlayerId);
+            game.answerMappings.delete(foundPlayerId);
+            game.answerMappings.set(newSocketId, mapping);
+        }
+
+        // Update global player registry
+        this.players.set(newSocketId, { gamePin: pin, name: foundPlayer.name });
+
+        // Join socket room
+        socket.join(`game-${pin}`);
+
+        // Emit rejoin success with current game state
+        socket.emit('rejoin-success', {
+            playerName: foundPlayer.name,
+            score: foundPlayer.score,
+            currentQuestion: game.currentQuestion,
+            gameStatus: game.gameState,
+            sessionToken: sessionToken,
+            gamePin: pin
+        });
+
+        // Broadcast updated player list
+        const currentPlayers = this._getPlayerListForBroadcast(game);
+        io.to(`game-${pin}`).emit('player-list-update', {
+            players: currentPlayers
+        });
+
+        this.logger.info(`Player ${foundPlayer.name} rejoined game ${pin} (score: ${foundPlayer.score})`);
+
+        return { success: true, playerName: foundPlayer.name };
+    }
+
+    /**
+     * Build player list for broadcast, including disconnected status
+     * @param {Object} game - Game instance
+     * @returns {Array} Player list for client consumption
+     */
+    _getPlayerListForBroadcast(game) {
+        return Array.from(game.players.values()).map(p => ({
+            id: p.id,
+            name: p.name,
+            disconnected: p.disconnected || false
+        }));
     }
 
     /**
@@ -179,6 +341,14 @@ class PlayerManagementService {
         io.to(`game-${game.pin}`).emit('game-ended', {
             reason: 'Host disconnected'
         });
+
+        // Clear any pending disconnect grace period timers for this game's players
+        for (const player of game.players.values()) {
+            if (player.sessionToken && this.disconnectTimers.has(player.sessionToken)) {
+                clearTimeout(this.disconnectTimers.get(player.sessionToken));
+                this.disconnectTimers.delete(player.sessionToken);
+            }
+        }
 
         // Clean up player references from global registry
         for (const playerId of game.players.keys()) {

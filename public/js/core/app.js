@@ -35,7 +35,17 @@ export class QuizGame {
         // Initialize socket connection with base path support for Kubernetes
         const basePath = document.querySelector('base')?.getAttribute('href') || '/';
         const cleanPath = basePath.replace(/\/$/, '');
-        this.socket = io({ path: cleanPath + '/socket.io' });
+        // Safari (non-Chrome) struggles with WebSocket upgrades; use polling-first for reliability
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        this.socket = io({
+            path: cleanPath + '/socket.io',
+            transports: isSafari ? ['polling', 'websocket'] : ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 20000
+        });
 
         // AbortController for cleanup of document-level event listeners
         this.abortController = new AbortController();
@@ -113,6 +123,9 @@ export class QuizGame {
 
         // Set default player name
         this.setDefaultPlayerName();
+
+        // Check for reconnection data on page load
+        this._checkForPendingRejoin();
 
         // Logger system initialized and ready
 
@@ -1184,6 +1197,34 @@ export class QuizGame {
             const playerNumber = Math.floor(Math.random() * LIMITS.MAX_PLAYER_NUMBER) + 1;
             const defaultName = `Player${playerNumber}`;
             playerNameInput.value = defaultName;
+        }
+    }
+
+    /**
+     * Check for pending rejoin data on page load.
+     * If sessionStorage has reconnection info, attempt to rejoin once connected.
+     */
+    _checkForPendingRejoin() {
+        try {
+            const raw = sessionStorage.getItem('quizix_reconnect');
+            if (!raw) return;
+
+            const data = JSON.parse(raw);
+            if (!data.pin || !data.sessionToken) return;
+
+            logger.info('Found pending rejoin data, will attempt rejoin on connect:', { pin: data.pin });
+
+            // Wait for socket connection before attempting rejoin
+            if (this.socket.connected) {
+                this.socketManager._attemptRejoin();
+            } else {
+                this.socket.once('connect', () => {
+                    this.socketManager._attemptRejoin();
+                });
+            }
+        } catch (e) {
+            logger.warn('Failed to check pending rejoin:', e);
+            try { sessionStorage.removeItem('quizix_reconnect'); } catch (_) { /* ignore */ }
         }
     }
 

@@ -397,6 +397,25 @@
     }
 }
 
+/* Light mode variant - border + background tint is more visible than glow on light backgrounds */
+@keyframes correctPulseLightMode {
+    0%, 100% {
+        box-shadow: 0 12px 40px rgba(16, 185, 129, 0.4);
+        border-color: #10b981;
+    }
+    50% {
+        box-shadow: 0 16px 50px rgba(16, 185, 129, 0.6);
+        border-color: #059669;
+    }
+}
+
+[data-theme="light"] .option-display.correct {
+    box-shadow: 0 12px 40px rgba(16, 185, 129, 0.4);
+    border: 3px solid #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    animation-name: correctPulseLightMode;
+}
+
 /* === HOST OPTION CODE SNIPPET STYLING === */
 
 /* Code blocks in host option displays */

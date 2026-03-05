@@ -70,13 +70,43 @@ function registerPlayerEvents(io, socket, options) {
         }
     });
 
+    // Handle player rejoin via session token
+    socket.on('player-rejoin', (data) => {
+        if (!checkRateLimit(socket.id, 'player-rejoin', 5, socket)) return;
+        try {
+            if (!data || typeof data !== 'object') {
+                socket.emit('rejoin-failed', { message: 'Invalid request data' });
+                return;
+            }
+
+            const { pin, sessionToken } = data;
+            const game = gameSessionService.getGame(pin);
+
+            const result = playerManagementService.handlePlayerRejoin(
+                socket.id,
+                pin,
+                sessionToken,
+                game,
+                socket,
+                io
+            );
+
+            if (!result.success) {
+                socket.emit('rejoin-failed', { message: result.error, messageKey: result.messageKey });
+            }
+        } catch (error) {
+            logger.error('Error in player-rejoin handler:', error);
+            socket.emit('rejoin-failed', { message: 'Failed to rejoin game' });
+        }
+    });
+
     // Handle intentional leave (player clicks leave button)
     socket.on('leave-game', () => {
         try {
             const playerData = playerManagementService.getPlayer(socket.id);
             if (playerData) {
                 const game = gameSessionService.getGame(playerData.gamePin);
-                playerManagementService.handlePlayerDisconnect(socket.id, game, io);
+                playerManagementService.handlePlayerDisconnect(socket.id, game, io, true);
                 logger.info(`Player ${playerData.name} left game ${playerData.gamePin} intentionally`);
             }
         } catch (error) {
@@ -86,11 +116,11 @@ function registerPlayerEvents(io, socket, options) {
 
     socket.on('disconnect', () => {
         try {
-            // Handle player disconnect
+            // Handle player disconnect (non-intentional — grace period for active games)
             const playerData = playerManagementService.getPlayer(socket.id);
             if (playerData) {
                 const game = gameSessionService.getGame(playerData.gamePin);
-                playerManagementService.handlePlayerDisconnect(socket.id, game, io);
+                playerManagementService.handlePlayerDisconnect(socket.id, game, io, false);
             }
 
             // Handle host disconnect

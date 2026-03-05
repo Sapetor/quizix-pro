@@ -175,7 +175,7 @@ const CONFIG = {
         PIN_LENGTH: 6
     },
     NETWORK: {
-        PING_TIMEOUT: 60000,
+        PING_TIMEOUT: 120000,
         PING_INTERVAL: 25000,
         UPGRADE_TIMEOUT: 30000
     }
