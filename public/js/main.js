@@ -243,11 +243,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.querySelectorAll('.first-game-hint').forEach(el => el.classList.add('hidden'));
         }
 
-        // First visit: show language picker, then onboarding; returning: delayed onboarding check
-        if (!getItem('language')) {
-            showLanguagePicker().then(() => tryStartOnboarding(0));
-        } else {
-            tryStartOnboarding(800);
+        // Skip onboarding when joining via QR code (PIN in URL) - go straight to lobby
+        if (!pinFromURL) {
+            // First visit: show language picker, then onboarding; returning: delayed onboarding check
+            if (!getItem('language')) {
+                showLanguagePicker().then(() => tryStartOnboarding(0));
+            } else {
+                tryStartOnboarding(800);
+            }
         }
 
         // FOUC Prevention: Add loaded class for smooth appearance
