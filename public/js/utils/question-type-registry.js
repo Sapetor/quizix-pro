@@ -91,7 +91,7 @@ const QUESTION_TYPES = {
 
             // Get correct answer from checked radio button
             const correctAnswerElement = optionsContainer.querySelector('.correct-option:checked');
-            const originalCorrectIndex = correctAnswerElement ? parseInt(correctAnswerElement.value || correctAnswerElement.dataset.option) : 0;
+            const originalCorrectIndex = correctAnswerElement ? parseInt(correctAnswerElement.dataset.option) : 0;
 
             // Remap correct index to filtered array position
             let correctIndex = indexMap.indexOf(originalCorrectIndex);
