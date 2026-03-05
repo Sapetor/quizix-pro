@@ -100,9 +100,11 @@ const QUESTION_TYPES = {
                 correctIndex = 0;
             }
 
+            const safeIndex = isNaN(correctIndex) ? 0 : correctIndex;
             return {
                 options,
-                correctIndex: isNaN(correctIndex) ? 0 : correctIndex
+                correctAnswer: safeIndex,
+                correctIndex: safeIndex
             };
         },
 
@@ -116,12 +118,15 @@ const QUESTION_TYPES = {
 
             const optionInputs = optionsContainer.querySelectorAll('.option');
 
+            // Support both field names — correctIndex is editor canonical, correctAnswer is server/AI canonical
+            const correctIdx = data.correctIndex ?? data.correctAnswer ?? 0;
+
             data.options.forEach((optionText, index) => {
                 if (optionInputs[index]) {
                     optionInputs[index].value = optionText;
 
                     // Mark correct answer conceptually (not used for logic with radios, but good for styling)
-                    if (index === data.correctIndex) {
+                    if (index === correctIdx) {
                         optionInputs[index].classList.add('correct');
                     } else {
                         optionInputs[index].classList.remove('correct');
@@ -130,10 +135,10 @@ const QUESTION_TYPES = {
             });
 
             // Set the correct radio button
-            const correctRadio = optionsContainer.querySelector(`.correct-option[data-option="${data.correctIndex}"]`);
+            const correctRadio = optionsContainer.querySelector(`.correct-option[data-option="${correctIdx}"]`);
             if (correctRadio) {
                 correctRadio.checked = true;
-                logger.debug('Set correct radio to index:', data.correctIndex);
+                logger.debug('Set correct radio to index:', correctIdx);
             }
         },
 
@@ -150,7 +155,8 @@ const QUESTION_TYPES = {
                 return { valid: false, error: 'At least 2 options required' };
             }
 
-            if (data.correctIndex === undefined || data.correctIndex < 0 || data.correctIndex >= data.options.length) {
+            const correctIdx = data.correctIndex ?? data.correctAnswer;
+            if (correctIdx === undefined || correctIdx < 0 || correctIdx >= data.options.length) {
                 return { valid: false, error: 'Valid correct answer must be selected' };
             }
 

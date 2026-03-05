@@ -32,7 +32,8 @@ const QUESTION_TYPES = {
             if (data.options.length < 2) {
                 return { valid: false, error: 'At least 2 options required' };
             }
-            if (data.correctIndex === undefined || data.correctIndex < 0 || data.correctIndex >= data.options.length) {
+            const correctIdx = data.correctIndex ?? data.correctAnswer;
+            if (correctIdx === undefined || correctIdx < 0 || correctIdx >= data.options.length) {
                 return { valid: false, error: 'Valid correct answer must be selected' };
             }
             return { valid: true };

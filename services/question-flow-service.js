@@ -155,7 +155,7 @@ class QuestionFlowService {
    * @returns {Object} Correct answer data
    */
     buildCorrectAnswerData(question) {
-        const correctAnswer = question.correctAnswer;
+        const correctAnswer = question.correctAnswer ?? question.correctIndex;
         let correctOption = '';
 
         switch (question.type || 'multiple-choice') {
