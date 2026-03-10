@@ -5,8 +5,10 @@
 
 import { translationManager } from '../utils/translation-manager.js';
 import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
-import { logger, UI } from '../core/config.js';
+import { logger, UI, TIMING } from '../core/config.js';
 import { uiStateManager } from '../utils/ui-state-manager.js';
+
+const RECONNECT_KEY = 'quizix_reconnect';
 
 export class SocketManager {
     constructor(socket, gameManager, uiManager, soundManager) {
@@ -165,10 +167,11 @@ export class SocketManager {
                 // Store reconnection info in sessionStorage
                 if (data.sessionToken) {
                     try {
-                        sessionStorage.setItem('quizix_reconnect', JSON.stringify({
+                        sessionStorage.setItem(RECONNECT_KEY, JSON.stringify({
                             pin: data.gamePin,
                             playerName: data.playerName,
-                            sessionToken: data.sessionToken
+                            sessionToken: data.sessionToken,
+                            savedAt: Date.now()
                         }));
                     } catch (e) {
                         logger.warn('Failed to store reconnection data:', e);
@@ -370,6 +373,7 @@ export class SocketManager {
 
             // Clear reconnection data — game is over
             this._clearReconnectionData();
+            this._hideRejoinBanner();
 
             // Switch to results state for leaderboard and celebration
             if (window.uiStateManager?.setState) {
@@ -578,6 +582,7 @@ export class SocketManager {
             const stopBtnEnded = this._getElement('stop-quiz-btn');
             if (stopBtnEnded) stopBtnEnded.classList.add('hidden');
             this._clearReconnectionData();
+            this._hideRejoinBanner();
             this.gameManager.stopTimer();
             this.gameManager.resetGameState();
             this.uiManager.showScreen('main-menu');
@@ -589,6 +594,7 @@ export class SocketManager {
         this.socket.on('force-disconnect', (data) => {
             logger.debug('Force disconnect:', data);
             this._clearReconnectionData();
+            this._hideRejoinBanner();
             this.gameManager.stopTimer();
             this.gameManager.resetGameState();
             translationManager.showAlert('info', this._resolveServerMessage(data, 'error_host_disconnected'));
@@ -606,17 +612,22 @@ export class SocketManager {
         });
 
         this.socket.on('reconnect_failed', () => {
-            logger.error('Reconnection failed');
+            logger.error('Reconnection failed — preserving session data for manual rejoin');
             this._hideReconnectionOverlay();
-            this._clearReconnectionData();
-            translationManager.showAlert('error',
-                translationManager.getTranslationSync('error_reconnect_failed') || 'Failed to reconnect to server');
+
+            // DON'T clear reconnection data — player can still rejoin manually
+            // Reset game state and go to main menu, then show rejoin banner
+            this.gameManager.stopTimer();
+            this.gameManager.resetGameState();
+            this.uiManager.showScreen('main-menu');
+            this._showRejoinBanner();
         });
 
         // Handle successful rejoin
         this.socket.on('rejoin-success', (data) => {
             logger.info('Rejoin successful:', data);
             this._hideReconnectionOverlay();
+            this._hideRejoinBanner();
 
             // Restore player state
             this.gameManager.setPlayerInfo(data.playerName, false);
@@ -642,12 +653,38 @@ export class SocketManager {
             logger.warn('Rejoin failed:', data);
             this._hideReconnectionOverlay();
             this._clearReconnectionData();
+            this._hideRejoinBanner();
 
             // Reset state and go to main menu
             this.gameManager.stopTimer();
             this.gameManager.resetGameState();
             this.uiManager.showScreen('main-menu');
         });
+
+        // Rejoin banner button handlers (cleaned up via abortController on disconnect)
+        const signal = this.abortController.signal;
+
+        const rejoinBtn = this._getElement('rejoin-banner-btn');
+        if (rejoinBtn) {
+            rejoinBtn.addEventListener('click', () => this._handleRejoinClick(), { signal });
+        }
+
+        const dismissBtn = this._getElement('rejoin-dismiss-btn');
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', () => this._handleRejoinDismiss(), { signal });
+        }
+
+        // Reconnection overlay "Return to Menu" button
+        const returnBtn = this._getElement('reconnection-return-btn');
+        if (returnBtn) {
+            returnBtn.addEventListener('click', () => {
+                this._hideReconnectionOverlay();
+                this.gameManager.stopTimer();
+                this.gameManager.resetGameState();
+                this.uiManager.showScreen('main-menu');
+                this._showRejoinBanner();
+            }, { signal });
+        }
     }
 
     /**
@@ -847,24 +884,55 @@ export class SocketManager {
     }
 
     /**
-     * Attempt to rejoin a game using stored session token
+     * Read and validate reconnection data from sessionStorage.
+     * Returns parsed data if valid and unexpired, or null otherwise.
+     * @returns {{ pin: string, playerName: string, sessionToken: string, savedAt: number } | null}
+     */
+    _getValidReconnectData() {
+        try {
+            const raw = sessionStorage.getItem(RECONNECT_KEY);
+            if (!raw) return null;
+
+            const data = JSON.parse(raw);
+            if (!data.pin || !data.sessionToken) return null;
+
+            // Check expiry against server grace period
+            if (data.savedAt && (Date.now() - data.savedAt) > TIMING.RECONNECT_GRACE_MS) {
+                logger.info('Reconnect data expired, clearing');
+                this._clearReconnectionData();
+                return null;
+            }
+
+            return data;
+        } catch (e) {
+            logger.warn('Failed to read reconnection data:', e);
+            this._clearReconnectionData();
+            return null;
+        }
+    }
+
+    /**
+     * Attempt to rejoin a game using stored session token.
+     * Reconnects socket first if disconnected.
      */
     _attemptRejoin() {
-        try {
-            const raw = sessionStorage.getItem('quizix_reconnect');
-            if (!raw) return;
+        const data = this._getValidReconnectData();
+        if (!data) return;
 
-            const reconnectData = JSON.parse(raw);
-            if (reconnectData.pin && reconnectData.sessionToken) {
-                logger.info('Attempting rejoin with session token:', { pin: reconnectData.pin });
-                this.socket.emit('player-rejoin', {
-                    pin: reconnectData.pin,
-                    sessionToken: reconnectData.sessionToken
-                });
-            }
-        } catch (e) {
-            logger.warn('Failed to parse reconnection data:', e);
-            this._clearReconnectionData();
+        logger.info('Attempting rejoin with session token:', { pin: data.pin });
+
+        const emitRejoin = () => {
+            this.socket.emit('player-rejoin', {
+                pin: data.pin,
+                sessionToken: data.sessionToken
+            });
+        };
+
+        if (!this.socket.connected) {
+            this.socket.connect();
+            this.socket.once('connect', emitRejoin);
+        } else {
+            emitRejoin();
         }
     }
 
@@ -873,30 +941,126 @@ export class SocketManager {
      */
     _clearReconnectionData() {
         try {
-            sessionStorage.removeItem('quizix_reconnect');
+            sessionStorage.removeItem(RECONNECT_KEY);
         } catch (e) {
             logger.warn('Failed to clear reconnection data:', e);
         }
     }
 
     /**
-     * Show the reconnection overlay
+     * Show the reconnection overlay with game context info
      */
     _showReconnectionOverlay() {
-        const overlay = document.getElementById('reconnection-overlay');
-        if (overlay) {
-            overlay.classList.remove('hidden');
+        const overlay = this._getElement('reconnection-overlay');
+        if (!overlay) return;
+        overlay.classList.remove('hidden');
+
+        // Populate context from stored reconnection data
+        const contextEl = this._getElement('reconnection-context');
+        if (contextEl) {
+            const data = this._getValidReconnectData();
+            if (data) {
+                const pinLabel = translationManager.getTranslationSync('rejoin_game_pin_label') || 'PIN:';
+                contextEl.textContent = `${pinLabel} ${data.pin} — ${data.playerName}`;
+            }
+        }
+
+        // Show "Return to Menu" button after a delay (give auto-reconnect a chance first)
+        const returnBtn = this._getElement('reconnection-return-btn');
+        if (returnBtn) {
+            returnBtn.classList.add('hidden');
+            this._reconnectionReturnTimeout = setTimeout(() => {
+                returnBtn.classList.remove('hidden');
+            }, 5000);
         }
     }
 
     /**
-     * Hide the reconnection overlay
+     * Hide the reconnection overlay and clean up timers
      */
     _hideReconnectionOverlay() {
-        const overlay = document.getElementById('reconnection-overlay');
+        const overlay = this._getElement('reconnection-overlay');
         if (overlay) {
             overlay.classList.add('hidden');
         }
+
+        // Clear the delayed "Return to Menu" timeout
+        if (this._reconnectionReturnTimeout) {
+            clearTimeout(this._reconnectionReturnTimeout);
+            this._reconnectionReturnTimeout = null;
+        }
+
+        // Re-hide the return button for next time
+        const returnBtn = this._getElement('reconnection-return-btn');
+        if (returnBtn) {
+            returnBtn.classList.add('hidden');
+        }
+
+        // Clear context text
+        const contextEl = this._getElement('reconnection-context');
+        if (contextEl) {
+            contextEl.textContent = '';
+        }
+    }
+
+    // ==================== REJOIN BANNER ====================
+
+    /**
+     * Show the rejoin banner on the main menu if valid reconnection data exists
+     */
+    _showRejoinBanner() {
+        const banner = this._getElement('rejoin-game-banner');
+        if (!banner) return;
+
+        const data = this._getValidReconnectData();
+        if (!data) return;
+
+        // Populate banner with game info (textContent = XSS-safe)
+        const pinEl = this._getElement('rejoin-banner-pin');
+        const nameEl = this._getElement('rejoin-banner-name');
+        if (pinEl) pinEl.textContent = data.pin;
+        if (nameEl) nameEl.textContent = data.playerName;
+
+        banner.classList.remove('hidden');
+        logger.info('Rejoin banner shown', { pin: data.pin, playerName: data.playerName });
+    }
+
+    /**
+     * Hide the rejoin banner
+     */
+    _hideRejoinBanner() {
+        const banner = this._getElement('rejoin-game-banner');
+        if (banner) {
+            banner.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Handle click on the "Rejoin" button in the banner
+     */
+    _handleRejoinClick() {
+        const data = this._getValidReconnectData();
+        if (!data) {
+            this._clearReconnectionData();
+            this._hideRejoinBanner();
+            const msg = translationManager.getTranslationSync('rejoin_expired') || 'Session expired — please join a new game';
+            if (window.toastNotifications) {
+                window.toastNotifications.show(msg, 'warning', 3000);
+            }
+            return;
+        }
+
+        this._hideRejoinBanner();
+        this._attemptRejoin();
+        logger.info('Manual rejoin attempted', { pin: data.pin });
+    }
+
+    /**
+     * Handle click on the "Dismiss" button in the banner
+     */
+    _handleRejoinDismiss() {
+        this._clearReconnectionData();
+        this._hideRejoinBanner();
     }
 
     /**
@@ -905,6 +1069,9 @@ export class SocketManager {
     disconnect() {
         // Clean up event listeners
         this.abortController.abort();
+
+        // Clean up pending reconnection timer
+        this._hideReconnectionOverlay();
 
         // Clean up game state when intentionally disconnecting
         if (this.gameManager) {

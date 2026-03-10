@@ -1180,5 +1180,12 @@ export default {
     import_quiz_hint: 'Możesz również importować quizy z plików JSON lub Excel',
     pin_format_hint: 'Wpisz 6-cyfrowy PIN wyświetlany na ekranie gospodarza',
     waiting_hint: 'Gospodarz rozpocznie grę, gdy wszyscy gracze dołączą',
-    choose_your_language: 'Wybierz swój Język'
+    choose_your_language: 'Wybierz swój Język',
+    // Rejoin Banner
+    rejoin_game_available: 'Gra w toku',
+    rejoin_game_pin_label: 'PIN:',
+    rejoin_button: 'Dołącz ponownie',
+    rejoin_dismiss: 'Odrzuć',
+    rejoin_expired: 'Sesja wygasła — dołącz do nowej gry',
+    return_to_menu: 'Wróć do menu',
 };

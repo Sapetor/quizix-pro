@@ -67,6 +67,7 @@ export const TIMING = {
     API_TIMEOUT: 2000,                // API request timeout
     RETRY_DELAY: 1000,                // Retry after failure
     STREAMING_INDICATOR: 1500,        // Show streaming progress
+    RECONNECT_GRACE_MS: 2 * 60 * 1000, // Must match server grace period (player-management-service)
 
     // Leaderboard celebration timing
     CONFETTI_DELAY: 100,              // Delay before confetti

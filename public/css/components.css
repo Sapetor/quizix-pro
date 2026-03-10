@@ -7982,3 +7982,110 @@ html {
 .language-picker-name {
     font-weight: 500;
 }
+
+/* ==================== Rejoin Game Banner ==================== */
+
+.rejoin-game-banner {
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(234, 88, 12, 0.15));
+    border: 2px solid var(--color-warning-500, #f59e0b);
+    border-radius: var(--border-radius-large, 16px);
+    animation: rejoinPulse 1.5s ease-in-out 3;
+}
+
+@keyframes rejoinPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+    50% { box-shadow: 0 0 16px 0 rgba(245, 158, 11, 0.25); }
+}
+
+.rejoin-banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.rejoin-banner-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+
+.rejoin-banner-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.rejoin-banner-text {
+    min-width: 0;
+}
+
+.rejoin-banner-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-warning-400, #fbbf24);
+    margin: 0;
+}
+
+.rejoin-banner-detail {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #9ca3af);
+    margin: 2px 0 0;
+}
+
+.rejoin-banner-detail strong {
+    color: var(--text-primary, #fff);
+    letter-spacing: 0.05em;
+}
+
+.rejoin-banner-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+    .rejoin-banner-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .rejoin-banner-actions {
+        justify-content: stretch;
+    }
+    .rejoin-banner-actions .btn {
+        flex: 1;
+    }
+}
+
+[data-theme="light"] .rejoin-game-banner {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(234, 88, 12, 0.08));
+    border-color: var(--color-warning-500, #f59e0b);
+}
+
+[data-theme="light"] .rejoin-banner-title {
+    color: #b45309;
+}
+
+[data-theme="light"] .rejoin-banner-detail strong {
+    color: var(--text-primary, #111827);
+}
+
+/* --- Reconnection Overlay Enhancements --- */
+
+.reconnection-context {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 0.5rem;
+}
+
+.reconnection-return-btn {
+    margin-top: 1.5rem;
+}
+
+.reconnection-return-btn.hidden {
+    display: none !important;
+}

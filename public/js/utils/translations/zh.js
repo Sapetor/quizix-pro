@@ -1166,5 +1166,12 @@ export default {
     import_quiz_hint: '你也可以从JSON或Excel文件导入测验',
     pin_format_hint: '输入主持人屏幕上显示的6位PIN码',
     waiting_hint: '所有玩家加入后主持人将开始游戏',
-    choose_your_language: '选择你的语言'
+    choose_your_language: '选择你的语言',
+    // Rejoin Banner
+    rejoin_game_available: '游戏进行中',
+    rejoin_game_pin_label: 'PIN:',
+    rejoin_button: '重新加入',
+    rejoin_dismiss: '关闭',
+    rejoin_expired: '会话已过期 — 请加入新游戏',
+    return_to_menu: '返回菜单',
 };

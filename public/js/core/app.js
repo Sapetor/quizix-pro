@@ -1231,26 +1231,23 @@ export class QuizGame {
      * If sessionStorage has reconnection info, attempt to rejoin once connected.
      */
     _checkForPendingRejoin() {
-        try {
-            const raw = sessionStorage.getItem('quizix_reconnect');
-            if (!raw) return;
+        if (!this.socketManager) return;
 
-            const data = JSON.parse(raw);
-            if (!data.pin || !data.sessionToken) return;
+        const data = this.socketManager._getValidReconnectData();
+        if (!data) return;
 
-            logger.info('Found pending rejoin data, will attempt rejoin on connect:', { pin: data.pin });
+        logger.info('Found pending rejoin data, will attempt rejoin on connect:', { pin: data.pin });
 
-            // Wait for socket connection before attempting rejoin
-            if (this.socket.connected) {
+        // Show rejoin banner as visual fallback while auto-rejoin is attempted
+        this.socketManager._showRejoinBanner();
+
+        // Wait for socket connection before attempting rejoin
+        if (this.socket.connected) {
+            this.socketManager._attemptRejoin();
+        } else {
+            this.socket.once('connect', () => {
                 this.socketManager._attemptRejoin();
-            } else {
-                this.socket.once('connect', () => {
-                    this.socketManager._attemptRejoin();
-                });
-            }
-        } catch (e) {
-            logger.warn('Failed to check pending rejoin:', e);
-            try { sessionStorage.removeItem('quizix_reconnect'); } catch (_) { /* ignore */ }
+            });
         }
     }
 

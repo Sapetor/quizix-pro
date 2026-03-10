@@ -11,9 +11,9 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Preload critical CSS -->
-    <link rel="preload" href="css/main.bundle.css?v=42" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="css/main.bundle.css?v=43" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript>
-        <link rel="stylesheet" href="css/main.bundle.css?v=42">
+        <link rel="stylesheet" href="css/main.bundle.css?v=43">
     </noscript>
 
     <!-- Preload critical JavaScript -->
@@ -675,6 +675,27 @@
 
         <main id="main-content" role="main">
             <div id="main-menu" class="screen active">
+                <!-- Rejoin Game Banner (shown when player disconnected mid-game) -->
+                <div id="rejoin-game-banner" class="rejoin-game-banner hidden" role="alert">
+                    <div class="rejoin-banner-content">
+                        <div class="rejoin-banner-info">
+                            <span class="rejoin-banner-icon">&#x1F504;</span>
+                            <div class="rejoin-banner-text">
+                                <p class="rejoin-banner-title" data-translate="rejoin_game_available">Game in progress</p>
+                                <p class="rejoin-banner-detail">
+                                    <span data-translate="rejoin_game_pin_label">PIN:</span>
+                                    <strong id="rejoin-banner-pin"></strong> &mdash;
+                                    <span id="rejoin-banner-name"></span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="rejoin-banner-actions">
+                            <button id="rejoin-banner-btn" class="btn primary btn-sm" data-translate="rejoin_button">Rejoin</button>
+                            <button id="rejoin-dismiss-btn" class="btn secondary btn-sm" data-translate="rejoin_dismiss">Dismiss</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Original Desktop Menu Options (hidden on mobile) -->
                 <div class="menu-options desktop-menu">
                     <button id="host-btn" class="btn primary" data-translate="host_game">Host a Game</button>
@@ -3209,6 +3230,9 @@ class GraphScene(Scene):
         <div class="reconnection-content">
             <div class="reconnection-spinner"></div>
             <p data-translate="reconnecting">Reconnecting...</p>
+            <p id="reconnection-context" class="reconnection-context"></p>
+            <button id="reconnection-return-btn" class="btn secondary btn-sm reconnection-return-btn hidden"
+                data-translate="return_to_menu">Return to Menu</button>
         </div>
     </div>
 </body>

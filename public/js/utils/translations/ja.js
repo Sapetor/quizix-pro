@@ -1165,5 +1165,12 @@ export default {
     import_quiz_hint: 'JSONまたはExcelファイルからクイズをインポートすることもできます',
     pin_format_hint: 'ホストの画面に表示されている6桁のPINを入力してください',
     waiting_hint: 'すべてのプレイヤーが参加したらホストがゲームを開始します',
-    choose_your_language: '言語を選択'
+    choose_your_language: '言語を選択',
+    // Rejoin Banner
+    rejoin_game_available: 'ゲーム進行中',
+    rejoin_game_pin_label: 'PIN:',
+    rejoin_button: '再参加',
+    rejoin_dismiss: '閉じる',
+    rejoin_expired: 'セッション期限切れ — 新しいゲームに参加してください',
+    return_to_menu: 'メニューに戻る',
 };

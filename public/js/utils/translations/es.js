@@ -1185,5 +1185,12 @@ export default {
     import_quiz_hint: 'También puedes importar quizzes desde archivos JSON o Excel',
     pin_format_hint: 'Ingresa el PIN de 6 dígitos que aparece en la pantalla del anfitrión',
     waiting_hint: 'El anfitrión iniciará el juego cuando todos los jugadores se hayan unido',
-    choose_your_language: 'Elige tu Idioma'
+    choose_your_language: 'Elige tu Idioma',
+    // Rejoin Banner
+    rejoin_game_available: 'Juego en curso',
+    rejoin_game_pin_label: 'PIN:',
+    rejoin_button: 'Reconectar',
+    rejoin_dismiss: 'Descartar',
+    rejoin_expired: 'Sesión expirada — únete a un nuevo juego',
+    return_to_menu: 'Volver al menú',
 };
