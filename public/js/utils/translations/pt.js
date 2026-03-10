@@ -748,6 +748,10 @@ export default {
     export: 'Exportar',
     to_top: 'Ir ao Topo',
     exit_to_main: 'Voltar ao Menu Principal',
+    stop_quiz: 'Parar Quiz',
+    back_to_home: 'Voltar ao Início',
+    confirm_stop_quiz: 'Parar o quiz e mostrar resultados?',
+    confirm_back_to_home: 'Sair do jogo? Todos os jogadores serão desconectados.',
 
     // Additional missing keys
     ready_to_start: 'Pronto para Começar?',

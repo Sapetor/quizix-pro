@@ -4,7 +4,7 @@
  */
 
 function registerGameEvents(io, socket, options) {
-    const { gameSessionService, playerManagementService, checkRateLimit, logger } = options;
+    const { gameSessionService, playerManagementService, questionFlowService, checkRateLimit, logger } = options;
 
     socket.on('host-join', (data) => {
         if (!checkRateLimit(socket.id, 'host-join', 5, socket)) return;
@@ -64,6 +64,66 @@ function registerGameEvents(io, socket, options) {
         } catch (error) {
             logger.error('Error in start-game handler:', error);
             socket.emit('error', { message: 'Failed to start game', messageKey: 'error_failed_start_game' });
+        }
+    });
+
+    // Handle stop-quiz - host ends the game early, shows final results
+    socket.on('stop-quiz', () => {
+        if (!checkRateLimit(socket.id, 'stop-quiz', 3, socket)) return;
+        try {
+            const game = gameSessionService.findGameByHost(socket.id);
+            if (!game) return;
+            if (game.gameState === 'finished') return;
+
+            // If a question is actively running, end it first
+            if (game.gameState === 'question') {
+                game.endingQuestionEarly = false;
+                if (game.earlyEndTimer) {
+                    clearTimeout(game.earlyEndTimer);
+                    game.earlyEndTimer = null;
+                }
+
+                game.endQuestion();
+
+                const question = game.quiz.questions[game.currentQuestion];
+                const correctAnswerData = questionFlowService.buildCorrectAnswerData(question);
+
+                io.to(game.hostId).emit('question-timeout', correctAnswerData);
+                io.to(game.hostId).emit('answer-statistics', game.getAnswerStatistics());
+                questionFlowService.emitPlayerResults(game, io);
+            }
+
+            // Clear pending timers
+            game.isAdvancing = false;
+            if (game.advanceTimer) {
+                clearTimeout(game.advanceTimer);
+                game.advanceTimer = null;
+            }
+            if (game.leaderboardTimer) {
+                clearTimeout(game.leaderboardTimer);
+                game.leaderboardTimer = null;
+            }
+
+            gameSessionService.endGame(game, io);
+            logger.info(`Game ${game.pin} stopped early by host`);
+        } catch (error) {
+            logger.error('Error in stop-quiz handler:', error);
+            socket.emit('error', { message: 'Failed to stop quiz', messageKey: 'error_failed_stop_quiz' });
+        }
+    });
+
+    // Handle host-leave-game - host leaves, all players disconnected
+    socket.on('host-leave-game', () => {
+        if (!checkRateLimit(socket.id, 'host-leave-game', 3, socket)) return;
+        try {
+            const game = gameSessionService.findGameByHost(socket.id);
+            if (!game) return;
+
+            playerManagementService.handleHostDisconnect(game, io);
+            gameSessionService.deleteGame(game.pin);
+            logger.info(`Host left game ${game.pin}`);
+        } catch (error) {
+            logger.error('Error in host-leave-game handler:', error);
         }
     });
 

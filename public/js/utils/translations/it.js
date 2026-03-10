@@ -460,6 +460,10 @@ export default {
     players_have_answered: 'giocatori hanno risposto',
     return_to_main: 'Torna al Menu Principale',
     exit_to_main: 'Torna al Menu Principale',
+    stop_quiz: 'Ferma Quiz',
+    back_to_home: "Torna alla Home",
+    confirm_stop_quiz: 'Fermare il quiz e mostrare i risultati?',
+    confirm_back_to_home: 'Uscire dal gioco? Tutti i giocatori verranno disconnessi.',
 
     // Additional tooltips
     adjust_font_size_tooltip: 'Regola dimensione carattere',

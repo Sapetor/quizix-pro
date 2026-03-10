@@ -421,6 +421,8 @@ export class QuizGame {
             this.nextQuestion();
         });
         bindElement('exit-to-main-stats', 'click', () => this.exitToMainMenu());
+        bindElement('stop-quiz-btn', 'click', () => this.stopQuiz());
+        bindElement('back-to-home-btn', 'click', () => this.backToHomeFromGame());
 
         // Auto-save setup
         bindElement('quiz-title', 'input', () => {
@@ -766,6 +768,30 @@ export class QuizGame {
     exitToMainMenu() {
         this.resetAndReturnToMenu();
         logger.debug('Exited game and returned to main menu');
+    }
+
+    /**
+     * Stop the quiz early and show final results (host only)
+     */
+    stopQuiz() {
+        const message = translationManager.getTranslationSync('confirm_stop_quiz') || 'Stop the quiz and show results?';
+        if (!confirm(message)) return;
+        if (this.socketManager?.socket) {
+            this.socketManager.socket.emit('stop-quiz');
+        }
+    }
+
+    /**
+     * Leave the game and return to home (host only)
+     */
+    backToHomeFromGame() {
+        const message = translationManager.getTranslationSync('confirm_back_to_home') || 'Leave the game? All players will be disconnected.';
+        if (!confirm(message)) return;
+        if (this.socketManager?.socket) {
+            this.socketManager.socket.emit('host-leave-game');
+        }
+        this.resetAndReturnToMenu();
+        logger.debug('Host left game and returned to main menu');
     }
 
     /**

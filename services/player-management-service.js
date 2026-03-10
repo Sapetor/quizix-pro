@@ -64,8 +64,8 @@ class PlayerManagementService {
             };
         }
 
-        // Check if game is still in lobby
-        if (game.gameState !== 'lobby') {
+        // Check if game is in a joinable state (lobby or between questions)
+        if (game.gameState !== 'lobby' && game.gameState !== 'revealing') {
             return {
                 success: false,
                 error: 'Game already started',
@@ -110,6 +110,16 @@ class PlayerManagementService {
         io.to(`game-${pin}`).emit('player-list-update', {
             players: currentPlayers
         });
+
+        // If joining mid-game (between questions), transition player to game screen
+        if (game.gameState === 'revealing') {
+            socket.emit('game-started', {
+                gamePin: pin,
+                questionCount: game.quiz.questions.length,
+                manualAdvancement: game.manualAdvancement || false,
+                powerUpsEnabled: game.powerUpsEnabled || false
+            });
+        }
 
         this.logger.info(`Player ${name} joined game ${pin} (${currentPlayers.length} players)`);
 
@@ -205,7 +215,7 @@ class PlayerManagementService {
     _finalizePlayerRemoval(sessionToken, game, io) {
         this.disconnectTimers.delete(sessionToken);
 
-        if (!game || game.gameState === 'ended') return;
+        if (!game || game.gameState === 'ended' || game.gameState === 'finished') return;
 
         // Find the player by session token
         for (const [playerId, player] of game.players) {
@@ -243,9 +253,13 @@ class PlayerManagementService {
             return { success: false, error: 'Game not found', messageKey: 'error_game_not_found' };
         }
 
-        // Find the disconnected player by session token
+        // Find the player by session token.
+        // First try disconnected players (normal case: server already detected disconnect).
+        // Then try still-connected players (race condition: client reconnected before
+        // server's pingTimeout detected the old socket is dead).
         let foundPlayerId = null;
         let foundPlayer = null;
+        let wasStillConnected = false;
         for (const [playerId, player] of game.players) {
             if (player.sessionToken === sessionToken && player.disconnected) {
                 foundPlayerId = playerId;
@@ -255,10 +269,37 @@ class PlayerManagementService {
         }
 
         if (!foundPlayer) {
+            // Race condition: client reconnected faster than server's pingTimeout.
+            // The old socket is dead but server hasn't fired 'disconnect' yet.
+            for (const [playerId, player] of game.players) {
+                if (player.sessionToken === sessionToken && playerId !== newSocketId) {
+                    foundPlayerId = playerId;
+                    foundPlayer = player;
+                    wasStillConnected = true;
+                    break;
+                }
+            }
+        }
+
+        if (!foundPlayer) {
             return { success: false, error: 'Session not found or expired', messageKey: 'rejoin_failed' };
         }
 
-        // Clear the grace period timer
+        // If old socket still appears connected, force-disconnect it so the
+        // eventual server-side 'disconnect' event is a no-op (player already gone
+        // from game.players under the old ID).
+        if (wasStillConnected) {
+            // Delete from global registry BEFORE force-disconnecting, so the
+            // synchronous 'disconnect' event handler finds no player data and is a no-op.
+            this.players.delete(foundPlayerId);
+            const oldSocket = io.sockets.sockets.get(foundPlayerId);
+            if (oldSocket) {
+                oldSocket.disconnect(true);
+            }
+            this.logger.info(`Rejoin race condition: force-disconnected stale socket ${foundPlayerId} for player ${foundPlayer.name}`);
+        }
+
+        // Clear the grace period timer (exists only if server had detected disconnect)
         const timerId = this.disconnectTimers.get(sessionToken);
         if (timerId) {
             clearTimeout(timerId);
@@ -295,6 +336,16 @@ class PlayerManagementService {
             sessionToken: sessionToken,
             gamePin: pin
         });
+
+        // If game already finished, send final results immediately
+        if (game.gameState === 'finished' && game.leaderboard) {
+            const conceptMastery = game.calculatePlayerConceptMastery(newSocketId);
+            socket.emit('game-end', {
+                finalLeaderboard: game.leaderboard,
+                conceptMastery: conceptMastery
+            });
+            this.logger.info(`Sent final results to late-rejoining player ${foundPlayer.name} in game ${pin}`);
+        }
 
         // Broadcast updated player list
         const currentPlayers = this._getPlayerListForBroadcast(game);

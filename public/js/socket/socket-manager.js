@@ -252,6 +252,13 @@ export class SocketManager {
         this.socket.on('question-start', errorBoundary.safeSocketHandler((data) => {
             logger.debug('Question started:', data);
 
+            // Show stop button for host during active question
+            const isHostForStop = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
+            if (isHostForStop) {
+                const stopBtn = this._getElement('stop-quiz-btn');
+                if (stopBtn) stopBtn.classList.remove('hidden');
+            }
+
             // Switch to playing state for immersive gameplay
             uiStateManager?.setState?.('playing');
 
@@ -285,6 +292,10 @@ export class SocketManager {
                 clearInterval(this.gameManager.timer);
                 this.gameManager.timer = null;
             }
+
+            // Hide stop button between questions
+            const stopBtnTimeout = this._getElement('stop-quiz-btn');
+            if (stopBtnTimeout) stopBtnTimeout.classList.add('hidden');
 
             // Show correct answer on host side
             const isHost = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
@@ -343,6 +354,10 @@ export class SocketManager {
 
         this.socket.on('game-end', (data) => {
             logger.debug('Game ended - triggering final results:', data);
+
+            // Hide host game controls
+            const stopBtnEnd = this._getElement('stop-quiz-btn');
+            if (stopBtnEnd) stopBtnEnd.classList.add('hidden');
 
             // Clear reconnection data — game is over
             this._clearReconnectionData();
@@ -551,6 +566,8 @@ export class SocketManager {
         // Handle game-ended (emitted when host disconnects mid-game)
         this.socket.on('game-ended', (data) => {
             logger.debug('Game ended (host disconnected):', data);
+            const stopBtnEnded = this._getElement('stop-quiz-btn');
+            if (stopBtnEnded) stopBtnEnded.classList.add('hidden');
             this._clearReconnectionData();
             this.gameManager.stopTimer();
             this.gameManager.resetGameState();

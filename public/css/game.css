@@ -201,6 +201,12 @@
     min-height: 60px; /* Ensure consistent height */
 }
 
+.host-game-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
 
 #question-counter {
     font-size: 1.1rem;

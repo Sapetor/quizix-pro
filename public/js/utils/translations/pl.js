@@ -449,6 +449,10 @@ export default {
     players_have_answered: 'graczy odpowiedziało',
     return_to_main: 'Powrót do Menu Głównego',
     exit_to_main: 'Powrót do Menu Głównego',
+    stop_quiz: 'Zatrzymaj Quiz',
+    back_to_home: 'Wróć do Strony Głównej',
+    confirm_stop_quiz: 'Zatrzymać quiz i pokazać wyniki?',
+    confirm_back_to_home: 'Opuścić grę? Wszyscy gracze zostaną rozłączeni.',
 
     // Additional tooltips
     adjust_font_size_tooltip: 'Dostosuj rozmiar czcionki',
