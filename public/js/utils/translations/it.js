@@ -55,6 +55,7 @@ export default {
     of: 'di',
     welcome: 'Benvenuto',
     waiting_for_players: 'In attesa dei giocatori...',
+    in_progress: 'In Corso',
     connected_waiting: "Connesso - In attesa dell'host",
     game_starting: 'Il gioco sta iniziando!',
     correct_answer_msg: 'Corretto!',

@@ -59,6 +59,7 @@ export default {
     of: 'z',
     welcome: 'Witaj',
     waiting_for_players: 'Oczekiwanie na graczy...',
+    in_progress: 'W Toku',
     connected_waiting: 'Połączono - Oczekiwanie na gospodarza',
     game_starting: 'Gra się rozpoczyna!',
     correct_answer_msg: 'Poprawnie!',

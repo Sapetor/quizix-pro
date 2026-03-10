@@ -77,6 +77,7 @@ export default {
     of: 'of',
     welcome: 'Welcome',
     waiting_for_players: 'Waiting for players...',
+    in_progress: 'In Progress',
     connected_waiting: 'Connected - Waiting for host',
     game_starting: 'Game is starting!',
     correct_answer_msg: 'Correct!',

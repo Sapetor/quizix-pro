@@ -61,6 +61,7 @@ export default {
     of: 'de',
     welcome: 'Bem-vindo',
     waiting_for_players: 'Aguardando jogadores...',
+    in_progress: 'Em Andamento',
     connected_waiting: 'Conectado - Aguardando o anfitrião',
     game_starting: 'O jogo está começando!',
     correct_answer_msg: 'Correto!',

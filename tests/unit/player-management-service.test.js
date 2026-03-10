@@ -151,10 +151,10 @@ describe('PlayerManagementService', () => {
             expect(result.error).toBe('Game not found');
         });
 
-        test('should reject if game already started', () => {
+        test('should reject if game already finished', () => {
             const socket = createMockSocket();
             const io = createMockIO();
-            const game = createMockGame('question');
+            const game = createMockGame('finished');
 
             const result = playerService.handlePlayerJoin(
                 socket.id, '123456', 'Player1', game, socket, io

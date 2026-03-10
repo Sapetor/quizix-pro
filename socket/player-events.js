@@ -4,7 +4,7 @@
  */
 
 function registerPlayerEvents(io, socket, options) {
-    const { gameSessionService, playerManagementService, checkRateLimit, logger } = options;
+    const { gameSessionService, playerManagementService, questionFlowService, checkRateLimit, logger } = options;
 
     socket.on('player-join', (data) => {
         if (!checkRateLimit(socket.id, 'player-join', 5, socket)) return;
@@ -88,7 +88,8 @@ function registerPlayerEvents(io, socket, options) {
                 sessionToken,
                 game,
                 socket,
-                io
+                io,
+                questionFlowService
             );
 
             if (!result.success) {

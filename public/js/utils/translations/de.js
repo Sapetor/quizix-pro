@@ -60,6 +60,7 @@ export default {
     of: 'von',
     welcome: 'Willkommen',
     waiting_for_players: 'Warten auf Spieler...',
+    in_progress: 'Laufend',
     connected_waiting: 'Verbunden - Warten auf Host',
     game_starting: 'Das Spiel beginnt!',
     correct_answer_msg: 'Richtig!',

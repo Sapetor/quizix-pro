@@ -55,6 +55,7 @@ export default {
     of: '的',
     welcome: '欢迎',
     waiting_for_players: '等待玩家...',
+    in_progress: '进行中',
     connected_waiting: '已连接 - 等待主持人',
     game_starting: '游戏即将开始！',
     correct_answer_msg: '正确！',

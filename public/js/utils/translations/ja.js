@@ -60,6 +60,7 @@ export default {
     of: 'の',
     welcome: 'ようこそ',
     waiting_for_players: 'プレイヤーを待機中...',
+    in_progress: '進行中',
     connected_waiting: '接続済み - ホストを待機中',
     game_starting: 'ゲームが開始されます！',
     correct_answer_msg: '正解！',

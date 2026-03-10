@@ -264,9 +264,18 @@ export class SocketManager {
 
             this.gameManager.displayQuestion(data);
 
+            // Block answer clicks if player already answered (rejoin scenario)
+            if (data.alreadyAnswered) {
+                this.gameManager.stateManager.answerSubmitted = true;
+            }
+
             // Ensure timer has valid duration (convert seconds to ms)
             const timeLimit = data.timeLimit && !isNaN(data.timeLimit) ? data.timeLimit : UI.DEFAULT_TIMER_SECONDS;
-            this.gameManager.startTimer(timeLimit * 1000);
+            // Use remaining time for rejoining players, full time for normal question start
+            const timerDuration = data.remainingTimeMs != null
+                ? data.remainingTimeMs
+                : (timeLimit * 1000);
+            this.gameManager.startTimer(timerDuration);
 
             if (this.soundManager?.isEnabled()) {
                 this.soundManager.playQuestionStartSound();

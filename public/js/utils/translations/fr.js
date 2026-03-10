@@ -58,6 +58,7 @@ export default {
     of: 'de',
     welcome: 'Bienvenue',
     waiting_for_players: 'En attente des joueurs...',
+    in_progress: 'En Cours',
     connected_waiting: "Connecté - En attente de l'hôte",
     game_starting: 'Le jeu commence !',
     correct_answer_msg: 'Correct !',

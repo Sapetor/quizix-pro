@@ -8,6 +8,8 @@
  * - Player reference cleanup
  */
 
+const { shuffleWithMapping } = require('./game');
+
 class PlayerManagementService {
     constructor(logger, config) {
         this.logger = logger;
@@ -65,7 +67,7 @@ class PlayerManagementService {
         }
 
         // Check if game is in a joinable state (lobby or between questions)
-        if (game.gameState !== 'lobby' && game.gameState !== 'revealing') {
+        if (game.gameState !== 'lobby' && game.gameState !== 'revealing' && game.gameState !== 'question') {
             return {
                 success: false,
                 error: 'Game already started',
@@ -111,14 +113,67 @@ class PlayerManagementService {
             players: currentPlayers
         });
 
-        // If joining mid-game (between questions), transition player to game screen
-        if (game.gameState === 'revealing') {
+        // If joining mid-game, transition player to game screen
+        if (game.gameState === 'revealing' || game.gameState === 'question') {
             socket.emit('game-started', {
                 gamePin: pin,
                 questionCount: game.quiz.questions.length,
                 manualAdvancement: game.manualAdvancement || false,
                 powerUpsEnabled: game.powerUpsEnabled || false
             });
+        }
+
+        if (game.gameState === 'question') {
+            // Send current question data so the new player can participate immediately
+            const question = game.quiz.questions[game.currentQuestion];
+            if (question) {
+                const timeLimit = question.timeLimit || question.time || 20;
+                const questionType = question.type || 'multiple-choice';
+
+                const baseQuestionData = {
+                    questionNumber: game.currentQuestion + 1,
+                    totalQuestions: game.quiz.questions.length,
+                    question: question.question,
+                    type: questionType,
+                    image: question.image || '',
+                    video: question.video || '',
+                    timeLimit: timeLimit
+                };
+
+                // Handle answer shuffling for the new player
+                const shouldShuffle = game.quiz.randomizeAnswers &&
+                    (questionType === 'multiple-choice' || questionType === 'multiple-correct') &&
+                    question.options && question.options.length > 1;
+
+                let options;
+                if (shouldShuffle) {
+                    const { shuffled, mapping } = shuffleWithMapping(question.options);
+                    game.answerMappings.set(socketId, mapping);
+                    options = shuffled;
+                } else {
+                    options = question.options;
+                }
+
+                const remainingTimeMs = Math.max(0, (timeLimit * 1000) - (Date.now() - game.questionStartTime));
+
+                socket.emit('question-start', {
+                    ...baseQuestionData,
+                    options,
+                    remainingTimeMs,
+                    alreadyAnswered: false
+                });
+            }
+
+            // Update host answer count since total player count changed
+            if (game.hostId) {
+                const activePlayers = Array.from(game.players.values()).filter(p => !p.disconnected);
+                const answeredPlayers = activePlayers
+                    .filter(p => p.answers && p.answers[game.currentQuestion]).length;
+                io.to(game.hostId).emit('answer-count-update', {
+                    answeredPlayers,
+                    totalPlayers: activePlayers.length
+                });
+            }
         }
 
         this.logger.info(`Player ${name} joined game ${pin} (${currentPlayers.length} players)`);
@@ -242,9 +297,10 @@ class PlayerManagementService {
      * @param {Object} game - Game instance
      * @param {Object} socket - Socket instance
      * @param {Object} io - Socket.IO instance
+     * @param {Object} questionFlowService - QuestionFlowService instance for building reveal data
      * @returns {Object} Result object with success status
      */
-    handlePlayerRejoin(newSocketId, pin, sessionToken, game, socket, io) {
+    handlePlayerRejoin(newSocketId, pin, sessionToken, game, socket, io, questionFlowService) {
         if (!pin || !sessionToken) {
             return { success: false, error: 'PIN and session token are required' };
         }
@@ -336,6 +392,73 @@ class PlayerManagementService {
             sessionToken: sessionToken,
             gamePin: pin
         });
+
+        // Send current question/reveal data so the player can participate
+        if (game.gameState === 'question') {
+            const question = game.quiz.questions[game.currentQuestion];
+            if (question) {
+                const timeLimit = question.timeLimit || question.time || 20;
+                const questionType = question.type || 'multiple-choice';
+
+                const baseQuestionData = {
+                    questionNumber: game.currentQuestion + 1,
+                    totalQuestions: game.quiz.questions.length,
+                    question: question.question,
+                    type: questionType,
+                    image: question.image || '',
+                    video: question.video || '',
+                    timeLimit: timeLimit
+                };
+
+                // Determine answer options (handle shuffling)
+                const shouldShuffle = game.quiz.randomizeAnswers &&
+                    (questionType === 'multiple-choice' || questionType === 'multiple-correct') &&
+                    question.options && question.options.length > 1;
+
+                let options;
+                if (shouldShuffle) {
+                    if (game.answerMappings.has(newSocketId)) {
+                        // Mapping was migrated from old socket — reconstruct shuffled options
+                        const mapping = game.answerMappings.get(newSocketId);
+                        options = mapping.map(originalIdx => question.options[originalIdx]);
+                    } else {
+                        // No mapping (missed question start) — create fresh shuffle
+                        const { shuffled, mapping } = shuffleWithMapping(question.options);
+                        game.answerMappings.set(newSocketId, mapping);
+                        options = shuffled;
+                    }
+                } else {
+                    options = question.options;
+                }
+
+                const remainingTimeMs = Math.max(0, (timeLimit * 1000) - (Date.now() - game.questionStartTime));
+                const alreadyAnswered = !!foundPlayer.answers[game.currentQuestion];
+
+                socket.emit('question-start', {
+                    ...baseQuestionData,
+                    options,
+                    remainingTimeMs,
+                    alreadyAnswered
+                });
+            }
+        } else if (game.gameState === 'revealing' && questionFlowService) {
+            const question = game.quiz.questions[game.currentQuestion];
+            if (question) {
+                const correctAnswerData = questionFlowService.buildCorrectAnswerData(question);
+                socket.emit('question-timeout', correctAnswerData);
+
+                const playerAnswer = foundPlayer.answers[game.currentQuestion];
+                socket.emit('player-result', {
+                    isCorrect: playerAnswer ? playerAnswer.isCorrect : false,
+                    points: playerAnswer ? playerAnswer.points : 0,
+                    totalScore: foundPlayer.score,
+                    explanation: question.explanation || null,
+                    questionType: correctAnswerData.questionType,
+                    correctAnswer: correctAnswerData.correctAnswer,
+                    correctAnswers: correctAnswerData.correctAnswers
+                });
+            }
+        }
 
         // If game already finished, send final results immediately
         if (game.gameState === 'finished' && game.leaderboard) {

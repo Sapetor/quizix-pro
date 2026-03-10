@@ -614,8 +614,12 @@ export class UIManager {
                     <span>${game.questionCount}</span> ${translationManager.getTranslationSync('questions')}
                 </div>
                 <div class="game-detail">
-                    <span class="game-detail-icon">🟢</span>
-                    <span class="game-status waiting">${translationManager.getTranslationSync('waiting_for_players') || 'Waiting'}</span>
+                    <span class="game-detail-icon">${game.gameState === 'question' || game.gameState === 'revealing' ? '🟡' : '🟢'}</span>
+                    <span class="game-status ${game.gameState === 'question' || game.gameState === 'revealing' ? 'in-progress' : 'waiting'}">${
+                        game.gameState === 'question' || game.gameState === 'revealing'
+                            ? (translationManager.getTranslationSync('in_progress') || 'In Progress')
+                            : (translationManager.getTranslationSync('waiting_for_players') || 'Waiting')
+                    }</span>
                 </div>
             </div>
             <div class="game-pin-display">${game.pin}</div>

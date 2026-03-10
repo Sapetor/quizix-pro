@@ -179,7 +179,7 @@ function createQuizManagementRoutes(options) {
                 created: new Date().toISOString()
             }));
 
-            const activeGames = allGames.filter(game => game.gameState === 'lobby');
+            const activeGames = allGames.filter(game => game.gameState !== 'finished');
 
             res.json({
                 games: activeGames,

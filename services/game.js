@@ -267,6 +267,11 @@ class Game {
         const player = this.players.get(playerId);
         if (!player) return false;
 
+        // Guard: prevent double-scoring if player already answered this question
+        if (player.answers[this.currentQuestion]) {
+            return player.answers[this.currentQuestion];
+        }
+
         const question = this.quiz.questions[this.currentQuestion];
         const questionType = question.type || 'multiple-choice';
 
