@@ -562,8 +562,7 @@ class Game {
                 // Tiebreaker: faster total response time wins
                 return a.totalTime - b.totalTime;
             })
-            .map(({ player }) => player)
-            .slice(0, 10);
+            .map(({ player }) => player);
     }
 
     /**
