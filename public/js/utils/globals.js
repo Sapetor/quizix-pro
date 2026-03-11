@@ -438,6 +438,9 @@ export function openQuizSettingsModal() {
     const modal = dom.get('quiz-settings-modal');
     if (!modal) return;
 
+    // Guard against double-opening
+    if (modal.classList.contains('visible')) return;
+
     // Sync modal values from inline settings
     syncSettingsToModal();
 

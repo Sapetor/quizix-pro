@@ -920,7 +920,6 @@ export class QuizGame {
             { id: 'vtoolbar-save', handler: () => this.quizManager.saveQuiz() },
             { id: 'vtoolbar-load', handler: () => this.quizManager.showLoadQuizModal() },
             { id: 'vtoolbar-ai-gen', handler: () => this.openAIGeneratorModal() },
-            { id: 'vtoolbar-settings', handler: () => window.openQuizSettingsModal?.() },
             { id: 'vtoolbar-import', handler: () => this.quizManager.importQuiz() },
             { id: 'vtoolbar-export', handler: () => this.quizManager.exportQuiz() },
             { id: 'vtoolbar-results', handler: () => this.openResultsViewer() }

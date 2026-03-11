@@ -924,6 +924,12 @@
                             aria-label="AI question generator" data-translate-aria-label="ai_generator_tooltip">
                             <span class="toolbar-icon" aria-hidden="true">🤖</span>
                         </button>
+                        <button class="toolbar-btn" id="vtoolbar-settings-direct"
+                            data-translate-title="quiz_settings_tooltip"
+                            aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip"
+                            onclick="openQuizSettingsModal()">
+                            <span class="toolbar-icon" aria-hidden="true">⚙️</span>
+                        </button>
 
                         <!-- Secondary Actions (More Menu) -->
                         <div class="toolbar-more-container">
@@ -932,10 +938,6 @@
                                 <span class="toolbar-icon" aria-hidden="true">⋮</span>
                             </button>
                             <div class="toolbar-more-menu hidden" id="vtoolbar-more-menu">
-                                <button class="more-menu-item" id="vtoolbar-settings">
-                                    <span class="more-menu-icon" aria-hidden="true">⚙️</span>
-                                    <span class="more-menu-text" data-translate="quiz_settings_tooltip">Settings</span>
-                                </button>
                                 <button class="more-menu-item" id="vtoolbar-import">
                                     <span class="more-menu-icon" aria-hidden="true">📥</span>
                                     <span class="more-menu-text" data-translate="import_quiz_tooltip">Import</span>
