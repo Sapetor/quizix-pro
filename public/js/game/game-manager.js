@@ -885,11 +885,12 @@ export class GameManager {
         dom.setContent('responses-count', data.answeredPlayers || 0);
         dom.setContent('total-players', data.totalPlayers || 0);
 
-        // Show the statistics container (clear inline style first so classList works)
+        // Show the statistics container in counting-only mode (hides stats grid, shows only response count)
         const container = dom.get('answer-statistics');
         if (container) {
             container.style.display = '';
             container.classList.remove('hidden');
+            container.classList.add('counting-only');
         }
     }
 
@@ -907,9 +908,10 @@ export class GameManager {
             return;
         }
 
-        // Show statistics container (clear inline style first so classList works)
+        // Show full statistics (remove counting-only to reveal stats grid)
         statisticsContainer.style.display = '';
         statisticsContainer.classList.remove('hidden');
+        statisticsContainer.classList.remove('counting-only');
 
         // Update response counts
         dom.setContent('responses-count', data.answeredPlayers || 0);
@@ -1295,6 +1297,7 @@ export class GameManager {
         const statisticsContainer = dom.get('answer-statistics');
         if (statisticsContainer) {
             statisticsContainer.classList.add('hidden');
+            statisticsContainer.classList.remove('counting-only');
         }
     }
 
@@ -1621,7 +1624,10 @@ export class GameManager {
 
         // Hide answer statistics and reset bars
         const answerStats = document.getElementById('answer-statistics');
-        if (answerStats) answerStats.classList.add('hidden');
+        if (answerStats) {
+            answerStats.classList.add('hidden');
+            answerStats.classList.remove('counting-only');
+        }
         for (let i = 0; i < 6; i++) {
             const fill = document.getElementById(`stat-fill-${i}`);
             if (fill) fill.style.width = '0%';

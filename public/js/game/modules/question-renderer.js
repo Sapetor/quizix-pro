@@ -133,6 +133,7 @@ export class QuestionRenderer {
             // Clear inline style first so classList toggle works (Critical Pattern #8)
             statisticsContainer.style.display = '';
             statisticsContainer.classList.add('hidden');
+            statisticsContainer.classList.remove('counting-only');
         }
 
         // Reset stat bars and counts to prevent stale data from previous question

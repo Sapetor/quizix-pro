@@ -859,6 +859,13 @@
     text-align: center;
 }
 
+/* During active question: show only "X of Y players answered", hide stats/controls */
+.answer-stats.counting-only .stats-header,
+.answer-stats.counting-only .stats-grid,
+.answer-stats.counting-only .host-score-breakdown {
+    display: none !important;
+}
+
 .stats-grid {
     display: flex;
     flex-wrap: wrap;
