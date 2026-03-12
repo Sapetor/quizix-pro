@@ -763,6 +763,48 @@
     }
 }
 
+/* ── Player answer indicator (shown after correct answer reveal) ── */
+/* Marks the option the player chose with a persistent badge */
+.player-answered {
+    position: relative;
+}
+
+.player-answered::after {
+    content: attr(data-player-badge);
+    position: absolute;
+    top: -10px;
+    right: -6px;
+    background: var(--color-primary-500, #3b82f6);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    z-index: 5;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    animation: none;
+}
+
+/* Player chose wrong — red badge + red border */
+.player-answered-wrong {
+    border: 3px solid var(--error-red, #ef4444) !important;
+    animation: none !important;
+    filter: brightness(0.85) !important;
+}
+
+.player-answered-wrong::after {
+    background: var(--error-red, #ef4444);
+}
+
+/* Player chose correct — keep green border from .correct-answer-highlight,
+   but badge stays blue to differentiate "your pick" from "correct" */
+.player-answered.correct-answer-highlight {
+    animation: none !important;
+}
+
 .player-option.disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -2681,6 +2723,46 @@
 
 .feedback-modal.incorrect .feedback-icon {
     color: var(--color-error-500);
+}
+
+/* Player's submitted answer shown inside the modal */
+.feedback-modal .modal-player-answer {
+    display: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    padding: 6px 16px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.feedback-modal.has-player-answer .modal-player-answer {
+    display: block;
+}
+
+.feedback-modal.incorrect .modal-player-answer {
+    color: var(--color-error-500, #ef4444);
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+.feedback-modal.correct .modal-player-answer {
+    color: var(--color-success-500, #10b981);
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+
+.feedback-modal.partial .modal-player-answer {
+    color: var(--color-warning-500, #f59e0b);
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.25);
+}
+
+[data-theme="light"] .feedback-modal .modal-player-answer {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Modal score display styling */

@@ -24,6 +24,7 @@ export class ModalFeedback {
         this.feedbackText = null;
         this.scoreDisplay = null;
         this.explanationDisplay = null;
+        this.playerAnswerDisplay = null;
         this.currentTimer = null;
         this.modalBindings = null;
         this.contentHandler = null;
@@ -44,6 +45,7 @@ export class ModalFeedback {
         this.feedbackText = document.getElementById('modal-feedback-text');
         this.scoreDisplay = document.getElementById('modal-score-display');
         this.explanationDisplay = document.getElementById('modal-explanation');
+        this.playerAnswerDisplay = document.getElementById('modal-player-answer');
 
         if (!this.overlay || !this.modal) {
             logger.error('❌ Modal feedback elements not found in DOM');
@@ -184,6 +186,22 @@ export class ModalFeedback {
     }
 
     /**
+     * Set the player's submitted answer text inside the modal.
+     * @param {string} answerText - Formatted answer string (e.g. "B", "True", "42")
+     */
+    setPlayerAnswer(answerText) {
+        if (!this.playerAnswerDisplay) return;
+        if (!answerText) {
+            this.modal?.classList.remove('has-player-answer');
+            this.playerAnswerDisplay.textContent = '';
+            return;
+        }
+        const label = getTranslation('your_answer') || 'Your answer';
+        this.playerAnswerDisplay.textContent = `${label}: ${answerText}`;
+        this.modal?.classList.add('has-player-answer');
+    }
+
+    /**
      * Clear all modal content to prevent stale data display
      * Called when starting a new question to ensure clean state
      */
@@ -200,7 +218,10 @@ export class ModalFeedback {
         if (this.explanationDisplay) {
             this.explanationDisplay.innerHTML = '';
         }
-        // Remove all state classes (correct, incorrect, partial, has-score, has-explanation)
+        if (this.playerAnswerDisplay) {
+            this.playerAnswerDisplay.textContent = '';
+        }
+        // Remove all state classes (correct, incorrect, partial, has-score, has-explanation, has-player-answer)
         if (this.modal) {
             this.modal.className = 'feedback-modal';
         }

@@ -1303,78 +1303,84 @@ pre code {
 }
 
 /* ========================================================================
-   CORRECT ANSWER STYLING - Must come AFTER colorful rules for cascade
+   CORRECT ANSWER STYLING - Checkmark badge approach
+   Preserves original colorful backgrounds; adds a small badge indicator
    ======================================================================== */
 
-/* GREEN HALO approach for multiple-choice correct answers */
-/* Maintains colorful backgrounds while adding distinctive green border/glow */
-/* NOTE: No transform:scale - it causes blurry text due to sub-pixel rendering */
+/* Shared correct-answer base: bold text + position context for badge */
 .preview-content .player-option.correct,
 .preview-content-split .player-option.correct {
-    border: 4px solid #22c55e !important;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
-        0 4px 20px rgba(34, 197, 94, 0.5) !important;
-    outline: 2px solid rgba(34, 197, 94, 0.6);
-    outline-offset: 2px;
     font-weight: 700 !important;
-    /* transform: scale removed - causes blurry text */
 }
 
-/* GREEN HALO for multiple-correct checkbox options - HIGH SPECIFICITY */
-/* Must override the colorful nth-child rules above */
 .preview-content .player-checkbox-options .checkbox-option.correct-preview,
 .preview-content-split .player-checkbox-options .checkbox-option.correct-preview {
-    border: 4px solid #22c55e !important;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
-        0 4px 20px rgba(34, 197, 94, 0.5) !important;
-    outline: 2px solid rgba(34, 197, 94, 0.6);
-    outline-offset: 2px;
+    position: relative;
     font-weight: 700 !important;
-    /* transform: scale removed - causes blurry text */
 }
 
-/* Specific overrides for each nth-child to ensure green halo wins */
-.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(1),
-.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(1),
-.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(2),
-.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(2),
-.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(3),
-.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(3),
-.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(4),
-.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(4),
-.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(5),
-.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(5),
-.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(6),
-.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(6) {
-    border: 4px solid #22c55e !important;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3),
-        0 4px 20px rgba(34, 197, 94, 0.5) !important;
-    outline: 2px solid rgba(34, 197, 94, 0.6);
-    outline-offset: 2px;
-    font-weight: 700 !important;
-    /* transform: scale removed - causes blurry text */
+/* Checkmark badge - shared ::after for all correct answer types */
+.preview-content .player-option.correct::after,
+.preview-content-split .player-option.correct::after,
+.preview-content .player-checkbox-options .checkbox-option.correct-preview::after,
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview::after {
+    content: "\2713";
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    background: #fff;
+    color: #16a34a;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 24px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    z-index: 2;
+    pointer-events: none;
 }
 
-/* Dark theme variants for correct answers */
-[data-theme="dark"] .preview-content .player-option.correct,
-[data-theme="dark"] .preview-content-split .player-option.correct,
-[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option.correct-preview,
-[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option.correct-preview {
-    border-color: #22c55e !important;
-    outline-color: rgba(34, 197, 94, 0.6);
+/* nth-child overrides to ensure badge shows on all checkbox positions */
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(1)::after,
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(1)::after,
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(2)::after,
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(2)::after,
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(3)::after,
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(3)::after,
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(4)::after,
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(4)::after,
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(5)::after,
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(5)::after,
+.preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(6)::after,
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(6)::after {
+    content: "\2713";
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    background: #fff;
+    color: #16a34a;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 24px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    z-index: 2;
+    pointer-events: none;
 }
 
-/* Hover states for correct answers - enhanced green glow */
-/* NOTE: No transform:scale on hover either - prevents blurry text */
-.preview-content .player-option.correct:hover,
-.preview-content-split .player-option.correct:hover,
-.preview-content .player-checkbox-options .checkbox-option.correct-preview:hover,
-.preview-content-split .player-checkbox-options .checkbox-option.correct-preview:hover {
-    border-color: #16a34a !important;
-    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.4),
-        0 6px 24px rgba(34, 197, 94, 0.6) !important;
-    outline-color: rgba(34, 197, 94, 0.8);
-    /* transform: scale removed - causes blurry text */
+/* Dark theme: inverted badge colors */
+[data-theme="dark"] .preview-content .player-option.correct::after,
+[data-theme="dark"] .preview-content-split .player-option.correct::after,
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option.correct-preview::after,
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option.correct-preview::after {
+    background: #1e293b;
+    color: #4ade80;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
 /* ======================================================================== */

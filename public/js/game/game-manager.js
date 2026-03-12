@@ -478,6 +478,14 @@ export class GameManager {
                 modalFeedback.showIncorrect(feedbackMessage, earnedPoints, displayDuration, explanation);
             }
 
+            // Show the player's submitted answer inside the modal
+            const playerAnswers = this.stateManager.getPlayerAnswers();
+            const storedAnswer = playerAnswers.get(gameState.playerName);
+            if (storedAnswer !== undefined) {
+                const answerText = this.answerRevealManager.formatAnswerForDisplay(storedAnswer);
+                modalFeedback.setPlayerAnswer(answerText);
+            }
+
             // Show correct answer to ALL players (not just wrong ones) after a short delay
             if (data.correctAnswer !== undefined || data.correctAnswers !== undefined) {
                 // Delay to allow modal to appear first

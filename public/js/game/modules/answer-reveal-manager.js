@@ -92,6 +92,9 @@ export class AnswerRevealManager {
     showCorrectAnswerOnClient(correctAnswer, questionType) {
         logger.debug('Showing correct answer on client:', correctAnswer, 'type:', questionType);
 
+        // Mark player's selected answer(s) before applying correct answer styles
+        this.markPlayerSelections(correctAnswer, questionType);
+
         // Handle multiple-correct questions
         if (questionType === 'multiple-correct' && Array.isArray(correctAnswer)) {
             const checkboxOptions = document.querySelectorAll('.checkbox-option');
@@ -119,6 +122,57 @@ export class AnswerRevealManager {
                 this.applyCorrectAnswerStyle(correctTFOption);
                 logger.debug('Highlighted correct T/F option:', tfAnswerStr);
             }
+        }
+    }
+
+    /**
+     * Mark the player's selected answer(s) with visual indicator classes.
+     * Adds .player-answered to selected options, and .player-answered-wrong
+     * if the selection does not match the correct answer.
+     * @param {*} correctAnswer - The correct answer value
+     * @param {string} questionType - Type of question
+     */
+    markPlayerSelections(correctAnswer, questionType) {
+        const badgeText = getTranslation('your_answer') || 'Your answer';
+
+        if (questionType === 'multiple-correct') {
+            const correctSet = new Set(Array.isArray(correctAnswer) ? correctAnswer : []);
+            const checkboxOptions = document.querySelectorAll('.checkbox-option');
+            checkboxOptions.forEach((option, index) => {
+                const checkbox = option.querySelector('input[type="checkbox"]');
+                const isChecked = checkbox?.checked;
+                if (isChecked) {
+                    option.classList.add('player-answered');
+                    option.dataset.playerBadge = badgeText;
+                    if (!correctSet.has(index)) {
+                        option.classList.add('player-answered-wrong');
+                    }
+                }
+            });
+            return;
+        }
+
+        // MC and T/F: find the .selected element
+        const selectedOption = document.querySelector('.player-option.selected, .tf-option.selected');
+        if (!selectedOption) return;
+
+        selectedOption.classList.add('player-answered');
+        selectedOption.dataset.playerBadge = badgeText;
+
+        // Determine if the player's selection is wrong
+        const playerAnswer = selectedOption.dataset.answer;
+        let isWrong = false;
+
+        if (typeof correctAnswer === 'number') {
+            isWrong = parseInt(playerAnswer) !== correctAnswer;
+        } else if (typeof correctAnswer === 'boolean') {
+            isWrong = (playerAnswer !== String(correctAnswer));
+        } else if (typeof correctAnswer === 'string') {
+            isWrong = playerAnswer !== correctAnswer;
+        }
+
+        if (isWrong) {
+            selectedOption.classList.add('player-answered-wrong');
         }
     }
 
