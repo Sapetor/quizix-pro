@@ -328,7 +328,7 @@ export class PlayerInteractionManager {
         document.addEventListener('click', this._handleOptionClick);
 
         // Multiple correct submit button
-        const mcSubmitBtn = document.getElementById('submit-multiple-correct');
+        const mcSubmitBtn = document.getElementById('submit-multiple');
         if (mcSubmitBtn) {
             mcSubmitBtn.addEventListener('click', this.submitMultipleCorrectAnswer);
         }
@@ -358,7 +358,7 @@ export class PlayerInteractionManager {
         document.removeEventListener('click', this._handleOptionClick);
 
         // Remove specific element listeners
-        const mcSubmitBtn = document.getElementById('submit-multiple-correct');
+        const mcSubmitBtn = document.getElementById('submit-multiple');
         if (mcSubmitBtn) {
             mcSubmitBtn.removeEventListener('click', this.submitMultipleCorrectAnswer);
         }

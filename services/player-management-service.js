@@ -171,7 +171,8 @@ class PlayerManagementService {
                     .filter(p => p.answers && p.answers[game.currentQuestion]).length;
                 io.to(game.hostId).emit('answer-count-update', {
                     answeredPlayers,
-                    totalPlayers: activePlayers.length
+                    connectedPlayers: activePlayers.length,
+                    totalPlayers: game.players.size
                 });
             }
         }
@@ -251,8 +252,9 @@ class PlayerManagementService {
                     .filter(player => player.answers && player.answers[game.currentQuestion]).length;
 
                 io.to(game.hostId).emit('answer-count-update', {
-                    answeredPlayers: answeredPlayers,
-                    totalPlayers: activePlayers.length
+                    answeredPlayers,
+                    connectedPlayers: activePlayers.length,
+                    totalPlayers: game.players.size
                 });
             }
         }

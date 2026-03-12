@@ -112,18 +112,12 @@ export class AnswerRevealManager {
         }
 
         // Handle true/false options
-        if (typeof correctAnswer === 'boolean') {
-            const index = correctAnswer ? 0 : 1;
-            const correctTFOption = document.querySelector(`[data-answer="${index}"]`);
-            if (correctTFOption?.classList.contains('tf-option')) {
+        const tfAnswerStr = (typeof correctAnswer === 'boolean') ? String(correctAnswer) : correctAnswer;
+        if (tfAnswerStr === 'true' || tfAnswerStr === 'false') {
+            const correctTFOption = document.querySelector(`.tf-option[data-answer="${tfAnswerStr}"]`);
+            if (correctTFOption) {
                 this.applyCorrectAnswerStyle(correctTFOption);
-                logger.debug('Highlighted correct T/F option:', correctAnswer, 'at index:', index);
-            }
-        } else {
-            const correctTFOption = document.querySelector(`[data-answer="${correctAnswer}"]`);
-            if (correctTFOption?.classList.contains('true-btn') || correctTFOption?.classList.contains('false-btn')) {
-                this.applyCorrectAnswerStyle(correctTFOption);
-                logger.debug('Highlighted correct T/F option:', correctAnswer);
+                logger.debug('Highlighted correct T/F option:', tfAnswerStr);
             }
         }
     }

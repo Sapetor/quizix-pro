@@ -307,56 +307,6 @@ export class GameManager {
     }
 
     /**
-     * Highlight selected answer and disable options (from monolithic version)
-     */
-    highlightSelectedAnswer(answer) {
-        logger.debug('Highlighting selected answer:', answer);
-
-        // Handle multiple choice options
-        const options = document.querySelectorAll('.player-option');
-        options.forEach(option => {
-            option.disabled = true;
-            option.classList.remove('selected');
-            option.classList.add('disabled');
-        });
-
-        if (typeof answer === 'number' && options[answer]) {
-            options[answer].classList.add('selected');
-            logger.debug('Added selected class to option:', answer);
-        }
-
-        // Handle true/false options
-        const tfOptions = document.querySelectorAll('.true-btn, .false-btn');
-        tfOptions.forEach(option => {
-            option.disabled = true;
-            option.classList.remove('selected');
-        });
-
-        // Find and highlight the selected true/false option
-        if (typeof answer === 'boolean') {
-            // Convert boolean back to index for UI highlighting: true = 0, false = 1
-            const index = answer === true ? 0 : 1;
-            const selectedTFOption = document.querySelector(`[data-answer="${index}"]`);
-            if (selectedTFOption && selectedTFOption.classList.contains('tf-option')) {
-                selectedTFOption.classList.add('selected');
-                logger.debug('Added selected class to T/F option:', answer, 'at index:', index);
-            }
-        } else if (typeof answer === 'number') {
-            const selectedTFOption = document.querySelector(`[data-answer="${answer}"]`);
-            if (selectedTFOption && (selectedTFOption.classList.contains('true-btn') || selectedTFOption.classList.contains('false-btn'))) {
-                selectedTFOption.classList.add('selected');
-                logger.debug('Added selected class to T/F option:', answer);
-            }
-        }
-
-        // Handle multiple correct checkboxes
-        const checkboxes = document.querySelectorAll('.multiple-correct-option');
-        checkboxes.forEach(checkbox => {
-            checkbox.disabled = true;
-        });
-    }
-
-    /**
      * Submit numeric answer
      */
     submitNumericAnswer() {
@@ -881,9 +831,25 @@ export class GameManager {
 
         logger.debug('Live answer count update:', data);
 
+        // Use connectedPlayers (active) as the denominator, fall back to totalPlayers
+        const connected = data.connectedPlayers ?? data.totalPlayers ?? 0;
+        const total = data.totalPlayers ?? connected;
+        const disconnected = total - connected;
+
         // Update response counts
         dom.setContent('responses-count', data.answeredPlayers || 0);
-        dom.setContent('total-players', data.totalPlayers || 0);
+        dom.setContent('total-players', connected);
+
+        // Show/hide disconnected indicator
+        const indicator = dom.get('disconnected-indicator');
+        if (indicator) {
+            if (disconnected > 0) {
+                indicator.textContent = `(${disconnected} disconnected)`;
+                indicator.classList.remove('hidden');
+            } else {
+                indicator.classList.add('hidden');
+            }
+        }
 
         // Show the statistics container in counting-only mode (hides stats grid, shows only response count)
         const container = dom.get('answer-statistics');

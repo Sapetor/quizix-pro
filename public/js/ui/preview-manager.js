@@ -313,7 +313,7 @@ export class PreviewManager {
         };
 
         this.listeners.radioHandler = (e) => {
-            if (e.target.matches('input[type="radio"][name^="correct-"]')) {
+            if (e.target.matches('input[type="radio"][name^="mc-correct-"]')) {
                 this.updatePreviewDebounced();
             }
         };

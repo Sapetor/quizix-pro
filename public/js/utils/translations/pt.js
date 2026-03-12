@@ -750,6 +750,7 @@ export default {
     to_top: 'Ir ao Topo',
     exit_to_main: 'Voltar ao Menu Principal',
     stop_quiz: 'Parar Quiz',
+    end_round: 'Encerrar Rodada',
     back_to_home: 'Voltar ao Início',
     confirm_stop_quiz: 'Parar o quiz e mostrar resultados?',
     confirm_back_to_home: 'Sair do jogo? Todos os jogadores serão desconectados.',

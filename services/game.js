@@ -576,10 +576,13 @@ class Game {
      */
     getAnswerStatistics() {
         const question = this.quiz.questions[this.currentQuestion];
+        // Only count active (non-disconnected) players
+        const activePlayers = Array.from(this.players.values())
+            .filter(p => !p.disconnected);
 
         if (!question) {
             return {
-                totalPlayers: this.players.size,
+                totalPlayers: activePlayers.length,
                 answeredPlayers: 0,
                 answerCounts: {},
                 questionType: 'multiple-choice'
@@ -587,7 +590,7 @@ class Game {
         }
 
         const stats = {
-            totalPlayers: this.players.size,
+            totalPlayers: activePlayers.length,
             answeredPlayers: 0,
             answerCounts: {},
             questionType: question.type || 'multiple-choice'
@@ -603,7 +606,7 @@ class Game {
         }
         // numeric and ordering types use dynamic keys, no pre-initialization needed
 
-        Array.from(this.players.values()).forEach(player => {
+        activePlayers.forEach(player => {
             const playerAnswer = player.answers[this.currentQuestion];
             if (playerAnswer) {
                 stats.answeredPlayers++;

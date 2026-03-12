@@ -278,8 +278,10 @@ class GameSessionService {
         };
 
         if (shouldShuffle) {
-            // Send per-player shuffled options
+            // Send per-player shuffled options (skip disconnected — they get shuffled options on rejoin)
             game.players.forEach((player, playerId) => {
+                if (player.disconnected) return;
+
                 const { shuffled, mapping } = shuffleWithMapping(question.options);
 
                 // Store mapping for answer validation: mapping[shuffledIndex] = originalIndex
@@ -305,6 +307,17 @@ class GameSessionService {
                 options: question.options
             };
             io.to(`game-${game.pin}`).emit('question-start', questionData);
+        }
+
+        // Send initial answer count to host so connected/total is visible immediately
+        if (game.hostId) {
+            const activePlayers = Array.from(game.players.values())
+                .filter(p => !p.disconnected);
+            io.to(game.hostId).emit('answer-count-update', {
+                answeredPlayers: 0,
+                connectedPlayers: activePlayers.length,
+                totalPlayers: game.players.size
+            });
         }
 
         // Set timer for automatic question timeout
@@ -405,8 +418,10 @@ class GameSessionService {
         const answerStats = game.getAnswerStatistics();
         io.to(game.hostId).emit('answer-statistics', answerStats);
 
-        // Send individual results to each player (include all answer data for client display)
+        // Send individual results to each active player (skip disconnected — they get results on rejoin)
         game.players.forEach((player, playerId) => {
+            if (player.disconnected) return;
+
             const playerAnswer = player.answers[game.currentQuestion];
             const resultData = {
                 isCorrect: playerAnswer ? playerAnswer.isCorrect : false,

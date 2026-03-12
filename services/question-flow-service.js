@@ -47,24 +47,26 @@ class QuestionFlowService {
         // Confirm submission to player
         socket.emit('answer-submitted', { answer: answer });
 
-        // Check if all players have answered
-        const totalPlayers = game.players.size;
-        const answeredPlayers = Array.from(game.players.values())
+        // Check if all active (non-disconnected) players have answered
+        const activePlayers = Array.from(game.players.values())
+            .filter(p => !p.disconnected);
+        const connectedPlayers = activePlayers.length;
+        const answeredPlayers = activePlayers
             .filter(player => player.answers[game.currentQuestion]).length;
 
-        this.logger.debug(`Answer submitted: ${answeredPlayers}/${totalPlayers} players answered`);
+        this.logger.debug(`Answer submitted: ${answeredPlayers}/${connectedPlayers} active players answered`);
 
         // Emit live answer count update to host (only if host is connected)
         if (game.hostId) {
-            const liveStats = {
-                answeredPlayers: answeredPlayers,
-                totalPlayers: totalPlayers
-            };
-            io.to(game.hostId).emit('answer-count-update', liveStats);
+            io.to(game.hostId).emit('answer-count-update', {
+                answeredPlayers,
+                connectedPlayers,
+                totalPlayers: game.players.size
+            });
         }
 
-        // If all players answered, end question early (check flag to prevent duplicates)
-        if (answeredPlayers >= totalPlayers && totalPlayers > 0 &&
+        // If all active players answered, end question early (check flag to prevent duplicates)
+        if (answeredPlayers >= connectedPlayers && connectedPlayers > 0 &&
         game.gameState === 'question' && !game.endingQuestionEarly) {
             this.endQuestionEarly(game, io);
         }
@@ -222,6 +224,9 @@ class QuestionFlowService {
         const correctAnswerData = this.buildCorrectAnswerData(currentQuestion);
 
         game.players.forEach((player, playerId) => {
+            // Skip disconnected players — they'll get results on reconnection
+            if (player.disconnected) return;
+
             const playerAnswer = player.answers[game.currentQuestion];
             io.to(playerId).emit('player-result', {
                 isCorrect: playerAnswer ? playerAnswer.isCorrect : false,

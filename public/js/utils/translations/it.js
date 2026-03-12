@@ -462,6 +462,7 @@ export default {
     return_to_main: 'Torna al Menu Principale',
     exit_to_main: 'Torna al Menu Principale',
     stop_quiz: 'Ferma Quiz',
+    end_round: 'Termina Round',
     back_to_home: "Torna alla Home",
     confirm_stop_quiz: 'Fermare il quiz e mostrare i risultati?',
     confirm_back_to_home: 'Uscire dal gioco? Tutti i giocatori verranno disconnessi.',

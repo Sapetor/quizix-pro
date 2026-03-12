@@ -748,6 +748,7 @@ export default {
     welcome_to: '欢迎来到',
     exit_to_main: '返回主菜单',
     stop_quiz: '停止测验',
+    end_round: '结束回合',
     back_to_home: '返回首页',
     confirm_stop_quiz: '停止测验并显示结果？',
     confirm_back_to_home: '离开游戏？所有玩家将被断开连接。',

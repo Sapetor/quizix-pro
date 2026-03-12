@@ -90,6 +90,7 @@ export default {
     new_game: 'Nuevo Juego',
     exit_to_main: 'Salir al Menú Principal',
     stop_quiz: 'Detener Quiz',
+    end_round: 'Terminar Ronda',
     back_to_home: 'Volver al Inicio',
     confirm_stop_quiz: '¿Detener el quiz y mostrar resultados?',
     confirm_back_to_home: '¿Salir del juego? Todos los jugadores serán desconectados.',

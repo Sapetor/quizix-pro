@@ -255,11 +255,16 @@ export class SocketManager {
         this.socket.on('question-start', errorBoundary.safeSocketHandler((data) => {
             logger.debug('Question started:', data);
 
-            // Show stop button for host during active question
+            // Show host-only buttons during active question
             const isHostForStop = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
             if (isHostForStop) {
                 const stopBtn = this._getElement('stop-quiz-btn');
                 if (stopBtn) stopBtn.classList.remove('hidden');
+                const endRoundContainer = this._getElement('end-round-container');
+                if (endRoundContainer) {
+                    endRoundContainer.classList.remove('hidden');
+                    endRoundContainer.classList.add('visible-flex');
+                }
             }
 
             // Switch to playing state for immersive gameplay
@@ -305,9 +310,14 @@ export class SocketManager {
                 this.gameManager.timer = null;
             }
 
-            // Hide stop button between questions
+            // Hide host-only buttons between questions
             const stopBtnTimeout = this._getElement('stop-quiz-btn');
             if (stopBtnTimeout) stopBtnTimeout.classList.add('hidden');
+            const endRoundTimeout = this._getElement('end-round-container');
+            if (endRoundTimeout) {
+                endRoundTimeout.classList.add('hidden');
+                endRoundTimeout.classList.remove('visible-flex');
+            }
 
             // Show correct answer on host side
             const isHost = this.gameManager.stateManager?.getGameState()?.isHost ?? false;

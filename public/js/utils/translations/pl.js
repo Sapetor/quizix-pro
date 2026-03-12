@@ -451,6 +451,7 @@ export default {
     return_to_main: 'Powrót do Menu Głównego',
     exit_to_main: 'Powrót do Menu Głównego',
     stop_quiz: 'Zatrzymaj Quiz',
+    end_round: 'Zakończ Rundę',
     back_to_home: 'Wróć do Strony Głównej',
     confirm_stop_quiz: 'Zatrzymać quiz i pokazać wyniki?',
     confirm_back_to_home: 'Opuścić grę? Wszyscy gracze zostaną rozłączeni.',

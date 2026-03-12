@@ -94,6 +94,7 @@ export default {
     new_game: 'New Game',
     exit_to_main: 'Exit to Main Menu',
     stop_quiz: 'Stop Quiz',
+    end_round: 'End Round',
     back_to_home: 'Back to Home',
     confirm_stop_quiz: 'Stop the quiz and show results?',
     confirm_back_to_home: 'Leave the game? All players will be disconnected.',
@@ -468,6 +469,7 @@ export default {
     failed_preview_result: 'Failed to preview result',
 
     // Simple download tool keys
+    download_csv: 'Download CSV',
     download_results: 'Download Results',
     select_results: 'Select results to download...',
     finish_quiz: 'Finish Quiz',

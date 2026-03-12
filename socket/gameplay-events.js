@@ -76,6 +76,20 @@ function registerGameplayEvents(io, socket, options) {
         }
     });
 
+    // Host forces the current question to end early
+    socket.on('force-end-question', () => {
+        if (!checkRateLimit(socket.id, 'force-end-question', 2, socket)) return;
+        try {
+            const game = gameSessionService.findGameByHost(socket.id);
+            if (!game || game.gameState !== 'question') return;
+
+            logger.info(`Host force-ended question ${game.currentQuestion + 1} in game ${game.pin}`);
+            questionFlowService.endQuestionEarly(game, io);
+        } catch (error) {
+            logger.error('Error in force-end-question handler:', error);
+        }
+    });
+
     socket.on('next-question', () => {
         if (!checkRateLimit(socket.id, 'next-question', 5, socket)) return;
         try {

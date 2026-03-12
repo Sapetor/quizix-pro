@@ -364,13 +364,6 @@ export function handleQuestionRemoved() {
 }
 
 /**
- * Get current editing question index
- */
-export function getCurrentEditingQuestion() {
-    return currentEditingQuestion;
-}
-
-/**
  * Initialize pagination on host screen (desktop only)
  */
 export function initializeQuestionPagination() {

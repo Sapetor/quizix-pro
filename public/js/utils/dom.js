@@ -439,5 +439,30 @@ export function debounce(func, wait) {
     return executedFunction;
 }
 
+/**
+ * Show an element by removing 'hidden' and 'visible-flex' clash
+ * @param {HTMLElement|string} elementOrId - Element or its ID
+ * @param {string} [displayClass='visible-flex'] - Optional display class to add
+ */
+export function show(elementOrId, displayClass = null) {
+    const el = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
+    if (!el) return;
+    el.classList.remove('hidden');
+    if (displayClass) {
+        el.classList.add(displayClass);
+    }
+}
+
+/**
+ * Hide an element by adding 'hidden' and removing 'visible-flex'
+ * @param {HTMLElement|string} elementOrId - Element or its ID
+ */
+export function hide(elementOrId) {
+    const el = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
+    if (!el) return;
+    el.classList.add('hidden');
+    el.classList.remove('visible-flex');
+}
+
 // Export for direct use
 export default dom;

@@ -76,6 +76,7 @@ export default {
     return_to_main: 'Retour au Menu Principal',
     exit_to_main: 'Retour au Menu Principal',
     stop_quiz: 'Arrêter le Quiz',
+    end_round: 'Terminer le Tour',
     back_to_home: "Retour à l'Accueil",
     confirm_stop_quiz: 'Arrêter le quiz et afficher les résultats ?',
     confirm_back_to_home: 'Quitter la partie ? Tous les joueurs seront déconnectés.',

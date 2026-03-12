@@ -217,14 +217,3 @@ export function buildEditActionsHtml(index) {
     `;
 }
 
-/**
- * Build view mode action buttons HTML
- * @param {number} index - Question index
- * @returns {string} - HTML string for edit/regenerate buttons
- */
-export function buildViewActionsHtml(index) {
-    return `
-        <button class="ai-edit-btn" title="Edit question" data-index="${index}">✏️</button>
-        <button class="ai-regenerate-btn" title="Regenerate this question" data-index="${index}">🔄</button>
-    `;
-}

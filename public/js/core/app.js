@@ -423,6 +423,7 @@ export class QuizGame {
         bindElement('exit-to-main-stats', 'click', () => this.exitToMainMenu());
         bindElement('stop-quiz-btn', 'click', () => this.stopQuiz());
         bindElement('back-to-home-btn', 'click', () => this.backToHomeFromGame());
+        bindElement('end-round-btn', 'click', () => this.forceEndQuestion());
 
         // Auto-save setup
         bindElement('quiz-title', 'input', () => {
@@ -768,6 +769,15 @@ export class QuizGame {
     exitToMainMenu() {
         this.resetAndReturnToMenu();
         logger.debug('Exited game and returned to main menu');
+    }
+
+    /**
+     * Force end the current question early (host only)
+     */
+    forceEndQuestion() {
+        if (this.socketManager?.socket) {
+            this.socketManager.socket.emit('force-end-question');
+        }
     }
 
     /**

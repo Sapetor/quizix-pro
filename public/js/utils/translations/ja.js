@@ -750,6 +750,7 @@ export default {
     welcome_to: 'ようこそ',
     exit_to_main: 'メインメニューに戻る',
     stop_quiz: 'クイズを停止',
+    end_round: 'ラウンド終了',
     back_to_home: 'ホームに戻る',
     confirm_stop_quiz: 'クイズを停止して結果を表示しますか？',
     confirm_back_to_home: 'ゲームを離れますか？全プレイヤーが切断されます。',

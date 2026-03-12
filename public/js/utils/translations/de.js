@@ -78,6 +78,7 @@ export default {
     return_to_main: 'Zurück zum Hauptmenü',
     exit_to_main: 'Zurück zum Hauptmenü',
     stop_quiz: 'Quiz Stoppen',
+    end_round: 'Runde Beenden',
     back_to_home: 'Zurück zur Startseite',
     confirm_stop_quiz: 'Quiz stoppen und Ergebnisse anzeigen?',
     confirm_back_to_home: 'Spiel verlassen? Alle Spieler werden getrennt.',

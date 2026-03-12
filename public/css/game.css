@@ -1002,6 +1002,18 @@
     margin-top: 8px;
 }
 
+.disconnected-indicator {
+    color: var(--danger-color, #ef4444);
+    font-size: 0.85rem;
+    margin-left: 6px;
+    opacity: 0.85;
+}
+
+.end-round-container {
+    justify-content: center;
+    padding: 8px 0;
+}
+
 /* Host Score Breakdown Display */
 .host-score-breakdown {
     display: flex;
