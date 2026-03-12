@@ -1307,23 +1307,34 @@ pre code {
    Preserves original colorful backgrounds; adds a small badge indicator
    ======================================================================== */
 
-/* Shared correct-answer base: bold text + position context for badge */
+/* Correct answer base: bold text */
 .preview-content .player-option.correct,
-.preview-content-split .player-option.correct {
+.preview-content-split .player-option.correct,
+.preview-content .tf-option.correct,
+.preview-content-split .tf-option.correct {
     font-weight: 700 !important;
+}
+
+/* Checkbox options need position context for badge (player-option & tf-option already have it) */
+.checkbox-option.correct-preview,
+.checkbox-option.preview-checkbox {
+    position: relative !important;
+    overflow: visible !important;
 }
 
 .preview-content .player-checkbox-options .checkbox-option.correct-preview,
 .preview-content-split .player-checkbox-options .checkbox-option.correct-preview {
-    position: relative;
     font-weight: 700 !important;
 }
 
-/* Checkmark badge - shared ::after for all correct answer types */
+/* Checkmark badge — shared ::after for all correct answer types */
 .preview-content .player-option.correct::after,
 .preview-content-split .player-option.correct::after,
+.preview-content .tf-option.correct::after,
+.preview-content-split .tf-option.correct::after,
 .preview-content .player-checkbox-options .checkbox-option.correct-preview::after,
-.preview-content-split .player-checkbox-options .checkbox-option.correct-preview::after {
+.preview-content-split .player-checkbox-options .checkbox-option.correct-preview::after,
+.tf-option.preview-option.correct::after {
     content: "\2713";
     position: absolute;
     top: -8px;
@@ -1342,7 +1353,7 @@ pre code {
     pointer-events: none;
 }
 
-/* nth-child overrides to ensure badge shows on all checkbox positions */
+/* nth-child overrides for checkbox positions (high specificity to beat colorful rules) */
 .preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(1)::after,
 .preview-content-split .player-checkbox-options .checkbox-option.correct-preview:nth-child(1)::after,
 .preview-content .player-checkbox-options .checkbox-option.correct-preview:nth-child(2)::after,
@@ -1373,11 +1384,22 @@ pre code {
     pointer-events: none;
 }
 
+/* T/F options need position context for badge */
+.preview-content .tf-option,
+.preview-content-split .tf-option,
+.tf-option.preview-option {
+    position: relative;
+    overflow: visible;
+}
+
 /* Dark theme: inverted badge colors */
 [data-theme="dark"] .preview-content .player-option.correct::after,
 [data-theme="dark"] .preview-content-split .player-option.correct::after,
+[data-theme="dark"] .preview-content .tf-option.correct::after,
+[data-theme="dark"] .preview-content-split .tf-option.correct::after,
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option.correct-preview::after,
-[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option.correct-preview::after {
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option.correct-preview::after,
+[data-theme="dark"] .tf-option.preview-option.correct::after {
     background: #1e293b;
     color: #4ade80;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);

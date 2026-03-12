@@ -903,15 +903,17 @@ export class PreviewRenderer {
             optionDiv.className = 'checkbox-option preview-checkbox';
             optionDiv.setAttribute('data-option', index);
 
-            // Add correct answer styling
-            if (correctAnswers && correctAnswers.includes(index)) {
-                optionDiv.classList.add('correct');
+            const isCorrect = correctAnswers && correctAnswers.includes(index);
+
+            // Add correct answer styling (use correct-preview to match CSS badge)
+            if (isCorrect) {
+                optionDiv.classList.add('correct-preview');
             }
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.disabled = true;
-            if (correctAnswers && correctAnswers.includes(index)) {
+            if (isCorrect) {
                 checkbox.checked = true;
             }
 
