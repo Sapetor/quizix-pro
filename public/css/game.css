@@ -741,13 +741,14 @@
 }
 
 /* Correct/Incorrect states override colors - WCAG AA accessible */
-.player-option.correct {
+/* Scope to game screens only — preview uses its own colorful backgrounds + checkmark badge */
+.player-option.correct:not(.preview-option) {
     background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end)) !important;
     box-shadow: 0 12px 40px var(--true-shadow-hover) !important;
     animation: correctPulse 2s ease-in-out infinite;
 }
 
-.player-option.incorrect {
+.player-option.incorrect:not(.preview-option) {
     background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end)) !important;
     box-shadow: 0 12px 40px var(--false-shadow-hover) !important;
     filter: brightness(0.8);
