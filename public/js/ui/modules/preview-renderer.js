@@ -508,8 +508,8 @@ export class PreviewRenderer {
             return;
         }
 
-        const trueOption = tfContainer.querySelector('.tf-option[data-answer="true"]');
-        const falseOption = tfContainer.querySelector('.tf-option[data-answer="false"]');
+        const trueOption = tfContainer.querySelector('.tf-option[data-option="true"]');
+        const falseOption = tfContainer.querySelector('.tf-option[data-option="false"]');
 
         if (trueOption && falseOption) {
             // Reset styles
