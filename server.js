@@ -370,8 +370,8 @@ app.use('/api', createManimRoutes({ logger, manimRenderService }));
 // Save quiz endpoint
 app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {
     try {
-        const { title, questions, password, filename } = req.validatedBody;
-        const result = await quizService.saveQuiz(title, questions, filename);
+        const { title, questions, settings, password, filename } = req.validatedBody;
+        const result = await quizService.saveQuiz(title, questions, filename, settings);
 
         // Register quiz in metadata and optionally set password
         if (result.filename) {

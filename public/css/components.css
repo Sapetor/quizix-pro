@@ -278,6 +278,27 @@
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Accent button variant - Quick Start (emerald green) */
+.btn.accent {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        0 4px 20px -5px rgba(16, 185, 129, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.btn.accent:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+        0 10px 40px -10px rgba(16, 185, 129, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
 /* Secondary button variant */
 .btn.secondary {
     background: var(--glass-medium);

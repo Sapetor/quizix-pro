@@ -114,6 +114,7 @@ export class ContextMenu {
             );
         } else if (type === 'quiz') {
             items.push(
+                { action: 'quick-start', label: t('quick_start') || 'Quick Start', icon: '&#9889;' },
                 { action: 'load', label: t('load') || 'Load', icon: '&#128194;' },
                 { action: 'practice', label: t('practice') || 'Practice', icon: '&#127919;' },
                 { type: 'separator' },

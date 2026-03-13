@@ -43,7 +43,7 @@ class QuizService {
      * @param {Array} questions - Quiz questions
      * @param {string} [existingFilename] - If provided and valid, overwrite this file instead of creating a new one
      */
-    async saveQuiz(titleArg, questions, existingFilename) {
+    async saveQuiz(titleArg, questions, existingFilename, settings) {
         let title = titleArg;
         if (!title || !questions || !Array.isArray(questions)) {
             const err = new Error('Invalid quiz data');
@@ -125,15 +125,16 @@ class QuizService {
                 quizData = {
                     title,
                     questions,
+                    ...(settings && { settings }),
                     created: existing.created || new Date().toISOString(),
                     id: existing.id || uuidv4(),
                     modified: new Date().toISOString()
                 };
             } catch {
-                quizData = { title, questions, created: new Date().toISOString(), id: uuidv4() };
+                quizData = { title, questions, ...(settings && { settings }), created: new Date().toISOString(), id: uuidv4() };
             }
         } else {
-            quizData = { title, questions, created: new Date().toISOString(), id: uuidv4() };
+            quizData = { title, questions, ...(settings && { settings }), created: new Date().toISOString(), id: uuidv4() };
         }
 
         // Write file with WSL performance monitoring

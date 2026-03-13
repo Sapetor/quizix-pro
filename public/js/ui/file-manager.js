@@ -19,7 +19,8 @@ export class FileManager {
         this.options = {
             treeContainer: options.treeContainer || null,
             onLoadQuiz: options.onLoadQuiz || (() => {}),
-            onPracticeQuiz: options.onPracticeQuiz || (() => {})
+            onPracticeQuiz: options.onPracticeQuiz || (() => {}),
+            onQuickStart: options.onQuickStart || (() => {})
         };
 
         this.folderTree = null;
@@ -136,6 +137,10 @@ export class FileManager {
                 await this.practiceQuiz(id, data);
                 break;
 
+            case 'quick-start':
+                await this.quickStartQuiz(id, data);
+                break;
+
             case 'new-folder':
                 await this.createFolder(type === 'folder' ? id : null);
                 break;
@@ -202,6 +207,13 @@ export class FileManager {
      */
     async practiceQuiz(filename, data) {
         await this.executeQuizAction(filename, data, this.options.onPracticeQuiz);
+    }
+
+    /**
+     * Quick start a quiz (skip editor, go straight to lobby)
+     */
+    async quickStartQuiz(filename, data) {
+        await this.executeQuizAction(filename, data, this.options.onQuickStart);
     }
 
     /**

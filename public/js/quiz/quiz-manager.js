@@ -64,10 +64,14 @@ export class QuizManager {
         // Memory management via EventListenerManager
         this.listenerManager = new EventListenerManager('QuizManager');
 
+        // Dependency injection for quick start
+        this._quickStartHandler = null;
+
         // Initialize file manager for folder tree view
         this.fileManager = getFileManager({
             onLoadQuiz: (filename, data) => this.handleFileManagerLoad(filename, data),
-            onPracticeQuiz: (filename, data) => this.handleFileManagerPractice(filename, data)
+            onPracticeQuiz: (filename, data) => this.handleFileManagerPractice(filename, data),
+            onQuickStart: (filename, data) => this.handleFileManagerQuickStart(filename, data)
         });
 
         // Bind cleanup method
@@ -118,6 +122,14 @@ export class QuizManager {
      */
     setStartPracticeModeHandler(handler) {
         this._startPracticeModeHandler = handler;
+    }
+
+    /**
+     * Dependency injection: Set quick start handler
+     * @param {Function} handler - Function to quick-start a quiz by filename
+     */
+    setQuickStartHandler(handler) {
+        this._quickStartHandler = handler;
     }
 
     /**
@@ -195,12 +207,64 @@ export class QuizManager {
     }
 
     /**
+     * Handle quick start from file manager context menu
+     */
+    handleFileManagerQuickStart(filename, data) {
+        this.hideLoadQuizModal();
+        const quickStart = this._quickStartHandler || window.game?.quickStartQuiz;
+        if (quickStart) {
+            quickStart(filename);
+        } else {
+            logger.error('No quickStart handler available');
+        }
+    }
+
+    /**
      * Collect all questions from the quiz builder
      */
     collectQuestions() {
         return Array.from(document.querySelectorAll('.question-item'))
             .map(el => this.extractQuestionData(el))
             .filter(Boolean);
+    }
+
+    /**
+     * Collect game settings from host screen UI elements
+     */
+    collectSettings() {
+        return {
+            randomizeQuestions: dom.get('randomize-questions')?.checked ?? false,
+            randomizeAnswers: dom.get('randomize-answers')?.checked ?? false,
+            useGlobalTime: dom.get('same-time-all')?.checked ?? false,
+            globalTimeLimit: parseInt(dom.get('default-time')?.value) || 20,
+            manualAdvance: dom.get('manual-advancement')?.checked ?? false,
+            consensusMode: dom.get('consensus-mode')?.checked ?? false,
+            consensusThreshold: dom.get('consensus-threshold')?.value ?? '66',
+            discussionTime: parseInt(dom.get('discussion-time')?.value) || 30,
+            allowChat: dom.get('allow-chat')?.checked ?? false
+        };
+    }
+
+    /**
+     * Restore saved game settings to host screen UI elements
+     */
+    restoreSettings(settings) {
+        if (!settings) return;
+
+        const setChecked = (id, val) => { const el = dom.get(id); if (el) el.checked = !!val; };
+        const setValue = (id, val) => { const el = dom.get(id); if (el) el.value = val; };
+
+        setChecked('randomize-questions', settings.randomizeQuestions);
+        setChecked('randomize-answers', settings.randomizeAnswers);
+        setChecked('same-time-all', settings.useGlobalTime);
+        setValue('default-time', settings.globalTimeLimit ?? 20);
+        setChecked('manual-advancement', settings.manualAdvance);
+        setChecked('consensus-mode', settings.consensusMode);
+        setValue('consensus-threshold', settings.consensusThreshold ?? '66');
+        setValue('discussion-time', settings.discussionTime ?? 30);
+        setChecked('allow-chat', settings.allowChat);
+
+        logger.debug('Game settings restored from quiz file');
     }
 
     /**
@@ -408,10 +472,13 @@ export class QuizManager {
             return;
         }
 
+        // Collect current game settings from host screen UI
+        const settings = this.collectSettings();
+
         // Only overwrite the loaded file if the title hasn't changed.
         // Changed title = user wants a new quiz, so skip filename to trigger conflict resolution.
         const shouldOverwrite = this._loadedFilename && this._loadedTitle === title;
-        this.pendingSave = { title, questions, filename: shouldOverwrite ? this._loadedFilename : null };
+        this.pendingSave = { title, questions, settings, filename: shouldOverwrite ? this._loadedFilename : null };
 
         // Show save modal for optional password
         this.showSaveQuizModal();
@@ -513,7 +580,7 @@ export class QuizManager {
     async confirmSave(password) {
         if (!this.pendingSave) return;
 
-        const { title, questions, filename: loadedFilename } = this.pendingSave;
+        const { title, questions, settings, filename: loadedFilename } = this.pendingSave;
 
         try {
             return await errorHandler.safeNetworkOperation(async () => {
@@ -522,7 +589,7 @@ export class QuizManager {
                 const response = await APIHelper.fetchAPI('api/save-quiz', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, questions, password: password || null, filename: loadedFilename || undefined })
+                    body: JSON.stringify({ title, questions, settings, password: password || null, filename: loadedFilename || undefined })
                 });
 
                 const data = await response.json();
@@ -1087,6 +1154,12 @@ export class QuizManager {
             logger.debug('Questions added successfully');
 
             // ========== NICE-TO-HAVE OPERATIONS (don't let these break the flow) ==========
+
+            // Restore saved game settings to host screen UI
+            this.errorHandler.safeExecute(
+                () => this.restoreSettings(quizData.settings),
+                { operation: 'restoreSettings' }
+            );
 
             // Translation loading
             await this.errorHandler.safeExecute(

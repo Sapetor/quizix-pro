@@ -24,7 +24,7 @@ import { bindElement, dom } from '../utils/dom.js';
 import { getJSON, setJSON } from '../utils/storage-utils.js';
 import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
-import { openModal, closeModal } from '../utils/modal-utils.js';
+import { openModal, closeModal, createModalBindings } from '../utils/modal-utils.js';
 // Results viewer will be lazy loaded when needed
 
 export class QuizGame {
@@ -108,6 +108,7 @@ export class QuizGame {
         // Wire up dependency injection for QuizManager
         this.quizManager.setLoadQuizHandler((filename) => this.loadQuiz(filename));
         this.quizManager.setStartPracticeModeHandler((filename) => this.startPracticeMode(filename));
+        this.quizManager.setQuickStartHandler((filename) => this.quickStartQuiz(filename));
         this.quizManager.setPreviewManager(this.previewManager);
         this.quizManager.setAddQuestionFunction(() => this.addQuestion());
 
@@ -349,6 +350,11 @@ export class QuizGame {
             this.uiManager.showScreen('host-screen');
         });
         bindElement('join-btn', 'click', () => this.uiManager.showScreen('join-screen'));
+
+        // Quick Start buttons (desktop + mobile)
+        bindElement('quick-start-btn', 'click', () => this.showQuickStartModal());
+        bindElement('quick-start-btn-mobile', 'click', () => this.showQuickStartModal());
+        bindElement('cancel-quick-start', 'click', () => this.hideQuickStartModal());
 
         // Mobile button handlers (same functionality as desktop)
         bindElement('host-btn-mobile', 'click', () => {
@@ -991,6 +997,210 @@ export class QuizGame {
      */
     loadQuiz(filename) {
         this.quizManager.loadQuiz(filename);
+    }
+
+    /**
+     * Show the Quick Start modal with the quiz file browser
+     */
+    async showQuickStartModal() {
+        if (this._quickStartLoading) return;
+
+        const modal = dom.get('quick-start-modal');
+        if (!modal) return;
+
+        const container = dom.get('quick-start-tree-container');
+        if (!container) return;
+
+        this._quickStartLoading = true;
+
+        // Reset selection state
+        this._quickStartSelectedFile = null;
+        const settingsPanel = dom.get('quick-start-settings');
+        if (settingsPanel) settingsPanel.classList.add('hidden');
+
+        // Lazy-init a dedicated FolderTree for quick start
+        if (!this._quickStartTree) {
+            const { FolderTree } = await import('../ui/components/folder-tree.js');
+            this._quickStartTree = new FolderTree(container, {
+                onSelect: (type, id) => {
+                    if (type === 'quiz') this._onQuickStartQuizSelected(id);
+                },
+                onDoubleClick: (type, id) => {
+                    if (type === 'quiz') this.quickStartQuiz(id);
+                },
+                onContextMenu: () => {}
+            });
+
+            // Wire up launch button and global time toggle
+            bindElement('quick-start-launch', 'click', () => {
+                if (this._quickStartSelectedFile) {
+                    this.quickStartQuiz(this._quickStartSelectedFile);
+                }
+            });
+            const qsGlobalTime = dom.get('qs-use-global-time');
+            if (qsGlobalTime) {
+                qsGlobalTime.addEventListener('change', () => {
+                    const timeRow = dom.get('qs-time-row');
+                    if (timeRow) timeRow.classList.toggle('hidden', !qsGlobalTime.checked);
+                });
+            }
+        }
+
+        // Load tree data BEFORE opening modal to avoid empty flash
+        try {
+            const response = await fetch(APIHelper.getApiUrl('api/quiz-tree'));
+            if (response.ok) {
+                const treeData = await response.json();
+                this._quickStartTree.setData(treeData);
+            }
+        } catch (error) {
+            logger.error('Failed to load quiz tree for quick start:', error);
+            this._quickStartLoading = false;
+            return;
+        }
+
+        this._quickStartLoading = false;
+
+        // Bind overlay click and escape key to close
+        if (this._quickStartModalBindings) {
+            this._quickStartModalBindings.cleanup();
+        }
+        this._quickStartModalBindings = createModalBindings(modal, () => this.hideQuickStartModal());
+
+        openModal(modal);
+    }
+
+    /**
+     * Handle quiz selection in quick start — show settings panel
+     */
+    async _onQuickStartQuizSelected(filename) {
+        this._quickStartSelectedFile = filename;
+
+        try {
+            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${filename}`));
+            if (!response.ok) return;
+            const data = await response.json();
+
+            // Read settings from the new `settings` field, falling back to legacy top-level keys
+            const s = data.settings || {};
+            const get = (key, legacy, fallback) => s[key] ?? data[legacy] ?? fallback;
+
+            // Populate settings panel checkboxes
+            const setChecked = (id, val) => { const el = dom.get(id); if (el) el.checked = !!val; };
+            setChecked('qs-randomize-questions', get('randomizeQuestions', 'randomizeQuestions', false));
+            setChecked('qs-randomize-answers', get('randomizeAnswers', 'randomizeAnswers', false));
+            setChecked('qs-manual-advancement', get('manualAdvance', 'manualAdvancement', false));
+            setChecked('qs-consensus-mode', get('consensusMode', 'consensusMode', false));
+
+            const useGlobal = get('useGlobalTime', 'sameTimeForAll', false);
+            setChecked('qs-use-global-time', useGlobal);
+
+            const timeEl = dom.get('qs-global-time');
+            if (timeEl) timeEl.value = get('globalTimeLimit', 'questionTime', 20);
+
+            const timeRow = dom.get('qs-time-row');
+            if (timeRow) timeRow.classList.toggle('hidden', !useGlobal);
+
+            // Show settings panel (includes launch button)
+            const settingsPanel = dom.get('quick-start-settings');
+            if (settingsPanel) settingsPanel.classList.remove('hidden');
+        } catch (error) {
+            logger.error('Failed to load quiz settings for quick start:', error);
+        }
+    }
+
+    /**
+     * Hide the Quick Start modal
+     */
+    hideQuickStartModal() {
+        const modal = dom.get('quick-start-modal');
+        if (modal) closeModal(modal);
+        if (this._quickStartModalBindings) {
+            this._quickStartModalBindings.cleanup();
+            this._quickStartModalBindings = null;
+        }
+    }
+
+    /**
+     * Read settings from the Quick Start panel UI
+     */
+    _collectQuickStartSettings() {
+        return {
+            randomizeQuestions: dom.get('qs-randomize-questions')?.checked ?? false,
+            randomizeAnswers: dom.get('qs-randomize-answers')?.checked ?? false,
+            manualAdvancement: dom.get('qs-manual-advancement')?.checked ?? false,
+            sameTimeForAll: dom.get('qs-use-global-time')?.checked ?? false,
+            questionTime: parseInt(dom.get('qs-global-time')?.value) || 20,
+            consensusMode: dom.get('qs-consensus-mode')?.checked ?? false
+        };
+    }
+
+    /**
+     * Quick start a quiz: fetch it and go straight to the game lobby
+     */
+    async quickStartQuiz(filename) {
+        this.hideQuickStartModal();
+
+        try {
+            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${filename}`));
+            const data = await response.json();
+
+            if (!response.ok || !data?.questions?.length) {
+                showErrorAlert('failed_load_quiz');
+                return;
+            }
+
+            // Read from panel (user may have tweaked) with quiz file fallback
+            const panel = this._collectQuickStartSettings();
+            const s = data.settings || {};
+            const fileFallback = (key, legacy, def) => s[key] ?? data[legacy] ?? def;
+
+            const randomizeQ = panel.randomizeQuestions;
+            const randomizeA = panel.randomizeAnswers;
+            const manualAdv = panel.manualAdvancement;
+            const sameTime = panel.sameTimeForAll;
+            const qTime = panel.questionTime;
+            const consensus = panel.consensusMode;
+
+            const title = data.title || filename.replace('.json', '');
+            let questions = [...data.questions];
+
+            if (randomizeQ) questions = shuffleArray(questions);
+            if (randomizeA) questions = randomizeAnswers(questions);
+            if (sameTime) questions.forEach(q => { q.time = qTime; });
+
+            const scoringConfig = data.scoringConfig ?? {
+                timeBonusEnabled: true,
+                timeBonusThreshold: 0,
+                difficultyMultipliers: { easy: 1, medium: 2, hard: 3 }
+            };
+
+            const quizData = {
+                quiz: {
+                    title,
+                    questions,
+                    manualAdvancement: manualAdv,
+                    powerUpsEnabled: fileFallback('powerUpsEnabled', 'powerUpsEnabled', false),
+                    randomizeQuestions: randomizeQ,
+                    randomizeAnswers: randomizeA,
+                    sameTimeForAll: sameTime,
+                    questionTime: qTime,
+                    scoringConfig
+                }
+            };
+
+            if (consensus) {
+                quizData.quiz.consensusMode = true;
+                quizData.quiz.consensusThreshold = fileFallback('consensusThreshold', 'consensusThreshold', '66');
+                quizData.quiz.discussionTime = fileFallback('discussionTime', 'discussionTime', 30);
+                quizData.quiz.allowChat = fileFallback('allowChat', 'allowChat', true);
+            }
+
+            this.socketManager.createGame(quizData);
+        } catch (error) {
+            logger.error('Quick start failed:', error);
+            showErrorAlert('failed_load_quiz');
+        }
     }
 
     /**
