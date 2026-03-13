@@ -10,11 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
-    <!-- Preload critical CSS -->
-    <link rel="preload" href="css/main.bundle.css?v=44" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript>
-        <link rel="stylesheet" href="css/main.bundle.css?v=44">
-    </noscript>
+    <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
+    <link rel="stylesheet" href="css/main.bundle.css?v=44">
 
     <!-- Preload critical JavaScript -->
     <link rel="preload" href="js/main.js?v=42" as="script" crossorigin="anonymous">
@@ -60,7 +57,6 @@
             background: var(--critical-bg);
             color: var(--critical-text);
             opacity: 0;
-            transition: opacity 0.3s ease-in;
         }
 
         body.loaded {
@@ -175,6 +171,34 @@
                     const icons = { small: 'A⁻', medium: 'A', large: 'A⁺', xlarge: 'A⁺⁺' };
                     fontIcon.textContent = icons[savedFontSize] || 'A';
                 }
+
+                // Synchronous language pre-set to avoid flash of wrong language
+                const savedLang = localStorage.getItem('language');
+                if (savedLang) {
+                    const langMap = {
+                        es: ['🇪🇸','Español'], en: ['🇺🇸','English'],
+                        fr: ['🇫🇷','Français'], de: ['🇩🇪','Deutsch'],
+                        it: ['🇮🇹','Italiano'], pt: ['🇵🇹','Português'],
+                        pl: ['🇵🇱','Polski'], ja: ['🇯🇵','日本語'],
+                        zh: ['🇨🇳','中文']
+                    };
+                    const info = langMap[savedLang];
+                    if (info) {
+                        document.querySelectorAll('.language-dropdown-selected').forEach(sel => {
+                            const f = sel.querySelector('.language-flag');
+                            const n = sel.querySelector('.language-name');
+                            if (f) f.textContent = info[0];
+                            if (n) n.textContent = info[1];
+                        });
+                    }
+                }
+
+                // Safety net: show body after max 3s even if JS init stalls
+                setTimeout(() => {
+                    if (document.body && !document.body.classList.contains('loaded')) {
+                        document.body.classList.add('loaded');
+                    }
+                }, 3000);
             });
         })();
 
@@ -415,7 +439,7 @@
                             data-onclick="toggleLanguageDropdown">
                             <div class="language-dropdown-selected">
                                 <span class="language-flag">🇪🇸</span>
-                                <span class="language-name" data-translate="language_es">Español</span>
+                                <span class="language-name">Español</span>
                             </div>
                             <div class="language-dropdown-arrow">▼</div>
                             <div class="language-dropdown-options" id="mobile-language-options-header">
@@ -483,7 +507,7 @@
                     <div id="language-selector" class="language-dropdown" data-onclick="toggleLanguageDropdown">
                         <div class="language-dropdown-selected">
                             <span class="language-flag">🇪🇸</span>
-                            <span class="language-name" data-translate="language_es">Español</span>
+                            <span class="language-name">Español</span>
                         </div>
                         <div class="language-dropdown-arrow">▼</div>
                         <div class="language-dropdown-options" id="language-options">
@@ -3207,8 +3231,8 @@ class GraphScene(Scene):
                             .then(names => Promise.all(names.map(n => caches.delete(n))))
                             .then(() => {
                                 localStorage.setItem('quizix-sw-version', SW_VERSION);
-                                console.log('[App] Cleanup done, reloading...');
-                                window.location.reload();
+                                console.log('[App] Cleanup done, re-registering SW (no reload needed)');
+                                registerServiceWorker();
                             });
                     }
                     localStorage.setItem('quizix-sw-version', SW_VERSION);
@@ -3216,12 +3240,20 @@ class GraphScene(Scene):
                 });
 
                 function registerServiceWorker() {
-                    // Reload once when a new service worker takes control
+                    // Only reload for SW updates, NOT for initial activation.
+                    // On first visit the SW activates via skipWaiting+clients.claim which
+                    // fires controllerchange — reloading here causes a visible blink.
+                    const hadControllerOnLoad = !!navigator.serviceWorker.controller;
                     let refreshing = false;
                     navigator.serviceWorker.addEventListener('controllerchange', () => {
                         if (refreshing) return;
+                        if (!hadControllerOnLoad) {
+                            // First-ever activation — no need to reload, page already has fresh content
+                            console.log('[App] Initial service worker activated (no reload needed)');
+                            return;
+                        }
                         refreshing = true;
-                        console.log('[App] New service worker activated, reloading for fresh content...');
+                        console.log('[App] Service worker updated, reloading for fresh content...');
                         window.location.reload();
                     });
 

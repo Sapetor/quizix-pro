@@ -164,18 +164,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (success) {
             logger.debug('Translation manager initialized successfully');
 
-            // Translate the page after initialization
+            // Translate the page and update language dropdown synchronously
+            // (must complete before body.loaded to avoid visible language flash)
             translationManager.translatePage();
+            updateLanguageDropdownDisplay(savedLanguage);
             logger.debug('Page translated with language:', savedLanguage);
-
-            // Ensure main menu is translated and language dropdown is updated after DOM renders
-            setTimeout(() => {
-                const mainMenuScreen = document.getElementById('main-menu');
-                if (mainMenuScreen) {
-                    translationManager.translateContainer(mainMenuScreen);
-                }
-                updateLanguageDropdownDisplay(savedLanguage);
-            }, 100);
 
             // Log memory savings
             const memoryInfo = translationManager.getMemoryInfo();
@@ -191,6 +184,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Ensure UI state is synced on page load (fixes cache bug after F5)
         // This shows the Create Lobby button on main-menu and prepares UI state
         window.game.uiManager.showScreen('main-menu');
+
+        // FOUC Prevention: Show body as soon as critical UI path is ready
+        // (translation loaded, dropdown correct, main-menu visible)
+        document.body.classList.add('loaded');
+
+        // --- Secondary initialization (runs while page is already visible) ---
 
         // Check for QR code URL parameters and auto-fill PIN
         const urlParams = new URLSearchParams(window.location.search);
@@ -252,9 +251,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tryStartOnboarding(800);
             }
         }
-
-        // FOUC Prevention: Add loaded class for smooth appearance
-        document.body.classList.add('loaded');
 
         // Make sure theme toggle is available globally
         window.toggleTheme = () => {
