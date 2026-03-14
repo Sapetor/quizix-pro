@@ -597,8 +597,11 @@ class GameSessionService {
                     finalLeaderboard: game.leaderboard
                 });
 
-                // Send to each player with their personal concept mastery
+                // Send to each connected player with their personal concept mastery.
+                // Skip disconnected players — they'll receive game-end on rejoin
+                // via handlePlayerRejoin (which checks game.gameState === 'finished').
                 game.players.forEach((player, playerId) => {
+                    if (player.disconnected) return;
                     const conceptMastery = game.calculatePlayerConceptMastery(playerId);
                     io.to(playerId).emit('game-end', {
                         finalLeaderboard: game.leaderboard,

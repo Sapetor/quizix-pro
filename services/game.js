@@ -554,6 +554,12 @@ class Game {
     /**
      * Update the leaderboard
      * Sorts by score (descending), then by total time (ascending) as tiebreaker
+     *
+     * NOTE: Intentionally includes disconnected players so their earned scores
+     * are preserved in the final standings. This differs from getAnswerStatistics()
+     * which excludes disconnected players (since they can't answer the current question).
+     * The host may see fewer players in answer stats than in the leaderboard — this is
+     * by design, not a bug.
      */
     updateLeaderboard() {
         const playersWithTime = Array.from(this.players.values()).map(player => ({
