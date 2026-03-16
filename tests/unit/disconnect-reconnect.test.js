@@ -53,6 +53,7 @@ function createGameWithQuiz(state = 'question', opts = {}) {
         currentQuestion: 0,
         questionStartTime: Date.now() - 5000,
         players: new Map(),
+        removedPlayers: [],
         answerMappings: new Map(),
         leaderboard: [{ name: 'Alice', score: 100 }],
         quiz: {
@@ -114,7 +115,12 @@ describe('Disconnect & Reconnect Logic', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        jest.useFakeTimers();
         service = new PlayerManagementService(mockLogger, mockConfig);
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
     });
 
     // =========================================================================
@@ -544,14 +550,6 @@ describe('Disconnect & Reconnect Logic', () => {
     // Grace period timer
     // =========================================================================
     describe('Grace period timer', () => {
-        beforeEach(() => {
-            jest.useFakeTimers();
-        });
-
-        afterEach(() => {
-            jest.useRealTimers();
-        });
-
         test('timer set on non-intentional disconnect during active game', () => {
             const game = createGameWithQuiz('question');
             const socket = createMockSocket('player-1');
@@ -700,14 +698,6 @@ describe('Disconnect & Reconnect Logic', () => {
     // Multiple player disconnects
     // =========================================================================
     describe('Multiple player disconnects', () => {
-        beforeEach(() => {
-            jest.useFakeTimers();
-        });
-
-        afterEach(() => {
-            jest.useRealTimers();
-        });
-
         test('3 players disconnect simultaneously, each gets own timer', () => {
             const game = createGameWithQuiz('question');
             const io = createMockIO();

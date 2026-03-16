@@ -8,6 +8,7 @@
  * - Player reference cleanup
  */
 
+const crypto = require('crypto');
 const { shuffleWithMapping } = require('./game');
 
 class PlayerManagementService {
@@ -85,7 +86,6 @@ class PlayerManagementService {
         }
 
         // Generate session token for reconnection
-        const crypto = require('crypto');
         const sessionToken = crypto.randomUUID();
         const player = game.players.get(socketId);
         if (player) {
@@ -277,6 +277,16 @@ class PlayerManagementService {
         // Find the player by session token
         for (const [playerId, player] of game.players) {
             if (player.sessionToken === sessionToken && player.disconnected) {
+                // Preserve player data for final leaderboard before removal
+                game.removedPlayers.push({
+                    id: playerId,
+                    name: player.name,
+                    score: player.score || 0,
+                    answers: player.answers || {},
+                    disconnected: true,
+                    removedAt: Date.now()
+                });
+
                 game.removePlayer(playerId);
                 this.players.delete(playerId);
 

@@ -19,6 +19,7 @@ class GameSessionService {
         this.hostIdToPin = new Map();
         this.cleanupInterval = null;
         this.socketBatchService = null; // Injected via setSocketBatchService()
+        this.hostDisconnectTimers = new Map(); // pin -> timerId for host disconnect grace period
 
         // Load environment-based limits
         this.limits = getLimits();
@@ -157,6 +158,38 @@ class GameSessionService {
     findGameByHost(hostId) {
         const pin = this.hostIdToPin.get(hostId);
         return pin ? this.games.get(pin) : undefined;
+    }
+
+    /**
+     * Update host ID mapping when host reconnects with a new socket
+     * @param {string} oldHostId - Previous host socket ID
+     * @param {string} newHostId - New host socket ID
+     * @param {string} pin - Game PIN
+     */
+    updateHostId(oldHostId, newHostId, pin) {
+        this.hostIdToPin.delete(oldHostId);
+        this.hostIdToPin.set(newHostId, pin);
+    }
+
+    /**
+     * Set a host disconnect grace period timer
+     * @param {string} pin - Game PIN
+     * @param {*} timerId - Timer ID from setTimeout
+     */
+    setHostDisconnectTimer(pin, timerId) {
+        this.hostDisconnectTimers.set(pin, timerId);
+    }
+
+    /**
+     * Clear a host disconnect grace period timer
+     * @param {string} pin - Game PIN
+     */
+    clearHostDisconnectTimer(pin) {
+        const timerId = this.hostDisconnectTimers.get(pin);
+        if (timerId) {
+            clearTimeout(timerId);
+            this.hostDisconnectTimers.delete(pin);
+        }
     }
 
     /**

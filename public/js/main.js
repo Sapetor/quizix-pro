@@ -8,7 +8,7 @@ import { translationManager } from './utils/translation-manager.js';
 import { unifiedErrorHandler as errorBoundary } from './utils/unified-error-handler.js';
 import { logger } from './core/config.js';
 import { getItem } from './utils/storage-utils.js';
-import { isMobile } from './utils/dom.js';
+import { isMobile, escapeHtml } from './utils/dom.js';
 import './utils/globals.js'; // Import globals to make them available
 import { browserOptimizer } from './utils/browser-optimizer.js'; // Browser-specific optimizations
 import { contentDensityManager } from './utils/content-density-manager.js'; // Smart content spacing and sizing
@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         logger.debug('Quizix Pro - Application initialized successfully');
     }, 'app_initialization', () => {
         logger.error('Failed to initialize application');
-        document.body.innerHTML = `<div style="text-align: center; padding: 50px;"><h2>${translationManager.getTranslationSync('application_error')}</h2><p>${translationManager.getTranslationSync('app_failed_init')}</p></div>`;
+        document.body.innerHTML = `<div style="text-align: center; padding: 50px;"><h2>${escapeHtml(translationManager.getTranslationSync('application_error'))}</h2><p>${escapeHtml(translationManager.getTranslationSync('app_failed_init'))}</p></div>`;
     });
 });
 
@@ -303,6 +303,16 @@ document.addEventListener('visibilitychange', () => {
             }
         } catch (error) {
             logger.error('Error during partial cleanup:', error);
+        }
+    } else {
+        // Tab became visible again — request time sync from server
+        logger.debug('Page visible - requesting time sync...');
+        try {
+            if (window.game?.socket?.connected) {
+                window.game.socket.emit('request-time-sync');
+            }
+        } catch (error) {
+            logger.error('Error requesting time sync:', error);
         }
     }
 });

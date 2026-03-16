@@ -138,7 +138,7 @@ async function waitForQuestionEnd(page, timeout = 25000) {
 /** Save reconnection data from a player page */
 async function getReconnectData(page) {
     return page.evaluate(() => {
-        const raw = sessionStorage.getItem('quizix_reconnect');
+        const raw = localStorage.getItem('quizix_reconnect');
         return raw ? JSON.parse(raw) : null;
     });
 }
@@ -153,7 +153,7 @@ async function reconnectPlayer(browser, device, reconnectData) {
     await page.waitForFunction(() => window.game?.socket?.connected === true, { timeout: 15000 });
 
     await page.evaluate((data) => {
-        sessionStorage.setItem('quizix_reconnect', JSON.stringify(data));
+        localStorage.setItem('quizix_reconnect', JSON.stringify(data));
         window.game.socket.emit('player-rejoin', {
             pin: data.pin,
             sessionToken: data.sessionToken,

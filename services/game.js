@@ -66,6 +66,9 @@ class Game {
         // Maps playerId -> array where mapping[shuffledIndex] = originalIndex
         this.answerMappings = new Map();
 
+        // Players removed after grace period expiry — preserved for final leaderboard
+        this.removedPlayers = [];
+
         // Consensus mode properties
         this.isConsensusMode = quiz.consensusMode || false;
         this.consensusConfig = {
@@ -562,9 +565,15 @@ class Game {
      * by design, not a bug.
      */
     updateLeaderboard() {
-        const playersWithTime = Array.from(this.players.values()).map(player => ({
+        // Combine active players and removed players (who disconnected and grace period expired)
+        const allPlayers = [
+            ...Array.from(this.players.values()),
+            ...this.removedPlayers
+        ];
+
+        const playersWithTime = allPlayers.map(player => ({
             player,
-            totalTime: Object.values(player.answers).reduce((sum, ans) => sum + (ans.timeMs || 0), 0)
+            totalTime: Object.values(player.answers || {}).reduce((sum, ans) => sum + (ans.timeMs || 0), 0)
         }));
         this.leaderboard = playersWithTime
             .sort((a, b) => {
@@ -816,6 +825,7 @@ class Game {
         this.gameState = 'lobby';
         this.questionStartTime = null;
         this.leaderboard = [];
+        this.removedPlayers = [];
         this.isAdvancing = false;
         this.endingQuestionEarly = false;
         this.startTime = null;
@@ -857,6 +867,7 @@ class Game {
 
         // Clear other game state
         this.leaderboard = [];
+        this.removedPlayers = [];
         this.gameState = 'ended';
 
         this.logger.debug(`Game ${this.pin} cleanup completed`);

@@ -7,6 +7,7 @@ import { translationManager } from '../utils/translation-manager.js';
 import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
 import { logger, UI, TIMING } from '../core/config.js';
 import { uiStateManager } from '../utils/ui-state-manager.js';
+import { show, hide } from '../utils/dom.js';
 
 const RECONNECT_KEY = 'quizix_reconnect';
 
@@ -114,10 +115,21 @@ export class SocketManager {
                 this.gameManager.stopTimer();
             }
 
-            // Show reconnection overlay for non-host players in active games
             const gameState = this.gameManager?.stateManager?.getGameState();
-            if (gameState && !gameState.isHost && gameState.gamePin) {
-                this._showReconnectionOverlay();
+            if (gameState && gameState.gamePin) {
+                if (gameState.isHost) {
+                    // Store host reconnection data for grace period rejoin
+                    try {
+                        localStorage.setItem('quizix_host_reconnect', JSON.stringify({
+                            pin: gameState.gamePin,
+                            savedAt: Date.now()
+                        }));
+                    } catch (e) {
+                        logger.warn('Failed to store host reconnection data:', e);
+                    }
+                } else {
+                    this._showReconnectionOverlay();
+                }
             }
         });
 
@@ -164,10 +176,10 @@ export class SocketManager {
                 this.gameManager.setPlayerInfo(data.playerName, false);
                 this.gameManager.setGamePin(data.gamePin);
 
-                // Store reconnection info in sessionStorage
+                // Store reconnection info in localStorage
                 if (data.sessionToken) {
                     try {
-                        sessionStorage.setItem(RECONNECT_KEY, JSON.stringify({
+                        localStorage.setItem(RECONNECT_KEY, JSON.stringify({
                             pin: data.gamePin,
                             playerName: data.playerName,
                             sessionToken: data.sessionToken,
@@ -259,12 +271,9 @@ export class SocketManager {
             const isHostForStop = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
             if (isHostForStop) {
                 const stopBtn = this._getElement('stop-quiz-btn');
-                if (stopBtn) stopBtn.classList.remove('hidden');
+                if (stopBtn) show(stopBtn);
                 const endRoundContainer = this._getElement('end-round-container');
-                if (endRoundContainer) {
-                    endRoundContainer.classList.remove('hidden');
-                    endRoundContainer.classList.add('visible-flex');
-                }
+                if (endRoundContainer) show(endRoundContainer, 'visible-flex');
             }
 
             // Switch to playing state for immersive gameplay
@@ -312,12 +321,9 @@ export class SocketManager {
 
             // Hide host-only buttons between questions
             const stopBtnTimeout = this._getElement('stop-quiz-btn');
-            if (stopBtnTimeout) stopBtnTimeout.classList.add('hidden');
+            if (stopBtnTimeout) hide(stopBtnTimeout);
             const endRoundTimeout = this._getElement('end-round-container');
-            if (endRoundTimeout) {
-                endRoundTimeout.classList.add('hidden');
-                endRoundTimeout.classList.remove('visible-flex');
-            }
+            if (endRoundTimeout) hide(endRoundTimeout);
 
             // Show correct answer on host side
             const isHost = this.gameManager.stateManager?.getGameState()?.isHost ?? false;
@@ -342,7 +348,7 @@ export class SocketManager {
             // Show buttons in leaderboard screen
             const nextButton = this._getElement('next-question');
             if (nextButton) {
-                nextButton.style.display = 'block';
+                show(nextButton, 'visible-block');
                 nextButton.textContent = buttonText;
                 this._resetButtonStyles(nextButton);
             }
@@ -351,8 +357,8 @@ export class SocketManager {
             const statsControls = this._getElementBySelector('.stats-controls');
             const nextButtonStats = this._getElement('next-question-stats');
             if (statsControls && nextButtonStats) {
-                statsControls.style.display = 'flex';
-                nextButtonStats.style.display = 'block';
+                show(statsControls, 'visible-flex');
+                show(nextButtonStats, 'visible-block');
                 nextButtonStats.textContent = buttonText;
             }
         });
@@ -363,15 +369,15 @@ export class SocketManager {
             // Hide button in leaderboard screen
             const nextButton = this._getElement('next-question');
             if (nextButton) {
-                nextButton.style.display = 'none';
+                hide(nextButton);
                 nextButton.onclick = null;
             }
 
             // Hide buttons in host-game-screen
             const statsControls = this._getElementBySelector('.stats-controls');
             const nextButtonStats = this._getElement('next-question-stats');
-            if (statsControls) statsControls.style.display = 'none';
-            if (nextButtonStats) nextButtonStats.style.display = 'none';
+            if (statsControls) hide(statsControls);
+            if (nextButtonStats) hide(nextButtonStats);
         });
 
         this.socket.on('game-end', (data) => {
@@ -379,7 +385,7 @@ export class SocketManager {
 
             // Hide host game controls
             const stopBtnEnd = this._getElement('stop-quiz-btn');
-            if (stopBtnEnd) stopBtnEnd.classList.add('hidden');
+            if (stopBtnEnd) hide(stopBtnEnd);
 
             // Clear reconnection data — game is over
             this._clearReconnectionData();
@@ -393,7 +399,7 @@ export class SocketManager {
             // Hide manual advancement button
             const nextButton = this._getElement('next-question');
             if (nextButton) {
-                nextButton.style.display = 'none';
+                hide(nextButton);
                 nextButton.onclick = null;
             }
 
@@ -590,7 +596,8 @@ export class SocketManager {
         this.socket.on('game-ended', (data) => {
             logger.debug('Game ended (host disconnected):', data);
             const stopBtnEnded = this._getElement('stop-quiz-btn');
-            if (stopBtnEnded) stopBtnEnded.classList.add('hidden');
+            if (stopBtnEnded) hide(stopBtnEnded);
+            this._hideReconnectionOverlay();
             this._clearReconnectionData();
             this._hideRejoinBanner();
             this.gameManager.stopTimer();
@@ -613,7 +620,21 @@ export class SocketManager {
 
         this.socket.on('reconnect', (attemptNumber) => {
             logger.debug('Reconnected after attempt:', attemptNumber);
-            // Attempt to rejoin using stored session token
+
+            // Try host rejoin first
+            try {
+                const hostData = JSON.parse(localStorage.getItem('quizix_host_reconnect') || 'null');
+                if (hostData?.pin && (Date.now() - hostData.savedAt) < 30000) {
+                    this.socket.emit('host-rejoin', { pin: hostData.pin });
+                    localStorage.removeItem('quizix_host_reconnect');
+                    return;
+                }
+            } catch (e) {
+                logger.warn('Failed to read host reconnect data:', e);
+            }
+            localStorage.removeItem('quizix_host_reconnect');
+
+            // Otherwise attempt player rejoin
             this._attemptRejoin();
         });
 
@@ -644,6 +665,18 @@ export class SocketManager {
             this.gameManager.setGamePin(data.gamePin);
             this.currentPlayerName = data.playerName;
 
+            // Refresh reconnection data with fresh timestamp
+            try {
+                localStorage.setItem(RECONNECT_KEY, JSON.stringify({
+                    pin: data.gamePin,
+                    playerName: data.playerName,
+                    sessionToken: data.sessionToken,
+                    savedAt: Date.now()
+                }));
+            } catch (e) {
+                logger.warn('Failed to update reconnection data:', e);
+            }
+
             // Show appropriate screen based on game status
             if (data.gameStatus === 'lobby') {
                 this.uiManager.showScreen('player-lobby');
@@ -669,6 +702,59 @@ export class SocketManager {
             this.gameManager.stopTimer();
             this.gameManager.resetGameState();
             this.uiManager.showScreen('main-menu');
+        });
+
+        // Handle successful host rejoin after disconnect
+        this.socket.on('host-rejoin-success', (data) => {
+            logger.info('Host rejoin successful:', data);
+            this.gameManager.setGamePin(data.pin);
+            this.gameManager.setPlayerInfo('Host', true);
+            this.uiManager.updateGamePin(data.pin);
+
+            if (data.gameState === 'lobby') {
+                this.uiManager.showScreen('game-lobby');
+            } else {
+                this.uiManager.showScreen('host-game-screen');
+            }
+
+            this.gameManager.updatePlayersList(data.players);
+
+            if (window.toastNotifications) {
+                window.toastNotifications.show('Reconnected as host!', 'success', 2000);
+            }
+        });
+
+        // Handle host temporarily disconnected (show waiting overlay to players)
+        this.socket.on('host-disconnected', () => {
+            const overlay = this._getElement('reconnection-overlay');
+            if (overlay) {
+                show(overlay);
+                const contextEl = this._getElement('reconnection-context');
+                if (contextEl) {
+                    contextEl.textContent = translationManager.getTranslationSync('host_disconnected_waiting')
+                        || 'Host disconnected — waiting for reconnection...';
+                }
+            }
+        });
+
+        // Handle host reconnected (hide waiting overlay)
+        this.socket.on('host-reconnected', () => {
+            this._hideReconnectionOverlay();
+            if (window.toastNotifications) {
+                window.toastNotifications.show(
+                    translationManager.getTranslationSync('host_reconnected') || 'Host reconnected!',
+                    'success', 2000
+                );
+            }
+        });
+
+        // Handle timer resync from server (after tab becomes visible)
+        this.socket.on('time-sync', (data) => {
+            if (data?.remainingMs != null && this.gameManager) {
+                const remainingSec = Math.ceil(data.remainingMs / 1000);
+                this.gameManager.updateTimerDisplay(remainingSec);
+                logger.debug('Timer synced:', remainingSec, 'seconds remaining');
+            }
         });
 
         // Rejoin banner button handlers (cleaned up via abortController on disconnect)
@@ -733,7 +819,7 @@ export class SocketManager {
         // Show the lobby info section
         const lobbyInfo = this._getElement('lobby-info');
         if (lobbyInfo) {
-            lobbyInfo.style.display = 'flex';
+            show(lobbyInfo, 'visible-flex');
         }
 
         logger.debug('Updated player lobby display:', { gamePin, playerCount: players?.length });
@@ -774,8 +860,8 @@ export class SocketManager {
         const editSection = this._getElement('player-name-edit');
         const editInput = this._getElement('edit-name-input');
 
-        if (displaySection) displaySection.classList.add('hidden');
-        if (editSection) editSection.classList.remove('hidden');
+        if (displaySection) hide(displaySection);
+        if (editSection) show(editSection);
 
         // Pre-fill with current name and focus
         if (editInput && this.currentPlayerName) {
@@ -792,8 +878,8 @@ export class SocketManager {
         const displaySection = this._getElement('player-name-display');
         const editSection = this._getElement('player-name-edit');
 
-        if (displaySection) displaySection.classList.remove('hidden');
-        if (editSection) editSection.classList.add('hidden');
+        if (displaySection) show(displaySection);
+        if (editSection) hide(editSection);
     }
 
     /**
@@ -894,13 +980,13 @@ export class SocketManager {
     }
 
     /**
-     * Read and validate reconnection data from sessionStorage.
+     * Read and validate reconnection data from localStorage.
      * Returns parsed data if valid and unexpired, or null otherwise.
      * @returns {{ pin: string, playerName: string, sessionToken: string, savedAt: number } | null}
      */
     _getValidReconnectData() {
         try {
-            const raw = sessionStorage.getItem(RECONNECT_KEY);
+            const raw = localStorage.getItem(RECONNECT_KEY);
             if (!raw) return null;
 
             const data = JSON.parse(raw);
@@ -931,6 +1017,27 @@ export class SocketManager {
 
         logger.info('Attempting rejoin with session token:', { pin: data.pin });
 
+        // Set a 10-second timeout for the rejoin attempt
+        const rejoinTimeout = setTimeout(() => {
+            logger.warn('Rejoin attempt timed out after 10 seconds');
+            this._hideReconnectionOverlay();
+            this.gameManager.stopTimer();
+            this.gameManager.resetGameState();
+            this.uiManager.showScreen('main-menu');
+            this._showRejoinBanner();
+
+            if (window.toastNotifications) {
+                const msg = translationManager.getTranslationSync('rejoin_timeout')
+                    || 'Could not reconnect — game may have ended';
+                window.toastNotifications.show(msg, 'warning', 4000);
+            }
+        }, 10000);
+
+        // Clear timeout when we get a response (success or failure)
+        const clearRejoinTimeout = () => clearTimeout(rejoinTimeout);
+        this.socket.once('rejoin-success', clearRejoinTimeout);
+        this.socket.once('rejoin-failed', clearRejoinTimeout);
+
         const emitRejoin = () => {
             this.socket.emit('player-rejoin', {
                 pin: data.pin,
@@ -947,11 +1054,11 @@ export class SocketManager {
     }
 
     /**
-     * Clear stored reconnection data from sessionStorage
+     * Clear stored reconnection data from localStorage
      */
     _clearReconnectionData() {
         try {
-            sessionStorage.removeItem(RECONNECT_KEY);
+            localStorage.removeItem(RECONNECT_KEY);
         } catch (e) {
             logger.warn('Failed to clear reconnection data:', e);
         }
@@ -963,7 +1070,7 @@ export class SocketManager {
     _showReconnectionOverlay() {
         const overlay = this._getElement('reconnection-overlay');
         if (!overlay) return;
-        overlay.classList.remove('hidden');
+        show(overlay);
 
         // Populate context from stored reconnection data
         const contextEl = this._getElement('reconnection-context');
@@ -978,9 +1085,9 @@ export class SocketManager {
         // Show "Return to Menu" button after a delay (give auto-reconnect a chance first)
         const returnBtn = this._getElement('reconnection-return-btn');
         if (returnBtn) {
-            returnBtn.classList.add('hidden');
+            hide(returnBtn);
             this._reconnectionReturnTimeout = setTimeout(() => {
-                returnBtn.classList.remove('hidden');
+                show(returnBtn);
             }, 5000);
         }
     }
@@ -990,9 +1097,7 @@ export class SocketManager {
      */
     _hideReconnectionOverlay() {
         const overlay = this._getElement('reconnection-overlay');
-        if (overlay) {
-            overlay.classList.add('hidden');
-        }
+        if (overlay) hide(overlay);
 
         // Clear the delayed "Return to Menu" timeout
         if (this._reconnectionReturnTimeout) {
@@ -1002,9 +1107,7 @@ export class SocketManager {
 
         // Re-hide the return button for next time
         const returnBtn = this._getElement('reconnection-return-btn');
-        if (returnBtn) {
-            returnBtn.classList.add('hidden');
-        }
+        if (returnBtn) hide(returnBtn);
 
         // Clear context text
         const contextEl = this._getElement('reconnection-context');
@@ -1031,7 +1134,7 @@ export class SocketManager {
         if (pinEl) pinEl.textContent = data.pin;
         if (nameEl) nameEl.textContent = data.playerName;
 
-        banner.classList.remove('hidden');
+        show(banner);
         logger.info('Rejoin banner shown', { pin: data.pin, playerName: data.playerName });
     }
 
@@ -1040,9 +1143,7 @@ export class SocketManager {
      */
     _hideRejoinBanner() {
         const banner = this._getElement('rejoin-game-banner');
-        if (banner) {
-            banner.classList.add('hidden');
-        }
+        if (banner) hide(banner);
     }
 
     /**
