@@ -1139,6 +1139,58 @@ export class QuizGame {
      * Quick start a quiz: fetch it and go straight to the game lobby
      */
     async quickStartQuiz(filename) {
+        // Check if quiz requires authentication before proceeding
+        try {
+            const authResponse = await APIHelper.fetchAPI(`api/requires-auth/quiz/${filename}`);
+            if (!authResponse.ok) return;
+
+            const { requiresAuth } = await authResponse.json();
+            if (requiresAuth) {
+                if (!this._passwordModal) {
+                    const { PasswordModal } = await import('../ui/components/password-modal.js');
+                    this._passwordModal = new PasswordModal();
+                }
+
+                const displayName = filename.replace('.json', '');
+                let unlocked = false;
+                while (!unlocked) {
+                    let password;
+                    try {
+                        password = await this._passwordModal.promptPassword(displayName);
+                    } catch {
+                        return; // User cancelled
+                    }
+
+                    const unlockRes = await APIHelper.fetchAPI('api/unlock', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ itemId: filename, itemType: 'quiz', password })
+                    });
+
+                    if (unlockRes.ok) {
+                        unlocked = true;
+                    } else if (unlockRes.status === 429) {
+                        toastNotifications.show(
+                            translationManager.getTranslationSync('too_many_attempts') || 'Too many attempts.',
+                            'error'
+                        );
+                        return;
+                    } else if (unlockRes.status === 401) {
+                        toastNotifications.show(
+                            translationManager.getTranslationSync('incorrect_password') || 'Incorrect password',
+                            'error'
+                        );
+                        // Loop continues — re-prompt
+                    } else {
+                        return;
+                    }
+                }
+            }
+        } catch (error) {
+            logger.error('Quick start auth check failed:', error);
+            return;
+        }
+
         this.hideQuickStartModal();
 
         try {
