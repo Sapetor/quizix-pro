@@ -135,20 +135,94 @@ describe('QRService', () => {
             process.env.RAILWAY_ENVIRONMENT = originalEnv;
         });
 
-        test('should generate local URL in development', () => {
+        test('should generate local URL from detected IP when request host is unavailable', () => {
             delete process.env.RAILWAY_ENVIRONMENT;
             delete process.env.NODE_ENV;
             delete process.env.VERCEL_ENV;
             delete process.env.HEROKU_APP_NAME;
 
+            const localReq = {
+                get: jest.fn(() => null),
+                secure: false
+            };
+
             os.networkInterfaces.mockReturnValue({
                 eth0: [{ family: 'IPv4', address: '192.168.1.50', internal: false }]
             });
 
-            const url = qrService._getGameUrl('123456', mockReq);
+            const url = qrService._getGameUrl('123456', localReq);
 
             expect(url).toContain('192.168.1.50');
             expect(url).toContain('pin=123456');
+        });
+
+        test('should prefer the current LAN request host in development', () => {
+            delete process.env.RAILWAY_ENVIRONMENT;
+            delete process.env.NODE_ENV;
+            delete process.env.VERCEL_ENV;
+            delete process.env.HEROKU_APP_NAME;
+
+            const localReq = {
+                get: jest.fn((header) => {
+                    if (header === 'host') return '192.168.1.77:3000';
+                    return null;
+                }),
+                secure: false
+            };
+
+            os.networkInterfaces.mockReturnValue({
+                eth0: [{ family: 'IPv4', address: '10.0.0.5', internal: false }]
+            });
+
+            const url = qrService._getGameUrl('123456', localReq);
+
+            expect(url).toBe('http://192.168.1.77:3000/?pin=123456');
+        });
+
+        test('should ignore localhost request host and fall back to detected LAN IP', () => {
+            delete process.env.RAILWAY_ENVIRONMENT;
+            delete process.env.NODE_ENV;
+            delete process.env.VERCEL_ENV;
+            delete process.env.HEROKU_APP_NAME;
+
+            const localReq = {
+                get: jest.fn((header) => {
+                    if (header === 'host') return 'localhost:3000';
+                    return null;
+                }),
+                secure: false
+            };
+
+            os.networkInterfaces.mockReturnValue({
+                eth0: [{ family: 'IPv4', address: '192.168.1.50', internal: false }]
+            });
+
+            const url = qrService._getGameUrl('123456', localReq);
+
+            expect(url).toBe('http://192.168.1.50:3000/?pin=123456');
+        });
+
+        test('should ignore WSL private bridge addresses from the request host', () => {
+            delete process.env.RAILWAY_ENVIRONMENT;
+            delete process.env.NODE_ENV;
+            delete process.env.VERCEL_ENV;
+            delete process.env.HEROKU_APP_NAME;
+
+            qrService._isWSL = true;
+            qrService._getLocalIP = jest.fn().mockReturnValue('192.168.1.50');
+
+            const localReq = {
+                get: jest.fn((header) => {
+                    if (header === 'host') return '172.28.112.1:3000';
+                    return null;
+                }),
+                secure: false
+            };
+
+            const url = qrService._getGameUrl('123456', localReq);
+
+            expect(url).toBe('http://192.168.1.50:3000/?pin=123456');
+            expect(qrService._getLocalIP).toHaveBeenCalledTimes(1);
         });
 
         test('should include basePath in URL', () => {
@@ -215,6 +289,32 @@ describe('QRService', () => {
             expect(mockLogger.debug).toHaveBeenCalledWith(
                 expect.stringContaining('served from cache')
             );
+        });
+
+        test('should keep separate cache entries for different local URLs', async () => {
+            const QRCode = require('qrcode');
+
+            const firstReq = {
+                get: jest.fn((header) => {
+                    if (header === 'host') return '192.168.1.50:3000';
+                    return null;
+                }),
+                secure: false
+            };
+            const secondReq = {
+                get: jest.fn((header) => {
+                    if (header === 'host') return 'quizix-server.local:3000';
+                    return null;
+                }),
+                secure: false
+            };
+
+            const firstResult = await qrService.generateQRCode('123456', mockGame, firstReq);
+            const secondResult = await qrService.generateQRCode('123456', mockGame, secondReq);
+
+            expect(QRCode.toDataURL).toHaveBeenCalledTimes(2);
+            expect(firstResult.gameUrl).toBe('http://192.168.1.50:3000/?pin=123456');
+            expect(secondResult.gameUrl).toBe('http://quizix-server.local:3000/?pin=123456');
         });
     });
 

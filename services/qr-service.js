@@ -27,6 +27,59 @@ class QRService {
         this._isWSL = this._detectWSL();
     }
 
+    _getRequestHost(req) {
+        if (!req?.get) return null;
+
+        const hostHeader = req.get('x-forwarded-host') || req.get('host');
+        if (!hostHeader) return null;
+
+        return hostHeader.split(',')[0].trim() || null;
+    }
+
+    _getHostnameFromHost(host) {
+        if (!host) return null;
+
+        try {
+            return new URL(`http://${host}`).hostname;
+        } catch {
+            return null;
+        }
+    }
+
+    _isLoopbackHost(hostname) {
+        if (!hostname) return true;
+
+        const normalizedHost = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+        return ['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(normalizedHost);
+    }
+
+    _isPrivateIPv4(hostname) {
+        if (!hostname) return false;
+
+        return /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+            /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+            /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(hostname);
+    }
+
+    _isMdnsHost(hostname) {
+        return typeof hostname === 'string' && /^[a-z0-9-]+\.local$/i.test(hostname);
+    }
+
+    _isUsableLocalRequestHost(host) {
+        const hostname = this._getHostnameFromHost(host);
+
+        if (!hostname || this._isLoopbackHost(hostname)) {
+            return false;
+        }
+
+        // WSL private 172.x addresses are typically the VM bridge, not the LAN-facing host.
+        if (this._isWSL && /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+            return false;
+        }
+
+        return this._isPrivateIPv4(hostname) || this._isMdnsHost(hostname);
+    }
+
     _detectWSL() {
         try {
             const procVersion = fs.readFileSync('/proc/version', 'utf8');
@@ -134,16 +187,23 @@ class QRService {
         const isCloudDeployment = process.env.RAILWAY_ENVIRONMENT === 'production' ||
                                   process.env.VERCEL_ENV ||
                                   process.env.HEROKU_APP_NAME;
+        const requestHost = this._getRequestHost(req);
 
         if (isCloudDeployment) {
             // Cloud deployment: use request host
-            const host = req.get('host');
             const protocol = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
-            const gameUrl = `${protocol}://${host}${this.basePath}/?pin=${pin}`;
+            const gameUrl = `${protocol}://${requestHost}${this.basePath}/?pin=${pin}`;
 
             this.logger.info(`QR Code: Cloud deployment URL: ${gameUrl}`);
             return gameUrl;
         } else {
+            if (this._isUsableLocalRequestHost(requestHost)) {
+                const gameUrl = `http://${requestHost}${this.basePath}/?pin=${pin}`;
+
+                this.logger.debug(`QR Code: Using request host URL: ${gameUrl}`);
+                return gameUrl;
+            }
+
             // Local deployment: use detected IP
             const localIP = this._getLocalIP();
             const port = process.env.PORT || 3000;
@@ -163,10 +223,10 @@ class QRService {
             throw new Error('Game not found');
         }
 
+        const gameUrl = this._getGameUrl(pin, req);
+
         // Check cache
-        const envType = (process.env.RAILWAY_ENVIRONMENT === 'production' ||
-                        process.env.NODE_ENV === 'production') ? 'cloud' : 'local';
-        const cacheKey = `qr_${pin}_${envType}`;
+        const cacheKey = `qr_${pin}_${gameUrl}`;
         const cached = this.qrCache.get(cacheKey);
         const now = Date.now();
 
@@ -174,9 +234,6 @@ class QRService {
             this.logger.debug(`QR code served from cache for PIN ${pin}`);
             return cached.data;
         }
-
-        // Generate new QR code
-        const gameUrl = this._getGameUrl(pin, req);
 
         const qrCodeDataUrl = await QRCode.toDataURL(gameUrl, {
             width: 300,
