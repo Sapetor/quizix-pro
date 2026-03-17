@@ -1023,13 +1023,24 @@ export class QuizGame {
             const { FolderTree } = await import('../ui/components/folder-tree.js');
             this._quickStartTree = new FolderTree(container, {
                 onSelect: (type, id) => {
-                    if (type === 'quiz') this._onQuickStartQuizSelected(id);
+                    if (type === 'quiz') {
+                        this._onQuickStartQuizSelected(id);
+                    } else {
+                        this._hideQuickStartSettings();
+                    }
                 },
                 onDoubleClick: (type, id) => {
                     if (type === 'quiz') this.quickStartQuiz(id);
                 },
                 onContextMenu: () => {}
             });
+
+            // Move settings panel into the tree body for positioning context
+            const body = modal.querySelector('.quick-start-body');
+            const settingsPanelEl = dom.get('quick-start-settings');
+            if (body && settingsPanelEl) {
+                body.appendChild(settingsPanelEl);
+            }
 
             // Wire up launch button and global time toggle
             bindElement('quick-start-launch', 'click', () => {
@@ -1101,12 +1112,54 @@ export class QuizGame {
             const timeRow = dom.get('qs-time-row');
             if (timeRow) timeRow.classList.toggle('hidden', !useGlobal);
 
-            // Show settings panel (includes launch button)
+            // Position floating settings panel next to selected quiz
             const settingsPanel = dom.get('quick-start-settings');
-            if (settingsPanel) settingsPanel.classList.remove('hidden');
+            if (settingsPanel) {
+                settingsPanel.classList.remove('hidden');
+                this._positionQuickStartSettings(filename, settingsPanel);
+            }
         } catch (error) {
             logger.error('Failed to load quiz settings for quick start:', error);
         }
+    }
+
+    /**
+     * Position the floating settings panel near the selected quiz item
+     */
+    _positionQuickStartSettings(filename, panel) {
+        const container = dom.get('quick-start-tree-container');
+        if (!container) return;
+
+        const selectedRow = container.querySelector(`.folder-tree-quiz[data-filename="${filename}"] > .folder-tree-row`);
+        if (!selectedRow) return;
+
+        const body = container.closest('.quick-start-body');
+        if (!body) return;
+
+        // Calculate position relative to the .quick-start-body container
+        const bodyRect = body.getBoundingClientRect();
+        const rowRect = selectedRow.getBoundingClientRect();
+
+        const top = rowRect.bottom - bodyRect.top;
+        const right = 0;
+
+        panel.style.top = `${top + 4}px`;
+        panel.style.right = `${right}px`;
+        panel.style.left = '';
+
+        // Ensure panel is visible within the modal
+        requestAnimationFrame(() => {
+            panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
+    }
+
+    /**
+     * Hide the quick start settings panel
+     */
+    _hideQuickStartSettings() {
+        this._quickStartSelectedFile = null;
+        const settingsPanel = dom.get('quick-start-settings');
+        if (settingsPanel) settingsPanel.classList.add('hidden');
     }
 
     /**

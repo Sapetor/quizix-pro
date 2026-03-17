@@ -1127,7 +1127,7 @@
     min-height: 120px;
     color: white;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* Was hidden — clipped .player-answered badge */
 }
 
 .tf-option.true-btn {
@@ -1180,7 +1180,7 @@
     text-align: center;
     color: white;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* Was hidden — clipped .player-answered badge */
 }
 
 #player-true-false .tf-option[data-answer="true"] {
@@ -1331,7 +1331,7 @@
     min-height: 70px;
     cursor: default;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* Was hidden — clipped .player-answered badge */
     width: 100%;
     max-width: 100%;
 }
@@ -1356,7 +1356,7 @@
     min-height: 60px;
     text-align: left;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* Was hidden — clipped .player-answered badge */
     width: 100%;
     max-width: 550px;
     gap: 12px;

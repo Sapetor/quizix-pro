@@ -2454,37 +2454,37 @@
             <h3 id="quick-start-modal-title" data-translate="quick_start_select">Select Quiz to Start</h3>
             <div class="quick-start-body">
                 <div id="quick-start-tree-container" class="quiz-tree-container"></div>
+            </div>
 
-                <!-- Compact settings panel (populated from saved quiz settings) -->
-                <div id="quick-start-settings" class="quick-start-settings hidden">
-                    <button id="quick-start-launch" class="btn accent qs-launch-btn" data-translate="start_game">Start Game</button>
-                    <h4 data-translate="game_settings">Game Settings</h4>
-                    <div class="qs-settings-grid">
-                        <label class="qs-toggle">
-                            <input type="checkbox" id="qs-randomize-questions">
-                            <span data-translate="randomize_questions">Randomize Questions</span>
-                        </label>
-                        <label class="qs-toggle">
-                            <input type="checkbox" id="qs-randomize-answers">
-                            <span data-translate="randomize_answers">Randomize Answers</span>
-                        </label>
-                        <label class="qs-toggle">
-                            <input type="checkbox" id="qs-manual-advancement">
-                            <span data-translate="manual_advancement">Manual Advancement</span>
-                        </label>
-                        <label class="qs-toggle">
-                            <input type="checkbox" id="qs-use-global-time">
-                            <span data-translate="same_time_for_all">Same Time for All</span>
-                        </label>
-                        <div class="qs-time-row hidden" id="qs-time-row">
-                            <label data-translate="time_seconds">Time (sec)</label>
-                            <input type="number" id="qs-global-time" value="20" min="5" max="300" class="input-sm">
-                        </div>
-                        <label class="qs-toggle">
-                            <input type="checkbox" id="qs-consensus-mode">
-                            <span data-translate="consensus_mode">Consensus Mode</span>
-                        </label>
+            <!-- Floating settings panel (repositioned next to selected quiz via JS) -->
+            <div id="quick-start-settings" class="quick-start-settings hidden">
+                <button id="quick-start-launch" class="btn accent qs-launch-btn" data-translate="start_game">Start Game</button>
+                <h4 data-translate="game_settings">Game Settings</h4>
+                <div class="qs-settings-grid">
+                    <label class="qs-toggle">
+                        <input type="checkbox" id="qs-randomize-questions">
+                        <span data-translate="randomize_questions">Randomize Questions</span>
+                    </label>
+                    <label class="qs-toggle">
+                        <input type="checkbox" id="qs-randomize-answers">
+                        <span data-translate="randomize_answers">Randomize Answers</span>
+                    </label>
+                    <label class="qs-toggle">
+                        <input type="checkbox" id="qs-manual-advancement">
+                        <span data-translate="manual_advancement">Manual Advancement</span>
+                    </label>
+                    <label class="qs-toggle">
+                        <input type="checkbox" id="qs-use-global-time">
+                        <span data-translate="same_time_for_all">Same Time for All</span>
+                    </label>
+                    <div class="qs-time-row hidden" id="qs-time-row">
+                        <label data-translate="time_seconds">Time (sec)</label>
+                        <input type="number" id="qs-global-time" value="20" min="5" max="300" class="input-sm">
                     </div>
+                    <label class="qs-toggle">
+                        <input type="checkbox" id="qs-consensus-mode">
+                        <span data-translate="consensus_mode">Consensus Mode</span>
+                    </label>
                 </div>
             </div>
 
