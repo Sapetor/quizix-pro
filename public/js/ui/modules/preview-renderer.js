@@ -83,7 +83,7 @@ export class PreviewRenderer {
         if (questionText) {
             this.renderSplitTextWithLatex(previewElement, questionText);
         } else {
-            previewElement.innerHTML = `<em>${translationManager.getTranslationSync('no_question_text')}</em>`;
+            previewElement.innerHTML = `<em>${escapeHtml(translationManager.getTranslationSync('no_question_text'))}</em>`;
         }
     }
 
@@ -405,7 +405,7 @@ export class PreviewRenderer {
 
         if (!options || options.length === 0) {
             const noOptionsText = translationManager.getTranslationSync('no_options') || 'No options';
-            optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
+            optionsContainer.innerHTML = `<p><em>${escapeHtml(noOptionsText)}</em></p>`;
             return;
         }
 
@@ -458,7 +458,7 @@ export class PreviewRenderer {
 
         if (!options || options.length === 0) {
             const noOptionsText = translationManager.getTranslationSync('no_options') || 'No options';
-            optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
+            optionsContainer.innerHTML = `<p><em>${escapeHtml(noOptionsText)}</em></p>`;
             return;
         }
 
@@ -559,7 +559,7 @@ export class PreviewRenderer {
         }
 
         if (!options || options.length === 0) {
-            container.innerHTML = `<p>${translationManager.getTranslationSync('no_ordering_options')}</p>`;
+            container.innerHTML = `<p>${escapeHtml(translationManager.getTranslationSync('no_ordering_options'))}</p>`;
             return;
         }
 
@@ -838,7 +838,7 @@ export class PreviewRenderer {
 
         if (!options || options.length === 0) {
             const noOptionsText = translationManager.getTranslationSync('no_options') || 'No options';
-            optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
+            optionsContainer.innerHTML = `<p><em>${escapeHtml(noOptionsText)}</em></p>`;
             return;
         }
 
@@ -890,7 +890,7 @@ export class PreviewRenderer {
 
         if (!options || options.length === 0) {
             const noOptionsText = translationManager.getTranslationSync('no_options') || 'No options';
-            optionsContainer.innerHTML = `<p><em>${noOptionsText}</em></p>`;
+            optionsContainer.innerHTML = `<p><em>${escapeHtml(noOptionsText)}</em></p>`;
             return;
         }
 

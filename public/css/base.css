@@ -40,6 +40,14 @@ body {
     display: flex !important;
 }
 
+.visible-block {
+    display: block !important;
+}
+
+.visible-inline-block {
+    display: inline-block !important;
+}
+
 
 /* Correct answer highlighting for player side */
 .correct-answer-highlight {

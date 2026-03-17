@@ -9,6 +9,7 @@ const {
     joinGameSchema,
     submitAnswerSchema,
     validateSocketEvent,
+    validateAndHandle,
     hostJoinSchema,
     playerJoinSchema,
     socketSubmitAnswerSchema
@@ -199,6 +200,24 @@ describe('Validation Schemas', () => {
         });
     });
 
+    describe('Socket Player Join Schema (wire format)', () => {
+        it('should validate with name field (actual wire format)', () => {
+            const result = playerJoinSchema.safeParse({
+                pin: '123456',
+                name: 'TestPlayer'
+            });
+            expect(result.success).toBe(true);
+        });
+
+        it('should reject playerName field (wrong field name)', () => {
+            const result = playerJoinSchema.safeParse({
+                pin: '123456',
+                playerName: 'TestPlayer'
+            });
+            expect(result.success).toBe(false);
+        });
+    });
+
     describe('Submit Answer Schema', () => {
         it('should validate numeric answer', () => {
             const result = submitAnswerSchema.safeParse({ answer: 42 });
@@ -262,7 +281,7 @@ describe('Socket Event Validation', () => {
             it('should validate valid player-join data', () => {
                 const data = {
                     pin: '123456',
-                    playerName: 'TestPlayer'
+                    name: 'TestPlayer'
                 };
 
                 const result = validateSocketEvent('player-join', data);
@@ -272,7 +291,7 @@ describe('Socket Event Validation', () => {
             it('should reject invalid PIN', () => {
                 const result = validateSocketEvent('player-join', {
                     pin: 'invalid',
-                    playerName: 'Test'
+                    name: 'Test'
                 });
                 expect(result.valid).toBe(false);
             });
@@ -281,7 +300,6 @@ describe('Socket Event Validation', () => {
         describe('submit-answer event', () => {
             it('should validate numeric answer submission', () => {
                 const result = validateSocketEvent('submit-answer', {
-                    pin: '123456',
                     answer: 1
                 });
                 expect(result.valid).toBe(true);
@@ -289,7 +307,6 @@ describe('Socket Event Validation', () => {
 
             it('should validate array answer submission', () => {
                 const result = validateSocketEvent('submit-answer', {
-                    pin: '123456',
                     answer: [0, 2, 1]
                 });
                 expect(result.valid).toBe(true);
@@ -297,8 +314,15 @@ describe('Socket Event Validation', () => {
 
             it('should validate boolean answer submission', () => {
                 const result = validateSocketEvent('submit-answer', {
-                    pin: '123456',
                     answer: true
+                });
+                expect(result.valid).toBe(true);
+            });
+
+            it('should validate answer with optional type field', () => {
+                const result = validateSocketEvent('submit-answer', {
+                    answer: 1,
+                    type: 'player-answer'
                 });
                 expect(result.valid).toBe(true);
             });

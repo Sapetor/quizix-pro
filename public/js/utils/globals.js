@@ -17,7 +17,7 @@ import { translationManager } from './translation-manager.js';
 import { setItem, getJSON, setJSON } from './storage-utils.js';
 import { updateEditorQuestionCount } from './editor-question-count.js';
 import { openModal } from './modal-utils.js';
-import { dom } from './dom.js';
+import { dom, show, hide } from './dom.js';
 
 // ============================================================================
 // Preview and Modal Functions
@@ -70,8 +70,12 @@ export function toggleToolbar() {
     logger.debug('Horizontal toolbar toggle function called');
     const toolbar = dom.get('horizontal-toolbar');
     if (toolbar) {
-        const isVisible = toolbar.style.display !== 'none' && toolbar.style.display !== '';
-        toolbar.style.display = isVisible ? 'none' : 'flex';
+        const isVisible = !toolbar.classList.contains('hidden');
+        if (isVisible) {
+            hide(toolbar);
+        } else {
+            show(toolbar, 'visible-flex');
+        }
     }
 }
 
@@ -87,14 +91,22 @@ export function toggleGlobalTime() {
     }
 
     const isEnabled = useGlobalTime.checked;
-    globalTimeContainer.style.display = isEnabled ? 'block' : 'none';
+    if (isEnabled) {
+        show(globalTimeContainer, 'visible-block');
+    } else {
+        hide(globalTimeContainer);
+    }
     logger.debug('Global time container display set to:', isEnabled ? 'block' : 'none');
 
     // Update individual question time inputs
     document.querySelectorAll('.question-time-limit').forEach(input => {
         const container = input.closest('.time-limit-container');
         if (container) {
-            container.style.display = isEnabled ? 'none' : 'block';
+            if (isEnabled) {
+                hide(container);
+            } else {
+                show(container, 'visible-block');
+            }
         }
 
         // If enabling global time, sync all question times to the global value
@@ -160,12 +172,12 @@ export function updateQuestionType(selectElement) {
 
     // Hide all option types, show selected
     questionItem.querySelectorAll('.answer-options').forEach(opt => {
-        opt.style.display = 'none';
+        hide(opt);
     });
 
     const targetOptions = questionItem.querySelector(`.${questionType}-options`);
     if (targetOptions) {
-        targetOptions.style.display = 'block';
+        show(targetOptions, 'visible-block');
     } else {
         logger.warn(`updateQuestionType: Could not find options for type '${questionType}'`);
     }
@@ -487,7 +499,11 @@ export function toggleGlobalTimeModal() {
 
     if (!useGlobalTime || !globalTimeContainer) return;
 
-    globalTimeContainer.style.display = useGlobalTime.checked ? 'block' : 'none';
+    if (useGlobalTime.checked) {
+        show(globalTimeContainer, 'visible-block');
+    } else {
+        hide(globalTimeContainer);
+    }
 }
 
 function syncSettingsToModal() {
@@ -501,7 +517,11 @@ function syncSettingsToModal() {
     const useGlobalTime = dom.get('modal-use-global-time');
     const globalTimeContainer = dom.get('modal-global-time-container');
     if (useGlobalTime && globalTimeContainer) {
-        globalTimeContainer.style.display = useGlobalTime.checked ? 'block' : 'none';
+        if (useGlobalTime.checked) {
+            show(globalTimeContainer, 'visible-block');
+        } else {
+            hide(globalTimeContainer);
+        }
     }
 
     // Advanced options
@@ -590,7 +610,7 @@ export function removeImage(buttonElement) {
     logger.debug('Remove image function called');
     const imagePreview = buttonElement.closest('.image-preview');
     if (imagePreview) {
-        imagePreview.style.display = 'none';
+        hide(imagePreview);
         const img = imagePreview.querySelector('.question-image');
         if (img) {
             img.src = '';
@@ -754,12 +774,20 @@ export function updateMobileReturnButtonVisibility(currentScreen) {
     const shouldShow = currentScreen !== 'main-menu' && currentScreen !== '';
 
     if (mobileReturnButton) {
-        mobileReturnButton.style.display = shouldShow ? 'flex' : 'none';
+        if (shouldShow) {
+            show(mobileReturnButton, 'visible-flex');
+        } else {
+            hide(mobileReturnButton);
+        }
         logger.debug(`Mobile return button: ${shouldShow ? 'shown' : 'hidden'} for screen: ${currentScreen}`);
     }
 
     if (desktopReturnButton) {
-        desktopReturnButton.style.display = shouldShow ? 'inline-block' : 'none';
+        if (shouldShow) {
+            show(desktopReturnButton, 'visible-inline-block');
+        } else {
+            hide(desktopReturnButton);
+        }
         logger.debug(`Desktop return button: ${shouldShow ? 'shown' : 'hidden'} for screen: ${currentScreen}`);
     }
 }

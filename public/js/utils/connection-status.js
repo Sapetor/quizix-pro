@@ -6,6 +6,7 @@
 import { logger } from '../core/config.js';
 import { translationManager } from './translation-manager.js';
 import { APIHelper } from './api-helper.js';
+import { show, hide } from './dom.js';
 
 export class ConnectionStatus {
     constructor() {
@@ -61,7 +62,7 @@ export class ConnectionStatus {
                 <div class="connection-dot"></div>
                 <span class="connection-text" data-translate="checking_connection">Checking...</span>
             </div>
-            <div class="connection-details" style="display: none;">
+            <div class="connection-details hidden">
                 <div class="detail-item">
                     <span data-translate="status">Status</span>: <span id="status-value">-</span>
                 </div>
@@ -87,8 +88,12 @@ export class ConnectionStatus {
         const details = statusElement.querySelector('.connection-details');
 
         indicator.addEventListener('click', () => {
-            const isVisible = details.style.display !== 'none';
-            details.style.display = isVisible ? 'none' : 'block';
+            const isVisible = !details.classList.contains('hidden');
+            if (isVisible) {
+                hide(details);
+            } else {
+                show(details, 'visible-block');
+            }
         });
 
         // Add hover tooltip

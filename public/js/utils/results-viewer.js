@@ -14,7 +14,7 @@ import { logger, COLORS, TIMING } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
 import { SwipeToDelete } from './swipe-to-delete.js';
-import { bindElement, dom, escapeHtml } from './dom.js';
+import { bindElement, dom, escapeHtml, show, hide } from './dom.js';
 import {
     openModal,
     closeModal,
@@ -246,14 +246,14 @@ export class ResultsViewer {
     showLoading() {
         const loadingEl = dom.get('results-loading');
         if (loadingEl) {
-            loadingEl.style.display = 'flex';
+            show(loadingEl, 'visible-flex');
         }
     }
 
     hideLoading() {
         const loadingEl = dom.get('results-loading');
         if (loadingEl) {
-            loadingEl.style.display = 'none';
+            hide(loadingEl);
         }
     }
 
@@ -618,7 +618,11 @@ export class ResultsViewer {
                 const content = modal.querySelector('#concept-insights-content');
                 if (toggle && content) {
                     toggle.addEventListener('change', () => {
-                        content.style.display = toggle.checked ? 'flex' : 'none';
+                        if (toggle.checked) {
+                            show(content, 'visible-flex');
+                        } else {
+                            hide(content);
+                        }
                     });
                 }
             }

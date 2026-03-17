@@ -3,18 +3,18 @@
  * Handles: host-join, start-game, rematch-game
  */
 
+const { validateAndHandle } = require('../services/validation-schemas');
+
 function registerGameEvents(io, socket, options) {
     const { gameSessionService, playerManagementService, questionFlowService, checkRateLimit, logger } = options;
 
     socket.on('host-join', (data) => {
         if (!checkRateLimit(socket.id, 'host-join', 5, socket)) return;
         try {
-            if (!data || !data.quiz || !Array.isArray(data.quiz.questions)) {
-                socket.emit('error', { message: 'Invalid quiz data', messageKey: 'error_invalid_quiz_data' });
-                return;
-            }
+            const validated = validateAndHandle(socket, 'host-join', data, logger);
+            if (!validated) return;
 
-            const { quiz } = data;
+            const { quiz } = validated;
             logger.debug(`host-join: "${quiz.title}" with ${quiz.questions.length} questions`);
 
             if (quiz.questions.length === 0) {

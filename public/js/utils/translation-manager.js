@@ -170,6 +170,9 @@ class TranslationManager {
         const previousLanguage = this.currentLanguage;
         this.currentLanguage = languageCode;
 
+        // Keep <html lang> in sync to prevent browser auto-translate conflicts
+        document.documentElement.lang = languageCode;
+
         // Save to localStorage (with error handling for private browsing/quota)
         setItem('language', languageCode);
 
@@ -232,8 +235,8 @@ class TranslationManager {
             // Use toast notification for error messages too
             toastNotifications.error(message);
         } else {
-            // Fallback to regular alert for other types (rare)
-            alert(message);
+            // Fallback to toast notification for other types (rare)
+            toastNotifications.info(message);
         }
     }
 
@@ -266,6 +269,7 @@ class TranslationManager {
 
     /**
      * Translate all elements on the page
+     * Delegates to translateContainer(document) for DRY implementation
      */
     translatePage() {
         // Check if translations are loaded
@@ -277,57 +281,7 @@ class TranslationManager {
 
         logger.debug('Translating page with', Object.keys(translations).length, 'translations');
 
-        // Translate elements with data-translate attribute
-        document.querySelectorAll('[data-translate]').forEach(element => {
-            const translationKey = element.getAttribute('data-translate');
-            const args = element.getAttribute('data-translate-args');
-            const parsedArgs = args ? args.split(',').map(arg => arg.trim()) : [];
-
-            if (translationKey) {
-                const translatedText = this.getTranslationSync(translationKey, parsedArgs);
-                // Only replace content if translation was found (not falling back to key)
-                // This preserves the HTML fallback text if translation fails
-                if (translatedText !== translationKey) {
-                    element.textContent = translatedText;
-                }
-            }
-        });
-
-        // Translate title attributes
-        document.querySelectorAll('[data-translate-title]').forEach(element => {
-            const translationKey = element.getAttribute('data-translate-title');
-            const args = element.getAttribute('data-translate-title-args');
-            const parsedArgs = args ? args.split(',').map(arg => arg.trim()) : [];
-
-            if (translationKey) {
-                element.title = this.getTranslationSync(translationKey, parsedArgs);
-            }
-        });
-
-        // Translate placeholder attributes
-        document.querySelectorAll('[data-translate-placeholder]').forEach(element => {
-            const translationKey = element.getAttribute('data-translate-placeholder');
-            element.placeholder = this.getTranslationSync(translationKey);
-        });
-
-        // Translate aria-label attributes
-        document.querySelectorAll('[data-translate-aria-label]').forEach(element => {
-            const translationKey = element.getAttribute('data-translate-aria-label');
-            if (translationKey) {
-                element.setAttribute('aria-label', this.getTranslationSync(translationKey));
-            }
-        });
-
-        // Translate option elements (for select dropdowns)
-        document.querySelectorAll('option[data-translate]').forEach(element => {
-            const translationKey = element.getAttribute('data-translate');
-            if (translationKey) {
-                const translatedText = this.getTranslationSync(translationKey);
-                if (translatedText !== translationKey) {
-                    element.textContent = translatedText;
-                }
-            }
-        });
+        this.translateContainer(document);
     }
 
     /**
@@ -490,6 +444,7 @@ class TranslationManager {
                 await this.changeLanguage(targetLanguage);
             } else {
                 this.currentLanguage = this.defaultLanguage;
+                document.documentElement.lang = this.defaultLanguage;
             }
 
             logger.debug('Translation manager initialized successfully');
@@ -578,6 +533,10 @@ export function showAlert(key, params = []) {
     } else if (errorKeywords.some(kw => key.includes(kw)) || errorMessagePatterns.some(p => lowerMessage.includes(p))) {
         toastNotifications.error(message);
     } else {
-        alert(message);
+        if (typeof toastNotifications !== 'undefined') {
+            toastNotifications.info(message);
+        } else {
+            console.warn(message);
+        }
     }
 }

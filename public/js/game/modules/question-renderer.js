@@ -6,7 +6,7 @@
 
 import { translationManager } from '../../utils/translation-manager.js';
 import { logger, TIMING, COLORS } from '../../core/config.js';
-import { escapeHtmlPreservingLatex, escapeHtml, formatCodeBlocks } from '../../utils/dom.js';
+import { escapeHtmlPreservingLatex, escapeHtml, formatCodeBlocks, show, hide } from '../../utils/dom.js';
 import { QuestionTypeRegistry } from '../../utils/question-type-registry.js';
 
 export class QuestionRenderer {
@@ -93,13 +93,13 @@ export class QuestionRenderer {
         const hostMultipleChoice = document.getElementById('host-multiple-choice');
 
         if (data.type === 'numeric') {
-            hostOptionsContainer.style.display = 'none';
+            hide(hostOptionsContainer);
             // Hide the entire "Question Alternatives" frame for numeric questions
             if (hostMultipleChoice) {
                 hostMultipleChoice.classList.add('numeric-question-type');
             }
         } else {
-            hostOptionsContainer.style.display = 'block';
+            show(hostOptionsContainer, 'visible-block');
             // Remove the numeric-question-type class for non-numeric questions
             if (hostMultipleChoice) {
                 hostMultipleChoice.classList.remove('numeric-question-type');
@@ -130,9 +130,7 @@ export class QuestionRenderer {
     hideAnswerStatistics() {
         const statisticsContainer = document.getElementById('answer-statistics');
         if (statisticsContainer) {
-            // Clear inline style first so classList toggle works (Critical Pattern #8)
-            statisticsContainer.style.display = '';
-            statisticsContainer.classList.add('hidden');
+            hide(statisticsContainer);
             statisticsContainer.classList.remove('counting-only');
         }
 
@@ -315,7 +313,7 @@ export class QuestionRenderer {
         // Reset host option displays
         document.querySelectorAll('.option-display').forEach(option => {
             option.classList.remove('correct', 'incorrect');
-            option.style.display = 'block';
+            show(option, 'visible-block');
         });
     }
 }

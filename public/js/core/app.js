@@ -20,7 +20,7 @@ import { connectionStatus } from '../utils/connection-status.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
-import { bindElement, dom } from '../utils/dom.js';
+import { bindElement, dom, show } from '../utils/dom.js';
 import { getJSON, setJSON } from '../utils/storage-utils.js';
 import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
@@ -252,7 +252,7 @@ export class QuizGame {
         imageElement.alt = 'Question Image';
 
         // Show the preview
-        imagePreview.style.display = 'block';
+        show(imagePreview, 'visible-block');
 
         // Restore UI state
         const imageUploadDiv = questionItem.querySelector('.image-upload');

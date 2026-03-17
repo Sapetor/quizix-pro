@@ -9,6 +9,7 @@ const fs = require('fs');
 const cors = require('cors');
 const os = require('os');
 const compression = require('compression');
+const helmet = require('helmet');
 const { CORSValidationService } = require('./services/cors-validation-service');
 const { QuizService } = require('./services/quiz-service');
 const { ResultsService } = require('./services/results-service');
@@ -57,29 +58,28 @@ const BASE_PATH = process.env.BASE_PATH || (isProduction ? '/quizmaster/' : '/')
 
 // Server-side logging utility
 const DEBUG = {
-    ENABLED: !isProduction, // Disabled in production, enabled in development
     LEVELS: { ERROR: 1, WARN: 2, INFO: 3, DEBUG: 4 },
     CURRENT_LEVEL: isProduction ? 2 : 4 // WARN level in production, DEBUG in development
 };
 
 const logger = {
     error: (message, ...args) => {
-        if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.ERROR) {
+        if (DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.ERROR) {
             console.error(`❌ [SERVER] ${message}`, ...args);
         }
     },
     warn: (message, ...args) => {
-        if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.WARN) {
+        if (DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.WARN) {
             console.warn(`⚠️ [SERVER] ${message}`, ...args);
         }
     },
     info: (message, ...args) => {
-        if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.INFO) {
+        if (DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.INFO) {
             console.log(`ℹ️ [SERVER] ${message}`, ...args);
         }
     },
     debug: (message, ...args) => {
-        if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.DEBUG) {
+        if (DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.DEBUG) {
             console.log(`🔧 [SERVER] ${message}`, ...args);
         }
     }
@@ -228,6 +228,11 @@ const checkRateLimit = socketRateLimiter.checkRateLimit.bind(socketRateLimiter);
 // Initialize graceful shutdown handler
 const gracefulShutdownHandler = new GracefulShutdown(logger, { forceTimeout: 10000 });
 
+app.use(helmet({
+    contentSecurityPolicy: false, // CSP too restrictive for inline scripts/styles + CDN resources
+    crossOriginEmbedderPolicy: false, // Breaks CDN font/script loading
+    frameguard: { action: 'sameorigin' }
+}));
 app.use(cors(corsValidator.getExpressCorsConfig()));
 
 // Add metrics middleware for Prometheus monitoring

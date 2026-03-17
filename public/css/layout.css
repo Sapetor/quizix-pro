@@ -36,6 +36,12 @@
     position: static !important;
     pointer-events: auto !important;
     z-index: auto !important;
+}
+
+/* Animation only applied via JS during explicit screen transitions.
+   Kept off .screen.active to prevent replay when body.loaded releases
+   the body:not(.loaded) animation:none override. */
+.screen.screen-fade-in {
     animation: screenFadeIn 200ms ease-out;
 }
 
@@ -53,7 +59,7 @@
 
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
-    .screen.active {
+    .screen.screen-fade-in {
         animation: none;
     }
 }
@@ -83,6 +89,20 @@ header {
     background: rgba(255, 255, 255, 0.8);
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Header visibility states for game screens */
+header.header-offscreen {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease-in-out;
+}
+
+header.header-offscreen.header-collapsed {
+    position: absolute;
+    top: -100px;
+    z-index: -1;
 }
 
 .header-controls {

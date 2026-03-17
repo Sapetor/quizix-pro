@@ -342,14 +342,27 @@ const exportFormatSchema = z.object({
 // ============================================================================
 
 // Host events (from client to server)
+const scoringConfigSchema = z.object({
+    timeBonusEnabled: z.boolean().optional(),
+    timeBonusThreshold: z.number().min(0).optional(),
+    difficultyMultipliers: z.object({
+        easy: z.number().optional(),
+        medium: z.number().optional(),
+        hard: z.number().optional()
+    }).optional()
+}).optional();
+
 const hostJoinSchema = z.object({
     quiz: z.object({
         title: z.string().min(1),
         questions: z.array(questionSchema).min(1),
         manualAdvancement: z.boolean().optional(),
+        powerUpsEnabled: z.boolean().optional().default(false),
         randomizeQuestions: z.boolean().optional(),
         randomizeAnswers: z.boolean().optional(),
+        sameTimeForAll: z.boolean().optional(),
         questionTime: z.number().int().min(5).max(300).optional(),
+        scoringConfig: scoringConfigSchema,
         // Consensus mode settings
         consensusMode: z.boolean().optional().default(false),
         consensusThreshold: z.enum(['50', '66', '75', '100']).optional().default('66'),
@@ -360,7 +373,7 @@ const hostJoinSchema = z.object({
 
 const playerJoinSchema = z.object({
     pin: z.string().regex(/^\d{6}$/),
-    playerName: z.string().min(1).max(50)
+    name: z.string().min(1).max(50)
 });
 
 const startGameSchema = z.object({
@@ -376,14 +389,13 @@ const endQuestionEarlySchema = z.object({
 });
 
 const socketSubmitAnswerSchema = z.object({
-    pin: z.string().regex(/^\d{6}$/),
     answer: z.union([
         z.number(),
         z.boolean(),
         z.string(),
         z.array(z.number())
     ]),
-    questionIndex: z.number().int().min(0).optional()
+    type: z.string().optional()
 });
 
 const kickPlayerSchema = z.object({
@@ -487,7 +499,7 @@ function validateSocketEvent(eventName, data) {
         // Client to server
         'host-join': hostJoinSchema,
         'player-join': playerJoinSchema,
-        'start-game': startGameSchema,
+        // 'start-game' sends no data — validated by handler logic
         'next-question': nextQuestionSchema,
         'end-question-early': endQuestionEarlySchema,
         'submit-answer': socketSubmitAnswerSchema,
@@ -523,6 +535,25 @@ function validateSocketEvent(eventName, data) {
             message: err.message
         }))
     };
+}
+
+/**
+ * Validates socket event data and emits an error if invalid.
+ * Returns the validated data on success, or null on failure.
+ * @param {Object} socket - Socket.IO socket instance
+ * @param {string} eventName - Name of the socket event
+ * @param {Object} data - Event data to validate
+ * @param {Object} logger - Logger instance
+ * @returns {Object|null} Validated data or null if invalid
+ */
+function validateAndHandle(socket, eventName, data, logger) {
+    const result = validateSocketEvent(eventName, data);
+    if (!result.valid) {
+        logger.warn(`Invalid ${eventName} data:`, result.errors);
+        socket.emit('error', { message: `Invalid ${eventName} data` });
+        return null;
+    }
+    return result.data;
 }
 
 module.exports = {
@@ -575,5 +606,6 @@ module.exports = {
     validateQuery,
 
     // Socket validation
-    validateSocketEvent
+    validateSocketEvent,
+    validateAndHandle
 };

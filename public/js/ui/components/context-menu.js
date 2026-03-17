@@ -4,7 +4,7 @@
  */
 
 import { logger } from '../../core/config.js';
-import { escapeHtml } from '../../utils/dom.js';
+import { escapeHtml, show, hide } from '../../utils/dom.js';
 import { translationManager } from '../../utils/translation-manager.js';
 
 // Helper for shorter translation calls
@@ -30,7 +30,7 @@ export class ContextMenu {
     createMenu() {
         this.element = document.createElement('div');
         this.element.className = 'context-menu';
-        this.element.style.display = 'none';
+        hide(this.element);
         document.body.appendChild(this.element);
     }
 
@@ -45,7 +45,7 @@ export class ContextMenu {
         this.renderItems(items);
 
         // Position the menu
-        this.element.style.display = 'block';
+        show(this.element, 'visible-block');
 
         // Adjust position to stay within viewport
         const rect = this.element.getBoundingClientRect();
@@ -78,7 +78,7 @@ export class ContextMenu {
      * Hide the context menu
      */
     hide() {
-        this.element.style.display = 'none';
+        hide(this.element);
         this.currentContext = null;
 
         document.removeEventListener('click', this.boundClickOutside);

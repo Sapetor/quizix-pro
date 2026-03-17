@@ -99,12 +99,17 @@ export class UIManager {
             return;
         }
 
-        // Standard transition for other screens
-        document.querySelectorAll('.screen').forEach(screen => {
-            screen.classList.remove('active');
-        });
-
-        targetScreen.classList.add('active');
+        // Skip remove-and-readd if already on this screen (avoids re-triggering fade animation)
+        const alreadyActive = targetScreen.classList.contains('active');
+        if (!alreadyActive) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active', 'screen-fade-in');
+            });
+            targetScreen.classList.add('active', 'screen-fade-in');
+            targetScreen.addEventListener('animationend', () => {
+                targetScreen.classList.remove('screen-fade-in');
+            }, { once: true });
+        }
         this.currentScreen = screenId;
         logger.debug('Successfully switched to screen:', screenId);
 
@@ -164,13 +169,7 @@ export class UIManager {
                     uiStateManager.setState('lobby');
                     // Restore header visibility (may be hidden from player-game-screen)
                     if (header) {
-                        header.style.transform = '';
-                        header.style.opacity = '';
-                        header.style.pointerEvents = '';
-                        header.style.position = '';
-                        header.style.top = '';
-                        header.style.zIndex = '';
-                        header.style.transition = '';
+                        header.classList.remove('header-offscreen', 'header-collapsed');
                     }
                     // Create Lobby button is only shown in editor (host-screen), not main menu
                     // Force retranslation of main menu to ensure Quick Start Guide is translated
@@ -197,31 +196,15 @@ export class UIManager {
                 case 'player-game-screen':
                     // Player game screen gets standard treatment
                     if (header) {
-                        header.style.transform = 'translateY(-100%)';
-                        header.style.opacity = '0';
-                        header.style.pointerEvents = 'none';
-                        header.style.transition = 'all 0.3s ease-in-out';
+                        header.classList.add('header-offscreen');
+                        setTimeout(() => header.classList.add('header-collapsed'), 300);
                     }
-
-                    setTimeout(() => {
-                        if (header && this.currentScreen === 'player-game-screen') {
-                            header.style.position = 'absolute';
-                            header.style.top = '-100px';
-                            header.style.zIndex = '-1';
-                        }
-                    }, 300);
                     break;
                 case 'player-final-screen':
                 case 'leaderboard-screen':
                     // Restore header for final results screens to prevent blank gap
                     if (header) {
-                        header.style.transform = '';
-                        header.style.opacity = '';
-                        header.style.pointerEvents = '';
-                        header.style.position = '';
-                        header.style.top = '';
-                        header.style.zIndex = '';
-                        header.style.transition = 'all 0.3s ease-in-out';
+                        header.classList.remove('header-offscreen', 'header-collapsed');
                     }
                     break;
                 case 'game-browser':
@@ -352,9 +335,12 @@ export class UIManager {
 
         // Step 4: Now perform the actual screen transition
         document.querySelectorAll('.screen').forEach(screen => {
-            screen.classList.remove('active');
+            screen.classList.remove('active', 'screen-fade-in');
         });
-        targetScreen.classList.add('active');
+        targetScreen.classList.add('active', 'screen-fade-in');
+        targetScreen.addEventListener('animationend', () => {
+            targetScreen.classList.remove('screen-fade-in');
+        }, { once: true });
         this.currentScreen = 'host-screen';
         logger.debug('Successfully switched to host-screen');
 
@@ -405,13 +391,7 @@ export class UIManager {
 
         // Restore header visibility (may be hidden from player-game-screen)
         if (header) {
-            header.style.transform = '';
-            header.style.opacity = '';
-            header.style.pointerEvents = '';
-            header.style.position = '';
-            header.style.top = '';
-            header.style.zIndex = '';
-            header.style.transition = '';
+            header.classList.remove('header-offscreen', 'header-collapsed');
         }
 
         // Show toolbar elements
@@ -492,7 +472,7 @@ export class UIManager {
 
                 if (qrImage) {
                     qrImage.src = data.qrCode;
-                    qrImage.style.display = '';
+                    qrImage.classList.remove('hidden');
                 }
                 if (qrLoading) qrLoading.classList.add('hidden');
                 if (gameUrl) gameUrl.textContent = data.gameUrl;
@@ -516,7 +496,7 @@ export class UIManager {
         const gamesContainer = dom.get('games-list');
         if (!gamesContainer) return;
 
-        gamesContainer.innerHTML = `<div class="loading-games">${translationManager.getTranslationSync('loading_games')}</div>`;
+        gamesContainer.innerHTML = `<div class="loading-games">${escapeHtml(translationManager.getTranslationSync('loading_games'))}</div>`;
 
         try {
             // Use API helper to ensure proper URL handling across different network configurations

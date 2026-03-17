@@ -3,18 +3,18 @@
  * Handles: submit-answer, use-power-up, next-question
  */
 
+const { validateAndHandle } = require('../services/validation-schemas');
+
 function registerGameplayEvents(io, socket, options) {
     const { gameSessionService, playerManagementService, questionFlowService, checkRateLimit, logger } = options;
 
     socket.on('submit-answer', (data) => {
         if (!checkRateLimit(socket.id, 'submit-answer', 3, socket)) return; // Strict limit: 3 per second
         try {
-            if (!data || data.answer === undefined) {
-                socket.emit('answer-error', { message: 'Invalid answer data', messageKey: 'error_invalid_answer' });
-                return;
-            }
+            const validated = validateAndHandle(socket, 'submit-answer', data, logger);
+            if (!validated) return;
 
-            const { answer, type } = data;
+            const { answer, type } = validated;
             const playerData = playerManagementService.getPlayer(socket.id);
             if (!playerData) {
                 socket.emit('answer-error', { message: 'Player session not found', messageKey: 'error_session_not_found' });

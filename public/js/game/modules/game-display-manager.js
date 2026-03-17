@@ -9,6 +9,7 @@ import { logger } from '../../core/config.js';
 import { MathRenderer } from '../../utils/math-renderer.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
 import { imagePathResolver } from '../../utils/image-path-resolver.js';
+import { escapeHtml } from '../../utils/dom.js';
 
 export class GameDisplayManager {
     constructor(uiManager) {
@@ -274,7 +275,7 @@ export class GameDisplayManager {
         // Clear or show loading message in host question element
         if (elements.hostQuestionElement) {
             if (showLoading) {
-                elements.hostQuestionElement.innerHTML = `<div class="loading-question">${getTranslation('loading_next_question')}</div>`;
+                elements.hostQuestionElement.innerHTML = `<div class="loading-question">${escapeHtml(getTranslation('loading_next_question'))}</div>`;
             } else {
                 elements.hostQuestionElement.innerHTML = '';
             }

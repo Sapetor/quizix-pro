@@ -9,7 +9,7 @@ import { LocalGameSession } from './local-game-session.js';
 import { logger } from '../core/config.js';
 import { getTranslation } from '../utils/translation-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
-import { dom } from '../utils/dom.js';
+import { dom, escapeHtml } from '../utils/dom.js';
 
 export class PracticeModeManager {
     /**
@@ -293,45 +293,45 @@ export class PracticeModeManager {
         // Build results HTML
         resultsContainer.innerHTML = `
             <div class="practice-results-content">
-                <h2>${getTranslation('practice_complete') || 'Practice Complete!'}</h2>
+                <h2>${escapeHtml(getTranslation('practice_complete') || 'Practice Complete!')}</h2>
 
                 <div class="practice-score-display">
-                    <div class="practice-score">${data.finalScore}</div>
-                    <div class="practice-score-label">${getTranslation('points') || 'Points'}</div>
+                    <div class="practice-score">${escapeHtml(String(data.finalScore))}</div>
+                    <div class="practice-score-label">${escapeHtml(getTranslation('points') || 'Points')}</div>
                 </div>
 
                 <div class="practice-stats">
                     <div class="practice-stat">
-                        <span class="stat-value">${data.correctAnswers}/${data.totalQuestions}</span>
-                        <span class="stat-label">${getTranslation('correct') || 'Correct'}</span>
+                        <span class="stat-value">${escapeHtml(String(data.correctAnswers))}/${escapeHtml(String(data.totalQuestions))}</span>
+                        <span class="stat-label">${escapeHtml(getTranslation('correct') || 'Correct')}</span>
                     </div>
                     <div class="practice-stat">
-                        <span class="stat-value">${percentage}%</span>
-                        <span class="stat-label">${getTranslation('accuracy') || 'Accuracy'}</span>
+                        <span class="stat-value">${escapeHtml(String(percentage))}%</span>
+                        <span class="stat-label">${escapeHtml(getTranslation('accuracy') || 'Accuracy')}</span>
                     </div>
                     <div class="practice-stat">
-                        <span class="stat-value">${timeFormatted}</span>
-                        <span class="stat-label">${getTranslation('time') || 'Time'}</span>
+                        <span class="stat-value">${escapeHtml(timeFormatted)}</span>
+                        <span class="stat-label">${escapeHtml(getTranslation('time') || 'Time')}</span>
                     </div>
                 </div>
 
                 ${data.isNewPersonalBest ? `
                     <div class="new-personal-best">
                         <span class="best-icon">🏆</span>
-                        <span>${getTranslation('new_personal_best') || 'New Personal Best!'}</span>
+                        <span>${escapeHtml(getTranslation('new_personal_best') || 'New Personal Best!')}</span>
                     </div>
                 ` : `
                     <div class="personal-best-info">
-                        <span>${getTranslation('personal_best') || 'Personal Best'}: ${data.personalBest}</span>
+                        <span>${escapeHtml(getTranslation('personal_best') || 'Personal Best')}: ${escapeHtml(String(data.personalBest))}</span>
                     </div>
                 `}
 
                 <div class="practice-actions">
                     <button id="practice-try-again" class="primary-button">
-                        ${getTranslation('try_again') || 'Try Again'}
+                        ${escapeHtml(getTranslation('try_again') || 'Try Again')}
                     </button>
                     <button id="practice-exit" class="secondary-button">
-                        ${getTranslation('exit') || 'Exit'}
+                        ${escapeHtml(getTranslation('exit') || 'Exit')}
                     </button>
                 </div>
             </div>

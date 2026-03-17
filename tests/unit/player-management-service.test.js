@@ -54,7 +54,12 @@ describe('PlayerManagementService', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        jest.useFakeTimers();
         playerService = new PlayerManagementService(mockLogger, mockConfig);
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
     });
 
     describe('handlePlayerJoin', () => {

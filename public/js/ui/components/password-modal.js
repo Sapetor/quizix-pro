@@ -6,6 +6,7 @@
 import { logger, COLORS } from '../../core/config.js';
 import { translationManager } from '../../utils/translation-manager.js';
 import { openModal, closeModal, createModalBindings } from '../../utils/modal-utils.js';
+import { show, hide } from '../../utils/dom.js';
 
 // Helper for shorter translation calls
 const t = (key) => translationManager.getTranslationSync(key);
@@ -27,7 +28,7 @@ export class PasswordModal {
         this.modal = document.createElement('div');
         this.modal.id = 'password-modal';
         this.modal.className = 'modal password-modal';
-        this.modal.style.display = 'none';
+        this.modal.classList.add('hidden');
 
         this.modal.innerHTML = `
             <div class="modal-content password-modal-content">
@@ -39,11 +40,11 @@ export class PasswordModal {
                         <label class="password-modal-label" for="password-input"></label>
                         <input type="password" id="password-input" class="password-modal-input" autocomplete="off" />
                     </div>
-                    <div class="password-modal-field password-confirm-field" style="display: none;">
+                    <div class="password-modal-field password-confirm-field hidden">
                         <label class="password-modal-label" for="password-confirm-input"></label>
                         <input type="password" id="password-confirm-input" class="password-modal-input" autocomplete="off" />
                     </div>
-                    <div class="password-strength" style="display: none;">
+                    <div class="password-strength hidden">
                         <div class="password-strength-bar">
                             <div class="password-strength-fill"></div>
                         </div>
@@ -51,7 +52,7 @@ export class PasswordModal {
                     </div>
                 </div>
 
-                <p class="password-modal-error" style="display: none;"></p>
+                <p class="password-modal-error hidden"></p>
 
                 <div class="password-modal-actions">
                     <button class="btn btn-secondary password-cancel-btn"></button>
@@ -94,9 +95,9 @@ export class PasswordModal {
                 itemName ? `${t('password_required_for') || 'Password required for'} "${itemName}"` : '';
             this.modal.querySelector('.password-modal-label').textContent =
                 t('password') || 'Password';
-            this.modal.querySelector('.password-confirm-field').style.display = 'none';
-            this.modal.querySelector('.password-strength').style.display = 'none';
-            this.modal.querySelector('.password-modal-error').style.display = 'none';
+            hide(this.modal.querySelector('.password-confirm-field'));
+            hide(this.modal.querySelector('.password-strength'));
+            hide(this.modal.querySelector('.password-modal-error'));
             this.modal.querySelector('.password-cancel-btn').textContent =
                 t('cancel') || 'Cancel';
             this.modal.querySelector('.password-submit-btn').textContent =
@@ -134,9 +135,9 @@ export class PasswordModal {
             labels[0].textContent = t('new_password') || 'New Password';
             labels[1].textContent = t('confirm_password') || 'Confirm Password';
 
-            this.modal.querySelector('.password-confirm-field').style.display = 'block';
-            this.modal.querySelector('.password-strength').style.display = 'block';
-            this.modal.querySelector('.password-modal-error').style.display = 'none';
+            show(this.modal.querySelector('.password-confirm-field'), 'visible-block');
+            show(this.modal.querySelector('.password-strength'), 'visible-block');
+            hide(this.modal.querySelector('.password-modal-error'));
             this.modal.querySelector('.password-cancel-btn').textContent =
                 t('cancel') || 'Cancel';
             this.modal.querySelector('.password-submit-btn').textContent =
@@ -199,7 +200,7 @@ export class PasswordModal {
     showError(message) {
         const errorEl = this.modal.querySelector('.password-modal-error');
         errorEl.textContent = message;
-        errorEl.style.display = 'block';
+        show(errorEl, 'visible-block');
 
         // Shake animation
         this.modal.querySelector('.password-modal-content').classList.add('shake');

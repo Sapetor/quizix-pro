@@ -5,7 +5,7 @@
 
 import { getTranslation } from './translation-manager.js';
 import { logger } from '../core/config.js';
-import { isMobile } from './dom.js';
+import { isMobile, escapeHtml } from './dom.js';
 
 class MobileQuestionCarousel {
     constructor() {
@@ -176,7 +176,7 @@ class MobileQuestionCarousel {
 
         if (this.questions.length === 0) {
             // If no questions, show a placeholder
-            this.questionsWrapper.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">${getTranslation('no_questions_yet')}</div>`;
+            this.questionsWrapper.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">${escapeHtml(getTranslation('no_questions_yet'))}</div>`;
             this.updateIndicators();
             this.updateNavigation();
             return;

@@ -4,6 +4,7 @@
  */
 
 import { logger, TIMING } from '../core/config.js';
+import { show, hide } from './dom.js';
 
 /**
  * Scroll the page/container to the top
@@ -56,12 +57,12 @@ export function scrollToTop() {
 function showBackToTopButtons(floatingBtn, editorBtn) {
     if (floatingBtn && !floatingBtn.classList.contains('show')) {
         logger.debug('Showing floating back-to-top button');
-        floatingBtn.style.display = 'flex';
+        show(floatingBtn, 'visible-flex');
         floatingBtn.classList.add('show');
     }
-    if (editorBtn && editorBtn.style.display === 'none') {
+    if (editorBtn && editorBtn.classList.contains('hidden')) {
         logger.debug('Showing editor back-to-top button');
-        editorBtn.style.display = 'flex';
+        show(editorBtn, 'visible-flex');
     }
 }
 
@@ -74,13 +75,13 @@ function hideBackToTopButtons(floatingBtn, editorBtn) {
         floatingBtn.classList.remove('show');
         setTimeout(() => {
             if (!floatingBtn.classList.contains('show')) {
-                floatingBtn.style.display = 'none';
+                hide(floatingBtn);
             }
         }, TIMING.ANIMATION_FADE_DURATION);
     }
     if (editorBtn) {
         logger.debug('Hiding editor back-to-top button');
-        editorBtn.style.display = 'none';
+        hide(editorBtn);
     }
 }
 

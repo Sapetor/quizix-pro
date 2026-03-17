@@ -13,7 +13,7 @@ import { imagePathResolver, loadImageWithRetry as sharedLoadImageWithRetry } fro
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 import { getJSON, setJSON, removeItem } from '../utils/storage-utils.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
-import { dom, escapeHtml } from '../utils/dom.js';
+import { dom, escapeHtml, show, hide } from '../utils/dom.js';
 import { getFileManager } from '../ui/file-manager.js';
 import { openModal, closeModal } from '../utils/modal-utils.js';
 import { manimEditor } from './manim-editor.js';
@@ -502,13 +502,17 @@ export class QuizManager {
 
         if (passwordInput) passwordInput.value = '';
         if (confirmInput) confirmInput.value = '';
-        if (confirmGroup) confirmGroup.style.display = 'none';
+        if (confirmGroup) hide(confirmGroup);
 
         // Show confirm field when password is entered
         if (passwordInput) {
             passwordInput.oninput = () => {
                 if (confirmGroup) {
-                    confirmGroup.style.display = passwordInput.value ? 'block' : 'none';
+                    if (passwordInput.value) {
+                        show(confirmGroup, 'visible-block');
+                    } else {
+                        hide(confirmGroup);
+                    }
                 }
             };
         }
@@ -827,8 +831,8 @@ export class QuizManager {
         // Force DOM update
         modal.offsetHeight; // Force reflow
         requestAnimationFrame(() => {
-            if (modal.style.display !== 'none') {
-                modal.style.display = 'none';
+            if (!modal.classList.contains('hidden')) {
+                hide(modal);
             }
         });
 
@@ -940,7 +944,7 @@ export class QuizManager {
 
         // Escape key to close
         this.loadQuizModalHandlers.keydown = (e) => {
-            if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
+            if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
                 this.hideLoadQuizModal();
             }
         };
@@ -1259,7 +1263,11 @@ export class QuizManager {
 
             // Handle remove button visibility
             const removeButton = this.ensureRemoveButton(questionItem);
-            removeButton.style.display = hasMultipleQuestions ? 'block' : 'none';
+            if (hasMultipleQuestions) {
+                show(removeButton, 'visible-block');
+            } else {
+                hide(removeButton);
+            }
         });
 
         logger.debug(`Updated questions UI for ${questionItems.length} questions`);
@@ -1516,7 +1524,7 @@ export class QuizManager {
         this.setupImageElement(imageElement, imageSrc, questionData.image, questionData.imageWebp);
         this.setupImageHandlers(imageElement, imagePreview, questionData.image);
 
-        imagePreview.style.display = 'block';
+        show(imagePreview, 'visible-block');
         logger.debug('Image populated:', imageElement.src);
     }
 
@@ -1550,7 +1558,7 @@ export class QuizManager {
         // Add load success handler first
         imageElement.onload = () => {
             logger.debug('✅ Quiz builder image loaded successfully:', imageData);
-            imagePreview.style.display = 'block';
+            show(imagePreview, 'visible-block');
         };
 
         // Set up retry logic similar to preview renderer
@@ -1567,13 +1575,13 @@ export class QuizManager {
         logger.warn('⚠️ Quiz builder image failed to load:', imageData);
 
         // Hide the broken image
-        imageElement.style.display = 'none';
+        hide(imageElement);
 
         // Create or update error message
         this.showImageErrorMessage(imagePreview, imageData);
 
         // Keep preview visible with error message
-        imagePreview.style.display = 'block';
+        show(imagePreview, 'visible-block');
         logger.debug('Shown image error message in quiz builder');
     }
 

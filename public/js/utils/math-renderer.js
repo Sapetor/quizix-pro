@@ -12,7 +12,7 @@
 
 import { TIMING, logger } from '../core/config.js';
 import { simpleMathJaxService } from './simple-mathjax-service.js';
-import { escapeHtml, formatCodeBlocks as sharedFormatCodeBlocks } from './dom.js';
+import { escapeHtml, formatCodeBlocks as sharedFormatCodeBlocks, show } from './dom.js';
 
 export class MathRenderer {
     constructor() {
@@ -52,7 +52,7 @@ export class MathRenderer {
             // Ensure proper display styling after rendering
             const containers = element.querySelectorAll('.mjx-container');
             containers.forEach(container => {
-                container.style.display = 'inline-block';
+                show(container, 'visible-inline-block');
                 container.style.verticalAlign = 'middle';
                 container.classList.add('MathJax_Processed');
 

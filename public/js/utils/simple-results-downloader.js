@@ -7,6 +7,7 @@ import { translationManager, showErrorAlert, showSuccessAlert } from './translat
 import { logger } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
+import { show, hide } from './dom.js';
 
 export class SimpleResultsDownloader {
     constructor() {
@@ -43,7 +44,7 @@ export class SimpleResultsDownloader {
     onResultsUpdated(results) {
         // Update dropdown if it's currently visible
         const dropdown = document.getElementById('results-dropdown');
-        if (dropdown && dropdown.style.display !== 'none') {
+        if (dropdown && !dropdown.classList.contains('hidden')) {
             this.populateDropdownWithResults(results);
         }
     }
@@ -217,7 +218,7 @@ export class SimpleResultsDownloader {
         logger.debug('📊 showDownloadTool called');
         const downloadSection = document.querySelector('.download-results');
         if (downloadSection) {
-            downloadSection.style.display = 'block';
+            show(downloadSection, 'visible-block');
             await this.initializeDropdown();
             this.addViewAllResultsButton();
         } else {
@@ -290,7 +291,7 @@ export class SimpleResultsDownloader {
     hideDownloadTool() {
         const downloadSection = document.querySelector('.download-results');
         if (downloadSection) {
-            downloadSection.style.display = 'none';
+            hide(downloadSection);
         }
     }
 }

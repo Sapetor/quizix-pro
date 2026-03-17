@@ -7,7 +7,7 @@ import { translationManager, getTranslation, getTrueFalseText } from '../utils/t
 import { TIMING, logger, UI, ANIMATION } from '../core/config.js';
 // MathRenderer and mathJaxService now handled by GameDisplayManager
 import { simpleMathJaxService } from '../utils/simple-mathjax-service.js';
-import { dom, escapeHtml, escapeHtmlPreservingLatex } from '../utils/dom.js';
+import { dom, escapeHtml, escapeHtmlPreservingLatex, show, hide } from '../utils/dom.js';
 import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
 import { modalFeedback } from '../utils/modal-feedback.js';
 import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
@@ -862,8 +862,7 @@ export class GameManager {
         // Show the statistics container in counting-only mode (hides stats grid, shows only response count)
         const container = dom.get('answer-statistics');
         if (container) {
-            container.style.display = '';
-            container.classList.remove('hidden');
+            show(container);
             container.classList.add('counting-only');
         }
     }
@@ -883,8 +882,7 @@ export class GameManager {
         }
 
         // Show full statistics (remove counting-only to reveal stats grid)
-        statisticsContainer.style.display = '';
-        statisticsContainer.classList.remove('hidden');
+        show(statisticsContainer);
         statisticsContainer.classList.remove('counting-only');
 
         // Update response counts
@@ -930,7 +928,7 @@ export class GameManager {
         const contentSpan = dom.get('breakdown-content');
 
         if (!showBreakdown || !scoringInfo || !container || !contentSpan) {
-            if (container) container.style.display = 'none';
+            if (container) hide(container);
             return;
         }
 
@@ -954,7 +952,7 @@ export class GameManager {
         }
 
         contentSpan.textContent = parts.join(' | ');
-        container.style.display = 'flex';
+        show(container, 'visible-flex');
     }
 
 
@@ -1006,7 +1004,7 @@ export class GameManager {
         numericStatsDiv.innerHTML = '';
 
         if (sortedAnswers.length === 0) {
-            numericStatsDiv.innerHTML = `<div class="no-answers">${getTranslation('no_answers_yet')}</div>`;
+            numericStatsDiv.innerHTML = `<div class="no-answers">${escapeHtml(getTranslation('no_answers_yet'))}</div>`;
             return;
         }
 
@@ -1193,7 +1191,7 @@ export class GameManager {
 
         const orderKeys = Object.keys(answerCounts || {});
         if (orderKeys.length === 0) {
-            orderingDisplay.innerHTML = `<div class="no-answers">${getTranslation('no_answers_yet')}</div>`;
+            orderingDisplay.innerHTML = `<div class="no-answers">${escapeHtml(getTranslation('no_answers_yet'))}</div>`;
             return;
         }
 
@@ -1621,11 +1619,11 @@ export class GameManager {
 
         // Hide score breakdown
         const scoreBreakdown = document.getElementById('host-score-breakdown');
-        if (scoreBreakdown) scoreBreakdown.style.display = 'none';
+        if (scoreBreakdown) hide(scoreBreakdown);
 
         // Hide game controls
         const gameControls = document.getElementById('game-controls');
-        if (gameControls) gameControls.style.display = 'none';
+        if (gameControls) hide(gameControls);
 
         // Clear modal feedback from previous game
         if (modalFeedback) {

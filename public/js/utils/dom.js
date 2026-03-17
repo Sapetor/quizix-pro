@@ -312,18 +312,15 @@ export function escapeHtml(text) {
 }
 
 /**
- * Escape HTML but preserve LaTeX delimiters for MathJax rendering
- * @param {string} text - Text to escape
- * @returns {string} - Escaped text with LaTeX delimiters preserved
+ * Escape HTML in text that may contain LaTeX delimiters.
+ * Currently identical to escapeHtml() — LaTeX delimiters ($ and \)
+ * are not HTML metacharacters, so they survive escaping naturally.
+ * Exists as a semantic marker: if LaTeX-aware escaping is ever needed,
+ * only this function needs updating.
  */
 export function escapeHtmlPreservingLatex(text) {
     if (!text) return '';
-    // Escape HTML entities but keep $ and \ for LaTeX
-    const escaped = escapeHtml(text);
-    // Restore only backslash escapes needed for LaTeX (not angle brackets)
-    // Do NOT restore < and > as that re-opens XSS vectors
-    return escaped
-        .replace(/\\(.)/g, '\\$1'); // Preserve backslash escapes for LaTeX
+    return escapeHtml(text);
 }
 
 /**
@@ -361,9 +358,9 @@ export function formatCodeBlocks(text) {
     });
 
     // Bold: **text** → <strong>text</strong> (must run before italic)
-    processedText = processedText.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    processedText = processedText.replace(/\*\*(.+?)\*\*/g, (_, text) => `<strong>${escapeHtml(text)}</strong>`);
     // Italic: *text* → <em>text</em> (lone asterisks, not part of **)
-    processedText = processedText.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+    processedText = processedText.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, (_, text) => `<em>${escapeHtml(text)}</em>`);
 
     // Convert remaining standard newlines to <br> for regular text paragraph flow
     processedText = processedText.replace(/\n/g, '<br>');
@@ -448,6 +445,7 @@ export function show(elementOrId, displayClass = null) {
     const el = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
     if (!el) return;
     el.classList.remove('hidden');
+    el.classList.remove('visible-flex', 'visible-block', 'visible-inline-block');
     if (displayClass) {
         el.classList.add(displayClass);
     }
@@ -461,7 +459,7 @@ export function hide(elementOrId) {
     const el = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
     if (!el) return;
     el.classList.add('hidden');
-    el.classList.remove('visible-flex');
+    el.classList.remove('visible-flex', 'visible-block', 'visible-inline-block');
 }
 
 // Export for direct use

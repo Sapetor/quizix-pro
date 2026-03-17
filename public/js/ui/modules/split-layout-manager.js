@@ -7,6 +7,7 @@
 import { logger, UI } from '../../core/config.js';
 import { getItem, setItem } from '../../utils/storage-utils.js';
 import { getTranslation } from '../../utils/translation-manager.js';
+import { show, hide } from '../../utils/dom.js';
 
 // Mobile breakpoint - matches CSS media query in responsive.css
 const MOBILE_BREAKPOINT = 1000;
@@ -121,7 +122,7 @@ export class SplitLayoutManager {
     showResizeHandle() {
         const resizeHandle = document.getElementById('split-resize-handle');
         if (resizeHandle) {
-            resizeHandle.style.display = 'flex';
+            show(resizeHandle, 'visible-flex');
         }
     }
 
@@ -131,7 +132,7 @@ export class SplitLayoutManager {
     hideResizeHandle() {
         const resizeHandle = document.getElementById('split-resize-handle');
         if (resizeHandle) {
-            resizeHandle.style.display = 'none';
+            hide(resizeHandle);
         }
     }
 
