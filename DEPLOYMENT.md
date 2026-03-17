@@ -94,11 +94,12 @@ open https://your-domain.com
 
 ## 🔄 How Auto-Update Works
 
-### Service Worker Strategy
+### Update Strategy
 
 1. **index.html** - Never cached (always fresh from server)
 2. **sw.js** - Always revalidated with server
-3. **Static assets** - Cached with version-specific names
+3. **HTTP LAN clients** - JS/CSS/images are served with `no-store` so phones on `http://<lan-ip>` do not pin old builds
+4. **HTTPS clients** - Service worker takes over and refreshes cached assets on version change
 
 ### Update Flow
 
@@ -107,15 +108,23 @@ User visits site
     ↓
 Browser fetches index.html (no cache)
     ↓
-index.html loads sw.js (with version check)
+Is the origin HTTPS / secure?
     ↓
-Service Worker detects new CACHE_VERSION
+If no:
+    Browser fetches JS/CSS/images with no-store headers
     ↓
-Service Worker installs new cache
+    User gets latest version from the server
+
+If yes:
+    index.html loads sw.js (with version check)
     ↓
-Page automatically reloads
+    Service Worker detects new CACHE_VERSION
     ↓
-User sees latest version! ✨
+    Service Worker installs new cache
+    ↓
+    Page automatically reloads
+    ↓
+    User sees latest version! ✨
 ```
 
 ### Automatic Checks
@@ -138,6 +147,15 @@ git commit -m "build: cache bust for deployment"
 git push
 # Redeploy
 ```
+
+### Browser Says "Not Secure" On Phones
+
+**Cause**: `http://<lan-ip>` is an insecure context. Mobile browsers disable service workers and will always show a "not secure" warning on plain HTTP.
+
+**Solution**:
+- Put the app behind HTTPS with a certificate trusted by the phones.
+- For LAN-only installs, use a reverse proxy such as Caddy, Nginx, or Traefik plus a locally trusted certificate (for example `mkcert` or your own internal CA).
+- The app now falls back to `no-store` HTTP headers on plain HTTP so updates still arrive, but the security warning only disappears with HTTPS.
 
 ### Service Worker Not Updating
 

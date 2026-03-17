@@ -3177,7 +3177,7 @@ class GraphScene(Scene):
 
             // Fetch and display app version
             console.log('[App] Fetching version from:', swPath);
-            fetch(swPath)
+            fetch(swPath, { cache: 'no-store' })
                 .then(response => {
                     console.log('[App] sw.js fetch response:', response.status, response.ok);
                     if (!response.ok) {
@@ -3213,8 +3213,8 @@ class GraphScene(Scene):
                 });
         });
 
-        // Service Worker registration (only if supported)
-        if ('serviceWorker' in navigator) {
+        // Service Worker registration (secure contexts only)
+        if ('serviceWorker' in navigator && window.isSecureContext) {
             window.addEventListener('load', () => {
                 const basePath = document.querySelector('base')?.getAttribute('href') || '/';
                 const swPath = basePath + 'sw.js';
@@ -3240,6 +3240,15 @@ class GraphScene(Scene):
                 });
 
                 function registerServiceWorker() {
+                    const forceWorkerActivation = (worker) => {
+                        if (!worker || !navigator.serviceWorker.controller) {
+                            return;
+                        }
+
+                        console.log('[App] Activating waiting service worker immediately');
+                        worker.postMessage({ type: 'SKIP_WAITING' });
+                    };
+
                     // Only reload for SW updates, NOT for initial activation.
                     // On first visit the SW activates via skipWaiting+clients.claim which
                     // fires controllerchange — reloading here causes a visible blink.
@@ -3260,13 +3269,45 @@ class GraphScene(Scene):
                     navigator.serviceWorker.register(swPath, { scope: basePath, updateViaCache: 'none' })
                         .then((registration) => {
                             console.log('[App] Service Worker registered with scope:', registration.scope);
-                            setInterval(() => { registration.update(); }, 60 * 60 * 1000);
-                            registration.update();
+
+                            if (registration.waiting) {
+                                forceWorkerActivation(registration.waiting);
+                            }
+
+                            registration.addEventListener('updatefound', () => {
+                                const installingWorker = registration.installing;
+                                if (!installingWorker) {
+                                    return;
+                                }
+
+                                installingWorker.addEventListener('statechange', () => {
+                                    if (installingWorker.state === 'installed') {
+                                        forceWorkerActivation(installingWorker);
+                                    }
+                                });
+                            });
+
+                            const checkForUpdates = () => registration.update()
+                                .catch((error) => console.warn('[App] Service Worker update check failed:', error));
+
+                            document.addEventListener('visibilitychange', () => {
+                                if (document.visibilityState === 'visible') {
+                                    checkForUpdates();
+                                }
+                            });
+
+                            window.addEventListener('focus', checkForUpdates);
+                            setInterval(checkForUpdates, 60 * 60 * 1000);
+                            checkForUpdates();
                         })
                         .catch((error) => {
                             console.warn('[App] Service Worker registration failed:', error);
                         });
                 }
+            });
+        } else if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                console.warn('[App] Insecure context detected. Service workers are disabled on plain-HTTP LAN URLs, so this session relies on no-store HTTP headers. Use HTTPS to remove the browser security warning.');
             });
         }
     </script>

@@ -7,6 +7,24 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 
+const NO_STORE_CACHE_CONTROL = 'no-store, no-cache, must-revalidate, private';
+
+function applyNoStoreHeaders(res) {
+    res.setHeader('Cache-Control', NO_STORE_CACHE_CONTROL);
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+}
+
+function isSecureRequest(req) {
+    const forwardedProto = req.headers['x-forwarded-proto'];
+    const normalizedProto = Array.isArray(forwardedProto)
+        ? forwardedProto[0]
+        : (forwardedProto || '').split(',')[0].trim();
+
+    return Boolean(req.secure || req.socket?.encrypted || normalizedProto === 'https');
+}
+
 /**
  * Detect if request is from a mobile device
  * @param {string} userAgent - User agent string
@@ -47,48 +65,68 @@ function createStaticFilesConfig(isProduction) {
             const userAgent = res.req.headers['user-agent'] || '';
             const isMobile = isMobileDevice(userAgent);
             const maxAge = getAssetMaxAge(isProduction, isMobile);
+            const secureRequest = isSecureRequest(res.req);
+            const serveNoStoreAsset = !secureRequest;
 
             // Critical fix: Proper MIME types for JavaScript modules
             if (filePath.endsWith('.js')) {
                 res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-                res.setHeader('Cache-Control', `public, max-age=${maxAge}, must-revalidate`);
                 res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+
+                if (serveNoStoreAsset) {
+                    applyNoStoreHeaders(res);
+                } else {
+                    res.setHeader('Cache-Control', `public, max-age=${maxAge}, must-revalidate`);
+                }
             }
 
             // CSS files
             if (filePath.endsWith('.css')) {
                 res.setHeader('Content-Type', 'text/css; charset=utf-8');
-                res.setHeader('Cache-Control', `public, max-age=${maxAge}, must-revalidate`);
                 res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+
+                if (serveNoStoreAsset) {
+                    applyNoStoreHeaders(res);
+                } else {
+                    res.setHeader('Cache-Control', `public, max-age=${maxAge}, must-revalidate`);
+                }
             }
 
             // HTML files
             if (filePath.endsWith('.html')) {
                 res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                applyNoStoreHeaders(res);
             }
 
             // JSON files
             if (filePath.endsWith('.json')) {
                 res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+                if (serveNoStoreAsset) {
+                    applyNoStoreHeaders(res);
+                }
             }
 
-            // Optimize image caching for mobile bandwidth
-            if (filePath.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-                const imageMaxAge = isMobile ? 7200 : 3600; // 2 hours mobile, 1 hour desktop
-                res.setHeader('Cache-Control', `public, max-age=${imageMaxAge}`);
+            // Only cache images aggressively on secure deployments. On plain HTTP LAN
+            // requests we disable storage so phones always fetch the current build.
+            if (filePath.match(/\.(jpg|jpeg|png|gif|webp|svg|woff2?|ttf|mp3|wav|ico|mp4)$/i)) {
+                if (serveNoStoreAsset) {
+                    applyNoStoreHeaders(res);
+                } else {
+                    const imageMaxAge = isMobile ? 7200 : 3600; // 2 hours mobile, 1 hour desktop
+                    res.setHeader('Cache-Control', `public, max-age=${imageMaxAge}`);
+                }
             }
 
             // Special handling for index.html - NO cache, always revalidate for new deployments
             if (filePath.endsWith('index.html')) {
-                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-                res.setHeader('Pragma', 'no-cache');
-                res.setHeader('Expires', '0');
+                applyNoStoreHeaders(res);
                 res.setHeader('Vary', 'Accept-Encoding, User-Agent');
             }
 
             // CRITICAL: Service worker must always be revalidated to detect updates
             if (filePath.endsWith('sw.js')) {
-                res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+                applyNoStoreHeaders(res);
                 res.setHeader('Vary', 'Accept-Encoding');
             }
 
@@ -154,7 +192,7 @@ function createJsFileHandler(logger, isProduction, baseDir) {
             // Set proper headers for JavaScript files
             res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
             res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-            res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+            applyNoStoreHeaders(res);
 
             // Read and send file directly to avoid express.static issues
             fs.readFile(filePath, 'utf8', (err, data) => {
@@ -190,5 +228,7 @@ module.exports = {
     createJsFileHandler,
     createDebugStaticConfig,
     isMobileDevice,
-    getAssetMaxAge
+    getAssetMaxAge,
+    isSecureRequest,
+    NO_STORE_CACHE_CONTROL
 };

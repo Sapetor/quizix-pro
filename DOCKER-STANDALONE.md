@@ -102,6 +102,11 @@ From any device on the network:
 - **Different VLAN (WiFi):** `http://<server-ip>:3000` (`.local` doesn't work across VLANs)
 - **Players (phones):** Scan the QR code in the lobby — it auto-detects the correct IP
 
+Important for phones:
+- `http://...` on a LAN is still an insecure browser context. The browser warning is expected, and service workers are disabled on those URLs.
+- This app now sends `no-store` for first-party assets on plain HTTP so returning phones fetch the latest build instead of pinning stale JS/CSS.
+- If you want the warning to disappear, terminate the app behind HTTPS with a certificate trusted by the devices.
+
 ## How It Works
 
 | Component | Detail |
@@ -120,6 +125,8 @@ cd ~/quizix-pro
 git pull
 docker compose up -d --build
 ```
+
+If phones still show the browser security warning after updating, that is not a cache bug. It means the deployment is still plain HTTP. Use Caddy/Nginx/Traefik with TLS if you need a secure mobile experience.
 
 ## Common Commands
 

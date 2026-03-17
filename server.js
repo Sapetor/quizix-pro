@@ -284,7 +284,10 @@ app.get('/sw.js', (req, res) => {
         }
         const modifiedSw = data.replace(/__CACHE_VERSION__/g, ASSET_VERSION);
         res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.setHeader('Surrogate-Control', 'no-store');
         res.send(modifiedSw);
     });
 });
@@ -339,9 +342,10 @@ const serveIndexHtml = (req, res) => {
 
         // Never cache index.html - always fetch fresh for new deployments
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
+        res.setHeader('Surrogate-Control', 'no-store');
         res.send(modifiedHtml);
     });
 };
