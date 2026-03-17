@@ -77,7 +77,7 @@ class QRService {
             return false;
         }
 
-        return this._isPrivateIPv4(hostname) || this._isMdnsHost(hostname);
+        return this._isPrivateIPv4(hostname);
     }
 
     _detectWSL() {
@@ -188,6 +188,7 @@ class QRService {
                                   process.env.VERCEL_ENV ||
                                   process.env.HEROKU_APP_NAME;
         const requestHost = this._getRequestHost(req);
+        const requestHostname = this._getHostnameFromHost(requestHost);
 
         if (isCloudDeployment) {
             // Cloud deployment: use request host
@@ -201,6 +202,23 @@ class QRService {
                 const gameUrl = `http://${requestHost}${this.basePath}/?pin=${pin}`;
 
                 this.logger.debug(`QR Code: Using request host URL: ${gameUrl}`);
+                return gameUrl;
+            }
+
+            if (this._isMdnsHost(requestHostname)) {
+                const localIP = this._getLocalIP();
+                const port = process.env.PORT || 3000;
+                const portSuffix = this.basePath ? '' : `:${port}`;
+
+                if (localIP !== 'localhost') {
+                    const gameUrl = `http://${localIP}${portSuffix}${this.basePath}/?pin=${pin}`;
+
+                    this.logger.debug(`QR Code: Replacing mDNS host with LAN IP URL: ${gameUrl}`);
+                    return gameUrl;
+                }
+
+                const gameUrl = `http://${requestHost}${this.basePath}/?pin=${pin}`;
+                this.logger.debug(`QR Code: Falling back to mDNS host URL: ${gameUrl}`);
                 return gameUrl;
             }
 
