@@ -42,6 +42,7 @@ export function openModal(modal, options = {}) {
     if (mode === MODAL_MODES.CLASS) {
         modal.classList.add(activeClass);
     } else {
+        modal.classList.remove('hidden');
         modal.style.display = 'flex';
     }
 
@@ -76,6 +77,7 @@ export function closeModal(modal, options = {}) {
         modal.classList.remove(activeClass);
     } else {
         modal.style.display = 'none';
+        modal.classList.add('hidden');
     }
 
     if (unlockScroll) {

@@ -3652,7 +3652,7 @@
         
         /* Ensure all hidden answer types take no space */
         .player-answer-type[style*="display: none"],
-        .player-answer-type:not(.active) {
+        .player-answer-type.hidden {
             display: none !important;
             height: 0 !important;
             margin: 0 !important;
