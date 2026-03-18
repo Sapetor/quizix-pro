@@ -17,7 +17,10 @@
     "format:check": "prettier --check \"**/*.{js,json,css,md}\"",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:stress": "jest --testMatch='**/tests/stress/**/*.test.js' --testTimeout=120000 --no-coverage --forceExit",
+    "test:visual": "npx playwright test tests/e2e/visual-regression.spec.js",
+    "test:visual:update": "npx playwright test tests/e2e/visual-regression.spec.js --update-snapshots"
   },
   "dependencies": {
     "cheerio": "^1.2.0",
@@ -48,7 +51,8 @@
     "postcss": "^8.4.35",
     "postcss-cli": "^11.0.0",
     "postcss-import": "^16.1.0",
-    "prettier": "^3.7.4"
+    "prettier": "^3.7.4",
+    "socket.io-client": "^4.8.3"
   },
   "keywords": [
     "quiz",

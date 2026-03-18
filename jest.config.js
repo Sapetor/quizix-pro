@@ -7,7 +7,7 @@ module.exports = {
     // Test environment
     testEnvironment: 'node',
 
-    // Test file patterns
+    // Test file patterns (stress tests excluded — run via `npm run test:stress`)
     testMatch: [
         '**/tests/unit/**/*.test.js',
         '**/tests/unit/**/*.spec.js'
