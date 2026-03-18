@@ -641,6 +641,76 @@ class PlayerManagementService {
     }
 
     /**
+     * Migrate players from an old game (pending-migration) to a new game.
+     * Moves connected players, assigns fresh scores and session tokens.
+     * @param {Object} oldGame - Old game instance (pending-migration)
+     * @param {Object} newGame - New game instance
+     * @param {Object} io - Socket.IO instance
+     * @returns {number} Number of players migrated
+     */
+    migratePlayersToGame(oldGame, newGame, io) {
+        let migratedCount = 0;
+        const newPlayers = [];
+
+        for (const [playerId, player] of oldGame.players) {
+            // Skip disconnected players
+            if (player.disconnected) continue;
+
+            // Get the actual socket — skip if not available
+            const socket = io.sockets.sockets.get(playerId);
+            if (!socket) continue;
+
+            // Leave old room, join new room
+            socket.leave(`game-${oldGame.pin}`);
+            socket.join(`game-${newGame.pin}`);
+
+            // Add player to new game (fresh score)
+            const addResult = newGame.addPlayer(playerId, player.name);
+            if (!addResult.success) {
+                this.logger.warn(`Failed to migrate player ${player.name}: ${addResult.error}`);
+                continue;
+            }
+
+            // Generate new session token
+            const sessionToken = crypto.randomUUID();
+            const newPlayer = newGame.players.get(playerId);
+            if (newPlayer) {
+                newPlayer.sessionToken = sessionToken;
+            }
+
+            // Update player tracking map
+            this.players.set(playerId, { gamePin: newGame.pin, name: player.name });
+
+            // Collect for player list
+            newPlayers.push({ id: playerId, name: player.name });
+
+            // Notify the player
+            socket.emit('player-joined', {
+                gamePin: newGame.pin,
+                playerName: player.name,
+                players: newPlayers,
+                sessionToken
+            });
+
+            migratedCount++;
+        }
+
+        // Clear any disconnect grace timers from old game
+        for (const [playerId, player] of oldGame.players) {
+            if (player.sessionToken && this.disconnectTimers) {
+                const timerId = this.disconnectTimers.get(player.sessionToken);
+                if (timerId) {
+                    clearTimeout(timerId);
+                    this.disconnectTimers.delete(player.sessionToken);
+                }
+            }
+        }
+
+        this.logger.info(`Migrated ${migratedCount} players from game ${oldGame.pin} to ${newGame.pin}`);
+        return migratedCount;
+    }
+
+    /**
    * Get player data by socket ID
    * @param {string} socketId - Socket ID
    * @returns {Object|undefined} Player data or undefined

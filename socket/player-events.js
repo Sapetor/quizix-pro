@@ -206,10 +206,17 @@ function registerPlayerEvents(io, socket, options) {
 
                     const timerId = setTimeout(() => {
                         gameSessionService.clearHostDisconnectTimer(hostedGame.pin);
-                        // Only kill if host hasn't reconnected
+                        // Only act if host hasn't reconnected
                         if (hostedGame.hostDisconnected) {
-                            playerManagementService.handleHostDisconnect(hostedGame, io);
-                            gameSessionService.deleteGame(hostedGame.pin);
+                            // Instead of deleting, transition to pending-migration
+                            // so players can be migrated if host creates a new game
+                            hostedGame.migrationSource = 'disconnect';
+                            gameSessionService.setPendingMigration(hostedGame, io);
+
+                            // Notify players that host is preparing a new game
+                            io.to(`game-${hostedGame.pin}`).emit('host-preparing-new-game', { graceMs: 120000 });
+
+                            logger.info(`Game ${hostedGame.pin} transitioned to pending-migration after host disconnect`);
                         }
                     }, 30000);
                     gameSessionService.setHostDisconnectTimer(hostedGame.pin, timerId);

@@ -20,6 +20,7 @@ class GameSessionService {
         this.cleanupInterval = null;
         this.socketBatchService = null; // Injected via setSocketBatchService()
         this.hostDisconnectTimers = new Map(); // pin -> timerId for host disconnect grace period
+        this.migrationTimers = new Map(); // pin -> timerId for pending-migration timeout
 
         // Load environment-based limits
         this.limits = getLimits();
@@ -193,6 +194,61 @@ class GameSessionService {
     }
 
     /**
+     * Transition a game to pending-migration state.
+     * Players wait up to 2 minutes for the host to create a new game.
+     * @param {Object} game - Game instance
+     * @param {Object} io - Socket.IO instance
+     * @returns {{ pin: string, migrationToken: string }}
+     */
+    setPendingMigration(game, io) {
+        // End any active question
+        game.endQuestion();
+        if (game.questionTimer) { clearTimeout(game.questionTimer); game.questionTimer = null; }
+        if (game.advanceTimer) { clearTimeout(game.advanceTimer); game.advanceTimer = null; }
+        if (game.leaderboardTimer) { clearTimeout(game.leaderboardTimer); game.leaderboardTimer = null; }
+        if (game.startTimer) { clearTimeout(game.startTimer); game.startTimer = null; }
+
+        // Transition state
+        game.gameState = 'pending-migration';
+        const { randomUUID } = require('crypto');
+        game.migrationToken = randomUUID();
+
+        // Disassociate host from game (prevents cleanupOrphanedGames from finding it)
+        this.hostIdToPin.delete(game.hostId);
+        game.hostId = null;
+
+        // Start 2-minute migration timeout
+        const timerId = setTimeout(() => {
+            this.migrationTimers.delete(game.pin);
+            if (game.gameState === 'pending-migration') {
+                io.to(`game-${game.pin}`).emit('game-ended', {
+                    reason: 'Host did not start a new game',
+                    messageKey: 'error_host_disconnected'
+                });
+                this.deleteGame(game.pin);
+                this.logger.info(`Migration timeout expired for game ${game.pin}`);
+            }
+        }, 120000); // 2 minutes
+
+        this.migrationTimers.set(game.pin, timerId);
+
+        this.logger.info(`Game ${game.pin} entered pending-migration state`);
+        return { pin: game.pin, migrationToken: game.migrationToken };
+    }
+
+    /**
+     * Clear a pending-migration timeout timer
+     * @param {string} pin - Game PIN
+     */
+    clearMigrationTimer(pin) {
+        const timerId = this.migrationTimers.get(pin);
+        if (timerId) {
+            clearTimeout(timerId);
+            this.migrationTimers.delete(pin);
+        }
+    }
+
+    /**
    * Delete a game
    * @param {string} pin - Game PIN
    */
@@ -218,6 +274,7 @@ class GameSessionService {
    */
     cleanupOrphanedGames(io) {
         this.games.forEach((game, pin) => {
+            if (game.gameState === 'pending-migration') return;
             if (game.players.size === 0 && game.gameState === 'lobby') {
                 const hostSocket = io.sockets.sockets.get(game.hostId);
                 if (!hostSocket) {

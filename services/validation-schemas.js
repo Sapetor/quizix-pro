@@ -368,7 +368,9 @@ const hostJoinSchema = z.object({
         consensusThreshold: z.enum(['50', '66', '75', '100']).optional().default('66'),
         discussionTime: z.number().int().min(10).max(300).optional().default(30),
         allowChat: z.boolean().optional().default(false)
-    })
+    }),
+    previousPin: z.string().regex(/^\d{6}$/).optional(),
+    migrationToken: z.string().uuid().optional()
 });
 
 const playerJoinSchema = z.object({

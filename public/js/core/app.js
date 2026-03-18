@@ -752,11 +752,17 @@ export class QuizGame {
      * Reset game and return to main menu (shared logic for newGame and exitToMainMenu)
      */
     resetAndReturnToMenu() {
-        // Notify server so the game is cleaned up
+        // Notify server so the game is cleaned up or enters migration state
         if (this.socketManager?.socket) {
             const isHost = this.gameManager.stateManager?.getGameState()?.isHost;
             if (isHost) {
-                this.socketManager.socket.emit('host-leave-game');
+                // Store current PIN for migration (host may create a new game)
+                const currentPin = this.gameManager.stateManager?.gamePin
+                    || document.getElementById('game-pin')?.textContent?.trim();
+                if (currentPin) {
+                    localStorage.setItem('quizix_migration_pin', currentPin);
+                }
+                this.socketManager.socket.emit('host-starting-new-game');
             } else {
                 this.socketManager.socket.emit('leave-game');
             }
@@ -808,16 +814,14 @@ export class QuizGame {
     }
 
     /**
-     * Leave the game and return to home (host only)
+     * Leave the game and return to home (host only).
+     * Uses the migration path so players can follow to the next game.
      */
     backToHomeFromGame() {
-        const message = translationManager.getTranslationSync('confirm_back_to_home') || 'Leave the game? All players will be disconnected.';
+        const message = translationManager.getTranslationSync('confirm_back_to_home') || 'Leave the game? Players will wait for your next game.';
         if (!confirm(message)) return;
-        if (this.socketManager?.socket) {
-            this.socketManager.socket.emit('host-leave-game');
-        }
         this.resetAndReturnToMenu();
-        logger.debug('Host left game and returned to main menu');
+        logger.debug('Host left game via backToHome — migration path');
     }
 
     /**

@@ -46,6 +46,25 @@ function registerGameEvents(io, socket, options) {
                 questionCount: quiz.questions.length,
                 created: game.createdAt
             });
+
+            // Migrate players from previous game if applicable
+            if (validated.previousPin) {
+                const oldGame = gameSessionService.getGame(validated.previousPin);
+                if (oldGame && oldGame.gameState === 'pending-migration') {
+                    // Verify migration token (skip for disconnect-originated migrations)
+                    const tokenValid = oldGame.migrationSource === 'disconnect'
+                        || (validated.migrationToken && validated.migrationToken === oldGame.migrationToken);
+
+                    if (tokenValid) {
+                        const migratedCount = playerManagementService.migratePlayersToGame(oldGame, game, io);
+                        gameSessionService.clearMigrationTimer(validated.previousPin);
+                        gameSessionService.deleteGame(validated.previousPin);
+                        logger.info(`Migrated ${migratedCount} players from ${validated.previousPin} to ${game.pin}`);
+                    } else {
+                        logger.warn(`Migration token mismatch for game ${validated.previousPin}`);
+                    }
+                }
+            }
         } catch (error) {
             logger.error('Error in host-join handler:', error);
             socket.emit('error', { message: 'Failed to create game', messageKey: 'error_failed_create_game' });
@@ -165,6 +184,31 @@ function registerGameEvents(io, socket, options) {
         } catch (error) {
             logger.error('Error in rematch-game handler:', error);
             socket.emit('error', { message: 'Failed to start rematch', messageKey: 'error_failed_rematch' });
+        }
+    });
+
+    // Handle host starting a new game — transition current game to pending-migration
+    socket.on('host-starting-new-game', () => {
+        if (!checkRateLimit(socket.id, 'host-starting-new-game', 3, socket)) return;
+        try {
+            const game = gameSessionService.findGameByHost(socket.id);
+            if (!game) return;
+
+            // Transition to pending-migration
+            const { pin, migrationToken } = gameSessionService.setPendingMigration(game, io);
+
+            // Notify players only (socket.to excludes the sender/host)
+            socket.to(`game-${pin}`).emit('host-preparing-new-game', { graceMs: 120000 });
+
+            // Send migration token to host so they can include it in next host-join
+            socket.emit('migration-token', { pin, migrationToken });
+
+            // Remove host from old game room so they don't receive stale events
+            socket.leave(`game-${pin}`);
+
+            logger.info(`Host starting new game, game ${pin} in pending-migration`);
+        } catch (error) {
+            logger.error('Error in host-starting-new-game handler:', error);
         }
     });
 }

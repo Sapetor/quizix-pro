@@ -750,12 +750,19 @@ function applyThemeFallback() {
 export function returnToMainFromHeader() {
     logger.debug('Mobile header: Return to main menu clicked');
 
+    // Use the proper resetAndReturnToMenu flow so the server is notified
+    // (handles game cleanup, migration state, leave events)
+    if (window.game?.resetAndReturnToMenu) {
+        window.game.resetAndReturnToMenu();
+        return;
+    }
+
+    // Fallback: direct navigation (no game instance available)
     if (window.game?.uiManager) {
         window.game.uiManager.showScreen('main-menu');
         return;
     }
 
-    // Fallback: direct navigation
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.add('hidden');
     });

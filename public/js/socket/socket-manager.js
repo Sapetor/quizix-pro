@@ -155,7 +155,23 @@ export class SocketManager {
             this._lastPlayerCount = 0; // Reset player count tracking for join sounds
             logger.debug('🧹 Initialized empty player list for new lobby');
 
+            // Store PIN for migration (survives refresh — host can start new game after refresh)
+            try {
+                localStorage.setItem('quizix_migration_pin', data.pin);
+            } catch (e) {
+                logger.warn('Failed to store migration PIN:', e);
+            }
+
             this.uiManager.showScreen('game-lobby');
+        });
+
+        this.socket.on('migration-token', (data) => {
+            logger.debug('Received migration token for game:', data.pin);
+            try {
+                localStorage.setItem('quizix_migration_token', data.migrationToken);
+            } catch (e) {
+                logger.warn('Failed to store migration token:', e);
+            }
         });
 
         // Listen for new games becoming available
@@ -169,6 +185,11 @@ export class SocketManager {
             logger.debug('Player joined:', data);
             logger.debug('data.players:', data.players);
             logger.debug('data keys:', Object.keys(data));
+
+            // Dismiss migration toast if visible (player was migrated to new game)
+            if (window.toastNotifications?.clearAll) {
+                window.toastNotifications.clearAll();
+            }
 
             // Set player info correctly - player is NOT a host
             logger.debug('PlayerJoined', { playerName: data.playerName, gamePin: data.gamePin });
@@ -607,6 +628,26 @@ export class SocketManager {
             translationManager.showAlert('info', reason);
         });
 
+        this.socket.on('host-preparing-new-game', (data) => {
+            logger.info('Host is preparing a new game, waiting for migration...');
+
+            // Stop active game state (timer, sounds)
+            this.gameManager.stopTimer();
+            this.gameManager.resetGameState();
+
+            if (window.toastNotifications) {
+                const msg = translationManager.getTranslationSync('host_preparing_new_game')
+                    || 'Host is setting up the next game... Please wait.';
+                window.toastNotifications.show(msg, 'info', data.graceMs || 120000);
+            }
+
+            if (window.uiStateManager?.setState) {
+                window.uiStateManager.setState('playerWaiting');
+            }
+
+            this.uiManager.showScreen('player-lobby');
+        });
+
         // Special events
         this.socket.on('force-disconnect', (data) => {
             logger.debug('Force disconnect:', data);
@@ -911,6 +952,19 @@ export class SocketManager {
         }
 
         try {
+            // Include migration data if host is coming from a previous game
+            const previousPin = localStorage.getItem('quizix_migration_pin');
+            const migrationToken = localStorage.getItem('quizix_migration_token');
+            if (previousPin) {
+                quizData.previousPin = previousPin;
+                if (migrationToken) {
+                    quizData.migrationToken = migrationToken;
+                }
+            }
+            // Clear migration data after use
+            localStorage.removeItem('quizix_migration_pin');
+            localStorage.removeItem('quizix_migration_token');
+
             this.socket.emit('host-join', quizData);
         } catch (error) {
             logger.error('Error creating game:', error);
