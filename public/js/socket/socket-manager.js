@@ -120,7 +120,7 @@ export class SocketManager {
                 if (gameState.isHost) {
                     // Store host reconnection data for grace period rejoin
                     try {
-                        localStorage.setItem('quizix_host_reconnect', JSON.stringify({
+                        sessionStorage.setItem('quizix_host_reconnect', JSON.stringify({
                             pin: gameState.gamePin,
                             savedAt: Date.now()
                         }));
@@ -200,7 +200,7 @@ export class SocketManager {
                 // Store reconnection info in localStorage
                 if (data.sessionToken) {
                     try {
-                        localStorage.setItem(RECONNECT_KEY, JSON.stringify({
+                        sessionStorage.setItem(RECONNECT_KEY, JSON.stringify({
                             pin: data.gamePin,
                             playerName: data.playerName,
                             sessionToken: data.sessionToken,
@@ -664,16 +664,16 @@ export class SocketManager {
 
             // Try host rejoin first
             try {
-                const hostData = JSON.parse(localStorage.getItem('quizix_host_reconnect') || 'null');
+                const hostData = JSON.parse(sessionStorage.getItem('quizix_host_reconnect') || 'null');
                 if (hostData?.pin && (Date.now() - hostData.savedAt) < 30000) {
                     this.socket.emit('host-rejoin', { pin: hostData.pin });
-                    localStorage.removeItem('quizix_host_reconnect');
+                    sessionStorage.removeItem('quizix_host_reconnect');
                     return;
                 }
             } catch (e) {
                 logger.warn('Failed to read host reconnect data:', e);
             }
-            localStorage.removeItem('quizix_host_reconnect');
+            sessionStorage.removeItem('quizix_host_reconnect');
 
             // Otherwise attempt player rejoin
             this._attemptRejoin();
@@ -708,7 +708,7 @@ export class SocketManager {
 
             // Refresh reconnection data with fresh timestamp
             try {
-                localStorage.setItem(RECONNECT_KEY, JSON.stringify({
+                sessionStorage.setItem(RECONNECT_KEY, JSON.stringify({
                     pin: data.gamePin,
                     playerName: data.playerName,
                     sessionToken: data.sessionToken,
@@ -1040,7 +1040,7 @@ export class SocketManager {
      */
     _getValidReconnectData() {
         try {
-            const raw = localStorage.getItem(RECONNECT_KEY);
+            const raw = sessionStorage.getItem(RECONNECT_KEY);
             if (!raw) return null;
 
             const data = JSON.parse(raw);
@@ -1112,7 +1112,7 @@ export class SocketManager {
      */
     _clearReconnectionData() {
         try {
-            localStorage.removeItem(RECONNECT_KEY);
+            sessionStorage.removeItem(RECONNECT_KEY);
         } catch (e) {
             logger.warn('Failed to clear reconnection data:', e);
         }
