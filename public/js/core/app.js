@@ -752,6 +752,16 @@ export class QuizGame {
      * Reset game and return to main menu (shared logic for newGame and exitToMainMenu)
      */
     resetAndReturnToMenu() {
+        // Notify server so the game is cleaned up
+        if (this.socketManager?.socket) {
+            const isHost = this.gameManager.stateManager?.getGameState()?.isHost;
+            if (isHost) {
+                this.socketManager.socket.emit('host-leave-game');
+            } else {
+                this.socketManager.socket.emit('leave-game');
+            }
+        }
+
         this.gameManager.resetGameState();
 
         if (this.gameManager.timer) {

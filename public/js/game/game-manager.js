@@ -1504,8 +1504,10 @@ export class GameManager {
         // Clear all visible game screen content to prevent stale data flash
         this.clearGameDisplayContent();
 
-        // Clean up event listeners and timers when resetting game
-        this.cleanup();
+        // NOTE: Do NOT call this.cleanup() here — cleanup() removes event
+        // listeners (e.g. answer button click handlers) that are meant to
+        // persist for the lifetime of the app.  reset() above already
+        // clears the visual/state for each module.
 
         logger.debug('🔄 Complete game state reset - both main and modular state managers');
     }
