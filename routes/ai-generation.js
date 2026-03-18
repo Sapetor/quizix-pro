@@ -147,13 +147,35 @@ function createAIGenerationRoutes(options) {
 
     // ==================== OLLAMA ROUTES ====================
 
-    // Ollama endpoint is configurable via OLLAMA_URL env var for K8s deployments
-    const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
+    // Ollama endpoint is configurable via OLLAMA_URL env var or runtime API
+    let ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
+    let ollamaEnabled = true;
+
+    // Runtime Ollama configuration endpoints
+    router.get('/ollama/config', (req, res) => {
+        res.json({ url: ollamaUrl, enabled: ollamaEnabled });
+    });
+
+    router.post('/ollama/config', (req, res) => {
+        const { url, enabled } = req.body;
+        if (typeof url === 'string' && url.trim()) {
+            ollamaUrl = url.trim().replace(/\/+$/, ''); // strip trailing slashes
+            logger.info('Ollama URL updated to:', ollamaUrl);
+        }
+        if (typeof enabled === 'boolean') {
+            ollamaEnabled = enabled;
+            logger.info('Ollama enabled:', ollamaEnabled);
+        }
+        res.json({ url: ollamaUrl, enabled: ollamaEnabled });
+    });
 
     // Fetch available Ollama models endpoint
     router.get('/ollama/models', async (req, res) => {
+        if (!ollamaEnabled) {
+            return res.json({ models: [] });
+        }
         try {
-            const response = await fetch(`${OLLAMA_URL}/api/tags`);
+            const response = await fetch(`${ollamaUrl}/api/tags`);
 
             if (!response.ok) {
                 return res.status(500).json({ error: 'Failed to fetch Ollama models', messageKey: 'error_ollama_fetch_models' });
@@ -177,6 +199,9 @@ function createAIGenerationRoutes(options) {
 
     // Ollama generate proxy endpoint - forwards generation requests to Ollama server
     router.post('/ollama/generate', async (req, res) => {
+        if (!ollamaEnabled) {
+            return res.status(503).json({ error: 'Ollama is disabled', messageKey: 'error_ollama_disabled' });
+        }
         try {
             const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
             const rateCheck = ollamaLimiter.check(clientIP);
@@ -199,7 +224,7 @@ function createAIGenerationRoutes(options) {
                 return res.status(400).json({ error: 'model and prompt are required', messageKey: 'error_invalid_request' });
             }
 
-            const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+            const response = await fetch(`${ollamaUrl}/api/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model, prompt, stream: stream ?? false, options })
@@ -229,11 +254,14 @@ function createAIGenerationRoutes(options) {
 
     // Ollama health check endpoint
     router.get('/ollama/health', async (req, res) => {
+        if (!ollamaEnabled) {
+            return res.json({ running: false });
+        }
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-            const response = await fetch(`${OLLAMA_URL}/api/tags`, {
+            const response = await fetch(`${ollamaUrl}/api/tags`, {
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -818,7 +846,7 @@ function createAIGenerationRoutes(options) {
         res.json({
             claudeKeyConfigured: !!process.env.CLAUDE_API_KEY,
             geminiKeyConfigured: !!process.env.GEMINI_API_KEY,
-            ollamaAvailable: true // Ollama doesn't require API key
+            ollamaAvailable: ollamaEnabled
             // Don't expose actual keys, just whether they're configured
         });
     });

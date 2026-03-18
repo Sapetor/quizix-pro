@@ -317,11 +317,22 @@ export class AIUIHelpers {
                     apiKeySection.classList.add('hidden');
                 }
 
+                // Handle Ollama server config visibility
+                const ollamaConfig = document.getElementById('ollama-server-config');
+                if (ollamaConfig) {
+                    if (provider === 'ollama') {
+                        ollamaConfig.classList.remove('hidden');
+                    } else {
+                        ollamaConfig.classList.add('hidden');
+                    }
+                }
+
                 // Handle model selection visibility
                 if (provider === 'ollama') {
                     modelSelection.classList.remove('hidden');
                     if (claudeModelSelection) claudeModelSelection.classList.add('hidden');
                     if (geminiModelSelection) geminiModelSelection.classList.add('hidden');
+                    await this.loadOllamaConfig();
                     await this.loadOllamaModels();
                 } else if (provider === 'claude') {
                     modelSelection.classList.add('hidden');
@@ -353,6 +364,64 @@ export class AIUIHelpers {
                 this.isChangingProvider = false;
             }
         });
+    }
+
+    /**
+     * Load current Ollama server configuration and populate the UI fields
+     */
+    async loadOllamaConfig() {
+        try {
+            const response = await fetch(APIHelper.getApiUrl('api/ollama/config'));
+            if (!response.ok) return;
+            const config = await response.json();
+
+            const urlInput = document.getElementById('ollama-url');
+            const enabledCheckbox = document.getElementById('ollama-enabled');
+            if (urlInput) urlInput.value = config.url || '';
+            if (enabledCheckbox) enabledCheckbox.checked = config.enabled !== false;
+        } catch {
+            logger.debug('Could not load Ollama config');
+        }
+    }
+
+    /**
+     * Save Ollama server configuration and reload models
+     */
+    async saveOllamaConfig() {
+        const urlInput = document.getElementById('ollama-url');
+        const enabledCheckbox = document.getElementById('ollama-enabled');
+        const url = urlInput?.value?.trim();
+        const enabled = enabledCheckbox?.checked ?? true;
+
+        try {
+            const response = await fetch(APIHelper.getApiUrl('api/ollama/config'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url || undefined, enabled })
+            });
+
+            if (!response.ok) throw new Error('Failed to save');
+            const config = await response.json();
+
+            if (urlInput) urlInput.value = config.url;
+            if (enabledCheckbox) enabledCheckbox.checked = config.enabled;
+
+            if (toastNotifications) {
+                toastNotifications.show(
+                    enabled ? `Ollama: ${config.url}` : 'Ollama disabled',
+                    enabled ? 'success' : 'info',
+                    3000
+                );
+            }
+
+            // Reload models with the new config
+            await this.loadOllamaModels();
+        } catch (e) {
+            logger.error('Failed to save Ollama config:', e);
+            if (toastNotifications) {
+                toastNotifications.show('Failed to save Ollama config', 'error', 3000);
+            }
+        }
     }
 
     /**

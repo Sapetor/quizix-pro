@@ -2684,6 +2684,18 @@ class GraphScene(Scene):
                     </select>
                 </div>
 
+                <div id="ollama-server-config" class="ollama-server-config">
+                    <div class="ollama-config-row">
+                        <label for="ollama-url" data-translate="ollama_server_url">Ollama Server:</label>
+                        <input type="text" id="ollama-url" class="input-field" placeholder="http://localhost:11434">
+                        <label class="toggle-switch" title="Enable/disable Ollama">
+                            <input type="checkbox" id="ollama-enabled" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <button id="ollama-save-config" class="btn small primary" data-translate="save">Save</button>
+                    </div>
+                </div>
+
                 <div class="model-selection" id="model-selection">
                     <label for="ollama-model" data-translate="choose_model">Choose Model:</label>
                     <select id="ollama-model" class="input-field">

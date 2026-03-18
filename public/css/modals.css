@@ -188,6 +188,31 @@
     margin-bottom: 15px;
 }
 
+.ollama-server-config {
+    margin-bottom: 15px;
+}
+
+.ollama-config-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ollama-config-row label:first-child {
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+.ollama-config-row .input-field {
+    flex: 1;
+    min-width: 0;
+}
+
+.ollama-config-row .btn.small {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+}
+
 .api-key-section {
     margin-top: 15px;
 }

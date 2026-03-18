@@ -169,6 +169,12 @@ export class AIQuestionGenerator {
             modelSelect.addEventListener('change', this.eventHandlers.modelChange);
         }
 
+        this.eventHandlers.ollamaSaveConfig = () => this.uiHelpers.saveOllamaConfig();
+        const ollamaSaveBtn = document.getElementById('ollama-save-config');
+        if (ollamaSaveBtn) {
+            ollamaSaveBtn.addEventListener('click', this.eventHandlers.ollamaSaveConfig);
+        }
+
         const fileInput = dom.get('content-file');
         if (fileInput) {
             fileInput.addEventListener('change', this.eventHandlers.fileChange);
@@ -229,6 +235,10 @@ export class AIQuestionGenerator {
         }
         if (modelSelect && this.eventHandlers.modelChange) {
             modelSelect.removeEventListener('change', this.eventHandlers.modelChange);
+        }
+        const ollamaSaveBtn = document.getElementById('ollama-save-config');
+        if (ollamaSaveBtn && this.eventHandlers.ollamaSaveConfig) {
+            ollamaSaveBtn.removeEventListener('click', this.eventHandlers.ollamaSaveConfig);
         }
         if (fileInput && this.eventHandlers.fileChange) {
             fileInput.removeEventListener('change', this.eventHandlers.fileChange);
