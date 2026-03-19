@@ -1296,4 +1296,23 @@ export default {
     rejoin_dismiss: 'Dismiss',
     rejoin_expired: 'Session expired — please join a new game',
     return_to_menu: 'Return to Menu',
+
+    // Host reconnection messages
+    host_disconnected_waiting: 'Host disconnected. Waiting for reconnection...',
+    host_preparing_new_game: 'Host is preparing a new game...',
+    host_reconnected: 'Host reconnected!',
+    rejoin_timeout: 'Reconnection timed out. Please join a new game.',
+
+    // Validation messages
+    auth_check_failed: 'Unable to verify permissions. Please try again.',
+    invalid_correct_answer: 'Please select a correct answer',
+    invalid_numeric_answer: 'Please enter a valid numeric answer',
+    invalid_quiz_format: 'Invalid quiz file format',
+    select_at_least_one_correct: 'Please select at least one correct answer',
+
+    // Import/Export messages
+    failed_export_quiz: 'Failed to export quiz',
+    failed_import_quiz: 'Failed to import quiz',
+    quiz_exported_successfully: 'Quiz exported successfully',
+    quiz_imported_successfully: 'Quiz imported successfully',
 };
