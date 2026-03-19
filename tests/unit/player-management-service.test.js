@@ -404,4 +404,78 @@ describe('PlayerManagementService', () => {
             expect(list[0]).toEqual({ id: 'p1', name: 'Player1', score: 100 });
         });
     });
+
+    describe('Host Session lifecycle', () => {
+        test('createOrGetSession creates a new session', () => {
+            const session = playerService.createOrGetSession('host-socket-1');
+            expect(session).toBeDefined();
+            expect(session.hostSessionId).toBeDefined();
+            expect(session.hostSocketId).toBe('host-socket-1');
+            expect(session.currentGamePin).toBeNull();
+            expect(session.playerRegistry).toBeInstanceOf(Map);
+            expect(session.playerRegistry.size).toBe(0);
+        });
+
+        test('createOrGetSession returns existing session when hostSessionId provided', () => {
+            const session1 = playerService.createOrGetSession('host-socket-1');
+            const session2 = playerService.createOrGetSession('host-socket-2', session1.hostSessionId);
+            expect(session2).toBe(session1);
+            expect(session2.hostSocketId).toBe('host-socket-2');
+        });
+
+        test('createOrGetSession returns existing session for same host socket', () => {
+            const session1 = playerService.createOrGetSession('host-socket-1');
+            const session2 = playerService.createOrGetSession('host-socket-1');
+            expect(session2).toBe(session1);
+        });
+
+        test('registerDevice adds device to session playerRegistry', () => {
+            const session = playerService.createOrGetSession('host-socket-1');
+            playerService.registerDevice(session.hostSessionId, 'device-1', 'Alice', 'sock-1');
+            expect(session.playerRegistry.get('device-1')).toEqual({ name: 'Alice', socketId: 'sock-1' });
+            expect(playerService.deviceToSession.get('device-1')).toBe(session.hostSessionId);
+        });
+
+        test('unregisterDevice removes device from session and reverse map', () => {
+            const session = playerService.createOrGetSession('host-socket-1');
+            playerService.registerDevice(session.hostSessionId, 'device-1', 'Alice', 'sock-1');
+            playerService.unregisterDevice('device-1');
+            expect(session.playerRegistry.has('device-1')).toBe(false);
+            expect(playerService.deviceToSession.has('device-1')).toBe(false);
+        });
+
+        test('destroySession cleans up all devices from deviceToSession', () => {
+            const session = playerService.createOrGetSession('host-socket-1');
+            playerService.registerDevice(session.hostSessionId, 'device-1', 'Alice', null);
+            playerService.registerDevice(session.hostSessionId, 'device-2', 'Bob', null);
+            playerService.destroySession(session.hostSessionId);
+            expect(playerService.hostSessions.has(session.hostSessionId)).toBe(false);
+            expect(playerService.deviceToSession.has('device-1')).toBe(false);
+            expect(playerService.deviceToSession.has('device-2')).toBe(false);
+        });
+
+        test('getSessionByHostSocket finds session by host socket ID', () => {
+            const session = playerService.createOrGetSession('host-socket-1');
+            expect(playerService.getSessionByHostSocket('host-socket-1')).toBe(session);
+            expect(playerService.getSessionByHostSocket('nonexistent')).toBeUndefined();
+        });
+
+        test('getDisconnectedCount returns count of null-socketId entries', () => {
+            const session = playerService.createOrGetSession('host-socket-1');
+            playerService.registerDevice(session.hostSessionId, 'device-1', 'Alice', 'sock-1');
+            playerService.registerDevice(session.hostSessionId, 'device-2', 'Bob', null);
+            playerService.registerDevice(session.hostSessionId, 'device-3', 'Charlie', null);
+            expect(playerService.getDisconnectedCount(session.hostSessionId)).toBe(2);
+        });
+
+        test('registerDevice to different session removes from old session first', () => {
+            const session1 = playerService.createOrGetSession('host-1');
+            const session2 = playerService.createOrGetSession('host-2');
+            playerService.registerDevice(session1.hostSessionId, 'device-1', 'Alice', 'sock-1');
+            playerService.registerDevice(session2.hostSessionId, 'device-1', 'Alice', 'sock-1');
+            expect(session1.playerRegistry.has('device-1')).toBe(false);
+            expect(session2.playerRegistry.get('device-1')).toEqual({ name: 'Alice', socketId: 'sock-1' });
+            expect(playerService.deviceToSession.get('device-1')).toBe(session2.hostSessionId);
+        });
+    });
 });

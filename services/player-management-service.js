@@ -17,6 +17,9 @@ class PlayerManagementService {
         this.config = config;
         this.players = new Map(); // Global player registry: socketId -> { gamePin, name }
         this.disconnectTimers = new Map(); // sessionToken -> timeoutId for grace period removal
+        this.hostSessions = new Map();       // hostSessionId -> session object
+        this.deviceToSession = new Map();    // deviceId -> hostSessionId
+        this.sessionGraceTimers = new Map(); // hostSessionId -> timerId
     }
 
     /**
@@ -708,6 +711,133 @@ class PlayerManagementService {
 
         this.logger.info(`Migrated ${migratedCount} players from game ${oldGame.pin} to ${newGame.pin}`);
         return migratedCount;
+    }
+
+    /**
+     * Create or retrieve an existing host session.
+     * If hostSessionId is provided (host reconnected/refreshed), looks up by ID first.
+     * Otherwise falls back to socket ID lookup, then creates new.
+     * @param {string} hostSocketId - Host's current socket ID
+     * @param {string|null} hostSessionId - Optional existing session ID from client storage
+     * @returns {Object} The host session object
+     */
+    createOrGetSession(hostSocketId, hostSessionId = null) {
+        // Try by hostSessionId first (handles reconnect/refresh with new socket)
+        if (hostSessionId) {
+            const existing = this.hostSessions.get(hostSessionId);
+            if (existing) {
+                existing.hostSocketId = hostSocketId; // Update to new socket
+                return existing;
+            }
+        }
+
+        // Try by current socket ID
+        const bySocket = this.getSessionByHostSocket(hostSocketId);
+        if (bySocket) return bySocket;
+
+        // Create new session
+        const newId = crypto.randomUUID();
+        const session = {
+            hostSessionId: newId,
+            hostSocketId,
+            currentGamePin: null,
+            playerRegistry: new Map()
+        };
+        this.hostSessions.set(newId, session);
+        this.logger.info(`Created host session ${newId} for host ${hostSocketId}`);
+        return session;
+    }
+
+    /**
+     * Find a host session by the host's socket ID.
+     * @param {string} hostSocketId
+     * @returns {Object|undefined}
+     */
+    getSessionByHostSocket(hostSocketId) {
+        for (const session of this.hostSessions.values()) {
+            if (session.hostSocketId === hostSocketId) return session;
+        }
+        return undefined;
+    }
+
+    /**
+     * Register a device in a host session's playerRegistry.
+     * If the device is already in a different session, removes it from the old one first.
+     * @param {string} hostSessionId
+     * @param {string} deviceId
+     * @param {string} name - Player name
+     * @param {string|null} socketId - Current socket ID (null if disconnected)
+     */
+    registerDevice(hostSessionId, deviceId, name, socketId) {
+        // Remove from old session if switching hosts
+        const oldSessionId = this.deviceToSession.get(deviceId);
+        if (oldSessionId && oldSessionId !== hostSessionId) {
+            const oldSession = this.hostSessions.get(oldSessionId);
+            if (oldSession) {
+                oldSession.playerRegistry.delete(deviceId);
+                this.logger.debug(`Removed device ${deviceId} from old session ${oldSessionId}`);
+            }
+        }
+
+        const session = this.hostSessions.get(hostSessionId);
+        if (!session) return;
+
+        session.playerRegistry.set(deviceId, { name, socketId });
+        this.deviceToSession.set(deviceId, hostSessionId);
+    }
+
+    /**
+     * Remove a device from its session's playerRegistry and the reverse lookup.
+     * @param {string} deviceId
+     */
+    unregisterDevice(deviceId) {
+        const hostSessionId = this.deviceToSession.get(deviceId);
+        if (hostSessionId) {
+            const session = this.hostSessions.get(hostSessionId);
+            if (session) {
+                session.playerRegistry.delete(deviceId);
+            }
+            this.deviceToSession.delete(deviceId);
+        }
+    }
+
+    /**
+     * Destroy a host session and clean up all device references.
+     * @param {string} hostSessionId
+     */
+    destroySession(hostSessionId) {
+        const session = this.hostSessions.get(hostSessionId);
+        if (!session) return;
+
+        // Clean up reverse lookup for all devices in this session
+        for (const deviceId of session.playerRegistry.keys()) {
+            this.deviceToSession.delete(deviceId);
+        }
+
+        // Clear any grace timer
+        const timerId = this.sessionGraceTimers.get(hostSessionId);
+        if (timerId) {
+            clearTimeout(timerId);
+            this.sessionGraceTimers.delete(hostSessionId);
+        }
+
+        this.hostSessions.delete(hostSessionId);
+        this.logger.info(`Destroyed host session ${hostSessionId}`);
+    }
+
+    /**
+     * Get count of disconnected (expected but not connected) players in a session.
+     * @param {string} hostSessionId
+     * @returns {number}
+     */
+    getDisconnectedCount(hostSessionId) {
+        const session = this.hostSessions.get(hostSessionId);
+        if (!session) return 0;
+        let count = 0;
+        for (const entry of session.playerRegistry.values()) {
+            if (entry.socketId === null) count++;
+        }
+        return count;
     }
 
     /**
