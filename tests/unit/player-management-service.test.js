@@ -583,4 +583,92 @@ describe('PlayerManagementService', () => {
             expect(session.playerRegistry.get('device-abc').socketId).toBeNull();
         });
     });
+
+    describe('Session edge cases', () => {
+        test('device switching hosts clears old session binding', () => {
+            const host1Session = playerService.createOrGetSession('host-1');
+            const host2Session = playerService.createOrGetSession('host-2');
+
+            playerService.registerDevice(host1Session.hostSessionId, 'device-1', 'Alice', 'sock-1');
+            playerService.registerDevice(host2Session.hostSessionId, 'device-1', 'Alice', 'sock-1');
+
+            expect(host1Session.playerRegistry.has('device-1')).toBe(false);
+            expect(host2Session.playerRegistry.has('device-1')).toBe(true);
+        });
+
+        test('session destruction notifies cleanup invariant', () => {
+            const session = playerService.createOrGetSession('host-1');
+            playerService.registerDevice(session.hostSessionId, 'd1', 'Alice', null);
+            playerService.registerDevice(session.hostSessionId, 'd2', 'Bob', null);
+            playerService.registerDevice(session.hostSessionId, 'd3', 'Charlie', null);
+
+            playerService.destroySession(session.hostSessionId);
+
+            expect(playerService.deviceToSession.size).toBe(0);
+            expect(playerService.hostSessions.size).toBe(0);
+        });
+
+        test('session grace timer is cleared on destroy', () => {
+            const session = playerService.createOrGetSession('host-1');
+            playerService.registerDevice(session.hostSessionId, 'd1', 'Alice', null);
+
+            // Simulate setting a grace timer
+            const timerId = setTimeout(() => {}, 120000);
+            playerService.sessionGraceTimers.set(session.hostSessionId, timerId);
+
+            playerService.destroySession(session.hostSessionId);
+
+            expect(playerService.sessionGraceTimers.has(session.hostSessionId)).toBe(false);
+        });
+
+        test('getDisconnectedCount with mixed connected/disconnected', () => {
+            const session = playerService.createOrGetSession('host-1');
+            playerService.registerDevice(session.hostSessionId, 'd1', 'Alice', 'sock-1');
+            playerService.registerDevice(session.hostSessionId, 'd2', 'Bob', null);
+            playerService.registerDevice(session.hostSessionId, 'd3', 'Charlie', 'sock-3');
+            playerService.registerDevice(session.hostSessionId, 'd4', 'Dave', null);
+
+            expect(playerService.getDisconnectedCount(session.hostSessionId)).toBe(2);
+        });
+
+        test('getDisconnectedCount returns 0 for nonexistent session', () => {
+            expect(playerService.getDisconnectedCount('nonexistent')).toBe(0);
+        });
+
+        test('unregisterDevice is a no-op for unknown device', () => {
+            playerService.unregisterDevice('unknown-device');
+            expect(playerService.deviceToSession.size).toBe(0);
+        });
+
+        test('destroySession is a no-op for unknown session', () => {
+            playerService.destroySession('unknown-session');
+            // Should not throw
+        });
+
+        test('registerDevice updates name when re-registering same device in same session', () => {
+            const session = playerService.createOrGetSession('host-1');
+            playerService.registerDevice(session.hostSessionId, 'd1', 'Alice', 'sock-1');
+            playerService.registerDevice(session.hostSessionId, 'd1', 'Bob', 'sock-2');
+
+            expect(session.playerRegistry.get('d1')).toEqual({ name: 'Bob', socketId: 'sock-2' });
+            expect(playerService.deviceToSession.get('d1')).toBe(session.hostSessionId);
+        });
+
+        test('multiple sessions can coexist independently', () => {
+            const s1 = playerService.createOrGetSession('host-1');
+            const s2 = playerService.createOrGetSession('host-2');
+
+            playerService.registerDevice(s1.hostSessionId, 'd1', 'Alice', null);
+            playerService.registerDevice(s2.hostSessionId, 'd2', 'Bob', null);
+
+            expect(s1.playerRegistry.size).toBe(1);
+            expect(s2.playerRegistry.size).toBe(1);
+
+            playerService.destroySession(s1.hostSessionId);
+
+            expect(playerService.hostSessions.has(s1.hostSessionId)).toBe(false);
+            expect(playerService.hostSessions.has(s2.hostSessionId)).toBe(true);
+            expect(s2.playerRegistry.size).toBe(1);
+        });
+    });
 });
