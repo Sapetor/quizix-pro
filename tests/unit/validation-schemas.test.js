@@ -12,7 +12,10 @@ const {
     validateAndHandle,
     hostJoinSchema,
     playerJoinSchema,
-    socketSubmitAnswerSchema
+    socketSubmitAnswerSchema,
+    sessionCheckSchema,
+    leaveSessionSchema,
+    releaseSessionSchema
 } = require('../../services/validation-schemas.js');
 
 describe('Validation Schemas', () => {
@@ -335,5 +338,73 @@ describe('Socket Event Validation', () => {
                 expect(result.data).toEqual({ any: 'data' });
             });
         });
+    });
+});
+
+describe('Session event schemas', () => {
+    test('playerJoinSchema accepts optional deviceId', () => {
+        const result = playerJoinSchema.safeParse({ pin: '123456', name: 'Alice', deviceId: '550e8400-e29b-41d4-a716-446655440000' });
+        expect(result.success).toBe(true);
+    });
+
+    test('playerJoinSchema still works without deviceId', () => {
+        const result = playerJoinSchema.safeParse({ pin: '123456', name: 'Alice' });
+        expect(result.success).toBe(true);
+    });
+
+    test('playerJoinSchema rejects invalid deviceId', () => {
+        const result = playerJoinSchema.safeParse({ pin: '123456', name: 'Alice', deviceId: 'not-a-uuid' });
+        expect(result.success).toBe(false);
+    });
+
+    test('sessionCheckSchema validates deviceId and hostSessionId', () => {
+        const result = sessionCheckSchema.safeParse({
+            deviceId: '550e8400-e29b-41d4-a716-446655440000',
+            hostSessionId: '550e8400-e29b-41d4-a716-446655440001'
+        });
+        expect(result.success).toBe(true);
+    });
+
+    test('sessionCheckSchema rejects missing fields', () => {
+        const result = sessionCheckSchema.safeParse({ deviceId: '550e8400-e29b-41d4-a716-446655440000' });
+        expect(result.success).toBe(false);
+    });
+
+    test('leaveSessionSchema validates deviceId and hostSessionId', () => {
+        const result = leaveSessionSchema.safeParse({
+            deviceId: '550e8400-e29b-41d4-a716-446655440000',
+            hostSessionId: '550e8400-e29b-41d4-a716-446655440001'
+        });
+        expect(result.success).toBe(true);
+    });
+
+    test('releaseSessionSchema validates hostSessionId', () => {
+        const result = releaseSessionSchema.safeParse({
+            hostSessionId: '550e8400-e29b-41d4-a716-446655440001'
+        });
+        expect(result.success).toBe(true);
+    });
+
+    test('validateSocketEvent recognizes session-check', () => {
+        const result = validateSocketEvent('session-check', {
+            deviceId: '550e8400-e29b-41d4-a716-446655440000',
+            hostSessionId: '550e8400-e29b-41d4-a716-446655440001'
+        });
+        expect(result.valid).toBe(true);
+    });
+
+    test('validateSocketEvent recognizes leave-session', () => {
+        const result = validateSocketEvent('leave-session', {
+            deviceId: '550e8400-e29b-41d4-a716-446655440000',
+            hostSessionId: '550e8400-e29b-41d4-a716-446655440001'
+        });
+        expect(result.valid).toBe(true);
+    });
+
+    test('validateSocketEvent recognizes release-session', () => {
+        const result = validateSocketEvent('release-session', {
+            hostSessionId: '550e8400-e29b-41d4-a716-446655440001'
+        });
+        expect(result.valid).toBe(true);
     });
 });

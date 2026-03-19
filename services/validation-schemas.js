@@ -370,12 +370,14 @@ const hostJoinSchema = z.object({
         allowChat: z.boolean().optional().default(false)
     }),
     previousPin: z.string().regex(/^\d{6}$/).optional(),
-    migrationToken: z.string().uuid().optional()
+    migrationToken: z.string().uuid().optional(),
+    hostSessionId: z.string().uuid().optional()
 });
 
 const playerJoinSchema = z.object({
     pin: z.string().regex(/^\d{6}$/),
-    name: z.string().min(1).max(50)
+    name: z.string().min(1).max(50),
+    deviceId: z.string().uuid().optional()
 });
 
 const startGameSchema = z.object({
@@ -417,6 +419,21 @@ const sendQuickResponseSchema = z.object({
 
 const sendChatMessageSchema = z.object({
     text: z.string().min(1).max(200)
+});
+
+// Session event schemas
+const sessionCheckSchema = z.object({
+    deviceId: z.string().uuid(),
+    hostSessionId: z.string().uuid()
+});
+
+const leaveSessionSchema = z.object({
+    deviceId: z.string().uuid(),
+    hostSessionId: z.string().uuid()
+});
+
+const releaseSessionSchema = z.object({
+    hostSessionId: z.string().uuid()
 });
 
 // Server to client event data schemas
@@ -510,6 +527,10 @@ function validateSocketEvent(eventName, data) {
         'propose-answer': proposeAnswerSchema,
         'send-quick-response': sendQuickResponseSchema,
         'send-chat-message': sendChatMessageSchema,
+        // Session events
+        'session-check': sessionCheckSchema,
+        'leave-session': leaveSessionSchema,
+        'release-session': releaseSessionSchema,
         // Server to client
         'game-created': gameCreatedEventSchema,
         'player-joined': playerJoinedEventSchema,
@@ -594,6 +615,10 @@ module.exports = {
     proposeAnswerSchema,
     sendQuickResponseSchema,
     sendChatMessageSchema,
+    // Session event schemas
+    sessionCheckSchema,
+    leaveSessionSchema,
+    releaseSessionSchema,
     gameCreatedEventSchema,
     playerJoinedEventSchema,
     questionStartEventSchema,
