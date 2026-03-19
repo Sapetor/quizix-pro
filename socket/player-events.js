@@ -14,7 +14,7 @@ function registerPlayerEvents(io, socket, options) {
             const validated = validateAndHandle(socket, 'player-join', data, logger);
             if (!validated) return;
 
-            const { pin, name } = validated;
+            const { pin, name, deviceId } = validated;
             const game = gameSessionService.getGame(pin);
 
             const result = playerManagementService.handlePlayerJoin(
@@ -23,7 +23,8 @@ function registerPlayerEvents(io, socket, options) {
                 name,
                 game,
                 socket,
-                io
+                io,
+                deviceId
             );
 
             if (!result.success) {
@@ -137,6 +138,12 @@ function registerPlayerEvents(io, socket, options) {
             gameSessionService.clearHostDisconnectTimer(game.pin);
             gameSessionService.updateHostId(oldHostId, socket.id, game.pin);
 
+            // Update host session socket ID
+            const session = playerManagementService.getSessionByHostSocket(oldHostId);
+            if (session) {
+                session.hostSocketId = socket.id;
+            }
+
             socket.join(`game-${game.pin}`);
 
             // Notify players
@@ -159,6 +166,101 @@ function registerPlayerEvents(io, socket, options) {
         } catch (error) {
             logger.error('Error in host-rejoin handler:', error);
             socket.emit('error', { message: 'Failed to rejoin as host' });
+        }
+    });
+
+    // Handle session check from returning device
+    socket.on('session-check', (data) => {
+        if (!checkRateLimit(socket.id, 'session-check', 3, socket)) return;
+        try {
+            const validated = validateAndHandle(socket, 'session-check', data, logger);
+            if (!validated) return;
+
+            const { deviceId, hostSessionId } = validated;
+            const session = playerManagementService.hostSessions.get(hostSessionId);
+
+            if (!session || !session.playerRegistry.has(deviceId)) {
+                socket.emit('session-invalid');
+                return;
+            }
+
+            const entry = session.playerRegistry.get(deviceId);
+            entry.socketId = socket.id;
+
+            if (session.currentGamePin) {
+                // Active game exists — auto-join the player
+                const game = gameSessionService.getGame(session.currentGamePin);
+                if (game && (game.gameState === 'lobby' || game.gameState === 'revealing' || game.gameState === 'question')) {
+                    const result = playerManagementService.handlePlayerJoin(
+                        socket.id, session.currentGamePin, entry.name, game, socket, io, deviceId
+                    );
+                    if (!result.success) {
+                        socket.join(`session:${hostSessionId}`);
+                        socket.emit('session-waiting', { hostSessionId });
+                    }
+                } else {
+                    socket.join(`session:${hostSessionId}`);
+                    socket.emit('session-waiting', { hostSessionId });
+                }
+            } else {
+                // No active game — waiting room
+                socket.join(`session:${hostSessionId}`);
+                socket.emit('session-waiting', { hostSessionId });
+            }
+        } catch (error) {
+            logger.error('Error in session-check handler:', error);
+            socket.emit('session-invalid');
+        }
+    });
+
+    // Handle player leaving session voluntarily
+    socket.on('leave-session', (data) => {
+        if (!checkRateLimit(socket.id, 'leave-session', 5, socket)) return;
+        try {
+            const validated = validateAndHandle(socket, 'leave-session', data, logger);
+            if (!validated) return;
+
+            const { deviceId, hostSessionId } = validated;
+            playerManagementService.unregisterDevice(deviceId);
+            socket.leave(`session:${hostSessionId}`);
+            logger.info(`Device ${deviceId} left session ${hostSessionId}`);
+        } catch (error) {
+            logger.error('Error in leave-session handler:', error);
+        }
+    });
+
+    // Handle host releasing all session players
+    socket.on('release-session', (data) => {
+        if (!checkRateLimit(socket.id, 'release-session', 3, socket)) return;
+        try {
+            const validated = validateAndHandle(socket, 'release-session', data, logger);
+            if (!validated) return;
+
+            const { hostSessionId } = validated;
+            const session = playerManagementService.hostSessions.get(hostSessionId);
+
+            if (!session || session.hostSocketId !== socket.id) {
+                socket.emit('error', { message: 'Not authorized to release this session' });
+                return;
+            }
+
+            // Make all sockets leave the session room before destroying
+            const roomName = `session:${hostSessionId}`;
+            const socketsInRoom = io.sockets.adapter.rooms.get(roomName);
+            if (socketsInRoom) {
+                for (const sid of [...socketsInRoom]) {
+                    const s = io.sockets.sockets.get(sid);
+                    if (s) {
+                        s.emit('session-released');
+                        s.leave(roomName);
+                    }
+                }
+            }
+
+            playerManagementService.destroySession(hostSessionId);
+            logger.info(`Host released all players from session ${hostSessionId}`);
+        } catch (error) {
+            logger.error('Error in release-session handler:', error);
         }
     });
 
@@ -223,7 +325,32 @@ function registerPlayerEvents(io, socket, options) {
 
                     logger.info(`Host disconnected from game ${hostedGame.pin} — 30s grace period started`);
                 } else {
-                    // In lobby: immediate cleanup (no game in progress)
+                    // In lobby: check if session has captured players
+                    const session = playerManagementService.getSessionByHostSocket(socket.id);
+                    if (session && session.playerRegistry.size > 0) {
+                        // Session has players — start grace timer instead of immediate cleanup
+                        session.currentGamePin = null;
+                        const sessionId = session.hostSessionId;
+                        const timerId = setTimeout(() => {
+                            playerManagementService.sessionGraceTimers.delete(sessionId);
+                            const roomName = `session:${sessionId}`;
+                            const socketsInRoom = io.sockets.adapter.rooms.get(roomName);
+                            if (socketsInRoom) {
+                                for (const sid of [...socketsInRoom]) {
+                                    const s = io.sockets.sockets.get(sid);
+                                    if (s) {
+                                        s.emit('session-released');
+                                        s.leave(roomName);
+                                    }
+                                }
+                            }
+                            playerManagementService.destroySession(sessionId);
+                            logger.info(`Session ${sessionId} destroyed after lobby disconnect grace period`);
+                        }, 2 * 60 * 1000);
+                        playerManagementService.sessionGraceTimers.set(sessionId, timerId);
+                    }
+
+                    // Still clean up the game immediately
                     playerManagementService.handleHostDisconnect(hostedGame, io);
                     gameSessionService.deleteGame(hostedGame.pin);
                 }

@@ -33,11 +33,23 @@ function registerGameEvents(io, socket, options) {
             // Create new game
             const game = gameSessionService.createGame(socket.id, quiz);
 
+            // Create or reuse host session (pass hostSessionId from client for reconnect continuity)
+            const session = playerManagementService.createOrGetSession(socket.id, validated.hostSessionId || null);
+            session.currentGamePin = game.pin;
+
+            // Cancel any session grace timer (host returned and created new game)
+            const graceTimerId = playerManagementService.sessionGraceTimers.get(session.hostSessionId);
+            if (graceTimerId) {
+                clearTimeout(graceTimerId);
+                playerManagementService.sessionGraceTimers.delete(session.hostSessionId);
+            }
+
             socket.join(`game-${game.pin}`);
             socket.emit('game-created', {
                 pin: game.pin,
                 gameId: game.id,
-                title: quiz.title
+                title: quiz.title,
+                hostSessionId: session.hostSessionId
             });
 
             socket.broadcast.emit('game-available', {
@@ -63,6 +75,33 @@ function registerGameEvents(io, socket, options) {
                     } else {
                         logger.warn(`Migration token mismatch for game ${validated.previousPin}`);
                     }
+                }
+            }
+
+            // Auto-join waiting players from session room into the new game
+            const sessionRoom = `session:${session.hostSessionId}`;
+            const waitingSockets = io.sockets.adapter.rooms.get(sessionRoom);
+            if (waitingSockets) {
+                for (const sid of [...waitingSockets]) {
+                    const waitingSocket = io.sockets.sockets.get(sid);
+                    if (!waitingSocket) continue;
+
+                    // Find device entry for this socket
+                    let deviceId = null;
+                    let playerName = null;
+                    for (const [did, entry] of session.playerRegistry) {
+                        if (entry.socketId === sid) {
+                            deviceId = did;
+                            playerName = entry.name;
+                            break;
+                        }
+                    }
+                    if (!deviceId || !playerName) continue;
+
+                    waitingSocket.leave(sessionRoom);
+                    playerManagementService.handlePlayerJoin(
+                        sid, game.pin, playerName, game, waitingSocket, io, deviceId
+                    );
                 }
             }
         } catch (error) {
