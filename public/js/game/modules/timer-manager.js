@@ -12,6 +12,7 @@ export class TimerManager {
         this.timer = null;
         this.trackedTimers = new Set(); // Track timers for cleanup
         this.timerElement = document.getElementById('timer');
+        this.playerTimerElement = document.getElementById('player-timer');
     }
 
     /**
@@ -89,17 +90,17 @@ export class TimerManager {
      * Update timer display in the UI
      */
     updateTimerDisplay(timeRemaining) {
-        const timerElement = this.timerElement;
+        const seconds = Math.max(0, Math.ceil(timeRemaining / 1000));
 
-        if (timerElement) {
-            const seconds = Math.max(0, Math.ceil(timeRemaining / 1000));
-            timerElement.textContent = seconds.toString();
+        for (const el of [this.timerElement, this.playerTimerElement]) {
+            if (!el) continue;
+            el.textContent = seconds.toString();
 
             // Add warning class for last 10 seconds
             if (seconds <= 10 && seconds > 0) {
-                timerElement.classList.add('warning');
+                el.classList.add('warning');
             } else {
-                timerElement.classList.remove('warning');
+                el.classList.remove('warning');
             }
         }
     }
@@ -109,12 +110,12 @@ export class TimerManager {
      */
     setStaticTimerDisplay(seconds) {
         try {
-            const timerElement = this.timerElement;
-            if (timerElement) {
-                timerElement.textContent = seconds.toString();
-                timerElement.classList.add('error-state');
-                logger.debug('Static timer display set to:', seconds);
+            for (const el of [this.timerElement, this.playerTimerElement]) {
+                if (!el) continue;
+                el.textContent = seconds.toString();
+                el.classList.add('error-state');
             }
+            logger.debug('Static timer display set to:', seconds);
         } catch (error) {
             logger.error('Failed to set static timer display:', error);
         }
@@ -153,19 +154,24 @@ export class TimerManager {
             return;
         }
 
-        const timerElement = this.timerElement;
-        if (timerElement) {
-            const currentSeconds = parseInt(timerElement.textContent) || 0;
-            const newSeconds = currentSeconds + extraSeconds;
-            timerElement.textContent = newSeconds.toString();
+        // Read current seconds from whichever element exists
+        const source = this.timerElement || this.playerTimerElement;
+        if (!source) return;
+
+        const currentSeconds = parseInt(source.textContent) || 0;
+        const newSeconds = currentSeconds + extraSeconds;
+
+        for (const el of [this.timerElement, this.playerTimerElement]) {
+            if (!el) continue;
+            el.textContent = newSeconds.toString();
 
             // Remove warning class if we're back above 10 seconds
             if (newSeconds > 10) {
-                timerElement.classList.remove('warning');
+                el.classList.remove('warning');
             }
-
-            logger.debug(`Timer extended by ${extraSeconds}s. New time: ${newSeconds}s`);
         }
+
+        logger.debug(`Timer extended by ${extraSeconds}s. New time: ${newSeconds}s`);
     }
 
     /**

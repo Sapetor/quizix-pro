@@ -158,6 +158,11 @@ export class PracticeModeManager {
             }
 
             this.gameManager.displayQuestion(data);
+
+            // Show player timer
+            const playerTimer = document.getElementById('player-timer');
+            if (playerTimer) playerTimer.classList.remove('hidden');
+
             const timeLimit = data.timeLimit || 20;
             this.gameManager.startTimer(timeLimit * 1000);
         };

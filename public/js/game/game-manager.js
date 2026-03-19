@@ -1538,11 +1538,17 @@ export class GameManager {
         const playerCounter = document.getElementById('player-question-counter');
         if (playerCounter) playerCounter.textContent = '';
 
-        // Reset timer
+        // Reset timers (host + player)
         const timer = document.getElementById('timer');
         if (timer) {
             timer.textContent = '';
             timer.classList.remove('warning');
+        }
+        const playerTimer = document.getElementById('player-timer');
+        if (playerTimer) {
+            playerTimer.textContent = '';
+            playerTimer.classList.remove('warning');
+            playerTimer.classList.add('hidden');
         }
 
         // Hide and clear question images
@@ -1569,18 +1575,21 @@ export class GameManager {
 
         // Reset player multiple-choice options (clear selection state, keep structure)
         document.querySelectorAll('.player-option').forEach(opt => {
-            opt.classList.remove('selected', 'correct', 'incorrect', 'disabled', 'power-up-hidden');
+            opt.classList.remove('selected', 'correct', 'incorrect', 'disabled', 'power-up-hidden', 'player-answered', 'player-answered-wrong');
+            opt.removeAttribute('data-player-badge');
             opt.style.pointerEvents = '';
         });
 
         // Reset true/false options
         document.querySelectorAll('.tf-option').forEach(opt => {
-            opt.classList.remove('selected', 'correct', 'incorrect', 'disabled');
+            opt.classList.remove('selected', 'correct', 'incorrect', 'disabled', 'player-answered', 'player-answered-wrong');
+            opt.removeAttribute('data-player-badge');
         });
 
         // Reset multiple-correct checkboxes
         document.querySelectorAll('.checkbox-option').forEach(opt => {
-            opt.classList.remove('selected', 'correct', 'incorrect');
+            opt.classList.remove('selected', 'correct', 'incorrect', 'player-answered', 'player-answered-wrong');
+            opt.removeAttribute('data-player-badge');
             const checkbox = opt.querySelector('input[type="checkbox"]');
             if (checkbox) checkbox.checked = false;
         });

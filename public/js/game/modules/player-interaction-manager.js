@@ -219,6 +219,10 @@ export class PlayerInteractionManager {
         // Mark answer as submitted to prevent double submission
         this.gameStateManager.markAnswerSubmitted();
 
+        // Hide player timer after submitting
+        const playerTimer = document.getElementById('player-timer');
+        if (playerTimer) playerTimer.classList.add('hidden');
+
         // Store answer locally
         this.gameStateManager.storePlayerAnswer(gameState.playerName, answer);
 

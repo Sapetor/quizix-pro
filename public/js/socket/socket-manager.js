@@ -307,6 +307,18 @@ export class SocketManager {
                 this.gameManager.stateManager.answerSubmitted = true;
             }
 
+            // Show player timer for non-host players (hide if already answered on rejoin)
+            if (!isHostForStop) {
+                const playerTimer = document.getElementById('player-timer');
+                if (playerTimer) {
+                    if (data.alreadyAnswered) {
+                        playerTimer.classList.add('hidden');
+                    } else {
+                        playerTimer.classList.remove('hidden');
+                    }
+                }
+            }
+
             // Ensure timer has valid duration (convert seconds to ms)
             const timeLimit = data.timeLimit && !isNaN(data.timeLimit) ? data.timeLimit : UI.DEFAULT_TIMER_SECONDS;
             // Use remaining time for rejoining players, full time for normal question start
@@ -323,6 +335,10 @@ export class SocketManager {
         this.socket.on('question-end', (data) => {
             logger.debug('Question ended:', data);
             this.gameManager.stopTimer();
+
+            // Hide player timer when question ends
+            const playerTimer = document.getElementById('player-timer');
+            if (playerTimer) playerTimer.classList.add('hidden');
 
             // New flow: question-end now shows statistics first, not leaderboard
             if (data && data.showStatistics) {

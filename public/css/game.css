@@ -602,8 +602,18 @@
 
 /* Player Question Info */
 .question-info {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
     margin-bottom: 20px;
+}
+
+/* Player timer — smaller variant of .timer for mobile player screens */
+#player-timer {
+    font-size: 18px;
+    padding: 4px 14px;
+    min-width: 50px;
 }
 
 #player-question-counter {

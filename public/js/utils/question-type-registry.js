@@ -257,7 +257,8 @@ const QUESTION_TYPES = {
                             <span class="option-text">${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOption)}</span>
                         `;
                         button.setAttribute('data-answer', index.toString());
-                        button.classList.remove('selected', 'disabled', 'hidden');
+                        button.classList.remove('selected', 'disabled', 'hidden', 'player-answered', 'player-answered-wrong');
+                        button.removeAttribute('data-player-badge');
                     } else {
                         button.classList.add('hidden');
                     }
@@ -461,7 +462,8 @@ const QUESTION_TYPES = {
                         <span class="option-text">${translationManager.getOptionLetter(index)}: ${formattedOption}</span>
                     `;
                     label.setAttribute('data-option', index);
-                    label.classList.remove('hidden');
+                    label.classList.remove('hidden', 'player-answered', 'player-answered-wrong');
+                    label.removeAttribute('data-player-badge');
                 } else {
                     label.classList.add('hidden');
                 }
@@ -549,7 +551,8 @@ const QUESTION_TYPES = {
             // True/false uses existing DOM structure, just reset states
             const buttons = container.querySelectorAll('.tf-option');
             buttons.forEach(button => {
-                button.classList.remove('selected', 'disabled');
+                button.classList.remove('selected', 'disabled', 'player-answered', 'player-answered-wrong');
+                button.removeAttribute('data-player-badge');
             });
         },
 
