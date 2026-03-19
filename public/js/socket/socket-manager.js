@@ -10,6 +10,21 @@ import { uiStateManager } from '../utils/ui-state-manager.js';
 import { show, hide } from '../utils/dom.js';
 
 const RECONNECT_KEY = 'quizix_reconnect';
+const DEVICE_ID_KEY = 'quizix_device_id';
+const SESSION_BINDING_KEY = 'quizix_session_binding';
+
+/**
+ * Get or create a persistent device ID.
+ * @returns {string} UUID device identifier
+ */
+function getOrCreateDeviceId() {
+    let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+    if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem(DEVICE_ID_KEY, deviceId);
+    }
+    return deviceId;
+}
 
 export class SocketManager {
     constructor(socket, gameManager, uiManager, soundManager) {
@@ -19,6 +34,7 @@ export class SocketManager {
         this.soundManager = soundManager;
         this.currentPlayerName = null; // Store current player name for language updates
         this.abortController = new AbortController(); // For cleanup of event listeners
+        this._isReconnecting = false; // Guard: prevent session-check during socket reconnects
 
         // Cached DOM element references (lazy-loaded)
         this._cachedElements = {};
@@ -128,6 +144,7 @@ export class SocketManager {
                         logger.warn('Failed to store host reconnection data:', e);
                     }
                 } else {
+                    this._isReconnecting = true;
                     this._showReconnectionOverlay();
                 }
             }
@@ -208,6 +225,18 @@ export class SocketManager {
                         }));
                     } catch (e) {
                         logger.warn('Failed to store reconnection data:', e);
+                    }
+                }
+
+                // Store session binding in localStorage for cross-session recognition
+                if (data.hostSessionId) {
+                    try {
+                        localStorage.setItem(SESSION_BINDING_KEY, JSON.stringify({
+                            deviceId: getOrCreateDeviceId(),
+                            hostSessionId: data.hostSessionId
+                        }));
+                    } catch (e) {
+                        logger.warn('Failed to store session binding:', e);
                     }
                 }
 
@@ -838,6 +867,53 @@ export class SocketManager {
                 this._showRejoinBanner();
             }, { signal });
         }
+
+        // Session waiting — show waiting screen
+        this.socket.on('session-waiting', (data) => {
+            logger.info('Session waiting:', data);
+            this._hideReconnectionOverlay();
+            this._hideRejoinBanner();
+            this.uiManager.showScreen('session-waiting-screen');
+        });
+
+        // Session game started — server auto-joins us, no action needed
+        this.socket.on('session-game-started', (data) => {
+            logger.info('Session game started, server is auto-joining us:', data);
+        });
+
+        // Session invalid — clear binding, return to main menu
+        this.socket.on('session-invalid', () => {
+            logger.info('Session invalid, clearing binding');
+            localStorage.removeItem(SESSION_BINDING_KEY);
+            if (this.gameManager.resetAndReturnToMenu) {
+                this.gameManager.resetAndReturnToMenu();
+            } else {
+                this.uiManager.showScreen('main-menu');
+            }
+        });
+
+        // Session released by host — clear binding, return to main menu
+        this.socket.on('session-released', () => {
+            logger.info('Session released by host');
+            localStorage.removeItem(SESSION_BINDING_KEY);
+            if (this.gameManager.resetAndReturnToMenu) {
+                this.gameManager.resetAndReturnToMenu();
+            } else {
+                this.gameManager.stopTimer();
+                this.gameManager.resetGameState();
+                this.uiManager.showScreen('main-menu');
+            }
+            if (window.toastNotifications) {
+                window.toastNotifications.show('Host ended the session', 'info', 3000);
+            }
+        });
+
+        // Check for session binding on fresh page load
+        if (this.socket.connected) {
+            this._checkSessionBinding();
+        } else {
+            this.socket.once('connect', () => this._checkSessionBinding());
+        }
     }
 
     /**
@@ -845,7 +921,8 @@ export class SocketManager {
      */
     joinGame(pin, playerName) {
         logger.debug('Joining game:', { pin, playerName });
-        this.socket.emit('player-join', { pin, name: playerName });
+        const deviceId = getOrCreateDeviceId();
+        this.socket.emit('player-join', { pin, name: playerName, deviceId });
     }
 
     /**
@@ -1032,6 +1109,7 @@ export class SocketManager {
      */
     leaveGame() {
         this._clearReconnectionData();
+        localStorage.removeItem(SESSION_BINDING_KEY);
         this.socket.emit('leave-game');
     }
 
@@ -1242,6 +1320,65 @@ export class SocketManager {
     _handleRejoinDismiss() {
         this._clearReconnectionData();
         this._hideRejoinBanner();
+    }
+
+    /**
+     * Check for existing session binding on fresh page load.
+     * Only fires if there's no valid sessionToken (which takes priority).
+     * Never fires during socket reconnects.
+     */
+    _checkSessionBinding() {
+        // Never fire during socket reconnects — only fresh page loads
+        if (this._isReconnecting) return;
+
+        // sessionToken reconnect takes priority
+        const reconnectData = this._getValidReconnectData();
+        if (reconnectData) return;
+
+        try {
+            const bindingStr = localStorage.getItem(SESSION_BINDING_KEY);
+            if (!bindingStr) return;
+
+            const binding = JSON.parse(bindingStr);
+            if (!binding?.deviceId || !binding?.hostSessionId) {
+                localStorage.removeItem(SESSION_BINDING_KEY);
+                return;
+            }
+
+            logger.debug('Found session binding, checking with server:', binding);
+            this.socket.emit('session-check', {
+                deviceId: binding.deviceId,
+                hostSessionId: binding.hostSessionId
+            });
+        } catch (e) {
+            logger.warn('Failed to check session binding:', e);
+            localStorage.removeItem(SESSION_BINDING_KEY);
+        }
+    }
+
+    /**
+     * Leave the current session voluntarily.
+     */
+    leaveSession() {
+        try {
+            const bindingStr = localStorage.getItem(SESSION_BINDING_KEY);
+            if (!bindingStr) return;
+            const binding = JSON.parse(bindingStr);
+            this.socket.emit('leave-session', {
+                deviceId: binding.deviceId,
+                hostSessionId: binding.hostSessionId
+            });
+            localStorage.removeItem(SESSION_BINDING_KEY);
+            if (this.gameManager.resetAndReturnToMenu) {
+                this.gameManager.resetAndReturnToMenu();
+            } else {
+                this.uiManager.showScreen('main-menu');
+            }
+        } catch (e) {
+            logger.warn('Failed to leave session:', e);
+            localStorage.removeItem(SESSION_BINDING_KEY);
+            this.uiManager.showScreen('main-menu');
+        }
     }
 
     /**
