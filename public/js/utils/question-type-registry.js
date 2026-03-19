@@ -257,7 +257,7 @@ const QUESTION_TYPES = {
                             <span class="option-text">${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOption)}</span>
                         `;
                         button.setAttribute('data-answer', index.toString());
-                        button.classList.remove('selected', 'disabled', 'hidden', 'player-answered', 'player-answered-wrong');
+                        button.classList.remove('selected', 'disabled', 'hidden', 'player-answered', 'player-answered-wrong', 'correct-answer', 'correct-answer-highlight');
                         button.removeAttribute('data-player-badge');
                     } else {
                         button.classList.add('hidden');

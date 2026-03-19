@@ -13,6 +13,17 @@ const RECONNECT_KEY = 'quizix_reconnect';
 const DEVICE_ID_KEY = 'quizix_device_id';
 const SESSION_BINDING_KEY = 'quizix_session_binding';
 
+function generateUUID() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    // Fallback for non-secure contexts (HTTP over LAN)
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = (Math.random() * 16) | 0;
+        return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+}
+
 /**
  * Get or create a persistent device ID.
  * @returns {string} UUID device identifier
@@ -20,7 +31,7 @@ const SESSION_BINDING_KEY = 'quizix_session_binding';
 function getOrCreateDeviceId() {
     let deviceId = localStorage.getItem(DEVICE_ID_KEY);
     if (!deviceId) {
-        deviceId = crypto.randomUUID();
+        deviceId = generateUUID();
         localStorage.setItem(DEVICE_ID_KEY, deviceId);
     }
     return deviceId;

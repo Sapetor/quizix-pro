@@ -357,7 +357,7 @@ export class GameDisplayManager {
 
         // Clear multiple choice selections
         elements.multipleChoiceOptions.forEach(option => {
-            option.classList.remove('selected', 'correct', 'incorrect', 'disabled');
+            option.classList.remove('selected', 'correct', 'incorrect', 'disabled', 'correct-answer', 'correct-answer-highlight');
             option.disabled = false;
             option.style.border = '';
             option.style.backgroundColor = '';
@@ -366,7 +366,7 @@ export class GameDisplayManager {
 
         // Clear true/false selections
         elements.trueFalseOptions.forEach(option => {
-            option.classList.remove('selected', 'correct', 'incorrect', 'disabled');
+            option.classList.remove('selected', 'correct', 'incorrect', 'disabled', 'correct-answer', 'correct-answer-highlight');
             option.disabled = false;
             option.style.border = '';
             option.style.backgroundColor = '';

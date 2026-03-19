@@ -466,8 +466,8 @@ export class GameManager {
                 feedbackMessage += ` (+${earnedPoints} ${getTranslation('points')})`;
             }
 
-            // Extend display time if explanation is present
-            const displayDuration = explanation ? TIMING.RESULT_DISPLAY_DURATION + 2000 : TIMING.RESULT_DISPLAY_DURATION;
+            // No auto-dismiss when explanation is present — stays until next question or user tap
+            const displayDuration = explanation ? 0 : TIMING.RESULT_DISPLAY_DURATION;
 
             // Show modal feedback instead of inline feedback
             if (isCorrect) {
