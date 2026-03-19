@@ -1960,6 +1960,10 @@
                                     aria-label="Start the quiz game" data-translate-aria-label="start_game">
                                     <span data-translate="start_game">Start Game</span>
                                 </button>
+                                <div id="session-expected-count" class="hidden" style="font-size:0.85em; opacity:0.7; margin-top:8px;">
+                                    <span id="expected-player-count">0</span> <span data-i18n="players_expected">players expected</span>
+                                </div>
+                                <button id="release-session-btn" class="btn btn-secondary btn-sm hidden" data-i18n="release_players" style="margin-top:8px;">Release All Players</button>
                             </div>
                         </div>
                     </div>
@@ -2421,6 +2425,16 @@
                 <!-- Dynamically populated by LeaderboardManager -->
             </div>
             <button id="play-again" class="btn primary" data-translate="play_again">Play Again</button>
+        </div>
+    </div>
+
+    <!-- Session Waiting Screen -->
+    <div id="session-waiting-screen" class="screen hidden">
+        <div class="waiting-container" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; text-align:center; padding:20px;">
+            <div class="spinner" style="width:48px; height:48px; border:4px solid rgba(255,255,255,0.2); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:24px;"></div>
+            <h2 data-i18n="session_waiting_title" style="margin-bottom:8px;">Waiting for the next game...</h2>
+            <p data-i18n="session_waiting_subtitle" style="opacity:0.7; margin-bottom:32px;">The host will start a new game soon.</p>
+            <button id="leave-session-btn" class="btn btn-secondary" data-i18n="leave_session">Leave Session</button>
         </div>
     </div>
 

@@ -179,6 +179,23 @@ export class SocketManager {
                 logger.warn('Failed to store migration PIN:', e);
             }
 
+            // Store host session ID if server returned one
+            if (data.hostSessionId) {
+                try {
+                    localStorage.setItem('quizix_host_session_id', data.hostSessionId);
+                } catch (e) {
+                    logger.warn('Failed to store host session ID:', e);
+                }
+            }
+
+            // Show release button if host has an active session
+            const releaseBtn = document.getElementById('release-session-btn');
+            const countEl = document.getElementById('session-expected-count');
+            if (data.hostSessionId && releaseBtn) {
+                releaseBtn.classList.remove('hidden');
+            }
+            if (countEl) countEl.classList.add('hidden');
+
             this.uiManager.showScreen('game-lobby');
         });
 
@@ -856,6 +873,28 @@ export class SocketManager {
             dismissBtn.addEventListener('click', () => this._handleRejoinDismiss(), { signal });
         }
 
+        const leaveSessionBtn = this._getElement('leave-session-btn');
+        if (leaveSessionBtn) {
+            leaveSessionBtn.addEventListener('click', () => this.leaveSession(), { signal });
+        }
+
+        const releaseSessionBtn = this._getElement('release-session-btn');
+        if (releaseSessionBtn) {
+            releaseSessionBtn.addEventListener('click', () => {
+                try {
+                    const hostSessionId = localStorage.getItem('quizix_host_session_id');
+                    if (hostSessionId) {
+                        this.socket.emit('release-session', { hostSessionId });
+                        releaseSessionBtn.classList.add('hidden');
+                        const countEl = this._getElement('session-expected-count');
+                        if (countEl) countEl.classList.add('hidden');
+                    }
+                } catch (e) {
+                    logger.warn('Failed to release session:', e);
+                }
+            }, { signal });
+        }
+
         // Reconnection overlay "Return to Menu" button
         const returnBtn = this._getElement('reconnection-return-btn');
         if (returnBtn) {
@@ -1057,6 +1096,12 @@ export class SocketManager {
             // Clear migration data after use
             localStorage.removeItem('quizix_migration_pin');
             localStorage.removeItem('quizix_migration_token');
+
+            // Include host session ID if one exists (links this game to the host's session)
+            const hostSessionId = localStorage.getItem('quizix_host_session_id');
+            if (hostSessionId) {
+                quizData.hostSessionId = hostSessionId;
+            }
 
             this.socket.emit('host-join', quizData);
         } catch (error) {
