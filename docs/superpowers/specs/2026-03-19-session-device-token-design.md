@@ -184,7 +184,7 @@ All new client→server events must have Zod schemas in `validation-schemas.js` 
 - `validation-schemas.js` — add Zod schemas for new events, add `deviceId` to `player-join` schema, fix `player-joined` schema mismatch
 
 **Client:**
-- `public/js/network/socket-manager.js` — add `DEVICE_ID_KEY` and `SESSION_BINDING_KEY` constants, generate/store `deviceId` in localStorage, add `session-check` on fresh page load (not on reconnect), handle new events, store `{ deviceId, hostSessionId }` in localStorage under `SESSION_BINDING_KEY` on `player-joined`
+- `public/js/socket/socket-manager.js` — add `DEVICE_ID_KEY` and `SESSION_BINDING_KEY` constants, generate/store `deviceId` in localStorage, add `session-check` on fresh page load (not on reconnect), handle new events, store `{ deviceId, hostSessionId }` in localStorage under `SESSION_BINDING_KEY` on `player-joined`
 - `public/js/ui/screens/` — new waiting screen (or reuse existing screen with waiting state)
 - `public/js/ui/screens/host-lobby-screen.js` (or equivalent) — add "Release All Players" button, show expected player count
 - `public/index.html` — waiting screen markup
