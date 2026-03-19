@@ -32,7 +32,7 @@ class PlayerManagementService {
    * @param {Object} io - Socket.IO instance
    * @returns {Object} Result object with success status and optional error message
    */
-    handlePlayerJoin(socketId, pin, name, game, socket, io) {
+    handlePlayerJoin(socketId, pin, name, game, socket, io, deviceId = null) {
     // Validate input
         if (!pin || !name || typeof pin !== 'string' || typeof name !== 'string') {
             return {
@@ -93,9 +93,24 @@ class PlayerManagementService {
         const player = game.players.get(socketId);
         if (player) {
             player.sessionToken = sessionToken;
+            if (deviceId) {
+                player.deviceId = deviceId;
+            }
         }
 
         this.players.set(socketId, { gamePin: pin, name });
+
+        // Register device in host session if deviceId provided
+        if (deviceId) {
+            const session = this.getSessionByHostSocket(game.hostId);
+            if (session) {
+                this.registerDevice(session.hostSessionId, deviceId, name, socketId);
+            }
+        }
+
+        // Find hostSessionId for response
+        const session = this.getSessionByHostSocket(game.hostId);
+        const hostSessionId = session ? session.hostSessionId : null;
 
         // Join socket room
         socket.join(`game-${pin}`);
@@ -108,7 +123,8 @@ class PlayerManagementService {
             gamePin: pin,
             playerName: name,
             players: currentPlayers,
-            sessionToken
+            sessionToken,
+            hostSessionId
         });
 
         // Broadcast updated player list to all players in the game
@@ -207,6 +223,18 @@ class PlayerManagementService {
                 gamePlayer.disconnectedAt = Date.now();
                 gamePlayer.oldSocketId = socketId;
 
+                // Update session playerRegistry: mark device as disconnected
+                if (gamePlayer.deviceId) {
+                    const sessionId = this.deviceToSession.get(gamePlayer.deviceId);
+                    if (sessionId) {
+                        const hostSession = this.hostSessions.get(sessionId);
+                        if (hostSession) {
+                            const entry = hostSession.playerRegistry.get(gamePlayer.deviceId);
+                            if (entry) entry.socketId = null;
+                        }
+                    }
+                }
+
                 const sessionToken = gamePlayer.sessionToken;
 
                 // Set grace period timer (2 minutes) — after which, truly remove them
@@ -289,6 +317,18 @@ class PlayerManagementService {
                     disconnected: true,
                     removedAt: Date.now()
                 });
+
+                // Keep device in session for future game rejoins (don't unregisterDevice)
+                if (player.deviceId) {
+                    const sessionId = this.deviceToSession.get(player.deviceId);
+                    if (sessionId) {
+                        const hostSession = this.hostSessions.get(sessionId);
+                        if (hostSession) {
+                            const entry = hostSession.playerRegistry.get(player.deviceId);
+                            if (entry) entry.socketId = null;
+                        }
+                    }
+                }
 
                 game.removePlayer(playerId);
                 this.players.delete(playerId);
@@ -679,6 +719,10 @@ class PlayerManagementService {
             const newPlayer = newGame.players.get(playerId);
             if (newPlayer) {
                 newPlayer.sessionToken = sessionToken;
+                // Preserve deviceId from old player
+                if (player.deviceId) {
+                    newPlayer.deviceId = player.deviceId;
+                }
             }
 
             // Update player tracking map
@@ -687,12 +731,17 @@ class PlayerManagementService {
             // Collect for player list
             newPlayers.push({ id: playerId, name: player.name });
 
+            // Find hostSessionId for the new game
+            const session = this.getSessionByHostSocket(newGame.hostId);
+            const hostSessionId = session ? session.hostSessionId : null;
+
             // Notify the player
             socket.emit('player-joined', {
                 gamePin: newGame.pin,
                 playerName: player.name,
                 players: newPlayers,
-                sessionToken
+                sessionToken,
+                hostSessionId
             });
 
             migratedCount++;

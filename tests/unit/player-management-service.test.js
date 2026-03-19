@@ -478,4 +478,109 @@ describe('PlayerManagementService', () => {
             expect(playerService.deviceToSession.get('device-1')).toBe(session2.hostSessionId);
         });
     });
+
+    describe('handlePlayerJoin with deviceId', () => {
+        test('stores deviceId on game player object', () => {
+            const socket = createMockSocket();
+            const io = createMockIO();
+            const game = createMockGame();
+
+            const session = playerService.createOrGetSession(game.hostId);
+            session.currentGamePin = game.pin;
+
+            playerService.handlePlayerJoin(socket.id, '123456', 'Alice', game, socket, io, 'device-abc');
+
+            const player = game.players.get(socket.id);
+            expect(player.deviceId).toBe('device-abc');
+        });
+
+        test('registers device in host session when deviceId provided', () => {
+            const socket = createMockSocket();
+            const io = createMockIO();
+            const game = createMockGame();
+
+            const session = playerService.createOrGetSession(game.hostId);
+            session.currentGamePin = game.pin;
+
+            playerService.handlePlayerJoin(socket.id, '123456', 'Alice', game, socket, io, 'device-abc');
+
+            expect(session.playerRegistry.get('device-abc')).toEqual({ name: 'Alice', socketId: socket.id });
+        });
+
+        test('includes hostSessionId in player-joined emit', () => {
+            const socket = createMockSocket();
+            const io = createMockIO();
+            const game = createMockGame();
+
+            const session = playerService.createOrGetSession(game.hostId);
+            session.currentGamePin = game.pin;
+
+            playerService.handlePlayerJoin(socket.id, '123456', 'Alice', game, socket, io, 'device-abc');
+
+            expect(socket.emit).toHaveBeenCalledWith('player-joined', expect.objectContaining({
+                hostSessionId: session.hostSessionId
+            }));
+        });
+
+        test('works without deviceId (backward compatible)', () => {
+            const socket = createMockSocket();
+            const io = createMockIO();
+            const game = createMockGame();
+
+            const result = playerService.handlePlayerJoin(socket.id, '123456', 'Alice', game, socket, io);
+            expect(result.success).toBe(true);
+        });
+    });
+
+    describe('handlePlayerDisconnect with session', () => {
+        test('sets playerRegistry socketId to null on disconnect', () => {
+            const socket = createMockSocket();
+            const io = createMockIO();
+            const game = createMockGame('lobby');
+
+            const session = playerService.createOrGetSession(game.hostId);
+            session.currentGamePin = game.pin;
+
+            playerService.handlePlayerJoin(socket.id, '123456', 'Alice', game, socket, io, 'device-abc');
+
+            // Switch to question state after join so disconnect uses grace period path
+            game.gameState = 'question';
+
+            playerService.handlePlayerDisconnect(socket.id, game, io, false);
+
+            expect(session.playerRegistry.get('device-abc').socketId).toBeNull();
+        });
+    });
+
+    describe('_finalizePlayerRemoval with session', () => {
+        test('keeps deviceId in session playerRegistry after grace period removal', () => {
+            const socket = createMockSocket();
+            const io = createMockIO();
+            const game = createMockGame('lobby');
+            game.removedPlayers = [];
+
+            const session = playerService.createOrGetSession(game.hostId);
+            session.currentGamePin = game.pin;
+
+            playerService.handlePlayerJoin(socket.id, '123456', 'Alice', game, socket, io, 'device-abc');
+
+            // Switch to question state so _finalizePlayerRemoval doesn't bail out early
+            game.gameState = 'question';
+
+            // Get the sessionToken that was set during join
+            const player = game.players.get(socket.id);
+            const sessionToken = player.sessionToken;
+
+            // Mark as disconnected (simulating what handlePlayerDisconnect does)
+            player.disconnected = true;
+            player.disconnectedAt = Date.now();
+
+            playerService._finalizePlayerRemoval(sessionToken, game, io);
+
+            // Player removed from game, but device stays in session
+            expect(game.players.has(socket.id)).toBe(false);
+            expect(session.playerRegistry.has('device-abc')).toBe(true);
+            expect(session.playerRegistry.get('device-abc').socketId).toBeNull();
+        });
+    });
 });
