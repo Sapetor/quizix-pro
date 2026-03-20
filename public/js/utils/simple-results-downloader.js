@@ -30,7 +30,7 @@ export class SimpleResultsDownloader {
                 this.onResultsUpdated(data);
                 break;
             case 'downloadComplete':
-                showSuccessAlert(translationManager.getTranslationSync('downloaded_file', [data.downloadFilename]) || `Downloaded: ${data.downloadFilename}`);
+                showSuccessAlert('downloaded_file', [data.downloadFilename]);
                 break;
             case 'error':
                 logger.error('Service error:', data);

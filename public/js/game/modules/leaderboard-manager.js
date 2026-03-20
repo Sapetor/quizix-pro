@@ -192,6 +192,7 @@ export class LeaderboardManager {
         if (!leaderboardList) return;
 
         dom.clearContent('leaderboard-list');
+        const ptsLabel = translationManager.getTranslationSync('pts') || 'pts';
 
         leaderboard.forEach((player, index) => {
             const item = document.createElement('div');
@@ -206,7 +207,7 @@ export class LeaderboardManager {
 
             item.innerHTML = `
                 <span>${medal} ${escapeHtml(player.name)}</span>
-                <span>${player.score} ${translationManager.getTranslationSync('pts') || 'pts'}</span>
+                <span>${player.score} ${ptsLabel}</span>
             `;
 
             leaderboardList.appendChild(item);
@@ -345,6 +346,7 @@ export class LeaderboardManager {
         if (!leaderboardContainer) return;
 
         leaderboardContainer.innerHTML = '';
+        const ptsLabel = translationManager.getTranslationSync('pts') || 'pts';
 
         topPlayers.forEach((player, index) => {
             const item = document.createElement('div');
@@ -356,7 +358,7 @@ export class LeaderboardManager {
             item.innerHTML = `
                 <span class="medal">${medal}</span>
                 <span class="player-name">${escapeHtml(player.name)}</span>
-                <span class="player-score">${player.score} ${translationManager.getTranslationSync('pts') || 'pts'}</span>
+                <span class="player-score">${player.score} ${ptsLabel}</span>
             `;
 
             if (position === 1) item.classList.add('first');

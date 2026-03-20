@@ -822,7 +822,7 @@ export class AIUIHelpers {
         // Check if parser is available
         if (!excelQuestionParser.isAvailable()) {
             logger.error('XLSX library not loaded');
-            showAlert(translationManager.getTranslationSync('excel_lib_not_available') || 'Excel processing library not available', 'error');
+            showAlert('excel_lib_not_available');
             return;
         }
 
@@ -860,11 +860,11 @@ export class AIUIHelpers {
 
                 logger.debug('Excel converted to structured text for AI');
             } else {
-                throw new Error(translationManager.getTranslationSync('no_valid_excel_data') || 'No valid data found in Excel file');
+                throw new Error('No valid data found in Excel file');
             }
         } catch (error) {
             logger.error('Excel processing failed:', error);
-            showAlert(translationManager.getTranslationSync('failed_process_excel') || 'Failed to process Excel file: ' + error.message, 'error');
+            showAlert('failed_process_excel', [error.message]);
         }
     }
 }
