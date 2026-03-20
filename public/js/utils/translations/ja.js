@@ -1290,6 +1290,13 @@ export default {
     host_reconnected: 'ホストが再接続しました！',
     rejoin_timeout: '再接続がタイムアウトしました。新しいゲームに参加してください。',
 
+    // セッション/ロビー
+    players_expected: '人の参加予定',
+    release_players: '全プレイヤーを解放',
+    session_waiting_title: '次のゲームを待っています...',
+    session_waiting_subtitle: 'ホストがまもなく新しいゲームを開始します。',
+    leave_session: 'セッションを離れる',
+
     // Validation
     auth_check_failed: '権限の確認に失敗しました。もう一度お試しください。',
     invalid_correct_answer: '正解を選択してください',

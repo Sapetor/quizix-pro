@@ -1303,6 +1303,13 @@ export default {
     host_reconnected: 'Host reconnected!',
     rejoin_timeout: 'Reconnection timed out. Please join a new game.',
 
+    // Session/lobby
+    players_expected: 'players expected',
+    release_players: 'Release All Players',
+    session_waiting_title: 'Waiting for the next game...',
+    session_waiting_subtitle: 'The host will start a new game soon.',
+    leave_session: 'Leave Session',
+
     // Validation messages
     auth_check_failed: 'Unable to verify permissions. Please try again.',
     invalid_correct_answer: 'Please select a correct answer',

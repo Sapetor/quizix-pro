@@ -1297,6 +1297,13 @@ export default {
     host_reconnected: 'Hôte reconnecté !',
     rejoin_timeout: 'Délai de reconnexion expiré. Rejoignez une nouvelle partie.',
 
+    // Session/lobby
+    players_expected: 'joueurs attendus',
+    release_players: 'Libérer Tous les Joueurs',
+    session_waiting_title: 'En attente de la prochaine partie...',
+    session_waiting_subtitle: 'L\'hôte commencera bientôt une nouvelle partie.',
+    leave_session: 'Quitter la Session',
+
     // Validation
     auth_check_failed: 'Impossible de vérifier les permissions. Veuillez réessayer.',
     invalid_correct_answer: 'Veuillez sélectionner une réponse correcte',

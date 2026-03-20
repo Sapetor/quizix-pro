@@ -1306,6 +1306,13 @@ export default {
     host_reconnected: 'Gospodarz ponownie połączony!',
     rejoin_timeout: 'Upłynął czas ponownego połączenia. Dołącz do nowej gry.',
 
+    // Sesja/lobby
+    players_expected: 'oczekiwanych graczy',
+    release_players: 'Zwolnij Wszystkich Graczy',
+    session_waiting_title: 'Oczekiwanie na następną grę...',
+    session_waiting_subtitle: 'Gospodarz wkrótce rozpocznie nową grę.',
+    leave_session: 'Opuść Sesję',
+
     // Validation
     auth_check_failed: 'Nie udało się zweryfikować uprawnień. Spróbuj ponownie.',
     invalid_correct_answer: 'Wybierz poprawną odpowiedź',

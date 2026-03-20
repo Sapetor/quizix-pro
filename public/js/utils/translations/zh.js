@@ -1289,6 +1289,13 @@ export default {
     host_reconnected: '主持人已重新连接！',
     rejoin_timeout: '重新连接超时。请加入新游戏。',
 
+    // 会话/大厅
+    players_expected: '位预期玩家',
+    release_players: '释放所有玩家',
+    session_waiting_title: '等待下一场游戏...',
+    session_waiting_subtitle: '主持人即将开始新游戏。',
+    leave_session: '离开会话',
+
     // Validation
     auth_check_failed: '无法验证权限。请重试。',
     invalid_correct_answer: '请选择正确答案',

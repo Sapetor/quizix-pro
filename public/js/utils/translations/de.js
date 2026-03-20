@@ -1292,6 +1292,13 @@ export default {
     host_reconnected: 'Host wieder verbunden!',
     rejoin_timeout: 'Wiederverbindung abgelaufen. Bitte einem neuen Spiel beitreten.',
 
+    // Sitzung/Lobby
+    players_expected: 'erwartete Spieler',
+    release_players: 'Alle Spieler Freigeben',
+    session_waiting_title: 'Warte auf das nächste Spiel...',
+    session_waiting_subtitle: 'Der Host wird bald ein neues Spiel starten.',
+    leave_session: 'Sitzung Verlassen',
+
     // Validation
     auth_check_failed: 'Berechtigungen konnten nicht überprüft werden. Bitte versuchen Sie es erneut.',
     invalid_correct_answer: 'Bitte wählen Sie eine richtige Antwort',

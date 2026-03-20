@@ -1279,6 +1279,13 @@ export default {
     host_reconnected: 'Anfitrião reconectado!',
     rejoin_timeout: 'Tempo de reconexão esgotado. Entre em um novo jogo.',
 
+    // Sessão/lobby
+    players_expected: 'jogadores esperados',
+    release_players: 'Liberar Todos os Jogadores',
+    session_waiting_title: 'Aguardando o próximo jogo...',
+    session_waiting_subtitle: 'O anfitrião iniciará um novo jogo em breve.',
+    leave_session: 'Sair da Sessão',
+
     // Validation
     auth_check_failed: 'Não foi possível verificar as permissões. Tente novamente.',
     invalid_correct_answer: 'Selecione uma resposta correta',

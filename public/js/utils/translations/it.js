@@ -1280,6 +1280,13 @@ export default {
     host_reconnected: 'Host riconnesso!',
     rejoin_timeout: 'Tempo di riconnessione scaduto. Entra in una nuova partita.',
 
+    // Sessione/lobby
+    players_expected: 'giocatori previsti',
+    release_players: 'Rilascia Tutti i Giocatori',
+    session_waiting_title: 'In attesa della prossima partita...',
+    session_waiting_subtitle: 'L\'host inizierà presto una nuova partita.',
+    leave_session: 'Lascia la Sessione',
+
     // Validation
     auth_check_failed: 'Impossibile verificare i permessi. Riprova.',
     invalid_correct_answer: 'Seleziona una risposta corretta',
