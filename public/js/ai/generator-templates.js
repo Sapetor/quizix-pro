@@ -197,9 +197,9 @@ export function buildChoiceEditHtml(question, questionIndex) {
 export function buildNumericEditHtml(question) {
     return `
         <div class="ai-edit-option-row">
-            <label>Answer:</label>
+            <label>${translationManager.getTranslationSync('answer_label') || 'Answer:'}</label>
             <input type="number" class="ai-edit-field ai-edit-numeric" value="${escapeHtml(String(question.correctAnswer))}" step="any">
-            <label>Tolerance:</label>
+            <label>${translationManager.getTranslationSync('tolerance_label') || 'Tolerance:'}</label>
             <input type="number" class="ai-edit-field ai-edit-tolerance" value="${escapeHtml(String(question.tolerance || 0))}" step="any">
         </div>
     `;

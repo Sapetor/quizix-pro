@@ -4,7 +4,7 @@
  * Extracted from game-manager.js for modularity
  */
 
-import { getTranslation } from '../../utils/translation-manager.js';
+import { getTranslation, translationManager } from '../../utils/translation-manager.js';
 import { logger, ANIMATION, TIMING, COLORS } from '../../core/config.js';
 import { dom, escapeHtml } from '../../utils/dom.js';
 import { simpleResultsDownloader } from '../../utils/simple-results-downloader.js';
@@ -206,7 +206,7 @@ export class LeaderboardManager {
 
             item.innerHTML = `
                 <span>${medal} ${escapeHtml(player.name)}</span>
-                <span>${player.score} pts</span>
+                <span>${player.score} ${translationManager.getTranslationSync('pts') || 'pts'}</span>
             `;
 
             leaderboardList.appendChild(item);
@@ -356,7 +356,7 @@ export class LeaderboardManager {
             item.innerHTML = `
                 <span class="medal">${medal}</span>
                 <span class="player-name">${escapeHtml(player.name)}</span>
-                <span class="player-score">${player.score} pts</span>
+                <span class="player-score">${player.score} ${translationManager.getTranslationSync('pts') || 'pts'}</span>
             `;
 
             if (position === 1) item.classList.add('first');

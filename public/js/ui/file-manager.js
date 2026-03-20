@@ -179,7 +179,7 @@ export class FileManager {
         } catch (error) {
             if (error.message !== 'Cancelled') {
                 logger.error('Action failed:', error);
-                this.showToast(error.message || 'Action failed', 'error');
+                this.showToast(error.message || t('action_failed') || 'Action failed', 'error');
             }
         }
     }
@@ -290,7 +290,7 @@ export class FileManager {
         const folders = this.getFolderList();
 
         // Simple prompt-based selection (could be enhanced with a custom modal)
-        let options = ['/ (Root)'];
+        let options = [t('root_folder') || '/ (Root)'];
         folders.forEach((f, i) => {
             options.push(`${i + 1}. ${f.path}`);
         });

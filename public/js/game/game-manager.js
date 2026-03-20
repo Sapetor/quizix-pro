@@ -852,7 +852,7 @@ export class GameManager {
         const indicator = dom.get('disconnected-indicator');
         if (indicator) {
             if (disconnected > 0) {
-                indicator.textContent = `(${disconnected} disconnected)`;
+                indicator.textContent = translationManager.getTranslationSync('disconnected_count', [disconnected]) || `(${disconnected} disconnected)`;
                 indicator.classList.remove('hidden');
             } else {
                 indicator.classList.add('hidden');
@@ -1848,7 +1848,7 @@ export class GameManager {
                     container.innerHTML = `
                         <div class="error-state">
                             <p>⚠️ ${getTranslation('question_load_error')}</p>
-                            <p>Please wait for the next question...</p>
+                            <p>${translationManager.getTranslationSync('please_wait_next_question') || 'Please wait for the next question...'}</p>
                         </div>
                     `;
                 }
@@ -1875,7 +1875,7 @@ export class GameManager {
 
                 const messageElement = dom.get('feedback-message');
                 if (messageElement) {
-                    messageElement.textContent = '⚠️ Result display error';
+                    messageElement.textContent = '⚠️ ' + (translationManager.getTranslationSync('result_display_error') || 'Result display error');
                 }
 
                 // Hide after delay and clean up

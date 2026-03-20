@@ -834,7 +834,7 @@ export class SocketManager {
             this.gameManager.updatePlayersList(data.players);
 
             if (window.toastNotifications) {
-                window.toastNotifications.show('Reconnected as host!', 'success', 2000);
+                window.toastNotifications.show(translationManager.getTranslationSync('reconnected_as_host') || 'Reconnected as host!', 'success', 2000);
             }
         });
 
@@ -954,7 +954,7 @@ export class SocketManager {
                 this.uiManager.showScreen('main-menu');
             }
             if (window.toastNotifications) {
-                window.toastNotifications.show('Host ended the session', 'info', 3000);
+                window.toastNotifications.show(translationManager.getTranslationSync('host_ended_session') || 'Host ended the session', 'info', 3000);
             }
         });
 

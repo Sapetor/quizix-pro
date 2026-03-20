@@ -208,8 +208,8 @@ export class PreviewRenderer {
             errorMsg.className = 'image-error';
             errorMsg.innerHTML = `
                 <div class="error-icon">🖼️</div>
-                <div class="error-text">Image failed to load</div>
-                <div class="error-details">Check if the image file exists</div>
+                <div class="error-text">${translationManager.getTranslationSync('image_failed_to_load') || 'Image failed to load'}</div>
+                <div class="error-details">${translationManager.getTranslationSync('check_image_exists') || 'Check if the image file exists'}</div>
             `;
             imageDisplay.appendChild(errorMsg);
         }

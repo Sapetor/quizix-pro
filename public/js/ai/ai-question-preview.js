@@ -212,7 +212,7 @@ export class AIQuestionPreview {
                         const badge = document.createElement('span');
                         badge.className = 'ai-format-warning-badge';
                         badge.textContent = warning;
-                        badge.title = 'Expected formatting not detected in this question';
+                        badge.title = translationManager.getTranslationSync('formatting_not_detected') || 'Expected formatting not detected in this question';
                         badgesContainer.appendChild(badge);
                     });
                 }
@@ -430,7 +430,7 @@ export class AIQuestionPreview {
 
         // Re-render the question
         this.cancelEditMode(index);
-        toastNotifications.success('Question updated');
+        toastNotifications.success(translationManager.getTranslationSync('ai_question_updated') || 'Question updated');
     }
 
     /**
@@ -498,13 +498,13 @@ export class AIQuestionPreview {
                 const newItem = this.renderPreviewQuestion(newQuestion, index);
                 item.replaceWith(newItem);
 
-                toastNotifications.success('Question regenerated');
+                toastNotifications.success(translationManager.getTranslationSync('question_regenerated') || 'Question regenerated');
             } else {
                 throw new Error('Failed to generate replacement question');
             }
         } catch (error) {
             logger.error('Regenerate single question failed:', error);
-            toastNotifications.error('Failed to regenerate: ' + error.message);
+            toastNotifications.error(translationManager.getTranslationSync('failed_to_regenerate', [error.message]) || `Failed to regenerate: ${error.message}`);
 
             // Restore button
             if (regenerateBtn) {

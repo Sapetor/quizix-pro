@@ -30,7 +30,7 @@ export class SimpleResultsDownloader {
                 this.onResultsUpdated(data);
                 break;
             case 'downloadComplete':
-                showSuccessAlert(`Downloaded: ${data.downloadFilename}`);
+                showSuccessAlert(translationManager.getTranslationSync('downloaded_file', [data.downloadFilename]) || `Downloaded: ${data.downloadFilename}`);
                 break;
             case 'error':
                 logger.error('Service error:', data);
@@ -201,7 +201,7 @@ export class SimpleResultsDownloader {
      * Format date for display
      */
     formatDate(dateString) {
-        if (!dateString) return 'Unknown';
+        if (!dateString) return translationManager.getTranslationSync('unknown') || 'Unknown';
 
         try {
             const date = new Date(dateString);

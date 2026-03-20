@@ -249,7 +249,7 @@ export class QuizGame {
         if (webpStoragePath) {
             imageElement.dataset.webpUrl = webpStoragePath;
         }
-        imageElement.alt = 'Question Image';
+        imageElement.alt = translationManager.getTranslationSync('question_image_alt') || 'Question Image';
 
         // Show the preview
         show(imagePreview, 'visible-block');
@@ -1559,7 +1559,7 @@ export class QuizGame {
         if (playerNameInput && !playerNameInput.value) {
             // Generate a random player number between 1-999
             const playerNumber = Math.floor(Math.random() * LIMITS.MAX_PLAYER_NUMBER) + 1;
-            const defaultName = `Player${playerNumber}`;
+            const defaultName = `${translationManager.getTranslationSync('default_player_name') || 'Player'}${playerNumber}`;
             playerNameInput.value = defaultName;
         }
     }

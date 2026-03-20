@@ -311,7 +311,7 @@ export class AIUIHelpers {
                     const apiKeyInput = dom.get('ai-api-key');
                     if (apiKeyInput) {
                         apiKeyInput.value = '';
-                        apiKeyInput.placeholder = 'Enter your API key';
+                        apiKeyInput.placeholder = translationManager.getTranslationSync('enter_api_key_placeholder') || 'Enter your API key';
                     }
                 } else {
                     apiKeySection.classList.add('hidden');
@@ -408,7 +408,9 @@ export class AIUIHelpers {
 
             if (toastNotifications) {
                 toastNotifications.show(
-                    enabled ? `Ollama: ${config.url}` : 'Ollama disabled',
+                    enabled
+                        ? (translationManager.getTranslationSync('ollama_config_saved', [config.url]) || `Ollama: ${config.url}`)
+                        : (translationManager.getTranslationSync('ollama_disabled') || 'Ollama disabled'),
                     enabled ? 'success' : 'info',
                     3000
                 );
@@ -419,7 +421,7 @@ export class AIUIHelpers {
         } catch (e) {
             logger.error('Failed to save Ollama config:', e);
             if (toastNotifications) {
-                toastNotifications.show('Failed to save Ollama config', 'error', 3000);
+                toastNotifications.show(translationManager.getTranslationSync('ollama_failed_save') || 'Failed to save Ollama config', 'error', 3000);
             }
         }
     }
@@ -440,7 +442,7 @@ export class AIUIHelpers {
             }
 
             // Set loading state
-            modelSelect.innerHTML = '<option value="">\u{1F504} Loading models...</option>';
+            modelSelect.innerHTML = `<option value="">\u{1F504} ${translationManager.getTranslationSync('loading_models') || 'Loading models...'}</option>`;
             modelSelect.disabled = true;
 
             try {
@@ -463,7 +465,7 @@ export class AIUIHelpers {
                 modelSelect.innerHTML = '';
 
                 if (models.length === 0) {
-                    modelSelect.innerHTML = '<option value="">No models found</option>';
+                    modelSelect.innerHTML = `<option value="">${translationManager.getTranslationSync('no_models_found') || 'No models found'}</option>`;
                 } else {
                     models.forEach(model => {
                         const option = document.createElement('option');
@@ -820,7 +822,7 @@ export class AIUIHelpers {
         // Check if parser is available
         if (!excelQuestionParser.isAvailable()) {
             logger.error('XLSX library not loaded');
-            showAlert('Excel processing library not available', 'error');
+            showAlert(translationManager.getTranslationSync('excel_lib_not_available') || 'Excel processing library not available', 'error');
             return;
         }
 
@@ -858,11 +860,11 @@ export class AIUIHelpers {
 
                 logger.debug('Excel converted to structured text for AI');
             } else {
-                throw new Error('No valid data found in Excel file');
+                throw new Error(translationManager.getTranslationSync('no_valid_excel_data') || 'No valid data found in Excel file');
             }
         } catch (error) {
             logger.error('Excel processing failed:', error);
-            showAlert('Failed to process Excel file: ' + error.message, 'error');
+            showAlert(translationManager.getTranslationSync('failed_process_excel') || 'Failed to process Excel file: ' + error.message, 'error');
         }
     }
 }
