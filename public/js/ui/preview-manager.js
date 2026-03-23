@@ -9,6 +9,7 @@ import { MathRenderer } from '../utils/math-renderer.js';
 import { simpleMathJaxService } from '../utils/simple-mathjax-service.js';
 import { SplitLayoutManager } from './modules/split-layout-manager.js';
 import { PreviewRenderer } from './modules/preview-renderer.js';
+import { lockBodyScroll, unlockBodyScroll } from '../utils/modal-utils.js';
 import { logger, TIMING } from '../core/config.js';
 
 // Use faster debounce for preview responsiveness
@@ -675,14 +676,9 @@ export class PreviewManager {
             preview.classList.add('hidden');
         });
 
-        // Store original body styles to restore later
-        const body = document.body;
-        this.originalBodyOverflow = body.style.overflow;
-        this.originalBodyHeight = body.style.height;
-
         // Prevent body scrolling while preview is active
-        body.style.overflow = 'hidden';
-        body.style.height = '100vh';
+        lockBodyScroll();
+        document.body.style.height = '100vh';
 
         // Create or show mobile preview container as full-screen overlay
         this.createMobilePreviewContainer();
@@ -712,14 +708,9 @@ export class PreviewManager {
             this.hiddenElements = null;
         }
 
-        // Restore original body styles
-        const body = document.body;
-        if (this.originalBodyOverflow !== undefined) {
-            body.style.overflow = this.originalBodyOverflow;
-        }
-        if (this.originalBodyHeight !== undefined) {
-            body.style.height = this.originalBodyHeight;
-        }
+        // Restore body styles
+        unlockBodyScroll();
+        document.body.style.height = '';
 
         // Remove mobile preview overlay container (also cleans up its event listeners)
         document.getElementById('mobile-preview-container')?.remove();

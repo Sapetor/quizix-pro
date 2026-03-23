@@ -5,6 +5,7 @@
 
 import { logger } from '../core/config.js';
 import { dom } from './dom.js';
+import { lockBodyScroll, unlockBodyScroll } from './modal-utils.js';
 
 // Animation and gesture timing constants
 const SHEET_OPEN_DELAY_MS = 10;
@@ -72,7 +73,7 @@ function showMobileQuizSheet() {
     }
 
     // Prevent body scroll when sheet is open
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll();
 }
 
 /**
@@ -106,7 +107,7 @@ function hideMobileQuizSheet() {
     mobileQuizSheetVisible = false;
 
     // Restore body scroll
-    document.body.style.overflow = '';
+    unlockBodyScroll();
 }
 
 /**

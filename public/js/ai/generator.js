@@ -18,6 +18,8 @@ import { setItem } from '../utils/storage-utils.js';
 import {
     openModal,
     closeModal,
+    lockBodyScroll,
+    unlockBodyScroll,
     bindOverlayClose,
     bindEscapeClose,
     getModal
@@ -881,7 +883,7 @@ export class AIQuestionGenerator {
 
         const closeModalFn = () => {
             modal.remove();
-            document.body.style.overflow = '';
+            unlockBodyScroll();
         };
 
         if (okBtn) {
@@ -899,7 +901,7 @@ export class AIQuestionGenerator {
             }
         });
 
-        document.body.style.overflow = 'hidden';
+        lockBodyScroll();
         logger.debug('Simple error popup displayed');
     }
 }

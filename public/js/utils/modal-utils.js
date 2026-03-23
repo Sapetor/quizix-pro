@@ -12,6 +12,27 @@
 import { logger } from '../core/config.js';
 
 /**
+ * Reference-counted body scroll lock.
+ * Multiple modals/overlays can request a lock; scroll is only restored
+ * when every requester has released.
+ */
+let scrollLockCount = 0;
+
+export function lockBodyScroll() {
+    scrollLockCount++;
+    if (scrollLockCount === 1) {
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+export function unlockBodyScroll() {
+    scrollLockCount = Math.max(0, scrollLockCount - 1);
+    if (scrollLockCount === 0) {
+        document.body.style.overflow = '';
+    }
+}
+
+/**
  * Modal display modes
  */
 export const MODAL_MODES = {
@@ -47,7 +68,7 @@ export function openModal(modal, options = {}) {
     }
 
     if (lockScroll) {
-        document.body.style.overflow = 'hidden';
+        lockBodyScroll();
     }
 
     logger.debug('Modal opened:', modal.id || 'unnamed');
@@ -81,7 +102,7 @@ export function closeModal(modal, options = {}) {
     }
 
     if (unlockScroll) {
-        document.body.style.overflow = '';
+        unlockBodyScroll();
     }
 
     logger.debug('Modal closed:', modal.id || 'unnamed');
@@ -266,6 +287,8 @@ export default {
     openModal,
     closeModal,
     isModalOpen,
+    lockBodyScroll,
+    unlockBodyScroll,
     bindOverlayClose,
     unbindOverlayClose,
     bindEscapeClose,
