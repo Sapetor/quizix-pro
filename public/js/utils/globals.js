@@ -541,6 +541,7 @@ function syncSettingsToModal() {
 
     // Scoring options
     syncCheckbox('time-bonus-enabled', 'modal-time-bonus-enabled');
+    syncInput('time-bonus-threshold', 'modal-time-bonus-threshold');
     syncCheckbox('show-score-breakdown', 'modal-show-score-breakdown');
     syncInput('easy-multiplier', 'modal-easy-multiplier');
     syncInput('medium-multiplier', 'modal-medium-multiplier');
@@ -571,6 +572,7 @@ function syncSettingsFromModal() {
 
     // Scoring options
     syncCheckbox('modal-time-bonus-enabled', 'time-bonus-enabled');
+    syncInput('modal-time-bonus-threshold', 'time-bonus-threshold');
     syncCheckbox('modal-show-score-breakdown', 'show-score-breakdown');
     syncInput('modal-easy-multiplier', 'easy-multiplier');
     syncInput('modal-medium-multiplier', 'medium-multiplier');

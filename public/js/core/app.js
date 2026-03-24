@@ -600,7 +600,7 @@ export class QuizGame {
         const manualAdvancement = dom.get('manual-advancement')?.checked;
         const powerUpsEnabled = dom.get('enable-power-ups')?.checked || false;
 
-        // Get scoring configuration (per-game session, not saved to quiz file)
+        // Get scoring configuration (saved to quiz file + used per-game session)
         // timeBonusThreshold: convert seconds to milliseconds (0 = disabled)
         const thresholdSeconds = parseInt(dom.get('time-bonus-threshold')?.value) || 0;
         const scoringConfig = {
@@ -1288,7 +1288,7 @@ export class QuizGame {
             if (randomizeA) questions = randomizeAnswers(questions);
             if (sameTime) questions.forEach(q => { q.time = qTime; });
 
-            const scoringConfig = data.scoringConfig ?? {
+            const scoringConfig = s.scoringConfig ?? {
                 timeBonusEnabled: true,
                 timeBonusThreshold: 0,
                 difficultyMultipliers: { easy: 1, medium: 2, hard: 3 }

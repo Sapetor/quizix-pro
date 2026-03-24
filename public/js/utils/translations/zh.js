@@ -549,16 +549,18 @@ export default {
 
     // Scoring Settings
     scoring_settings: '📊 计分设置',
-    enable_time_bonus: '启用时间奖励（越快越高分）',
+    enable_time_bonus: '启用时间奖励',
+    time_bonus_help: '开启时，回答越快得分越高（简单最多+1000，中等+2000，困难+3000）。关闭时，所有正确答案获得相同的基础分数，与速度无关。',
     show_score_breakdown: '显示分数明细（主持人视图）',
     difficulty_multipliers: '难度倍数：',
+    difficulty_multipliers_help: '每个正确答案的基础分 = 100 × 倍数。例：简单 ×1 = 100分，中等 ×2 = 200分，困难 ×3 = 300分。时间奖励也随倍数缩放。',
     scoring: '计分：',
     base: '基础',
     time_bonus: '时间奖励',
     enabled: '开',
     disabled: '关',
-    time_bonus_threshold: '满分阈值：',
-    time_bonus_threshold_hint: '（0 = 禁用，在阈值内作答可获得满分奖励）',
+    time_bonus_threshold: '均等得分窗口：',
+    time_bonus_threshold_help: '如果设置大于0，在此秒数内回答的所有玩家获得满额奖励——没有速度优势。超过此窗口后，奖励线性递减。设为0则从一开始就奖励速度。',
     seconds_short: '秒',
     max_within: '内满分',
 

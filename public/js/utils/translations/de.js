@@ -569,16 +569,18 @@ export default {
 
     // Scoring Settings
     scoring_settings: '📊 Punkteeinstellungen',
-    enable_time_bonus: 'Zeitbonus aktivieren (schneller = mehr Punkte)',
+    enable_time_bonus: 'Zeitbonus aktivieren',
+    time_bonus_help: 'Wenn AN, bringen schnellere Antworten mehr Punkte (bis zu +1000 leicht, +2000 mittel, +3000 schwer). Wenn AUS, erhalten alle richtigen Antworten die gleichen Basispunkte unabhängig von der Geschwindigkeit.',
     show_score_breakdown: 'Punkteaufschlüsselung anzeigen (Host-Ansicht)',
     difficulty_multipliers: 'Schwierigkeitsmultiplikatoren:',
+    difficulty_multipliers_help: 'Basispunkte pro richtige Antwort = 100 × Multiplikator. Z.B. Leicht ×1 = 100 Pkt, Mittel ×2 = 200 Pkt, Schwer ×3 = 300 Pkt. Der Zeitbonus skaliert ebenfalls mit dem Multiplikator.',
     scoring: 'Punkte:',
     base: 'Basis',
     time_bonus: 'Zeitbonus',
     enabled: 'AN',
     disabled: 'AUS',
-    time_bonus_threshold: 'Maximalpunkte-Schwelle:',
-    time_bonus_threshold_hint: '(0 = deaktiviert, Antworten innerhalb der Schwelle erhalten max. Bonus)',
+    time_bonus_threshold: 'Gleichpunkte-Fenster:',
+    time_bonus_threshold_help: 'Wenn über 0, erhalten alle Spieler die innerhalb dieser Sekunden antworten den vollen Bonus — kein Geschwindigkeitsvorteil. Nach diesem Fenster nimmt der Bonus linear ab. Auf 0 setzen um Geschwindigkeit von Anfang an zu belohnen.',
     seconds_short: 'Sek',
     max_within: 'max in',
 

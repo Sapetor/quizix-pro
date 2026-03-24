@@ -6323,10 +6323,12 @@ html {
     color: var(--text-muted, #9ca3af);
 }
 
-.threshold-hint {
+.scoring-help-text {
     font-size: 0.75rem;
+    line-height: 1.4;
     color: var(--text-muted, #9ca3af);
-    font-style: italic;
+    margin: 0.15rem 0 0.5rem;
+    padding: 0;
 }
 
 [data-theme="light"] .threshold-label input[type="number"] {

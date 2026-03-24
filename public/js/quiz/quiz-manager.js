@@ -241,7 +241,16 @@ export class QuizManager {
             consensusMode: dom.get('consensus-mode')?.checked ?? false,
             consensusThreshold: dom.get('consensus-threshold')?.value ?? '66',
             discussionTime: parseInt(dom.get('discussion-time')?.value) || 30,
-            allowChat: dom.get('allow-chat')?.checked ?? false
+            allowChat: dom.get('allow-chat')?.checked ?? false,
+            scoringConfig: {
+                timeBonusEnabled: dom.get('time-bonus-enabled')?.checked ?? true,
+                timeBonusThreshold: parseInt(dom.get('time-bonus-threshold')?.value) || 0,
+                difficultyMultipliers: {
+                    easy: parseFloat(dom.get('easy-multiplier')?.value) || 1,
+                    medium: parseFloat(dom.get('medium-multiplier')?.value) || 2,
+                    hard: parseFloat(dom.get('hard-multiplier')?.value) || 3
+                }
+            }
         };
     }
 
@@ -263,6 +272,19 @@ export class QuizManager {
         setValue('consensus-threshold', settings.consensusThreshold ?? '66');
         setValue('discussion-time', settings.discussionTime ?? 30);
         setChecked('allow-chat', settings.allowChat);
+
+        // Restore scoring config (backward-compatible: missing = defaults)
+        const sc = settings.scoringConfig;
+        if (sc) {
+            setChecked('time-bonus-enabled', sc.timeBonusEnabled ?? true);
+            setValue('time-bonus-threshold', sc.timeBonusThreshold ?? 0);
+            const dm = sc.difficultyMultipliers;
+            if (dm) {
+                setValue('easy-multiplier', dm.easy ?? 1);
+                setValue('medium-multiplier', dm.medium ?? 2);
+                setValue('hard-multiplier', dm.hard ?? 3);
+            }
+        }
 
         logger.debug('Game settings restored from quiz file');
     }

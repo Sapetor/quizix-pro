@@ -583,16 +583,18 @@ export default {
 
     // Scoring Settings
     scoring_settings: '📊 Paramètres de Score',
-    enable_time_bonus: 'Activer le bonus de temps (plus rapide = plus de points)',
+    enable_time_bonus: 'Activer le bonus de temps',
+    time_bonus_help: 'Si activé, les réponses rapides rapportent plus de points (jusqu\'à +1000 facile, +2000 moyen, +3000 difficile). Si désactivé, toutes les bonnes réponses rapportent les mêmes points de base quelle que soit la vitesse.',
     show_score_breakdown: 'Afficher le détail du score (vue hôte)',
     difficulty_multipliers: 'Multiplicateurs de Difficulté :',
+    difficulty_multipliers_help: 'Points de base par bonne réponse = 100 × multiplicateur. Ex : Facile ×1 = 100 pts, Moyen ×2 = 200 pts, Difficile ×3 = 300 pts. Le bonus de temps évolue aussi avec le multiplicateur.',
     scoring: 'Score :',
     base: 'Base',
     time_bonus: 'Bonus de temps',
     enabled: 'ON',
     disabled: 'OFF',
-    time_bonus_threshold: 'Seuil de points max :',
-    time_bonus_threshold_hint: '(0 = désactivé, réponses dans le seuil obtiennent bonus max)',
+    time_bonus_threshold: 'Fenêtre de points égaux :',
+    time_bonus_threshold_help: 'Si supérieur à 0, tous les joueurs qui répondent dans ce délai obtiennent le bonus maximum — pas d\'avantage de vitesse. Après cette fenêtre, le bonus diminue linéairement. Mettez 0 pour récompenser la vitesse dès le départ.',
     seconds_short: 'sec',
     max_within: 'max en',
 

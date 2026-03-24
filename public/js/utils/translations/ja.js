@@ -554,16 +554,18 @@ export default {
 
     // Scoring Settings
     scoring_settings: '📊 スコア設定',
-    enable_time_bonus: 'タイムボーナスを有効にする（速い＝高得点）',
+    enable_time_bonus: 'タイムボーナスを有効にする',
+    time_bonus_help: 'ONの場合、速い回答ほど多くのポイントを獲得（簡単+1000、普通+2000、難しい+3000まで）。OFFの場合、すべての正解は速度に関係なく同じ基本ポイントを獲得。',
     show_score_breakdown: 'スコア内訳を表示（ホスト画面）',
     difficulty_multipliers: '難易度倍率:',
+    difficulty_multipliers_help: '正解あたりの基本ポイント = 100 × 倍率。例：簡単 ×1 = 100点、普通 ×2 = 200点、難しい ×3 = 300点。タイムボーナスも倍率に応じてスケール。',
     scoring: 'スコア:',
     base: '基本',
     time_bonus: 'タイムボーナス',
     enabled: 'オン',
     disabled: 'オフ',
-    time_bonus_threshold: '最大ポイントしきい値:',
-    time_bonus_threshold_hint: '(0 = 無効、しきい値内の回答は最大ボーナス)',
+    time_bonus_threshold: '均等ポイント枠：',
+    time_bonus_threshold_help: '0より大きい場合、この秒数以内に回答した全プレイヤーがフルボーナスを獲得 — 速度の優位性なし。この枠を過ぎるとボーナスは直線的に減少。0に設定すると最初から速度を重視。',
     seconds_short: '秒',
     max_within: '以内で最大',
 

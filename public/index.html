@@ -1074,18 +1074,17 @@
                                     <div class="scoring-options">
                                         <label class="scoring-option">
                                             <input type="checkbox" id="time-bonus-enabled" checked>
-                                            <span data-translate="enable_time_bonus">Enable time bonus (faster = more
-                                                points)</span>
+                                            <span data-translate="enable_time_bonus">Enable time bonus</span>
                                         </label>
+                                        <p class="scoring-help-text" data-translate="time_bonus_help">When ON, faster answers earn more points (up to +1000 for easy, +2000 medium, +3000 hard). When OFF, all correct answers earn the same flat base points regardless of speed.</p>
                                         <div class="time-bonus-threshold-container">
                                             <label class="threshold-label">
-                                                <span data-translate="time_bonus_threshold">Max points threshold:</span>
+                                                <span data-translate="time_bonus_threshold">Equal-points window:</span>
                                                 <input type="number" id="time-bonus-threshold" value="0" min="0"
                                                     max="30" step="1">
                                                 <span class="threshold-unit" data-translate="seconds_short">sec</span>
                                             </label>
-                                            <span class="threshold-hint" data-translate="time_bonus_threshold_hint">(0 =
-                                                disabled, answers within threshold get max bonus)</span>
+                                            <p class="scoring-help-text" data-translate="time_bonus_threshold_help">If set above 0, all players who answer within this many seconds get full bonus — no speed advantage. After this window, the bonus decreases linearly. Set to 0 to reward speed from the start.</p>
                                         </div>
                                         <label class="scoring-option host-breakdown-option">
                                             <input type="checkbox" id="show-score-breakdown" checked>
@@ -1095,6 +1094,7 @@
                                         <div class="difficulty-multipliers">
                                             <span class="multipliers-label"
                                                 data-translate="difficulty_multipliers">Difficulty Multipliers:</span>
+                                            <p class="scoring-help-text" data-translate="difficulty_multipliers_help">Base points per correct answer = 100 × multiplier. E.g. Easy ×1 = 100 pts, Medium ×2 = 200 pts, Hard ×3 = 300 pts. Time bonus also scales with the multiplier.</p>
                                             <div class="multiplier-inputs">
                                                 <label class="multiplier-input">
                                                     <span data-translate="easy">Easy</span>
@@ -1877,8 +1877,17 @@
                     <h4 data-translate="scoring_settings">Scoring Settings</h4>
                     <label>
                         <input type="checkbox" id="modal-time-bonus-enabled" checked>
-                        <span data-translate="enable_time_bonus">Enable time bonus (faster = more points)</span>
+                        <span data-translate="enable_time_bonus">Enable time bonus</span>
                     </label>
+                    <p class="scoring-help-text" data-translate="time_bonus_help">When ON, faster answers earn more points (up to +1000 for easy, +2000 medium, +3000 hard). When OFF, all correct answers earn the same flat base points regardless of speed.</p>
+                    <div class="time-bonus-threshold-container">
+                        <label class="threshold-label">
+                            <span data-translate="time_bonus_threshold">Equal-points window:</span>
+                            <input type="number" id="modal-time-bonus-threshold" value="0" min="0" max="30" step="1">
+                            <span class="threshold-unit" data-translate="seconds_short">sec</span>
+                        </label>
+                        <p class="scoring-help-text" data-translate="time_bonus_threshold_help">If set above 0, all players who answer within this many seconds get full bonus — no speed advantage. After this window, the bonus decreases linearly. Set to 0 to reward speed from the start.</p>
+                    </div>
                     <label>
                         <input type="checkbox" id="modal-show-score-breakdown" checked>
                         <span data-translate="show_score_breakdown">Show score breakdown (host view)</span>
@@ -1886,6 +1895,7 @@
                     <div class="difficulty-multipliers">
                         <span class="multipliers-label" data-translate="difficulty_multipliers">Difficulty
                             Multipliers:</span>
+                        <p class="scoring-help-text" data-translate="difficulty_multipliers_help">Base points per correct answer = 100 × multiplier. E.g. Easy ×1 = 100 pts, Medium ×2 = 200 pts, Hard ×3 = 300 pts. Time bonus also scales with the multiplier.</p>
                         <div class="multiplier-inputs">
                             <label class="multiplier-input">
                                 <span data-translate="easy">Easy</span>
