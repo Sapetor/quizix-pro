@@ -6,6 +6,22 @@
 const { z } = require('zod');
 
 // ============================================================================
+// Coercion helpers — quiz files may store strings for booleans/numbers
+// ============================================================================
+
+/** Accepts boolean or "true"/"false" strings */
+const coerceBool = z.preprocess(
+    val => val === 'true' ? true : val === 'false' ? false : val,
+    z.boolean()
+);
+
+/** Accepts number or numeric strings */
+const coerceNum = z.preprocess(
+    val => typeof val === 'string' && val.trim() !== '' ? Number(val) : val,
+    z.number()
+);
+
+// ============================================================================
 // Question Schemas
 // ============================================================================
 
@@ -47,7 +63,7 @@ const multipleCorrectQuestionSchema = z.object({
 const trueFalseQuestionSchema = z.object({
     type: z.literal('true-false'),
     question: z.string().min(1, 'Question text is required'),
-    correctAnswer: z.boolean(),
+    correctAnswer: coerceBool,
     difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
@@ -59,7 +75,7 @@ const trueFalseQuestionSchema = z.object({
 const numericQuestionSchema = z.object({
     type: z.literal('numeric'),
     question: z.string().min(1, 'Question text is required'),
-    correctAnswer: z.number(),
+    correctAnswer: coerceNum,
     tolerance: z.number().min(0).optional().default(0.01),
     difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
@@ -573,7 +589,10 @@ function validateAndHandle(socket, eventName, data, logger) {
     const result = validateSocketEvent(eventName, data);
     if (!result.valid) {
         logger.warn(`Invalid ${eventName} data:`, result.errors);
-        socket.emit('error', { message: `Invalid ${eventName} data` });
+        socket.emit('error', {
+            message: `Invalid ${eventName} data: ${result.errors.map(e => `${e.field}: ${e.message}`).join('; ')}`,
+            messageKey: 'error_validation_failed'
+        });
         return null;
     }
     return result.data;
