@@ -2507,9 +2507,45 @@
                         <input type="number" id="qs-global-time" value="20" min="5" max="300" class="input-sm">
                     </div>
                     <label class="qs-toggle">
+                        <input type="checkbox" id="qs-enable-power-ups">
+                        <span data-translate="enable_power_ups">Power-ups</span>
+                    </label>
+                    <label class="qs-toggle">
                         <input type="checkbox" id="qs-consensus-mode">
                         <span data-translate="consensus_mode">Consensus Mode</span>
                     </label>
+                    <div class="qs-consensus-details hidden" id="qs-consensus-details">
+                        <div class="qs-time-row">
+                            <label data-translate="consensus_threshold">Threshold %</label>
+                            <input type="number" id="qs-consensus-threshold" value="66" min="50" max="100" class="input-sm">
+                        </div>
+                        <div class="qs-time-row">
+                            <label data-translate="discussion_time">Discussion (sec)</label>
+                            <input type="number" id="qs-discussion-time" value="30" min="10" max="120" class="input-sm">
+                        </div>
+                        <label class="qs-toggle">
+                            <input type="checkbox" id="qs-allow-chat">
+                            <span data-translate="allow_chat">Allow Chat</span>
+                        </label>
+                    </div>
+                    <details class="qs-scoring-details">
+                        <summary data-translate="scoring_settings">📊 Scoring Settings</summary>
+                        <label class="qs-toggle">
+                            <input type="checkbox" id="qs-time-bonus-enabled" checked>
+                            <span data-translate="enable_time_bonus">Enable time bonus</span>
+                        </label>
+                        <div class="qs-time-row">
+                            <label data-translate="time_bonus_threshold">Equal-points window</label>
+                            <input type="number" id="qs-time-bonus-threshold" value="0" min="0" max="30" class="input-sm">
+                            <span data-translate="seconds_short">sec</span>
+                        </div>
+                        <div class="qs-multiplier-row">
+                            <span data-translate="difficulty_multipliers">Multipliers:</span>
+                            <label>E <input type="number" id="qs-easy-multiplier" value="1" min="0.5" max="5" step="0.5" class="input-xs"></label>
+                            <label>M <input type="number" id="qs-medium-multiplier" value="2" min="0.5" max="5" step="0.5" class="input-xs"></label>
+                            <label>H <input type="number" id="qs-hard-multiplier" value="3" min="0.5" max="5" step="0.5" class="input-xs"></label>
+                        </div>
+                    </details>
                 </div>
             </div>
 

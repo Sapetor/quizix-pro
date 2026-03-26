@@ -1069,6 +1069,13 @@ export class QuizGame {
                     if (timeRow) timeRow.classList.toggle('hidden', !qsGlobalTime.checked);
                 });
             }
+            const qsConsensus = dom.get('qs-consensus-mode');
+            if (qsConsensus) {
+                qsConsensus.addEventListener('change', () => {
+                    const details = dom.get('qs-consensus-details');
+                    if (details) details.classList.toggle('hidden', !qsConsensus.checked);
+                });
+            }
         }
 
         // Load tree data BEFORE opening modal to avoid empty flash
@@ -1110,21 +1117,38 @@ export class QuizGame {
             const s = data.settings || {};
             const get = (key, legacy, fallback) => s[key] ?? data[legacy] ?? fallback;
 
-            // Populate settings panel checkboxes
+            // Populate settings panel from quiz file
             const setChecked = (id, val) => { const el = dom.get(id); if (el) el.checked = !!val; };
+            const setValue = (id, val) => { const el = dom.get(id); if (el) el.value = val; };
+
             setChecked('qs-randomize-questions', get('randomizeQuestions', 'randomizeQuestions', false));
             setChecked('qs-randomize-answers', get('randomizeAnswers', 'randomizeAnswers', false));
             setChecked('qs-manual-advancement', get('manualAdvance', 'manualAdvancement', false));
-            setChecked('qs-consensus-mode', get('consensusMode', 'consensusMode', false));
+            setChecked('qs-enable-power-ups', get('powerUpsEnabled', 'powerUpsEnabled', false));
 
             const useGlobal = get('useGlobalTime', 'sameTimeForAll', false);
             setChecked('qs-use-global-time', useGlobal);
-
-            const timeEl = dom.get('qs-global-time');
-            if (timeEl) timeEl.value = get('globalTimeLimit', 'questionTime', 20);
-
+            setValue('qs-global-time', get('globalTimeLimit', 'questionTime', 20));
             const timeRow = dom.get('qs-time-row');
             if (timeRow) timeRow.classList.toggle('hidden', !useGlobal);
+
+            // Consensus settings
+            const consensus = get('consensusMode', 'consensusMode', false);
+            setChecked('qs-consensus-mode', consensus);
+            setValue('qs-consensus-threshold', get('consensusThreshold', 'consensusThreshold', '66'));
+            setValue('qs-discussion-time', get('discussionTime', 'discussionTime', 30));
+            setChecked('qs-allow-chat', get('allowChat', 'allowChat', false));
+            const consensusDetails = dom.get('qs-consensus-details');
+            if (consensusDetails) consensusDetails.classList.toggle('hidden', !consensus);
+
+            // Scoring config
+            const sc = s.scoringConfig || {};
+            setChecked('qs-time-bonus-enabled', sc.timeBonusEnabled ?? true);
+            setValue('qs-time-bonus-threshold', sc.timeBonusThreshold ?? 0);
+            const dm = sc.difficultyMultipliers || {};
+            setValue('qs-easy-multiplier', dm.easy ?? 1);
+            setValue('qs-medium-multiplier', dm.medium ?? 2);
+            setValue('qs-hard-multiplier', dm.hard ?? 3);
 
             // Position floating settings panel next to selected quiz
             const settingsPanel = dom.get('quick-start-settings');
@@ -1192,13 +1216,27 @@ export class QuizGame {
      * Read settings from the Quick Start panel UI
      */
     _collectQuickStartSettings() {
+        const thresholdSec = parseInt(dom.get('qs-time-bonus-threshold')?.value) || 0;
         return {
             randomizeQuestions: dom.get('qs-randomize-questions')?.checked ?? false,
             randomizeAnswers: dom.get('qs-randomize-answers')?.checked ?? false,
             manualAdvancement: dom.get('qs-manual-advancement')?.checked ?? false,
             sameTimeForAll: dom.get('qs-use-global-time')?.checked ?? false,
             questionTime: parseInt(dom.get('qs-global-time')?.value) || 20,
-            consensusMode: dom.get('qs-consensus-mode')?.checked ?? false
+            powerUpsEnabled: dom.get('qs-enable-power-ups')?.checked ?? false,
+            consensusMode: dom.get('qs-consensus-mode')?.checked ?? false,
+            consensusThreshold: dom.get('qs-consensus-threshold')?.value ?? '66',
+            discussionTime: parseInt(dom.get('qs-discussion-time')?.value) || 30,
+            allowChat: dom.get('qs-allow-chat')?.checked ?? false,
+            scoringConfig: {
+                timeBonusEnabled: dom.get('qs-time-bonus-enabled')?.checked ?? true,
+                timeBonusThreshold: thresholdSec * 1000,
+                difficultyMultipliers: {
+                    easy: parseFloat(dom.get('qs-easy-multiplier')?.value) || 1,
+                    medium: parseFloat(dom.get('qs-medium-multiplier')?.value) || 2,
+                    hard: parseFloat(dom.get('qs-hard-multiplier')?.value) || 3
+                }
+            }
         };
     }
 
@@ -1269,50 +1307,35 @@ export class QuizGame {
                 return;
             }
 
-            // Read from panel (user may have tweaked) with quiz file fallback
+            // All settings come from the quick-start panel (pre-populated from quiz file)
             const panel = this._collectQuickStartSettings();
-            const s = data.settings || {};
-            const fileFallback = (key, legacy, def) => s[key] ?? data[legacy] ?? def;
-
-            const randomizeQ = panel.randomizeQuestions;
-            const randomizeA = panel.randomizeAnswers;
-            const manualAdv = panel.manualAdvancement;
-            const sameTime = panel.sameTimeForAll;
-            const qTime = panel.questionTime;
-            const consensus = panel.consensusMode;
 
             const title = data.title || filename.replace('.json', '');
             let questions = [...data.questions];
 
-            if (randomizeQ) questions = shuffleArray(questions);
-            if (randomizeA) questions = randomizeAnswers(questions);
-            if (sameTime) questions.forEach(q => { q.time = qTime; });
-
-            const scoringConfig = s.scoringConfig ?? {
-                timeBonusEnabled: true,
-                timeBonusThreshold: 0,
-                difficultyMultipliers: { easy: 1, medium: 2, hard: 3 }
-            };
+            if (panel.randomizeQuestions) questions = shuffleArray(questions);
+            if (panel.randomizeAnswers) questions = randomizeAnswers(questions);
+            if (panel.sameTimeForAll) questions.forEach(q => { q.time = panel.questionTime; });
 
             const quizData = {
                 quiz: {
                     title,
                     questions,
-                    manualAdvancement: manualAdv,
-                    powerUpsEnabled: fileFallback('powerUpsEnabled', 'powerUpsEnabled', false),
-                    randomizeQuestions: randomizeQ,
-                    randomizeAnswers: randomizeA,
-                    sameTimeForAll: sameTime,
-                    questionTime: qTime,
-                    scoringConfig
+                    manualAdvancement: panel.manualAdvancement,
+                    powerUpsEnabled: panel.powerUpsEnabled,
+                    randomizeQuestions: panel.randomizeQuestions,
+                    randomizeAnswers: panel.randomizeAnswers,
+                    sameTimeForAll: panel.sameTimeForAll,
+                    questionTime: panel.questionTime,
+                    scoringConfig: panel.scoringConfig
                 }
             };
 
-            if (consensus) {
+            if (panel.consensusMode) {
                 quizData.quiz.consensusMode = true;
-                quizData.quiz.consensusThreshold = fileFallback('consensusThreshold', 'consensusThreshold', '66');
-                quizData.quiz.discussionTime = fileFallback('discussionTime', 'discussionTime', 30);
-                quizData.quiz.allowChat = fileFallback('allowChat', 'allowChat', true);
+                quizData.quiz.consensusThreshold = panel.consensusThreshold;
+                quizData.quiz.discussionTime = panel.discussionTime;
+                quizData.quiz.allowChat = panel.allowChat;
             }
 
             this.socketManager.createGame(quizData);
