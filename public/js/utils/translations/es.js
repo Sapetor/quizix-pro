@@ -580,7 +580,7 @@ export default {
     // Scoring Settings
     scoring_settings: '📊 Configuración de Puntuación',
     enable_time_bonus: 'Habilitar bonus de tiempo',
-    time_bonus_help: 'Si está ON, las respuestas más rápidas ganan más puntos (hasta +1000 fácil, +2000 medio, +3000 difícil). Si está OFF, todas las respuestas correctas ganan los mismos puntos base sin importar la velocidad.',
+    time_bonus_help: 'Si está ON, las respuestas más rápidas ganan más puntos (hasta +1000 fácil, +2000 medio, +3000 difícil). El bonus disminuye proporcionalmente hasta que se agota el tiempo de la pregunta — responder en el último segundo aún da un pequeño bonus sobre la base. Si está OFF, todas las respuestas correctas ganan puntos base fijos sin importar la velocidad.',
     show_score_breakdown: 'Mostrar desglose de puntuación (vista del anfitrión)',
     difficulty_multipliers: 'Multiplicadores de Dificultad:',
     difficulty_multipliers_help: 'Puntos base por respuesta correcta = 100 × multiplicador. Ej: Fácil ×1 = 100 pts, Medio ×2 = 200 pts, Difícil ×3 = 300 pts. El bonus de tiempo también escala con el multiplicador.',

@@ -355,16 +355,25 @@ export class LocalGameSession {
         }
 
         // Match server formula exactly
-        const maxBonusTime = SCORING.MAX_BONUS_TIME;
+        const maxBonusValue = SCORING.MAX_BONUS_TIME;
+        const questionTimeSec = question.timeLimit || question.time || TIMING.DEFAULT_QUESTION_TIME;
+        const decayWindowMs = questionTimeSec * 1000;
 
         // Calculate time bonus with optional threshold (prevents random quick guessing)
         let timeBonus;
         if (this.timeBonusThreshold > 0 && responseTime <= this.timeBonusThreshold) {
             // Within threshold: award maximum time bonus
-            timeBonus = maxBonusTime;
+            timeBonus = maxBonusValue;
+        } else if (this.timeBonusThreshold > 0) {
+            // Past threshold: linear decay from max at threshold to 0 at question end
+            const remaining = decayWindowMs - this.timeBonusThreshold;
+            const elapsed = responseTime - this.timeBonusThreshold;
+            const ratio = remaining > 0 ? Math.max(0, (remaining - elapsed) / remaining) : 1;
+            timeBonus = Math.floor(maxBonusValue * ratio);
         } else {
-            // Beyond threshold or no threshold: linear decrease
-            timeBonus = Math.max(0, maxBonusTime - responseTime);
+            // No threshold: proportional decay from 0s to question time limit
+            const ratio = Math.max(0, (decayWindowMs - responseTime) / decayWindowMs);
+            timeBonus = Math.floor(maxBonusValue * ratio);
         }
 
         // basePoints = 100 * difficultyMultiplier

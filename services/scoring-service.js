@@ -17,6 +17,7 @@ class ScoringService {
      * @param {Object} params.config - Server config with SCORING settings
      * @param {Object} params.scoringConfig - Optional per-game scoring config
      * @param {number} params.doublePointsMultiplier - Power-up multiplier (1 or 2)
+     * @param {number} params.questionTimeLimitMs - Question time limit in ms (for proportional decay)
      * @returns {Object} { points, isCorrect, breakdown, partialScore }
      */
     static calculateScore({
@@ -26,7 +27,8 @@ class ScoringService {
         questionStartTime,
         config,
         scoringConfig = null,
-        doublePointsMultiplier = 1
+        doublePointsMultiplier = 1,
+        questionTimeLimitMs = 0
     }) {
         // Get correct answer key based on question type
         const correctAnswerKey = ScoringService.getCorrectAnswerKey(question, questionType);
@@ -60,11 +62,15 @@ class ScoringService {
         const timeBonusEnabled = scoringConfig?.timeBonusEnabled ?? true;
         const timeBonusThreshold = scoringConfig?.timeBonusThreshold ?? 0;
 
+        // Use question time limit as the decay window (fall back to MAX_BONUS_TIME for backward compat)
+        const decayWindowMs = questionTimeLimitMs > 0 ? questionTimeLimitMs : maxBonusTime;
+
         // Calculate time bonus with optional threshold
         const timeBonus = ScoringService.calculateTimeBonus(
             timeTaken,
             maxBonusTime,
-            timeBonusThreshold
+            timeBonusThreshold,
+            decayWindowMs
         );
 
         // Calculate base points and scaled time bonus
@@ -107,19 +113,32 @@ class ScoringService {
     }
 
     /**
-     * Calculate time bonus based on response time
+     * Calculate time bonus based on response time.
+     * Bonus decays linearly from maxBonusValue at 0s to 0 at decayWindowMs.
+     * If a threshold is set, answers within it get the full bonus.
+     *
      * @param {number} timeTaken - Time taken to answer in ms
-     * @param {number} maxBonusTime - Maximum bonus time in ms
-     * @param {number} threshold - Optional threshold for maximum bonus (0 = disabled)
-     * @returns {number} Time bonus value
+     * @param {number} maxBonusValue - Maximum bonus value (score ceiling)
+     * @param {number} threshold - Answers within this get full bonus (0 = disabled)
+     * @param {number} decayWindowMs - Time window for linear decay (question time limit)
+     * @returns {number} Time bonus value (0 to maxBonusValue)
      */
-    static calculateTimeBonus(timeTaken, maxBonusTime, threshold = 0) {
+    static calculateTimeBonus(timeTaken, maxBonusValue, threshold = 0, decayWindowMs = 0) {
         if (threshold > 0 && timeTaken <= threshold) {
-            // Within threshold: award maximum time bonus
-            return maxBonusTime;
+            return maxBonusValue;
         }
-        // Beyond threshold or no threshold: linear decrease
-        return Math.max(0, maxBonusTime - timeTaken);
+        const window = decayWindowMs > 0 ? decayWindowMs : maxBonusValue;
+        if (threshold > 0) {
+            // Decay linearly from max at threshold to 0 at end of question
+            const remaining = window - threshold;
+            if (remaining <= 0) return maxBonusValue;
+            const elapsed = timeTaken - threshold;
+            const ratio = Math.max(0, (remaining - elapsed) / remaining);
+            return Math.floor(maxBonusValue * ratio);
+        }
+        // No threshold: proportional decay from 0s to window
+        const ratio = Math.max(0, (window - timeTaken) / window);
+        return Math.floor(maxBonusValue * ratio);
     }
 
     /**

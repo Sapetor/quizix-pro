@@ -284,6 +284,11 @@ class Game {
         // Get double points multiplier
         const doublePointsMultiplier = this.getAndConsumeDoublePoints(playerId);
 
+        // Resolve question time limit in ms
+        const questionTimeSec = question.timeLimit || question.time
+            || this.config.TIMING?.DEFAULT_QUESTION_TIME || 20;
+        const questionTimeLimitMs = questionTimeSec * 1000;
+
         // Use ScoringService for centralized scoring logic
         const scoringResult = ScoringService.calculateScore({
             answer: translatedAnswer,
@@ -292,7 +297,8 @@ class Game {
             questionStartTime: this.questionStartTime,
             config: this.config,
             scoringConfig: this.scoringConfig,
-            doublePointsMultiplier
+            doublePointsMultiplier,
+            questionTimeLimitMs
         });
 
         const answerData = {

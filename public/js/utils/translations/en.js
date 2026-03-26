@@ -656,7 +656,7 @@ export default {
     // Scoring Settings
     scoring_settings: '📊 Scoring Settings',
     enable_time_bonus: 'Enable time bonus',
-    time_bonus_help: 'When ON, faster answers earn more points (up to +1000 for easy, +2000 medium, +3000 hard). When OFF, all correct answers earn the same flat base points regardless of speed.',
+    time_bonus_help: 'When ON, faster answers earn more points (up to +1000 for easy, +2000 medium, +3000 hard). The bonus decreases proportionally until the question timer runs out — answering at the last second still earns a small bonus above base. When OFF, all correct answers earn flat base points regardless of speed.',
     show_score_breakdown: 'Show score breakdown (host view)',
     difficulty_multipliers: 'Difficulty Multipliers:',
     difficulty_multipliers_help: 'Base points per correct answer = 100 × multiplier. E.g. Easy ×1 = 100 pts, Medium ×2 = 200 pts, Hard ×3 = 300 pts. Time bonus also scales with the multiplier.',

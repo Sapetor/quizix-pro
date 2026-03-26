@@ -54,30 +54,35 @@ function buildScoreParams(overrides = {}) {
             type: 'multiple-choice',
             options: ['A', 'B', 'C', 'D'],
             correctIndex: 0,
-            difficulty: 'medium'
+            difficulty: 'medium',
+            timeLimit: 20
         },
         questionType: 'multiple-choice',
         questionStartTime: now - 5000, // answered in 5 seconds
         config: CONFIG,
         scoringConfig: null,
         doublePointsMultiplier: 1,
+        questionTimeLimitMs: 20000, // 20 seconds default
         ...overrides
     };
 }
 
 /** Helper: compute expected score for correct answer */
-function expectedScore({ timeTakenMs, difficulty = 'medium', config = CONFIG, scoringConfig = null, doublePoints = 1 }) {
+function expectedScore({ timeTakenMs, difficulty = 'medium', config = CONFIG, scoringConfig = null, doublePoints = 1, questionTimeLimitMs = 20000 }) {
     const defaultMultipliers = config.SCORING.DIFFICULTY_MULTIPLIERS;
     const customMultipliers = scoringConfig?.difficultyMultipliers;
     const diffMult = customMultipliers?.[difficulty] ?? defaultMultipliers[difficulty] ?? 2;
     const timeBonusEnabled = scoringConfig?.timeBonusEnabled ?? true;
     const threshold = scoringConfig?.timeBonusThreshold ?? 0;
+    const maxBonus = config.SCORING.MAX_BONUS_TIME;
+    const decayWindow = questionTimeLimitMs > 0 ? questionTimeLimitMs : maxBonus;
 
     let timeBonus;
     if (threshold > 0 && timeTakenMs <= threshold) {
-        timeBonus = config.SCORING.MAX_BONUS_TIME;
+        timeBonus = maxBonus;
     } else {
-        timeBonus = Math.max(0, config.SCORING.MAX_BONUS_TIME - timeTakenMs);
+        const ratio = Math.max(0, (decayWindow - timeTakenMs) / decayWindow);
+        timeBonus = Math.floor(maxBonus * ratio);
     }
 
     const base = config.SCORING.BASE_POINTS * diffMult;
@@ -95,17 +100,18 @@ describe('ScoringService.calculateScore', () => {
     // ── Multiple-Choice ────────────────────────────────────────────────────
 
     describe('multiple-choice questions', () => {
-        test('correct answer with medium difficulty, 5s response', () => {
+        test('correct answer with medium difficulty, 5s response on 20s question', () => {
             const now = Date.now();
             const result = ScoringService.calculateScore(buildScoreParams({
                 questionStartTime: now - 5000
             }));
 
             expect(result.isCorrect).toBe(true);
-            // base=200, timeBonus=floor(5000*2/10)=1000 → 1200
-            expect(result.points).toBe(1200);
+            // 20s question, 5s answer → ratio=15/20=0.75, bonus=floor(10000*0.75)=7500
+            // scaledTimeBonus=floor(7500*2/10)=1500 → 200+1500=1700
+            expect(result.points).toBe(1700);
             expect(result.breakdown.basePoints).toBe(200);
-            expect(result.breakdown.timeBonus).toBe(1000);
+            expect(result.breakdown.timeBonus).toBe(1500);
             expect(result.breakdown.difficultyMultiplier).toBe(2);
         });
 
@@ -120,27 +126,30 @@ describe('ScoringService.calculateScore', () => {
             expect(result.points).toBe(0);
         });
 
-        test('correct answer at exactly 10s gets 0 time bonus', () => {
+        test('correct answer at halfway (10s on 20s) gets 50% time bonus', () => {
             const now = Date.now();
             const result = ScoringService.calculateScore(buildScoreParams({
                 questionStartTime: now - 10000
             }));
 
             expect(result.isCorrect).toBe(true);
-            // timeBonus = max(0, 10000-10000) = 0 → base only = 200
-            expect(result.points).toBe(200);
-            expect(result.breakdown.timeBonus).toBe(0);
+            // ratio=10/20=0.5, bonus=floor(10000*0.5)=5000
+            // scaledTimeBonus=floor(5000*2/10)=1000 → 200+1000=1200
+            expect(result.points).toBe(1200);
+            expect(result.breakdown.timeBonus).toBe(1000);
         });
 
-        test('correct answer after 10s gets only base points', () => {
+        test('correct answer near limit (18s on 20s) still gets some bonus', () => {
             const now = Date.now();
             const result = ScoringService.calculateScore(buildScoreParams({
                 questionStartTime: now - 18000
             }));
 
             expect(result.isCorrect).toBe(true);
-            expect(result.points).toBe(200); // base only
-            expect(result.breakdown.timeBonus).toBe(0);
+            // ratio=2/20=0.1, bonus=floor(10000*0.1)=1000
+            // scaledTimeBonus=floor(1000*2/10)=200 → 200+200=400
+            expect(result.points).toBe(400);
+            expect(result.breakdown.timeBonus).toBe(200);
         });
 
         test('instant answer (0ms) gets maximum time bonus', () => {
@@ -150,9 +159,20 @@ describe('ScoringService.calculateScore', () => {
             }));
 
             expect(result.isCorrect).toBe(true);
-            // timeBonus = floor(10000*2/10) = 2000 → 200+2000 = 2200
+            // ratio=20/20=1.0, bonus=10000, scaled=floor(10000*2/10)=2000 → 200+2000=2200
             expect(result.points).toBe(2200);
             expect(result.breakdown.timeBonus).toBe(2000);
+        });
+
+        test('answer at exact time limit gets 0 bonus (base points only)', () => {
+            const now = Date.now();
+            const result = ScoringService.calculateScore(buildScoreParams({
+                questionStartTime: now - 20000 // exactly 20s on 20s question
+            }));
+
+            expect(result.isCorrect).toBe(true);
+            expect(result.points).toBe(200); // base only
+            expect(result.breakdown.timeBonus).toBe(0);
         });
     });
 
@@ -233,8 +253,9 @@ describe('ScoringService.calculateScore', () => {
                 }
             }));
 
-            // easy custom = 5, base=500, timeBonus=floor(5000*5/10)=2500 → 3000
-            expect(result.points).toBe(3000);
+            // easy custom=5, 5s on 20s → ratio=0.75, bonus=7500
+            // base=500, scaledTimeBonus=floor(7500*5/10)=3750 → 4250
+            expect(result.points).toBe(4250);
             expect(result.breakdown.difficultyMultiplier).toBe(5);
         });
 
@@ -276,8 +297,9 @@ describe('ScoringService.calculateScore', () => {
             }));
 
             expect(result.isCorrect).toBe(true);
-            // easy=1, base=100, timeBonus=floor(7000*1/10)=700 → 800
-            expect(result.points).toBe(800);
+            // easy=1, 3s on 20s → ratio=17/20=0.85, bonus=floor(10000*0.85)=8500
+            // base=100, scaledTimeBonus=floor(8500*1/10)=850 → 950
+            expect(result.points).toBe(950);
         });
 
         test('string "true" matches boolean true', () => {
@@ -332,8 +354,9 @@ describe('ScoringService.calculateScore', () => {
             }));
 
             expect(result.isCorrect).toBe(true);
-            // hard=3, base=300, timeBonus=floor(6000*3/10)=1800 → 2100
-            expect(result.points).toBe(2100);
+            // hard=3, 4s on 20s → ratio=16/20=0.8, bonus=floor(10000*0.8)=8000
+            // base=300, scaledTimeBonus=floor(8000*3/10)=2400 → 2700
+            expect(result.points).toBe(2700);
         });
 
         test('missing one correct selection scores 0 (no partial credit)', () => {
@@ -499,7 +522,8 @@ describe('ScoringService.calculateScore', () => {
 
             expect(result.isCorrect).toBe(true);
             expect(result.partialScore).toBe(1);
-            expect(result.points).toBe(1200); // same as full MC score
+            // 5s on 20s, medium: 200 + 1500 = 1700
+            expect(result.points).toBe(1700);
         });
 
         test('50% correct positions scores 50% of points', () => {
@@ -518,8 +542,8 @@ describe('ScoringService.calculateScore', () => {
 
             expect(result.isCorrect).toBe(false); // not 100%
             expect(result.partialScore).toBe(0.5);
-            // (200 + 1000) * 0.5 = 600
-            expect(result.points).toBe(600);
+            // 5s on 20s, medium: (200 + 1500) * 0.5 = 850
+            expect(result.points).toBe(850);
         });
 
         test('0 correct positions scores 0', () => {
@@ -556,8 +580,9 @@ describe('ScoringService.calculateScore', () => {
             }));
 
             expect(result.partialScore).toBe(0.5);
-            // base=300, timeBonus=floor(2000*3/10)=600 → (300+600)*0.5 = 450
-            expect(result.points).toBe(450);
+            // 8s on 20s, hard: ratio=12/20=0.6, bonus=floor(10000*0.6)=6000
+            // base=300, scaledTimeBonus=floor(6000*3/10)=1800 → (300+1800)*0.5=1050
+            expect(result.points).toBe(1050);
         });
     });
 
@@ -589,30 +614,45 @@ describe('ScoringService.calculateScore', () => {
             expect(result.points).toBe(2200);
         });
 
-        test('answer just after threshold gets linear decay', () => {
+        test('answer just after threshold decays smoothly (no cliff)', () => {
             const now = Date.now();
             const result = ScoringService.calculateScore(buildScoreParams({
-                questionStartTime: now - 3001, // 1ms past threshold
+                questionStartTime: now - 3001, // 1ms past 3s threshold
                 scoringConfig: { timeBonusThreshold: 3000 }
             }));
 
-            // timeBonus = max(0, 10000 - 3001) = 6999
-            // scaledTimeBonus = floor(6999 * 2 / 10) = 1399
-            // total = 200 + 1399 = 1599
-            expect(result.points).toBe(1599);
+            // remaining window = 20000-3000 = 17000ms
+            // elapsed past threshold = 1ms → ratio = 16999/17000 ≈ 0.9999
+            // bonus = floor(10000 * 0.9999) = 9999 → nearly full
+            // scaled = floor(9999*2/10) = 1999 → total = 200+1999 = 2199
+            expect(result.points).toBe(2199);
+            // Should be very close to the max (2200), not a cliff drop
         });
 
-        test('threshold=0 means disabled (linear decay from start)', () => {
+        test('answer at midpoint between threshold and end gets 50%', () => {
+            const now = Date.now();
+            // threshold=5s, question=20s → remaining=15s, midpoint=5+7.5=12.5s
+            const result = ScoringService.calculateScore(buildScoreParams({
+                questionStartTime: now - 12500,
+                scoringConfig: { timeBonusThreshold: 5000 }
+            }));
+
+            // elapsed past threshold = 7500ms, remaining window = 15000ms
+            // ratio = (15000-7500)/15000 = 0.5 → bonus = 5000
+            // scaled = floor(5000*2/10) = 1000 → total = 200+1000 = 1200
+            expect(result.points).toBe(1200);
+        });
+
+        test('threshold=0 means disabled (proportional decay from start)', () => {
             const now = Date.now();
             const result = ScoringService.calculateScore(buildScoreParams({
                 questionStartTime: now - 2000,
                 scoringConfig: { timeBonusThreshold: 0 }
             }));
 
-            // timeBonus = max(0, 10000-2000) = 8000
-            // scaledTimeBonus = floor(8000*2/10) = 1600
-            // total = 200 + 1600 = 1800
-            expect(result.points).toBe(1800);
+            // 2s on 20s: ratio=18/20=0.9, bonus=floor(10000*0.9)=9000
+            // scaledTimeBonus=floor(9000*2/10)=1800 → 200+1800=2000
+            expect(result.points).toBe(2000);
         });
 
         test('two players: both within threshold get same max bonus', () => {
@@ -650,6 +690,65 @@ describe('ScoringService.calculateScore', () => {
             // hard=3, threshold → max bonus
             // base=300, timeBonus=floor(10000*3/10)=3000 → 3300
             expect(result.points).toBe(3300);
+        });
+    });
+
+    // ── Proportional Decay (time limit scaling) ──────────────────────────
+
+    describe('proportional decay scales with question time limit', () => {
+        test('same response time, different time limits → different bonuses', () => {
+            const now = Date.now();
+
+            // 5s answer on 10s question → ratio=0.5, bonus=5000
+            const short = ScoringService.calculateScore(buildScoreParams({
+                questionStartTime: now - 5000,
+                questionTimeLimitMs: 10000
+            }));
+
+            // 5s answer on 30s question → ratio=25/30=0.833, bonus=floor(10000*0.833)=8333
+            const long = ScoringService.calculateScore(buildScoreParams({
+                questionStartTime: now - 5000,
+                questionTimeLimitMs: 30000
+            }));
+
+            // Longer time limit = more generous bonus for same response time
+            expect(long.points).toBeGreaterThan(short.points);
+            // short: scaled=floor(5000*2/10)=1000 → 200+1000=1200
+            expect(short.points).toBe(1200);
+            // long: scaled=floor(8333*2/10)=1666 → 200+1666=1866
+            expect(long.points).toBe(1866);
+        });
+
+        test('answering at 50% of time limit always gives same ratio', () => {
+            const now = Date.now();
+
+            // 5s on 10s
+            const a = ScoringService.calculateScore(buildScoreParams({
+                questionStartTime: now - 5000,
+                questionTimeLimitMs: 10000
+            }));
+
+            // 15s on 30s
+            const b = ScoringService.calculateScore(buildScoreParams({
+                questionStartTime: now - 15000,
+                questionTimeLimitMs: 30000
+            }));
+
+            // Both at 50% → same bonus
+            expect(a.points).toBe(b.points);
+        });
+
+        test('10s question: answering at 9.5s gives small bonus, not 0', () => {
+            const now = Date.now();
+            const result = ScoringService.calculateScore(buildScoreParams({
+                questionStartTime: now - 9500,
+                questionTimeLimitMs: 10000
+            }));
+
+            // ratio=500/10000=0.05, bonus=floor(10000*0.05)=500
+            // scaled=floor(500*2/10)=100 → 200+100=300
+            expect(result.points).toBe(300);
+            expect(result.points).toBeGreaterThan(200); // more than base
         });
     });
 
@@ -731,7 +830,8 @@ describe('ScoringService.calculateScore', () => {
             }));
 
             expect(doubled.points).toBe(normal.points * 2);
-            expect(doubled.points).toBe(2400);
+            // 5s on 20s, medium: (200+1500)*2 = 3400
+            expect(doubled.points).toBe(3400);
         });
 
         test('double points on wrong answer is still 0', () => {
@@ -760,8 +860,8 @@ describe('ScoringService.calculateScore', () => {
                 doublePointsMultiplier: 2
             }));
 
-            // (200 + 1000) * 0.5 * 2 = 1200
-            expect(result.points).toBe(1200);
+            // 5s on 20s, medium: (200 + 1500) * 0.5 * 2 = 1700
+            expect(result.points).toBe(1700);
         });
 
         test('double points with flat scoring', () => {
@@ -781,32 +881,64 @@ describe('ScoringService.calculateScore', () => {
 // ─── ScoringService.calculateTimeBonus ─────────────────────────────────────
 
 describe('ScoringService.calculateTimeBonus', () => {
+    // With 20s decay window (typical question time limit)
+    const DECAY = 20000;
+    const MAX = 10000;
+
     test('0ms → maximum bonus', () => {
-        expect(ScoringService.calculateTimeBonus(0, 10000, 0)).toBe(10000);
+        expect(ScoringService.calculateTimeBonus(0, MAX, 0, DECAY)).toBe(10000);
     });
 
-    test('5000ms → 5000 bonus', () => {
-        expect(ScoringService.calculateTimeBonus(5000, 10000, 0)).toBe(5000);
+    test('10s on 20s question → 50% bonus', () => {
+        // ratio = 10000/20000 = 0.5 → floor(10000 * 0.5) = 5000
+        expect(ScoringService.calculateTimeBonus(10000, MAX, 0, DECAY)).toBe(5000);
     });
 
-    test('10000ms → 0 bonus', () => {
-        expect(ScoringService.calculateTimeBonus(10000, 10000, 0)).toBe(0);
+    test('20s on 20s question → 0 bonus', () => {
+        expect(ScoringService.calculateTimeBonus(20000, MAX, 0, DECAY)).toBe(0);
     });
 
-    test('15000ms → 0 bonus (clamped)', () => {
-        expect(ScoringService.calculateTimeBonus(15000, 10000, 0)).toBe(0);
+    test('beyond time limit → 0 bonus (clamped)', () => {
+        expect(ScoringService.calculateTimeBonus(25000, MAX, 0, DECAY)).toBe(0);
+    });
+
+    test('5s on 20s → 75% bonus', () => {
+        expect(ScoringService.calculateTimeBonus(5000, MAX, 0, DECAY)).toBe(7500);
     });
 
     test('threshold: 2000ms taken, 3000ms threshold → max', () => {
-        expect(ScoringService.calculateTimeBonus(2000, 10000, 3000)).toBe(10000);
+        expect(ScoringService.calculateTimeBonus(2000, MAX, 3000, DECAY)).toBe(10000);
     });
 
     test('threshold: 3000ms taken, 3000ms threshold → max', () => {
-        expect(ScoringService.calculateTimeBonus(3000, 10000, 3000)).toBe(10000);
+        expect(ScoringService.calculateTimeBonus(3000, MAX, 3000, DECAY)).toBe(10000);
     });
 
-    test('threshold: 4000ms taken, 3000ms threshold → linear decay', () => {
-        expect(ScoringService.calculateTimeBonus(4000, 10000, 3000)).toBe(6000);
+    test('threshold: 4000ms taken, 3000ms threshold → smooth decay from max', () => {
+        // remaining window = 20000-3000 = 17000ms, elapsed past threshold = 1000ms
+        // ratio = (17000-1000)/17000 = 16000/17000 ≈ 0.9412
+        // bonus = floor(10000 * 0.9412) = 9411
+        expect(ScoringService.calculateTimeBonus(4000, MAX, 3000, DECAY)).toBe(9411);
+    });
+
+    test('threshold: midpoint between threshold and end → 50% bonus', () => {
+        // threshold=5000, decay=20000 → remaining=15000, midpoint at 12500ms
+        // elapsed = 12500-5000 = 7500, ratio = 7500/15000 = 0.5
+        expect(ScoringService.calculateTimeBonus(12500, MAX, 5000, DECAY)).toBe(5000);
+    });
+
+    test('short 10s question: 5s taken → 50% bonus', () => {
+        expect(ScoringService.calculateTimeBonus(5000, MAX, 0, 10000)).toBe(5000);
+    });
+
+    test('long 60s question: 30s taken → 50% bonus', () => {
+        expect(ScoringService.calculateTimeBonus(30000, MAX, 0, 60000)).toBe(5000);
+    });
+
+    test('fallback: no decayWindow → uses maxBonusValue as window', () => {
+        // backward compat: 5000ms taken, maxBonus=10000, no decay window
+        // ratio = (10000-5000)/10000 = 0.5 → floor(10000*0.5) = 5000
+        expect(ScoringService.calculateTimeBonus(5000, MAX, 0)).toBe(5000);
     });
 });
 
@@ -1232,10 +1364,12 @@ describe('Multi-player game with scoring config overrides', () => {
         game.questionStartTime = Date.now() - 7000;
         const bob = game.submitAnswer('bob', 0, 'multiple-choice');
 
-        expect(alice.points).toBe(2200); // max
+        expect(alice.points).toBe(2200); // max (within threshold)
         expect(bob.points).toBeLessThan(alice.points);
-        // Bob: timeBonus=max(0,10000-7000)=3000, scaled=floor(3000*2/10)=600 → 200+600=800
-        expect(bob.points).toBe(800);
+        // Bob: 7s, threshold=3s, 20s question → remaining=17s, elapsed past=4s
+        // ratio=13000/17000≈0.7647, bonus=floor(10000*0.7647)=7647
+        // scaled=floor(7647*2/10)=1529 → 200+1529=1729
+        expect(bob.points).toBe(1729);
     });
 
     test('custom multipliers change point values', () => {
@@ -1254,8 +1388,9 @@ describe('Multi-player game with scoring config overrides', () => {
 
         const result = game.submitAnswer('alice', 0, 'multiple-choice');
 
-        // medium custom=5, base=500, timeBonus=floor(5000*5/10)=2500 → 3000
-        expect(result.points).toBe(3000);
+        // 5s on 20s, medium custom=5: ratio=0.75, bonus=7500
+        // base=500, scaledTimeBonus=floor(7500*5/10)=3750 → 4250
+        expect(result.points).toBe(4250);
     });
 });
 
