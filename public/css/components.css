@@ -1164,7 +1164,8 @@ button:disabled:focus-visible {
         pointer-events: auto !important;
         transform: none !important;
         clip: auto !important;
-        overflow: visible !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
         background: rgba(30, 41, 59, 0.98) !important;
         border: 1px solid var(--border-color) !important;
         border-radius: 12px !important;
@@ -1173,6 +1174,43 @@ button:disabled:focus-visible {
         min-width: 200px !important;
         max-width: 300px !important;
         max-height: 300px !important;
+    }
+
+    /* Portaled dropdown option styles (parent selectors break when moved to body) */
+    body>.language-dropdown-options[data-portal-moved="true"] .language-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        font-size: 15px;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    body>.language-dropdown-options[data-portal-moved="true"] .language-option:last-child {
+        border-bottom: none;
+    }
+
+    body>.language-dropdown-options[data-portal-moved="true"] .language-option:hover,
+    body>.language-dropdown-options[data-portal-moved="true"] .language-option:active {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--color-primary-500);
+    }
+
+    body>.language-dropdown-options[data-portal-moved="true"] .language-option.selected {
+        background: var(--color-primary-500);
+        color: white;
+    }
+
+    body>.language-dropdown-options[data-portal-moved="true"] .language-flag {
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    body>.language-dropdown-options[data-portal-moved="true"] .language-name {
+        font-weight: 500;
     }
 
     /* Reduce dropdown arrow size on mobile */
@@ -1240,6 +1278,13 @@ button:disabled:focus-visible {
     [data-theme="light"] body>.language-dropdown-options[data-portal-moved="true"] {
         background: rgba(248, 250, 252, 0.98) !important;
         color: #1e293b !important;
+        border: 1px solid rgba(0, 0, 0, 0.12) !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    [data-theme="light"] body>.language-dropdown-options[data-portal-moved="true"] .language-option {
+        color: #1e293b;
+        border-bottom-color: rgba(0, 0, 0, 0.08);
     }
 
     [data-theme="dark"] body>.language-dropdown-options[data-portal-moved="true"] {

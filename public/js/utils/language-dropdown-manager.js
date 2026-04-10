@@ -24,17 +24,7 @@ function updateWelcomeText(langCode) {
  */
 function resetDropdownStyles(dropdownOptions) {
     if (!dropdownOptions) return;
-
-    dropdownOptions.style.position = '';
-    dropdownOptions.style.left = '';
-    dropdownOptions.style.top = '';
-    dropdownOptions.style.width = '';
-    dropdownOptions.style.zIndex = '';
-    dropdownOptions.style.transform = '';
-    dropdownOptions.style.isolation = '';
-    dropdownOptions.style.pointerEvents = '';
-    dropdownOptions.style.visibility = '';
-    dropdownOptions.style.opacity = '';
+    dropdownOptions.removeAttribute('style');
 }
 
 /**
@@ -46,7 +36,7 @@ function restoreDropdownToOriginalPosition(dropdown) {
     if (!dropdownOptions) {
         // Check if dropdown was moved to body portal
         const bodyDropdown = document.body.querySelector('.language-dropdown-options[data-portal-moved="true"]');
-        if (bodyDropdown && bodyDropdown.dataset.originalParent === 'language-dropdown') {
+        if (bodyDropdown && bodyDropdown.dataset.originalParent === dropdown.id) {
             dropdown.appendChild(bodyDropdown);
             delete bodyDropdown.dataset.portalMoved;
             delete bodyDropdown.dataset.originalParent;
@@ -70,7 +60,9 @@ function restoreDropdownToOriginalPosition(dropdown) {
  */
 function positionMobileDropdown(dropdown) {
     const dropdownButton = dropdown.querySelector('.language-dropdown-selected');
-    const dropdownOptions = dropdown.querySelector('.language-dropdown-options');
+    // Options may already be portaled to body
+    let dropdownOptions = dropdown.querySelector('.language-dropdown-options')
+        || document.body.querySelector('.language-dropdown-options[data-portal-moved="true"]');
 
     if (!dropdownButton || !dropdownOptions) return;
 
@@ -78,13 +70,11 @@ function positionMobileDropdown(dropdown) {
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
     const dropdownHeight = 300; // max-height from CSS
-    const dropdownMaxWidth = Math.min(300, viewportWidth - 20);
+    const dropdownMaxWidth = Math.min(280, viewportWidth - 40);
 
-    // Calculate optimal position
+    // Position below button, fall back to above if near viewport bottom
+    const left = Math.round((viewportWidth - dropdownMaxWidth) / 2);
     let top = rect.bottom + 8;
-    let left = rect.left;
-
-    // Adjust if dropdown would go off-screen vertically
     if (top + dropdownHeight > viewportHeight - 10) {
         top = rect.top - dropdownHeight - 8;
         if (top < 10) {
@@ -92,26 +82,16 @@ function positionMobileDropdown(dropdown) {
         }
     }
 
-    // Ensure dropdown stays within horizontal bounds
-    if (left + dropdownMaxWidth > viewportWidth - 10) {
-        left = viewportWidth - dropdownMaxWidth - 10;
-    }
-    left = Math.max(10, left);
-
-    // Center horizontally on narrow screens
-    if (viewportWidth <= 400) {
-        left = (viewportWidth - dropdownMaxWidth) / 2;
-    }
-
     // Move dropdown to body to escape container constraints
     if (!dropdownOptions.dataset.portalMoved) {
         dropdownOptions.dataset.portalMoved = 'true';
-        dropdownOptions.dataset.originalParent = 'language-dropdown';
+        dropdownOptions.dataset.originalParent = dropdown.id;
         document.body.appendChild(dropdownOptions);
         logger.debug('Moved dropdown to body portal to escape container bounds');
     }
 
-    // Apply fixed positioning with maximum z-index
+    // Inline visual styles as fallback (CSS portal rule may not match with stale bundles)
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     Object.assign(dropdownOptions.style, {
         position: 'fixed',
         left: `${left}px`,
@@ -119,10 +99,15 @@ function positionMobileDropdown(dropdown) {
         width: `${dropdownMaxWidth}px`,
         zIndex: '2147483647',
         transform: 'none',
-        isolation: 'isolate',
         pointerEvents: 'auto',
         visibility: 'visible',
-        opacity: '1'
+        opacity: '1',
+        background: isLight ? 'rgba(248, 250, 252, 0.98)' : 'rgba(30, 41, 59, 0.98)',
+        color: isLight ? '#1e293b' : '#f8fafc',
+        border: isLight ? '1px solid rgba(0, 0, 0, 0.12)' : '1px solid rgba(255, 255, 255, 0.15)',
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+        maxHeight: `${dropdownHeight}px`
     });
 
     logger.debug(`Mobile dropdown positioned at: ${Math.round(left)}px, ${Math.round(top)}px`);
@@ -132,17 +117,29 @@ function positionMobileDropdown(dropdown) {
  * Toggle language dropdown visibility
  */
 export function toggleLanguageDropdown() {
-    // Handle mobile-specific dropdowns
+    // Handle mobile-specific dropdowns — use body portal to escape header stacking context
     if (isMobile()) {
         const mobileHeaderDropdown = document.getElementById('mobile-language-selector-header');
         if (mobileHeaderDropdown) {
+            const isOpening = !mobileHeaderDropdown.classList.contains('open');
             mobileHeaderDropdown.classList.toggle('open');
+            if (isOpening) {
+                positionMobileDropdown(mobileHeaderDropdown);
+            } else {
+                restoreDropdownToOriginalPosition(mobileHeaderDropdown);
+            }
             return;
         }
 
         const mobileDropdown = document.getElementById('mobile-language-selector');
         if (mobileDropdown) {
+            const isOpening = !mobileDropdown.classList.contains('open');
             mobileDropdown.classList.toggle('open');
+            if (isOpening) {
+                positionMobileDropdown(mobileDropdown);
+            } else {
+                restoreDropdownToOriginalPosition(mobileDropdown);
+            }
             return;
         }
     }
@@ -204,9 +201,11 @@ export async function selectLanguage(langCode, event) {
     }
     if (mobileDropdown) {
         mobileDropdown.classList.remove('open');
+        restoreDropdownToOriginalPosition(mobileDropdown);
     }
     if (mobileHeaderDropdown) {
         mobileHeaderDropdown.classList.remove('open');
+        restoreDropdownToOriginalPosition(mobileHeaderDropdown);
     }
 
     // Update all dropdown UIs
@@ -232,30 +231,36 @@ export async function selectLanguage(langCode, event) {
  * Initialize dropdown event listeners
  */
 export function initializeDropdownListeners() {
+    const allDropdownIds = ['language-selector', 'mobile-language-selector-header', 'mobile-language-selector'];
+
     // Close dropdown when clicking outside
     document.addEventListener('click', (event) => {
-        const dropdown = document.getElementById('language-selector');
-        if (!dropdown || dropdown.contains(event.target)) return;
+        const openDropdown = allDropdownIds.map(id => document.getElementById(id)).find(el => el?.classList.contains('open'));
+        if (!openDropdown) return;
 
         // Check if clicking on body portal dropdown
         const bodyDropdown = document.body.querySelector('.language-dropdown-options[data-portal-moved="true"]');
         if (bodyDropdown && bodyDropdown.contains(event.target)) return;
 
-        dropdown.classList.remove('open');
-        restoreDropdownToOriginalPosition(dropdown);
+        if (!openDropdown.contains(event.target)) {
+            openDropdown.classList.remove('open');
+            restoreDropdownToOriginalPosition(openDropdown);
+        }
     });
 
     // Reposition on window resize
     window.addEventListener('resize', debounce(() => {
-        const dropdown = document.getElementById('language-selector');
-        if (!dropdown || !dropdown.classList.contains('open')) return;
+        for (const id of allDropdownIds) {
+            const dropdown = document.getElementById(id);
+            if (!dropdown || !dropdown.classList.contains('open')) continue;
 
-        if (isMobile()) {
-            setTimeout(() => positionMobileDropdown(dropdown), 100);
-        } else {
-            const dropdownOptions = dropdown.querySelector('.language-dropdown-options');
-            if (dropdownOptions) {
-                resetDropdownStyles(dropdownOptions);
+            if (isMobile()) {
+                positionMobileDropdown(dropdown);
+            } else {
+                const dropdownOptions = dropdown.querySelector('.language-dropdown-options');
+                if (dropdownOptions) {
+                    resetDropdownStyles(dropdownOptions);
+                }
             }
         }
     }, 200));
@@ -265,10 +270,14 @@ export function initializeDropdownListeners() {
     window.addEventListener('scroll', () => {
         if (!scrollTicking) {
             requestAnimationFrame(() => {
-                const dropdown = document.getElementById('language-selector');
-                if (dropdown && dropdown.classList.contains('open') && isMobile()) {
-                    dropdown.classList.remove('open');
-                    restoreDropdownToOriginalPosition(dropdown);
+                if (isMobile()) {
+                    for (const id of allDropdownIds) {
+                        const dropdown = document.getElementById(id);
+                        if (dropdown && dropdown.classList.contains('open')) {
+                            dropdown.classList.remove('open');
+                            restoreDropdownToOriginalPosition(dropdown);
+                        }
+                    }
                 }
                 scrollTicking = false;
             });
@@ -278,10 +287,12 @@ export function initializeDropdownListeners() {
 
     // Close on orientation change
     window.addEventListener('orientationchange', () => {
-        const dropdown = document.getElementById('language-selector');
-        if (dropdown && dropdown.classList.contains('open')) {
-            dropdown.classList.remove('open');
-            restoreDropdownToOriginalPosition(dropdown);
+        for (const id of allDropdownIds) {
+            const dropdown = document.getElementById(id);
+            if (dropdown && dropdown.classList.contains('open')) {
+                dropdown.classList.remove('open');
+                restoreDropdownToOriginalPosition(dropdown);
+            }
         }
     });
 
