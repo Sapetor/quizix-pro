@@ -8,7 +8,7 @@ import { APIHelper } from '../utils/api-helper.js';
 import { translationManager } from '../utils/translation-manager.js';
 import { unifiedErrorHandler } from '../utils/unified-error-handler.js';
 import { authManager } from '../utils/auth-manager.js';
-import { getItem, setItem } from '../utils/storage-utils.js';
+import { getJSON, setJSON } from '../utils/storage-utils.js';
 import { FolderTree } from './components/folder-tree.js';
 import { ContextMenu } from './components/context-menu.js';
 import { PasswordModal } from './components/password-modal.js';
@@ -37,16 +37,21 @@ export class FileManager {
 
         // showOnlyMine state. null marker = user has never explicitly chosen,
         // so the default tracks the current auth state.
-        const stored = getItem(SHOW_ONLY_MINE_KEY, null);
-        if (stored === null) {
-            this.showOnlyMine = authManager.isAuthenticated;
-            this.showOnlyMineExplicit = false;
-        } else {
-            this.showOnlyMine = stored === 'true';
-            this.showOnlyMineExplicit = true;
-        }
+        const stored = getJSON(SHOW_ONLY_MINE_KEY, null);
+        this.showOnlyMineExplicit = stored !== null;
+        this.showOnlyMine = this.showOnlyMineExplicit ? !!stored : authManager.isAuthenticated;
 
         this.initialize();
+    }
+
+    /**
+     * Re-sync the default filter state with the current auth state. No-op
+     * once the user has explicitly toggled the checkbox.
+     */
+    _syncShowOnlyMineDefault() {
+        if (!this.showOnlyMineExplicit) {
+            this.showOnlyMine = authManager.isAuthenticated;
+        }
     }
 
     /**
@@ -85,11 +90,7 @@ export class FileManager {
         this.options.treeContainer = container;
 
         // FileManager may be constructed before authManager.bootstrap() resolves.
-        // If the user never explicitly picked a filter state, re-sync the default
-        // with the current auth state at mount time.
-        if (!this.showOnlyMineExplicit) {
-            this.showOnlyMine = authManager.isAuthenticated;
-        }
+        this._syncShowOnlyMineDefault();
 
         // Mount the filter bar above the tree container before attaching the tree.
         this._mountFilterBar(container);
@@ -103,17 +104,22 @@ export class FileManager {
         });
 
         // Refresh the tree whenever the user logs in or out so ownership
-        // flags and visibility filtering stay in sync.
+        // flags and visibility filtering stay in sync. Update the predicate
+        // silently on the existing tree so the incoming loadTree is the only
+        // render (avoids a flash of stale-filtered data).
         if (!this._authListenerAttached) {
             window.addEventListener('auth-changed', () => {
-                // If the user has never explicitly toggled, let the default
-                // track auth state: filter on when logged in, off when anon.
-                if (!this.showOnlyMineExplicit) {
-                    this.showOnlyMine = authManager.isAuthenticated;
-                }
+                this._syncShowOnlyMineDefault();
                 this._syncFilterBar();
-                this.folderTree?.setFilterPredicate(this._getFilterPredicate());
+                if (this.folderTree) {
+                    this.folderTree.options.filterPredicate = this._getFilterPredicate();
+                }
                 this.loadTree().catch(err => logger.warn('tree refresh after auth-change failed:', err.message));
+            });
+            document.addEventListener('languageChanged', () => {
+                if (this.filterBar) {
+                    translationManager.translateContainer(this.filterBar);
+                }
             });
             this._authListenerAttached = true;
         }
@@ -132,6 +138,11 @@ export class FileManager {
      * container. Hidden entirely for anonymous users.
      */
     _mountFilterBar(container) {
+        if (!container.parentElement) {
+            logger.warn('file-manager filter bar: container has no parent, skipping mount');
+            return;
+        }
+
         // Remove any previously-mounted bar (re-init safety).
         if (this.filterBar && this.filterBar.parentElement) {
             this.filterBar.parentElement.removeChild(this.filterBar);
@@ -151,21 +162,16 @@ export class FileManager {
         checkbox.addEventListener('change', () => {
             this.showOnlyMine = checkbox.checked;
             this.showOnlyMineExplicit = true;
-            setItem(SHOW_ONLY_MINE_KEY, String(this.showOnlyMine));
+            setJSON(SHOW_ONLY_MINE_KEY, this.showOnlyMine);
             this.folderTree?.setFilterPredicate(this._getFilterPredicate());
         });
 
-        container.parentElement?.insertBefore(bar, container);
+        container.parentElement.insertBefore(bar, container);
         this.filterBar = bar;
         this.filterCheckbox = checkbox;
 
         this._syncFilterBar();
-
-        // Translate the freshly-mounted markup so the label and tooltip
-        // use the current language.
-        if (typeof translationManager.translateContainer === 'function') {
-            translationManager.translateContainer(bar);
-        }
+        translationManager.translateContainer(bar);
     }
 
     /**
