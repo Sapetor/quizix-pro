@@ -51,6 +51,9 @@
 /* Analytics - Question analytics and statistical visualizations */
 @import './analytics.css';
 
+/* User accounts - Auth modal, user chip, visibility badges */
+@import './auth.css';
+
 /* Mobile enhancements consolidated into responsive.css */
 
 

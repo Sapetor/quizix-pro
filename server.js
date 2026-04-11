@@ -14,6 +14,8 @@ const { CORSValidationService } = require('./services/cors-validation-service');
 const { QuizService } = require('./services/quiz-service');
 const { ResultsService } = require('./services/results-service');
 const { MetadataService } = require('./services/metadata-service');
+const { UserService } = require('./services/user-service');
+const { SessionService } = require('./services/session-service');
 const { QRService } = require('./services/qr-service');
 const { GameSessionService } = require('./services/game-session-service');
 const { PlayerManagementService } = require('./services/player-management-service');
@@ -34,7 +36,9 @@ const {
     setPasswordSchema,
     updateQuizMetadataSchema,
     unlockSchema,
-    folderIdParamSchema
+    folderIdParamSchema,
+    signupSchema,
+    loginSchema
 } = require('./services/validation-schemas');
 const { metricsService } = require('./services/metrics-service');
 const { SocketRateLimiter } = require('./utils/socket-rate-limiter');
@@ -46,6 +50,8 @@ const { createQuizManagementRoutes } = require('./routes/quiz-management');
 const { createFileUploadRoutes } = require('./routes/file-uploads');
 const { createAIGenerationRoutes } = require('./routes/ai-generation');
 const { createManimRoutes } = require('./routes/manim-routes');
+const { createAuthRoutes } = require('./routes/auth');
+const { createAttachUser } = require('./middleware/attach-user');
 const { ManimRenderService } = require('./services/manim-render-service');
 const { registerSocketHandlers } = require('./socket');
 
@@ -193,6 +199,8 @@ const quizService = new QuizService(logger, WSLMonitor, 'quizzes');
 const resultsService = new ResultsService(logger, 'results');
 const qrService = new QRService(logger, BASE_PATH);
 const metadataService = new MetadataService(logger, WSLMonitor, 'quizzes');
+const userService = new UserService(logger, 'quizzes');
+const sessionService = new SessionService(logger);
 const manimRenderService = new ManimRenderService(logger, CONFIG);
 
 // Initialize Socket.IO game services
@@ -263,6 +271,10 @@ app.use(compression({
 // Body parsing middleware - configure properly for file uploads
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Attach req.user (or null) from the session cookie on every request.
+// Must run after body parsing so routes that need req.user can read it.
+app.use(createAttachUser({ sessionService, userService, logger }));
 
 // Conditional caching based on environment
 app.use(createCacheControlMiddleware(isProduction));
@@ -376,15 +388,35 @@ app.use('/api', createAIGenerationRoutes({
 // ============================================================================
 app.use('/api', createManimRoutes({ logger, manimRenderService }));
 
+// ============================================================================
+// Auth Routes
+// ============================================================================
+app.use('/api/auth', createAuthRoutes({
+    userService,
+    sessionService,
+    logger,
+    validateBody,
+    signupSchema,
+    loginSchema
+}));
+
 // Save quiz endpoint
 app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {
     try {
         const { title, questions, settings, password, filename } = req.validatedBody;
-        const result = await quizService.saveQuiz(title, questions, filename, settings);
+        const ownerId = req.user?.id || null;
+
+        // Scope title-conflict detection to the requester's own quizzes
+        // (or the public pool if anonymous) so user A doesn't bump user B's title.
+        const scopedFilenames = metadataService.getQuizFilenamesByOwner(ownerId);
+        const result = await quizService.saveQuiz(title, questions, filename, settings, { scopedFilenames });
 
         // Register quiz in metadata and optionally set password
         if (result.filename) {
-            await metadataService.registerQuiz(result.filename, title);
+            await metadataService.registerQuiz(result.filename, result.title, {
+                ownerId,
+                visibility: ownerId ? 'private' : 'public'
+            });
             if (password) {
                 await metadataService.setQuizPassword(result.filename, password);
             }
@@ -607,6 +639,16 @@ async function startServer() {
     } catch (error) {
         logger.error('Failed to initialize metadata service:', error);
         // Continue anyway - basic functionality should still work
+    }
+
+    // Initialize user service (accounts). Must succeed — a malformed users.json
+    // will abort startup so we never silently wipe accounts.
+    try {
+        await userService.initialize();
+        logger.info('User service initialized');
+    } catch (error) {
+        logger.error('Failed to initialize user service:', error);
+        process.exit(1);
     }
 
     server.listen(PORT, '0.0.0.0', () => {

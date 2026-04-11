@@ -46,11 +46,34 @@ function createQuizManagementRoutes(options) {
     // Quiz Loading Endpoints
     // ============================================================================
 
-    // List all quizzes
+    /**
+     * Is this quiz visible to the given user?
+     * Legacy ownerless / public → visible to everyone.
+     * Private → only visible to owner.
+     */
+    function isQuizVisible(filename, userId) {
+        const meta = metadataService.getQuizMetadata(filename);
+        if (!meta) return true;                 // legacy — no metadata entry, treat as public
+        if (!meta.ownerId) return true;         // ownerless — always public
+        if (meta.visibility !== 'private') return true;
+        return !!userId && userId === meta.ownerId;
+    }
+
+    // List all quizzes (filtered to what the requester may see)
     router.get('/api/quizzes', async (req, res) => {
         try {
+            const userId = req.user?.id || null;
             const quizzes = await quizService.listQuizzes();
-            res.json(quizzes);
+            const filtered = quizzes.filter(q => isQuizVisible(q.filename, userId)).map(q => {
+                const meta = metadataService.getQuizMetadata(q.filename);
+                return {
+                    ...q,
+                    ownerId: meta?.ownerId || null,
+                    visibility: meta?.ownerId ? (meta.visibility || 'private') : 'public',
+                    owned: !!userId && meta?.ownerId === userId
+                };
+            });
+            res.json(filtered);
         } catch (error) {
             logger.error('Load quizzes error:', error);
             res.status(500).json({ error: 'Failed to load quizzes', messageKey: 'error_failed_load_quizzes' });
@@ -61,6 +84,15 @@ function createQuizManagementRoutes(options) {
     router.get('/api/quiz/:filename', async (req, res) => {
         try {
             const { filename } = req.params;
+            if (!quizService.validateFilename(filename)) {
+                return res.status(400).json({ error: 'Invalid filename', messageKey: 'error_invalid_filename' });
+            }
+
+            // Ownership gate: private quizzes are only readable by their owner.
+            if (!isQuizVisible(filename, req.user?.id || null)) {
+                return res.status(403).json({ error: 'You do not have access to this quiz', messageKey: 'error_quiz_forbidden' });
+            }
+
             const data = await quizService.loadQuiz(filename);
             res.json(data);
         } catch (error) {
@@ -230,10 +262,10 @@ function createQuizManagementRoutes(options) {
     // File Management API Endpoints
     // ============================================================================
 
-    // Get quiz tree structure (folders and quizzes)
+    // Get quiz tree structure (folders and quizzes), filtered to what the requester may see
     router.get('/api/quiz-tree', async (req, res) => {
         try {
-            const tree = metadataService.getTreeStructure();
+            const tree = metadataService.getTreeStructure(req.user?.id || null);
             res.json(tree);
         } catch (error) {
             logger.error('Get quiz tree error:', error);
@@ -324,7 +356,7 @@ function createQuizManagementRoutes(options) {
         }
     });
 
-    // Update quiz metadata (display name and/or folder)
+    // Update quiz metadata (display name, folder, and/or visibility)
     router.patch('/api/quiz-metadata/:filename', validateBody(schemas.updateQuizMetadataSchema), async (req, res) => {
         try {
             const { filename } = req.params;
@@ -334,10 +366,10 @@ function createQuizManagementRoutes(options) {
                 return res.status(400).json({ error: 'Invalid filename', messageKey: 'error_invalid_filename' });
             }
 
-            const { displayName, folderId } = req.validatedBody;
+            const { displayName, folderId, visibility } = req.validatedBody;
             let quiz = metadataService.getQuizMetadata(filename);
 
-            // If quiz not in metadata, try to register it
+            // If quiz not in metadata, try to register it as an ownerless legacy entry.
             if (!quiz) {
                 try {
                     const quizData = await quizService.loadQuiz(filename);
@@ -345,6 +377,13 @@ function createQuizManagementRoutes(options) {
                 } catch {
                     return res.status(404).json({ error: 'Quiz not found', messageKey: 'error_quiz_not_found' });
                 }
+            }
+
+            // Ownership gate: only the owner may edit the metadata of an owned quiz.
+            // Legacy/ownerless quizzes remain editable by anyone (matching pre-auth behavior).
+            const userId = req.user?.id || null;
+            if (quiz.ownerId && quiz.ownerId !== userId) {
+                return res.status(403).json({ error: 'You do not own this quiz', messageKey: 'error_quiz_not_owner' });
             }
 
             // Update display name if provided
@@ -357,11 +396,17 @@ function createQuizManagementRoutes(options) {
                 await metadataService.moveQuizToFolder(filename, folderId);
             }
 
+            // Update visibility if provided (owner-only; legacy quizzes can't be toggled)
+            if (visibility !== undefined) {
+                await metadataService.setQuizVisibility(filename, visibility, userId);
+            }
+
             const updatedQuiz = metadataService.getQuizMetadata(filename);
             res.json(updatedQuiz);
         } catch (error) {
             logger.error('Update quiz metadata error:', error);
-            res.status(400).json({ error: error.message || 'Failed to update quiz metadata', messageKey: error.messageKey || 'error_failed_update_metadata' });
+            const statusCode = error.status || 400;
+            res.status(statusCode).json({ error: error.message || 'Failed to update quiz metadata', messageKey: error.messageKey || 'error_failed_update_metadata' });
         }
     });
 
@@ -398,6 +443,16 @@ function createQuizManagementRoutes(options) {
             // Require confirmation parameter
             if (req.query.confirm !== 'true') {
                 return res.status(400).json({ error: 'Delete requires confirm=true parameter', messageKey: 'error_confirm_required' });
+            }
+
+            // Ownership gate: owned quizzes may only be deleted by their owner.
+            // Legacy/ownerless quizzes remain deletable by anyone.
+            const quizMeta = metadataService.getQuizMetadata(filename);
+            if (quizMeta?.ownerId) {
+                const userId = req.user?.id || null;
+                if (quizMeta.ownerId !== userId) {
+                    return res.status(403).json({ error: 'You do not own this quiz', messageKey: 'error_quiz_not_owner' });
+                }
             }
 
             // Check if quiz requires authentication

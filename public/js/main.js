@@ -19,6 +19,7 @@ import './utils/main-menu-carousel.js'; // Main menu preview carousel
 import './utils/mobile-quiz-controls.js'; // Mobile quiz management controls (FAB and bottom sheet)
 import './utils/mobile-question-carousel.js'; // Mobile question carousel for quiz editor
 import { onboardingTutorial } from './utils/onboarding-tutorial.js'; // First-time user onboarding
+import { initAuthChip } from './ui/auth-chip.js'; // Optional user accounts (login/signup chip)
 
 /**
  * Update language dropdown display to show the currently selected language
@@ -180,6 +181,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Initialize the main application
         window.game = new QuizGame();
         logger.debug('QuizGame instance created successfully');
+
+        // Initialize optional user accounts (fire-and-forget — page works either way)
+        initAuthChip().catch(err => logger.warn('Auth chip init failed:', err.message));
 
         // Ensure UI state is synced on page load (fixes cache bug after F5)
         // This shows the Create Lobby button on main-menu and prepares UI state

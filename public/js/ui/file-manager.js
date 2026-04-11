@@ -7,9 +7,13 @@ import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { translationManager } from '../utils/translation-manager.js';
 import { unifiedErrorHandler } from '../utils/unified-error-handler.js';
+import { authManager } from '../utils/auth-manager.js';
+import { getItem, setItem } from '../utils/storage-utils.js';
 import { FolderTree } from './components/folder-tree.js';
 import { ContextMenu } from './components/context-menu.js';
 import { PasswordModal } from './components/password-modal.js';
+
+const SHOW_ONLY_MINE_KEY = 'file-manager-show-only-mine';
 
 // Helper for shorter translation calls
 const t = (key) => translationManager.getTranslationSync(key);
@@ -28,8 +32,30 @@ export class FileManager {
         this.passwordModal = null;
         this.sessionTokens = new Map(); // itemId -> { token, expiresAt }
         this.treeData = null;
+        this.filterBar = null;
+        this.filterCheckbox = null;
+
+        // showOnlyMine state. null marker = user has never explicitly chosen,
+        // so the default tracks the current auth state.
+        const stored = getItem(SHOW_ONLY_MINE_KEY, null);
+        if (stored === null) {
+            this.showOnlyMine = authManager.isAuthenticated;
+            this.showOnlyMineExplicit = false;
+        } else {
+            this.showOnlyMine = stored === 'true';
+            this.showOnlyMineExplicit = true;
+        }
 
         this.initialize();
+    }
+
+    /**
+     * Compute the current FolderTree predicate, or null if filtering is off.
+     */
+    _getFilterPredicate() {
+        if (!authManager.isAuthenticated) return null;
+        if (!this.showOnlyMine) return null;
+        return (quiz) => quiz.owned === true;
     }
 
     /**
@@ -58,11 +84,39 @@ export class FileManager {
 
         this.options.treeContainer = container;
 
+        // FileManager may be constructed before authManager.bootstrap() resolves.
+        // If the user never explicitly picked a filter state, re-sync the default
+        // with the current auth state at mount time.
+        if (!this.showOnlyMineExplicit) {
+            this.showOnlyMine = authManager.isAuthenticated;
+        }
+
+        // Mount the filter bar above the tree container before attaching the tree.
+        this._mountFilterBar(container);
+
         this.folderTree = new FolderTree(container, {
             onSelect: (type, id, data) => this.handleSelect(type, id, data),
             onDoubleClick: (type, id, data) => this.handleDoubleClick(type, id, data),
-            onContextMenu: (e, type, id, data) => this.showContextMenu(e, type, id, data)
+            onContextMenu: (e, type, id, data) => this.showContextMenu(e, type, id, data),
+            onToggleVisibility: (filename, nextVisibility) => this.toggleQuizVisibility(filename, nextVisibility),
+            filterPredicate: this._getFilterPredicate()
         });
+
+        // Refresh the tree whenever the user logs in or out so ownership
+        // flags and visibility filtering stay in sync.
+        if (!this._authListenerAttached) {
+            window.addEventListener('auth-changed', () => {
+                // If the user has never explicitly toggled, let the default
+                // track auth state: filter on when logged in, off when anon.
+                if (!this.showOnlyMineExplicit) {
+                    this.showOnlyMine = authManager.isAuthenticated;
+                }
+                this._syncFilterBar();
+                this.folderTree?.setFilterPredicate(this._getFilterPredicate());
+                this.loadTree().catch(err => logger.warn('tree refresh after auth-change failed:', err.message));
+            });
+            this._authListenerAttached = true;
+        }
 
         // Also handle context menu on empty area
         container.addEventListener('contextmenu', (e) => {
@@ -71,6 +125,82 @@ export class FileManager {
                 this.contextMenu.show(e.clientX, e.clientY, 'root', null, null);
             }
         });
+    }
+
+    /**
+     * Build and insert the "Show only my quizzes" toggle bar above the tree
+     * container. Hidden entirely for anonymous users.
+     */
+    _mountFilterBar(container) {
+        // Remove any previously-mounted bar (re-init safety).
+        if (this.filterBar && this.filterBar.parentElement) {
+            this.filterBar.parentElement.removeChild(this.filterBar);
+        }
+
+        const bar = document.createElement('div');
+        bar.className = 'file-manager-filter-bar';
+        bar.innerHTML = `
+            <label class="file-manager-filter-toggle" data-translate-title="filter_show_only_mine_tooltip">
+                <input type="checkbox" class="file-manager-show-only-mine">
+                <span data-translate="filter_show_only_mine">Show only my quizzes</span>
+            </label>
+        `;
+
+        const checkbox = bar.querySelector('.file-manager-show-only-mine');
+        checkbox.checked = this.showOnlyMine;
+        checkbox.addEventListener('change', () => {
+            this.showOnlyMine = checkbox.checked;
+            this.showOnlyMineExplicit = true;
+            setItem(SHOW_ONLY_MINE_KEY, String(this.showOnlyMine));
+            this.folderTree?.setFilterPredicate(this._getFilterPredicate());
+        });
+
+        container.parentElement?.insertBefore(bar, container);
+        this.filterBar = bar;
+        this.filterCheckbox = checkbox;
+
+        this._syncFilterBar();
+
+        // Translate the freshly-mounted markup so the label and tooltip
+        // use the current language.
+        if (typeof translationManager.translateContainer === 'function') {
+            translationManager.translateContainer(bar);
+        }
+    }
+
+    /**
+     * Update bar visibility and checkbox state to match the current auth
+     * state and preference.
+     */
+    _syncFilterBar() {
+        if (!this.filterBar) return;
+        this.filterBar.classList.toggle('hidden', !authManager.isAuthenticated);
+        if (this.filterCheckbox) {
+            this.filterCheckbox.checked = this.showOnlyMine;
+        }
+    }
+
+    /**
+     * Flip the visibility of a quiz owned by the current user.
+     * Calls PATCH /api/quiz-metadata/:filename and reloads the tree.
+     */
+    async toggleQuizVisibility(filename, nextVisibility) {
+        try {
+            const res = await fetch(APIHelper.getApiUrl(`api/quiz-metadata/${encodeURIComponent(filename)}`), {
+                method: 'PATCH',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ visibility: nextVisibility })
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.messageKey || err.error || 'Failed to change visibility');
+            }
+            await this.loadTree();
+        } catch (err) {
+            logger.error('Toggle visibility failed:', err);
+            unifiedErrorHandler.handleError(err, { showToast: true, context: { op: 'toggle-quiz-visibility', filename } });
+        }
     }
 
     /**

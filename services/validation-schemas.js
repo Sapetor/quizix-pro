@@ -211,7 +211,7 @@ function validateBody(schema) {
         try {
             const result = schema.safeParse(req.body);
             if (!result.success) {
-                const errors = result.error.errors.map(err => ({
+                const errors = result.error.issues.map(err => ({
                     field: err.path.join('.'),
                     message: err.message
                 }));
@@ -243,7 +243,7 @@ function validateParams(schema) {
         try {
             const result = schema.safeParse(req.params);
             if (!result.success) {
-                const errors = result.error.errors.map(err => ({
+                const errors = result.error.issues.map(err => ({
                     field: err.path.join('.'),
                     message: err.message
                 }));
@@ -275,7 +275,7 @@ function validateQuery(schema) {
         try {
             const result = schema.safeParse(req.query);
             if (!result.success) {
-                const errors = result.error.errors.map(err => ({
+                const errors = result.error.issues.map(err => ({
                     field: err.path.join('.'),
                     message: err.message
                 }));
@@ -320,7 +320,27 @@ const setPasswordSchema = z.object({
 
 const updateQuizMetadataSchema = z.object({
     displayName: z.string().min(1).max(200).optional(),
-    folderId: z.string().uuid().nullable().optional()
+    folderId: z.string().uuid().nullable().optional(),
+    visibility: z.enum(['public', 'private']).optional()
+});
+
+// ============================================================================
+// Auth Schemas
+// ============================================================================
+
+const signupSchema = z.object({
+    username: z.string()
+        .min(3, 'Username must be at least 3 characters')
+        .max(32, 'Username must be at most 32 characters')
+        .regex(/^[a-zA-Z0-9_]+$/, 'Username may contain only letters, digits, and underscore'),
+    password: z.string()
+        .min(8, 'Password must be at least 8 characters')
+        .max(200, 'Password must be at most 200 characters')
+});
+
+const loginSchema = z.object({
+    username: z.string().min(1, 'Username is required').max(64),
+    password: z.string().min(1, 'Password is required').max(200)
 });
 
 const unlockSchema = z.object({
@@ -622,6 +642,10 @@ module.exports = {
     updateQuizMetadataSchema,
     unlockSchema,
     folderIdParamSchema,
+
+    // Auth schemas
+    signupSchema,
+    loginSchema,
 
     // Socket event schemas
     hostJoinSchema,

@@ -17,9 +17,12 @@ export class FolderTree {
             onSelect: options.onSelect || (() => {}),
             onDoubleClick: options.onDoubleClick || (() => {}),
             onContextMenu: options.onContextMenu || (() => {}),
+            onToggleVisibility: options.onToggleVisibility || (() => {}),
+            filterPredicate: options.filterPredicate || null,
             animationDuration: options.animationDuration || 200
         };
 
+        this.rawTreeData = { folders: [], quizzes: [] };
         this.treeData = { folders: [], quizzes: [] };
         this.expandedFolders = new Set();
         this.selectedItem = null;
@@ -65,8 +68,44 @@ export class FolderTree {
      * Set the tree data and render
      */
     setData(treeData) {
-        this.treeData = treeData || { folders: [], quizzes: [] };
+        this.rawTreeData = treeData || { folders: [], quizzes: [] };
+        this.treeData = this._applyFilter(this.rawTreeData);
         this.render();
+    }
+
+    /**
+     * Replace the filter predicate and re-render.
+     * Predicate signature: (quiz) => boolean. Pass null to disable filtering.
+     */
+    setFilterPredicate(predicate) {
+        this.options.filterPredicate = predicate || null;
+        this.treeData = this._applyFilter(this.rawTreeData);
+        this.render();
+    }
+
+    /**
+     * Return a filtered + pruned copy of the tree data.
+     * Drops quizzes that don't match the predicate; drops folders whose
+     * entire visible subtree becomes empty. Mirrors server-side pruning in
+     * metadata-service.getTreeStructure.
+     */
+    _applyFilter(data) {
+        const predicate = this.options.filterPredicate;
+        if (!predicate) return data;
+
+        const pruneFolder = (folder) => {
+            const children = (folder.children || [])
+                .map(pruneFolder)
+                .filter(Boolean);
+            const quizzes = (folder.quizzes || []).filter(predicate);
+            if (quizzes.length === 0 && children.length === 0) return null;
+            return { ...folder, children, quizzes };
+        };
+
+        return {
+            folders: (data.folders || []).map(pruneFolder).filter(Boolean),
+            quizzes: (data.quizzes || []).filter(predicate)
+        };
     }
 
     /**
@@ -237,6 +276,28 @@ export class FolderTree {
             lock.innerHTML = '&#128274;'; // Lock icon
             lock.title = t('password_protected') || 'Password protected';
             row.appendChild(lock);
+        }
+
+        // Visibility badge / toggle for owned quizzes only.
+        // Clicking the badge flips the visibility via the onToggleVisibility callback.
+        if (quiz.owned) {
+            const visibility = quiz.visibility === 'public' ? 'public' : 'private';
+            const badge = document.createElement('button');
+            badge.type = 'button';
+            badge.className = `quiz-visibility-badge ${visibility}`;
+            badge.textContent = visibility === 'public'
+                ? (t('quiz_visibility_public') || 'Public')
+                : (t('quiz_visibility_private') || 'Private');
+            badge.title = visibility === 'public'
+                ? (t('quiz_visibility_make_private') || 'Make private')
+                : (t('quiz_visibility_make_public') || 'Make public');
+            badge.setAttribute('aria-label', badge.title);
+            badge.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const next = visibility === 'public' ? 'private' : 'public';
+                this.options.onToggleVisibility(quiz.filename, next);
+            });
+            row.appendChild(badge);
         }
 
         // Event handlers

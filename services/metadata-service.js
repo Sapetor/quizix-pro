@@ -391,18 +391,33 @@ class MetadataService {
     // ============================================================================
 
     /**
-     * Register a new quiz in metadata
+     * Register a new quiz in metadata.
+     *
+     * @param {string} filename
+     * @param {string} displayName
+     * @param {object} [options]
+     * @param {string|null} [options.ownerId]   - Account id of the quiz owner, or null for legacy/public.
+     * @param {'public'|'private'} [options.visibility] - Only applied when creating or when ownerId is set.
      */
-    async registerQuiz(filename, displayName) {
-        if (this.metadata.quizzes[filename]) {
-            // Update existing
-            this.metadata.quizzes[filename].displayName = displayName;
+    async registerQuiz(filename, displayName, options = {}) {
+        const { ownerId = null, visibility } = options;
+        const existing = this.metadata.quizzes[filename];
+
+        if (existing) {
+            // Update display name on re-save. Do not change ownership on re-save of
+            // an already-owned quiz unless an explicit owner is supplied.
+            existing.displayName = displayName;
+            if (ownerId && !existing.ownerId) {
+                existing.ownerId = ownerId;
+                if (!existing.visibility) existing.visibility = visibility || 'private';
+            }
         } else {
-            // Create new
             this.metadata.quizzes[filename] = {
                 displayName,
                 folderId: null,
                 passwordHash: null,
+                ownerId: ownerId || null,
+                visibility: ownerId ? (visibility || 'private') : (visibility || 'public'),
                 created: new Date().toISOString(),
                 sortOrder: Object.keys(this.metadata.quizzes).length
             };
@@ -488,6 +503,64 @@ class MetadataService {
      */
     getQuizMetadata(filename) {
         return this.metadata.quizzes[filename] || null;
+    }
+
+    /**
+     * Set the visibility of a quiz. Only the owner may toggle visibility;
+     * callers must pass the current requester's userId so the service can
+     * enforce this.
+     *
+     * Legacy/ownerless quizzes cannot be toggled — they're always public.
+     */
+    async setQuizVisibility(filename, visibility, userId) {
+        const quiz = this.metadata.quizzes[filename];
+        if (!quiz) {
+            const err = new Error('Quiz not found in metadata');
+            err.messageKey = 'error_quiz_not_found';
+            err.status = 404;
+            throw err;
+        }
+        if (!quiz.ownerId) {
+            const err = new Error('This quiz is public and cannot be made private');
+            err.messageKey = 'error_quiz_legacy_public';
+            err.status = 400;
+            throw err;
+        }
+        if (quiz.ownerId !== userId) {
+            const err = new Error('You do not own this quiz');
+            err.messageKey = 'error_quiz_not_owner';
+            err.status = 403;
+            throw err;
+        }
+        if (visibility !== 'public' && visibility !== 'private') {
+            const err = new Error('Invalid visibility value');
+            err.messageKey = 'error_invalid_visibility';
+            err.status = 400;
+            throw err;
+        }
+        quiz.visibility = visibility;
+        await this.saveMetadata();
+        return quiz;
+    }
+
+    /**
+     * Return the set of quiz filenames that belong to a given owner scope.
+     * - If ownerId is a string, returns files whose metadata.ownerId matches.
+     * - If ownerId is null or undefined, returns files with no ownerId
+     *   (legacy / anonymous / public pool).
+     *
+     * Used by the quiz save flow to scope title-conflict detection so Alice
+     * saving "Math Quiz" doesn't bump her title just because Bob already
+     * has one.
+     */
+    getQuizFilenamesByOwner(ownerId) {
+        const target = ownerId || null;
+        const out = new Set();
+        for (const [filename, quiz] of Object.entries(this.metadata.quizzes)) {
+            const quizOwner = quiz.ownerId || null;
+            if (quizOwner === target) out.add(filename);
+        }
+        return out;
     }
 
     // ============================================================================
@@ -733,47 +806,77 @@ class MetadataService {
     // ============================================================================
 
     /**
-     * Get full tree structure for the file browser
+     * Is the given quiz visible to `userId`?
+     *
+     * - Legacy/ownerless quizzes (no ownerId) are always visible.
+     * - Public quizzes are always visible.
+     * - Private quizzes are only visible to their owner.
      */
-    getTreeStructure() {
-        const buildFolderTree = (parentId) => {
-            const childFolders = Object.values(this.metadata.folders)
-                .filter(f => f.parentId === parentId)
-                .sort((a, b) => a.sortOrder - b.sortOrder)
-                .map(folder => ({
-                    type: 'folder',
-                    id: folder.id,
-                    name: folder.name,
-                    protected: !!folder.passwordHash,
-                    created: folder.created,
-                    children: buildFolderTree(folder.id),
-                    quizzes: Object.entries(this.metadata.quizzes)
-                        .filter(([_, q]) => q.folderId === folder.id)
-                        .sort(([_, a], [__, b]) => a.sortOrder - b.sortOrder)
-                        .map(([filename, quiz]) => ({
-                            type: 'quiz',
-                            filename,
-                            displayName: quiz.displayName,
-                            protected: !!quiz.passwordHash || !!folder.passwordHash,
-                            created: quiz.created
-                        }))
-                }));
+    _quizVisibleTo(quiz, userId) {
+        if (!quiz.ownerId) return true;                 // legacy public
+        if (quiz.visibility !== 'private') return true; // explicitly public
+        return !!userId && userId === quiz.ownerId;
+    }
 
-            return childFolders;
+    /**
+     * Map a metadata quiz entry to the tree node shape, including an `owned`
+     * flag that the frontend uses to render the visibility toggle.
+     */
+    _quizToTreeNode(filename, quiz, folder, userId) {
+        return {
+            type: 'quiz',
+            filename,
+            displayName: quiz.displayName,
+            protected: !!quiz.passwordHash || !!(folder && folder.passwordHash),
+            created: quiz.created,
+            ownerId: quiz.ownerId || null,
+            visibility: quiz.ownerId ? (quiz.visibility || 'private') : 'public',
+            owned: !!userId && quiz.ownerId === userId
+        };
+    }
+
+    /**
+     * Get the tree structure for the file browser, filtered to what `userId`
+     * may see. Anonymous requesters (userId = null/undefined) see only the
+     * public pool.
+     *
+     * Folders whose entire visible descendant set is empty are pruned — this
+     * prevents leaking folder names for folders that only contain private
+     * quizzes owned by someone else.
+     */
+    getTreeStructure(userId = null) {
+        const visibleQuizzesInFolder = (folderId, folder) => {
+            return Object.entries(this.metadata.quizzes)
+                .filter(([_, q]) => q.folderId === folderId && this._quizVisibleTo(q, userId))
+                .sort(([_, a], [__, b]) => a.sortOrder - b.sortOrder)
+                .map(([filename, quiz]) => this._quizToTreeNode(filename, quiz, folder, userId));
         };
 
-        // Root level items
+        const buildFolderTree = (parentId) => {
+            return Object.values(this.metadata.folders)
+                .filter(f => f.parentId === parentId)
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map(folder => {
+                    const children = buildFolderTree(folder.id);
+                    const quizzes = visibleQuizzesInFolder(folder.id, folder);
+                    return {
+                        type: 'folder',
+                        id: folder.id,
+                        name: folder.name,
+                        protected: !!folder.passwordHash,
+                        created: folder.created,
+                        children,
+                        quizzes
+                    };
+                })
+                // Prune folders whose entire subtree is empty after filtering.
+                // A folder is kept if it contains any visible quiz or any
+                // non-empty child folder.
+                .filter(f => f.quizzes.length > 0 || f.children.length > 0);
+        };
+
         const rootFolders = buildFolderTree(null);
-        const rootQuizzes = Object.entries(this.metadata.quizzes)
-            .filter(([_, q]) => q.folderId === null)
-            .sort(([_, a], [__, b]) => a.sortOrder - b.sortOrder)
-            .map(([filename, quiz]) => ({
-                type: 'quiz',
-                filename,
-                displayName: quiz.displayName,
-                protected: !!quiz.passwordHash,
-                created: quiz.created
-            }));
+        const rootQuizzes = visibleQuizzesInFolder(null, null);
 
         return {
             folders: rootFolders,

@@ -9,6 +9,10 @@ yarn-error.log*
 public/uploads/*
 !public/uploads/.gitkeep
 quizzes/*
+# User accounts and session secret are runtime state — never committed.
+# (Already covered by quizzes/*, but called out for clarity.)
+# quizzes/users.json
+# quizzes/.session-secret
 !quizzes/quiz_example_1.json
 !quizzes/quiz_example_2.json
 !quizzes/quiz_example_3.json

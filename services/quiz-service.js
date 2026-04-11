@@ -42,8 +42,12 @@ class QuizService {
      * @param {string} title - Quiz title
      * @param {Array} questions - Quiz questions
      * @param {string} [existingFilename] - If provided and valid, overwrite this file instead of creating a new one
+     * @param {object} [settings] - Quiz settings
+     * @param {object} [options]
+     * @param {Set<string>} [options.scopedFilenames] - If provided, title-conflict detection
+     *        only considers files in this set (used to scope collisions per-owner).
      */
-    async saveQuiz(titleArg, questions, existingFilename, settings) {
+    async saveQuiz(titleArg, questions, existingFilename, settings, options = {}) {
         let title = titleArg;
         if (!title || !questions || !Array.isArray(questions)) {
             const err = new Error('Invalid quiz data');
@@ -91,7 +95,7 @@ class QuizService {
         // Only check for title conflicts on new saves (not overwrites)
         if (!existingFilename) {
             const originalTitle = title;
-            title = await this._resolveNameConflict(title);
+            title = await this._resolveNameConflict(title, options.scopedFilenames);
             if (title !== originalTitle) {
                 this.logger.info(`Title conflict resolved: "${originalTitle}" → "${title}"`);
             }
@@ -161,11 +165,12 @@ class QuizService {
      * List all quizzes
      */
     async listQuizzes() {
-        // Read directory with WSL performance monitoring
+        // Read directory with WSL performance monitoring.
+        // Exclude metadata + users files so they don't generate parse-error log noise.
         const files = (await this.wslMonitor.trackFileOperation(
             () => fs.readdir(this.quizzesDir),
             'Quiz directory listing'
-        )).filter(f => f.endsWith('.json'));
+        )).filter(f => f.endsWith('.json') && f !== 'quiz-metadata.json' && f !== 'users.json');
 
         // Process files in parallel for better performance
         const quizPromises = files.map(async (file) => {
@@ -227,14 +232,23 @@ class QuizService {
      * Resolve title conflicts for new saves.
      * If a quiz with the same title already exists, appends a date suffix.
      * If that also conflicts, appends a counter.
+     *
+     * When `scopedFilenames` is provided, conflicts are only checked against
+     * files in that set — e.g. only an owner's own quizzes, so Alice's
+     * "Math Quiz" isn't bumped because Bob already has one.
+     *
      * @param {string} title - Proposed quiz title
+     * @param {Set<string>} [scopedFilenames] - Restrict conflict check to these files.
      * @returns {Promise<string>} - Possibly modified title
      */
-    async _resolveNameConflict(title) {
+    async _resolveNameConflict(title, scopedFilenames) {
         let files;
         try {
             const allFiles = await fs.readdir(this.quizzesDir);
-            files = allFiles.filter(f => f.endsWith('.json') && f !== 'quiz-metadata.json');
+            files = allFiles.filter(f => f.endsWith('.json') && f !== 'quiz-metadata.json' && f !== 'users.json');
+            if (scopedFilenames) {
+                files = files.filter(f => scopedFilenames.has(f));
+            }
         } catch {
             // If we can't read the directory, skip conflict checking
             return title;

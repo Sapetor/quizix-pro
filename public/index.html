@@ -694,6 +694,15 @@
                 <button id="sound-toggle" class="sound-toggle" data-translate-title="toggle_sound_tooltip"
                     aria-label="Toggle sound" data-translate-aria-label="toggle_sound_tooltip" aria-pressed="true"><span
                         aria-hidden="true">🔊</span></button>
+
+                <!-- User chip (logged in) / Sign-in button (anonymous) — toggled by auth-manager -->
+                <button id="user-chip" class="user-chip anonymous" type="button"
+                    data-translate-title="auth_signin_tooltip"
+                    aria-label="Sign in to your account"
+                    data-translate-aria-label="auth_signin_tooltip">
+                    <span class="user-chip-avatar" aria-hidden="true">?</span>
+                    <span class="user-chip-name" data-translate="auth_signin_short">Sign in</span>
+                </button>
             </div>
         </header>
 
