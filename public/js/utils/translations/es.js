@@ -38,6 +38,8 @@ export default {
     quiz_owned_by_you: 'Tu cuestionario',
     filter_show_only_mine: 'Mostrar solo los míos',
     filter_show_only_mine_tooltip: 'Mostrar solo los cuestionarios que creaste. Desmarca para ver también los públicos.',
+    filter_search_placeholder: 'Buscar cuestionarios…',
+    filter_search_clear: 'Limpiar búsqueda',
 
     welcome_to: 'Bienvenido a',
     skip_to_content: 'Saltar al contenido principal',

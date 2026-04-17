@@ -358,4 +358,172 @@ describe('MetadataService', () => {
             expect(attempts.count).toBe(4);
         });
     });
+
+    describe('quiz password ownership and visibility', () => {
+        beforeEach(() => {
+            metadataService.metadata = {
+                version: '1.0',
+                folders: {},
+                quizzes: {
+                    'owned-protected.json': {
+                        displayName: 'Owned Protected',
+                        folderId: null,
+                        passwordHash: 'hash',
+                        ownerId: 'user-1',
+                        visibility: 'public',
+                        created: '2026-01-01',
+                        sortOrder: 0
+                    },
+                    'legacy-protected.json': {
+                        displayName: 'Legacy Protected',
+                        folderId: null,
+                        passwordHash: 'hash',
+                        ownerId: null,
+                        visibility: 'public',
+                        created: '2026-01-01',
+                        sortOrder: 1
+                    },
+                    'public-open.json': {
+                        displayName: 'Public Open',
+                        folderId: null,
+                        passwordHash: null,
+                        ownerId: null,
+                        visibility: 'public',
+                        created: '2026-01-01',
+                        sortOrder: 2
+                    }
+                }
+            };
+            fs.writeFile.mockResolvedValue();
+        });
+
+        test('setQuizPassword requires an authenticated owner', async () => {
+            await expect(metadataService.setQuizPassword('owned-protected.json', 'secret'))
+                .rejects.toThrow('Authentication required');
+
+            await expect(metadataService.setQuizPassword('legacy-protected.json', 'secret', 'user-1'))
+                .rejects.toThrow('Only account-owned quizzes can use passwords');
+
+            await expect(metadataService.setQuizPassword('owned-protected.json', 'secret', 'user-2'))
+                .rejects.toThrow('You do not own this quiz');
+        });
+
+        test('setQuizPassword allows any user to clear a legacy ownerless hash', async () => {
+            const result = await metadataService.setQuizPassword('legacy-protected.json', null, 'user-2');
+
+            expect(result).toEqual({ success: true, protected: false });
+            expect(metadataService.metadata.quizzes['legacy-protected.json'].passwordHash).toBeNull();
+        });
+
+        test('setQuizPassword allows the owner to update protection', async () => {
+            const result = await metadataService.setQuizPassword('owned-protected.json', 'new-secret', 'user-1');
+
+            expect(result).toEqual({ success: true, protected: true });
+            expect(metadataService.metadata.quizzes['owned-protected.json'].passwordHash).toBeTruthy();
+        });
+
+        test('owned protected quizzes are visible to all users (but locked)', () => {
+            expect(metadataService.isQuizVisibleToUser('owned-protected.json', null)).toBe(true);
+            expect(metadataService.isQuizVisibleToUser('owned-protected.json', 'user-2')).toBe(true);
+            expect(metadataService.isQuizVisibleToUser('owned-protected.json', 'user-1')).toBe(true);
+        });
+
+        test('legacy protected quizzes remain visible to anonymous users', () => {
+            expect(metadataService.isQuizVisibleToUser('legacy-protected.json', null)).toBe(true);
+            expect(metadataService.isQuizVisibleToUser('legacy-protected.json', 'user-2')).toBe(true);
+        });
+
+        test('requiresAuth is skipped for the owner of a protected quiz', () => {
+            expect(metadataService.requiresAuth('owned-protected.json', 'quiz', null)).toBe(true);
+            expect(metadataService.requiresAuth('owned-protected.json', 'quiz', 'user-2')).toBe(true);
+            expect(metadataService.requiresAuth('owned-protected.json', 'quiz', 'user-1')).toBe(false);
+        });
+
+        test('legacy anonymous quiz passwords are not enforced', () => {
+            expect(metadataService.requiresAuth('legacy-protected.json', 'quiz', null)).toBe(false);
+            expect(metadataService.requiresAuth('legacy-protected.json', 'quiz', 'user-2')).toBe(false);
+        });
+
+        test('setFolderPassword requires authentication', async () => {
+            metadataService.metadata.folders['folder-1'] = {
+                id: 'folder-1', name: 'Test', parentId: null,
+                passwordHash: null, passwordSetBy: null,
+                created: '2026-01-01', sortOrder: 0
+            };
+
+            await expect(metadataService.setFolderPassword('folder-1', 'secret'))
+                .rejects.toThrow('Authentication required');
+        });
+
+        test('setFolderPassword records who locked the folder', async () => {
+            metadataService.metadata.folders['folder-1'] = {
+                id: 'folder-1', name: 'Test', parentId: null,
+                passwordHash: null, passwordSetBy: null,
+                created: '2026-01-01', sortOrder: 0
+            };
+
+            await metadataService.setFolderPassword('folder-1', 'secret', 'user-1');
+            expect(metadataService.metadata.folders['folder-1'].passwordSetBy).toBe('user-1');
+        });
+
+        test('setFolderPassword rejects a different user', async () => {
+            metadataService.metadata.folders['folder-1'] = {
+                id: 'folder-1', name: 'Test', parentId: null,
+                passwordHash: 'hash', passwordSetBy: 'user-1',
+                created: '2026-01-01', sortOrder: 0
+            };
+
+            await expect(metadataService.setFolderPassword('folder-1', 'new-pw', 'user-2'))
+                .rejects.toThrow('Only the user who locked this folder');
+        });
+
+        test('setFolderPassword rejects changes to legacy folders without passwordSetBy', async () => {
+            metadataService.metadata.folders['folder-1'] = {
+                id: 'folder-1', name: 'Legacy', parentId: null,
+                passwordHash: 'hash',
+                created: '2026-01-01', sortOrder: 0
+            };
+
+            await expect(metadataService.setFolderPassword('folder-1', 'new-pw', 'user-1'))
+                .rejects.toThrow('Only the user who locked this folder');
+        });
+
+        test('setFolderPassword allows the same user to update', async () => {
+            metadataService.metadata.folders['folder-1'] = {
+                id: 'folder-1', name: 'Test', parentId: null,
+                passwordHash: 'hash', passwordSetBy: 'user-1',
+                created: '2026-01-01', sortOrder: 0
+            };
+
+            const result = await metadataService.setFolderPassword('folder-1', 'new-pw', 'user-1');
+            expect(result).toEqual({ success: true, protected: true });
+        });
+
+        test('setFolderPassword clears passwordSetBy on removal', async () => {
+            metadataService.metadata.folders['folder-1'] = {
+                id: 'folder-1', name: 'Test', parentId: null,
+                passwordHash: 'hash', passwordSetBy: 'user-1',
+                created: '2026-01-01', sortOrder: 0
+            };
+
+            await metadataService.setFolderPassword('folder-1', null, 'user-1');
+            expect(metadataService.metadata.folders['folder-1'].passwordHash).toBeNull();
+            expect(metadataService.metadata.folders['folder-1'].passwordSetBy).toBeNull();
+        });
+
+        test('folder-protected quizzes are hidden from anonymous users', () => {
+            metadataService.metadata.folders['folder-1'] = {
+                id: 'folder-1',
+                name: 'Protected Folder',
+                parentId: null,
+                passwordHash: 'folder-hash',
+                created: '2026-01-01',
+                sortOrder: 0
+            };
+            metadataService.metadata.quizzes['public-open.json'].folderId = 'folder-1';
+
+            expect(metadataService.isQuizVisibleToUser('public-open.json', null)).toBe(false);
+            expect(metadataService.isQuizVisibleToUser('public-open.json', 'user-2')).toBe(true);
+        });
+    });
 });

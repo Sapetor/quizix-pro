@@ -16,6 +16,7 @@ import { EventListenerManager } from '../utils/event-listener-manager.js';
 import { dom, escapeHtml, show, hide } from '../utils/dom.js';
 import { getFileManager } from '../ui/file-manager.js';
 import { openModal, closeModal } from '../utils/modal-utils.js';
+import { authManager } from '../utils/auth-manager.js';
 import { manimEditor } from './manim-editor.js';
 
 // Shared translation fallback map used for cleaning translation keys from loaded data
@@ -521,22 +522,33 @@ export class QuizManager {
         const passwordInput = dom.get('save-quiz-password');
         const confirmInput = dom.get('save-quiz-password-confirm');
         const confirmGroup = dom.get('save-quiz-confirm-group');
+        const passwordGroup = passwordInput?.closest('.form-group');
+        const canUsePasswords = authManager.isAuthenticated;
 
         if (passwordInput) passwordInput.value = '';
         if (confirmInput) confirmInput.value = '';
         if (confirmGroup) hide(confirmGroup);
+        if (passwordGroup) {
+            if (canUsePasswords) {
+                show(passwordGroup, 'visible-block');
+            } else {
+                hide(passwordGroup);
+            }
+        }
 
         // Show confirm field when password is entered
         if (passwordInput) {
-            passwordInput.oninput = () => {
-                if (confirmGroup) {
-                    if (passwordInput.value) {
-                        show(confirmGroup, 'visible-block');
-                    } else {
-                        hide(confirmGroup);
+            passwordInput.oninput = canUsePasswords
+                ? () => {
+                    if (confirmGroup) {
+                        if (passwordInput.value) {
+                            show(confirmGroup, 'visible-block');
+                        } else {
+                            hide(confirmGroup);
+                        }
                     }
                 }
-            };
+                : null;
         }
 
         // Setup button handlers

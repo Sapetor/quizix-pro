@@ -101,7 +101,7 @@ export class ContextMenu {
             );
 
             // Only show "Remove Password" for protected folders
-            if (data.protected) {
+            if (data.protected && data.owned) {
                 items.push(
                     { type: 'separator' },
                     { action: 'remove-password', label: t('remove_password') || 'Remove Password', icon: '&#128275;' }
@@ -123,7 +123,7 @@ export class ContextMenu {
             );
 
             // Only show "Remove Password" for protected quizzes
-            if (data.protected) {
+            if (data.protected && data.owned) {
                 items.push(
                     { type: 'separator' },
                     { action: 'remove-password', label: t('remove_password') || 'Remove Password', icon: '&#128275;' }

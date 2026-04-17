@@ -406,6 +406,13 @@ app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {
         const { title, questions, settings, password, filename } = req.validatedBody;
         const ownerId = req.user?.id || null;
 
+        if (password && !ownerId) {
+            return res.status(401).json({
+                error: 'Sign in to use quiz passwords',
+                messageKey: 'error_auth_required'
+            });
+        }
+
         // Scope title-conflict detection to the requester's own quizzes
         // (or the public pool if anonymous) so user A doesn't bump user B's title.
         const scopedFilenames = metadataService.getQuizFilenamesByOwner(ownerId);
@@ -418,7 +425,7 @@ app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {
                 visibility: ownerId ? 'private' : 'public'
             });
             if (password) {
-                await metadataService.setQuizPassword(result.filename, password);
+                await metadataService.setQuizPassword(result.filename, password, ownerId);
             }
         }
 

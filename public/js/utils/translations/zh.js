@@ -38,6 +38,8 @@ export default {
     quiz_owned_by_you: '您的测验',
     filter_show_only_mine: '仅显示我的',
     filter_show_only_mine_tooltip: '仅显示您创建的测验。取消勾选以同时查看公开测验。',
+    filter_search_placeholder: '搜索测验…',
+    filter_search_clear: '清除搜索',
 
     skip_to_content: '跳至主要内容',
     host_game: '创建游戏',

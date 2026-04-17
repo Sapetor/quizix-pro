@@ -38,6 +38,8 @@ export default {
     quiz_owned_by_you: 'Twój quiz',
     filter_show_only_mine: 'Pokaż tylko moje',
     filter_show_only_mine_tooltip: 'Pokaż tylko quizy, które utworzyłeś. Odznacz, aby zobaczyć również publiczne.',
+    filter_search_placeholder: 'Szukaj quizów…',
+    filter_search_clear: 'Wyczyść wyszukiwanie',
 
     skip_to_content: 'Przejdź do głównej treści',
     host_game: 'Utwórz Grę',

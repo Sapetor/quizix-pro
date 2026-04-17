@@ -52,11 +52,7 @@ function createQuizManagementRoutes(options) {
      * Private → only visible to owner.
      */
     function isQuizVisible(filename, userId) {
-        const meta = metadataService.getQuizMetadata(filename);
-        if (!meta) return true;                 // legacy — no metadata entry, treat as public
-        if (!meta.ownerId) return true;         // ownerless — always public
-        if (meta.visibility !== 'private') return true;
-        return !!userId && userId === meta.ownerId;
+        return metadataService.isQuizVisibleToUser(filename, userId);
     }
 
     // List all quizzes (filtered to what the requester may see)
@@ -318,11 +314,11 @@ function createQuizManagementRoutes(options) {
         try {
             const { id } = req.validatedParams;
             const { password } = req.validatedBody;
-            const result = await metadataService.setFolderPassword(id, password);
+            const result = await metadataService.setFolderPassword(id, password, req.user?.id || null);
             res.json(result);
         } catch (error) {
             logger.error('Set folder password error:', error);
-            const statusCode = error.message === 'Folder not found' ? 404 : 400;
+            const statusCode = error.status || (error.message === 'Folder not found' ? 404 : 400);
             res.status(statusCode).json({ error: error.message || 'Failed to set folder password', messageKey: error.messageKey || 'error_failed_set_password' });
         }
     });
@@ -334,7 +330,7 @@ function createQuizManagementRoutes(options) {
             const deleteContents = req.query.deleteContents === 'true';
 
             // Check if folder requires authentication
-            if (metadataService.requiresAuth(id, 'folder')) {
+            if (metadataService.requiresAuth(id, 'folder', req.user?.id || null)) {
                 // Extract token from Authorization header
                 const authHeader = req.headers['authorization'];
                 if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -413,6 +409,10 @@ function createQuizManagementRoutes(options) {
     // Set or remove quiz password
     router.post('/api/quiz-metadata/:filename/password', validateBody(schemas.setPasswordSchema), async (req, res) => {
         try {
+            if (!req.user) {
+                return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
+            }
+
             const { filename } = req.params;
 
             // Validate filename
@@ -421,11 +421,11 @@ function createQuizManagementRoutes(options) {
             }
 
             const { password } = req.validatedBody;
-            const result = await metadataService.setQuizPassword(filename, password);
+            const result = await metadataService.setQuizPassword(filename, password, req.user.id);
             res.json(result);
         } catch (error) {
             logger.error('Set quiz password error:', error);
-            const statusCode = error.message.includes('not found') ? 404 : 400;
+            const statusCode = error.status || (error.message.includes('not found') ? 404 : 400);
             res.status(statusCode).json({ error: error.message || 'Failed to set quiz password', messageKey: error.messageKey || 'error_failed_set_password' });
         }
     });
@@ -456,7 +456,7 @@ function createQuizManagementRoutes(options) {
             }
 
             // Check if quiz requires authentication
-            if (metadataService.requiresAuth(filename, 'quiz')) {
+            if (metadataService.requiresAuth(filename, 'quiz', req.user?.id || null)) {
                 // Extract token from Authorization header
                 const authHeader = req.headers['authorization'];
                 if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -521,7 +521,7 @@ function createQuizManagementRoutes(options) {
                 return res.status(400).json({ error: 'Invalid item type', messageKey: 'error_invalid_item_type' });
             }
 
-            const requiresAuth = metadataService.requiresAuth(itemId, itemType);
+            const requiresAuth = metadataService.requiresAuth(itemId, itemType, req.user?.id || null);
             res.json({ requiresAuth });
         } catch (error) {
             logger.error('Check auth error:', error);

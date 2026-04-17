@@ -38,6 +38,8 @@ export default {
     quiz_owned_by_you: 'Dein Quiz',
     filter_show_only_mine: 'Nur meine anzeigen',
     filter_show_only_mine_tooltip: 'Nur von dir erstellte Quizze anzeigen. Deaktivieren, um auch öffentliche Quizze zu sehen.',
+    filter_search_placeholder: 'Quizze suchen…',
+    filter_search_clear: 'Suche löschen',
 
     welcome_to: 'Willkommen bei',
     skip_to_content: 'Zum Hauptinhalt springen',

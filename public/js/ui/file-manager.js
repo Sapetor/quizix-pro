@@ -9,6 +9,7 @@ import { translationManager } from '../utils/translation-manager.js';
 import { unifiedErrorHandler } from '../utils/unified-error-handler.js';
 import { authManager } from '../utils/auth-manager.js';
 import { getJSON, setJSON } from '../utils/storage-utils.js';
+import { debounce } from '../utils/dom.js';
 import { FolderTree } from './components/folder-tree.js';
 import { ContextMenu } from './components/context-menu.js';
 import { PasswordModal } from './components/password-modal.js';
@@ -34,6 +35,10 @@ export class FileManager {
         this.treeData = null;
         this.filterBar = null;
         this.filterCheckbox = null;
+        this.filterToggleLabel = null;
+        this.searchInput = null;
+        this.searchClearButton = null;
+        this.searchQuery = '';
 
         // showOnlyMine state. null marker = user has never explicitly chosen,
         // so the default tracks the current auth state.
@@ -56,11 +61,21 @@ export class FileManager {
 
     /**
      * Compute the current FolderTree predicate, or null if filtering is off.
+     * Composes the ownership filter (auth-gated) with the name search.
      */
     _getFilterPredicate() {
-        if (!authManager.isAuthenticated) return null;
-        if (!this.showOnlyMine) return null;
-        return (quiz) => quiz.owned === true;
+        const ownershipActive = authManager.isAuthenticated && this.showOnlyMine;
+        const query = this.searchQuery.trim().toLowerCase();
+        if (!ownershipActive && !query) return null;
+
+        return (quiz) => {
+            if (ownershipActive && quiz.owned !== true) return false;
+            if (query) {
+                const name = (quiz.displayName || quiz.filename || '').toLowerCase();
+                if (!name.includes(query)) return false;
+            }
+            return true;
+        };
     }
 
     /**
@@ -134,8 +149,9 @@ export class FileManager {
     }
 
     /**
-     * Build and insert the "Show only my quizzes" toggle bar above the tree
-     * container. Hidden entirely for anonymous users.
+     * Build and insert the filter bar above the tree container. Holds the
+     * name search (visible to all users) and the "Show only my quizzes"
+     * toggle (visible to authenticated users only).
      */
     _mountFilterBar(container) {
         if (!container.parentElement) {
@@ -151,6 +167,17 @@ export class FileManager {
         const bar = document.createElement('div');
         bar.className = 'file-manager-filter-bar';
         bar.innerHTML = `
+            <div class="file-manager-search">
+                <input type="text"
+                       class="file-manager-search-input"
+                       data-translate-placeholder="filter_search_placeholder"
+                       autocomplete="off"
+                       spellcheck="false">
+                <button type="button"
+                        class="file-manager-search-clear hidden"
+                        data-translate-title="filter_search_clear"
+                        aria-label="Clear search">&times;</button>
+            </div>
             <label class="file-manager-filter-toggle" data-translate-title="filter_show_only_mine_tooltip">
                 <input type="checkbox" class="file-manager-show-only-mine">
                 <span data-translate="filter_show_only_mine">Show only my quizzes</span>
@@ -166,9 +193,46 @@ export class FileManager {
             this.folderTree?.setFilterPredicate(this._getFilterPredicate());
         });
 
+        const searchInput = bar.querySelector('.file-manager-search-input');
+        const searchClear = bar.querySelector('.file-manager-search-clear');
+        const applyFilter = () => {
+            if (!this.folderTree) return;
+            this.folderTree.setFilter({
+                predicate: this._getFilterPredicate(),
+                forceExpandAll: this.searchQuery.trim().length > 0
+            });
+        };
+        const applySearch = (value, immediate = false) => {
+            this.searchQuery = value;
+            searchClear.classList.toggle('hidden', !value);
+            if (immediate) {
+                debouncedApply.cancel?.();
+                applyFilter();
+            } else {
+                debouncedApply();
+            }
+        };
+        const debouncedApply = debounce(applyFilter, 120);
+        searchInput.addEventListener('input', () => applySearch(searchInput.value));
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && searchInput.value) {
+                e.stopPropagation();
+                searchInput.value = '';
+                applySearch('', true);
+            }
+        });
+        searchClear.addEventListener('click', () => {
+            searchInput.value = '';
+            applySearch('', true);
+            searchInput.focus();
+        });
+
         container.parentElement.insertBefore(bar, container);
         this.filterBar = bar;
         this.filterCheckbox = checkbox;
+        this.filterToggleLabel = bar.querySelector('.file-manager-filter-toggle');
+        this.searchInput = searchInput;
+        this.searchClearButton = searchClear;
 
         this._syncFilterBar();
         translationManager.translateContainer(bar);
@@ -176,11 +240,14 @@ export class FileManager {
 
     /**
      * Update bar visibility and checkbox state to match the current auth
-     * state and preference.
+     * state and preference. The search input stays visible for everyone;
+     * only the "show only mine" toggle hides for anonymous users.
      */
     _syncFilterBar() {
         if (!this.filterBar) return;
-        this.filterBar.classList.toggle('hidden', !authManager.isAuthenticated);
+        if (this.filterToggleLabel) {
+            this.filterToggleLabel.classList.toggle('hidden', !authManager.isAuthenticated);
+        }
         if (this.filterCheckbox) {
             this.filterCheckbox.checked = this.showOnlyMine;
         }

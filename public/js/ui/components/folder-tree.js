@@ -25,6 +25,7 @@ export class FolderTree {
         this.rawTreeData = { folders: [], quizzes: [] };
         this.treeData = { folders: [], quizzes: [] };
         this.expandedFolders = new Set();
+        this.forceExpandAll = false;
         this.selectedItem = null;
 
         // Double-tap detection for mobile (uses string IDs to survive re-renders)
@@ -78,9 +79,47 @@ export class FolderTree {
      * Predicate signature: (quiz) => boolean. Pass null to disable filtering.
      */
     setFilterPredicate(predicate) {
-        this.options.filterPredicate = predicate || null;
+        const next = predicate || null;
+        if (this.options.filterPredicate === next) return;
+        this.options.filterPredicate = next;
         this.treeData = this._applyFilter(this.rawTreeData);
         this.render();
+    }
+
+    /**
+     * Render every folder as expanded without touching the persisted
+     * expanded set. Used while a search is active so matches buried in
+     * collapsed folders stay visible. Caller must restore by passing false.
+     */
+    setForceExpandAll(active) {
+        const next = !!active;
+        if (this.forceExpandAll === next) return;
+        this.forceExpandAll = next;
+        this.render();
+    }
+
+    /**
+     * Update the filter predicate and force-expand flag in a single pass so
+     * callers changing both per keystroke render once instead of twice.
+     */
+    setFilter({ predicate, forceExpandAll } = {}) {
+        let dirty = false;
+        if (forceExpandAll !== undefined) {
+            const next = !!forceExpandAll;
+            if (this.forceExpandAll !== next) {
+                this.forceExpandAll = next;
+                dirty = true;
+            }
+        }
+        if (predicate !== undefined) {
+            const nextPred = predicate || null;
+            if (this.options.filterPredicate !== nextPred) {
+                this.options.filterPredicate = nextPred;
+                this.treeData = this._applyFilter(this.rawTreeData);
+                dirty = true;
+            }
+        }
+        if (dirty) this.render();
     }
 
     /**
@@ -151,7 +190,7 @@ export class FolderTree {
         li.dataset.id = folder.id;
         li.dataset.type = 'folder';
 
-        const isExpanded = this.expandedFolders.has(folder.id);
+        const isExpanded = this.forceExpandAll || this.expandedFolders.has(folder.id);
         if (isExpanded) {
             li.classList.add('expanded');
         }

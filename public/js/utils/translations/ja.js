@@ -38,6 +38,8 @@ export default {
     quiz_owned_by_you: 'あなたのクイズ',
     filter_show_only_mine: '自分のクイズのみ表示',
     filter_show_only_mine_tooltip: '自分が作成したクイズのみを表示します。チェックを外すと公開クイズも表示されます。',
+    filter_search_placeholder: 'クイズを検索…',
+    filter_search_clear: '検索をクリア',
 
     skip_to_content: 'メインコンテンツへスキップ',
     host_game: 'ゲームを作成',

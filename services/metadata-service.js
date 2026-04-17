@@ -606,11 +606,29 @@ class MetadataService {
     /**
      * Set password for a folder
      */
-    async setFolderPassword(folderId, password) {
+    async setFolderPassword(folderId, password, userId = null) {
         const folder = this.metadata.folders[folderId];
         if (!folder) {
             const err = new Error('Folder not found');
             err.messageKey = 'error_folder_not_found';
+            throw err;
+        }
+
+        if (!userId) {
+            const err = new Error('Authentication required to manage folder passwords');
+            err.messageKey = 'error_auth_required';
+            err.status = 401;
+            throw err;
+        }
+
+        // Only the user who set the password can change it. Legacy folders with
+        // a passwordHash but no passwordSetBy (predating ownership tracking) are
+        // locked out of API changes to prevent silent hijacking — an admin must
+        // clear the entry directly in quiz-metadata.json.
+        if (folder.passwordHash && folder.passwordSetBy !== userId) {
+            const err = new Error('Only the user who locked this folder can change its password');
+            err.messageKey = 'error_folder_not_password_owner';
+            err.status = 403;
             throw err;
         }
 
@@ -621,8 +639,10 @@ class MetadataService {
                 throw err;
             }
             folder.passwordHash = await this.hashPassword(password);
+            folder.passwordSetBy = userId;
         } else {
             folder.passwordHash = null;
+            folder.passwordSetBy = null;
         }
 
         await this.saveMetadata();
@@ -633,11 +653,35 @@ class MetadataService {
     /**
      * Set password for a quiz
      */
-    async setQuizPassword(filename, password) {
+    async setQuizPassword(filename, password, userId = null) {
         const quiz = this.metadata.quizzes[filename];
         if (!quiz) {
             const err = new Error('Quiz not found in metadata');
             err.messageKey = 'error_quiz_not_found';
+            throw err;
+        }
+
+        if (!userId) {
+            const err = new Error('Authentication required to manage quiz passwords');
+            err.messageKey = 'error_auth_required';
+            err.status = 401;
+            throw err;
+        }
+
+        // Setting a password requires an owner; clearing an ownerless (legacy)
+        // hash is allowed for any authenticated user so orphaned hashes can be
+        // cleaned up via the API.
+        if (password && !quiz.ownerId) {
+            const err = new Error('Only account-owned quizzes can use passwords');
+            err.messageKey = 'error_quiz_password_requires_owner';
+            err.status = 400;
+            throw err;
+        }
+
+        if (quiz.ownerId && quiz.ownerId !== userId) {
+            const err = new Error('You do not own this quiz');
+            err.messageKey = 'error_quiz_not_owner';
+            err.status = 403;
             throw err;
         }
 
@@ -767,7 +811,7 @@ class MetadataService {
     /**
      * Check if item requires authentication
      */
-    requiresAuth(itemId, itemType) {
+    requiresAuth(itemId, itemType, userId = null) {
         if (itemType === 'folder') {
             const folder = this.metadata.folders[itemId];
             return folder && !!folder.passwordHash;
@@ -776,7 +820,10 @@ class MetadataService {
             if (!quiz) return false;
 
             // Check quiz password
-            if (quiz.passwordHash) return true;
+            if (quiz.passwordHash) {
+                if (!quiz.ownerId) return false; // legacy anonymous passwords are not enforced
+                return !(userId && quiz.ownerId === userId);
+            }
 
             // Check if any parent folder is protected
             let folderId = quiz.folderId;
@@ -813,9 +860,30 @@ class MetadataService {
      * - Private quizzes are only visible to their owner.
      */
     _quizVisibleTo(quiz, userId) {
+        // Folder-level protection is hidden from anonymous users, but still
+        // available to signed-in users through the password flow.
+        if (!userId) {
+            let folderId = quiz.folderId;
+            while (folderId) {
+                const folder = this.metadata.folders[folderId];
+                if (folder && folder.passwordHash) return false;
+                folderId = folder ? folder.parentId : null;
+            }
+        }
+
         if (!quiz.ownerId) return true;                 // legacy public
         if (quiz.visibility !== 'private') return true; // explicitly public
         return !!userId && userId === quiz.ownerId;
+    }
+
+    /**
+     * Public wrapper for quiz visibility checks by filename.
+     * Missing metadata falls back to visible to preserve legacy behavior.
+     */
+    isQuizVisibleToUser(filename, userId = null) {
+        const quiz = this.metadata?.quizzes?.[filename];
+        if (!quiz) return true;
+        return this._quizVisibleTo(quiz, userId);
     }
 
     /**
@@ -827,7 +895,7 @@ class MetadataService {
             type: 'quiz',
             filename,
             displayName: quiz.displayName,
-            protected: !!quiz.passwordHash || !!(folder && folder.passwordHash),
+            protected: (!!quiz.ownerId && !!quiz.passwordHash) || !!(folder && folder.passwordHash),
             created: quiz.created,
             ownerId: quiz.ownerId || null,
             visibility: quiz.ownerId ? (quiz.visibility || 'private') : 'public',
