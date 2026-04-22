@@ -10,7 +10,7 @@
 
 // IMPORTANT: This placeholder is replaced by the server with a dynamic version
 // on each server start, ensuring browsers always detect SW updates.
-const CACHE_VERSION = 'v20260416-password-ownership-fix';
+const CACHE_VERSION = 'v20260422-landing-pin-joiners-live';
 const CACHE_NAME = `quizix-static-${CACHE_VERSION}`;
 const OFFLINE_CACHE_NAME = 'quizix-offline-data';
 

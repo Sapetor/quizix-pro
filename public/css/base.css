@@ -91,6 +91,13 @@ body:not(.loaded) * {
     font-display: swap; /* Use fallback immediately, swap when Inter loads */
 }
 
+/* Editorial display font on headings site-wide */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    font-weight: 460;
+}
+
 /* LaTeX rendering - FOUC Prevention with instant hide, smooth reveal */
 /* Content starts invisible immediately, then fades in after MathJax processes */
 .tex2jax_process {

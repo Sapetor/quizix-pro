@@ -54,6 +54,9 @@
 /* User accounts - Auth modal, user chip, visibility badges */
 @import './auth.css';
 
+/* Editorial landing page */
+@import './landing.css';
+
 /* Mobile enhancements consolidated into responsive.css */
 
 

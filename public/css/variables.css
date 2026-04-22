@@ -5,10 +5,23 @@
 
 /* Modern Design System */
 :root {
-    /* === PREMIUM FONT STACK === */
-    --font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    /* === FONT STACK (editorial) === */
+    --font-display: 'Fraunces', 'Plus Jakarta Sans', 'Times New Roman', serif;
     --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+    /* === EDITORIAL PALETTE (shared with landing) === */
+    --paper: #f5f1ea;
+    --paper-2: #ebe4d7;
+    --paper-3: #e1d8c6;
+    --ink: #1a1916;
+    --ink-2: #3c3930;
+    --ink-3: #6b6658;
+    --ink-4: #9a9383;
+    --rule-soft-light: rgba(26, 25, 22, 0.12);
+    --rule-soft-dark: rgba(243, 237, 224, 0.14);
+    --accent-terracotta: #d97757;
+    --accent-terracotta-deep: #b85d3e;
 
     /* === PREMIUM INDIGO COLOR PALETTE === */
     --color-primary-50: #eef2ff;
@@ -40,9 +53,9 @@
     --duration-normal: 250ms;
     --duration-slow: 400ms;
 
-    /* Premium Gradient */
-    --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    --gradient-primary-hover: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    /* Primary gradient (editorial terracotta) */
+    --gradient-primary: linear-gradient(135deg, #d97757 0%, #b85d3e 100%);
+    --gradient-primary-hover: linear-gradient(135deg, #b85d3e 0%, #9c4a30 100%);
     
     /* === COLORFUL OPTIONS SYSTEM === */
     /* WCAG AA Accessible Colors: All meet ≥4.5:1 contrast with white text */
@@ -260,17 +273,17 @@
     --bg-light-primary: #fafafa;
     --bg-light-secondary: #f5f5f7;
 
-    /* Light Theme Variables - Critical for theme switching */
-    --bg-primary: linear-gradient(135deg, #fafafa 0%, #f5f5f7 50%, #ebebef 100%);
-    --bg-secondary: rgba(99, 102, 241, 0.15);
-    --text-primary: #1e293b;
-    --text-secondary: #4338ca;
-    --modal-bg: rgba(255, 255, 255, 0.98);
-    --modal-text: #1e293b;
-    --card-bg: rgba(255, 255, 255, 0.85);
-    --border-color: rgba(0, 0, 0, 0.08);
-    --accent-primary: #6366f1;
-    --accent-secondary: #f97316;
+    /* Light Theme Variables - Critical for theme switching (editorial cream) */
+    --bg-primary: var(--paper);
+    --bg-secondary: rgba(217, 119, 87, 0.10);
+    --text-primary: var(--ink);
+    --text-secondary: var(--accent-terracotta-deep);
+    --modal-bg: var(--paper-2);
+    --modal-text: var(--ink);
+    --card-bg: var(--paper-2);
+    --border-color: var(--rule-soft-light);
+    --accent-primary: var(--accent-terracotta);
+    --accent-secondary: var(--ink);
     --success-color: #10b981;
     --warning-color: #f59e0b;
     --error-color: #ef4444;
@@ -314,17 +327,17 @@
     --bg-dark-secondary: #18181f;
     --bg-dark-elevated: #1f1f28;
 
-    /* Dark Theme Variables - Critical for theme switching */
-    --bg-primary: linear-gradient(135deg, #0f0f14 0%, #18181f 50%, #1f1f28 100%);
-    --bg-secondary: rgba(255,255,255,0.08);
-    --text-primary: #f0f6fc;
-    --text-secondary: #818cf8;
-    --modal-bg: #1f1f28;
-    --modal-text: #f8fafc;
-    --card-bg: rgba(255,255,255,0.08);
-    --border-color: rgba(255,255,255,0.15);
-    --accent-primary: #818cf8;
-    --accent-secondary: #f97316;
+    /* Dark Theme Variables - Critical for theme switching (editorial ink) */
+    --bg-primary: #14130f;
+    --bg-secondary: rgba(217, 119, 87, 0.12);
+    --text-primary: #f3ede0;
+    --text-secondary: var(--accent-terracotta);
+    --modal-bg: #1e1c17;
+    --modal-text: #f3ede0;
+    --card-bg: #27241d;
+    --border-color: var(--rule-soft-dark);
+    --accent-primary: var(--accent-terracotta);
+    --accent-secondary: #f3ede0;
     --success-color: #10b981;
     --warning-color: #f59e0b;
     --error-color: #ef4444;
