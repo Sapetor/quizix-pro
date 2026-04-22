@@ -9,6 +9,9 @@
 /* Base styles - Reset, typography, global styles */
 @import './base.css';
 
+/* App header - Brand, toolbar container, utility icons, user chip */
+@import './header.css';
+
 /* Layout systems - Grid, containers, screen management */
 @import './layout.css';
 
