@@ -91,10 +91,9 @@ export class SettingsManager {
     applyTheme(theme) {
         const body = document.body;
 
-        // Get all theme toggle buttons (desktop, mobile header, mobile bottom)
+        // Get all theme toggle buttons (desktop, mobile bottom)
         const themeToggleButtons = [
             dom.get('theme-toggle'),
-            dom.get('theme-toggle-mobile-header'),
             dom.get('theme-toggle-mobile'), // fallback if still exists
             dom.get('mobile-theme-toggle')  // fallback if still exists
         ].filter(button => button !== null); // Remove null elements
@@ -107,13 +106,13 @@ export class SettingsManager {
 
             // Update all theme toggle buttons - show moon (current state: dark)
             themeToggleButtons.forEach(themeToggle => {
-                // Update icon span if it exists (for mobile header controls)
                 const iconSpan = themeToggle.querySelector('.control-icon');
                 if (iconSpan) {
                     iconSpan.textContent = '🌙'; // Moon icon - currently dark
                 } else {
-                    // Update button text/icon directly
-                    themeToggle.textContent = '🌙'; // Moon icon - currently dark
+                    // Use data-icon-state to avoid destroying SVG children
+                    themeToggle.dataset.iconState = 'dark';
+                    themeToggle.setAttribute('aria-pressed', 'true');
                 }
                 themeToggle.title = getThemeToggleTitles().switchToLight;
             });
@@ -125,13 +124,13 @@ export class SettingsManager {
 
             // Update all theme toggle buttons - show sun (current state: light)
             themeToggleButtons.forEach(themeToggle => {
-                // Update icon span if it exists (for mobile header controls)
                 const iconSpan = themeToggle.querySelector('.control-icon');
                 if (iconSpan) {
                     iconSpan.textContent = '☀️'; // Sun icon - currently light
                 } else {
-                    // Update button text/icon directly
-                    themeToggle.textContent = '☀️'; // Sun icon - currently light
+                    // Use data-icon-state to avoid destroying SVG children
+                    themeToggle.dataset.iconState = 'light';
+                    themeToggle.setAttribute('aria-pressed', 'false');
                 }
                 themeToggle.title = getThemeToggleTitles().switchToDark;
             });
@@ -339,26 +338,16 @@ export class SettingsManager {
     updateSoundToggleButtons() {
         const soundManager = this._getSoundManager();
         const isEnabled = soundManager?.isSoundsEnabled() ?? true;
-        const icon = isEnabled ? '🔊' : '🔇';
         const tooltip = isEnabled ?
             (translationManager.getTranslationSync('mute_sound') || 'Mute sound') :
             (translationManager.getTranslationSync('unmute_sound') || 'Unmute sound');
 
-        // Desktop button
+        // Desktop button — use data-icon-state to avoid destroying SVG children
         const desktopBtn = dom.get('sound-toggle');
         if (desktopBtn) {
-            desktopBtn.textContent = icon;
+            desktopBtn.dataset.iconState = isEnabled ? 'on' : 'off';
+            desktopBtn.setAttribute('aria-pressed', isEnabled ? 'true' : 'false');
             desktopBtn.title = tooltip;
-        }
-
-        // Mobile button
-        const mobileBtn = dom.get('sound-toggle-mobile-header');
-        if (mobileBtn) {
-            const iconSpan = mobileBtn.querySelector('.control-icon');
-            if (iconSpan) {
-                iconSpan.textContent = icon;
-            }
-            mobileBtn.title = tooltip;
         }
     }
 
@@ -458,7 +447,6 @@ export class SettingsManager {
         // Update all theme toggle buttons (desktop and mobile)
         const themeToggleButtons = [
             dom.get('theme-toggle'),
-            dom.get('theme-toggle-mobile-header'),
             dom.get('theme-toggle-mobile'),
             dom.get('mobile-theme-toggle')
         ].filter(button => button !== null);
@@ -471,7 +459,9 @@ export class SettingsManager {
                 if (iconSpan) {
                     iconSpan.textContent = '🌙';
                 } else {
-                    themeToggle.textContent = '🌙';
+                    // Use data-icon-state to avoid destroying SVG children
+                    themeToggle.dataset.iconState = 'dark';
+                    themeToggle.setAttribute('aria-pressed', 'true');
                 }
                 themeToggle.title = getThemeToggleTitles().switchToLight;
             } else {
@@ -479,7 +469,9 @@ export class SettingsManager {
                 if (iconSpan) {
                     iconSpan.textContent = '☀️';
                 } else {
-                    themeToggle.textContent = '☀️';
+                    // Use data-icon-state to avoid destroying SVG children
+                    themeToggle.dataset.iconState = 'light';
+                    themeToggle.setAttribute('aria-pressed', 'false');
                 }
                 themeToggle.title = getThemeToggleTitles().switchToDark;
             }
@@ -520,10 +512,9 @@ export class SettingsManager {
      * Initialize settings event listeners
      */
     initializeEventListeners() {
-        // Theme toggle (desktop and mobile)
+        // Theme toggle (desktop)
         const themeToggleButtons = [
-            dom.get('theme-toggle'),
-            dom.get('theme-toggle-mobile-header')
+            dom.get('theme-toggle')
         ].filter(button => button !== null);
 
         themeToggleButtons.forEach(themeToggle => {
@@ -532,10 +523,9 @@ export class SettingsManager {
             }
         });
 
-        // Sound toggle (desktop and mobile)
+        // Sound toggle (desktop)
         const soundToggleButtons = [
-            dom.get('sound-toggle'),
-            dom.get('sound-toggle-mobile-header')
+            dom.get('sound-toggle')
         ].filter(button => button !== null);
 
         soundToggleButtons.forEach(soundToggle => {

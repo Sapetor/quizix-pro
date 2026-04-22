@@ -119,18 +119,6 @@ function positionMobileDropdown(dropdown) {
 export function toggleLanguageDropdown() {
     // Handle mobile-specific dropdowns — use body portal to escape header stacking context
     if (isMobile()) {
-        const mobileHeaderDropdown = document.getElementById('mobile-language-selector-header');
-        if (mobileHeaderDropdown) {
-            const isOpening = !mobileHeaderDropdown.classList.contains('open');
-            mobileHeaderDropdown.classList.toggle('open');
-            if (isOpening) {
-                positionMobileDropdown(mobileHeaderDropdown);
-            } else {
-                restoreDropdownToOriginalPosition(mobileHeaderDropdown);
-            }
-            return;
-        }
-
         const mobileDropdown = document.getElementById('mobile-language-selector');
         if (mobileDropdown) {
             const isOpening = !mobileDropdown.classList.contains('open');
@@ -193,7 +181,6 @@ export async function selectLanguage(langCode, event) {
     // Close all dropdowns
     const desktopDropdown = document.getElementById('language-selector');
     const mobileDropdown = document.getElementById('mobile-language-selector');
-    const mobileHeaderDropdown = document.getElementById('mobile-language-selector-header');
 
     if (desktopDropdown) {
         desktopDropdown.classList.remove('open');
@@ -203,13 +190,9 @@ export async function selectLanguage(langCode, event) {
         mobileDropdown.classList.remove('open');
         restoreDropdownToOriginalPosition(mobileDropdown);
     }
-    if (mobileHeaderDropdown) {
-        mobileHeaderDropdown.classList.remove('open');
-        restoreDropdownToOriginalPosition(mobileHeaderDropdown);
-    }
 
     // Update all dropdown UIs
-    [desktopDropdown, mobileDropdown, mobileHeaderDropdown].forEach(dropdown => {
+    [desktopDropdown, mobileDropdown].forEach(dropdown => {
         updateDropdownSelection(dropdown, langCode);
     });
 
@@ -231,7 +214,7 @@ export async function selectLanguage(langCode, event) {
  * Initialize dropdown event listeners
  */
 export function initializeDropdownListeners() {
-    const allDropdownIds = ['language-selector', 'mobile-language-selector-header', 'mobile-language-selector'];
+    const allDropdownIds = ['language-selector', 'mobile-language-selector'];
 
     // Close dropdown when clicking outside
     document.addEventListener('click', (event) => {

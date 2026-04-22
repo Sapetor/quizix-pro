@@ -27,12 +27,11 @@ import { initAuthChip } from './ui/auth-chip.js'; // Optional user accounts (log
  */
 function updateLanguageDropdownDisplay(languageCode) {
     try {
-        // Update all language selectors (desktop, mobile bottom, mobile header)
+        // Update all language selectors (desktop, mobile bottom)
         const desktopDropdown = document.getElementById('language-selector');
         const mobileDropdown = document.getElementById('mobile-language-selector');
-        const mobileHeaderDropdown = document.getElementById('mobile-language-selector-header');
 
-        const dropdowns = [desktopDropdown, mobileDropdown, mobileHeaderDropdown].filter(d => d);
+        const dropdowns = [desktopDropdown, mobileDropdown].filter(d => d);
 
         if (dropdowns.length === 0) {
             logger.debug('No language dropdowns found during initialization');

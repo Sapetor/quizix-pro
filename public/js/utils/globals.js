@@ -71,10 +71,17 @@ export function toggleToolbar() {
     const toolbar = dom.get('horizontal-toolbar');
     if (toolbar) {
         const isVisible = !toolbar.classList.contains('hidden');
+        const willBeVisible = !isVisible;
         if (isVisible) {
             hide(toolbar);
         } else {
             show(toolbar, 'visible-flex');
+        }
+        document.body.classList.toggle('has-editor-toolbar', willBeVisible);
+        const breadcrumb = document.getElementById('editor-breadcrumb');
+        if (breadcrumb) {
+            if (willBeVisible) breadcrumb.removeAttribute('hidden');
+            else breadcrumb.setAttribute('hidden', '');
         }
     }
 }
@@ -714,10 +721,8 @@ function applyThemeFallback() {
     document.documentElement.setAttribute('data-theme', newTheme);
 
     // Update all theme toggle buttons
-    const themeIcon = newTheme === 'dark' ? '\ud83c\udf19' : '\u2600\ufe0f';
     const themeButtons = [
         'theme-toggle',
-        'theme-toggle-mobile-header',
         'theme-toggle-mobile',
         'mobile-theme-toggle'
     ];
@@ -728,9 +733,11 @@ function applyThemeFallback() {
 
         const iconSpan = button.querySelector('.control-icon');
         if (iconSpan) {
-            iconSpan.textContent = themeIcon;
+            iconSpan.textContent = newTheme === 'dark' ? '\ud83c\udf19' : '\u2600\ufe0f';
         } else {
-            button.textContent = themeIcon;
+            // Use data-icon-state to avoid destroying SVG children
+            button.dataset.iconState = newTheme === 'dark' ? 'dark' : 'light';
+            button.setAttribute('aria-pressed', newTheme === 'dark' ? 'true' : 'false');
         }
     });
 
@@ -778,18 +785,8 @@ export function returnToMainFromHeader() {
  * Update mobile and desktop header return button visibility
  */
 export function updateMobileReturnButtonVisibility(currentScreen) {
-    const mobileReturnButton = dom.get('mobile-return-to-main');
     const desktopReturnButton = dom.get('desktop-return-to-main');
     const shouldShow = currentScreen !== 'main-menu' && currentScreen !== '';
-
-    if (mobileReturnButton) {
-        if (shouldShow) {
-            show(mobileReturnButton, 'visible-flex');
-        } else {
-            hide(mobileReturnButton);
-        }
-        logger.debug(`Mobile return button: ${shouldShow ? 'shown' : 'hidden'} for screen: ${currentScreen}`);
-    }
 
     if (desktopReturnButton) {
         if (shouldShow) {
