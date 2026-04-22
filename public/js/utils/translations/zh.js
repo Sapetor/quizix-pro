@@ -41,6 +41,10 @@ export default {
     filter_search_placeholder: '搜索测验…',
     filter_search_clear: '清除搜索',
 
+    // Header contextual breadcrumb
+    header_editor: '编辑器',
+    header_untitled_quiz: '无标题测验',
+
     skip_to_content: '跳至主要内容',
     host_game: '创建游戏',
     join_game: '加入游戏',

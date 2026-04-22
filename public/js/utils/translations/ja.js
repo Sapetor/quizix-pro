@@ -41,6 +41,10 @@ export default {
     filter_search_placeholder: 'クイズを検索…',
     filter_search_clear: '検索をクリア',
 
+    // Header contextual breadcrumb
+    header_editor: 'エディター',
+    header_untitled_quiz: '無題のクイズ',
+
     skip_to_content: 'メインコンテンツへスキップ',
     host_game: 'ゲームを作成',
     join_game: 'ゲームに参加',

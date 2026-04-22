@@ -41,6 +41,10 @@ export default {
     filter_search_placeholder: 'Cerca quiz…',
     filter_search_clear: 'Cancella ricerca',
 
+    // Header contextual breadcrumb
+    header_editor: 'Editor',
+    header_untitled_quiz: 'Quiz senza titolo',
+
     welcome_to: 'Benvenuto a',
     skip_to_content: 'Vai al contenuto principale',
     host_game: 'Crea Gioco',
