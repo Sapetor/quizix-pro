@@ -1510,8 +1510,9 @@ export class QuizGame {
         body.setAttribute('data-theme', newTheme);
         document.documentElement.setAttribute('data-theme', newTheme);
         if (themeToggle) {
-            // Show current state (consistent with SettingsManager)
-            themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+            // New SVG-based header: swap via data-icon-state (see header.css)
+            themeToggle.dataset.iconState = newTheme;
+            themeToggle.setAttribute('aria-pressed', newTheme === 'dark' ? 'true' : 'false');
         }
         // Save to quizSettings format for consistency with SettingsManager
         const savedSettings = getJSON('quizSettings', {});
