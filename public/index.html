@@ -148,24 +148,14 @@
                 }
 
 
-                // Initialize theme toggles (desktop and mobile)
-                const themeToggleButtons = [
-                    document.getElementById('theme-toggle'),
-                    document.getElementById('theme-toggle-mobile-header')
-                ].filter(button => button !== null);
+                // Initialize theme icon state (SVG swap is driven by data-icon-state; see header.css)
+                const themeToggle = document.getElementById('theme-toggle');
+                if (themeToggle) {
+                    themeToggle.dataset.iconState = initialTheme === 'dark' ? 'dark' : 'light';
+                    themeToggle.setAttribute('aria-pressed', initialTheme === 'dark' ? 'true' : 'false');
+                }
 
                 const fontIcon = document.getElementById('font-size-icon');
-
-                themeToggleButtons.forEach(button => {
-                    const iconSpan = button.querySelector('.control-icon');
-                    const emoji = initialTheme === 'dark' ? '🌙' : '☀️';
-
-                    if (iconSpan) {
-                        iconSpan.textContent = emoji;
-                    } else {
-                        button.textContent = emoji;
-                    }
-                });
 
                 if (fontIcon) {
                     const icons = { small: 'A⁻', medium: 'A', large: 'A⁺', xlarge: 'A⁺⁺' };
@@ -207,12 +197,6 @@
             const body = document.body;
             if (!body) return; // Safety check
 
-            // Get all theme toggle buttons (desktop and mobile)
-            const themeToggleButtons = [
-                document.getElementById('theme-toggle'),
-                document.getElementById('theme-toggle-mobile-header')
-            ].filter(button => button !== null);
-
             const currentTheme = body.getAttribute('data-theme') || 'light';
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
@@ -220,17 +204,14 @@
             body.setAttribute('data-theme', newTheme);
             document.documentElement.setAttribute('data-theme', newTheme);
 
-            // Update all theme toggle buttons
-            themeToggleButtons.forEach(button => {
-                const iconSpan = button.querySelector('.control-icon');
-                const newEmoji = newTheme === 'dark' ? '🌙' : '☀️';
-
-                if (iconSpan) {
-                    iconSpan.textContent = newEmoji;
-                } else {
-                    button.textContent = newEmoji;
-                }
-            });
+            // Update the theme button's icon state and aria-pressed
+            // (SVG swap is driven by CSS via [data-icon-state]; header-controller.js
+            // also observes data-theme, but we update the button here for immediate feedback)
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.dataset.iconState = newTheme;
+                themeToggle.setAttribute('aria-pressed', newTheme === 'dark' ? 'true' : 'false');
+            }
 
             localStorage.setItem('theme', newTheme);
         };
