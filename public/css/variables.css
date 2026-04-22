@@ -309,6 +309,16 @@
 }
 
 [data-theme="dark"] {
+    /* Editorial Palette - Dark Mode (inverted from light mode) */
+    --paper: #14130f;
+    --paper-2: #1e1c17;
+    --paper-3: #27241d;
+    --ink: #f3ede0;
+    --ink-2: #d8d0be;
+    --ink-3: #a69e8b;
+    --ink-4: #746d5e;
+    --rule-soft-light: rgba(243, 237, 224, 0.14);
+
     /* Modern Glass Morphism for Dark Mode */
     --glass-light: rgba(255, 255, 255, 0.05);
     --glass-medium: rgba(255, 255, 255, 0.08);
