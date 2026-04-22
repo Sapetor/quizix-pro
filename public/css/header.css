@@ -1,0 +1,380 @@
+/* =========================================================
+   App header — editorial paper/ink, sticky, 64px (56 mobile)
+   Tokens from variables.css. No !important.
+   ========================================================= */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule-soft-light);
+  transition: background 300ms, border-color 300ms;
+}
+
+.app-header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  height: 64px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  position: relative; /* anchor for the utilities popover */
+}
+
+/* ----- Left cluster: brand + (editor breadcrumb) ----- */
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-shrink: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(3px);
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.brand-tag {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 3px 7px;
+  border: 1px solid var(--rule-soft-light);
+  border-radius: 4px;
+  transform: translateY(-3px);
+}
+
+.editor-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink-3);
+  min-width: 0;
+}
+.editor-breadcrumb[hidden] { display: none; }
+.editor-breadcrumb .chevron {
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+.editor-breadcrumb-separator {
+  color: var(--ink-4);
+}
+.editor-breadcrumb-title {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+}
+
+/* ----- Contained editor toolbar ----- */
+.app-header .toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--paper-2);
+  border-radius: 10px;
+  border: 1px solid var(--rule-soft-light);
+}
+.app-header .toolbar.hidden { display: none; }
+.app-header .toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.app-header .toolbar-group + .toolbar-group {
+  margin-left: 4px;
+  padding-left: 6px;
+  border-left: 1px solid var(--rule-soft-light);
+}
+.app-header .toolbar-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms, color 150ms;
+}
+.app-header .toolbar-btn:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+.app-header .toolbar-btn .toolbar-icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+/* ----- Right cluster ----- */
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-header-utilities {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.iconbtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 150ms, color 150ms;
+  position: relative;
+}
+.iconbtn:hover {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+.iconbtn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.iconbtn.text-icon {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--ink-2);
+}
+.iconbtn.hidden { display: none; }
+
+/* Theme/sound: two SVGs, one hidden at a time */
+.iconbtn[data-icon-state="light"] .icon-moon { display: block; }
+.iconbtn[data-icon-state="light"] .icon-sun { display: none; }
+.iconbtn[data-icon-state="dark"] .icon-moon { display: none; }
+.iconbtn[data-icon-state="dark"] .icon-sun { display: block; }
+.iconbtn[data-icon-state="on"] .icon-sound-on { display: block; }
+.iconbtn[data-icon-state="on"] .icon-sound-off { display: none; }
+.iconbtn[data-icon-state="off"] .icon-sound-on { display: none; }
+.iconbtn[data-icon-state="off"] .icon-sound-off { display: block; }
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--rule-soft-light);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ----- Language pill (wraps the existing #language-selector) ----- */
+.app-header .language-selector {
+  position: relative;
+}
+.app-header .lang-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-2);
+  padding: 7px 12px;
+  border: 1px solid var(--rule-soft-light);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 200ms, color 200ms;
+}
+.app-header .lang-pill:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.app-header .lang-pill .language-flag {
+  font-size: 14px;
+  line-height: 1;
+}
+.app-header .lang-pill .lang-chevron {
+  width: 10px;
+  height: 10px;
+  opacity: 0.5;
+}
+
+/* Existing dropdown options popover — keep its behavior, refresh styling */
+.app-header .language-dropdown-options {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--paper);
+  border: 1px solid var(--rule-soft-light);
+  border-radius: 10px;
+  padding: 4px;
+  min-width: 160px;
+  box-shadow: 0 10px 30px -10px rgba(26, 25, 22, 0.2);
+  z-index: 110;
+  display: none;
+}
+.app-header .language-selector.open .language-dropdown-options { display: block; }
+.app-header .language-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--ink-2);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.app-header .language-option:hover {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+
+/* ----- Primary "Create Lobby" CTA ----- */
+.app-header #start-hosting-header-small.btn {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--accent-terracotta);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 200ms;
+  white-space: nowrap;
+}
+.app-header #start-hosting-header-small.btn:hover {
+  background: var(--accent-terracotta-deep);
+}
+.app-header #start-hosting-header-small.hidden { display: none; }
+
+/* ----- User chip ----- */
+.app-header .user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border: 1px solid var(--rule-soft-light);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 200ms;
+  font-family: var(--font-body);
+}
+.app-header .user-chip:hover { border-color: var(--ink); }
+.app-header .user-chip-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.app-header .user-chip.anonymous .user-chip-avatar {
+  background: var(--paper-2);
+  color: var(--ink-3);
+  border: 1px dashed var(--rule-soft-light);
+}
+.app-header .user-chip-name {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+/* ----- Overflow collapse behavior ----- */
+/* Default (wide + no editor toolbar): utilities inline, overflow toggle hidden */
+.app-header #utility-overflow-toggle { display: none; }
+
+/* Collapsed state 1: editor toolbar visible */
+body.has-editor-toolbar .app-header .app-header-utilities { display: none; }
+body.has-editor-toolbar .app-header #utility-overflow-toggle { display: inline-flex; }
+
+/* Collapsed state 2: narrow viewport */
+@media (max-width: 899px) {
+  .app-header .app-header-utilities { display: none; }
+  .app-header #utility-overflow-toggle { display: inline-flex; }
+}
+
+/* Popover reveal when the toggle is active */
+.app-header.overflow-open .app-header-utilities {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: absolute;
+  right: 24px;
+  top: calc(100% + 6px);
+  background: var(--paper);
+  border: 1px solid var(--rule-soft-light);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 10px 30px -10px rgba(26, 25, 22, 0.2);
+  z-index: 105;
+}
+
+/* ----- Responsive tightening ----- */
+@media (max-width: 639px) {
+  .app-header-inner {
+    height: 56px;
+    padding: 0 16px;
+    gap: 12px;
+  }
+  .brand-tag { display: none; }
+  .app-header .lang-pill .language-name { display: none; }
+}
+
+@media (max-width: 479px) {
+  .brand-name { display: none; }
+  .app-header .user-chip-name { display: none; }
+  .app-header-right { gap: 4px; }
+}
