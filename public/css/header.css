@@ -253,7 +253,7 @@
   border-radius: 10px;
   padding: 4px;
   min-width: 160px;
-  box-shadow: 0 10px 30px -10px rgba(26, 25, 22, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.25);
   z-index: 110;
   display: none;
 }
@@ -358,7 +358,7 @@ body.has-editor-toolbar .app-header #utility-overflow-toggle { display: inline-f
   border: 1px solid var(--rule-soft-light);
   border-radius: 10px;
   padding: 6px;
-  box-shadow: 0 10px 30px -10px rgba(26, 25, 22, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.25);
   z-index: 105;
 }
 
