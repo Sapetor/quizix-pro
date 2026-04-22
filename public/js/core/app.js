@@ -25,6 +25,7 @@ import { getJSON, setJSON } from '../utils/storage-utils.js';
 import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
 import { openModal, closeModal, createModalBindings } from '../utils/modal-utils.js';
+import { initHeaderController, syncEditorBreadcrumbTitle } from '../ui/header-controller.js';
 // Results viewer will be lazy loaded when needed
 
 export class QuizGame {
@@ -124,6 +125,10 @@ export class QuizGame {
 
         // Set default player name
         this.setDefaultPlayerName();
+
+        // Initialize the new editorial header (brand lockup, overflow menu, icon state, breadcrumb)
+        initHeaderController();
+        window.headerController = { sync: syncEditorBreadcrumbTitle };
 
         // Check for reconnection data on page load
         this._checkForPendingRejoin();
@@ -385,7 +390,6 @@ export class QuizGame {
         }
 
         bindElement('return-to-main', 'click', () => this.resetAndReturnToMenu());
-        bindElement('mobile-return-to-main', 'click', () => this.resetAndReturnToMenu());
         bindElement('desktop-return-to-main', 'click', () => this.resetAndReturnToMenu());
 
         // Language selection
