@@ -12,6 +12,22 @@ import { initializeAutoHideToolbar, disableAutoHideToolbar, isAutoHideToolbarAct
 import { updateMobileReturnButtonVisibility } from '../utils/globals.js';
 import { escapeHtml, dom } from '../utils/dom.js';
 
+/**
+ * Toggle editor header state (toolbar and breadcrumb visibility)
+ * @param {boolean} visible - Whether the editor toolbar should be visible
+ */
+function setEditorHeaderState(visible) {
+    document.body.classList.toggle('has-editor-toolbar', visible);
+    const breadcrumb = document.getElementById('editor-breadcrumb');
+    if (breadcrumb) {
+        if (visible) breadcrumb.removeAttribute('hidden');
+        else breadcrumb.setAttribute('hidden', '');
+    }
+    if (visible && window.headerController && typeof window.headerController.sync === 'function') {
+        window.headerController.sync();
+    }
+}
+
 export class UIManager {
     constructor() {
         this.currentScreen = 'main-menu';
@@ -129,6 +145,7 @@ export class UIManager {
                     horizontalToolbar.classList.add('hidden');
                     horizontalToolbar.classList.remove('visible-flex');
                 }
+                setEditorHeaderState(false);
                 // Hide mobile FAB on lobby screen
                 if (mobileQuizFab) {
                     mobileQuizFab.classList.add('hidden');
@@ -148,6 +165,7 @@ export class UIManager {
                     horizontalToolbar.classList.add('hidden');
                     horizontalToolbar.classList.remove('visible-flex');
                 }
+                setEditorHeaderState(false);
                 // Hide mobile FAB on all other screens
                 if (mobileQuizFab) {
                     mobileQuizFab.classList.add('hidden');
@@ -400,6 +418,7 @@ export class UIManager {
             horizontalToolbar.classList.remove('hidden');
             horizontalToolbar.classList.add('visible-flex');
         }
+        setEditorHeaderState(true);
         if (mobileQuizFab) {
             mobileQuizFab.classList.remove('hidden');
             mobileQuizFab.classList.add('visible-flex');
