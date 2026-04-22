@@ -168,14 +168,6 @@ h1 {
     background-clip: text;
 }
 
-/* Override for header title - no font scaling for consistent toolbar */
-header h1 {
-    font-size: 2.25rem !important; /* Fixed size equivalent to --text-4xl base */
-    font-family: var(--font-display);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-}
-
 h2 {
     font-size: var(--text-3xl);
     font-weight: 700;

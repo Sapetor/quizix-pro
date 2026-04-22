@@ -98,7 +98,6 @@
 @media (max-width: 768px) {
     /* Hide desktop header controls on mobile */
     .language-selector,
-    .font-size-control,
     #fullscreen-toggle,
     #theme-toggle,
     #sound-toggle {
@@ -112,139 +111,6 @@
         border-bottom: none !important;
         box-shadow: none !important;
         padding: 12px 0 6px 0; /* Reduced from 20px 0 10px 0 */
-    }
-    
-    /* Hide desktop title on mobile */
-    .desktop-title {
-        display: none !important;
-    }
-    
-    /* Mobile title with welcome text */
-    .mobile-title {
-        text-align: center;
-        margin: 0;
-    }
-    
-    .mobile-title .welcome-text {
-        display: block;
-        font-size: 0.8rem; /* Reduced from 0.9rem */
-        color: var(--text-secondary);
-        font-weight: 400;
-        margin-bottom: 1px; /* Reduced from 2px */
-        letter-spacing: 0.3px;
-    }
-    
-    .mobile-title h1 {
-        font-size: 1.6rem !important; /* Reduced from 1.8rem */
-        font-weight: 600;
-        margin: 0;
-        color: var(--text-primary);
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        letter-spacing: 0.5px;
-        line-height: 1.1; /* Tighter line height */
-    }
-    
-    /* Mobile Header Layout */
-    .mobile-title {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        width: 100% !important;
-        padding: 8px 16px !important; /* Reduced from 12px */
-    }
-    
-    .mobile-title-content {
-        flex: 1;
-        text-align: center;
-    }
-    
-    .mobile-header-controls {
-        display: flex !important;
-        align-items: center;
-        gap: 16px; /* Increase gap for better visual spacing */
-        flex-shrink: 0;
-    }
-    
-    /* Compact Mobile Header Controls */
-    .mobile-header .language-selector {
-        position: relative;
-    }
-    
-    .mobile-header .language-dropdown {
-        background: none !important;
-        border: none !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        font-size: 0.8em !important;
-        min-width: auto !important;
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
-        color: var(--text-secondary);
-        transition: color 0.2s ease;
-    }
-    
-    .mobile-header .language-dropdown:hover {
-        color: var(--text-primary);
-    }
-    
-    .mobile-header .language-dropdown-selected {
-        flex-direction: row !important;
-        gap: 0 !important;
-        padding: 0 !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .mobile-header .language-flag {
-        font-size: 1.4em !important; /* Match house icon size */
-    }
-    
-    .mobile-header .language-name {
-        font-size: 0.75em !important;
-        display: none; /* Hide text, show only flag */
-    }
-    
-    .mobile-header .language-dropdown-arrow {
-        font-size: 0.7em !important;
-        margin-left: 2px;
-        display: none; /* Hide arrow, show only flag */
-    }
-    
-    .mobile-header.mobile-control-btn {
-        background: none !important;
-        border: none !important;
-        border-radius: 0 !important;
-        padding: 6px 8px !important;
-        color: var(--text-secondary);
-        font-size: 0.8em !important;
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        cursor: pointer;
-        transition: color 0.2s ease;
-    }
-    
-    .mobile-header.mobile-control-btn:hover {
-        background: none !important;
-        color: var(--text-primary) !important;
-    }
-    
-    .mobile-header .control-icon {
-        font-size: 1.2em !important;
-    }
-    
-    .mobile-header .control-label {
-        font-size: 0.7em !important;
-        display: none; /* Hide text, show only icon */
-    }
-    
-    /* Hide connection status on mobile */
-    .header-controls {
-        display: none !important;
     }
     
     /* Style mobile secondary controls as Airbnb-style bottom navigation */
@@ -1139,12 +1005,6 @@
         border-color: rgba(59, 130, 246, 0.2) !important;
     }
     
-    /* Ensure language dropdown is visible on mobile */
-    .header-controls .language-selector {
-        position: static; /* Allow dropdown to escape container bounds */
-        overflow: visible; /* Ensure dropdown is not clipped */
-    }
-    
     /* Mobile-optimized join container - compact layout */
     .join-container {
         overflow: visible; /* Allow language dropdown to escape container */
@@ -1258,11 +1118,6 @@
         justify-content: flex-start; /* Prevent extra spacing distribution */
         overflow-y: auto; /* Enable scrolling only when needed */
         overflow-x: hidden; /* Prevent horizontal scroll */
-    }
-    
-    /* Header Adjustments */
-    header h1 {
-        font-size: 2rem;
     }
     
     /* PIN Display */
@@ -1429,14 +1284,6 @@
     .join-container .btn.secondary {
         padding: 10px 16px !important; /* Compact secondary buttons */
         margin-bottom: 0.3rem !important; /* Minimal spacing between buttons */
-    }
-    
-    .header-controls .language-selector {
-        overflow: visible; /* Critical for dropdown visibility */
-    }
-    
-    header h1 {
-        font-size: 1.8rem;
     }
     
     .pin-display {
@@ -1734,17 +1581,6 @@
     
     /* Hide desktop header controls on mobile */
     .desktop-only {
-        display: none !important;
-    }
-}
-
-/* Desktop title visibility */
-@media (min-width: 769px) {
-    .desktop-title {
-        display: block !important;
-    }
-    
-    .mobile-title {
         display: none !important;
     }
 }
@@ -2179,38 +2015,6 @@
 .mobile-control-btn .control-label {
     font-size: 0.75em;
     color: var(--text-secondary);
-}
-
-/* Return to Main Button in Mobile Header */
-.return-to-main-btn.mobile-header {
-    background: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-    padding: 6px 8px !important; /* Consistent padding with other buttons */
-    color: var(--text-secondary) !important;
-    font-size: 0.8em !important;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    cursor: pointer;
-    transition: color 0.2s ease;
-    /* Remove margin - let flexbox gap handle spacing */
-}
-
-.return-to-main-btn.mobile-header:hover {
-    background: none !important;
-    color: var(--text-primary) !important;
-}
-
-.return-to-main-btn.mobile-header .control-icon {
-    font-size: 1.4em !important; /* Slightly larger than theme toggle to better match moon size */
-}
-
-.return-to-main-btn.mobile-header .control-label {
-    font-size: 0.7em !important;
-    color: var(--text-secondary);
-    display: none; /* Hide text on mobile, show only icon */
 }
 
 /* ============================================

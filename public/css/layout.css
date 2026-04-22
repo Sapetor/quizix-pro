@@ -64,33 +64,6 @@
     }
 }
 
-/* Header Layout */
-header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-    padding: 8px 16px;
-    backdrop-filter: blur(12px);
-    transition: var(--transition-smooth);
-}
-
-[data-theme="dark"] header {
-    background: rgba(255, 255, 255, 0.05);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] header {
-    background: rgba(255, 255, 255, 0.8);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
-}
-
 /* Header visibility states for game screens */
 header.header-offscreen {
     transform: translateY(-100%);
@@ -103,24 +76,6 @@ header.header-offscreen.header-collapsed {
     position: absolute;
     top: -100px;
     z-index: -1;
-}
-
-.header-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    padding: 4px 0;
-    transition: var(--transition-smooth);
-}
-
-/* Desktop: prevent header wrapping for single-line layout */
-@media (min-width: 769px) {
-
-    header,
-    .header-controls {
-        flex-wrap: nowrap;
-    }
 }
 
 /* Host Container Layout System */
