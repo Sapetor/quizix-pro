@@ -411,105 +411,211 @@
     <a href="#main-content" class="skip-link" data-translate="skip_to_content">Skip to main content</a>
 
     <div class="container">
-        <header>
-            <!-- Desktop Title -->
-            <h1 class="desktop-title" data-translate="app_title">Quizix Pro</h1>
-
-            <!-- Mobile Title with Welcome -->
-            <div class="mobile-title mobile-only">
-                <div class="mobile-title-content">
-                    <span class="welcome-text" data-translate="welcome_to">Welcome to</span>
-                    <h1 data-translate="app_title">Quizix Pro</h1>
-                </div>
-
-                <!-- Mobile Controls in Header -->
-                <div class="mobile-header-controls">
-                    <!-- Return to Main Button (only visible when not on main menu) -->
-                    <button id="mobile-return-to-main"
-                        class="mobile-control-btn mobile-header return-to-main-btn mobile-only"
-                        onclick="returnToMainFromHeader()" data-translate-title="return_to_main"
-                        data-translate-aria-label="return_to_main" style="display: none;">
-                        <span class="control-icon">🏠</span>
-                        <span class="control-label" data-translate="return_to_main">Return to Main Menu</span>
-                    </button>
-
-                    <!-- Language Selector -->
-                    <div class="language-selector mobile-lang mobile-header">
-                        <div id="mobile-language-selector-header" class="language-dropdown mobile"
-                            data-onclick="toggleLanguageDropdown">
-                            <div class="language-dropdown-selected">
-                                <span class="language-flag">🇪🇸</span>
-                                <span class="language-name">Español</span>
-                            </div>
-                            <div class="language-dropdown-arrow">▼</div>
-                            <div class="language-dropdown-options" id="mobile-language-options-header">
-                                <div class="language-option" data-value="es" onclick="selectLanguage('es', event)">
-                                    <span class="language-flag">🇪🇸</span>
-                                    <span class="language-name" data-translate="language_es">Español</span>
-                                </div>
-                                <div class="language-option" data-value="en" onclick="selectLanguage('en', event)">
-                                    <span class="language-flag">🇺🇸</span>
-                                    <span class="language-name" data-translate="language_en">English</span>
-                                </div>
-                                <div class="language-option" data-value="fr" onclick="selectLanguage('fr', event)">
-                                    <span class="language-flag">🇫🇷</span>
-                                    <span class="language-name" data-translate="language_fr">Français</span>
-                                </div>
-                                <div class="language-option" data-value="de" onclick="selectLanguage('de', event)">
-                                    <span class="language-flag">🇩🇪</span>
-                                    <span class="language-name" data-translate="language_de">Deutsch</span>
-                                </div>
-                                <div class="language-option" data-value="it" onclick="selectLanguage('it', event)">
-                                    <span class="language-flag">🇮🇹</span>
-                                    <span class="language-name" data-translate="language_it">Italiano</span>
-                                </div>
-                                <div class="language-option" data-value="pt" onclick="selectLanguage('pt', event)">
-                                    <span class="language-flag">🇵🇹</span>
-                                    <span class="language-name" data-translate="language_pt">Português</span>
-                                </div>
-                                <div class="language-option" data-value="pl" onclick="selectLanguage('pl', event)">
-                                    <span class="language-flag">🇵🇱</span>
-                                    <span class="language-name" data-translate="language_pl">Polski</span>
-                                </div>
-                                <div class="language-option" data-value="ja" onclick="selectLanguage('ja', event)">
-                                    <span class="language-flag">🇯🇵</span>
-                                    <span class="language-name" data-translate="language_ja">日本語</span>
-                                </div>
-                                <div class="language-option" data-value="zh" onclick="selectLanguage('zh', event)">
-                                    <span class="language-flag">🇨🇳</span>
-                                    <span class="language-name" data-translate="language_zh">中文</span>
-                                </div>
-                            </div>
-                        </div>
+        <header class="app-header" role="banner">
+            <div class="app-header-inner">
+                <div class="app-header-left">
+                    <a href="#" class="brand" onclick="returnToMainFromHeader(); return false;" aria-label="Quizix Pro home">
+                        <span class="brand-mark" aria-hidden="true">Q</span>
+                        <span class="brand-name">Quizix</span>
+                        <span class="brand-tag" aria-hidden="true">Pro</span>
+                    </a>
+                    <div class="editor-breadcrumb" id="editor-breadcrumb" hidden>
+                        <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                             aria-hidden="true">
+                            <path d="M9 18l6-6-6-6"></path>
+                        </svg>
+                        <span data-translate="header_editor">Editor</span>
+                        <span class="editor-breadcrumb-separator" aria-hidden="true">·</span>
+                        <span class="editor-breadcrumb-title" id="editor-breadcrumb-title"
+                              data-translate="header_untitled_quiz">Untitled quiz</span>
                     </div>
-
-                    <!-- Theme Toggle -->
-                    <button id="theme-toggle-mobile-header" class="mobile-control-btn mobile-header"
-                        data-translate-title="toggle_dark_mode_tooltip" aria-label="Toggle dark mode"
-                        data-translate-aria-label="toggle_dark_mode_tooltip" aria-pressed="false">
-                        <span class="control-icon" aria-hidden="true">☀️</span>
-                        <span class="control-label" data-translate="theme">theme</span>
-                    </button>
-
-                    <!-- Sound Toggle -->
-                    <button id="sound-toggle-mobile-header" class="mobile-control-btn mobile-header"
-                        data-translate-title="toggle_sound_tooltip" aria-label="Toggle sound"
-                        data-translate-aria-label="toggle_sound_tooltip" aria-pressed="true">
-                        <span class="control-icon" aria-hidden="true">🔊</span>
-                        <span class="control-label" data-translate="sound">sound</span>
-                    </button>
                 </div>
-            </div>
 
-            <div class="header-controls">
-                <!-- Desktop Language Selector (hidden on mobile) -->
-                <div class="language-selector">
-                    <div id="language-selector" class="language-dropdown" data-onclick="toggleLanguageDropdown">
-                        <div class="language-dropdown-selected">
+                <!-- Horizontal Toolbar (shown only in host editing mode) -->
+                <div class="horizontal-toolbar toolbar hidden" id="horizontal-toolbar" role="toolbar"
+                     aria-label="Quiz editing tools">
+                    <div class="toolbar-group" role="group" aria-label="Question management">
+                        <button class="toolbar-btn" id="toolbar-add-question"
+                                data-translate-title="add_question_tooltip" aria-label="Add question"
+                                data-translate-aria-label="add_question_tooltip">
+                            <svg class="toolbar-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip"
+                                aria-label="Save quiz" data-translate-aria-label="save_quiz_tooltip">
+                            <svg class="toolbar-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                <polyline points="7 3 7 8 15 8"></polyline>
+                            </svg>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip"
+                                aria-label="Load quiz" data-translate-aria-label="load_quiz_tooltip">
+                            <svg class="toolbar-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="toolbar-group" role="group" aria-label="Tools">
+                        <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip"
+                                aria-label="AI question generator" data-translate-aria-label="ai_generator_tooltip">
+                            <svg class="toolbar-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <path d="M12 8V4H8"></path>
+                                <rect x="4" y="8" width="16" height="12" rx="2" ry="2"></rect>
+                                <path d="M2 14h2"></path>
+                                <path d="M20 14h2"></path>
+                                <path d="M15 13v2"></path>
+                                <path d="M9 13v2"></path>
+                            </svg>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-settings" data-translate-title="quiz_settings_tooltip"
+                                aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip"
+                                onclick="openQuizSettingsModal()">
+                            <svg class="toolbar-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_quiz_tooltip"
+                                aria-label="Import quiz" data-translate-aria-label="import_quiz_tooltip">
+                            <svg class="toolbar-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-export" data-translate-title="export_quiz_tooltip"
+                                aria-label="Export quiz" data-translate-aria-label="export_quiz_tooltip">
+                            <svg class="toolbar-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-results" data-translate-title="view_results_tooltip"
+                                aria-label="View results" data-translate-aria-label="view_results_tooltip">
+                            <svg class="toolbar-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <line x1="18" y1="20" x2="18" y2="10"></line>
+                                <line x1="12" y1="20" x2="12" y2="4"></line>
+                                <line x1="6" y1="20" x2="6" y2="14"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="toolbar-group" role="group" aria-label="Navigation">
+                        <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip"
+                                aria-label="Back to top" data-translate-aria-label="back_to_top_tooltip">
+                            <svg class="toolbar-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <line x1="12" y1="19" x2="12" y2="5"></line>
+                                <polyline points="5 12 12 5 19 12"></polyline>
+                            </svg>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip"
+                                aria-label="Go to bottom" data-translate-aria-label="go_to_bottom_tooltip">
+                            <svg class="toolbar-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <polyline points="19 12 12 19 5 12"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="app-header-right">
+                    <div class="app-header-utilities" id="app-header-utilities">
+                        <button id="font-size-toggle" class="iconbtn text-icon"
+                                data-translate-title="adjust_font_size_tooltip" aria-label="Adjust font size"
+                                data-translate-aria-label="adjust_font_size_tooltip" onclick="toggleGlobalFontSize();">
+                            <span id="font-size-icon" aria-hidden="true">A</span>
+                        </button>
+                        <button id="fullscreen-toggle" class="iconbtn"
+                                data-translate-title="toggle_fullscreen_tooltip" aria-label="Toggle fullscreen"
+                                data-translate-aria-label="toggle_fullscreen_tooltip" aria-pressed="false">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5"></path>
+                            </svg>
+                        </button>
+                        <button id="theme-toggle" class="iconbtn" data-icon-state="light"
+                                data-translate-title="toggle_dark_mode_tooltip" aria-label="Toggle dark mode"
+                                data-translate-aria-label="toggle_dark_mode_tooltip" aria-pressed="false">
+                            <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+                            </svg>
+                            <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="5"></circle>
+                                <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path>
+                            </svg>
+                        </button>
+                        <button id="sound-toggle" class="iconbtn" data-icon-state="on"
+                                data-translate-title="toggle_sound_tooltip" aria-label="Toggle sound"
+                                data-translate-aria-label="toggle_sound_tooltip" aria-pressed="true">
+                            <svg class="icon-sound-on" aria-hidden="true" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"></path>
+                            </svg>
+                            <svg class="icon-sound-off" aria-hidden="true" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <line x1="22" y1="9" x2="16" y2="15"></line>
+                                <line x1="16" y1="9" x2="22" y2="15"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <button id="utility-overflow-toggle" class="iconbtn" aria-haspopup="true" aria-expanded="false"
+                            aria-controls="app-header-utilities" aria-label="More options">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="5" cy="12" r="1"></circle>
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="19" cy="12" r="1"></circle>
+                        </svg>
+                    </button>
+
+                    <span class="divider" aria-hidden="true"></span>
+
+                    <button id="desktop-return-to-main" class="iconbtn" hidden
+                            data-translate-title="return_to_main" aria-label="Return to main menu"
+                            data-translate-aria-label="return_to_main" onclick="returnToMainFromHeader()">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-7h4v7h4a1 1 0 001-1V10"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Language selector — reuses existing dropdown logic, new pill styling -->
+                    <div class="language-selector" id="language-selector" data-onclick="toggleLanguageDropdown">
+                        <button type="button" class="lang-pill">
                             <span class="language-flag">🇪🇸</span>
                             <span class="language-name">Español</span>
-                        </div>
-                        <div class="language-dropdown-arrow">▼</div>
+                            <svg class="lang-chevron" viewBox="0 0 10 10" aria-hidden="true">
+                                <path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5"></path>
+                            </svg>
+                        </button>
                         <div class="language-dropdown-options" id="language-options">
                             <div class="language-option" data-value="es" onclick="selectLanguage('es', event)">
                                 <span class="language-flag">🇪🇸</span>
@@ -549,160 +655,25 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <button id="start-hosting-header-small" class="btn primary small start-game-header hidden"
-                    data-translate-title="start_quiz_tooltip"><span data-translate="create_lobby">Create
-                        Lobby</span></button>
 
-                <!-- Horizontal Toolbar (shown only in host editing mode) -->
-                <div class="horizontal-toolbar hidden" id="horizontal-toolbar" role="toolbar"
-                    aria-label="Quiz editing tools">
-                    <div class="toolbar-group" role="group" aria-label="Question management">
-                        <button class="toolbar-btn" id="toolbar-add-question"
-                            data-translate-title="add_question_tooltip" aria-label="Add question"
-                            data-translate-aria-label="add_question_tooltip">
-                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip"
-                            aria-label="Save quiz" data-translate-aria-label="save_quiz_tooltip">
-                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                <polyline points="7 3 7 8 15 8"></polyline>
-                            </svg>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip"
-                            aria-label="Load quiz" data-translate-aria-label="load_quiz_tooltip">
-                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
-                                </path>
-                            </svg>
-                        </button>
-                    </div>
+                    <span class="divider" aria-hidden="true"></span>
 
-                    <div class="toolbar-group" role="group" aria-label="Tools">
-                        <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip"
-                            aria-label="AI question generator" data-translate-aria-label="ai_generator_tooltip">
-                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M12 8V4H8"></path>
-                                <rect x="4" y="8" width="16" height="12" rx="2" ry="2"></rect>
-                                <path d="M2 14h2"></path>
-                                <path d="M20 14h2"></path>
-                                <path d="M15 13v2"></path>
-                                <path d="M9 13v2"></path>
-                            </svg>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-settings" data-translate-title="quiz_settings_tooltip"
-                            aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip"
-                            onclick="openQuizSettingsModal()">
-                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path
-                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                                </path>
-                            </svg>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_quiz_tooltip"
-                            aria-label="Import quiz" data-translate-aria-label="import_quiz_tooltip">
-                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-export" data-translate-title="export_quiz_tooltip"
-                            aria-label="Export quiz" data-translate-aria-label="export_quiz_tooltip">
-                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="17 8 12 3 7 8"></polyline>
-                                <line x1="12" y1="3" x2="12" y2="15"></line>
-                            </svg>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-results" data-translate-title="view_results_tooltip"
-                            aria-label="View results" data-translate-aria-label="view_results_tooltip">
-                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <line x1="18" y1="20" x2="18" y2="10"></line>
-                                <line x1="12" y1="20" x2="12" y2="4"></line>
-                                <line x1="6" y1="20" x2="6" y2="14"></line>
-                            </svg>
-                        </button>
-                    </div>
+                    <button id="start-hosting-header-small" class="btn hidden"
+                            data-translate-title="start_quiz_tooltip">
+                        <span data-translate="create_lobby">Create Lobby</span>
+                        <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true">
+                            <path d="M1 7h12M8 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8"
+                                  stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
 
-                    <div class="toolbar-group" role="group" aria-label="Navigation">
-                        <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip"
-                            aria-label="Back to top" data-translate-aria-label="back_to_top_tooltip">
-                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <line x1="12" y1="19" x2="12" y2="5"></line>
-                                <polyline points="5 12 12 5 19 12"></polyline>
-                            </svg>
-                        </button>
-                        <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip"
-                            aria-label="Go to bottom" data-translate-aria-label="go_to_bottom_tooltip">
-                            <svg class="toolbar-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <polyline points="19 12 12 19 5 12"></polyline>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Desktop Theme and Controls (hidden on mobile) -->
-                <!-- Global Font Size Control (hidden on mobile) -->
-                <div class="font-size-control">
-                    <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size_tooltip"
-                        aria-label="Adjust font size" data-translate-aria-label="adjust_font_size_tooltip"
-                        onclick="toggleGlobalFontSize();">
-                        <span id="font-size-icon" aria-hidden="true">A</span>
+                    <button id="user-chip" class="user-chip anonymous" type="button"
+                            data-translate-title="auth_signin_tooltip" aria-label="Sign in to your account"
+                            data-translate-aria-label="auth_signin_tooltip">
+                        <span class="user-chip-avatar" aria-hidden="true">?</span>
+                        <span class="user-chip-name" data-translate="auth_signin_short">Sign in</span>
                     </button>
                 </div>
-
-                <button id="desktop-return-to-main" class="theme-toggle desktop-only"
-                    data-translate-title="return_to_main" aria-label="Return to main menu"
-                    data-translate-aria-label="return_to_main" onclick="returnToMainFromHeader()"
-                    style="display: none;">
-                    <span class="control-icon" aria-hidden="true">🏠</span>
-                </button>
-                <button id="fullscreen-toggle" class="theme-toggle" data-translate-title="toggle_fullscreen_tooltip"
-                    aria-label="Toggle fullscreen" data-translate-aria-label="toggle_fullscreen_tooltip"
-                    aria-pressed="false"><span aria-hidden="true">⛶</span></button>
-                <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip"
-                    aria-label="Toggle dark mode" data-translate-aria-label="toggle_dark_mode_tooltip"
-                    aria-pressed="false"><span aria-hidden="true">☀️</span></button>
-                <button id="sound-toggle" class="sound-toggle" data-translate-title="toggle_sound_tooltip"
-                    aria-label="Toggle sound" data-translate-aria-label="toggle_sound_tooltip" aria-pressed="true"><span
-                        aria-hidden="true">🔊</span></button>
-
-                <!-- User chip (logged in) / Sign-in button (anonymous) — toggled by auth-manager -->
-                <button id="user-chip" class="user-chip anonymous" type="button"
-                    data-translate-title="auth_signin_tooltip"
-                    aria-label="Sign in to your account"
-                    data-translate-aria-label="auth_signin_tooltip">
-                    <span class="user-chip-avatar" aria-hidden="true">?</span>
-                    <span class="user-chip-name" data-translate="auth_signin_short">Sign in</span>
-                </button>
             </div>
         </header>
 
