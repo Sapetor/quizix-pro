@@ -463,6 +463,12 @@ export class UIManager {
                 pinElement.textContent = gamePin;
             }
         }
+
+        // Mirror the PIN into the host-game header pill (editorial layout)
+        const headerPin = document.getElementById('host-header-pin');
+        if (headerPin && gamePin) {
+            headerPin.textContent = gamePin;
+        }
     }
 
     updateQuizTitle(title) {

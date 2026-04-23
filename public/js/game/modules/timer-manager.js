@@ -13,6 +13,7 @@ export class TimerManager {
         this.trackedTimers = new Set(); // Track timers for cleanup
         this.timerElement = document.getElementById('timer');
         this.playerTimerElement = document.getElementById('player-timer');
+        this.totalDuration = 0;
     }
 
     /**
@@ -31,6 +32,7 @@ export class TimerManager {
             // Clear existing timer
             this.stopTimer();
 
+            this.totalDuration = duration;
             let timeRemaining = duration;
             this.updateTimerDisplay(timeRemaining);
 
@@ -102,6 +104,15 @@ export class TimerManager {
             } else {
                 el.classList.remove('warning');
             }
+        }
+
+        // Feed the host-game timer bar (editorial layout) with a 0-100 percentage.
+        const hostScreen = document.getElementById('host-game-screen');
+        if (hostScreen) {
+            const pct = this.totalDuration > 0
+                ? Math.max(0, Math.min(100, (Math.max(0, timeRemaining) / this.totalDuration) * 100))
+                : 0;
+            hostScreen.style.setProperty('--timer-pct', pct.toFixed(2));
         }
     }
 

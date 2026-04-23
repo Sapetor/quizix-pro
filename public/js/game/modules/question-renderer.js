@@ -142,11 +142,22 @@ export class QuestionRenderer {
             if (count) count.textContent = '0';
         }
 
+        // Clear distribution overlays on host option tiles (editorial layout)
+        document.querySelectorAll('#answer-options .option-display').forEach(tile => {
+            tile.style.setProperty('--pct', 0);
+            tile.removeAttribute('data-pct');
+            tile.removeAttribute('data-count');
+        });
+
         // Reset response counts
         const responsesCount = document.getElementById('responses-count');
         if (responsesCount) responsesCount.textContent = '0';
         const totalPlayers = document.getElementById('total-players');
         if (totalPlayers) totalPlayers.textContent = '0';
+        const headerAnswered = document.getElementById('host-header-answered');
+        if (headerAnswered) headerAnswered.textContent = '0';
+        const headerTotal = document.getElementById('host-header-total');
+        if (headerTotal) headerTotal.textContent = '0';
     }
 
     /**

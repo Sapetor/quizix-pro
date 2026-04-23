@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=50">
+    <link rel="stylesheet" href="css/main.bundle.css?v=52">
 
     <!-- Preload critical JavaScript -->
     <link rel="preload" href="js/main.js?v=50" as="script" crossorigin="anonymous">
@@ -2081,7 +2081,11 @@
                     <div class="lobby-card players-list-card" role="region" aria-label="Connected Players"
                         data-translate-aria-label="players_joined">
                         <div class="card-header">
-                            <h3 class="card-title" data-translate="players_joined">Players Joined</h3>
+                            <h3 class="card-title" data-translate="students_connected">Students connected</h3>
+                            <div class="card-heading">
+                                <span><em id="lobby-headline-count">0</em> <span data-translate="in_the_room">in the room</span></span>
+                                <span class="waiting"><span class="pulse-dot"></span><span data-translate="waiting">Waiting</span></span>
+                            </div>
                         </div>
                         <div class="card-content">
                             <div id="players-list" class="players-grid" aria-live="polite"
@@ -2147,6 +2151,20 @@
             <!-- Host-specific header with timer and counter -->
             <div class="question-header">
                 <span id="question-counter" aria-live="polite">Question 1 of 5</span>
+                <div class="qhdr-center">
+                    <span class="pin-pill">
+                        <span class="pin-kicker" data-translate="pin">PIN</span>
+                        <span id="host-header-pin" class="pin-value">------</span>
+                    </span>
+                    <span class="qhdr-sep" aria-hidden="true"></span>
+                    <span class="responses-pill">
+                        <span class="dot" aria-hidden="true"></span>
+                        <strong id="host-header-answered">0</strong>
+                        <span>/</span>
+                        <span id="host-header-total">0</span>
+                        <span data-translate="responses">responses</span>
+                    </span>
+                </div>
                 <div id="host-game-controls" class="host-game-controls">
                     <button id="stop-quiz-btn" class="btn danger btn-sm hidden"
                         data-translate="stop_quiz">Stop Quiz</button>
@@ -2156,6 +2174,7 @@
                 <div id="timer" class="timer" role="timer" aria-live="off" aria-label="Time remaining"
                     data-translate-aria-label="time_remaining">20</div>
             </div>
+            <div class="timer-bar" aria-hidden="true"></div>
 
             <!-- Use client-style question display -->
             <div id="host-question-display" class="player-question-area">

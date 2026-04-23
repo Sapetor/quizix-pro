@@ -1,0 +1,967 @@
+/**
+ * Editorial treatment for in-app screens (pilot: lobby + host-game).
+ *
+ * Reuses tokens defined in variables.css:
+ *   --paper / --paper-2 / --paper-3 / --ink / --ink-2..4
+ *   --accent-terracotta / --accent-terracotta-deep / --rule-soft-light / --rule-soft-dark
+ *
+ * Rules below match the specificity of existing game.css/layout.css rules
+ * (which prefix themes with [data-theme="..."] and use !important heavily),
+ * so all overrides are theme-prefixed where needed.
+ */
+
+/* ==========================================================================
+   Shared tokens for screen-scoped helpers
+   ========================================================================== */
+
+:root {
+    --rule-soft: var(--rule-soft-light);
+    --accent: var(--accent-terracotta);
+    --accent-deep: var(--accent-terracotta-deep);
+    --accent-soft: rgba(217, 119, 87, 0.12);
+    --good: #10b981;
+}
+[data-theme="dark"] {
+    --rule-soft: var(--rule-soft-dark);
+}
+
+/* ==========================================================================
+   Lobby screen (#game-lobby) — editorial paper/ink/terracotta restyle
+   ========================================================================== */
+
+[data-theme="light"] #game-lobby,
+[data-theme="dark"] #game-lobby,
+#game-lobby {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+}
+
+#game-lobby .lobby-container {
+    padding: 24px 40px 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+#game-lobby .lobby-layout {
+    gap: 48px;
+    grid-template-columns: 1.1fr 1fr;
+}
+
+/* Neutralize existing card chrome */
+#game-lobby .lobby-card,
+#game-lobby .players-list-card,
+#game-lobby .combined-info-card,
+[data-theme="light"] #game-lobby .players-list-card,
+[data-theme="light"] #game-lobby .combined-info-card,
+[data-theme="dark"] #game-lobby .players-list-card,
+[data-theme="dark"] #game-lobby .combined-info-card {
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: none;
+    position: relative;
+}
+
+#game-lobby .lobby-card:hover,
+#game-lobby .players-list-card:hover,
+#game-lobby .combined-info-card:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--rule-soft);
+}
+
+#game-lobby .lobby-card::before {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    border: 1px solid var(--rule-soft);
+    border-radius: 12px;
+    pointer-events: none;
+}
+
+/* Editorial card header: kicker + serif "N en la sala" */
+#game-lobby .players-list-card .card-header {
+    margin-bottom: 18px;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+#game-lobby .players-list-card .card-header .card-title {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 8px 0;
+}
+#game-lobby .players-list-card .card-header .card-title::before {
+    content: "";
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+}
+
+/* Injected heading below the kicker */
+#game-lobby .players-list-card .card-heading {
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: 40px;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.05;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+}
+#game-lobby .players-list-card .card-heading em {
+    font-style: italic;
+    color: var(--accent);
+    font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
+}
+#game-lobby .players-list-card .card-heading .waiting {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-style: normal;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+    text-transform: none;
+}
+#game-lobby .players-list-card .card-heading .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--good);
+    animation: appLobbyPulse 1.6s ease-out infinite;
+}
+
+/* Player grid: editorial pills */
+#game-lobby .players-list-card .card-content {
+    align-items: stretch;
+    justify-content: flex-start;
+    max-height: none;
+}
+
+#game-lobby .players-list-card .players-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 0;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+    #game-lobby .players-list-card .players-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 600px) {
+    #game-lobby .players-list-card .players-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+#game-lobby .player-item,
+[data-theme="light"] #game-lobby .player-item,
+[data-theme="dark"] #game-lobby .player-item {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--paper);
+    border: 1px solid var(--rule-soft);
+    border-radius: 999px;
+    min-height: 0;
+    box-shadow: none;
+    animation: appLobbySlideIn 0.4s ease-out backwards;
+}
+
+#game-lobby .player-item .player-avatar,
+[data-theme="light"] #game-lobby .player-item .player-avatar,
+[data-theme="dark"] #game-lobby .player-item .player-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 12px;
+    color: #fff;
+    background: var(--chip-color, var(--accent));
+    flex-shrink: 0;
+    padding: 0;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+#game-lobby .player-item .player-name {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-2);
+    letter-spacing: 0;
+    text-transform: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#game-lobby .player-item.placeholder {
+    border-style: dashed;
+    justify-content: center;
+    color: var(--ink-4);
+    font-size: 12px;
+}
+
+/* Combined info card: PIN + QR + start */
+#game-lobby .combined-info-card .card-header .card-title {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 18px 0;
+}
+#game-lobby .combined-info-card .card-header .card-title::before {
+    content: "";
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+}
+
+#game-lobby .combined-info-card .combined-content {
+    align-items: stretch;
+    gap: 20px;
+}
+
+#game-lobby .combined-info-card .qr-pin-section {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+#game-lobby .combined-info-card .pin-section {
+    align-items: flex-start;
+    gap: 6px;
+}
+
+#game-lobby .combined-info-card .pin-text {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 0;
+}
+
+#game-lobby .pin-display,
+[data-theme="light"] #game-lobby .pin-display,
+[data-theme="dark"] #game-lobby .pin-display {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 72px;
+    letter-spacing: 0.04em;
+    line-height: 0.95;
+    font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 1;
+    text-align: left;
+    user-select: all;
+    transition: none;
+}
+
+#game-lobby .pin-display .pin-text {
+    display: none;
+}
+
+#game-lobby .pin-display:hover,
+#game-lobby .pin-display:focus {
+    background: transparent;
+    border: none;
+    transform: none;
+    box-shadow: none;
+    color: var(--accent-deep);
+    outline: none;
+}
+
+#game-lobby .combined-info-card .game-url {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink-3);
+    margin-top: 8px;
+    text-align: left;
+    word-break: break-all;
+}
+
+#game-lobby .combined-info-card .qr-container {
+    width: 160px;
+    max-width: 180px;
+    flex-shrink: 0;
+    background: var(--paper);
+    padding: 10px;
+    border: 1px solid var(--rule-soft);
+    border-radius: 14px;
+}
+#game-lobby .combined-info-card #qr-code-image {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: none;
+    background: #fff;
+}
+
+/* Horizontal rule separating QR/PIN from Start button */
+#game-lobby .combined-info-card .combined-content::before {
+    content: "";
+    display: block;
+    height: 1px;
+    background: var(--rule-soft);
+    order: 1; /* pushed between sections below via flex order */
+}
+
+#game-lobby .combined-info-card .action-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: 0;
+}
+
+#game-lobby .combined-info-card .player-count-display {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+    justify-content: center;
+}
+
+#game-lobby .combined-info-card .btn.large-start-btn,
+[data-theme="light"] #game-lobby .combined-info-card .btn.large-start-btn,
+[data-theme="dark"] #game-lobby .combined-info-card .btn.large-start-btn {
+    width: 100%;
+    min-height: 0;
+    padding: 18px 24px;
+    background: var(--accent);
+    border: none;
+    border-radius: 14px;
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    box-shadow: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background 0.2s ease;
+}
+#game-lobby .combined-info-card .btn.large-start-btn::before,
+#game-lobby .combined-info-card .btn.large-start-btn::after {
+    display: none;
+}
+#game-lobby .combined-info-card .btn.large-start-btn:hover,
+[data-theme="light"] #game-lobby .combined-info-card .btn.large-start-btn:hover,
+[data-theme="dark"] #game-lobby .combined-info-card .btn.large-start-btn:hover {
+    background: var(--accent-deep);
+    transform: none;
+    box-shadow: none;
+}
+
+/* Quiz name at bottom */
+#game-lobby .quiz-name-section {
+    border-top: 1px solid var(--rule-soft);
+    background: transparent;
+    margin: 0;
+    padding: 12px 0 0;
+}
+#game-lobby .quiz-title-display {
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+    color: var(--ink-2);
+    text-align: center;
+}
+
+@keyframes appLobbyPulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+    70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+@keyframes appLobbySlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   Host game screen (#host-game-screen) — editorial live-question layout
+   ========================================================================== */
+
+[data-theme="light"] #host-game-screen,
+[data-theme="dark"] #host-game-screen,
+#host-game-screen {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+}
+
+#host-game-screen .host-game-container {
+    max-width: 1400px;
+    padding: 0;
+    gap: 0;
+}
+
+/* Header bar ---------------------------------------------------------------- */
+#host-game-screen .question-header {
+    padding: 14px 32px;
+    min-height: 64px;
+    margin: 0;
+    border-bottom: 1px solid var(--rule-soft);
+    background: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+#host-game-screen .question-header #question-counter,
+[data-theme="light"] #host-game-screen .question-header #question-counter,
+[data-theme="dark"] #host-game-screen .question-header #question-counter {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--ink-2);
+    letter-spacing: 0;
+    text-transform: none;
+    min-height: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+#host-game-screen .question-header #question-counter::before {
+    content: "";
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+}
+
+#host-game-screen .question-header #timer,
+[data-theme="light"] #host-game-screen .question-header #timer,
+[data-theme="dark"] #host-game-screen .question-header #timer {
+    background: transparent;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 500;
+    border: 1px solid var(--rule-soft);
+    box-shadow: none;
+    padding: 6px 14px;
+    border-radius: 999px;
+    min-width: 0;
+    min-height: 0;
+    letter-spacing: 0.04em;
+    animation: none;
+}
+#host-game-screen .question-header #timer.warning {
+    color: var(--accent-deep);
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    animation: none;
+}
+#host-game-screen .question-header #timer.danger {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+    animation: appHostTimerBlink 0.6s ease-in-out infinite;
+}
+
+#host-game-screen .host-game-controls {
+    gap: 8px;
+}
+#host-game-screen .host-game-controls .btn {
+    background: transparent;
+    border: 1px solid var(--rule-soft);
+    color: var(--ink);
+    box-shadow: none;
+    padding: 9px 16px;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    min-height: 0;
+}
+#host-game-screen .host-game-controls .btn:hover {
+    border-color: var(--ink);
+    background: transparent;
+    transform: none;
+    box-shadow: none;
+}
+#host-game-screen .host-game-controls .btn.primary {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+}
+#host-game-screen .host-game-controls .btn.primary:hover {
+    background: var(--ink-2);
+    border-color: var(--ink-2);
+}
+
+/* Timer progress bar (below header) ---------------------------------------- */
+#host-game-screen .timer-bar {
+    height: 3px;
+    background: var(--rule-soft);
+    position: relative;
+    overflow: hidden;
+    margin: 0;
+    flex-shrink: 0;
+}
+#host-game-screen .timer-bar::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: calc(var(--timer-pct, 100) * 1%);
+    background: var(--accent);
+    transition: width 0.9s linear;
+}
+
+/* Question area ------------------------------------------------------------ */
+#host-game-screen .player-question-area,
+[data-theme="light"] #host-game-screen .player-question-area,
+[data-theme="dark"] #host-game-screen .player-question-area {
+    background: transparent;
+    backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+    padding: 48px 56px 24px;
+    margin: 0;
+    max-width: 100%;
+    text-align: center;
+}
+#host-game-screen .player-question-area::before {
+    display: none;
+}
+
+#host-game-screen #current-question,
+[data-theme="light"] #host-game-screen #current-question,
+[data-theme="dark"] #host-game-screen #current-question {
+    font-family: var(--font-display);
+    font-weight: 360;
+    font-size: clamp(32px, 3.6vw, 52px);
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    max-width: 1000px;
+    margin: 0 auto;
+    text-align: center;
+    font-variation-settings: "opsz" 144, "SOFT" 40, "WONK" 0;
+}
+
+/* Options with distribution overlay --------------------------------------- */
+#host-game-screen #host-multiple-choice,
+#host-game-screen .player-answer-type,
+[data-theme="light"] #host-game-screen .player-answer-type,
+[data-theme="dark"] #host-game-screen .player-answer-type {
+    padding: 8px 56px 32px;
+    max-width: 100%;
+    margin: 0 auto;
+    background: transparent;
+    backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+#host-game-screen #host-multiple-choice .question-alternatives-header {
+    display: none;
+}
+
+/* Multiple-choice grid: apply only when the container actually holds
+   .option-display tiles. True/false (and other single-wrapper types)
+   render their own layout inside #answer-options without a forced grid. */
+#host-game-screen #host-multiple-choice .player-options:has(.option-display),
+#host-game-screen #answer-options:has(.option-display) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+@media (max-width: 768px) {
+    #host-game-screen #host-multiple-choice .player-options:has(.option-display),
+    #host-game-screen #answer-options:has(.option-display) {
+        grid-template-columns: 1fr;
+    }
+}
+
+#host-game-screen .option-display,
+[data-theme="light"] #host-game-screen .option-display,
+[data-theme="dark"] #host-game-screen .option-display {
+    position: relative;
+    overflow: hidden;
+    /* reserve ~80px on the right for the ::after percentage label */
+    padding: 22px 84px 22px 26px;
+    border: none;
+    border-radius: 14px;
+    min-height: 84px;
+    backdrop-filter: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    box-shadow: none;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#host-game-screen .option-display::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: calc(100% - var(--pct, 0) * 1%);
+    background: rgba(0, 0, 0, 0.18);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: 0;
+}
+
+#host-game-screen .option-display::after {
+    content: attr(data-pct) "%";
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    letter-spacing: 0.02em;
+    z-index: 2;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* Hide overlay + label entirely before any distribution data exists
+   (question-reading and answering phases — before the host reveals stats). */
+#host-game-screen .option-display:not([data-pct])::before,
+#host-game-screen .option-display[data-pct=""]::before {
+    display: none;
+}
+#host-game-screen .option-display[data-pct=""]::after,
+#host-game-screen .option-display:not([data-pct])::after {
+    content: "";
+}
+/* Before reveal, drop the reserved right padding so long option text can breathe */
+#host-game-screen .option-display:not([data-pct]),
+#host-game-screen .option-display[data-pct=""] {
+    padding-right: 26px;
+}
+
+#host-game-screen .option-display .option-text {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-body);
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: #fff;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    text-align: left;
+    display: block;
+    width: 100%;
+}
+
+/* --- True/False host layout ------------------------------------------------
+   The registry replaces #answer-options.innerHTML with a single
+   <div class="true-false-options">…</div> that already contains two
+   .tf-option children. Style the inner wrapper as the 2-col grid so it
+   matches the multi-choice rhythm. */
+#host-game-screen #answer-options > .true-false-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+@media (max-width: 768px) {
+    #host-game-screen #answer-options > .true-false-options {
+        grid-template-columns: 1fr;
+    }
+}
+
+#host-game-screen .tf-option,
+[data-theme="light"] #host-game-screen .tf-option,
+[data-theme="dark"] #host-game-screen .tf-option {
+    position: relative;
+    overflow: hidden;
+    padding: 32px 28px;
+    border: none;
+    border-radius: 14px;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    box-shadow: none;
+    backdrop-filter: none;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+#host-game-screen .tf-option .option-text {
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: clamp(28px, 3.2vw, 44px);
+    letter-spacing: -0.01em;
+    color: #fff;
+    text-align: center;
+    display: block;
+    width: 100%;
+    line-height: 1.05;
+}
+#host-game-screen .tf-option.true-btn,
+[data-theme="light"] #host-game-screen .tf-option.true-btn {
+    background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end));
+}
+#host-game-screen .tf-option.false-btn,
+[data-theme="light"] #host-game-screen .tf-option.false-btn {
+    background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end));
+}
+
+#host-game-screen .option-display.correct {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 3px var(--ink) inset;
+    animation: none;
+}
+#host-game-screen .option-display.correct::after {
+    color: #fff;
+}
+#host-game-screen .option-display:hover {
+    transform: translateY(-2px);
+}
+
+/* Stats block: keep the controls (Next Question / End Round / score breakdown)
+   visible and editorially styled, but hide the duplicate distribution grid
+   and response summary — those are now overlaid on the option tiles + header. */
+#host-game-screen #answer-statistics,
+[data-theme="light"] #host-game-screen #answer-statistics,
+[data-theme="dark"] #host-game-screen #answer-statistics {
+    background: transparent;
+    backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+    padding: 0 56px 24px;
+    margin: 0 auto;
+    max-width: 100%;
+}
+#host-game-screen #answer-statistics .stats-header h3,
+#host-game-screen #answer-statistics .stats-grid,
+#host-game-screen #answer-statistics .response-summary,
+#host-game-screen #answer-statistics .host-score-breakdown {
+    display: none !important;
+}
+#host-game-screen #answer-statistics .stats-header {
+    padding: 0;
+    border: none;
+    margin: 0;
+    background: transparent;
+    display: flex;
+    justify-content: flex-end;
+}
+/* Don't fight counting-only mode: during the answering phase the stats-header
+   (which wraps the Next Question button) should stay hidden like before. */
+#host-game-screen #answer-statistics.counting-only .stats-header {
+    display: none;
+}
+#host-game-screen #answer-statistics .stats-controls {
+    display: inline-flex;
+    gap: 8px;
+    margin: 0;
+}
+#host-game-screen #answer-statistics .stats-controls .btn,
+[data-theme="light"] #host-game-screen #answer-statistics .stats-controls .btn,
+[data-theme="dark"] #host-game-screen #answer-statistics .stats-controls .btn {
+    background: transparent;
+    border: 1px solid var(--rule-soft);
+    color: var(--ink);
+    box-shadow: none;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+}
+#host-game-screen #answer-statistics .stats-controls .btn.primary,
+[data-theme="light"] #host-game-screen #answer-statistics .stats-controls .btn.primary,
+[data-theme="dark"] #host-game-screen #answer-statistics .stats-controls .btn.primary {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+}
+#host-game-screen #answer-statistics .stats-controls .btn:hover {
+    border-color: var(--ink);
+    transform: none;
+    box-shadow: none;
+    background: transparent;
+}
+#host-game-screen #answer-statistics .stats-controls .btn.primary:hover {
+    background: var(--ink-2);
+    border-color: var(--ink-2);
+    color: var(--paper);
+}
+#host-game-screen #answer-statistics #end-round-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+/* Footer strip -------------------------------------------------------------- */
+#host-game-screen .host-game-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 32px;
+    border-top: 1px solid var(--rule-soft);
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--ink-3);
+    background: var(--paper);
+    margin-top: auto;
+}
+#host-game-screen .host-game-footer .pin-hint {
+    font-family: var(--font-mono);
+    color: var(--ink);
+}
+
+/* PIN pill in the header (added inside .question-header) */
+#host-game-screen .qhdr-center {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+#host-game-screen .qhdr-center .pin-pill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+}
+#host-game-screen .qhdr-center .pin-pill .pin-kicker {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+#host-game-screen .qhdr-center .pin-pill .pin-value {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 0;
+}
+#host-game-screen .qhdr-center .qhdr-sep {
+    width: 1px;
+    height: 18px;
+    background: var(--rule-soft);
+}
+#host-game-screen .qhdr-center .responses-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--ink-2);
+}
+#host-game-screen .qhdr-center .responses-pill .dot {
+    width: 7px;
+    height: 7px;
+    background: var(--good);
+    border-radius: 50%;
+    display: inline-block;
+}
+#host-game-screen .qhdr-center .responses-pill strong {
+    color: var(--ink);
+    font-weight: 500;
+}
+
+@keyframes appHostTimerBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* ==========================================================================
+   Responsive tweaks — keep screens usable down to small viewports
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    #game-lobby .lobby-container {
+        padding: 16px;
+        gap: 16px;
+    }
+    #game-lobby .lobby-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    #game-lobby .pin-display {
+        font-size: 56px;
+    }
+    #game-lobby .combined-info-card .qr-pin-section {
+        grid-template-columns: 1fr;
+    }
+    #game-lobby .combined-info-card .qr-container {
+        width: 100%;
+        max-width: 240px;
+        margin: 0 auto;
+    }
+    #host-game-screen .player-question-area {
+        padding: 28px 20px 16px;
+    }
+    #host-game-screen #host-multiple-choice {
+        padding: 8px 20px 24px;
+    }
+    #host-game-screen .question-header {
+        padding: 10px 16px;
+    }
+}

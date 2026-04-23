@@ -60,6 +60,9 @@
 /* Editorial landing page */
 @import './landing.css';
 
+/* Editorial treatment for in-app screens (pilot: lobby + host-game) */
+@import './app-screens.css';
+
 /* Mobile enhancements consolidated into responsive.css */
 
 

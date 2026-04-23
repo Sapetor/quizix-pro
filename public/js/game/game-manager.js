@@ -847,6 +847,8 @@ export class GameManager {
         // Update response counts
         dom.setContent('responses-count', data.answeredPlayers || 0);
         dom.setContent('total-players', connected);
+        dom.setContent('host-header-answered', data.answeredPlayers || 0);
+        dom.setContent('host-header-total', connected);
 
         // Show/hide disconnected indicator
         const indicator = dom.get('disconnected-indicator');
@@ -888,6 +890,8 @@ export class GameManager {
         // Update response counts
         dom.setContent('responses-count', data.answeredPlayers || 0);
         dom.setContent('total-players', data.totalPlayers || 0);
+        dom.setContent('host-header-answered', data.answeredPlayers || 0);
+        dom.setContent('host-header-total', data.totalPlayers || 0);
 
         // Update individual answer statistics
         const questionType = data.questionType || data.type;
@@ -1249,9 +1253,10 @@ export class GameManager {
             logger.warn(`stat-count-${index} element not found`);
         }
 
+        let percentage = 0;
         if (statFill) {
             if (totalAnswered > 0) {
-                const percentage = (count / totalAnswered) * ANIMATION.PERCENTAGE_CALCULATION_BASE;
+                percentage = (count / totalAnswered) * ANIMATION.PERCENTAGE_CALCULATION_BASE;
                 statFill.style.width = `${percentage}%`;
                 logger.debug(`Updated stat fill for index ${index}: ${percentage}%`);
             } else {
@@ -1259,6 +1264,16 @@ export class GameManager {
             }
         } else {
             logger.warn(`stat-fill-${index} element not found`);
+        }
+
+        // Mirror the distribution onto the matching host option tile so
+        // the editorial overlay (see app-screens.css) shows live percentages.
+        const optionTile = document.querySelector(`#answer-options .option-display[data-option="${index}"]`);
+        if (optionTile) {
+            const rounded = Math.round(percentage);
+            optionTile.style.setProperty('--pct', rounded);
+            optionTile.setAttribute('data-pct', rounded);
+            optionTile.setAttribute('data-count', count);
         }
     }
 
@@ -1352,15 +1367,32 @@ export class GameManager {
 
         playersListElement.innerHTML = '';
 
-        players.forEach(player => {
+        const chipColors = [
+            'var(--option-0-start)',
+            'var(--option-1-start)',
+            'var(--option-2-start)',
+            'var(--option-3-start)',
+            'var(--option-4-start)',
+            'var(--option-5-start)'
+        ];
+
+        players.forEach((player, idx) => {
             const playerElement = document.createElement('div');
             playerElement.className = 'player-item';
+            const color = chipColors[idx % chipColors.length];
+            playerElement.style.setProperty('--chip-color', color);
+            const name = player.name || '';
+            const initial = name.trim().charAt(0) || '•';
             playerElement.innerHTML = `
-                <div class="player-avatar">👤</div>
-                <div class="player-name">${escapeHtml(player.name)}</div>
+                <span class="player-avatar" aria-hidden="true">${escapeHtml(initial)}</span>
+                <span class="player-name">${escapeHtml(name)}</span>
             `;
             playersListElement.appendChild(playerElement);
         });
+
+        // Update the editorial "N in the room" headline if present
+        const headlineCount = document.getElementById('lobby-headline-count');
+        if (headlineCount) headlineCount.textContent = players.length;
 
         // Update player count in lobby with animation
         const lobbyPlayerCount = dom.get('lobby-player-count');
@@ -1499,6 +1531,10 @@ export class GameManager {
         const legacyPlayerCount = dom.get('player-count');
         if (legacyPlayerCount) {
             legacyPlayerCount.textContent = '0';
+        }
+        const headlineCount = document.getElementById('lobby-headline-count');
+        if (headlineCount) {
+            headlineCount.textContent = '0';
         }
 
         // Clear all visible game screen content to prevent stale data flash
