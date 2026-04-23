@@ -1266,14 +1266,23 @@ export class GameManager {
             logger.warn(`stat-fill-${index} element not found`);
         }
 
-        // Mirror the distribution onto the matching host option tile so
-        // the editorial overlay (see app-screens.css) shows live percentages.
-        const optionTile = document.querySelector(`#answer-options .option-display[data-option="${index}"]`);
-        if (optionTile) {
-            const rounded = Math.round(percentage);
-            optionTile.style.setProperty('--pct', rounded);
-            optionTile.setAttribute('data-pct', rounded);
-            optionTile.setAttribute('data-count', count);
+        // Mirror the distribution onto the matching host tile so the editorial
+        // overlay (see app-screens.css) shows live percentages. Multi-choice /
+        // multi-correct render `.option-display[data-option=N]`; true/false
+        // renders `.tf-option[data-answer="true|false"]` with index 0 → true,
+        // index 1 → false.
+        const rounded = Math.round(percentage);
+        let tile = document.querySelector(`#answer-options .option-display[data-option="${index}"]`);
+        if (!tile) {
+            const tfAnswer = index === 0 ? 'true' : index === 1 ? 'false' : null;
+            if (tfAnswer) {
+                tile = document.querySelector(`#answer-options .tf-option[data-answer="${tfAnswer}"]`);
+            }
+        }
+        if (tile) {
+            tile.style.setProperty('--pct', rounded);
+            tile.setAttribute('data-pct', rounded);
+            tile.setAttribute('data-count', count);
         }
     }
 
@@ -1382,7 +1391,10 @@ export class GameManager {
             const color = chipColors[idx % chipColors.length];
             playerElement.style.setProperty('--chip-color', color);
             const name = player.name || '';
-            const initial = name.trim().charAt(0) || '•';
+            // Array.from iterates by code point so surrogate pairs (astral
+            // plane letters) aren't split — charAt(0) would return an
+            // unpaired high surrogate that renders as a replacement glyph.
+            const initial = Array.from(name.trim())[0] || '•';
             playerElement.innerHTML = `
                 <span class="player-avatar" aria-hidden="true">${escapeHtml(initial)}</span>
                 <span class="player-name">${escapeHtml(name)}</span>

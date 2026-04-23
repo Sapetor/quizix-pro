@@ -747,6 +747,8 @@
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 #host-game-screen .tf-option .option-text {
+    position: relative;
+    z-index: 1;
     font-family: var(--font-display);
     font-weight: 380;
     font-size: clamp(28px, 3.2vw, 44px);
@@ -756,6 +758,41 @@
     display: block;
     width: 100%;
     line-height: 1.05;
+}
+/* Distribution overlay (mirrors .option-display::before/::after) */
+#host-game-screen .tf-option::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: calc(100% - var(--pct, 0) * 1%);
+    background: rgba(0, 0, 0, 0.18);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: 0;
+}
+#host-game-screen .tf-option::after {
+    content: attr(data-pct) "%";
+    position: absolute;
+    right: 20px;
+    top: 14px;
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    letter-spacing: 0.02em;
+    z-index: 2;
+    pointer-events: none;
+    white-space: nowrap;
+}
+#host-game-screen .tf-option:not([data-pct])::before,
+#host-game-screen .tf-option[data-pct=""]::before {
+    display: none;
+}
+#host-game-screen .tf-option[data-pct=""]::after,
+#host-game-screen .tf-option:not([data-pct])::after {
+    content: "";
 }
 #host-game-screen .tf-option.true-btn,
 [data-theme="light"] #host-game-screen .tf-option.true-btn {
@@ -793,10 +830,114 @@
     max-width: 100%;
 }
 #host-game-screen #answer-statistics .stats-header h3,
-#host-game-screen #answer-statistics .stats-grid,
 #host-game-screen #answer-statistics .response-summary,
 #host-game-screen #answer-statistics .host-score-breakdown {
     display: none !important;
+}
+/* Hide the default .stat-item bars (MC/multi-correct/TF distribution is
+   overlaid on the option tiles) but keep #stats-grid visible when it is
+   hosting the numeric / ordering stats panels. */
+#host-game-screen #answer-statistics .stats-grid > .stat-item {
+    display: none !important;
+}
+#host-game-screen #answer-statistics .stats-grid {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    gap: 0;
+}
+#host-game-screen #answer-statistics .stats-grid:not(:has(#numeric-stats-display, #ordering-stats-display)) {
+    display: none !important;
+}
+
+/* Editorial skin for numeric / ordering per-answer breakdowns */
+#host-game-screen #numeric-stats-display,
+#host-game-screen #ordering-stats-display {
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 16px;
+    padding: 20px 24px;
+    color: var(--ink);
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+#host-game-screen #numeric-stats-display .numeric-stats-header h4,
+#host-game-screen #ordering-stats-display .numeric-stats-header h4 {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 14px 0;
+}
+#host-game-screen #numeric-stats-display .numeric-answer-item,
+#host-game-screen #ordering-stats-display .numeric-answer-item {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--rule-soft);
+}
+#host-game-screen #numeric-stats-display .numeric-answer-item:last-child,
+#host-game-screen #ordering-stats-display .numeric-answer-item:last-child {
+    border-bottom: none;
+}
+#host-game-screen #numeric-stats-display .answer-value,
+#host-game-screen #ordering-stats-display .answer-value {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--ink);
+    word-break: break-all;
+}
+#host-game-screen #numeric-stats-display .answer-bar-container,
+#host-game-screen #ordering-stats-display .answer-bar-container {
+    position: relative;
+    height: 22px;
+    background: var(--paper);
+    border: 1px solid var(--rule-soft);
+    border-radius: 999px;
+    overflow: hidden;
+}
+#host-game-screen #numeric-stats-display .answer-bar,
+#host-game-screen #ordering-stats-display .answer-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: var(--accent);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#host-game-screen #numeric-stats-display .answer-count,
+#host-game-screen #ordering-stats-display .answer-count {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+}
+#host-game-screen #numeric-stats-display .more-answers,
+#host-game-screen #ordering-stats-display .more-answers {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--ink-3);
+    margin-top: 10px;
+    text-align: right;
+}
+#host-game-screen #numeric-stats-display .no-answers,
+#host-game-screen #ordering-stats-display .no-answers {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--ink-3);
+    text-align: center;
+    padding: 12px 0;
 }
 #host-game-screen #answer-statistics .stats-header {
     padding: 0;

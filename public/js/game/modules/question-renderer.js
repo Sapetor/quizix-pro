@@ -143,7 +143,7 @@ export class QuestionRenderer {
         }
 
         // Clear distribution overlays on host option tiles (editorial layout)
-        document.querySelectorAll('#answer-options .option-display').forEach(tile => {
+        document.querySelectorAll('#answer-options .option-display, #answer-options .tf-option').forEach(tile => {
             tile.style.setProperty('--pct', 0);
             tile.removeAttribute('data-pct');
             tile.removeAttribute('data-count');

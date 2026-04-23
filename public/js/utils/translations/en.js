@@ -99,7 +99,6 @@ export default {
     students_connected: 'Students connected',
     in_the_room: 'in the room',
     waiting: 'Waiting',
-    responses: 'responses',
     pin: 'PIN',
     waiting_for_game: 'Waiting for game to start...',
     you_are_in: "You're in!",
