@@ -448,33 +448,8 @@
     background: var(--paper);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 20px;
-    flex-wrap: wrap;
-}
-
-#host-game-screen .question-header #question-counter,
-[data-theme="light"] #host-game-screen .question-header #question-counter,
-[data-theme="dark"] #host-game-screen .question-header #question-counter {
-    font-family: var(--font-body);
-    font-size: 13px;
-    font-weight: 500;
-    background: transparent;
-    border: none;
-    padding: 0;
-    color: var(--ink-2);
-    letter-spacing: 0;
-    text-transform: none;
-    min-height: 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-#host-game-screen .question-header #question-counter::before {
-    content: "";
-    width: 24px;
-    height: 1px;
-    background: var(--accent);
 }
 
 #host-game-screen .question-header #timer,
@@ -505,39 +480,6 @@
     background: var(--accent);
     border-color: var(--accent);
     animation: appHostTimerBlink 0.6s ease-in-out infinite;
-}
-
-#host-game-screen .host-game-controls {
-    gap: 8px;
-}
-#host-game-screen .host-game-controls .btn {
-    background: transparent;
-    border: 1px solid var(--rule-soft);
-    color: var(--ink);
-    box-shadow: none;
-    padding: 9px 16px;
-    border-radius: 999px;
-    font-family: var(--font-body);
-    font-size: 14px;
-    font-weight: 500;
-    text-transform: none;
-    letter-spacing: 0;
-    min-height: 0;
-}
-#host-game-screen .host-game-controls .btn:hover {
-    border-color: var(--ink);
-    background: transparent;
-    transform: none;
-    box-shadow: none;
-}
-#host-game-screen .host-game-controls .btn.primary {
-    background: var(--ink);
-    color: var(--paper);
-    border-color: var(--ink);
-}
-#host-game-screen .host-game-controls .btn.primary:hover {
-    background: var(--ink-2);
-    border-color: var(--ink-2);
 }
 
 /* Timer progress bar (below header) ---------------------------------------- */
@@ -1014,59 +956,6 @@
     color: var(--ink);
 }
 
-/* PIN pill in the header (added inside .question-header) */
-#host-game-screen .qhdr-center {
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-#host-game-screen .qhdr-center .pin-pill {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 8px;
-}
-#host-game-screen .qhdr-center .pin-pill .pin-kicker {
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--ink-3);
-}
-#host-game-screen .qhdr-center .pin-pill .pin-value {
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: 22px;
-    letter-spacing: 0.08em;
-    color: var(--accent);
-    font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 0;
-}
-#host-game-screen .qhdr-center .qhdr-sep {
-    width: 1px;
-    height: 18px;
-    background: var(--rule-soft);
-}
-#host-game-screen .qhdr-center .responses-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-family: var(--font-body);
-    font-size: 13px;
-    color: var(--ink-2);
-}
-#host-game-screen .qhdr-center .responses-pill .dot {
-    width: 7px;
-    height: 7px;
-    background: var(--good);
-    border-radius: 50%;
-    display: inline-block;
-}
-#host-game-screen .qhdr-center .responses-pill strong {
-    color: var(--ink);
-    font-weight: 500;
-}
-
 @keyframes appHostTimerBlink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
@@ -1105,4 +994,212 @@
     #host-game-screen .question-header {
         padding: 10px 16px;
     }
+}
+
+/* ==========================================================================
+   Quiz editor body (#quiz-editor-section) — editorial paper/ink pilot.
+   Neutralizes the legacy glass + indigo chrome on cards, headers, and the
+   core form controls. Scoped-only changes: does NOT touch the inline-styled
+   feature toggles (manual advancement / power-ups / consensus mode),
+   scoring settings, manim-ai section, or preview pane — those stay legacy
+   until their own design pass.
+   ========================================================================== */
+
+/* Editor wrapper — kill the glass panel; the editor is the page. */
+#quiz-editor-section,
+.host-container:not(.split-screen) #quiz-editor-section,
+[data-theme="light"] #quiz-editor-section,
+[data-theme="dark"] #quiz-editor-section {
+    background: var(--paper);
+    border: none;
+    border-radius: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+    color: var(--ink);
+    font-family: var(--font-body);
+}
+
+/* Keep a hairline separator from the header in split-screen, where the
+   editor abuts the preview pane and needs its own outline. */
+.host-container.split-screen > #quiz-editor-section {
+    background: var(--paper);
+    border: 1px solid var(--rule-soft);
+    border-radius: 20px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+}
+
+/* Editor heading */
+#quiz-editor-section .editor-heading-row {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--rule-soft);
+    margin-bottom: 20px;
+}
+#quiz-editor-section .editor-heading-row h2,
+#quiz-editor-section h2:first-of-type {
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: clamp(28px, 3.4vw, 40px);
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    color: var(--ink);
+    margin: 0;
+}
+
+/* Quiz title input — prominent, no indigo border */
+#quiz-editor-section #quiz-title.input-field {
+    background: var(--paper-2) !important;
+    border: 1px solid var(--rule-soft) !important;
+    border-radius: 12px !important;
+    color: var(--ink) !important;
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: clamp(20px, 2vw, 26px);
+    letter-spacing: -0.015em;
+    padding: 14px 18px !important;
+}
+#quiz-editor-section #quiz-title.input-field:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--accent-soft) !important;
+    outline: none;
+}
+#quiz-editor-section #quiz-title.input-field::placeholder {
+    color: var(--ink-4);
+}
+
+/* Question card */
+#quiz-editor-section .question-item {
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 18px;
+    box-shadow: none;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+#quiz-editor-section .question-item:hover {
+    background: var(--paper-2);
+    border-color: var(--ink-4);
+    box-shadow: none;
+}
+
+/* Question header row */
+#quiz-editor-section .question-header {
+    background: transparent;
+    border-bottom: 1px solid var(--rule-soft);
+    border-radius: 18px 18px 0 0;
+    padding: 10px 16px;
+    margin: -24px -24px 16px -24px;
+}
+#quiz-editor-section .question-item.collapsed .question-header {
+    border-bottom: none;
+    border-radius: 18px;
+}
+#quiz-editor-section .question-header h3 {
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+}
+#quiz-editor-section .collapse-indicator {
+    color: var(--ink-3);
+}
+
+/* Collapsed badges */
+#quiz-editor-section .collapsed-type-badge,
+#quiz-editor-section .collapsed-difficulty-badge {
+    background: var(--paper-3);
+    color: var(--ink-2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+}
+
+/* Remove-question button */
+#quiz-editor-section .btn-icon.btn-remove {
+    color: var(--ink-3);
+    border-color: transparent;
+}
+#quiz-editor-section .btn-icon.btn-remove:hover {
+    background: rgba(217, 119, 87, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-deep);
+}
+
+/* Question meta grid (type / difficulty / concepts / time) */
+#quiz-editor-section .question-meta {
+    background: var(--paper-3);
+    border: 1px solid var(--rule-soft);
+}
+#quiz-editor-section .question-meta-title {
+    color: var(--ink-3);
+    font-family: var(--font-body);
+    letter-spacing: 0.08em;
+}
+
+/* Dropdowns inside the meta grid */
+#quiz-editor-section .question-type,
+#quiz-editor-section .question-difficulty {
+    background: var(--paper) !important;
+    border: 1px solid var(--rule-soft) !important;
+    color: var(--ink) !important;
+    border-radius: 8px !important;
+}
+#quiz-editor-section .question-type:focus,
+#quiz-editor-section .question-difficulty:focus {
+    border-color: var(--accent) !important;
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+
+/* Question text editor — the large textarea */
+#quiz-editor-section .question-text {
+    background: var(--paper) !important;
+    border: 1px solid var(--rule-soft) !important;
+    color: var(--ink) !important;
+    border-radius: 12px !important;
+    font-family: var(--font-body);
+}
+#quiz-editor-section .question-text:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+#quiz-editor-section .question-text::placeholder {
+    color: var(--ink-4);
+}
+
+/* Option text inputs — scoped to the options container so we don't affect
+   checkbox/radio inputs inside the feature-toggle labels */
+#quiz-editor-section .options-container .option-input,
+#quiz-editor-section .options-container input[type="text"],
+#quiz-editor-section .options-container input[type="number"] {
+    background: var(--paper) !important;
+    border: 1px solid var(--rule-soft) !important;
+    color: var(--ink) !important;
+    border-radius: 8px !important;
+}
+#quiz-editor-section .options-container .option-input:focus,
+#quiz-editor-section .options-container input[type="text"]:focus,
+#quiz-editor-section .options-container input[type="number"]:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--accent-soft) !important;
+    outline: none;
+}
+
+/* Pagination controls sit above the questions list */
+#quiz-editor-section .pagination-btn {
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
+    color: var(--ink-2);
+}
+#quiz-editor-section .pagination-btn:hover:not(:disabled) {
+    background: var(--paper-3);
+    border-color: var(--ink-4);
+    color: var(--ink);
+}
+#quiz-editor-section .question-indicator {
+    font-family: var(--font-mono);
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
 }

@@ -28,6 +28,24 @@ function setEditorHeaderState(visible) {
     }
 }
 
+/**
+ * Toggle live-game header state (PIN/progress cluster + Pausar/Terminar buttons).
+ * Visibility is also driven by the body.in-host-game class so CSS can hide
+ * unrelated header items (utilities, sign-in chip, etc.) in this state.
+ */
+function setLiveGameHeaderState(visible) {
+    const want = !!visible;
+    if (document.body.classList.contains('in-host-game') === want) return;
+    document.body.classList.toggle('in-host-game', want);
+    const cluster = document.getElementById('header-live-game-cluster');
+    const controls = document.getElementById('header-live-game-controls');
+    [cluster, controls].forEach(el => {
+        if (!el) return;
+        if (want) el.removeAttribute('hidden');
+        else el.setAttribute('hidden', '');
+    });
+}
+
 export class UIManager {
     constructor() {
         this.currentScreen = 'main-menu';
@@ -108,6 +126,8 @@ export class UIManager {
                 hostContainer.classList.remove('always-preview');
             }
         }
+
+        setLiveGameHeaderState(screenId === 'host-game-screen');
 
         // Special handling for host-screen: prepare-then-fade pattern
         if (screenId === 'host-screen') {

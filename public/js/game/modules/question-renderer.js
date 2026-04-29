@@ -154,8 +154,6 @@ export class QuestionRenderer {
         if (responsesCount) responsesCount.textContent = '0';
         const totalPlayers = document.getElementById('total-players');
         if (totalPlayers) totalPlayers.textContent = '0';
-        const headerAnswered = document.getElementById('host-header-answered');
-        if (headerAnswered) headerAnswered.textContent = '0';
         const headerTotal = document.getElementById('host-header-total');
         if (headerTotal) headerTotal.textContent = '0';
     }

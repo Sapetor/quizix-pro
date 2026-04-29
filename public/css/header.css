@@ -362,6 +362,162 @@ body.has-editor-toolbar .app-header #utility-overflow-toggle { display: inline-f
   z-index: 105;
 }
 
+/* ----- Connection status pill (main-menu state) ----- */
+.app-header .conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--ink-3);
+  padding: 5px 10px;
+  border: 1px solid var(--rule-soft-light);
+  border-radius: 999px;
+}
+.app-header .conn .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  flex-shrink: 0;
+}
+.app-header .conn[hidden] { display: none; }
+
+/* Hide conn pill when editor toolbar shown (breadcrumb takes its place) */
+body.has-editor-toolbar .app-header .conn { display: none; }
+
+/* ----- Live-game header cluster (host-game-screen active) ----- */
+.app-header .live-game-cluster {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  min-width: 0;
+}
+.app-header .live-game-cluster[hidden] { display: none; }
+
+.app-header .live-game-pin {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.app-header .live-game-pin-kicker {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.app-header .live-game-pin-value {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  color: var(--accent-terracotta);
+  font-variation-settings: "opsz" 144, "SOFT" 80, "WONK" 1;
+}
+
+.app-header .live-game-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-2);
+  min-width: 0;
+}
+.app-header .live-game-players {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.app-header .live-game-players strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+.app-header .live-game-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+}
+.app-header .live-game-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--rule-soft-light);
+  flex-shrink: 0;
+}
+/* #question-counter inherits live-game-progress styles when relocated here */
+.app-header .live-game-progress #question-counter {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ----- Live-game right cluster: Pausar (stub) + Terminar ----- */
+.app-header .live-game-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.app-header .live-game-controls[hidden] { display: none; }
+
+.app-header .live-game-controls .btn {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 200ms, color 200ms, border-color 200ms;
+}
+.app-header .live-game-controls .btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--rule-soft-light);
+}
+.app-header .live-game-controls .btn-ghost:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+.app-header .live-game-controls .btn-ghost:disabled,
+.app-header .live-game-controls .btn-ghost[aria-disabled="true"] {
+  color: var(--ink-4);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+.app-header .live-game-controls .btn-ink {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.app-header .live-game-controls .btn-ink:hover {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+}
+.app-header .live-game-controls .btn.hidden { display: none; }
+
+/* Visibility orchestration: in-host-game state */
+body.in-host-game .app-header .conn,
+body.in-host-game .app-header .editor-breadcrumb,
+body.in-host-game .app-header .app-header-utilities,
+body.in-host-game .app-header #utility-overflow-toggle,
+body.in-host-game .app-header #start-hosting-header-small,
+body.in-host-game .app-header #user-chip { display: none; }
+
+body.in-host-game .app-header .live-game-cluster,
+body.in-host-game .app-header .live-game-controls { display: flex; }
+
 /* ----- Responsive tightening ----- */
 @media (max-width: 639px) {
   .app-header-inner {
@@ -371,6 +527,10 @@ body.has-editor-toolbar .app-header #utility-overflow-toggle { display: inline-f
   }
   .brand-tag { display: none; }
   .app-header .lang-pill .language-name { display: none; }
+  .app-header .conn span:not(.dot) { display: none; }
+  .app-header .live-game-progress { gap: 8px; }
+  .app-header .live-game-progress #question-counter { font-size: 12px; }
+  body.in-host-game .app-header .brand-name { display: none; }
 }
 
 @media (max-width: 479px) {

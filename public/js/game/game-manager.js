@@ -847,7 +847,6 @@ export class GameManager {
         // Update response counts
         dom.setContent('responses-count', data.answeredPlayers || 0);
         dom.setContent('total-players', connected);
-        dom.setContent('host-header-answered', data.answeredPlayers || 0);
         dom.setContent('host-header-total', connected);
 
         // Show/hide disconnected indicator
@@ -890,7 +889,6 @@ export class GameManager {
         // Update response counts
         dom.setContent('responses-count', data.answeredPlayers || 0);
         dom.setContent('total-players', data.totalPlayers || 0);
-        dom.setContent('host-header-answered', data.answeredPlayers || 0);
         dom.setContent('host-header-total', data.totalPlayers || 0);
 
         // Update individual answer statistics
