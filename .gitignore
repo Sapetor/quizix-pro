@@ -6,6 +6,8 @@ yarn-error.log*
 .DS_Store
 *.log
 .claude/
+.omc/
+.serena/
 public/uploads/*
 !public/uploads/.gitkeep
 quizzes/*
@@ -47,8 +49,16 @@ Desktop.ini
 # Backup directories
 .claude.backup-*/
 .serena.backup-*/
-.serena/cache/
 
 # Temporary files
 *.tmp
 *.temp
+
+# Local scratch docs and screenshots
+/bug.md
+/future-ideas.md
+/image.png
+/image2.png
+/ordering-host-screen.png
+test-screenshots/
+/design_handoff_landing/
