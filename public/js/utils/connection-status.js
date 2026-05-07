@@ -6,7 +6,6 @@
 import { logger } from '../core/config.js';
 import { translationManager } from './translation-manager.js';
 import { APIHelper } from './api-helper.js';
-import { show, hide } from './dom.js';
 
 export class ConnectionStatus {
     constructor() {
@@ -43,63 +42,29 @@ export class ConnectionStatus {
     }
 
     /**
-     * Create and inject the connection status indicator into the header
+     * Bind to the existing header connection pill and add a ping span.
+     * The pill is rendered statically in index.html as part of the header redesign;
+     * this class drives its dot color, label, and ping readout.
      */
     initializeUI() {
-        // Find the header controls area
-        const headerControls = document.querySelector('.header-controls');
-        if (!headerControls) {
-            logger.warn('Header controls not found, cannot add connection status');
+        const pill = document.getElementById('header-conn-pill');
+        if (!pill) {
+            logger.debug('Connection pill (#header-conn-pill) not present on this page');
             return;
         }
 
-        // Create the connection status element
-        const statusElement = document.createElement('div');
-        statusElement.id = 'connection-status';
-        statusElement.className = 'connection-status';
-        statusElement.innerHTML = `
-            <div class="connection-indicator">
-                <div class="connection-dot"></div>
-                <span class="connection-text" data-translate="checking_connection">Checking...</span>
-            </div>
-            <div class="connection-details hidden">
-                <div class="detail-item">
-                    <span data-translate="status">Status</span>: <span id="status-value">-</span>
-                </div>
-                <div class="detail-item">
-                    <span data-translate="ping">Ping</span>: <span id="ping-value">-</span>
-                </div>
-                <div class="detail-item">
-                    <span data-translate="quality">Quality</span>: <span id="quality-value">-</span>
-                </div>
-            </div>
-        `;
-
-        // Insert before the language selector (last element typically)
-        const languageSelector = headerControls.querySelector('.language-selector');
-        if (languageSelector) {
-            headerControls.insertBefore(statusElement, languageSelector);
-        } else {
-            headerControls.appendChild(statusElement);
+        const dot = pill.querySelector('.dot');
+        const text = pill.querySelector('span[data-translate]');
+        let ping = pill.querySelector('.ping');
+        if (!ping) {
+            ping = document.createElement('span');
+            ping.className = 'ping';
+            ping.setAttribute('aria-hidden', 'true');
+            pill.appendChild(ping);
         }
 
-        // Add click handler for details toggle
-        const indicator = statusElement.querySelector('.connection-indicator');
-        const details = statusElement.querySelector('.connection-details');
-
-        indicator.addEventListener('click', () => {
-            const isVisible = !details.classList.contains('hidden');
-            if (isVisible) {
-                hide(details);
-            } else {
-                show(details, 'visible-block');
-            }
-        });
-
-        // Add hover tooltip
-        indicator.title = translationManager.getTranslationSync('click_connection_details');
-
-        logger.debug('Connection status UI initialized');
+        this.elements = { pill, dot, text, ping };
+        logger.debug('Connection status bound to header pill');
     }
 
     /**
@@ -220,52 +185,30 @@ export class ConnectionStatus {
     }
 
     /**
-     * Update the UI elements
+     * Update the header pill with current status.
      */
     updateUI() {
-        const statusElement = document.getElementById('connection-status');
-        if (!statusElement) return;
+        if (!this.elements) return;
+        const { pill, dot, text, ping } = this.elements;
 
-        const dot = statusElement.querySelector('.connection-dot');
-        const text = statusElement.querySelector('.connection-text');
-        const statusValue = document.getElementById('status-value');
-        const pingValue = document.getElementById('ping-value');
-        const qualityValue = document.getElementById('quality-value');
+        const labelKey = this.isOnline ? 'connected' : 'offline';
+        const label = translationManager.getTranslationSync(labelKey);
 
-        // Update connection dot and text
-        if (this.isOnline) {
-            dot.className = `connection-dot ${this.connectionQuality}`;
-            text.setAttribute('data-translate', 'connected');
-            text.textContent = translationManager.getTranslationSync('connected');
+        dot.classList.toggle('offline', !this.isOnline);
+        text.setAttribute('data-translate', labelKey);
+        text.textContent = label;
+
+        if (this.isOnline && this.lastPingTime != null) {
+            ping.textContent = `${this.lastPingTime}ms`;
+            ping.hidden = false;
         } else {
-            dot.className = 'connection-dot offline';
-            text.setAttribute('data-translate', 'offline');
-            text.textContent = translationManager.getTranslationSync('offline');
-        }
-
-        // Update details
-        if (statusValue) {
-            statusValue.textContent = this.isOnline ?
-                translationManager.getTranslationSync('connected') :
-                translationManager.getTranslationSync('offline');
-        }
-
-        if (pingValue) {
-            pingValue.textContent = this.lastPingTime ? `${this.lastPingTime}ms` : '-';
+            ping.textContent = '';
+            ping.hidden = true;
         }
 
         const qualityText = this.getQualityText();
-
-        if (qualityValue) {
-            qualityValue.textContent = qualityText || '-';
-        }
-
-        // Update tooltip
-        const indicator = statusElement.querySelector('.connection-indicator');
-        if (indicator) {
-            const connectionLabel = translationManager.getTranslationSync('connection');
-            indicator.title = `${connectionLabel}: ${qualityText}${this.lastPingTime ? ` (${this.lastPingTime}ms)` : ''}`;
-        }
+        const connectionLabel = translationManager.getTranslationSync('connection');
+        pill.title = `${connectionLabel}: ${qualityText}${this.lastPingTime != null ? ` (${this.lastPingTime}ms)` : ''}`;
     }
 
     /**

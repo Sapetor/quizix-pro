@@ -382,6 +382,17 @@ body.has-editor-toolbar .app-header #utility-overflow-toggle { display: inline-f
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
   flex-shrink: 0;
 }
+.app-header .conn .dot.offline {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+.app-header .conn .ping {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--ink-4);
+  padding-left: 8px;
+  border-left: 1px solid var(--rule-soft-light);
+}
 .app-header .conn[hidden] { display: none; }
 
 /* Hide conn pill when editor toolbar shown (breadcrumb takes its place) */
