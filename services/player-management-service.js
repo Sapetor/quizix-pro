@@ -138,7 +138,12 @@ class PlayerManagementService {
                 gamePin: pin,
                 questionCount: game.quiz.questions.length,
                 manualAdvancement: game.manualAdvancement || false,
-                powerUpsEnabled: game.powerUpsEnabled || false
+                powerUpsEnabled: game.powerUpsEnabled || false,
+                consensusConfig: game.isConsensusMode ? {
+                    enabled: true,
+                    threshold: game.consensusConfig.threshold,
+                    allowChat: game.consensusConfig.allowChat
+                } : null
             });
         }
 
@@ -510,7 +515,8 @@ class PlayerManagementService {
                     explanation: question.explanation || null,
                     questionType: correctAnswerData.questionType,
                     correctAnswer: correctAnswerData.correctAnswer,
-                    correctAnswers: correctAnswerData.correctAnswers
+                    correctAnswers: correctAnswerData.correctAnswers,
+                    partialScore: playerAnswer ? playerAnswer.partialScore : undefined
                 });
             }
         }

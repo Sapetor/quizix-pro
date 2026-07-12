@@ -326,23 +326,41 @@ export class ResultsManagerService {
         let totalParticipants = 0;
         let totalCorrectAnswers = 0;
         let totalQuestions = 0;
+        let scoreSum = 0;
+        let scoreCount = 0;
 
         results.forEach(result => {
             if (result.results && Array.isArray(result.results)) {
+                // Detail object with full per-player data (exact computation)
                 totalParticipants += result.results.length;
 
+                let quizCorrect = 0;
+                let quizQuestions = 0;
                 result.results.forEach(player => {
                     const answers = player.answers || [];
-                    const playerQuestions = answers.length;
-                    const playerCorrect = answers.filter(a => a?.isCorrect).length;
-                    totalCorrectAnswers += playerCorrect;
-                    totalQuestions += playerQuestions;
+                    quizQuestions += answers.length;
+                    quizCorrect += answers.filter(a => a?.isCorrect).length;
                 });
+                totalCorrectAnswers += quizCorrect;
+                totalQuestions += quizQuestions;
+                if (quizQuestions > 0) {
+                    scoreSum += (quizCorrect / quizQuestions) * 100;
+                    scoreCount += 1;
+                }
+            } else {
+                // Listing payload: server drops the heavy per-player array and provides
+                // participantCount + averageScore summary fields instead.
+                totalParticipants += result.participantCount ?? 0;
+                if (typeof result.averageScore === 'number') {
+                    scoreSum += result.averageScore;
+                    scoreCount += 1;
+                }
             }
         });
 
-        const averageScore = totalQuestions > 0 ?
-            Math.round((totalCorrectAnswers / totalQuestions) * 100) : 0;
+        const averageScore = scoreCount > 0 ?
+            Math.round(scoreSum / scoreCount) :
+            (totalQuestions > 0 ? Math.round((totalCorrectAnswers / totalQuestions) * 100) : 0);
         const averageParticipants = results.length > 0 ?
             Math.round(totalParticipants / results.length) : 0;
 

@@ -228,14 +228,32 @@ class QuestionFlowService {
             if (player.disconnected) return;
 
             const playerAnswer = player.answers[game.currentQuestion];
+
+            // Inverse-map canonical correct indices into this player's shuffled
+            // coordinate space (mapping[shuffledIndex] = originalIndex, so indexOf
+            // converts canonical -> displayed). When randomizeAnswers is off the
+            // mapping is empty and values pass through unchanged.
+            const mapping = game.answerMappings?.get(playerId);
+            let correctAnswer = correctAnswerData.correctAnswer;
+            let correctAnswers = correctAnswerData.correctAnswers;
+            if (mapping) {
+                if (correctAnswerData.questionType === 'multiple-choice' && typeof correctAnswer === 'number') {
+                    correctAnswer = mapping.indexOf(correctAnswer);
+                }
+                if (correctAnswerData.questionType === 'multiple-correct' && Array.isArray(correctAnswers)) {
+                    correctAnswers = correctAnswers.map(idx => mapping.indexOf(idx));
+                }
+            }
+
             io.to(playerId).emit('player-result', {
                 isCorrect: playerAnswer ? playerAnswer.isCorrect : false,
                 points: playerAnswer ? playerAnswer.points : 0,
+                partialScore: playerAnswer ? playerAnswer.partialScore : undefined,
                 totalScore: player.score,
                 explanation: currentQuestion?.explanation || null,
                 questionType: correctAnswerData.questionType,
-                correctAnswer: correctAnswerData.correctAnswer,
-                correctAnswers: correctAnswerData.correctAnswers
+                correctAnswer: correctAnswer,
+                correctAnswers: correctAnswers
             });
         });
 

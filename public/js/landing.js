@@ -15,6 +15,13 @@ function getLandingRoot() {
     return document.getElementById('main-menu');
 }
 
+// True only while the landing screen is the visible, foreground screen.
+// 'active' is the class UIManager.showScreen toggles; document.hidden covers backgrounded tabs.
+function landingActive() {
+    const root = getLandingRoot();
+    return !!root && root.classList.contains('active') && !document.hidden;
+}
+
 function renderTicker(games) {
     const strip = document.getElementById('lp-rooms-strip');
     const track = document.getElementById('lp-rooms-track');
@@ -143,6 +150,7 @@ function startPinAnim() {
     });
     let cur = 0;
     pinAnimTimer = window.setInterval(() => {
+        if (!landingActive()) return;
         const prev = digits[4];
         const last = digits[5];
         const ch = PIN_CYCLE_CHARS[cur % PIN_CYCLE_CHARS.length];
@@ -221,7 +229,9 @@ export function initLanding() {
 
     fetchActiveGames();
     if (tickerTimer) clearInterval(tickerTimer);
-    tickerTimer = window.setInterval(fetchActiveGames, TICKER_REFRESH_MS);
+    tickerTimer = window.setInterval(() => {
+        if (landingActive()) fetchActiveGames();
+    }, TICKER_REFRESH_MS);
 
     wireHeroJoin();
     wireSectionLinks();

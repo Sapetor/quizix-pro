@@ -1533,7 +1533,7 @@
 .checkbox-option,
 .tf-option,
 .btn {
-    transition: transform 0.2s ease;
+    transition: var(--theme-transition-fast), transform 0.2s ease;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
@@ -1781,15 +1781,15 @@
 }
 
 .carousel-dot.active {
-    background: #3b82f6;
+    background: var(--accent-primary);
     transform: scale(1.3);
-    box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent-primary) 40%, transparent);
 }
 
 .carousel-dot:hover {
-    background: rgba(59, 130, 246, 0.7);
+    background: color-mix(in srgb, var(--accent-primary) 70%, transparent);
     transform: scale(1.15);
-    box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--accent-primary) 30%, transparent);
 }
 
 /* Mobile-specific carousel dots - ensure visibility */
@@ -1811,7 +1811,7 @@
     }
     
     .carousel-dot.active {
-        background: #3b82f6 !important;
+        background: var(--accent-primary) !important;
         transform: scale(1.3); /* Slightly larger active state */
     }
     
@@ -1876,11 +1876,11 @@
 }
 
 [data-theme="light"] .carousel-dot:hover {
-    background: rgba(59, 130, 246, 0.7);
+    background: color-mix(in srgb, var(--accent-primary) 70%, transparent);
 }
 
 [data-theme="light"] .carousel-dot.active {
-    background: #3b82f6;
+    background: var(--accent-primary);
 }
 
 /* ============================================
@@ -2683,15 +2683,15 @@
     }
     
     .preview-carousel-dot.active {
-        background: #3b82f6;
+        background: var(--accent-primary);
         transform: scale(1.3);
-        box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+        box-shadow: 0 0 12px color-mix(in srgb, var(--accent-primary) 40%, transparent);
     }
-    
+
     .preview-carousel-dot:hover {
-        background: rgba(59, 130, 246, 0.7);
+        background: color-mix(in srgb, var(--accent-primary) 70%, transparent);
         transform: scale(1.15);
-        box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+        box-shadow: 0 0 8px color-mix(in srgb, var(--accent-primary) 30%, transparent);
     }
     
     /* Light theme adaptations */
@@ -2739,11 +2739,11 @@
     }
     
     [data-theme="light"] .preview-carousel-dot:hover {
-        background: rgba(59, 130, 246, 0.7);
+        background: color-mix(in srgb, var(--accent-primary) 70%, transparent);
     }
-    
+
     [data-theme="light"] .preview-carousel-dot.active {
-        background: #3b82f6;
+        background: var(--accent-primary);
     }
     
     /* Nuclear option for preview carousel dots - Ultra high specificity */
@@ -2797,11 +2797,11 @@
     .mobile-preview-showcase .preview-carousel-dot[data-index].active,
     div.mobile-preview-showcase .preview-carousel-dots button.preview-carousel-dot.active,
     div.mobile-preview-showcase button.preview-carousel-dot[data-index].active {
-        background: #3b82f6 !important; /* Blue for active only */
+        background: var(--accent-primary) !important; /* Accent for active only */
         transform: scale(1.3) !important;
         width: 10px !important; /* Original size when active */
         height: 10px !important;
-        box-shadow: 0 0 12px rgba(59, 130, 246, 0.4) !important; /* Original active shadow */
+        box-shadow: 0 0 12px color-mix(in srgb, var(--accent-primary) 40%, transparent) !important; /* Original active shadow */
     }
     
     /* Extreme override for bottom carousel - Force original appearance */
@@ -2832,8 +2832,8 @@
     }
 
     button.preview-carousel-dot[data-index].active {
-        background: #3b82f6 !important;
-        box-shadow: 0 0 12px rgba(59, 130, 246, 0.4) !important;
+        background: var(--accent-primary) !important;
+        box-shadow: 0 0 12px color-mix(in srgb, var(--accent-primary) 40%, transparent) !important;
         transform: scale(1.3) !important;
     }
     
@@ -2858,7 +2858,7 @@
     }
 
     .mobile-preview-showcase .preview-carousel-navigation button[class*="preview-carousel-dot"].active {
-        background: #3b82f6 !important;
+        background: var(--accent-primary) !important;
         transform: scale(1.3) !important;
     }
 

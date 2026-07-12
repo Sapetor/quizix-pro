@@ -168,55 +168,6 @@
 }
 
 /* ====================================================================== */
-/*  Top-bar User Chip                                                     */
-/* ====================================================================== */
-
-.user-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: var(--bg-hover, rgba(0, 0, 0, 0.06));
-    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
-    color: var(--text-primary, #1a1a1a);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-}
-
-.user-chip:hover,
-.user-chip:focus {
-    background: var(--bg-hover-strong, rgba(0, 0, 0, 0.1));
-    outline: none;
-}
-
-.user-chip-avatar {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--accent-color, #2563eb);
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.user-chip-name {
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.user-chip.anonymous .user-chip-avatar {
-    background: var(--bg-secondary, #999);
-}
-
-/* ====================================================================== */
 /*  File Manager Visibility Badge / Toggle                                */
 /* ====================================================================== */
 
@@ -297,17 +248,6 @@
     border-bottom-color: rgba(255, 255, 255, 0.12);
 }
 
-:not([data-theme="light"]) .user-chip {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.14);
-    color: #f3f4f6;
-}
-
-:not([data-theme="light"]) .user-chip:hover,
-:not([data-theme="light"]) .user-chip:focus {
-    background: rgba(255, 255, 255, 0.14);
-}
-
 :not([data-theme="light"]) .quiz-visibility-badge.private {
     background: rgba(96, 165, 250, 0.18);
     color: #93c5fd;
@@ -328,8 +268,5 @@
     .auth-modal-content {
         padding: 24px 20px;
         max-width: 100%;
-    }
-    .user-chip-name {
-        max-width: 80px;
     }
 }

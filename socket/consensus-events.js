@@ -3,6 +3,8 @@
  * Handles: propose-answer, send-quick-response, send-chat-message, lock-consensus
  */
 
+const { validateAndHandle } = require('../services/validation-schemas');
+
 function registerConsensusEvents(io, socket, options) {
     const { gameSessionService, playerManagementService, consensusFlowService, checkRateLimit, logger } = options;
 
@@ -10,10 +12,8 @@ function registerConsensusEvents(io, socket, options) {
     socket.on('propose-answer', (data) => {
         if (!checkRateLimit(socket.id, 'propose-answer', 5, socket)) return;
         try {
-            if (!data || data.answer === undefined) {
-                socket.emit('error', { message: 'Invalid proposal data', messageKey: 'consensus_invalid_answer' });
-                return;
-            }
+            const validated = validateAndHandle(socket, 'propose-answer', data, logger);
+            if (!validated) return;
 
             const playerData = playerManagementService.getPlayer(socket.id);
             if (!playerData) {
@@ -29,7 +29,7 @@ function registerConsensusEvents(io, socket, options) {
 
             const result = consensusFlowService.handleProposalSubmission(
                 socket.id,
-                data.answer,
+                validated.answer,
                 game,
                 socket,
                 io
@@ -48,10 +48,8 @@ function registerConsensusEvents(io, socket, options) {
     socket.on('send-quick-response', (data) => {
         if (!checkRateLimit(socket.id, 'send-quick-response', 10, socket)) return;
         try {
-            if (!data || !data.type) {
-                socket.emit('error', { message: 'Invalid quick response data', messageKey: 'consensus_invalid_response' });
-                return;
-            }
+            const validated = validateAndHandle(socket, 'send-quick-response', data, logger);
+            if (!validated) return;
 
             const playerData = playerManagementService.getPlayer(socket.id);
             if (!playerData) {
@@ -67,8 +65,8 @@ function registerConsensusEvents(io, socket, options) {
 
             const result = consensusFlowService.handleQuickResponse(
                 socket.id,
-                data.type,
-                data.targetPlayer || null,
+                validated.type,
+                validated.targetPlayer || null,
                 game,
                 socket,
                 io
@@ -87,10 +85,8 @@ function registerConsensusEvents(io, socket, options) {
     socket.on('send-chat-message', (data) => {
         if (!checkRateLimit(socket.id, 'send-chat-message', 5, socket)) return;
         try {
-            if (!data || !data.text) {
-                socket.emit('error', { message: 'Invalid chat message', messageKey: 'consensus_empty_message' });
-                return;
-            }
+            const validated = validateAndHandle(socket, 'send-chat-message', data, logger);
+            if (!validated) return;
 
             const playerData = playerManagementService.getPlayer(socket.id);
             if (!playerData) {
@@ -106,7 +102,7 @@ function registerConsensusEvents(io, socket, options) {
 
             const result = consensusFlowService.handleChatMessage(
                 socket.id,
-                data.text,
+                validated.text,
                 game,
                 socket,
                 io

@@ -348,6 +348,9 @@ export default {
     generate_questions_btn: '生成问题',
     supported_formats: '支持的格式',
     or_upload_file: '或上传文件',
+    type_message: '输入消息...',
+    paste_content_here: '在此粘贴您的文本内容，或在下方上传文件...',
+    send_message: '发送消息',
     content_type_detected: '检测到内容类型',
 
     // AI Content Analysis

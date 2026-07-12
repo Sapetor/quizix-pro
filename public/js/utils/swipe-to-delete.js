@@ -32,6 +32,7 @@ export class SwipeToDelete {
 
         // Bound event handlers for cleanup
         this._boundHandlers = {};
+        this._boundContainer = null;
         this._outsideClickHandler = null;
 
         logger.debug('SwipeToDelete initialized');
@@ -75,6 +76,21 @@ export class SwipeToDelete {
     setupEventListeners() {
         if (!this.container) return;
 
+        // Avoid stacking duplicate listeners when init() is called repeatedly
+        // (e.g. the results modal reopening) on the same persistent container.
+        if (this._boundContainer === this.container && this._boundHandlers.touchstart) {
+            return;
+        }
+
+        // If previously attached to a different container, detach those handlers first.
+        if (this._boundContainer && this._boundContainer !== this.container && this._boundHandlers.touchstart) {
+            ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(event => {
+                if (this._boundHandlers[event]) {
+                    this._boundContainer.removeEventListener(event, this._boundHandlers[event]);
+                }
+            });
+        }
+
         this._boundHandlers = {
             touchstart: (e) => this.handleTouchStart(e),
             touchmove: (e) => this.handleTouchMove(e),
@@ -86,6 +102,7 @@ export class SwipeToDelete {
         this.container.addEventListener('touchmove', this._boundHandlers.touchmove, { passive: false });
         this.container.addEventListener('touchend', this._boundHandlers.touchend, { passive: true });
         this.container.addEventListener('touchcancel', this._boundHandlers.touchcancel, { passive: true });
+        this._boundContainer = this.container;
     }
 
     handleTouchStart(e) {
@@ -287,6 +304,7 @@ export class SwipeToDelete {
 
         this.removeOutsideClickHandler();
         this._boundHandlers = {};
+        this._boundContainer = null;
         this.container = null;
         this.activeItem = null;
 

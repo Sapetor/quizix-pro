@@ -381,7 +381,7 @@
 }
 
 .analytics-modal-content {
-    animation: modalSlideIn 0.3s ease-out;
+    animation: analyticsModalSlideIn 0.3s ease-out;
 }
 
 @keyframes modalFadeIn {
@@ -393,7 +393,7 @@
     }
 }
 
-@keyframes modalSlideIn {
+@keyframes analyticsModalSlideIn {
     from {
         transform: translateY(-50px);
         opacity: 0;

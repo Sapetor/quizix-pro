@@ -49,7 +49,8 @@ function registerGameEvents(io, socket, options) {
                 pin: game.pin,
                 gameId: game.id,
                 title: quiz.title,
-                hostSessionId: session.hostSessionId
+                hostSessionId: session.hostSessionId,
+                hostToken: game.hostToken
             });
 
             socket.broadcast.emit('game-available', {

@@ -180,6 +180,7 @@
     --border-radius: 16px;
     --border-radius-small: 12px;
     --border-radius-medium: 15px;
+    --border-radius-large: var(--border-radius);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     
     /* Glass Effect Variants */
@@ -187,7 +188,25 @@
     
     /* Accent Gradient */
     --accent-secondary-gradient: #1d4ed8;
-    
+
+    /* === LEGACY TOKEN ALIASES ===
+       Orphan token names referenced across the CSS that map to canonical tokens.
+       Aliases re-resolve per theme because [data-theme] overrides live on :root. */
+    --primary-color: var(--accent-primary);
+    --primary-color-hover: var(--accent-terracotta-deep);
+    --danger-color: var(--error-color);
+    --info-color: #3b82f6;
+    --bg-tertiary: var(--card-bg);
+    --background-primary: var(--bg-primary);
+    --success-green: var(--success-color);
+    --color-primary: var(--color-primary-500);
+    --color-danger-500: var(--color-error-500);
+    --surface-color: var(--card-bg);
+    --text-tertiary: var(--text-secondary);
+    --glass-dark: rgba(0, 0, 0, 0.4);
+    /* Raw RGB triplet for use inside rgba(); cannot alias a color keyword */
+    --accent-primary-rgb: 37, 99, 235;
+
     /* === CONTENT-DENSITY AWARE SPACING SYSTEM === */
     /* Base spacing units for different content densities */
     --spacing-xs: 4px;
@@ -283,6 +302,7 @@
     --card-bg: var(--paper-2);
     --border-color: var(--rule-soft-light);
     --accent-primary: var(--accent-terracotta);
+    --accent-primary-rgb: 217, 119, 87;
     --accent-secondary: var(--ink);
     --success-color: #10b981;
     --warning-color: #f59e0b;
@@ -347,6 +367,7 @@
     --card-bg: #27241d;
     --border-color: var(--rule-soft-dark);
     --accent-primary: var(--accent-terracotta);
+    --accent-primary-rgb: 217, 119, 87;
     --accent-secondary: #f3ede0;
     --success-color: #10b981;
     --warning-color: #f59e0b;
@@ -495,30 +516,23 @@
     font-size: calc(1.6rem * var(--global-font-scale)) !important; 
 }
 
-.fs-6xl,  /* 1.8rem - Used 6x */
+.fs-6xl,  /* 1.8rem - Used 4x */
 .final-results h1,
 .result-card .podium-position,
-.leaderboard-header h3,
-.celebration-score,
-.big-announcement { 
-    font-size: calc(1.8rem * var(--global-font-scale)) !important; 
+.leaderboard-header h3 {
+    font-size: calc(1.8rem * var(--global-font-scale)) !important;
 }
 
-.fs-7xl,  /* 2.2rem - Used 1x */
-.celebration-text { 
-    font-size: calc(2.2rem * var(--global-font-scale)) !important; 
+.fs-7xl { /* 2.2rem */
+    font-size: calc(2.2rem * var(--global-font-scale)) !important;
 }
 
-.fs-8xl,  /* 2.5rem - Used 2x */
-.celebration-rank,
-.big-score { 
-    font-size: calc(2.5rem * var(--global-font-scale)) !important; 
+.fs-8xl { /* 2.5rem */
+    font-size: calc(2.5rem * var(--global-font-scale)) !important;
 }
 
-.fs-9xl,  /* 4rem - Used 2x */
-.title-display,
-.hero-text { 
-    font-size: calc(4rem * var(--global-font-scale)) !important; 
+.fs-9xl { /* 4rem */
+    font-size: calc(4rem * var(--global-font-scale)) !important;
 }
 
 /* Special utilities for specific cases */

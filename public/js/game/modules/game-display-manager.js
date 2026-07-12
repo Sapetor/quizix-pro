@@ -9,7 +9,7 @@ import { logger } from '../../core/config.js';
 import { MathRenderer } from '../../utils/math-renderer.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
 import { imagePathResolver } from '../../utils/image-path-resolver.js';
-import { escapeHtml } from '../../utils/dom.js';
+import { escapeHtml, escapeHtmlPreservingLatex } from '../../utils/dom.js';
 
 export class GameDisplayManager {
     constructor(uiManager) {
@@ -219,7 +219,7 @@ export class GameDisplayManager {
         element.classList.add('tex2jax_process');
         element.classList.remove('MathJax_Processed');
 
-        element.innerHTML = this.mathRenderer.formatCodeBlocks(questionText);
+        element.innerHTML = this.mathRenderer.formatCodeBlocks(escapeHtmlPreservingLatex(questionText));
         logger.debug('Question text displayed');
 
         // Apply syntax highlighting to code blocks

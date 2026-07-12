@@ -146,7 +146,7 @@
     font-weight: bold;
 }
 
-.close-btn {
+.preview-modal-header .close-btn {
     background: none;
     border: none;
     color: white;
@@ -158,7 +158,7 @@
     line-height: 1;
 }
 
-.close-btn:hover {
+.preview-modal-header .close-btn:hover {
     background: var(--border-color);
     transform: scale(1.1);
 }
@@ -340,13 +340,11 @@
     /* Remove flexbox to allow natural MathJax rendering */
 }
 
-#preview-question-image,
 #preview-question-image-split {
     text-align: center;
     margin: 25px 0;
 }
 
-#preview-question-img,
 #preview-question-img-split {
     max-width: 100%;
     max-height: 300px;
@@ -841,7 +839,7 @@ pre code {
     padding: 20px;
 }
 
-.close-btn {
+.preview-settings-popup .close-btn {
     background: none;
     border: none;
     font-size: 20px;
@@ -856,8 +854,8 @@ pre code {
     transition: all 0.3s ease;
 }
 
-.close-btn:hover {
-    background: var(--color-danger);
+.preview-settings-popup .close-btn:hover {
+    background: var(--error-color);
     color: white;
 }
 

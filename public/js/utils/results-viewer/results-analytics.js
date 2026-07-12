@@ -279,6 +279,8 @@ function inferCorrectAnswer(results, questionIndex) {
 export function createAnalyticsModal(result, analytics, summary, conceptData = null) {
     const existingModal = document.getElementById('analytics-modal');
     if (existingModal) {
+        // Destroy any Chart.js instances retained on the old modal before removing it
+        existingModal._charts?.forEach(chart => chart?.destroy());
         existingModal.remove();
     }
 
@@ -304,7 +306,7 @@ export function createAnalyticsModal(result, analytics, summary, conceptData = n
         <div class="modal-content analytics-modal-content">
             <div class="modal-header">
                 <h2>${getTranslation('analytics_quiz_title')}: ${escapeHtml(result.quizTitle || getTranslation('untitled_quiz'))}</h2>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                <button class="modal-close" data-action="close-analytics">&times;</button>
             </div>
 
             <div class="analytics-tabs">
@@ -404,7 +406,7 @@ export function createAnalyticsModal(result, analytics, summary, conceptData = n
             ${conceptData?.hasConcepts ? buildConceptsTabContent(conceptData, result) : ''}
 
             <div class="modal-footer">
-                <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">${getTranslation('close')}</button>
+                <button class="btn secondary" data-action="close-analytics">${getTranslation('close')}</button>
                 <button class="btn secondary" data-action="export-excel" data-filename="${safeFilename}">${getTranslation('export_excel_btn')}</button>
                 <button class="btn secondary" data-action="export-pdf" data-filename="${safeFilename}">${getTranslation('export_pdf_btn')}</button>
                 <button class="btn primary" data-action="export-analytics" data-filename="${safeFilename}">${getTranslation('export_csv_btn')}</button>
@@ -508,10 +510,10 @@ function buildConceptsTabContent(conceptData, result) {
 export function createSuccessRateChart(analytics) {
     const ctx = document.getElementById('success-rate-chart');
     if (!ctx || typeof Chart === 'undefined') {
-        return;
+        return null;
     }
 
-    new Chart(ctx, {
+    return new Chart(ctx, {
         type: 'bar',
         data: {
             labels: analytics.map(q => `Q${q.questionNumber}`),
@@ -562,10 +564,10 @@ export function createSuccessRateChart(analytics) {
 export function createTimeVsSuccessChart(analytics) {
     const ctx = document.getElementById('time-vs-success-scatter');
     if (!ctx || typeof Chart === 'undefined') {
-        return;
+        return null;
     }
 
-    new Chart(ctx, {
+    return new Chart(ctx, {
         type: 'scatter',
         data: {
             datasets: [{

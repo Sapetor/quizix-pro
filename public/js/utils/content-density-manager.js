@@ -10,7 +10,6 @@ export class ContentDensityManager {
     constructor() {
         this.initialized = false;
         this.observers = new Set();
-        this.contentAnalysis = new Map();
     }
 
     /**
@@ -90,7 +89,6 @@ export class ContentDensityManager {
         if (!element || !element.classList) return;
 
         const analysis = this.performContentAnalysis(element);
-        this.contentAnalysis.set(element, analysis);
         this.applyDensityClasses(element, analysis);
     }
 

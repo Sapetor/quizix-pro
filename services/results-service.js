@@ -50,6 +50,14 @@ class ResultsService {
             throw err;
         }
 
+        // Prevent path traversal / arbitrary file write via unvalidated gamePin.
+        // Legitimate game PINs are always 6 digits.
+        if (!/^\d{6}$/.test(String(gamePin))) {
+            const err = new Error('Invalid game PIN');
+            err.messageKey = 'error_invalid_pin_format';
+            throw err;
+        }
+
         const filename = `results_${gamePin}_${Date.now()}.json`;
         const resultsData = {
             quizTitle,
@@ -65,8 +73,10 @@ class ResultsService {
             resultsData.questions = questions;
         }
 
+        // Defense-in-depth: resolve through validatePath like the read/delete paths
+        const filePath = this.validatePath(filename);
         await fs.writeFile(
-            path.join(this.resultsDir, filename),
+            filePath,
             JSON.stringify(resultsData, null, 2),
             'utf8'
         );
@@ -100,16 +110,18 @@ class ResultsService {
                 const content = await fs.readFile(filePath, 'utf8');
                 const data = JSON.parse(content);
 
+                // Drop the heavy per-player `results` array from the listing
+                // payload (unbounded growth); expose summary fields instead.
                 return {
                     filename,
                     quizTitle: data.quizTitle || 'Untitled Quiz',
                     gamePin: data.gamePin,
                     participantCount: data.results?.length || 0,
+                    averageScore: this._computeAverageScore(data.results),
                     startTime: data.startTime,
                     endTime: data.endTime,
                     saved: data.saved || stats.mtime.toISOString(),
-                    fileSize: stats.size,
-                    results: data.results || []
+                    fileSize: stats.size
                 };
             } catch (error) {
                 this.logger.error(`Error reading result file ${filename}:`, error);
@@ -123,6 +135,30 @@ class ResultsService {
 
         this.logger.debug(`Found ${files.length} result files`);
         return files;
+    }
+
+    /**
+     * Compute the average score (correct-answer percentage) for a game.
+     * Mirrors the client's calculateAverageScore so the listing UI keeps its
+     * score badge without the heavy per-player `results` array.
+     * @param {Array} results - Per-player result objects
+     * @returns {number} Average score percentage (0-100)
+     */
+    _computeAverageScore(results) {
+        if (!Array.isArray(results) || results.length === 0) {
+            return 0;
+        }
+
+        let totalCorrect = 0;
+        let totalQuestions = 0;
+
+        results.forEach(player => {
+            const answers = player.answers || [];
+            totalQuestions += answers.length;
+            totalCorrect += answers.filter(a => a?.isCorrect).length;
+        });
+
+        return totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
     }
 
     /**

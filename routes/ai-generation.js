@@ -1,4 +1,6 @@
 const express = require('express');
+const dns = require('dns').promises;
+const { requireUser } = require('../middleware/attach-user');
 
 /**
  * AI Generation Routes
@@ -111,38 +113,64 @@ function createAIGenerationRoutes(options) {
     const ollamaLimiter = createRateLimiter(20);
 
     // ==================== SSRF PROTECTION ====================
-    // Check if an IP address is private (SSRF protection)
+
+    // Check a dotted-quad IPv4 string against private/loopback/link-local ranges
+    function isPrivateIPv4(ip) {
+        const m = ip.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+        if (!m) return false;
+        const [, a, b] = m.map(Number);
+        if (a === 10) return true;                       // 10.0.0.0/8
+        if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+        if (a === 192 && b === 168) return true;         // 192.168.0.0/16
+        if (a === 127) return true;                      // 127.0.0.0/8 loopback
+        if (a === 169 && b === 254) return true;         // 169.254.0.0/16 link-local
+        if (a === 0) return true;                        // 0.0.0.0/8
+        if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 CGNAT
+        return false;
+    }
+
+    // Check if a hostname/IP literal is private (SSRF protection).
+    // Covers IPv4 (incl. private/loopback/link-local), IPv6 loopback/ULA/link-local,
+    // and IPv4-mapped IPv6. DNS resolution is handled separately in isBlockedHost.
     function isPrivateIP(hostname) {
-        // Block localhost
-        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+        if (!hostname) return true;
+        let host = String(hostname).trim().toLowerCase();
+        // Strip brackets from IPv6 literals e.g. [::1]
+        if (host.startsWith('[') && host.endsWith(']')) {
+            host = host.slice(1, -1);
+        }
+
+        if (host === 'localhost') return true;
+
+        // IPv6
+        if (host.includes(':')) {
+            if (host === '::1' || host === '::') return true;
+            // IPv4-mapped IPv6 (::ffff:a.b.c.d)
+            const mapped = host.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+            if (mapped) return isPrivateIPv4(mapped[1]);
+            const firstHextet = host.split(':')[0];
+            // Unique local fc00::/7 (fc.. or fd..)
+            if (/^f[cd][0-9a-f]{0,2}$/.test(firstHextet)) return true;
+            // Link-local fe80::/10
+            if (/^fe[89ab][0-9a-f]$/.test(firstHextet)) return true;
+            return false;
+        }
+
+        return isPrivateIPv4(host);
+    }
+
+    // Resolve a hostname and reject if the literal OR any resolved address is
+    // private. DNS resolution also normalizes alternate IPv4 encodings
+    // (decimal/octal/hex), closing those bypasses. Fails closed on resolution error.
+    async function isBlockedHost(hostname) {
+        if (isPrivateIP(hostname)) return true;
+        try {
+            const addresses = await dns.lookup(hostname, { all: true });
+            return addresses.some(a => isPrivateIP(a.address));
+        } catch (err) {
+            logger.warn(`DNS resolution failed for ${hostname}: ${err.message}`);
             return true;
         }
-
-        // Parse IPv4 addresses
-        const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-        if (ipv4Match) {
-            const [, a, b, c] = ipv4Match.map(Number);
-
-            // 10.0.0.0/8
-            if (a === 10) return true;
-
-            // 172.16.0.0/12
-            if (a === 172 && b >= 16 && b <= 31) return true;
-
-            // 192.168.0.0/16
-            if (a === 192 && b === 168) return true;
-
-            // 127.0.0.0/8 (loopback)
-            if (a === 127) return true;
-
-            // 169.254.0.0/16 (link-local)
-            if (a === 169 && b === 254) return true;
-
-            // 0.0.0.0/8 (current network)
-            if (a === 0) return true;
-        }
-
-        return false;
     }
 
     // ==================== OLLAMA ROUTES ====================
@@ -156,9 +184,20 @@ function createAIGenerationRoutes(options) {
         res.json({ url: ollamaUrl, enabled: ollamaEnabled });
     });
 
-    router.post('/ollama/config', (req, res) => {
+    router.post('/ollama/config', requireUser, (req, res) => {
         const { url, enabled } = req.body;
         if (typeof url === 'string' && url.trim()) {
+            let parsed;
+            try {
+                parsed = new URL(url.trim());
+            } catch {
+                return res.status(400).json({ error: 'Invalid URL', messageKey: 'error_invalid_url' });
+            }
+            // SSRF protection: reject non-http(s) protocols and private/internal hosts
+            if (!['http:', 'https:'].includes(parsed.protocol) || isPrivateIP(parsed.hostname)) {
+                logger.warn(`Blocked Ollama URL config: ${url}`);
+                return res.status(403).json({ error: 'URL blocked', messageKey: 'error_url_blocked' });
+            }
             ollamaUrl = url.trim().replace(/\/+$/, ''); // strip trailing slashes
             logger.info('Ollama URL updated to:', ollamaUrl);
         }
@@ -571,9 +610,9 @@ function createAIGenerationRoutes(options) {
                 return res.status(400).json({ error: 'Invalid URL format', messageKey: 'error_invalid_url' });
             }
 
-            // SSRF protection: Block private IPs
-            if (isPrivateIP(parsedUrl.hostname)) {
-                logger.warn(`Blocked private IP URL request: ${url}`);
+            // SSRF protection is enforced per-hop below (DNS-resolved) so that
+            // redirects and hostnames pointing at private IPs cannot bypass it.
+            if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
                 return res.status(403).json({
                     error: 'URL blocked',
                     messageKey: 'error_url_blocked',
@@ -594,24 +633,57 @@ function createAIGenerationRoutes(options) {
                 });
             }
 
-            // Fetch the URL with timeout and redirect limits
+            // Fetch the URL with timeout, manual redirect handling, and SSRF
+            // re-validation (DNS-resolved) on every hop.
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), URL_FETCH_TIMEOUT_MS);
+            const MAX_REDIRECTS = 5;
+            const fetchHeaders = {
+                'User-Agent': 'Mozilla/5.0 (compatible; QuizixBot/1.0; +https://quizix.pro)',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5'
+            };
 
             try {
-                const response = await fetch(url, {
-                    signal: controller.signal,
-                    redirect: 'follow',
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (compatible; QuizixBot/1.0; +https://quizix.pro)',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                        'Accept-Language': 'en-US,en;q=0.5'
-                    }
-                });
+                let currentUrl = url;
+                let response;
 
-                clearTimeout(timeoutId);
+                for (let hop = 0; ; hop++) {
+                    const hopUrl = new URL(currentUrl);
+                    if (!['http:', 'https:'].includes(hopUrl.protocol) || await isBlockedHost(hopUrl.hostname)) {
+                        clearTimeout(timeoutId);
+                        logger.warn(`Blocked private/internal URL request: ${currentUrl}`);
+                        return res.status(403).json({
+                            error: 'URL blocked',
+                            messageKey: 'error_url_blocked',
+                            message: 'This URL cannot be accessed for security reasons.'
+                        });
+                    }
+
+                    response = await fetch(currentUrl, {
+                        signal: controller.signal,
+                        redirect: 'manual',
+                        headers: fetchHeaders
+                    });
+
+                    // Follow 3xx redirects manually so each hop is re-validated
+                    if (response.status >= 300 && response.status < 400 && response.headers.get('location')) {
+                        if (hop >= MAX_REDIRECTS) {
+                            clearTimeout(timeoutId);
+                            return res.status(400).json({
+                                error: 'Too many redirects',
+                                messageKey: 'error_url_fetch_failed',
+                                message: 'The URL redirected too many times.'
+                            });
+                        }
+                        currentUrl = new URL(response.headers.get('location'), currentUrl).toString();
+                        continue;
+                    }
+                    break;
+                }
 
                 if (!response.ok) {
+                    clearTimeout(timeoutId);
                     return res.status(response.status).json({
                         error: 'Failed to fetch URL',
                         messageKey: 'error_url_fetch_failed',
@@ -622,6 +694,7 @@ function createAIGenerationRoutes(options) {
                 // Check content type
                 const contentType = response.headers.get('content-type') || '';
                 if (!contentType.includes('text/html') && !contentType.includes('text/plain') && !contentType.includes('application/xhtml')) {
+                    clearTimeout(timeoutId);
                     return res.status(400).json({
                         error: 'Unsupported content type',
                         messageKey: 'error_unsupported_content_type',
@@ -629,7 +702,45 @@ function createAIGenerationRoutes(options) {
                     });
                 }
 
-                const html = await response.text();
+                // Fast-fail on declared size, then enforce the cap while streaming
+                // (Content-Length may be absent or spoofed). Keep the timeout armed
+                // until the body is fully read so download time is also bounded.
+                const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
+                if (contentLength > MAX_RESPONSE_SIZE) {
+                    clearTimeout(timeoutId);
+                    return res.status(413).json({
+                        error: 'Response too large',
+                        messageKey: 'error_url_too_large',
+                        message: 'The URL response exceeds the 5MB limit.'
+                    });
+                }
+
+                let html;
+                if (response.body && typeof response.body.getReader === 'function') {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    html = '';
+                    let received = 0;
+                    for (;;) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        received += value.byteLength;
+                        if (received > MAX_RESPONSE_SIZE) {
+                            controller.abort();
+                            clearTimeout(timeoutId);
+                            return res.status(413).json({
+                                error: 'Response too large',
+                                messageKey: 'error_url_too_large',
+                                message: 'The URL response exceeds the 5MB limit.'
+                            });
+                        }
+                        html += decoder.decode(value, { stream: true });
+                    }
+                    html += decoder.decode();
+                } else {
+                    html = await response.text();
+                }
+                clearTimeout(timeoutId);
 
                 // Parse HTML and extract text
                 const $ = cheerio.load(html);

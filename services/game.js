@@ -83,6 +83,9 @@ class Game {
         this.discussionMessages = [];
         // Tracks whether consensus was locked for current question
         this.consensusLocked = false;
+
+        // Guard against duplicate results saves for this game instance
+        this.resultsSaved = false;
     }
 
     /**
@@ -170,6 +173,13 @@ class Game {
             const question = this.quiz.questions[this.currentQuestion];
             if (question?.type === 'multiple-choice') {
                 result.hiddenOptions = this.calculateHiddenOptions(question);
+                // Translate original-order indices into this player's shuffled
+                // coordinate space so the client can apply them directly.
+                // mapping[shuffledIndex] = originalIndex, so indexOf gives shuffled index.
+                const mapping = this.answerMappings?.get(playerId);
+                if (mapping) {
+                    result.hiddenOptions = result.hiddenOptions.map(orig => mapping.indexOf(orig));
+                }
             }
         } else if (powerUpType === 'extend-time') {
             result.extraSeconds = 10;
@@ -233,9 +243,11 @@ class Game {
         if (hasMore) {
             this.currentQuestion = nextQuestionIndex;
             this.gameState = 'question';
-            this.questionTimer = null;
-            this.advanceTimer = null;
-            this.leaderboardTimer = null;
+            // Clear (not just null) any pending timers so a stale question timer
+            // cannot fire into the new question
+            if (this.questionTimer) { clearTimeout(this.questionTimer); this.questionTimer = null; }
+            if (this.advanceTimer) { clearTimeout(this.advanceTimer); this.advanceTimer = null; }
+            if (this.leaderboardTimer) { clearTimeout(this.leaderboardTimer); this.leaderboardTimer = null; }
             this.logger.debug(`Advanced to question ${this.currentQuestion + 1}`);
         } else {
             this.logger.debug('NO MORE QUESTIONS - should end game');
@@ -698,6 +710,10 @@ class Game {
      * Note: Client-side also saves via REST API for redundancy
      */
     async saveResults() {
+        // Idempotent per game instance: endGame, host-leave-after-finish, and
+        // host-disconnect can all reach this; only write once (reset on rematch).
+        if (this.resultsSaved) return;
+        this.resultsSaved = true;
         try {
             const fs = require('fs').promises;
             const path = require('path');
@@ -837,6 +853,7 @@ class Game {
         this.startTime = null;
         this.endTime = null;
         this.answerMappings.clear();
+        this.resultsSaved = false;
 
         // Reset each player's score and answers but keep them in the game
         this.players.forEach((player) => {

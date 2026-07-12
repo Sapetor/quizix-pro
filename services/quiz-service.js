@@ -13,6 +13,11 @@ class QuizService {
         this.logger = logger;
         this.wslMonitor = wslMonitor;
         this.quizzesDir = quizzesDir;
+
+        // mtime-keyed cache for listQuizzes: filename -> { mtimeMs, entry }.
+        // Avoids re-reading + re-parsing every quiz file on each request when
+        // the file has not changed on disk (external edits are respected via mtime).
+        this.listCache = new Map();
     }
 
     /**
@@ -172,21 +177,38 @@ class QuizService {
             'Quiz directory listing'
         )).filter(f => f.endsWith('.json') && f !== 'quiz-metadata.json' && f !== 'users.json');
 
-        // Process files in parallel for better performance
+        // Evict cache entries for files that no longer exist on disk
+        const currentFiles = new Set(files);
+        for (const key of this.listCache.keys()) {
+            if (!currentFiles.has(key)) {
+                this.listCache.delete(key);
+            }
+        }
+
+        // Process files in parallel. Stat each file (cheap) and only re-read +
+        // re-parse when its mtime differs from the cached entry.
         const quizPromises = files.map(async (file) => {
+            const filePath = path.join(this.quizzesDir, file);
             try {
-                const data = JSON.parse(
-                    await fs.readFile(path.join(this.quizzesDir, file), 'utf8')
-                );
-                return {
+                const stats = await fs.stat(filePath);
+                const cached = this.listCache.get(file);
+                if (cached && cached.mtimeMs === stats.mtimeMs) {
+                    return cached.entry;
+                }
+
+                const data = JSON.parse(await fs.readFile(filePath, 'utf8'));
+                const entry = {
                     filename: file,
                     title: data.title,
                     questionCount: data.questions.length,
                     created: data.created,
                     id: data.id
                 };
+                this.listCache.set(file, { mtimeMs: stats.mtimeMs, entry });
+                return entry;
             } catch (err) {
                 this.logger.error('Error reading quiz file:', file, err);
+                this.listCache.delete(file);
                 return null;
             }
         });
@@ -242,30 +264,26 @@ class QuizService {
      * @returns {Promise<string>} - Possibly modified title
      */
     async _resolveNameConflict(title, scopedFilenames) {
-        let files;
+        // Reuse the mtime-cached listing instead of re-reading every quiz file.
+        let quizzes;
         try {
-            const allFiles = await fs.readdir(this.quizzesDir);
-            files = allFiles.filter(f => f.endsWith('.json') && f !== 'quiz-metadata.json' && f !== 'users.json');
-            if (scopedFilenames) {
-                files = files.filter(f => scopedFilenames.has(f));
-            }
+            quizzes = await this.listQuizzes();
         } catch {
             // If we can't read the directory, skip conflict checking
             return title;
         }
 
+        if (scopedFilenames) {
+            quizzes = quizzes.filter(q => scopedFilenames.has(q.filename));
+        }
+
         // Collect all existing titles
         const existingTitles = new Set();
-        await Promise.all(files.map(async (file) => {
-            try {
-                const data = JSON.parse(await fs.readFile(path.join(this.quizzesDir, file), 'utf8'));
-                if (data.title) {
-                    existingTitles.add(data.title);
-                }
-            } catch {
-                // Ignore unreadable files
+        for (const quiz of quizzes) {
+            if (quiz.title) {
+                existingTitles.add(quiz.title);
             }
-        }));
+        }
 
         this.logger.info(`[NameConflict] Checking "${title}" against ${existingTitles.size} existing titles`);
 

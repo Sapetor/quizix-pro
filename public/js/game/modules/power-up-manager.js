@@ -207,6 +207,24 @@ export class PowerUpManager {
     }
 
     /**
+     * Apply server-computed 50-50 result - hides the exact options the server
+     * chose (already mapped to the player's shuffled option order).
+     * @param {number[]} indices - Option indices to hide
+     */
+    applyHiddenOptions(indices) {
+        if (!Array.isArray(indices)) return;
+        const options = document.querySelectorAll('#player-multiple-choice .player-option');
+        indices.forEach(index => {
+            const option = options[index];
+            if (option) {
+                option.classList.add('power-up-hidden');
+                option.disabled = true;
+            }
+        });
+        logger.debug(`[PowerUpManager] Applied server hidden options: ${indices}`);
+    }
+
+    /**
      * Activate Extend Time power-up
      * @returns {boolean}
      */

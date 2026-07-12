@@ -130,6 +130,13 @@ function registerPlayerEvents(io, socket, options) {
                 return;
             }
 
+            // Authenticate the host via the secret reconnect token issued at game
+            // creation — prevents any player who knows the PIN from hijacking the game.
+            if (!data.token || data.token !== game.hostToken) {
+                socket.emit('error', { message: 'Not authorized to rejoin as host', messageKey: 'error_not_authorized_host' });
+                return;
+            }
+
             // Restore host
             game.hostDisconnected = false;
             game.hostDisconnectedAt = null;

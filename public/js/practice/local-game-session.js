@@ -142,8 +142,9 @@ export class LocalGameSession {
             timeLimit: questionTime
         });
 
-        // Set up question timer
+        // Set up question timer (track end time so power-ups can re-arm it)
         const timeLimit = questionTime * 1000;
+        this.questionEndsAt = Date.now() + timeLimit;
         this.questionTimer = setTimeout(() => {
             this.handleQuestionTimeout();
         }, timeLimit);
@@ -254,8 +255,8 @@ export class LocalGameSession {
 
         // Emit player result event
         this.eventBus.emit('player-result', {
-            correct: typeof isCorrect === 'number' ? isCorrect >= 0.5 : isCorrect,
-            partialCredit: typeof isCorrect === 'number' ? isCorrect : null,
+            correct: typeof isCorrect === 'number' ? isCorrect === 1 : isCorrect,
+            partialScore: typeof isCorrect === 'number' ? isCorrect : null,
             points,
             totalScore: this.playerScore,
             correctAnswer,
@@ -447,7 +448,17 @@ export class LocalGameSession {
                 result.hiddenOptions = this.calculateHiddenOptions(question);
             }
         } else if (type === 'extend-time') {
+            const extraMs = 10000;
             result.extraSeconds = 10;
+            // Re-arm the authoritative question timeout with the added time
+            if (this.questionTimer) {
+                clearTimeout(this.questionTimer);
+            }
+            this.questionEndsAt = (this.questionEndsAt || Date.now()) + extraMs;
+            const remainingMs = Math.max(0, this.questionEndsAt - Date.now());
+            this.questionTimer = setTimeout(() => {
+                this.handleQuestionTimeout();
+            }, remainingMs);
         } else if (type === 'double-points') {
             powerUp.active = true;
         }

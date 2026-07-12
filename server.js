@@ -51,7 +51,7 @@ const { createFileUploadRoutes } = require('./routes/file-uploads');
 const { createAIGenerationRoutes } = require('./routes/ai-generation');
 const { createManimRoutes } = require('./routes/manim-routes');
 const { createAuthRoutes } = require('./routes/auth');
-const { createAttachUser } = require('./middleware/attach-user');
+const { createAttachUser, requireUser } = require('./middleware/attach-user');
 const { ManimRenderService } = require('./services/manim-render-service');
 const { registerSocketHandlers } = require('./socket');
 
@@ -237,7 +237,30 @@ const checkRateLimit = socketRateLimiter.checkRateLimit.bind(socketRateLimiter);
 const gracefulShutdownHandler = new GracefulShutdown(logger, { forceTimeout: 10000 });
 
 app.use(helmet({
-    contentSecurityPolicy: false, // CSP too restrictive for inline scripts/styles + CDN resources
+    contentSecurityPolicy: {
+        // Enforcing policy (NOT report-only). Defense-in-depth against XSS: restricts
+        // script/style/connect/object origins and locks base-uri. The primary XSS fix
+        // is source-side escaping of quiz-authored content (see dom.js escapeHtmlPreservingLatex
+        // usage in the question/preview render paths); this CSP is the backstop.
+        // NOTE: index.html relies on ~55 inline event-handler attributes (onclick/onchange),
+        // so script-src-attr must allow 'unsafe-inline' or the UI breaks. Removing those
+        // inline handlers in favor of addEventListener would let us tighten this back to
+        // 'none' — a worthwhile follow-up.
+        // useDefaults:false so the exact policy is emitted — notably WITHOUT
+        // upgrade-insecure-requests, which would break plain-HTTP LAN deployments.
+        useDefaults: false,
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://cdn.socket.io'],
+            scriptSrcAttr: ["'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net'],
+            imgSrc: ["'self'", 'data:', 'blob:'],
+            connectSrc: ["'self'", 'ws:', 'wss:'],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"]
+        }
+    },
     crossOriginEmbedderPolicy: false, // Breaks CDN font/script loading
     frameguard: { action: 'sameorigin' }
 }));
@@ -287,7 +310,22 @@ logger.info(`Asset cache-bust version: ${ASSET_VERSION}`);
 // Dynamic sw.js route — injects ASSET_VERSION into CACHE_VERSION so browsers
 // detect a new service worker on every server restart, triggering cache purge.
 // Must be defined BEFORE express.static so it takes priority.
+// Transformed sw.js is constant for the process lifetime, so cache it in
+// production. In dev we re-read every request (nodemon does not restart on
+// .js-in-public edits, so a cache would serve stale content).
+let cachedSwJs = null;
+const setSwHeaders = (res) => {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+};
 app.get('/sw.js', (req, res) => {
+    if (isProduction && cachedSwJs) {
+        setSwHeaders(res);
+        return res.send(cachedSwJs);
+    }
     const swPath = path.join(__dirname, 'public', 'sw.js');
     fs.readFile(swPath, 'utf8', (err, data) => {
         if (err) {
@@ -295,11 +333,10 @@ app.get('/sw.js', (req, res) => {
             return res.status(500).send('Error loading service worker');
         }
         const modifiedSw = data.replace(/__CACHE_VERSION__/g, ASSET_VERSION);
-        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        res.setHeader('Surrogate-Control', 'no-store');
+        if (isProduction) {
+            cachedSwJs = modifiedSw;
+        }
+        setSwHeaders(res);
         res.send(modifiedSw);
     });
 });
@@ -329,7 +366,25 @@ app.use('/debug', express.static('debug', createDebugStaticConfig()));
 
 // Dynamic index.html serving with environment-specific base path
 // This route serves index.html with the correct <base> tag for the environment
+// Transformed index.html is constant for the process lifetime (BASE_PATH and
+// ASSET_VERSION are fixed per start), so cache it in production instead of
+// re-reading + regex-transforming the ~232KB file on every request. Dev re-reads
+// each time (nodemon does not restart on .html edits).
+let cachedIndexHtml = null;
+const setIndexHeaders = (res) => {
+    // Never cache index.html - always fetch fresh for new deployments
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+};
 const serveIndexHtml = (req, res) => {
+    if (isProduction && cachedIndexHtml) {
+        setIndexHeaders(res);
+        return res.send(cachedIndexHtml);
+    }
+
     const indexPath = path.join(__dirname, 'public', 'index.html');
 
     fs.readFile(indexPath, 'utf8', (err, data) => {
@@ -350,14 +405,13 @@ const serveIndexHtml = (req, res) => {
         // Inject dynamic SW_VERSION so stale SW detection fires on every server restart
         modifiedHtml = modifiedHtml.replace(/__SW_VERSION__/g, ASSET_VERSION);
 
+        if (isProduction) {
+            cachedIndexHtml = modifiedHtml;
+        }
+
         logger.debug(`Serving index.html with base path: ${BASE_PATH}`);
 
-        // Never cache index.html - always fetch fresh for new deployments
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        res.setHeader('Surrogate-Control', 'no-store');
+        setIndexHeaders(res);
         res.send(modifiedHtml);
     });
 };
@@ -386,6 +440,9 @@ app.use('/api', createAIGenerationRoutes({
 // ============================================================================
 // Manim Animation Routes
 // ============================================================================
+// Gate the render endpoint behind authentication — arbitrary Python execution
+// must not be reachable anonymously (the code denylist is not a sandbox).
+app.use('/api/manim/render', requireUser);
 app.use('/api', createManimRoutes({ logger, manimRenderService }));
 
 // ============================================================================
@@ -411,6 +468,16 @@ app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {
                 error: 'Sign in to use quiz passwords',
                 messageKey: 'error_auth_required'
             });
+        }
+
+        // Ownership gate: don't let a requester overwrite a quiz they don't own.
+        // Mirrors the DELETE /api/quiz/:filename gate; ownerless legacy quizzes
+        // remain overwritable by anyone (consistent with the delete route).
+        if (filename) {
+            const quizMeta = metadataService.getQuizMetadata(filename);
+            if (quizMeta?.ownerId && quizMeta.ownerId !== ownerId) {
+                return res.status(403).json({ error: 'You do not own this quiz', messageKey: 'error_quiz_not_owner' });
+            }
         }
 
         // Scope title-conflict detection to the requester's own quizzes

@@ -17,13 +17,13 @@ function registerGameplayEvents(io, socket, options) {
             const { answer, type } = validated;
             const playerData = playerManagementService.getPlayer(socket.id);
             if (!playerData) {
-                socket.emit('answer-error', { message: 'Player session not found', messageKey: 'error_session_not_found' });
+                socket.emit('answer-rejected', { message: 'Player session not found', messageKey: 'error_session_not_found' });
                 return;
             }
 
             const game = gameSessionService.getGame(playerData.gamePin);
             if (!game) {
-                socket.emit('answer-error', { message: 'Game not found', messageKey: 'error_game_not_found' });
+                socket.emit('answer-rejected', { message: 'Game not found', messageKey: 'error_game_not_found' });
                 return;
             }
 
@@ -38,7 +38,7 @@ function registerGameplayEvents(io, socket, options) {
             );
         } catch (error) {
             logger.error('Error in submit-answer handler:', error);
-            socket.emit('answer-error', { message: 'Server error processing answer', messageKey: 'error_server_error' });
+            socket.emit('answer-rejected', { message: 'Server error processing answer', messageKey: 'error_server_error' });
         }
     });
 
@@ -68,6 +68,10 @@ function registerGameplayEvents(io, socket, options) {
             socket.emit('power-up-result', result);
 
             if (result.success) {
+                // Extend-time extends the authoritative room timer and resyncs everyone
+                if (type === 'extend-time' && result.extraSeconds) {
+                    gameSessionService.extendQuestionTimer(game, io, result.extraSeconds);
+                }
                 logger.info(`Player ${playerData.name} used power-up: ${type} in game ${playerData.gamePin}`);
             }
         } catch (error) {
@@ -94,7 +98,10 @@ function registerGameplayEvents(io, socket, options) {
         if (!checkRateLimit(socket.id, 'next-question', 5, socket)) return;
         try {
             const game = gameSessionService.findGameByHost(socket.id);
-            if (!game) return;
+            // Reject while a question is actively running — legitimate manual advance
+            // happens from the 'revealing' state. Prevents a stale question timer from
+            // firing into the next question.
+            if (!game || game.gameState === 'question') return;
 
             logger.debug(`next-question: game ${game.pin}, question ${game.currentQuestion + 1}/${game.quiz.questions.length}`);
             gameSessionService.manualAdvanceToNextQuestion(game, io);
