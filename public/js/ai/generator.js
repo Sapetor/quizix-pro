@@ -881,10 +881,17 @@ export class AIQuestionGenerator {
             return;
         }
 
+        let closed = false;
         const closeModalFn = () => {
+            if (closed) return;
+            closed = true;
+            document.removeEventListener('keydown', escapeHandler);
             modal.remove();
             unlockBodyScroll();
         };
+        function escapeHandler(e) {
+            if (e.key === 'Escape') closeModalFn();
+        }
 
         if (okBtn) {
             okBtn.addEventListener('click', closeModalFn);
@@ -894,12 +901,7 @@ export class AIQuestionGenerator {
             if (e.target === modal) closeModalFn();
         });
 
-        document.addEventListener('keydown', function escapeHandler(e) {
-            if (e.key === 'Escape') {
-                closeModalFn();
-                document.removeEventListener('keydown', escapeHandler);
-            }
-        });
+        document.addEventListener('keydown', escapeHandler);
 
         lockBodyScroll();
         logger.debug('Simple error popup displayed');

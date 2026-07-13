@@ -7,7 +7,9 @@
 const QRCode = require('qrcode');
 const os = require('os');
 const fs = require('fs');
-const { execSync } = require('child_process');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+const execFileAsync = promisify(execFile);
 
 class QRService {
     constructor(logger, basePath = '/') {
@@ -23,8 +25,19 @@ class QRService {
         this.ipCacheTime = null;
         this.ipCacheDuration = 5 * 60 * 1000;
 
+        // WSL Windows LAN IP: resolved asynchronously and cached for the
+        // process lifetime (it does not change during a server run).
+        this._windowsLanIP = null;
+        this._windowsLanIPRefreshing = false;
+
         // Detect WSL once at startup
         this._isWSL = this._detectWSL();
+
+        // Warm the Windows LAN IP cache at startup so the first QR request
+        // does not have to wait for (or block on) ipconfig.
+        if (this._isWSL) {
+            this._refreshWindowsLanIP();
+        }
     }
 
     _getRequestHost(req) {
@@ -90,36 +103,68 @@ class QRService {
     }
 
     /**
-     * Get the Windows host's LAN IP from within WSL2.
-     * Parses `ipconfig` output, skipping vEthernet (WSL virtual) adapters.
+     * Parse `ipconfig` output for the Windows host's LAN IP,
+     * skipping vEthernet (WSL virtual) adapters.
      */
-    _getWindowsLanIP() {
+    _parseWindowsLanIP(output) {
+        const lines = output.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+            // Skip vEthernet (WSL) adapter sections
+            if (lines[i].match(/vEthernet/i)) {
+                while (i < lines.length && !lines[i + 1]?.match(/^\S/)) i++;
+                continue;
+            }
+            const ipMatch = lines[i].match(/IPv4.*?:\s*(\d+\.\d+\.\d+\.\d+)/);
+            if (ipMatch && !ipMatch[1].startsWith('127.')) {
+                return ipMatch[1];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Asynchronously resolve the Windows host's LAN IP from within WSL2 and
+     * cache it for the process lifetime. Non-blocking: runs `ipconfig` via
+     * async execFile so the event loop is never stalled on the request path.
+     */
+    async _refreshWindowsLanIP() {
+        if (this._windowsLanIPRefreshing) return;
+        this._windowsLanIPRefreshing = true;
         try {
-            const output = execSync('cmd.exe /c ipconfig', { timeout: 5000, encoding: 'utf8' });
-            const lines = output.split('\n');
-            for (let i = 0; i < lines.length; i++) {
-                // Skip vEthernet (WSL) adapter sections
-                if (lines[i].match(/vEthernet/i)) {
-                    while (i < lines.length && !lines[i + 1]?.match(/^\S/)) i++;
-                    continue;
-                }
-                const ipMatch = lines[i].match(/IPv4.*?:\s*(\d+\.\d+\.\d+\.\d+)/);
-                if (ipMatch && !ipMatch[1].startsWith('127.')) {
-                    this.logger.debug('WSL: Detected Windows LAN IP via ipconfig:', ipMatch[1]);
-                    return ipMatch[1];
-                }
+            const { stdout } = await execFileAsync('cmd.exe', ['/c', 'ipconfig'], { timeout: 5000, encoding: 'utf8' });
+            const ip = this._parseWindowsLanIP(stdout);
+            if (ip) {
+                this._windowsLanIP = ip;
+                this.logger.debug('WSL: Detected Windows LAN IP via ipconfig:', ip);
             }
         } catch (err) {
             this.logger.debug('WSL: ipconfig IP detection failed:', err.message);
+        } finally {
+            this._windowsLanIPRefreshing = false;
         }
-
-        return null;
     }
 
     /**
      * Get local network IP with caching
      */
     _getLocalIP() {
+        const NETWORK_IP = process.env.NETWORK_IP;
+        if (NETWORK_IP) {
+            this.logger.debug('Using manual IP from environment:', NETWORK_IP);
+            return NETWORK_IP;
+        }
+
+        // WSL2: os.networkInterfaces() only sees the virtual adapter (172.x.x.x),
+        // so the actual Windows LAN IP is resolved asynchronously and cached for
+        // the process lifetime. Prefer it as soon as it is available; until then
+        // fall back to interface detection (never block on ipconfig here).
+        if (this._isWSL) {
+            if (this._windowsLanIP) {
+                return this._windowsLanIP;
+            }
+            this._refreshWindowsLanIP(); // non-blocking; populates for later requests
+        }
+
         const now = Date.now();
 
         // Return cached IP if still valid
@@ -127,27 +172,7 @@ class QRService {
             return this.cachedIP;
         }
 
-        // Detect IP
-        let localIP = 'localhost';
-        const NETWORK_IP = process.env.NETWORK_IP;
-
-        if (NETWORK_IP) {
-            localIP = NETWORK_IP;
-            this.logger.debug('Using manual IP from environment:', localIP);
-        } else if (this._isWSL) {
-            // WSL2: os.networkInterfaces() only sees the virtual adapter (172.x.x.x).
-            // Ask Windows for the actual LAN IP so phones can connect.
-            const winIP = this._getWindowsLanIP();
-            if (winIP) {
-                localIP = winIP;
-            } else {
-                this.logger.warn('WSL: Could not detect Windows LAN IP. Set NETWORK_IP env var manually.');
-                // Fall through to standard detection as last resort
-                localIP = this._detectFromInterfaces();
-            }
-        } else {
-            localIP = this._detectFromInterfaces();
-        }
+        const localIP = this._detectFromInterfaces();
 
         // Update cache
         this.cachedIP = localIP;

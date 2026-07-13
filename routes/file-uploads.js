@@ -377,6 +377,25 @@ function createFileUploadRoutes(options) {
         }
     });
 
+    // Router-scoped error handler so multer errors (oversized file, rejected
+    // type) return the JSON {error, messageKey} shape instead of an HTML 500.
+    // Covers all uploaders defined above.
+    router.use((err, req, res, next) => {
+        if (err instanceof multer.MulterError) {
+            logger.warn(`Upload rejected (${err.code}): ${req.path}`);
+            const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+            return res.status(status).json({
+                error: err.message,
+                messageKey: err.code === 'LIMIT_FILE_SIZE' ? 'error_file_too_large' : 'error_upload_failed'
+            });
+        }
+        if (err) {
+            logger.warn(`Upload rejected: ${err.message} (${req.path})`);
+            return res.status(400).json({ error: err.message, messageKey: 'error_upload_failed' });
+        }
+        return next();
+    });
+
     return router;
 }
 

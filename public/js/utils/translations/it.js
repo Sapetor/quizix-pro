@@ -348,6 +348,9 @@ export default {
     generate_questions_btn: 'Genera Domande',
     supported_formats: 'Formati Supportati',
     or_upload_file: 'O carica file',
+    type_message: 'Scrivi un messaggio...',
+    paste_content_here: 'Incolla qui il tuo contenuto testuale, oppure carica un file qui sotto...',
+    send_message: 'Invia messaggio',
     content_type_detected: 'Tipo di contenuto rilevato',
 
     // AI Content Analysis

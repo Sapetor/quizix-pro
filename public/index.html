@@ -9,6 +9,7 @@
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
     <link rel="stylesheet" href="css/main.bundle.css?v=56">
@@ -77,16 +78,16 @@
     <!-- CDN MathJax with fallback for WSL/Windows environment -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
         onerror="console.warn('MathJax CDN failed, app will function without LaTeX rendering')"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <!-- SheetJS for Excel file processing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Chart.js for results analytics visualizations - Fixed for ES6 compatibility -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <!-- jsPDF loaded on-demand when PDF export is requested -->
     <!-- Highlight.js for One Dark Pro syntax highlighting -->
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script>
         // FOUC Prevention: Set font scale and theme immediately from localStorage
         (function () {
@@ -1749,7 +1750,7 @@
                                             data-translate="of">of</span> 1</div>
                                     <div id="preview-question-text-split" data-translate="select_question_preview">
                                         Select a question to preview</div>
-                                    <div id="preview-question-image-split" style="display: none;">
+                                    <div id="preview-question-image-split" class="hidden">
                                         <img id="preview-question-img-split" src="" alt="Question Image">
                                     </div>
                                     <div id="preview-question-video-split" class="preview-video-container hidden"></div>
@@ -1885,9 +1886,6 @@
                         </div>
                         <div id="preview-question-text" data-translate="select_question_preview">Select a question to
                             preview</div>
-                        <div id="preview-question-image" style="display: none;">
-                            <img id="preview-question-img" src="" alt="Question Image">
-                        </div>
                     </div>
 
                     <div id="preview-answer-area">

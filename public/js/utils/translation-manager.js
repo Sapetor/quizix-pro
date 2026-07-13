@@ -394,21 +394,33 @@ class TranslationManager {
             const parsedArgs = args ? args.split(',').map(arg => arg.trim()) : [];
 
             if (translationKey) {
-                element.title = this.getTranslationSync(translationKey, parsedArgs);
+                const translatedTitle = this.getTranslationSync(translationKey, parsedArgs);
+                // Preserve the HTML fallback attribute if the key is missing
+                if (translatedTitle !== translationKey) {
+                    element.title = translatedTitle;
+                }
             }
         });
 
         // Translate placeholder attributes
         container.querySelectorAll('[data-translate-placeholder]').forEach(element => {
             const translationKey = element.getAttribute('data-translate-placeholder');
-            element.placeholder = this.getTranslationSync(translationKey);
+            const translatedPlaceholder = this.getTranslationSync(translationKey);
+            // Preserve the HTML fallback attribute if the key is missing
+            if (translatedPlaceholder !== translationKey) {
+                element.placeholder = translatedPlaceholder;
+            }
         });
 
         // Translate aria-label attributes
         container.querySelectorAll('[data-translate-aria-label]').forEach(element => {
             const translationKey = element.getAttribute('data-translate-aria-label');
             if (translationKey) {
-                element.setAttribute('aria-label', this.getTranslationSync(translationKey));
+                const translatedAria = this.getTranslationSync(translationKey);
+                // Preserve the HTML fallback attribute if the key is missing
+                if (translatedAria !== translationKey) {
+                    element.setAttribute('aria-label', translatedAria);
+                }
             }
         });
 

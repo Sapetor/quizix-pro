@@ -83,7 +83,7 @@ export class PasswordModal {
     /**
      * Prompt for existing password
      */
-    promptPassword(itemName = '') {
+    promptPassword(itemName = '', errorMessage = '') {
         return new Promise((resolve, reject) => {
             this.resolvePromise = resolve;
             this.rejectPromise = reject;
@@ -109,6 +109,11 @@ export class PasswordModal {
 
             this.isNewPassword = false;
             openModal(this.modal);
+
+            // Show error (e.g. after a wrong-password re-prompt) once the modal is visible
+            if (errorMessage) {
+                this.showError(errorMessage);
+            }
 
             // Focus input
             setTimeout(() => {

@@ -353,6 +353,9 @@ export default {
     generate_questions_btn: '質問を生成',
     supported_formats: 'サポート形式',
     or_upload_file: 'またはファイルをアップロード',
+    type_message: 'メッセージを入力...',
+    paste_content_here: 'ここにテキストを貼り付けるか、下からファイルをアップロードしてください...',
+    send_message: 'メッセージを送信',
     content_type_detected: 'コンテンツタイプが検出されました',
 
     // AI Content Analysis

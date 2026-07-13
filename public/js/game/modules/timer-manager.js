@@ -14,6 +14,7 @@ export class TimerManager {
         this.timerElement = document.getElementById('timer');
         this.playerTimerElement = document.getElementById('player-timer');
         this.totalDuration = 0;
+        this.timeRemaining = 0;
     }
 
     /**
@@ -33,24 +34,24 @@ export class TimerManager {
             this.stopTimer();
 
             this.totalDuration = duration;
-            let timeRemaining = duration;
-            this.updateTimerDisplay(timeRemaining);
+            this.timeRemaining = duration;
+            this.updateTimerDisplay(this.timeRemaining);
 
             // Call initial tick if provided
             if (onTick) {
-                onTick(timeRemaining);
+                onTick(this.timeRemaining);
             }
 
             this.timer = setInterval(() => {
-                timeRemaining -= 1000;
-                this.updateTimerDisplay(timeRemaining);
+                this.timeRemaining -= 1000;
+                this.updateTimerDisplay(this.timeRemaining);
 
                 // Call tick callback if provided
                 if (onTick) {
-                    onTick(timeRemaining);
+                    onTick(this.timeRemaining);
                 }
 
-                if (timeRemaining <= 0) {
+                if (this.timeRemaining <= 0) {
                     logger.debug('Timer finished');
                     this.stopTimer();
 
@@ -165,24 +166,14 @@ export class TimerManager {
             return;
         }
 
-        // Read current seconds from whichever element exists
-        const source = this.timerElement || this.playerTimerElement;
-        if (!source) return;
+        // Extend the authoritative countdown state so the next interval tick
+        // keeps the added time instead of overwriting it.
+        this.timeRemaining += extraSeconds * 1000;
+        // Grow totalDuration too so the host timer-bar percentage stays <= 100.
+        this.totalDuration += extraSeconds * 1000;
+        this.updateTimerDisplay(this.timeRemaining);
 
-        const currentSeconds = parseInt(source.textContent) || 0;
-        const newSeconds = currentSeconds + extraSeconds;
-
-        for (const el of [this.timerElement, this.playerTimerElement]) {
-            if (!el) continue;
-            el.textContent = newSeconds.toString();
-
-            // Remove warning class if we're back above 10 seconds
-            if (newSeconds > 10) {
-                el.classList.remove('warning');
-            }
-        }
-
-        logger.debug(`Timer extended by ${extraSeconds}s. New time: ${newSeconds}s`);
+        logger.debug(`Timer extended by ${extraSeconds}s. New time: ${Math.ceil(this.timeRemaining / 1000)}s`);
     }
 
     /**

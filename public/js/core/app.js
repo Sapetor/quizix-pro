@@ -20,7 +20,7 @@ import { connectionStatus } from '../utils/connection-status.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
-import { bindElement, dom, show } from '../utils/dom.js';
+import { bindElement, dom, show, escapeHtmlPreservingLatex } from '../utils/dom.js';
 import { getJSON, setJSON } from '../utils/storage-utils.js';
 import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
@@ -873,7 +873,7 @@ export class QuizGame {
 
             let questionHTML = `
                 <h3>${translationManager.getTranslationSync('question')} ${index + 1}</h3>
-                <div class="preview-question-text">${this.mathRenderer.formatCodeBlocks(question.question)}</div>
+                <div class="preview-question-text">${this.mathRenderer.formatCodeBlocks(escapeHtmlPreservingLatex(question.question))}</div>
                 <div class="preview-question-meta">
                     <span>${translationManager.getTranslationSync('type')}: ${translationManager.getTranslationSync(question.type)}</span>
                     <span>${translationManager.getTranslationSync('time')}: ${question.timeLimit || question.time || 30}s</span>

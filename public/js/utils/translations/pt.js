@@ -354,6 +354,9 @@ export default {
     generate_questions_btn: 'Gerar Perguntas',
     supported_formats: 'Formatos Suportados',
     or_upload_file: 'Ou enviar arquivo',
+    type_message: 'Digite uma mensagem...',
+    paste_content_here: 'Cole seu conteúdo de texto aqui, ou envie um arquivo abaixo...',
+    send_message: 'Enviar mensagem',
     content_type_detected: 'Tipo de conteúdo detectado',
 
     // AI Content Analysis

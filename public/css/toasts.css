@@ -143,15 +143,8 @@
         margin-bottom: 8px;
         padding: 10px 12px;
         font-size: 13px;
-        /* Enhanced mobile animation from mobile-enhancements.css */
-        transform: translateY(100%);
     }
-    
-    .toast.visible {
-        transform: translateY(0);
-        opacity: 1;
-    }
-    
+
     .toast-icon {
         font-size: 14px;
     }

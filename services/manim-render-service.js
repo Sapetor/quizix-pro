@@ -8,6 +8,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const fsp = fs.promises;
 const os = require('os');
 const crypto = require('crypto');
 const { execFile } = require('child_process');
@@ -52,8 +53,10 @@ class ManimRenderService {
         this.maxCodeLength = 10000;
         this.maxOutputSize = 50 * 1024 * 1024; // 50 MB
 
-        this.enabled = config.MANIM_ENABLED !== false
-            && process.env.MANIM_ENABLED !== 'false';
+        // Opt-in only: the Python denylist is not a sandbox, so arbitrary code
+        // execution must be explicitly enabled by the operator.
+        this.enabled = config.MANIM_ENABLED === true
+            || process.env.MANIM_ENABLED === 'true';
 
         this.logger.info(
             `ManimRenderService initialised — enabled=${this.enabled}, ` +
@@ -227,13 +230,13 @@ class ManimRenderService {
         );
 
         // Create isolated temp directory for this render
-        const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'manim-'));
+        const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'manim-'));
         this.logger.debug(`Temp dir: ${tempDir}`);
 
         try {
             // Write source to file
             const sourceFile = path.join(tempDir, 'scene.py');
-            fs.writeFileSync(sourceFile, manimCode, 'utf8');
+            await fsp.writeFile(sourceFile, manimCode, 'utf8');
 
             // Build args for: python -m manim render <quality> --format mp4 --media_dir <dir> scene.py <ClassName>
             const args = [
@@ -298,7 +301,7 @@ class ManimRenderService {
             }
 
             // Guard against absurdly large output files
-            const { size } = fs.statSync(mp4Path);
+            const { size } = await fsp.stat(mp4Path);
             if (size > this.maxOutputSize) {
                 const err = new Error(
                     `Rendered video (${size} bytes) exceeds maximum allowed size ` +
@@ -309,18 +312,21 @@ class ManimRenderService {
             }
 
             // Ensure uploads directory exists
-            fs.mkdirSync(this.outputDir, { recursive: true });
+            await fsp.mkdir(this.outputDir, { recursive: true });
 
             // Copy to uploads with a unique filename
             const filename = `manim-${crypto.randomBytes(8).toString('hex')}.mp4`;
             const destPath = path.join(this.outputDir, filename);
-            fs.copyFileSync(mp4Path, destPath);
+            await fsp.copyFile(mp4Path, destPath);
 
             this.logger.info(`Manim render complete — output: /uploads/${filename} (${size} bytes)`);
 
             return { videoPath: '/uploads/' + filename, duration: null };
 
         } finally {
+            // Fire-and-forget async cleanup: don't block the event loop or the
+            // HTTP response on a recursive tree removal. Internal catch prevents
+            // unhandled rejections.
             this._cleanupTempDir(tempDir);
         }
     }
@@ -362,9 +368,9 @@ class ManimRenderService {
      *
      * @param {string} tempDir
      */
-    _cleanupTempDir(tempDir) {
+    async _cleanupTempDir(tempDir) {
         try {
-            fs.rmSync(tempDir, { recursive: true, force: true });
+            await fsp.rm(tempDir, { recursive: true, force: true });
             this.logger.debug(`Cleaned up temp dir: ${tempDir}`);
         } catch (err) {
             this.logger.warn(`Failed to clean up temp dir ${tempDir}: ${err.message}`);

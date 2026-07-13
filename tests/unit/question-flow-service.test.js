@@ -353,6 +353,39 @@ describe('QuestionFlowService', () => {
                 points: 0
             }));
         });
+
+        test('should inverse-map correctAnswer into the player shuffled space', () => {
+            const io = createMockIO();
+            const game = createMockGame({
+                players: [
+                    { id: 'player-1', name: 'Player1', score: 100, answers: { 0: { isCorrect: true, points: 100 } } }
+                ]
+            });
+            // canonical correctAnswer is 0; player's shuffle shows it at position 1
+            // mapping[shuffledIndex] = originalIndex → [2, 0, 1] means indexOf(0) === 1
+            game.answerMappings = new Map([['player-1', [2, 0, 1]]]);
+
+            questionFlowService.emitPlayerResults(game, io);
+
+            expect(io.emit).toHaveBeenCalledWith('player-result', expect.objectContaining({
+                correctAnswer: 1
+            }));
+        });
+
+        test('should include partialScore from the stored answer', () => {
+            const io = createMockIO();
+            const game = createMockGame({
+                players: [
+                    { id: 'player-1', name: 'Player1', score: 75, answers: { 0: { isCorrect: false, points: 75, partialScore: 0.75 } } }
+                ]
+            });
+
+            questionFlowService.emitPlayerResults(game, io);
+
+            expect(io.emit).toHaveBeenCalledWith('player-result', expect.objectContaining({
+                partialScore: 0.75
+            }));
+        });
     });
 
     describe('getAnswerStatistics', () => {

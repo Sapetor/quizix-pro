@@ -344,6 +344,9 @@ export default {
     generate_questions_btn: 'Generuj Pytania',
     supported_formats: 'Obsługiwane Formaty',
     or_upload_file: 'Lub prześlij plik',
+    type_message: 'Wpisz wiadomość...',
+    paste_content_here: 'Wklej tutaj swoją treść tekstową lub prześlij plik poniżej...',
+    send_message: 'Wyślij wiadomość',
     content_type_detected: 'Wykryto typ zawartości',
 
     // AI Content Analysis

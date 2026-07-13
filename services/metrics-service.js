@@ -115,12 +115,17 @@ function metricsMiddleware(req, res, next) {
         const duration = process.hrtime(start);
         const durationSeconds = duration[0] + duration[1] / 1e9;
 
-        // Normalize route for metrics (avoid high cardinality)
-        let route = req.route?.path || req.path;
-        // Replace dynamic segments with placeholders
-        route = route.replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:id');
-        route = route.replace(/\/\d{6}/g, '/:pin');
-        route = route.replace(/\/[\w\-]+\.json/g, '/:filename');
+        // Normalize route for metrics to bound label cardinality.
+        // Matched Express routes are already parameterized (:id etc.); anything
+        // that never matched a route (static files, 404s) collapses to a fixed
+        // low-cardinality bucket so raw paths (unique upload names, bot scans)
+        // cannot create unbounded label combinations.
+        let route;
+        if (req.route) {
+            route = (req.baseUrl || '') + req.route.path;
+        } else {
+            route = res.statusCode === 404 ? 'unmatched' : 'static';
+        }
 
         const labels = {
             method: req.method,

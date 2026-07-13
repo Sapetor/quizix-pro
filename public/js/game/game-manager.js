@@ -689,12 +689,11 @@ export class GameManager {
                 this.applyHostCorrectStyle(options[correctIdx]);
             }
         } else if (questionType === 'true-false') {
-            // For true-false, correctAnswer is a string ("true" or "false")
-            // Convert to index: "true" = 0, "false" = 1
-            const correctIndex = (data.correctAnswer === true || data.correctAnswer === 'true') ? 0 : 1;
-            if (options[correctIndex]) {
-                this.applyHostCorrectStyle(options[correctIndex]);
-            }
+            // Host T/F tiles are `.tf-option[data-answer]`, not `.option-display`
+            // (see renderHostOptions in question-type-registry.js and updateStatItem below)
+            const answer = (data.correctAnswer === true || data.correctAnswer === 'true') ? 'true' : 'false';
+            const tile = document.querySelector(`#answer-options .tf-option[data-answer="${answer}"]`);
+            this.applyHostCorrectStyle(tile);
         } else if (questionType === 'multiple-correct') {
             // Support both correctAnswers and correctIndices (server may use either)
             const correctIndices = data.correctIndices || data.correctAnswers || [];
@@ -1505,8 +1504,15 @@ export class GameManager {
         }
         // Timer is already reset by this.stopTimer() call above
 
-        // Reset fanfare played flag for new games
-        this.fanfarePlayed = false;
+        // Reset leaderboard state (clears fanfarePlayed so final results show again)
+        if (this.leaderboardManager) {
+            this.leaderboardManager.reset();
+        }
+
+        // Reset power-up state and hide power-up bar from previous game
+        if (this.powerUpManager) {
+            this.powerUpManager.reset();
+        }
 
         // Reset consensus mode state
         if (this.consensusManager) {
@@ -1945,80 +1951,11 @@ export class GameManager {
     /**
      * Save game results to server for later download
      */
-    async saveGameResults(leaderboard) {
-        try {
-            const gameState = this.stateManager.getGameState();
-
-            // Only save results if we're the host and have game data
-            if (!gameState.isHost || !gameState.gamePin) {
-                logger.debug('📊 Not saving results - not host or no game PIN');
-                return;
-            }
-
-            // Get quiz title from the game data (if available)
-            const quizTitle = this.currentQuizTitle || gameState.quizTitle || 'Unknown Quiz';
-
-            // Prepare results data for saving
-            const resultsData = {
-                quizTitle: quizTitle,
-                gamePin: gameState.gamePin,
-                results: leaderboard || [],
-                startTime: this.gameStartTime || new Date().toISOString(),
-                endTime: new Date().toISOString()
-            };
-
-            // Debug: Check what quiz data we have
-            logger.debug('📊 Quiz data debug:', {
-                hasCurrentQuiz: !!this.currentQuiz,
-                currentQuizKeys: this.currentQuiz ? Object.keys(this.currentQuiz) : null,
-                hasQuestions: !!(this.currentQuiz && this.currentQuiz.questions),
-                questionsLength: this.currentQuiz?.questions?.length,
-                sampleQuestion: this.currentQuiz?.questions?.[0]
-            });
-
-            // Add questions data if available for detailed analytics
-            if (this.currentQuiz && this.currentQuiz.questions) {
-                logger.debug('📊 Including questions data for analytics:', this.currentQuiz.questions.length, 'questions');
-                resultsData.questions = this.currentQuiz.questions.map((q, index) => ({
-                    questionNumber: index + 1,
-                    text: q.question || q.text,
-                    type: q.type || 'multiple-choice',
-                    correctAnswer: q.correctAnswer,
-                    correctAnswers: q.correctAnswers,
-                    correctOrder: q.correctOrder,
-                    options: q.options,
-                    difficulty: q.difficulty || 'medium',
-                    timeLimit: q.time
-                }));
-            } else {
-                logger.debug('📊 No questions data available - CSV will use basic format');
-            }
-
-            logger.debug('📊 Saving game results:', {
-                quizTitle: resultsData.quizTitle,
-                gamePin: resultsData.gamePin,
-                playerCount: resultsData.results.length
-            });
-
-            // Save results to server
-            const response = await fetch(APIHelper.getApiUrl('api/save-results'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(resultsData)
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                logger.debug('📊 Results saved successfully:', result.filename);
-            } else {
-                const errorText = await response.text();
-                logger.error('📊 Failed to save results:', response.status, errorText);
-            }
-
-        } catch (error) {
-            logger.error('📊 Error saving game results:', error);
-        }
+    saveGameResults() {
+        // No-op: the server persists results in endGame() (services/game.js saveResults,
+        // idempotent per game). This client-side POST was a redundant second write that
+        // produced duplicate result files with different timestamps. Practice mode never
+        // set a host gamePin so it never saved here anyway. Kept as a stub so the
+        // leaderboard save callback wiring stays intact.
     }
 }

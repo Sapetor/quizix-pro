@@ -8,7 +8,7 @@ import { translationManager } from '../../utils/translation-manager.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
 import { logger, COLORS } from '../../core/config.js';
 import { imagePathResolver, loadImageWithRetry } from '../../utils/image-path-resolver.js';
-import { escapeHtml, formatCodeBlocks as sharedFormatCodeBlocks, dom } from '../../utils/dom.js';
+import { escapeHtml, escapeHtmlPreservingLatex, formatCodeBlocks as sharedFormatCodeBlocks, dom } from '../../utils/dom.js';
 import { QuestionTypeRegistry } from '../../utils/question-type-registry.js';
 
 export class PreviewRenderer {
@@ -96,7 +96,8 @@ export class PreviewRenderer {
             return;
         }
 
-        const formattedContent = this.formatCodeBlocks(text);
+        // Escape untrusted quiz-authored text before formatting to prevent stored XSS
+        const formattedContent = this.formatCodeBlocks(escapeHtmlPreservingLatex(text));
         const hasLatex = this.mathJaxService.hasLatex(formattedContent);
 
         element.innerHTML = formattedContent;
@@ -746,7 +747,7 @@ export class PreviewRenderer {
         }
 
         const hasLatex = this.hasLatexContent(questionText);
-        const formattedText = this.formatCodeBlocks(questionText);
+        const formattedText = this.formatCodeBlocks(escapeHtmlPreservingLatex(questionText));
         previewElement.innerHTML = formattedText;
 
         if (hasLatex) {

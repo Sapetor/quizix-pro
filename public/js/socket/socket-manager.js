@@ -149,6 +149,7 @@ export class SocketManager {
                     try {
                         sessionStorage.setItem('quizix_host_reconnect', JSON.stringify({
                             pin: gameState.gamePin,
+                            token: this._hostToken || null,
                             savedAt: Date.now()
                         }));
                     } catch (e) {
@@ -167,6 +168,9 @@ export class SocketManager {
             logger.debug('Quiz title from server:', data.title);
             this.gameManager.setGamePin(data.pin);
             this.gameManager.setPlayerInfo('Host', true);
+            // Secret host reconnect token — required by the server to re-authenticate a
+            // host-rejoin during the disconnect grace window (prevents host hijacking)
+            this._hostToken = data.hostToken || null;
             this.uiManager.updateGamePin(data.pin);
             this.uiManager.loadQRCode(data.pin);
 
@@ -310,6 +314,9 @@ export class SocketManager {
             // Clear stale content from any previous game before showing game screen
             this.gameManager.clearGameDisplayContent();
 
+            // Initialize consensus mode (resets cleanly when config is null/disabled)
+            this.gameManager.initializeConsensusMode(data.consensusConfig);
+
             // Initialize power-ups for players (not host)
             if (!isHost && data.powerUpsEnabled) {
                 this.gameManager.initializePowerUps(true);
@@ -328,10 +335,9 @@ export class SocketManager {
             if (data.success) {
                 // Handle specific power-up effects
                 if (data.type === 'fifty-fifty' && data.hiddenOptions) {
-                    // Apply 50-50 effect from server
-                    this.gameManager.getPowerUpManager()?.applyFiftyFiftyToOptions(
-                        this.gameManager.stateManager.getGameState().currentQuestion?.correctAnswer
-                    );
+                    // Apply 50-50 effect using the server-computed hidden option
+                    // indices (already mapped to the player's shuffled order)
+                    this.gameManager.getPowerUpManager()?.applyHiddenOptions(data.hiddenOptions);
                 } else if (data.type === 'extend-time' && data.extraSeconds) {
                     // Extend time effect is handled locally
                     this.gameManager.timerManager?.extendTime(data.extraSeconds);
@@ -383,10 +389,6 @@ export class SocketManager {
                 ? data.remainingTimeMs
                 : (timeLimit * 1000);
             this.gameManager.startTimer(timerDuration);
-
-            if (this.soundManager?.isEnabled()) {
-                this.soundManager.playQuestionStartSound();
-            }
         }, 'question-start'));
 
         this.socket.on('question-end', (data) => {
@@ -548,6 +550,15 @@ export class SocketManager {
         this.socket.on('answer-rejected', (data) => {
             logger.warn('Answer rejected:', data);
             this.gameManager.showAnswerRejected(this._resolveServerMessage(data, 'error_answer_rejected'));
+        });
+
+        this.socket.on('rate-limited', (data) => {
+            logger.warn('Rate limited:', data);
+            // Undo optimistic submit so the player can retry
+            if (data?.event === 'submit-answer') {
+                this.gameManager.stateManager.answerSubmitted = false;
+            }
+            this.gameManager.showAnswerRejected(this._resolveServerMessage(data, 'error_rate_limited'));
         });
 
         // Show leaderboard
@@ -732,14 +743,15 @@ export class SocketManager {
             this.uiManager.showScreen('main-menu');
         });
 
-        this.socket.on('reconnect', (attemptNumber) => {
+        // Reconnection events are emitted on the Manager (socket.io), not the Socket
+        this.socket.io.on('reconnect', (attemptNumber) => {
             logger.debug('Reconnected after attempt:', attemptNumber);
 
             // Try host rejoin first
             try {
                 const hostData = JSON.parse(sessionStorage.getItem('quizix_host_reconnect') || 'null');
                 if (hostData?.pin && (Date.now() - hostData.savedAt) < 30000) {
-                    this.socket.emit('host-rejoin', { pin: hostData.pin });
+                    this.socket.emit('host-rejoin', { pin: hostData.pin, token: hostData.token });
                     sessionStorage.removeItem('quizix_host_reconnect');
                     return;
                 }
@@ -752,11 +764,11 @@ export class SocketManager {
             this._attemptRejoin();
         });
 
-        this.socket.on('reconnect_error', (error) => {
+        this.socket.io.on('reconnect_error', (error) => {
             logger.error('Reconnection error:', error);
         });
 
-        this.socket.on('reconnect_failed', () => {
+        this.socket.io.on('reconnect_failed', () => {
             logger.error('Reconnection failed — preserving session data for manual rejoin');
             this._hideReconnectionOverlay();
 
@@ -862,12 +874,20 @@ export class SocketManager {
             }
         });
 
+        // Timer extended by a power-up (server broadcasts new remaining time in ms)
+        this.socket.on('timer-extended', (data) => {
+            if (data?.remainingMs != null && this.gameManager) {
+                this.gameManager.updateTimerDisplay(data.remainingMs);
+                logger.debug('Timer extended:', Math.ceil(data.remainingMs / 1000), 'seconds remaining');
+            }
+        });
+
         // Handle timer resync from server (after tab becomes visible)
         this.socket.on('time-sync', (data) => {
             if (data?.remainingMs != null && this.gameManager) {
-                const remainingSec = Math.ceil(data.remainingMs / 1000);
-                this.gameManager.updateTimerDisplay(remainingSec);
-                logger.debug('Timer synced:', remainingSec, 'seconds remaining');
+                // updateTimerDisplay expects milliseconds (see TimerManager)
+                this.gameManager.updateTimerDisplay(data.remainingMs);
+                logger.debug('Timer synced:', Math.ceil(data.remainingMs / 1000), 'seconds remaining');
             }
         });
 

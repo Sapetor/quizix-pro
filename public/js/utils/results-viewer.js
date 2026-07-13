@@ -142,6 +142,29 @@ export class ResultsViewer {
         bindElement('download-result-csv', 'click', () => this.downloadCurrentResult());
         bindElement('delete-result', 'click', () => this.deleteCurrentResult());
 
+        // Delegated action-button handler bound ONCE on the persistent #results-list
+        // container (it survives re-renders that only replace innerHTML). Binding it here
+        // instead of per-render avoids listener accumulation on every search keystroke.
+        bindElement('results-list', 'click', (e) => {
+            const actionBtn = e.target.closest('[data-action]');
+            if (!actionBtn) return;
+
+            const action = actionBtn.dataset.action;
+            const filename = actionBtn.dataset.filename;
+
+            switch (action) {
+                case 'analytics':
+                    this.showQuestionAnalytics(this.filteredResults.find(r => r.filename === filename));
+                    break;
+                case 'download':
+                    this.showDownloadOptions(filename);
+                    break;
+                case 'delete':
+                    this.quickDelete(filename);
+                    break;
+            }
+        });
+
         const formatSelect = dom.get('export-format-select');
         if (formatSelect) {
             formatSelect.addEventListener('change', (e) => {
@@ -348,27 +371,6 @@ export class ResultsViewer {
                         this.handleSwipeDelete(filename);
                     }
                 });
-            }
-        });
-
-        // Attach action button handlers via delegation
-        resultsList.addEventListener('click', (e) => {
-            const actionBtn = e.target.closest('[data-action]');
-            if (!actionBtn) return;
-
-            const action = actionBtn.dataset.action;
-            const filename = actionBtn.dataset.filename;
-
-            switch (action) {
-                case 'analytics':
-                    this.showQuestionAnalytics(this.filteredResults.find(r => r.filename === filename));
-                    break;
-                case 'download':
-                    this.showDownloadOptions(filename);
-                    break;
-                case 'delete':
-                    this.quickDelete(filename);
-                    break;
             }
         });
     }
@@ -604,14 +606,26 @@ export class ResultsViewer {
             });
         }
 
+        // Destroy Chart.js instances when the modal closes, then remove it
+        modal._charts = [];
+        modal.querySelectorAll('[data-action="close-analytics"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal._charts.forEach(chart => chart?.destroy());
+                modal.remove();
+            });
+        });
+
         // Create charts after modal is in DOM
         setTimeout(() => {
-            createSuccessRateChart(analytics);
-            createTimeVsSuccessChart(analytics);
+            modal._charts = [
+                createSuccessRateChart(analytics),
+                createTimeVsSuccessChart(analytics)
+            ].filter(Boolean);
 
             // Create concept mastery chart if concepts data exists
             if (conceptData?.hasConcepts) {
-                createConceptMasteryChart('concept-mastery-chart', conceptData);
+                const conceptChart = createConceptMasteryChart('concept-mastery-chart', conceptData);
+                if (conceptChart) modal._charts.push(conceptChart);
 
                 // Setup toggle for study suggestions
                 const toggle = modal.querySelector('#show-study-suggestions');
@@ -857,7 +871,7 @@ export class ResultsViewer {
 
         const sessionListHtml = quiz.sessions.map((session, idx) => {
             const date = new Date(session.saved).toLocaleDateString();
-            const participants = session.results?.length || 0;
+            const participants = session.participantCount ?? session.results?.length ?? 0;
             return `
                 <label class="session-checkbox-item">
                     <input type="checkbox" value="${session.filename}" ${idx < 3 ? 'checked' : ''}>
@@ -972,6 +986,7 @@ export class ResultsViewer {
     displayComparisonResults(quizTitle, comparisonData) {
         const existingModal = dom.get('comparison-results-modal');
         if (existingModal) {
+            existingModal._charts?.forEach(chart => chart?.destroy());
             existingModal.remove();
         }
 
@@ -997,7 +1012,7 @@ export class ResultsViewer {
             <div class="modal-content" style="max-width: 800px;">
                 <div class="modal-header">
                     <h2>${getTranslation('compare_quiz_sessions')}: ${escapeHtml(quizTitle)}</h2>
-                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                    <button class="modal-close" data-action="close-comparison">&times;</button>
                 </div>
                 <div class="modal-body" style="padding: 20px;">
                     <div class="comparison-summary" style="display: flex; gap: 20px; margin-bottom: 20px;">
@@ -1025,7 +1040,7 @@ export class ResultsViewer {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn secondary" onclick="this.closest('.modal-overlay').remove()">${getTranslation('close')}</button>
+                    <button class="btn secondary" data-action="close-comparison">${getTranslation('close')}</button>
                     <button class="btn primary" id="export-comparison-pdf">${getTranslation('export_pdf_btn')}</button>
                 </div>
             </div>
@@ -1033,9 +1048,19 @@ export class ResultsViewer {
 
         document.body.appendChild(modal);
 
+        // Destroy Chart.js instance when the modal closes, then remove it
+        modal._charts = [];
+        modal.querySelectorAll('[data-action="close-comparison"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal._charts.forEach(chart => chart?.destroy());
+                modal.remove();
+            });
+        });
+
         // Create chart after modal is in DOM
         setTimeout(() => {
-            createComparisonChart('comparison-chart', comparisonData.sessions);
+            const comparisonChart = createComparisonChart('comparison-chart', comparisonData.sessions);
+            if (comparisonChart) modal._charts.push(comparisonChart);
         }, TIMING.DOM_UPDATE_DELAY);
 
         // Attach PDF export handler

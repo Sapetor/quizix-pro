@@ -24,6 +24,7 @@ jest.mock('fs', () => ({
         writeFile: jest.fn(),
         readFile: jest.fn(),
         readdir: jest.fn(),
+        stat: jest.fn(),
         access: jest.fn(),
         unlink: jest.fn()
     }
@@ -142,6 +143,7 @@ describe('QuizService', () => {
     describe('listQuizzes', () => {
         test('should list all quiz files', async () => {
             fs.readdir.mockResolvedValue(['quiz1.json', 'quiz2.json', 'readme.txt']);
+            fs.stat.mockResolvedValue({ mtimeMs: 1 });
             fs.readFile.mockImplementation((filePath) => {
                 if (filePath.includes('quiz1')) {
                     return Promise.resolve(JSON.stringify({
@@ -170,6 +172,7 @@ describe('QuizService', () => {
 
         test('should filter out invalid quiz files', async () => {
             fs.readdir.mockResolvedValue(['quiz1.json', 'invalid.json']);
+            fs.stat.mockResolvedValue({ mtimeMs: 1 });
             fs.readFile.mockImplementation((filePath) => {
                 if (filePath.includes('invalid')) {
                     return Promise.reject(new Error('Parse error'));
@@ -186,6 +189,33 @@ describe('QuizService', () => {
 
             expect(quizzes).toHaveLength(1);
             expect(mockLogger.error).toHaveBeenCalled();
+        });
+
+        test('should reuse cached entry when mtime is unchanged', async () => {
+            fs.readdir.mockResolvedValue(['quiz1.json']);
+            fs.stat.mockResolvedValue({ mtimeMs: 42 });
+            fs.readFile.mockResolvedValue(JSON.stringify({
+                title: 'Quiz 1', questions: [{ q: 1 }], created: '2024-01-01', id: 'id1'
+            }));
+
+            await quizService.listQuizzes();
+            await quizService.listQuizzes();
+
+            // Second call hits the cache (same mtime) — no second read/parse
+            expect(fs.readFile).toHaveBeenCalledTimes(1);
+        });
+
+        test('should re-read when mtime changes', async () => {
+            fs.readdir.mockResolvedValue(['quiz1.json']);
+            fs.stat.mockResolvedValueOnce({ mtimeMs: 1 }).mockResolvedValueOnce({ mtimeMs: 2 });
+            fs.readFile.mockResolvedValue(JSON.stringify({
+                title: 'Quiz 1', questions: [{ q: 1 }], created: '2024-01-01', id: 'id1'
+            }));
+
+            await quizService.listQuizzes();
+            await quizService.listQuizzes();
+
+            expect(fs.readFile).toHaveBeenCalledTimes(2);
         });
     });
 

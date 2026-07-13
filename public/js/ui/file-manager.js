@@ -143,6 +143,7 @@ export class FileManager {
         container.addEventListener('contextmenu', (e) => {
             if (e.target === container || e.target.classList.contains('folder-tree-root')) {
                 e.preventDefault();
+                e.stopPropagation();
                 this.contextMenu.show(e.clientX, e.clientY, 'root', null, null);
             }
         });
@@ -739,7 +740,7 @@ export class FileManager {
     /**
      * Ensure item is unlocked (prompt for password if needed)
      */
-    async ensureUnlocked(type, id, name) {
+    async ensureUnlocked(type, id, name, errorMessage = '') {
         // Check if we have a valid token
         const cached = this.sessionTokens.get(id);
         if (cached && Date.now() < cached.expiresAt) {
@@ -772,7 +773,7 @@ export class FileManager {
 
         // Prompt for password
         try {
-            const password = await this.passwordModal.promptPassword(name);
+            const password = await this.passwordModal.promptPassword(name, errorMessage);
 
             const response = await APIHelper.fetchAPI('api/unlock', {
                 method: 'POST',
@@ -793,9 +794,8 @@ export class FileManager {
                 }
 
                 if (response.status === 401) {
-                    this.passwordModal.showError(t('incorrect_password') || 'Incorrect password');
-                    // Re-prompt
-                    return this.ensureUnlocked(type, id, name);
+                    // Re-prompt, threading the error so it is visible on the reopened modal
+                    return this.ensureUnlocked(type, id, name, t('incorrect_password') || 'Incorrect password');
                 }
 
                 throw new Error(error.error || 'Unlock failed');

@@ -11,6 +11,13 @@
  * @returns {number} Average score percentage (0-100)
  */
 export function calculateAverageScore(result) {
+    // Listing payloads carry a server-computed averageScore (the heavy per-player
+    // `results` array is dropped there); prefer it. Fall back to computing from
+    // `results` for detail objects that still include per-player data.
+    if (typeof result.averageScore === 'number') {
+        return result.averageScore;
+    }
+
     if (!result.results || result.results.length === 0) {
         return 0;
     }
@@ -124,8 +131,8 @@ export function sortResults(results, sortBy) {
 
         case 'participants-desc':
             return results.sort((a, b) => {
-                const aParticipants = a.results?.length || 0;
-                const bParticipants = b.results?.length || 0;
+                const aParticipants = a.participantCount ?? a.results?.length ?? 0;
+                const bParticipants = b.participantCount ?? b.results?.length ?? 0;
                 return bParticipants - aParticipants;
             });
 
@@ -189,7 +196,7 @@ export function getQuizzesWithMultipleSessions(results) {
             sessions,
             sessionCount: sessions.length,
             latestDate: sessions[0]?.saved,
-            totalParticipants: sessions.reduce((sum, s) => sum + (s.results?.length || 0), 0)
+            totalParticipants: sessions.reduce((sum, s) => sum + (s.participantCount ?? s.results?.length ?? 0), 0)
         }))
         .sort((a, b) => new Date(b.latestDate || 0) - new Date(a.latestDate || 0));
 }

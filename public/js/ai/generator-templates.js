@@ -41,7 +41,9 @@ export function buildOptionsHtml(question) {
 
     if (type === 'multiple-choice' || type === 'true-false') {
         const options = question.options || [];
-        const correctIndex = question.correctAnswer ?? 0;
+        const correctIndex = type === 'true-false'
+            ? (question.correctAnswer === 'true' ? 0 : 1)
+            : (question.correctAnswer ?? 0);
         return options.map((opt, i) => buildOptionHtml(opt, i, i === correctIndex)).join('');
     }
 

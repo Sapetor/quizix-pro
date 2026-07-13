@@ -128,6 +128,12 @@ class GameSessionService {
         }
 
         const game = new Game(hostId, quiz, this.logger, this.config, this.limits);
+        // Reassign PIN from the collision-checked generator so we never overwrite
+        // an existing live game (Game's own generatePin has no uniqueness check).
+        game.pin = this.generateGamePin();
+        // Secret host reconnect token — required by host-rejoin to prevent hijacking.
+        // Stays stable across reconnects (never rotated).
+        game.hostToken = require('crypto').randomUUID();
         this.games.set(game.pin, game);
         this.hostIdToPin.set(hostId, game.pin);
         this.logger.info(`Game created with PIN: ${game.pin} (${this.games.size}/${this.limits.MAX_CONCURRENT_GAMES} games)`);
@@ -291,6 +297,13 @@ class GameSessionService {
    * @param {Object} io - Socket.IO instance
    */
     startGame(game, io) {
+        // Guard against double start-game (rate limit allows several/sec) which
+        // would leak the start timer and skip question 1.
+        if (game.gameState !== 'lobby') {
+            this.logger.warn(`Ignoring start-game for game ${game.pin} in state '${game.gameState}'`);
+            return;
+        }
+
         game.gameState = 'starting';
         game.startTime = new Date().toISOString();
 
@@ -298,7 +311,12 @@ class GameSessionService {
             gamePin: game.pin,
             questionCount: game.quiz.questions.length,
             manualAdvancement: game.manualAdvancement,
-            powerUpsEnabled: game.powerUpsEnabled
+            powerUpsEnabled: game.powerUpsEnabled,
+            consensusConfig: game.isConsensusMode ? {
+                enabled: true,
+                threshold: game.consensusConfig.threshold,
+                allowChat: game.consensusConfig.allowChat
+            } : null
         });
 
         // Auto-advance to first question after delay
@@ -311,7 +329,9 @@ class GameSessionService {
    * @param {Object} io - Socket.IO instance
    */
     autoAdvanceToFirstQuestion(game, io) {
-    // Store timer ID for proper cleanup
+    // Defensively clear any existing start timer before scheduling a new one
+        if (game.startTimer) { clearTimeout(game.startTimer); }
+        // Store timer ID for proper cleanup
         game.startTimer = setTimeout(() => {
             game.startTimer = null;
             try {
@@ -350,6 +370,11 @@ class GameSessionService {
 
         // Clear previous question's answer mappings
         game.answerMappings = new Map();
+
+        // Reset consensus state (proposals, discussion, lock) for the new question
+        if (game.isConsensusMode) {
+            game.resetConsensusForQuestion();
+        }
 
         // Determine if this question type should have shuffled answers
         const shouldShuffle = game.quiz.randomizeAnswers &&
@@ -410,6 +435,9 @@ class GameSessionService {
             });
         }
 
+        // Record when the question should end so extend-time can recompute remaining time
+        game.questionEndsAt = Date.now() + timeLimit * 1000;
+
         // Set timer for automatic question timeout
         game.questionTimer = setTimeout(() => {
             try {
@@ -418,6 +446,44 @@ class GameSessionService {
                 this.logger.error(`Error in question timeout handler for game ${game.pin}:`, error);
             }
         }, timeLimit * 1000);
+
+        // In consensus mode, seed an initial (empty) proposal distribution so
+        // clients can render proposal bars before the first proposal arrives.
+        if (game.isConsensusMode) {
+            io.to(`game-${game.pin}`).emit('proposal-update', game.getProposalDistribution());
+        }
+    }
+
+    /**
+     * Extend the current question's authoritative timer by extraSeconds.
+     * Clears and re-arms game.questionTimer and broadcasts the new remaining time.
+     * @param {Object} game - Game instance
+     * @param {Object} io - Socket.IO instance
+     * @param {number} extraSeconds - Seconds to add
+     */
+    extendQuestionTimer(game, io, extraSeconds) {
+        if (!game || game.gameState !== 'question' || !game.questionEndsAt) return;
+
+        const question = game.quiz.questions[game.currentQuestion];
+
+        if (game.questionTimer) {
+            clearTimeout(game.questionTimer);
+            game.questionTimer = null;
+        }
+
+        game.questionEndsAt += extraSeconds * 1000;
+        const remainingMs = Math.max(0, game.questionEndsAt - Date.now());
+
+        game.questionTimer = setTimeout(() => {
+            try {
+                this.handleQuestionTimeout(game, io, question);
+            } catch (error) {
+                this.logger.error(`Error in question timeout handler for game ${game.pin}:`, error);
+            }
+        }, remainingMs);
+
+        // Resync host and players' countdowns
+        io.to(`game-${game.pin}`).emit('timer-extended', { remainingMs });
     }
 
     /**
@@ -513,17 +579,33 @@ class GameSessionService {
             if (player.disconnected) return;
 
             const playerAnswer = player.answers[game.currentQuestion];
+
+            // Inverse-map canonical correct indices into this player's shuffled
+            // coordinate space (question-timeout above stays canonical for the host).
+            const mapping = game.answerMappings?.get(playerId);
+            let correctAnswerForPlayer = timeoutData.correctAnswer;
+            let correctAnswersForPlayer = timeoutData.correctAnswers;
+            if (mapping) {
+                if (timeoutData.questionType === 'multiple-choice' && typeof correctAnswerForPlayer === 'number') {
+                    correctAnswerForPlayer = mapping.indexOf(correctAnswerForPlayer);
+                }
+                if (timeoutData.questionType === 'multiple-correct' && Array.isArray(correctAnswersForPlayer)) {
+                    correctAnswersForPlayer = correctAnswersForPlayer.map(idx => mapping.indexOf(idx));
+                }
+            }
+
             const resultData = {
                 isCorrect: playerAnswer ? playerAnswer.isCorrect : false,
                 points: playerAnswer ? playerAnswer.points : 0,
+                partialScore: playerAnswer ? playerAnswer.partialScore : undefined,
                 totalScore: player.score,
                 explanation: timeoutData.explanation,
                 questionType: timeoutData.questionType,
-                correctAnswer: timeoutData.correctAnswer
+                correctAnswer: correctAnswerForPlayer
             };
             // Include correctAnswers array for multiple-correct questions
-            if (timeoutData.correctAnswers) {
-                resultData.correctAnswers = timeoutData.correctAnswers;
+            if (correctAnswersForPlayer) {
+                resultData.correctAnswers = correctAnswersForPlayer;
             }
             io.to(playerId).emit('player-result', resultData);
         });
