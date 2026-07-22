@@ -169,11 +169,15 @@ export class FolderTree {
             rootList.appendChild(this.renderQuiz(quiz));
         });
 
-        // Empty state
+        // Empty state. treeData is already filtered, so an active predicate means
+        // "nothing matched" — saying "no quizzes yet" there claims the library is
+        // empty when it isn't.
         if (this.treeData.folders.length === 0 && this.treeData.quizzes.length === 0) {
             const emptyMsg = document.createElement('li');
             emptyMsg.className = 'folder-tree-empty';
-            emptyMsg.textContent = t('no_quizzes_yet') || 'No quizzes yet';
+            emptyMsg.textContent = this.options.filterPredicate
+                ? (t('no_results_found') || 'No results found')
+                : (t('no_quizzes_yet') || 'No quizzes yet');
             rootList.appendChild(emptyMsg);
         }
 

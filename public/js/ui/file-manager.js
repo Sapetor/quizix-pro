@@ -40,23 +40,13 @@ export class FileManager {
         this.searchClearButton = null;
         this.searchQuery = '';
 
-        // showOnlyMine state. null marker = user has never explicitly chosen,
-        // so the default tracks the current auth state.
-        const stored = getJSON(SHOW_ONLY_MINE_KEY, null);
-        this.showOnlyMineExplicit = stored !== null;
-        this.showOnlyMine = this.showOnlyMineExplicit ? !!stored : authManager.isAuthenticated;
+        // showOnlyMine is opt-in. It used to default to `authManager.isAuthenticated`,
+        // which hid the entire library from any signed-in user: quizzes created
+        // before ownership existed carry no ownerId, so `owned` is false for all
+        // of them and the predicate below filtered every one out.
+        this.showOnlyMine = !!getJSON(SHOW_ONLY_MINE_KEY, false);
 
         this.initialize();
-    }
-
-    /**
-     * Re-sync the default filter state with the current auth state. No-op
-     * once the user has explicitly toggled the checkbox.
-     */
-    _syncShowOnlyMineDefault() {
-        if (!this.showOnlyMineExplicit) {
-            this.showOnlyMine = authManager.isAuthenticated;
-        }
     }
 
     /**
@@ -104,9 +94,6 @@ export class FileManager {
 
         this.options.treeContainer = container;
 
-        // FileManager may be constructed before authManager.bootstrap() resolves.
-        this._syncShowOnlyMineDefault();
-
         // Mount the filter bar above the tree container before attaching the tree.
         this._mountFilterBar(container);
 
@@ -124,7 +111,6 @@ export class FileManager {
         // render (avoids a flash of stale-filtered data).
         if (!this._authListenerAttached) {
             window.addEventListener('auth-changed', () => {
-                this._syncShowOnlyMineDefault();
                 this._syncFilterBar();
                 if (this.folderTree) {
                     this.folderTree.options.filterPredicate = this._getFilterPredicate();
@@ -189,7 +175,6 @@ export class FileManager {
         checkbox.checked = this.showOnlyMine;
         checkbox.addEventListener('change', () => {
             this.showOnlyMine = checkbox.checked;
-            this.showOnlyMineExplicit = true;
             setJSON(SHOW_ONLY_MINE_KEY, this.showOnlyMine);
             this.folderTree?.setFilterPredicate(this._getFilterPredicate());
         });
