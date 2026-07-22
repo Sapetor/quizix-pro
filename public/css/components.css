@@ -370,9 +370,10 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-    border-color: var(--color-primary-500);
-    background: var(--glass-medium);
-    box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.3), var(--shadow-sm);
+    /* Was indigo (--color-primary-500 #6366f1), which read as a foreign blue
+       against the warm editorial palette. Terracotta is the app's one accent. */
+    border-color: var(--accent-terracotta);
+    box-shadow: inset 0 0 0 1px rgba(217, 119, 87, 0.28);
 }
 
 /* Theme-aware placeholder colors */
@@ -402,6 +403,35 @@ select option {
     background: var(--input-bg);
     color: var(--input-color);
     padding: 8px 12px;
+}
+
+/* === SELECT CONTROL ===========================================================
+   The 18 <select> elements in index.html previously fell through to the native
+   OS dropdown, which ignores the editorial palette and renders differently on
+   every platform. `appearance: none` plus a drawn chevron makes them read as
+   one control with the rest of the form. Must come AFTER the theme-aware
+   `background: var(--input-bg)` shorthand above, which resets background-image.
+   ========================================================================== */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    /* !important is load-bearing: several later rules (.question-type,
+       [data-theme="light"] select, #quiz-editor-section .question-type) set the
+       `background` SHORTHAND, which resets background-image to initial and
+       erases the chevron. Without appearance:none the browser drew its own
+       arrow; with it and no chevron the control has no affordance at all. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b6658' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 14px center !important;
+    background-size: 12px 8px !important;
+    padding-right: 40px !important;
+    cursor: pointer;
+    text-overflow: ellipsis;
+}
+
+[data-theme="dark"] select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239a9383' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
 }
 
 /* Dark theme specific select option styling */
@@ -506,20 +536,22 @@ select option {
 /* Enhanced button focus states */
 .btn:focus-visible,
 button:focus-visible {
-    outline: 3px solid var(--color-primary-500);
+    outline: 3px solid var(--accent-terracotta);
     outline-offset: 2px;
-    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.2), var(--shadow-md);
-    transform: translateY(-1px);
+    box-shadow: 0 0 0 6px rgba(217, 119, 87, 0.2), var(--shadow-md);
 }
 
 /* Quiz option focus states */
+/* These tiles are saturated blue/green/orange/red, so the ring must read
+   against all four. Cream contrasts with every option colour; the dark outer
+   ring keeps it visible if a tile ever sits on a light surface. No transform —
+   a focus ring should not move the thing it is marking. */
 .player-option:focus-visible,
 .checkbox-option:focus-visible,
 .tf-option:focus-visible {
-    outline: 3px solid var(--color-primary-500);
-    outline-offset: 3px;
-    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.15), var(--shadow-lg);
-    transform: translateY(-2px) scale(1.02);
+    outline: 3px solid var(--paper);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(26, 25, 22, 0.55);
 }
 
 .player-option:active,
@@ -531,10 +563,10 @@ button:focus-visible {
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-    outline: 2px solid var(--color-primary-500);
+    outline: 2px solid var(--accent-terracotta);
     outline-offset: 1px;
-    border-color: var(--color-primary-500) !important;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15), var(--shadow-md);
+    border-color: var(--accent-terracotta) !important;
+    box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.15);
 }
 
 /* High contrast focus for better visibility */
@@ -2339,7 +2371,8 @@ button:disabled:focus-visible {
     min-height: 40px !important;
     padding: 6px 12px !important;
     font-size: 14px !important;
-    background: var(--glass-medium) !important;
+    /* background-COLOR, not the shorthand — see the select chevron note above. */
+    background-color: var(--glass-medium) !important;
     border: 1px solid var(--glass-border) !important;
     border-radius: 6px !important;
 }
@@ -3886,9 +3919,11 @@ textarea:focus {
     transition: var(--theme-transition-smooth);
 }
 
+/* Was scale(1.05) — a dropdown that grows under the cursor reads as unstable
+   and shifts the click target. Border and surface shift instead. */
 .language-selector:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    border-color: var(--accent-terracotta);
+    background: var(--paper-2);
 }
 
 /* Enhanced loading states */

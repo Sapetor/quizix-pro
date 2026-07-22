@@ -524,7 +524,10 @@
 [data-theme="dark"] #host-game-screen #current-question {
     font-family: var(--font-display);
     font-weight: 360;
-    font-size: clamp(32px, 3.6vw, 52px);
+    /* !important + the scale multiplier: the .fs-4xl utility in variables.css
+       forces 1.5rem !important on #current-question, which capped the projected
+       question at 24px. Keeps the A/A+/A++ toggle working. */
+    font-size: calc(clamp(32px, 3.6vw, 52px) * var(--global-font-scale)) !important;
     line-height: 1.12;
     letter-spacing: -0.03em;
     color: var(--ink);
@@ -532,6 +535,15 @@
     margin: 0 auto;
     text-align: center;
     font-variation-settings: "opsz" 144, "SOFT" 40, "WONK" 0;
+    /* #current-question also carries .question-display, which paints a
+       glass card (white 0.9 + shadow-lg). The projected question is type on
+       paper, not a card — reset it here rather than at the generic class,
+       which other screens still rely on. */
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
 }
 
 /* Options with distribution overlay --------------------------------------- */
@@ -540,6 +552,10 @@
 [data-theme="light"] #host-game-screen .player-answer-type,
 [data-theme="dark"] #host-game-screen .player-answer-type {
     padding: 8px 56px 32px;
+    /* This is a flex item in a column container. `margin: 0 auto` sets auto
+       cross-axis margins, which suppress the default stretch and collapse the
+       block to its content width — width:100% restores the full span. */
+    width: 100%;
     max-width: 100%;
     margin: 0 auto;
     background: transparent;
@@ -561,6 +577,9 @@
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
+    /* width:100% is load-bearing — max-width alone let the grid shrink-wrap to
+       its content (~305px), stranding the answers in the middle of a projector. */
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     padding: 0;
@@ -640,7 +659,9 @@
     position: relative;
     z-index: 1;
     font-family: var(--font-body);
-    font-size: 20px;
+    /* Scales with the viewport so answers stay legible from the back of a room,
+       in proportion to the question above (clamp 32–52px). */
+    font-size: calc(clamp(20px, 1.7vw, 28px) * var(--global-font-scale));
     font-weight: 500;
     line-height: 1.3;
     color: #fff;
@@ -660,6 +681,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     padding: 0;
@@ -938,6 +960,34 @@
     margin-top: 12px;
 }
 
+/* End Round advances the game — it is not destructive, so it should not wear
+   the red .btn.danger treatment on the projected screen. Quiet outline instead,
+   aligned to the same 56px gutter as the question and answer grid. */
+#host-game-screen #end-round-container {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 56px 8px;
+}
+#host-game-screen #end-round-btn.btn.danger {
+    background: transparent;
+    color: var(--ink-3);
+    border: 1px solid var(--rule-soft);
+    box-shadow: none;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 8px 16px;
+    border-radius: 999px;
+    transition: color var(--duration-fast) var(--ease-smooth),
+                border-color var(--duration-fast) var(--ease-smooth);
+}
+#host-game-screen #end-round-btn.btn.danger:hover {
+    background: transparent;
+    color: var(--accent-deep);
+    border-color: var(--accent);
+}
+
 /* Footer strip -------------------------------------------------------------- */
 #host-game-screen .host-game-footer {
     display: flex;
@@ -1138,10 +1188,15 @@
     letter-spacing: 0.08em;
 }
 
-/* Dropdowns inside the meta grid */
+/* Dropdowns inside the meta grid.
+   background-COLOR, not the `background` shorthand: the shorthand also resets
+   background-image, which erased the select chevron drawn in components.css. */
 #quiz-editor-section .question-type,
 #quiz-editor-section .question-difficulty {
-    background: var(--paper) !important;
+    background-color: var(--paper) !important;
+    /* Clear the chevron: .question-type sets `padding: 6px 12px !important`,
+       which would otherwise let long option text run under it. */
+    padding-right: 34px !important;
     border: 1px solid var(--rule-soft) !important;
     color: var(--ink) !important;
     border-radius: 8px !important;

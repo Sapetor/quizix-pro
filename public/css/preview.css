@@ -294,12 +294,13 @@
 .preview-content {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary-gradient) 100%);
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
     border-radius: var(--border-radius-medium);
     padding: 40px;
-    color: white;
+    color: var(--ink);
     position: relative;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: none;
 }
 
 .mobile-viewport .preview-content {
@@ -323,9 +324,11 @@
 #preview-question-counter-display,
 #preview-question-counter-display-split {
     text-align: center;
-    font-size: 1.3rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     margin-bottom: 20px;
-    color: white;
+    color: var(--ink-3);
     font-weight: 600;
 }
 
@@ -1550,28 +1553,25 @@ pre code {
 .preview-content-split .question-text,
 #preview-question-text,
 #preview-question-text-split {
-    font-size: 2rem;
-    font-weight: 600;
-    line-height: 1.4;
+    font-family: var(--font-display);
+    /* !important + the scale multiplier: beats the blanket .fs-xl utility in
+       variables.css while keeping the A/A+/A++ accessibility toggle working. */
+    font-size: calc(1.75rem * var(--global-font-scale)) !important;
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
     margin: 20px 0 30px;
     text-align: center;
-    color: white;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    color: var(--ink);
+    text-shadow: none;
     max-width: 100%;
     border: 2px solid transparent;
     /* Removed: min-height, display:flex, padding, background, backdrop-filter */
     /* These were constraining MathJax and making it look different from in-game */
 }
 
-[data-theme="dark"] .preview-content .question-text,
-[data-theme="dark"] .preview-content-split .question-text,
-[data-theme="dark"] #preview-question-text,
-[data-theme="dark"] #preview-question-text-split {
-    background: rgba(15, 23, 42, 0.8);
-    border: 2px solid rgba(96, 165, 250, 0.3);
-    color: #f8fafc;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-}
+/* Dark theme needs no colour override: --ink/--paper are already theme-aware.
+   The former slate background and blue border predate the editorial palette. */
 
 /* Enhanced Preview Numeric Input */
 .preview-content #preview-numeric-input,
@@ -1632,25 +1632,32 @@ pre code {
     border: 2px solid rgba(37, 99, 235, 0.2);
 }
 
+/* Also app-wide, not preview-scoped. The 2px blue border was what made every
+   editor field (options, concepts, question text) read as blue-outlined
+   against the warm palette. Neutral hairline instead. */
 [data-theme="light"] input,
 [data-theme="light"] textarea,
 [data-theme="light"] select {
     background: rgba(255, 255, 255, 0.95);
     color: var(--text-contrast);
-    border: 2px solid rgba(37, 99, 235, 0.3);
+    border: 1px solid var(--rule-soft);
 }
 
+/* These two are NOT preview-scoped — they restyle every primary/secondary
+   button in the app. They were forcing blue over the terracotta
+   --gradient-primary, so "Rematch" was blue while "Create Lobby" was
+   terracotta on the same screen. Match the editorial primary instead. */
 [data-theme="light"] .btn.primary {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: var(--gradient-primary);
     color: white;
-    border: 2px solid rgba(37, 99, 235, 0.5);
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    border: 1px solid transparent;
+    text-shadow: none;
 }
 
 [data-theme="light"] .btn.secondary {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    color: var(--text-contrast);
-    border: 2px solid rgba(37, 99, 235, 0.3);
+    background: var(--paper-2);
+    color: var(--ink);
+    border: 1px solid var(--rule-soft);
 }
 
 /* ===== ENHANCED LIVE PREVIEW TITLE BAR & NAVIGATION ===== */
