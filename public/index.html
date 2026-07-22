@@ -624,7 +624,11 @@
 
                     <!-- Language selector — reuses existing dropdown logic, new pill styling -->
                     <div class="language-selector" id="language-selector" data-onclick="toggleLanguageDropdown">
-                        <button type="button" class="lang-pill">
+                        <!-- .language-dropdown-selected is the hook three call sites use to
+                             write the active language into this pill (the inline pre-set above,
+                             main.js:updateLanguageDropdownDisplay, and selectLanguage). Without
+                             it the pill is stuck on its hardcoded Español regardless of language. -->
+                        <button type="button" class="lang-pill language-dropdown-selected">
                             <span class="language-flag">🇪🇸</span>
                             <span class="language-name">Español</span>
                             <svg class="lang-chevron" viewBox="0 0 10 10" aria-hidden="true">
@@ -1123,47 +1127,65 @@
                         <button class="toolbar-btn primary-action" id="vtoolbar-add-question"
                             data-translate-title="add_question_tooltip" aria-label="Add question"
                             data-translate-aria-label="add_question_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">➕</span>
+                            <span class="toolbar-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                            </span>
                         </button>
                         <button class="toolbar-btn primary-action" id="vtoolbar-save"
                             data-translate-title="save_quiz_tooltip" aria-label="Save quiz"
                             data-translate-aria-label="save_quiz_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">💾</span>
+                            <span class="toolbar-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg>
+                            </span>
                         </button>
                         <button class="toolbar-btn primary-action" id="vtoolbar-load"
                             data-translate-title="load_quiz_tooltip" aria-label="Load quiz"
                             data-translate-aria-label="load_quiz_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">📂</span>
+                            <span class="toolbar-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h3.5l2 2H18a2 2 0 0 1 2 2v1"/><path d="M3.5 11h17l-1.8 7.2a2 2 0 0 1-1.9 1.8H7.2a2 2 0 0 1-1.9-1.8z"/></svg>
+                            </span>
                         </button>
                         <div class="toolbar-divider"></div>
                         <button class="toolbar-btn" id="vtoolbar-ai-gen" data-translate-title="ai_generator_tooltip"
                             aria-label="AI question generator" data-translate-aria-label="ai_generator_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">🤖</span>
+                            <span class="toolbar-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M12 3v3"/><rect x="4" y="6" width="16" height="12" rx="3"/><path d="M9 11v2M15 11v2"/><path d="M2 12v3M22 12v3"/></svg>
+                            </span>
                         </button>
                         <button class="toolbar-btn" id="vtoolbar-settings-direct"
                             data-translate-title="quiz_settings_tooltip"
                             aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip"
                             onclick="openQuizSettingsModal()">
-                            <span class="toolbar-icon" aria-hidden="true">⚙️</span>
+                            <span class="toolbar-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5l1.6 2.6 3-.5.5 3 2.6 1.6-1.6 2.8 1.6 2.8-2.6 1.6-.5 3-3-.5L12 21.5l-1.6-2.6-3 .5-.5-3L4.3 14.8 5.9 12 4.3 9.2l2.6-1.6.5-3 3 .5z"/></svg>
+                            </span>
                         </button>
 
                         <!-- Secondary Actions (More Menu) -->
                         <div class="toolbar-more-container">
                             <button class="toolbar-btn more-btn" id="vtoolbar-more" data-translate-title="more_options"
                                 aria-label="More options" aria-haspopup="true" aria-expanded="false">
-                                <span class="toolbar-icon" aria-hidden="true">⋮</span>
+                                <span class="toolbar-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg>
+                                </span>
                             </button>
                             <div class="toolbar-more-menu hidden" id="vtoolbar-more-menu">
                                 <button class="more-menu-item" id="vtoolbar-import">
-                                    <span class="more-menu-icon" aria-hidden="true">📥</span>
+                                    <span class="more-menu-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                                    </span>
                                     <span class="more-menu-text" data-translate="import_quiz_tooltip">Import</span>
                                 </button>
                                 <button class="more-menu-item" id="vtoolbar-export">
-                                    <span class="more-menu-icon" aria-hidden="true">📤</span>
+                                    <span class="more-menu-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M12 14V3m0 0L8 7m4-4l4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                                    </span>
                                     <span class="more-menu-text" data-translate="export_quiz_tooltip">Export</span>
                                 </button>
                                 <button class="more-menu-item" id="vtoolbar-results">
-                                    <span class="more-menu-icon" aria-hidden="true">📊</span>
+                                    <span class="more-menu-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M7 20v-6M12 20V7M17 20v-9"/></svg>
+                                    </span>
                                     <span class="more-menu-text" data-translate="view_results_tooltip">Results</span>
                                 </button>
                             </div>

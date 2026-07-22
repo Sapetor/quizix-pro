@@ -378,6 +378,20 @@ header.auto-hide-enabled.visible {
     display: block;
 }
 
+/* Line icons. Stroke-only and currentColor so they inherit the button's
+   text colour in both themes and in hover/active states. */
+.editor-toolbar .toolbar-icon svg,
+.more-menu-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 /* Vertical toolbar divider */
 .editor-toolbar .toolbar-divider {
     width: 28px;
@@ -500,7 +514,9 @@ header.auto-hide-enabled.visible {
 .more-menu-icon {
     font-size: 16px;
     min-width: 20px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .more-menu-text {

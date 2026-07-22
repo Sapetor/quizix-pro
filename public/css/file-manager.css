@@ -213,11 +213,32 @@
     flex-shrink: 0;
 }
 
+.folder-tree-quiz .folder-tree-icon svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.55;
+}
+
 .folder-tree-name {
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Created date — secondary, right-aligned, never competes with the name */
+.folder-tree-meta {
+    margin-left: 0.75rem;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-3);
+    opacity: 0.8;
 }
 
 .folder-tree-lock {

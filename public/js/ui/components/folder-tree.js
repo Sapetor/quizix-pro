@@ -281,6 +281,18 @@ export class FolderTree {
     }
 
     /**
+     * Short localised created-date, or '' when the value is missing/unparseable.
+     */
+    _formatDate(value) {
+        if (!value) return '';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return '';
+        return d.toLocaleDateString(translationManager.getCurrentLanguage(), {
+            year: 'numeric', month: 'short', day: 'numeric'
+        });
+    }
+
+    /**
      * Render a quiz node
      */
     renderQuiz(quiz) {
@@ -303,7 +315,8 @@ export class FolderTree {
         // Quiz icon
         const icon = document.createElement('span');
         icon.className = 'folder-tree-icon';
-        icon.innerHTML = '&#128196;'; // Document icon
+        icon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">'
+            + '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>';
         row.appendChild(icon);
 
         // Quiz name
@@ -311,6 +324,16 @@ export class FolderTree {
         name.className = 'folder-tree-name';
         name.textContent = quiz.displayName || quiz.filename.replace('.json', '');
         row.appendChild(name);
+
+        // Created date. Several quizzes share a display name, so without this the
+        // list is a run of identical rows with no way to tell them apart.
+        const created = this._formatDate(quiz.created);
+        if (created) {
+            const meta = document.createElement('span');
+            meta.className = 'folder-tree-meta';
+            meta.textContent = created;
+            row.appendChild(meta);
+        }
 
         // Lock icon if protected
         if (quiz.protected) {
