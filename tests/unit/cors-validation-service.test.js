@@ -26,6 +26,13 @@ describe('CORSValidationService', () => {
             expect(corsService.isOriginAllowed(undefined)).toBe(true);
         });
 
+        test('should always allow the server\'s own PORT (module scripts send Origin)', () => {
+            process.env.PORT = '3210';
+            const service = new CORSValidationService();
+            expect(service.isOriginAllowed('http://localhost:3210')).toBe(true);
+            expect(service.isOriginAllowed('http://192.168.1.20:3210')).toBe(true);
+        });
+
         test('should allow explicitly allowed origins', () => {
             expect(corsService.isOriginAllowed('http://localhost:3000')).toBe(true);
             expect(corsService.isOriginAllowed('https://localhost:3000')).toBe(true);

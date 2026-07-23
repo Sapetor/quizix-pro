@@ -59,6 +59,18 @@ class CORSValidationService {
         this.isProduction = process.env.NODE_ENV === 'production';
         this.isDevelopment = !this.isProduction; // Development is simply NOT production
         this.allowedPorts = new Set(['3000', '3001', '8080', '8000']);
+
+        // The server's own port must always be allowed: browsers send an
+        // Origin header on same-origin ES-module requests, and blocking it
+        // kills the app when PORT is anything outside the list above.
+        const ownPort = process.env.PORT;
+        if (ownPort && /^\d+$/.test(ownPort)) {
+            this.allowedPorts.add(ownPort);
+            this.allowedOrigins.add(`http://localhost:${ownPort}`);
+            this.allowedOrigins.add(`https://localhost:${ownPort}`);
+            this.allowedOrigins.add(`http://127.0.0.1:${ownPort}`);
+            this.allowedOrigins.add(`https://127.0.0.1:${ownPort}`);
+        }
     }
 
     /**

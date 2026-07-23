@@ -88,7 +88,9 @@ async function createContext(browser, device) {
     options.storageState = {
         cookies: [],
         origins: [{
-            origin: 'http://localhost:3000',
+            // Must match the origin the tests actually run on (see PW_PORT in
+            // playwright.config.js) or the seeded localStorage silently no-ops.
+            origin: `http://localhost:${process.env.PW_PORT || 3000}`,
             localStorage: [
                 { name: 'language', value: 'en' },
                 { name: 'quiz_onboarding_complete', value: JSON.stringify({ completed: true, version: 3 }) },

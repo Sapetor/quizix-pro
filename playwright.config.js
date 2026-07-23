@@ -1,6 +1,10 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
 
+/* Override with PW_PORT when 3000 is taken by another local service —
+ * reuseExistingServer would otherwise silently test the wrong app. */
+const PORT = process.env.PW_PORT || 3000;
+
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
@@ -23,7 +27,7 @@ module.exports = defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3000',
+    baseURL: `http://localhost:${PORT}`,
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
     /* Take screenshot on failure */
@@ -53,7 +57,8 @@ module.exports = defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'npm start',
-    url: 'http://localhost:3000',
+    url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
+    env: { PORT: String(PORT) },
   },
 });
