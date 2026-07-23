@@ -24,18 +24,14 @@
     --accent-terracotta-deep: #b85d3e;
 
     /* === PREMIUM INDIGO COLOR PALETTE === */
-    --color-primary-50: #eef2ff;
-    --color-primary-100: #e0e7ff;
     --color-primary-400: #818cf8;
     --color-primary-500: #6366f1;
     --color-primary-600: #4f46e5;
     --color-primary-700: #4338ca;
-    --color-primary-800: #3730a3;
     --color-primary-900: #312e81;
 
     /* Accent - Warm Coral (for CTAs and highlights) */
     --color-accent: #f97316;
-    --color-accent-soft: rgba(249, 115, 22, 0.15);
 
     /* Semantic Colors */
     --color-success-500: #10b981;
@@ -44,8 +40,6 @@
 
     /* === PREMIUM EASING CURVES === */
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
     --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Premium Duration Scale */
@@ -114,7 +108,6 @@
     --glass-border: rgba(255, 255, 255, 0.2);
     
     /* Backdrop Blur System */
-    --blur-subtle: blur(8px);
     --blur-medium: blur(16px);
     --blur-strong: blur(24px);
     
@@ -125,7 +118,6 @@
     --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
     
     /* === TYPOGRAPHY SCALE === */
-    --text-xs: calc(0.75rem * var(--global-font-scale));
     --text-sm: calc(0.875rem * var(--global-font-scale));
     --text-base: calc(1rem * var(--global-font-scale));
     --text-lg: calc(1.125rem * var(--global-font-scale));
@@ -136,14 +128,11 @@
     
     /* Line Heights */
     --leading-tight: 1.25;
-    --leading-normal: 1.5;
-    --leading-relaxed: 1.75;
 
 /* CSS Custom Properties */
     /* === SMOOTH THEME TRANSITIONS === */
     --theme-transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --theme-transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --theme-transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     --color-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 
     /* Background Variables */
@@ -210,11 +199,6 @@
     /* === CONTENT-DENSITY AWARE SPACING SYSTEM === */
     /* Base spacing units for different content densities */
     --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 12px;
-    --spacing-lg: 16px;
-    --spacing-xl: 24px;
-    --spacing-2xl: 32px;
     
     /* Content-specific density variables */
     --question-padding-compact: 12px;
@@ -250,24 +234,13 @@
     /* Preview Settings Variables */
     --split-left: 50fr;
     --split-right: 50fr;
-    --preview-font-base: 1em;
-    --preview-font-question: 1.1em;
-    --preview-font-option: 0.95rem;
-    --preview-font-small: 0.7rem;
     --preview-spacing: var(--option-gap-normal);
-    --preview-spacing-small: var(--spacing-xs);
-    --preview-spacing-large: var(--option-gap-spacious);
     --preview-button-padding: var(--option-padding-normal);
     --preview-border-radius: 8px;
     --preview-question-padding: var(--question-padding-normal);
     --preview-section-gap: 10px;
     --preview-line-height: 1.4;
     --preview-nav-padding: 5px 10px;
-    --preview-button-height: 40px;
-    --preview-content-padding: 8px;
-    --preview-header-padding: 3px 4px;
-    --preview-button-spacing: 6px 0;
-    --preview-option-margin: var(--spacing-xs) 0;
     
     /* Global Font Scale */
     --global-font-scale: 1.0;
@@ -286,11 +259,8 @@
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
     --shadow-xl: 0 15px 40px rgba(0, 0, 0, 0.16);
     --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.25);
-    --shadow-glow-intense: 0 0 30px rgba(99, 102, 241, 0.35);
 
     /* Premium Light Theme - Warmer, less clinical */
-    --bg-light-primary: #fafafa;
-    --bg-light-secondary: #f5f5f7;
 
     /* Light Theme Variables - Critical for theme switching (editorial cream) */
     --bg-primary: var(--paper);
@@ -322,10 +292,6 @@
     --checkbox-border: rgba(0, 0, 0, 0.15);
     --checkbox-color: #1e293b;
     
-    /* Language Dropdown */
-    --dropdown-bg: rgba(255, 255, 255, 0.95);
-    --dropdown-border: rgba(0, 0, 0, 0.1);
-    --dropdown-color: #1e293b;
 }
 
 [data-theme="dark"] {
@@ -350,12 +316,9 @@
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
     --shadow-xl: 0 15px 40px rgba(0, 0, 0, 0.5);
     --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.4);
-    --shadow-glow-intense: 0 0 30px rgba(99, 102, 241, 0.5);
 
     /* Premium Dark Theme - Richer depth */
     --bg-dark-primary: #0f0f14;
-    --bg-dark-secondary: #18181f;
-    --bg-dark-elevated: #1f1f28;
 
     /* Dark Theme Variables - Critical for theme switching (editorial ink) */
     --bg-primary: #14130f;
@@ -376,9 +339,6 @@
     --text-contrast: #f0f6fc;
     --bg-contrast: rgba(15,15,20,0.95);
 
-    /* Premium gradient mesh background */
-    --gradient-bg-mesh: radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-                        radial-gradient(ellipse at 80% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
     
     /* Form Elements */
     --input-bg: rgba(255, 255, 255, 0.05);
@@ -391,10 +351,6 @@
     --checkbox-border: rgba(255, 255, 255, 0.2);
     --checkbox-color: #f8fafc;
     
-    /* Language Dropdown */
-    --dropdown-bg: rgba(255, 255, 255, 0.08);
-    --dropdown-border: rgba(255, 255, 255, 0.15);
-    --dropdown-color: #f8fafc;
 }
 
 /* Desktop Preview Ratios */

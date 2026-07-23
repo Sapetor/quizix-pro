@@ -3,65 +3,98 @@
  * Main entry point that imports all CSS modules
  */
 
+/*
+ * Cascade @layer ordering (Phase 4 structural refactor).
+ *
+ * Two layers, low-priority → high-priority:
+ *   app        — every product stylesheet, imported in dependency order.
+ *   utilities  — the display utilities (.hidden / .visible-flex / …).
+ *
+ * WHY ONLY TWO LAYERS (and not one per file):
+ * The historical design stacks the editorial skin (app-screens.css,
+ * landing.css) on top of the legacy chrome (game.css, layout.css,
+ * components.css) using `!important` + late @import order. The CSS cascade
+ * REVERSES @layer order for `!important` declarations (earlier layer wins),
+ * so putting editorial in a *higher* layer than legacy FLIPS every
+ * !important-vs-!important pair and reverts the skin to legacy styling
+ * (empirically verified: host-game question reverted serif→sans). Keeping
+ * all product CSS in ONE `app` layer preserves today's cascade exactly
+ * (source order + specificity decide, unchanged), while still letting the
+ * `utilities` layer sit on top.
+ *
+ * Splitting `app` into finer layers to retire !important safely requires
+ * co-neutralizing !important on BOTH sides of each cross-file conflict, not
+ * a mechanical strip — see docs and the Phase 4 report. Do that per conflict
+ * cluster, behind the visual-regression gate, before adding layer boundaries.
+ *
+ * All `app` imports carry `layer(app)`; same-named layers merge, so their
+ * relative order stays exactly the @import order below and they share the
+ * single `app` important-context (no !important reversal between them).
+ */
+@layer app, utilities;
+
 /* CSS Variables - MUST be first for theme switching */
-@import './variables.css';
+@import './variables.css' layer(app);
 
 /* Base styles - Reset, typography, global styles */
-@import './base.css';
+@import './base.css' layer(app);
 
 /* App header - Brand, toolbar container, utility icons, user chip */
-@import './header.css';
+@import './header.css' layer(app);
 
 /* Layout systems - Grid, containers, screen management */
-@import './layout.css';
+@import './layout.css' layer(app);
 
 /* UI components - Buttons, inputs, cards */
-@import './components.css';
+@import './components.css' layer(app);
 
 /* Code blocks component - Unified code styling (Phase 1 refactor) */
-@import './components/code-blocks.css';
+@import './components/code-blocks.css' layer(app);
 
 /* Syntax highlighting - One Dark Pro theme integration */
-@import './components/syntax-highlighting.css';
+@import './components/syntax-highlighting.css' layer(app);
 
 /* Modal systems - All modal dialogs and overlays */
-@import './modals.css';
+@import './modals.css' layer(app);
 
 /* File manager - Folder tree, context menu, password modal */
-@import './file-manager.css';
+@import './file-manager.css' layer(app);
 
 /* Game screens - Lobby, gameplay, results */
-@import './game.css';
+@import './game.css' layer(app);
 
 /* Live preview system - Split-screen preview functionality */
-@import './preview.css';
+@import './preview.css' layer(app);
 
 /* Left toolbar - Navigation and tools */
-@import './toolbar.css';
+@import './toolbar.css' layer(app);
 
 /* Toast notifications - Non-intrusive notifications */
-@import './toasts.css';
+@import './toasts.css' layer(app);
 
 /* Onboarding tutorial - Spotlight-style guided tour */
-@import './onboarding.css';
+@import './onboarding.css' layer(app);
 
 /* Responsive design - Media queries and mobile optimizations */
-@import './responsive.css';
+@import './responsive.css' layer(app);
 
 /* Animations and transitions - Keyframes and motion */
-@import './animations.css';
+@import './animations.css' layer(app);
 
 /* Analytics - Question analytics and statistical visualizations */
-@import './analytics.css';
+@import './analytics.css' layer(app);
 
 /* User accounts - Auth modal, user chip, visibility badges */
-@import './auth.css';
+@import './auth.css' layer(app);
 
 /* Editorial landing page */
-@import './landing.css';
+@import './landing.css' layer(app);
 
 /* Editorial treatment for in-app screens (pilot: lobby + host-game) */
-@import './app-screens.css';
+@import './app-screens.css' layer(app);
+
+/* Display utilities - top-priority layer (see utilities.css) */
+@import './utilities.css' layer(utilities);
 
 /* Mobile enhancements consolidated into responsive.css */
 

@@ -31,22 +31,8 @@ body {
     /* Opacity handled by inline styles for immediate application */
 }
 
-/* Utility Classes */
-.hidden {
-    display: none !important;
-}
-
-.visible-flex {
-    display: flex !important;
-}
-
-.visible-block {
-    display: block !important;
-}
-
-.visible-inline-block {
-    display: inline-block !important;
-}
+/* Utility Classes moved to utilities.css (top `utilities` @layer) so they win
+   over layered component styles without specificity hacks. See main.css. */
 
 
 /* Correct answer highlighting for player side */

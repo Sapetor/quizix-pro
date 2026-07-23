@@ -1,0 +1,25 @@
+/**
+ * Display utilities — top-priority `utilities` @layer (see main.css).
+ *
+ * These sit in the highest cascade layer so they override component styling
+ * without needing specificity hacks. They intentionally keep `!important`:
+ * the JS visibility contract (add/remove `.hidden` / `.visible-flex`) relies
+ * on them winning over any element-level display declaration. Do NOT change
+ * this contract here — see docs/GOTCHAS.md (hidden vs visible-flex).
+ */
+
+.hidden {
+    display: none !important;
+}
+
+.visible-flex {
+    display: flex !important;
+}
+
+.visible-block {
+    display: block !important;
+}
+
+.visible-inline-block {
+    display: inline-block !important;
+}
