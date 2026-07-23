@@ -17,7 +17,6 @@ import './utils/mobile-enhancements.js'; // Mobile UX enhancements and touch int
 import './utils/mobile-carousel.js'; // Airbnb-style mobile carousel for main menu
 import './utils/main-menu-carousel.js'; // Main menu preview carousel
 import './utils/mobile-quiz-controls.js'; // Mobile quiz management controls (FAB and bottom sheet)
-import './utils/mobile-question-carousel.js'; // Mobile question carousel for quiz editor
 import { onboardingTutorial } from './utils/onboarding-tutorial.js'; // First-time user onboarding
 import { initAuthChip } from './ui/auth-chip.js'; // Optional user accounts (login/signup chip)
 

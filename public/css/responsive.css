@@ -788,222 +788,12 @@
         transition: all 0.2s ease !important;
     }
     
-    /* ============================================
-       MOBILE QUESTION CAROUSEL (Mobile Only)
-       ============================================ */
-    
-    /* Mobile Questions Container - Carousel Mode */
-    .mobile-questions-carousel {
-        position: relative !important;
-        overflow: hidden !important;
-        background: rgba(255, 255, 255, 0.02) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        border-radius: 12px !important;
-        margin-bottom: 16px !important;
-    }
-    
-    /* Mobile Question Navigation Header - Ultra compact */
-    .mobile-question-nav {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        padding: 4px 8px !important;
-        background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.08)) !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-    }
-    
-    /* Mobile Add Question Button - Compact */
-    .mobile-add-question-btn {
-        width: 28px !important;
-        height: 24px !important;
-        border-radius: 4px !important;
-        border: 1px solid rgba(59, 130, 246, 0.4) !important;
-        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) !important;
-        color: white !important;
-        cursor: pointer !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 0.9rem !important;
-        transition: all 0.2s ease !important;
-        margin-right: 4px !important;
-    }
-    
-    .mobile-add-question-btn:hover {
-        background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary)) !important;
-        transform: scale(1.05) !important;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
-    }
-    
-    .mobile-question-title {
-        flex: 1 !important;
-        text-align: center !important;
-        color: var(--text-primary) !important;
-        font-weight: 600 !important;
-        font-size: 0.8rem !important;
-        margin: 0 !important;
-    }
-    
-    .mobile-nav-btn {
-        width: 32px !important;
-        height: 32px !important;
-        border-radius: 8px !important;
-        border: 1px solid rgba(255, 255, 255, 0.25) !important;
-        background: rgba(255, 255, 255, 0.08) !important;
-        color: var(--text-primary) !important;
-        cursor: pointer !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 1.1rem !important;
-        transition: all 0.2s ease !important;
-    }
-    
-    .mobile-nav-btn:hover:not(:disabled) {
-        background: rgba(59, 130, 246, 0.2) !important;
-        border-color: rgba(59, 130, 246, 0.4) !important;
-        transform: scale(1.05) !important;
-    }
-    
-    .mobile-nav-btn:disabled {
-        opacity: 0.4 !important;
-        cursor: not-allowed !important;
-    }
-    
-    /* Dark mode navigation styling */
-    [data-theme="dark"] .mobile-question-title,
-    .dark-theme .mobile-question-title {
-        color: rgba(255, 255, 255, 0.98) !important;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-    }
-    
-    [data-theme="dark"] .mobile-nav-btn,
-    .dark-theme .mobile-nav-btn {
-        color: rgba(255, 255, 255, 0.95) !important;
-        background: rgba(255, 255, 255, 0.12) !important;
-        border-color: rgba(255, 255, 255, 0.3) !important;
-    }
-    
-    /* Mobile Questions Wrapper - Show/Hide Individual Questions */
-    .mobile-questions-wrapper {
-        position: relative !important;
-        min-height: 400px !important; /* Minimum height to prevent jumping */
-    }
-    
-    /* Individual Question in Carousel - Hidden by default */
-    .mobile-questions-wrapper .question-item {
-        display: none !important; /* Hide all questions by default */
-        padding: 12px !important;
-        margin-bottom: 0 !important;
-        border: none !important;
-        background: transparent !important;
-        animation: fadeIn 0.3s ease !important;
-    }
-    
-    /* Show only the current question */
-    .mobile-questions-wrapper .question-item.mobile-question-active {
-        display: block !important;
-    }
-    
-    /* Fade in animation for question transitions */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Carousel is always active on mobile - no toggle needed */
-    
-    /* Question indicator dots */
-    .mobile-question-indicators {
-        display: flex !important;
-        justify-content: center !important;
-        gap: 6px !important;
-        padding: 8px !important;
-        background: rgba(0, 0, 0, 0.05) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }
-    
-    .mobile-question-dot {
-        width: 8px !important;
-        height: 8px !important;
-        border-radius: 50% !important;
-        background: rgba(255, 255, 255, 0.3) !important;
-        cursor: pointer !important;
-        transition: all 0.2s ease !important;
-    }
-    
-    .mobile-question-dot.active {
-        background: var(--accent-primary) !important;
-        transform: scale(1.2) !important;
-    }
     
     /* Mobile - Show questions container (carousel removed for simplicity) */
     #questions-container {
         display: block !important;
     }
 
-    .mobile-carousel-container {
-        display: none !important;
-    }
-    
-    /* Mobile question navigation bar */
-    .mobile-question-nav {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        padding: 12px 16px !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-radius: 8px !important;
-        margin-bottom: 12px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }
-    
-    /* Mobile navigation buttons */
-    .mobile-nav-btn,
-    .mobile-add-question-btn {
-        background: rgba(59, 130, 246, 0.1) !important;
-        border: 1px solid rgba(59, 130, 246, 0.3) !important;
-        color: var(--text-primary) !important;
-        width: 44px !important;
-        height: 44px !important;
-        border-radius: 8px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 1.1rem !important;
-        font-weight: bold !important;
-        cursor: pointer !important;
-        flex-shrink: 0 !important;
-    }
-    
-    .mobile-nav-btn:hover,
-    .mobile-add-question-btn:hover {
-        background: rgba(59, 130, 246, 0.2) !important;
-        border-color: rgba(59, 130, 246, 0.5) !important;
-    }
-    
-    .mobile-nav-btn:disabled {
-        opacity: 0.5 !important;
-        cursor: not-allowed !important;
-    }
-    
-    /* Mobile question title */
-    .mobile-question-title {
-        flex: 1 !important;
-        text-align: center !important;
-        font-size: 0.95rem !important;
-        font-weight: 600 !important;
-        color: var(--text-primary) !important;
-        margin: 0 12px !important;
-    }
-    
-    
-    /* Light mode mobile navigation */
-    [data-theme="light"] .mobile-question-nav,
-    .light-theme .mobile-question-nav {
-        background: rgba(59, 130, 246, 0.08) !important;
-        border-color: rgba(59, 130, 246, 0.2) !important;
-    }
     
     /* Mobile-optimized join container - compact layout */
     .join-container {
@@ -2057,8 +1847,7 @@
     .mobile-quiz-sheet-overlay,
     .mobile-quiz-sheet,
     .mobile-bottom-controls,
-    .mobile-only,
-    .mobile-carousel-container {
+    .mobile-only {
         display: none !important;
     }
     
@@ -2444,19 +2233,6 @@
         border: 1px solid rgba(0, 0, 0, 0.2) !important;
     }
     
-    /* Light mode mobile navigation arrows - better contrast */
-    [data-theme="light"] .mobile-nav-btn {
-        color: #1e293b !important; /* Dark arrows for light mode */
-        background: rgba(255, 255, 255, 0.9) !important; /* Light background */
-        border: 1px solid rgba(30, 41, 59, 0.3) !important; /* Dark border */
-        font-weight: bold !important; /* Bold arrows for visibility */
-    }
-    
-    [data-theme="light"] .mobile-nav-btn:hover:not(:disabled) {
-        background: rgba(59, 130, 246, 0.1) !important;
-        border-color: rgba(59, 130, 246, 0.4) !important;
-        color: #1e293b !important;
-    }
     
     /* Fix ALL text colors in mobile editor light mode - comprehensive */
     [data-theme="light"] .quiz-editor-section *,
@@ -2467,15 +2243,10 @@
     [data-theme="light"] .quiz-editor-section .question-controls label,
     [data-theme="light"] .quiz-editor-section span,
     [data-theme="light"] .quiz-editor-section div,
-    [data-theme="light"] .quiz-editor-section p,
-    [data-theme="light"] .mobile-question-title {
+    [data-theme="light"] .quiz-editor-section p {
         color: #1e293b !important; /* Dark text for light mode */
     }
     
-    /* Hide redundant "Question X" title in mobile since navigation shows "Question X of Y" */
-    .mobile-question-title {
-        display: none !important;
-    }
     
     /* Add navigation explanation for mobile editor */
     .mobile-quiz-controls::before {
