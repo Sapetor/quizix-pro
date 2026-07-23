@@ -22,14 +22,23 @@ dependency: tests land BEFORE the refactors they protect.
   coverage thresholds 20 → 55/45/55/55; quarantines resolved; visual gate made
   runnable (PW_PORT, own-port CORS, onboarding seed, score/confetti masks) with
   49 committed chromium-linux baselines.
-- Phase 4 (CSS) — PARTIAL. `@layer app, utilities` scaffold landed (verified
-  no-op), utilities extracted, 36 dead tokens deleted. BLOCKER FINDING: the
-  cascade REVERSES layer order for `!important`, and editorial/legacy fight
-  with `!important` on both sides — mechanical stripping is unsafe. Follow-up:
-  per-conflict-cluster co-neutralization (drop `!important` on both sides, let
-  layer order decide) behind the visual gate; then alias-collapse in
-  variables.css, active-question consolidation (needs editor-screen visual
-  coverage first), components.css split.
+- Phase 4 (CSS) — IN PROGRESS. `@layer app, utilities` scaffold landed
+  (verified no-op), utilities extracted, 36 dead tokens deleted. BLOCKER
+  FINDING: the cascade REVERSES layer order for `!important`, and
+  editorial/legacy fight with `!important` on both sides — mechanical
+  stripping is unsafe; only per-cluster co-neutralization works.
+  Sprint 2 (2026-07-23): editor/landing/mobile-editor visual coverage added
+  (7 baselines, visual-static.spec.js); dead mobile carousel deleted
+  (489-line JS module + CSS; .mobile-question-active path never rendered —
+  consolidation moot); editor-field clusters co-neutralized. !important:
+  1,487 → 1,348 (responsive 727→606, app-screens 37→24, components 187→182).
+  Remaining map (from the Wave B report): (a) "editor select controls"
+  cluster — must include the components.css:415 select-chevron rule in the
+  same cluster or padding shifts; (b) responsive.css groups: mobile editor
+  form inputs ~450-640, mobile game/player, mobile join/lobby, mobile
+  header/toolbar — raise mobile selector specificity to match desktop
+  instead of keeping the flag; (c) variables.css alias collapse (55) as an
+  isolated pass; (d) components.css split last.
 - Phase 5 (god objects) — DONE. quiz-manager 2,130→1,622 (+3 modules);
   game-manager 1,960→1,591 (StatisticsManager extracted, timers consolidated);
   results-viewer facade 1,079→956 (extraction complete); event-bindings binder
