@@ -15,24 +15,26 @@ module.exports = {
 
     // Ignore patterns
     testPathIgnorePatterns: [
-        '/node_modules/',
-        '/tests/mobile-quiz-editor-light-mode.spec.js',
-        '/tests/code-review-fixes.test.js'
+        '/node_modules/'
     ],
 
     // Coverage configuration
     collectCoverageFrom: [
         'services/**/*.js',
+        'socket/**/*.js',
         '!**/node_modules/**'
     ],
 
-    // Coverage thresholds (start low, increase over time)
+    // Coverage thresholds. Measured global at time of writing (services/** +
+    // socket/**): ~68% stmts / 59% branches / 70% funcs / 69% lines. Set below
+    // that with headroom so the gate stays green as socket/** test coverage
+    // (added separately) fluctuates.
     coverageThreshold: {
         global: {
-            branches: 20,
-            functions: 20,
-            lines: 20,
-            statements: 20
+            branches: 45,
+            functions: 55,
+            lines: 55,
+            statements: 55
         }
     },
 

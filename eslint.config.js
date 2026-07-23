@@ -215,13 +215,21 @@ export default [
     },
     {
         // ESM unit tests (Babel-transformed for Jest, use import/export, jsdom env)
-        files: ['tests/unit/header-controller.test.js', 'tests/unit/client-scoring.test.js'],
+        files: [
+            'tests/unit/header-controller.test.js',
+            'tests/unit/client-scoring.test.js',
+            'tests/unit/api-helper.test.js',
+            'tests/unit/game-state-manager.test.js',
+            'tests/unit/player-interaction-manager.test.js',
+            'tests/unit/translations-parity.test.js'
+        ],
         languageOptions: {
             sourceType: 'module',
             globals: {
                 Event: 'readonly',
                 KeyboardEvent: 'readonly',
-                document: 'readonly'
+                document: 'readonly',
+                jest: 'readonly'
             }
         }
     },

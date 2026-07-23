@@ -6,6 +6,8 @@ const { defineConfig, devices } = require('@playwright/test');
  */
 module.exports = defineConfig({
   testDir: './tests',
+  /* Playwright specs only — Jest owns *.test.js (unit/ and stress/) */
+  testMatch: '**/*.spec.js',
   /* Ignore Jest unit tests */
   testIgnore: ['**/unit/**'],
   /* Run tests in files in parallel */
