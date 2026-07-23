@@ -53,6 +53,7 @@ const { createManimRoutes } = require('./routes/manim-routes');
 const { createAuthRoutes } = require('./routes/auth');
 const { createAttachUser, requireUser } = require('./middleware/attach-user');
 const { ManimRenderService } = require('./services/manim-render-service');
+const { UploadGCService } = require('./services/upload-gc-service');
 const { registerSocketHandlers } = require('./socket');
 
 // Detect production environment
@@ -202,6 +203,7 @@ const metadataService = new MetadataService(logger, WSLMonitor, 'quizzes');
 const userService = new UserService(logger, 'quizzes');
 const sessionService = new SessionService(logger);
 const manimRenderService = new ManimRenderService(logger, CONFIG);
+const uploadGCService = new UploadGCService(logger);
 
 // Initialize Socket.IO game services
 const gameSessionService = new GameSessionService(logger, CONFIG);
@@ -723,6 +725,18 @@ async function startServer() {
         logger.error('Failed to initialize user service:', error);
         process.exit(1);
     }
+
+    // Periodic orphaned-upload garbage collection. Delete the first sweep a few
+    // minutes past boot so startup settles, then repeat every 6h. Dry-run is
+    // OFF by default; timers are unref'd so they never hold the process open.
+    const UPLOAD_GC_FIRST_DELAY_MS = 5 * 60 * 1000;    // 5 min after boot
+    const UPLOAD_GC_INTERVAL_MS = 6 * 60 * 60 * 1000;  // every 6h
+    const runUploadGC = () => uploadGCService.sweep()
+        .catch(err => logger.error('Upload GC sweep failed:', err));
+    setTimeout(() => {
+        runUploadGC();
+        setInterval(runUploadGC, UPLOAD_GC_INTERVAL_MS).unref();
+    }, UPLOAD_GC_FIRST_DELAY_MS).unref();
 
     server.listen(PORT, '0.0.0.0', () => {
         let localIP = 'localhost';

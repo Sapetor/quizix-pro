@@ -3,6 +3,38 @@ const dns = require('dns').promises;
 const { requireUser } = require('../middleware/attach-user');
 
 /**
+ * POST to an upstream AI provider and normalize the outcome.
+ *
+ * Returns { ok: true, data } when the provider responds 2xx (body parsed as
+ * JSON), or { ok: false, status, errorText } for a non-2xx response so the
+ * caller can map status -> message. Network/parse failures throw and are
+ * handled by each route's try/catch (-> 500). This is pure transport: status
+ * mapping and response extraction stay in the routes because they differ per
+ * endpoint. Exported for unit testing.
+ *
+ * @param {Object} opts
+ * @param {string} opts.url - Provider endpoint.
+ * @param {Object} opts.headers - Request headers.
+ * @param {Object} opts.body - Request body (JSON-serialized here).
+ * @returns {Promise<{ok: true, data: any} | {ok: false, status: number, errorText: string}>}
+ */
+async function callProvider({ url, headers, body }) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        return { ok: false, status: response.status, errorText };
+    }
+
+    const data = await response.json();
+    return { ok: true, data };
+}
+
+/**
  * AI Generation Routes
  * Handles Ollama, Claude, and Gemini AI generation endpoints with BYOK rate limiting
  *
@@ -378,42 +410,40 @@ function createAIGenerationRoutes(options) {
                 ]
             };
 
-            const response = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
+            const result = await callProvider({
+                url: 'https://api.anthropic.com/v1/messages',
                 headers: {
                     'Content-Type': 'application/json',
                     'x-api-key': apiKey,
                     'anthropic-version': '2023-06-01'
                 },
-                body: JSON.stringify(requestBody)
+                body: requestBody
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                logger.error('Claude API error:', response.status);
+            if (!result.ok) {
+                logger.error('Claude API error:', result.status);
 
-                let errorMessage = `Claude API error: ${response.status}`;
+                let errorMessage = `Claude API error: ${result.status}`;
                 let messageKey = 'error_claude_api';
-                if (response.status === 401) {
+                if (result.status === 401) {
                     errorMessage = 'Invalid API key. Please check your Claude API key and try again.';
                     messageKey = 'error_invalid_api_key';
-                } else if (response.status === 429) {
+                } else if (result.status === 429) {
                     errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
                     messageKey = 'error_rate_limited';
-                } else if (response.status === 400) {
+                } else if (result.status === 400) {
                     errorMessage = 'Invalid request. Please check your input and try again.';
                     messageKey = 'error_invalid_request';
                 }
 
-                return res.status(response.status).json({
+                return res.status(result.status).json({
                     error: errorMessage,
                     messageKey,
-                    details: isProduction ? undefined : errorText // Hide details in production
+                    details: isProduction ? undefined : result.errorText // Hide details in production
                 });
             }
 
-            const data = await response.json();
-            res.json(data);
+            res.json(result.data);
         } catch (error) {
             logger.error('Claude proxy error:', error.message);
             res.status(500).json({
@@ -514,49 +544,45 @@ function createAIGenerationRoutes(options) {
                 };
             }
 
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-goog-api-key': apiKey
-                    },
-                    body: JSON.stringify(requestBody)
-                }
-            );
+            const result = await callProvider({
+                url: `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': apiKey
+                },
+                body: requestBody
+            });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                logger.error('Gemini API error:', response.status);
+            if (!result.ok) {
+                logger.error('Gemini API error:', result.status);
 
-                let errorMessage = `Gemini API error: ${response.status}`;
+                let errorMessage = `Gemini API error: ${result.status}`;
                 let messageKey = 'error_gemini_api';
-                if (response.status === 401) {
+                if (result.status === 401) {
                     errorMessage = 'Invalid API key. Please check your Gemini API key and try again.';
                     messageKey = 'error_invalid_api_key';
-                } else if (response.status === 429) {
+                } else if (result.status === 429) {
                     errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
                     messageKey = 'error_rate_limited';
-                } else if (response.status === 400) {
+                } else if (result.status === 400) {
                     errorMessage = 'Invalid request. Please check your input and try again.';
                     messageKey = 'error_invalid_request';
-                } else if (response.status === 403) {
+                } else if (result.status === 403) {
                     errorMessage = 'Access forbidden. Please check your API key permissions or account quotas.';
                     messageKey = 'error_api_forbidden';
-                } else if (response.status === 402) {
+                } else if (result.status === 402) {
                     errorMessage = 'Quota exceeded. Please check your account billing and quotas.';
                     messageKey = 'error_api_quota_exceeded';
                 }
 
-                return res.status(response.status).json({
+                return res.status(result.status).json({
                     error: errorMessage,
                     messageKey,
-                    details: isProduction ? undefined : errorText // Hide details in production
+                    details: isProduction ? undefined : result.errorText // Hide details in production
                 });
             }
 
-            const data = await response.json();
+            const data = result.data;
 
             // Check finishReason — if MAX_TOKENS, the response was truncated
             const finishReason = data.candidates?.[0]?.finishReason;
@@ -865,28 +891,26 @@ function createAIGenerationRoutes(options) {
                     ]
                 };
 
-                const response = await fetch('https://api.anthropic.com/v1/messages', {
-                    method: 'POST',
+                const result = await callProvider({
+                    url: 'https://api.anthropic.com/v1/messages',
                     headers: {
                         'Content-Type': 'application/json',
                         'x-api-key': apiKey,
                         'anthropic-version': '2023-06-01'
                     },
-                    body: JSON.stringify(requestBody)
+                    body: requestBody
                 });
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    logger.error('Claude AI complete error:', response.status);
-                    return res.status(response.status).json({
-                        error: `Claude API error: ${response.status}`,
+                if (!result.ok) {
+                    logger.error('Claude AI complete error:', result.status);
+                    return res.status(result.status).json({
+                        error: `Claude API error: ${result.status}`,
                         messageKey: 'error_claude_api',
-                        details: isProduction ? undefined : errorText
+                        details: isProduction ? undefined : result.errorText
                     });
                 }
 
-                const data = await response.json();
-                responseText = data.content?.[0]?.text || '';
+                responseText = result.data.content?.[0]?.text || '';
 
             } else if (provider === 'gemini') {
                 const selectedModel = model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
@@ -904,29 +928,25 @@ function createAIGenerationRoutes(options) {
                     }
                 };
 
-                const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-goog-api-key': apiKey
-                        },
-                        body: JSON.stringify(requestBody)
-                    }
-                );
+                const result = await callProvider({
+                    url: `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': apiKey
+                    },
+                    body: requestBody
+                });
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    logger.error('Gemini AI complete error:', response.status);
-                    return res.status(response.status).json({
-                        error: `Gemini API error: ${response.status}`,
+                if (!result.ok) {
+                    logger.error('Gemini AI complete error:', result.status);
+                    return res.status(result.status).json({
+                        error: `Gemini API error: ${result.status}`,
                         messageKey: 'error_gemini_api',
-                        details: isProduction ? undefined : errorText
+                        details: isProduction ? undefined : result.errorText
                     });
                 }
 
-                const data = await response.json();
+                const data = result.data;
                 // For thinking models, skip thought parts and get the actual output
                 const parts = data.candidates?.[0]?.content?.parts || [];
                 responseText = '';
@@ -968,4 +988,4 @@ function createAIGenerationRoutes(options) {
     return router;
 }
 
-module.exports = { createAIGenerationRoutes };
+module.exports = { createAIGenerationRoutes, callProvider };

@@ -33,6 +33,23 @@ class MetadataService {
         this.metadata = null;
         this.sessionTokens = new Map(); // token -> { itemId, itemType, expiresAt }
         this.unlockAttempts = new Map(); // ip -> { count, windowStart }
+        // Serializes metadata writes. This is a single-process server, so an
+        // in-memory promise chain is enough to stop concurrent saveMetadata()
+        // calls from racing on the shared `.tmp` file (both write the same temp
+        // path, then one rename loses to the other). See _runExclusive.
+        this._writeChain = Promise.resolve();
+    }
+
+    /**
+     * Serialize a write operation. Each call appends to the chain so only one
+     * saveMetadata runs at a time, even across await points. Mirrors the queue
+     * in user-service.js.
+     */
+    _runExclusive(fn) {
+        const next = this._writeChain.then(fn, fn);
+        // Do not let a failure poison the chain for future callers.
+        this._writeChain = next.catch(() => {});
+        return next;
     }
 
     /**
@@ -176,9 +193,13 @@ class MetadataService {
      * Save metadata to file
      */
     async saveMetadata() {
-        await this.wslMonitor.trackFileOperation(
-            () => atomicWriteFile(this.metadataPath, JSON.stringify(this.metadata, null, 2)),
-            'Save quiz metadata'
+        // Queue behind any in-flight write. JSON.stringify runs inside the
+        // critical section so each write serializes the latest in-memory state.
+        return this._runExclusive(() =>
+            this.wslMonitor.trackFileOperation(
+                () => atomicWriteFile(this.metadataPath, JSON.stringify(this.metadata, null, 2)),
+                'Save quiz metadata'
+            )
         );
     }
 

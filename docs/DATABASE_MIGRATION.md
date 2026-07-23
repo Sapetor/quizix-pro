@@ -31,6 +31,16 @@ public/uploads/    # User-uploaded images
 
 ## Why Migrate?
 
+> **Current state (interim, no migration yet):** This is an aspirational plan;
+> the app still runs on file-based storage. Concurrent-write safety is handled
+> in-process rather than by a database: single-JSON stores (`user-service.js`,
+> `metadata-service.js`) serialize their writes through a promise-chain mutex
+> (`_runExclusive`) so overlapping read-modify-write cycles cannot lose updates
+> or collide on the shared `.tmp` file, and all writes go through
+> `services/atomic-write.js` (temp-file + rename). Per-game result files
+> (`results/*.json`) are written to distinct paths, so they don't need the
+> mutex. Treat the mutex as the interim solution until this migration happens.
+
 ### File-Based Limitations
 - **No ACID transactions**: Concurrent writes can corrupt data
 - **No query capabilities**: Must load all files to search/filter
