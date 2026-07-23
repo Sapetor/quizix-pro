@@ -84,7 +84,8 @@ class PlayerManagementService {
         if (!addResult.success) {
             return {
                 success: false,
-                error: addResult.error
+                error: addResult.error,
+                messageKey: addResult.messageKey
             };
         }
 

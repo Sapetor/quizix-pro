@@ -39,12 +39,10 @@ function registerPlayerEvents(io, socket, options) {
     socket.on('player-change-name', (data) => {
         if (!checkRateLimit(socket.id, 'player-change-name', 5, socket)) return;
         try {
-            if (!data || typeof data !== 'object') {
-                socket.emit('error', { message: 'Invalid request data', messageKey: 'error_invalid_request' });
-                return;
-            }
+            const validated = validateAndHandle(socket, 'player-change-name', data, logger);
+            if (!validated) return;
 
-            const { newName } = data;
+            const { newName } = validated;
             const playerData = playerManagementService.getPlayer(socket.id);
 
             if (!playerData) {

@@ -661,26 +661,6 @@ export class SocketManager {
             translationManager.showAlert('error', this._resolveServerMessage(data, 'error_occurred'));
         });
 
-        this.socket.on('game-not-found', (data) => {
-            logger.error('Game not found:', data);
-            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_game_not_found'));
-        });
-
-        this.socket.on('player-limit-reached', (data) => {
-            logger.error('Player limit reached:', data);
-            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_player_limit'));
-        });
-
-        this.socket.on('invalid-pin', (data) => {
-            logger.error('Invalid PIN:', data);
-            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_invalid_pin'));
-        });
-
-        this.socket.on('name-taken', (data) => {
-            logger.error('Name taken:', data);
-            translationManager.showAlert('error', this._resolveServerMessage(data, 'error_name_taken'));
-        });
-
         this.socket.on('player-disconnected', (data) => {
             logger.debug('Player disconnected:', data);
 
@@ -730,17 +710,6 @@ export class SocketManager {
             }
 
             this.uiManager.showScreen('player-lobby');
-        });
-
-        // Special events
-        this.socket.on('force-disconnect', (data) => {
-            logger.debug('Force disconnect:', data);
-            this._clearReconnectionData();
-            this._hideRejoinBanner();
-            this.gameManager.stopTimer();
-            this.gameManager.resetGameState();
-            translationManager.showAlert('info', this._resolveServerMessage(data, 'error_host_disconnected'));
-            this.uiManager.showScreen('main-menu');
         });
 
         // Reconnection events are emitted on the Manager (socket.io), not the Socket
@@ -944,11 +913,6 @@ export class SocketManager {
             this._hideReconnectionOverlay();
             this._hideRejoinBanner();
             this.uiManager.showScreen('session-waiting-screen');
-        });
-
-        // Session game started — server auto-joins us, no action needed
-        this.socket.on('session-game-started', (data) => {
-            logger.info('Session game started, server is auto-joining us:', data);
         });
 
         // Session invalid — clear binding, return to main menu

@@ -417,6 +417,11 @@ const playerJoinSchema = z.object({
     deviceId: z.string().uuid().optional()
 });
 
+// Same name constraints as playerJoinSchema (names render on host/player screens)
+const playerChangeNameSchema = z.object({
+    newName: z.string().min(1).max(50)
+});
+
 const startGameSchema = z.object({
     pin: z.string().regex(/^\d{6}$/)
 });
@@ -555,6 +560,7 @@ function validateSocketEvent(eventName, data) {
         // Client to server
         'host-join': hostJoinSchema,
         'player-join': playerJoinSchema,
+        'player-change-name': playerChangeNameSchema,
         // 'start-game' sends no data — validated by handler logic
         'next-question': nextQuestionSchema,
         'end-question-early': endQuestionEarlySchema,
@@ -650,6 +656,7 @@ module.exports = {
     // Socket event schemas
     hostJoinSchema,
     playerJoinSchema,
+    playerChangeNameSchema,
     startGameSchema,
     nextQuestionSchema,
     endQuestionEarlySchema,
