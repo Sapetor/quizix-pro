@@ -214,8 +214,10 @@ export default [
         }
     },
     {
-        // ESM unit tests (Babel-transformed for Jest, use import/export, jsdom env)
+        // ESM unit tests (Babel-transformed for Jest, use import/export, jsdom env).
+        // New frontend ESM tests: name them *.dom.test.js — no need to list here.
         files: [
+            'tests/unit/*.dom.test.js',
             'tests/unit/header-controller.test.js',
             'tests/unit/client-scoring.test.js',
             'tests/unit/api-helper.test.js',

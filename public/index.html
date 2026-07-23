@@ -396,7 +396,7 @@
         <header class="app-header" role="banner">
             <div class="app-header-inner">
                 <div class="app-header-left">
-                    <a href="#" class="brand" onclick="returnToMainFromHeader(); return false;" aria-label="Quizix Pro home">
+                    <a href="#" class="brand" id="header-brand" aria-label="Quizix Pro home">
                         <span class="brand-mark" aria-hidden="true">Q</span>
                         <span class="brand-name">Quizix</span>
                         <span class="brand-tag" aria-hidden="true">Pro</span>
@@ -483,8 +483,7 @@
                             </svg>
                         </button>
                         <button class="toolbar-btn" id="toolbar-settings" data-translate-title="quiz_settings_tooltip"
-                                aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip"
-                                onclick="openQuizSettingsModal()">
+                                aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip">
                             <svg class="toolbar-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"
                                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                  stroke-linejoin="round">
@@ -615,7 +614,7 @@
 
                     <button id="desktop-return-to-main" class="iconbtn" hidden
                             data-translate-title="return_to_main" aria-label="Return to main menu"
-                            data-translate-aria-label="return_to_main" onclick="returnToMainFromHeader()">
+                            data-translate-aria-label="return_to_main">
                         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-7h4v7h4a1 1 0 001-1V10"></path>
@@ -1154,8 +1153,7 @@
                         </button>
                         <button class="toolbar-btn" id="vtoolbar-settings-direct"
                             data-translate-title="quiz_settings_tooltip"
-                            aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip"
-                            onclick="openQuizSettingsModal()">
+                            aria-label="Quiz settings" data-translate-aria-label="quiz_settings_tooltip">
                             <span class="toolbar-icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5l1.6 2.6 3-.5.5 3 2.6 1.6-1.6 2.8 1.6 2.8-2.6 1.6-.5 3-3-.5L12 21.5l-1.6-2.6-3 .5-.5-3L4.3 14.8 5.9 12 4.3 9.2l2.6-1.6.5-3 3 .5z"/></svg>
                             </span>
@@ -1227,7 +1225,7 @@
                                         <label class="time-input-label">
                                             <span data-translate="global_time_limit">Global time limit (seconds):</span>
                                             <input type="number" id="global-time-limit" min="5" max="300" value="20"
-                                                class="time-input" onchange="updateGlobalTime(this)">
+                                                class="time-input">
                                         </label>
                                     </div>
                                 </div>
@@ -1333,7 +1331,7 @@
 
                             <!-- Question Pagination Controls (Desktop only) -->
                             <div class="question-pagination desktop-only" id="question-pagination">
-                                <button class="pagination-btn" id="prev-question-btn" onclick="goToPreviousQuestion()"
+                                <button class="pagination-btn" id="prev-question-btn"
                                     disabled aria-label="Previous question" data-translate-aria-label="previous">
                                     ←
                                 </button>
@@ -1342,7 +1340,7 @@
                                         id="current-question-num">1</span> <span data-translate="of">of</span> <span
                                         id="total-question-num">1</span>
                                 </span>
-                                <button class="pagination-btn" id="next-question-btn" onclick="goToNextQuestion()"
+                                <button class="pagination-btn" id="next-question-btn"
                                     disabled aria-label="Next question" data-translate-aria-label="next">
                                     →
                                 </button>
@@ -1734,7 +1732,7 @@
                         <div class="preview-header">
                             <h4 data-translate="live_preview">Live Preview</h4>
                             <div class="preview-header-controls">
-                                <button id="toggle-preview" class="btn secondary" onclick="togglePreviewMode()"
+                                <button id="toggle-preview" class="btn secondary"
                                     data-translate="close_live_preview">Close Live Preview</button>
                             </div>
                         </div>
@@ -1746,8 +1744,7 @@
                                 <button id="preview-next-split" class="nav-btn"
                                     data-translate-aria-label="next">▶</button>
                             </div>
-                            <select id="preview-question-type" class="preview-type-selector"
-                                onchange="updateQuestionTypeFromPreview(this)">
+                            <select id="preview-question-type" class="preview-type-selector">
                                 <option value="multiple-choice" data-translate="multiple_choice">Multiple Choice
                                 </option>
                                 <option value="multiple-correct" data-translate="multiple_correct">Multiple Correct
@@ -1758,8 +1755,7 @@
                             </select>
                             <span id="preview-question-counter-split">Q1/1</span>
                             <div class="preview-nav-section">
-                                <button id="scroll-to-question" class="nav-btn edit-btn"
-                                    onclick="scrollToCurrentQuestion()"><span
+                                <button id="scroll-to-question" class="nav-btn edit-btn"><span
                                         data-translate="edit_question">Edit</span></button>
                             </div>
                         </div>
@@ -1988,7 +1984,7 @@
             <div class="settings-modal-header">
                 <h3 id="settings-modal-title"><span aria-hidden="true">⚙️</span> <span
                         data-translate="quiz_settings">Quiz Settings</span></h3>
-                <button class="settings-modal-close" onclick="closeQuizSettingsModal()" aria-label="Close"
+                <button class="settings-modal-close" id="settings-modal-close-btn" aria-label="Close"
                     data-translate-aria-label="close">&times;</button>
             </div>
             <div class="settings-modal-content">
@@ -2004,7 +2000,7 @@
                         <span data-translate="randomize_answers">Randomize answer positions</span>
                     </label>
                     <label>
-                        <input type="checkbox" id="modal-use-global-time" onchange="toggleGlobalTimeModal()">
+                        <input type="checkbox" id="modal-use-global-time">
                         <span data-translate="use_same_time">Use same time for all questions</span>
                     </label>
                     <div id="modal-global-time-container" class="time-setting-container" style="display: none;">
@@ -2039,7 +2035,7 @@
                         <label class="consensus-mode-option"
                             style="border: 2px solid #10b981; border-radius: 8px; padding: 8px; background: rgba(16, 185, 129, 0.1); margin-top: 8px;">
                             <input type="checkbox" id="modal-consensus-mode"
-                                data-translate-title="consensus_mode_tooltip" onchange="toggleConsensusModeModal()">
+                                data-translate-title="consensus_mode_tooltip">
                             <strong>🤝 <span data-translate="consensus_mode">Consensus Mode (Team
                                     Collaboration)</span></strong>
                         </label>

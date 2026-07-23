@@ -8,13 +8,19 @@ import { logger, UI } from '../../core/config.js';
 import { unifiedErrorHandler as errorBoundary } from '../../utils/unified-error-handler.js';
 
 export class TimerManager {
-    constructor() {
+    /**
+     * @param {object|null} soundManager - optional sound manager for countdown ticks
+     *   and the timer-expired cue. When present, the timer plays sounds itself so
+     *   callers only need to pass their own tick/complete callbacks.
+     */
+    constructor(soundManager = null) {
         this.timer = null;
         this.trackedTimers = new Set(); // Track timers for cleanup
         this.timerElement = document.getElementById('timer');
         this.playerTimerElement = document.getElementById('player-timer');
         this.totalDuration = 0;
         this.timeRemaining = 0;
+        this.soundManager = soundManager;
     }
 
     /**
@@ -37,7 +43,8 @@ export class TimerManager {
             this.timeRemaining = duration;
             this.updateTimerDisplay(this.timeRemaining);
 
-            // Call initial tick if provided
+            // Play countdown sound, then call initial tick if provided
+            this.playCountdownSound(this.timeRemaining);
             if (onTick) {
                 onTick(this.timeRemaining);
             }
@@ -46,7 +53,8 @@ export class TimerManager {
                 this.timeRemaining -= 1000;
                 this.updateTimerDisplay(this.timeRemaining);
 
-                // Call tick callback if provided
+                // Play countdown sound, then call tick callback if provided
+                this.playCountdownSound(this.timeRemaining);
                 if (onTick) {
                     onTick(this.timeRemaining);
                 }
@@ -55,7 +63,10 @@ export class TimerManager {
                     logger.debug('Timer finished');
                     this.stopTimer();
 
-                    // Call completion callback if provided
+                    // Play timer-expired sound, then call completion callback
+                    if (this.soundManager?.isSoundsEnabled()) {
+                        this.soundManager.playTimerExpired();
+                    }
                     if (onComplete) {
                         onComplete();
                     }
@@ -75,6 +86,17 @@ export class TimerManager {
             logger.error('Failed to start timer, using static display');
             this.setStaticTimerDisplay(Math.ceil(duration / 1000));
         });
+    }
+
+    /**
+     * Play the countdown tick sound for the current remaining time, if a sound
+     * manager is present and sounds are enabled. The sound manager decides which
+     * seconds actually beep (e.g. 5, 3, 2, 1).
+     */
+    playCountdownSound(timeRemaining) {
+        if (this.soundManager?.isSoundsEnabled()) {
+            this.soundManager.playCountdownTick(Math.ceil(timeRemaining / 1000));
+        }
     }
 
     /**

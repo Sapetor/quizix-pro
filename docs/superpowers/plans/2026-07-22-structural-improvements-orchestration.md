@@ -9,6 +9,35 @@ Execution model: each phase below is one orchestration run (Workflow or parallel
 agents), with a verify gate before the next phase starts. Phases are ordered by
 dependency: tests land BEFORE the refactors they protect.
 
+## Status (executed 2026-07-23)
+
+- Phase 1 (scoring) — DONE. Server forks proved value-identical then deduped;
+  shared client module `public/js/utils/scoring-config.js`; 4,320-case parity
+  sweep, 0 mismatches.
+- Phase 2 (socket audit) — DONE. 6 dead handlers deleted (`rate-limited` was
+  live — kept); game-full messageKey pass-through fixed; player-change-name
+  schema-validated.
+- Phase 3 (tests) — DONE. Suite 594 → 912; socket/, game loop, frontend
+  gotchas, i18n parity (106 keys untranslated in 7 locales — whitelisted TODO);
+  coverage thresholds 20 → 55/45/55/55; quarantines resolved; visual gate made
+  runnable (PW_PORT, own-port CORS, onboarding seed, score/confetti masks) with
+  49 committed chromium-linux baselines.
+- Phase 4 (CSS) — PARTIAL. `@layer app, utilities` scaffold landed (verified
+  no-op), utilities extracted, 36 dead tokens deleted. BLOCKER FINDING: the
+  cascade REVERSES layer order for `!important`, and editorial/legacy fight
+  with `!important` on both sides — mechanical stripping is unsafe. Follow-up:
+  per-conflict-cluster co-neutralization (drop `!important` on both sides, let
+  layer order decide) behind the visual gate; then alias-collapse in
+  variables.css, active-question consolidation (needs editor-screen visual
+  coverage first), components.css split.
+- Phase 5 (god objects) — DONE. quiz-manager 2,130→1,622 (+3 modules);
+  game-manager 1,960→1,591 (StatisticsManager extracted, timers consolidated);
+  results-viewer facade 1,079→956 (extraction complete); event-bindings binder
+  replaces 12 inline onclick handlers (fixed a double-fire on return-to-main).
+  ~62 window.game bridges remain (many pinned by generated-HTML references).
+- Phase 6 (backend) — DONE except deliberately deferred: pino migration and
+  results-listing index (do when volume/K8s observability demands).
+
 ---
 
 ## Phase 1 — Scoring consolidation (correctness, contained) — M

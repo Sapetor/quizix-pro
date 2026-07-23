@@ -4,47 +4,22 @@
  */
 
 import { translationManager, showErrorAlert, showSuccessAlert } from '../utils/translation-manager.js';
-import { createQuestionElement } from '../utils/question-utils.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 import { logger, TIMING } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
-import { imagePathResolver, loadImageWithRetry as sharedLoadImageWithRetry } from '../utils/image-path-resolver.js';
+import { imagePathResolver } from '../utils/image-path-resolver.js';
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 import { getJSON, setJSON, removeItem } from '../utils/storage-utils.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
 import { dom, escapeHtml, show, hide } from '../utils/dom.js';
-import { readScoringConfigFromDOM } from '../utils/scoring-config.js';
 import { getFileManager } from '../ui/file-manager.js';
 import { openModal, closeModal } from '../utils/modal-utils.js';
 import { authManager } from '../utils/auth-manager.js';
 import { manimEditor } from './manim-editor.js';
-
-// Shared translation fallback map used for cleaning translation keys from loaded data
-const TRANSLATION_FALLBACKS = {
-    'multiple_choice': 'Multiple Choice',
-    'multiple_correct': 'Multiple Correct Answers',
-    'true_false': 'True/False',
-    'numeric': 'Numeric Answer',
-    'easy': 'Easy',
-    'medium': 'Medium',
-    'hard': 'Hard',
-    'time_seconds': 'Time (sec)',
-    'add_image': 'Add Image',
-    'remove_image': 'Remove Image',
-    'remove': 'Remove',
-    'a_is_correct': 'A is correct',
-    'b_is_correct': 'B is correct',
-    'c_is_correct': 'C is correct',
-    'd_is_correct': 'D is correct',
-    'true': 'True',
-    'false': 'False',
-    'question': 'Question',
-    'enter_question_preview': 'Enter your question above to see preview',
-    'enter_question_with_latex': 'Enter your question (supports LaTeX and code blocks)',
-    'toggle_live_preview': 'Live Preview',
-    'close_live_preview': 'Close Live Preview'
-};
+import * as settings from './modules/settings-persistence.js';
+import * as io from './modules/import-export.js';
+import * as editing from './modules/question-editing.js';
 
 export class QuizManager {
     constructor(uiManager) {
@@ -234,55 +209,14 @@ export class QuizManager {
      * Collect game settings from host screen UI elements
      */
     collectSettings() {
-        return {
-            randomizeQuestions: dom.get('randomize-questions')?.checked ?? false,
-            randomizeAnswers: dom.get('randomize-answers')?.checked ?? false,
-            useGlobalTime: dom.get('same-time-all')?.checked ?? false,
-            globalTimeLimit: parseInt(dom.get('default-time')?.value) || 20,
-            manualAdvance: dom.get('manual-advancement')?.checked ?? false,
-            consensusMode: dom.get('consensus-mode')?.checked ?? false,
-            consensusThreshold: dom.get('consensus-threshold')?.value ?? '66',
-            discussionTime: parseInt(dom.get('discussion-time')?.value) || 30,
-            allowChat: dom.get('allow-chat')?.checked ?? false,
-            // Saved to the quiz file: keep the threshold in raw seconds so it
-            // round-trips with the seconds-based UI input (see restoreSettings).
-            scoringConfig: readScoringConfigFromDOM(dom, { thresholdToMs: false })
-        };
+        return settings.collectSettings();
     }
 
     /**
      * Restore saved game settings to host screen UI elements
      */
-    restoreSettings(settings) {
-        if (!settings) return;
-
-        const setChecked = (id, val) => { const el = dom.get(id); if (el) el.checked = !!val; };
-        const setValue = (id, val) => { const el = dom.get(id); if (el) el.value = val; };
-
-        setChecked('randomize-questions', settings.randomizeQuestions);
-        setChecked('randomize-answers', settings.randomizeAnswers);
-        setChecked('same-time-all', settings.useGlobalTime);
-        setValue('default-time', settings.globalTimeLimit ?? 20);
-        setChecked('manual-advancement', settings.manualAdvance);
-        setChecked('consensus-mode', settings.consensusMode);
-        setValue('consensus-threshold', settings.consensusThreshold ?? '66');
-        setValue('discussion-time', settings.discussionTime ?? 30);
-        setChecked('allow-chat', settings.allowChat);
-
-        // Restore scoring config (backward-compatible: missing = defaults)
-        const sc = settings.scoringConfig;
-        if (sc) {
-            setChecked('time-bonus-enabled', sc.timeBonusEnabled ?? true);
-            setValue('time-bonus-threshold', sc.timeBonusThreshold ?? 0);
-            const dm = sc.difficultyMultipliers;
-            if (dm) {
-                setValue('easy-multiplier', dm.easy ?? 1);
-                setValue('medium-multiplier', dm.medium ?? 2);
-                setValue('hard-multiplier', dm.hard ?? 3);
-            }
-        }
-
-        logger.debug('Game settings restored from quiz file');
+    restoreSettings(savedSettings) {
+        return settings.restoreSettings(savedSettings);
     }
 
     /**
@@ -1249,19 +1183,7 @@ export class QuizManager {
      * Create or get remove button for a question item
      */
     ensureRemoveButton(questionItem) {
-        let removeButton = questionItem.querySelector('.remove-question');
-        if (removeButton) return removeButton;
-
-        removeButton = document.createElement('button');
-        removeButton.className = 'btn secondary remove-question';
-        removeButton.onclick = () => {
-            questionItem.remove();
-            this.updateQuestionsUI();
-        };
-        removeButton.setAttribute('data-translate', 'remove');
-        removeButton.textContent = translationManager.getTranslationSync('remove') || 'Remove';
-        questionItem.appendChild(removeButton);
-        return removeButton;
+        return editing.ensureRemoveButton(this, questionItem);
     }
 
     /**
@@ -1269,63 +1191,14 @@ export class QuizManager {
      * Updates both remove button visibility and question numbering in single operation
      */
     updateQuestionsUI() {
-        const questionsContainer = dom.get('questions-container');
-        if (!questionsContainer) return;
-
-        const questionItems = questionsContainer.querySelectorAll('.question-item');
-        const hasMultipleQuestions = questionItems.length > 1;
-
-        logger.debug(`updateQuestionsUI: Found ${questionItems.length} questions, hasMultipleQuestions: ${hasMultipleQuestions}`);
-
-        questionItems.forEach((questionItem, index) => {
-            // Update data-question attribute only if needed
-            if (questionItem.getAttribute('data-question') !== index.toString()) {
-                questionItem.setAttribute('data-question', index);
-
-                // Update the question heading with proper translation
-                const questionHeading = questionItem.querySelector('h3');
-                if (questionHeading) {
-                    questionHeading.innerHTML = `<span data-translate="question">Question</span> ${index + 1}`;
-                    translationManager.translateContainer(questionHeading);
-                }
-            }
-
-            // Handle remove button visibility
-            const removeButton = this.ensureRemoveButton(questionItem);
-            if (hasMultipleQuestions) {
-                show(removeButton, 'visible-block');
-            } else {
-                hide(removeButton);
-            }
-        });
-
-        logger.debug(`Updated questions UI for ${questionItems.length} questions`);
+        return editing.updateQuestionsUI(this);
     }
 
     /**
      * Add question from data object
      */
     addQuestionFromData(questionData) {
-        const questionsContainer = dom.get('questions-container');
-        if (!questionsContainer) return;
-
-        const questionElement = createQuestionElement(questionData);
-        questionsContainer.appendChild(questionElement);
-
-        // Initialize video section for the new question element
-        manimEditor.initVideoSection(questionElement);
-
-        // Clean translation keys from text content WITHOUT using innerHTML
-        // This preserves the DOM structure and form field values
-        this.cleanTranslationKeysInElement(questionElement);
-
-        logger.debug('Cleaned translation keys from question element');
-
-        // Populate the question data
-        this.populateQuestionElement(questionElement, questionData);
-
-        // Translate the individual question element after populating data
-        translationManager.translateContainer(questionElement);
+        return editing.addQuestionFromData(this, questionData);
     }
 
     /**
@@ -1333,123 +1206,35 @@ export class QuizManager {
      * @returns {string|null} Replaced text if changes made, null otherwise
      */
     replaceTranslationKeys(text) {
-        if (!text) return null;
-
-        let result = text;
-        let changed = false;
-
-        for (const [key, value] of Object.entries(TRANSLATION_FALLBACKS)) {
-            const regex = new RegExp(`\\b${key}\\b`, 'g');
-            if (regex.test(result)) {
-                result = result.replace(regex, value);
-                changed = true;
-            }
-        }
-
-        return changed ? result : null;
+        return editing.replaceTranslationKeys(text);
     }
 
     /**
      * Clean translation keys from an element without destroying DOM structure
      */
     cleanTranslationKeysInElement(element) {
-        // Clean text content in text nodes (preserving DOM structure)
-        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
-
-        const textNodes = [];
-        let node;
-        while (node = walker.nextNode()) {
-            textNodes.push(node);
-        }
-
-        textNodes.forEach(textNode => {
-            const replaced = this.replaceTranslationKeys(textNode.textContent);
-            if (replaced) {
-                textNode.textContent = replaced;
-            }
-        });
-
-        // Clean placeholder attributes
-        element.querySelectorAll('[placeholder]').forEach(el => {
-            const replaced = this.replaceTranslationKeys(el.getAttribute('placeholder'));
-            if (replaced) {
-                el.setAttribute('placeholder', replaced);
-            }
-        });
+        return editing.cleanTranslationKeysInElement(element);
     }
 
     /**
      * Clean translation keys from loaded data (legacy method for backward compatibility)
      */
     cleanTranslationKeys(htmlString) {
-        return this.replaceTranslationKeys(htmlString) || htmlString;
+        return editing.cleanTranslationKeys(htmlString);
     }
 
     /**
      * Populate question element with data
      */
     populateQuestionElement(questionElement, questionData) {
-        logger.debug('Populating question element with data:', questionData);
-
-        this.populateBasicQuestionData(questionElement, questionData);
-        this.populateQuestionImage(questionElement, questionData);
-        this.populateTypeSpecificData(questionElement, questionData);
-
-        // Populate video/Manim data
-        if (questionData.video || questionData.videoManimCode || questionData.explanationVideo || questionData.explanationVideoManimCode) {
-            manimEditor.populateVideoData(questionElement, questionData);
-        }
+        return editing.populateQuestionElement(this, questionElement, questionData);
     }
 
     /**
      * Populate basic question data (text, type, time, difficulty)
      */
     populateBasicQuestionData(questionElement, questionData) {
-        // Set question text
-        const questionText = questionElement.querySelector('.question-text');
-        if (questionText) {
-            questionText.value = questionData.question || '';
-            logger.debug('Set question text:', questionData.question);
-        } else {
-            logger.warn('Question text element not found');
-        }
-
-        // Set question type
-        const questionType = questionElement.querySelector('.question-type');
-        if (questionType) {
-            questionType.value = questionData.type || 'multiple-choice';
-            // Trigger change event to update UI
-            questionType.dispatchEvent(new Event('change'));
-        }
-
-        // Set question time (with NaN protection)
-        // Match the selector used in extractQuestionData: .question-time-limit
-        const questionTime = questionElement.querySelector('.question-time-limit');
-        if (questionTime) {
-            // Support both 'timeLimit' (new) and 'time' (old) for backward compatibility
-            const timeValue = parseInt(questionData.timeLimit || questionData.time, 10);
-            questionTime.value = !isNaN(timeValue) && timeValue > 0 ? timeValue : 30;
-        }
-
-        // Set question difficulty
-        const questionDifficulty = questionElement.querySelector('.question-difficulty');
-        if (questionDifficulty) {
-            questionDifficulty.value = questionData.difficulty || 'medium';
-        }
-
-        // Set explanation (optional field from AI generator or manual entry)
-        const questionExplanation = questionElement.querySelector('.question-explanation');
-        if (questionExplanation && questionData.explanation) {
-            questionExplanation.value = questionData.explanation;
-            logger.debug('Set explanation:', questionData.explanation.substring(0, 50) + '...');
-        }
-
-        // Ensure concept container exists (for backward compatibility with old questions)
-        // and populate concept tags if present
-        this.ensureConceptTagsContainer(questionElement);
-        if (questionData.concepts && Array.isArray(questionData.concepts)) {
-            this.populateConceptTags(questionElement, questionData.concepts);
-        }
+        return editing.populateBasicQuestionData(this, questionElement, questionData);
     }
 
     /**
@@ -1458,37 +1243,7 @@ export class QuizManager {
      * @returns {HTMLElement|null} The concept-tags-list element
      */
     ensureConceptTagsContainer(questionElement) {
-        let tagsList = questionElement.querySelector('.concept-tags-list');
-        if (tagsList) return tagsList;
-
-        // Container doesn't exist - inject it (for backward compatibility with old questions)
-        const questionMeta = questionElement.querySelector('.question-meta');
-        if (!questionMeta) return null;
-
-        const container = document.createElement('div');
-        container.className = 'concept-tags-container';
-        container.innerHTML = `
-            <label data-translate="concepts">Concepts</label>
-            <div class="concept-tags-input">
-                <div class="concept-tags-list"></div>
-                <input type="text" class="concept-input" placeholder="Add concept..." data-translate-placeholder="add_concept" maxlength="30">
-            </div>
-            <div class="concept-hint" data-translate="concept_hint">Press Enter to add (max 5)</div>
-        `;
-
-        // Insert before time-limit-container
-        const timeContainer = questionMeta.querySelector('.time-limit-container');
-        if (timeContainer) {
-            questionMeta.insertBefore(container, timeContainer);
-        } else {
-            questionMeta.appendChild(container);
-        }
-
-        // Note: Event handling uses document-level delegation (see setupEventDelegation)
-        // so no specific listener setup needed for the new input
-
-        logger.debug('Injected concept-tags-container for backward compatibility');
-        return container.querySelector('.concept-tags-list');
+        return editing.ensureConceptTagsContainer(questionElement);
     }
 
     /**
@@ -1497,14 +1252,7 @@ export class QuizManager {
      * @param {string[]} concepts - Array of concept strings
      */
     populateConceptTags(questionElement, concepts) {
-        const tagsList = this.ensureConceptTagsContainer(questionElement);
-        if (!tagsList) return;
-
-        tagsList.innerHTML = '';
-        concepts.slice(0, 5).forEach(concept => {
-            this.createConceptTag(tagsList, concept, false);
-        });
-        logger.debug('Populated concept tags:', concepts);
+        return editing.populateConceptTags(this, questionElement, concepts);
     }
 
     /**
@@ -1515,46 +1263,14 @@ export class QuizManager {
      * @returns {HTMLElement} The created tag element
      */
     createConceptTag(tagsList, concept, triggerAutoSave = true) {
-        const tag = document.createElement('span');
-        tag.className = 'concept-tag';
-        tag.dataset.concept = concept;
-        tag.innerHTML = `${escapeHtml(concept)}<button type="button" class="concept-tag-remove" aria-label="Remove">×</button>`;
-
-        tag.querySelector('.concept-tag-remove').addEventListener('click', (e) => {
-            e.stopPropagation();
-            tag.remove();
-            if (triggerAutoSave) {
-                this.scheduleAutoSave();
-            }
-        });
-
-        tagsList.appendChild(tag);
-        return tag;
+        return editing.createConceptTag(this, tagsList, concept, triggerAutoSave);
     }
 
     /**
      * Populate question image data with proper error handling
      */
     populateQuestionImage(questionElement, questionData) {
-        if (!questionData.image) return;
-
-        logger.debug('Populating image for question:', questionData.image, 'WebP:', questionData.imageWebp);
-        const imageElement = questionElement.querySelector('.question-image');
-        const imagePreview = questionElement.querySelector('.image-preview');
-
-        if (!imageElement || !imagePreview) {
-            logger.debug('Image elements not found in question DOM');
-            return;
-        }
-
-        // Use WebP version for display if available (better compression)
-        const displayImage = questionData.imageWebp || questionData.image;
-        const imageSrc = this.resolveImageSource(displayImage);
-        this.setupImageElement(imageElement, imageSrc, questionData.image, questionData.imageWebp);
-        this.setupImageHandlers(imageElement, imagePreview, questionData.image);
-
-        show(imagePreview, 'visible-block');
-        logger.debug('Image populated:', imageElement.src);
+        return editing.populateQuestionImage(this, questionElement, questionData);
     }
 
     /**
@@ -1562,7 +1278,7 @@ export class QuizManager {
      * Delegates to imagePathResolver for consistent path handling
      */
     resolveImageSource(imageData) {
-        return imagePathResolver.toDisplayPath(imageData);
+        return editing.resolveImageSource(imageData);
     }
 
     /**
@@ -1573,86 +1289,35 @@ export class QuizManager {
      * @param {string|null} webpImageData - The WebP image storage path (if available)
      */
     setupImageElement(imageElement, imageSrc, originalImageData, webpImageData = null) {
-        imageElement.src = imageSrc;
-        imageElement.dataset.url = originalImageData;
-        if (webpImageData) {
-            imageElement.dataset.webpUrl = webpImageData;
-        }
+        return editing.setupImageElement(imageElement, imageSrc, originalImageData, webpImageData);
     }
 
     /**
      * Set up image error and load handlers
      */
     setupImageHandlers(imageElement, imagePreview, imageData) {
-        // Add load success handler first
-        imageElement.onload = () => {
-            logger.debug('✅ Quiz builder image loaded successfully:', imageData);
-            show(imagePreview, 'visible-block');
-        };
-
-        // Set up retry logic similar to preview renderer
-        this.loadImageWithRetry(imageElement, imageElement.src, 3, 1, imagePreview, imageData);
+        return editing.setupImageHandlers(this, imageElement, imagePreview, imageData);
     }
 
     /**
      * Handle image load errors with user-friendly messaging
      */
     handleImageLoadError(imageElement, imagePreview, imageData) {
-        // Prevent infinite loop - remove error handler after first failure
-        imageElement.onerror = null;
-
-        logger.warn('⚠️ Quiz builder image failed to load:', imageData);
-
-        // Hide the broken image
-        hide(imageElement);
-
-        // Create or update error message
-        this.showImageErrorMessage(imagePreview, imageData);
-
-        // Keep preview visible with error message
-        show(imagePreview, 'visible-block');
-        logger.debug('Shown image error message in quiz builder');
+        return editing.handleImageLoadError(this, imageElement, imagePreview, imageData);
     }
 
     /**
      * Load image with retry logic for WSL environments (delegates to shared utility)
      */
     loadImageWithRetry(img, src, maxRetries = 3, _attempt = 1, imagePreview = null, imageData = '') {
-        sharedLoadImageWithRetry(img, src, {
-            maxRetries,
-            useCacheBuster: true,
-            onError: () => {
-                this.handleImageLoadError(img, imagePreview, imageData || src);
-            }
-        });
+        return editing.loadImageWithRetry(this, img, src, maxRetries, _attempt, imagePreview, imageData);
     }
 
     /**
      * Show user-friendly image error message
      */
     showImageErrorMessage(imagePreview, imageData) {
-        let errorMsg = imagePreview.querySelector('.image-error-message');
-        if (!errorMsg) {
-            errorMsg = document.createElement('div');
-            errorMsg.className = 'image-error-message';
-            errorMsg.style.cssText = `
-                padding: 15px;
-                text-align: center;
-                background: rgba(255, 255, 255, 0.05);
-                border: 2px dashed rgba(255, 255, 255, 0.3);
-                border-radius: 8px;
-                color: var(--text-primary);
-                font-size: 0.85rem;
-                margin: 5px 0;
-            `;
-            imagePreview.appendChild(errorMsg);
-        }
-
-        errorMsg.innerHTML = `
-            <div style="margin-bottom: 6px;">📷 ${translationManager.getTranslationSync('image_not_found')}</div>
-            <div style="font-size: 0.75rem; opacity: 0.7;">${imageData}</div>
-            <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 3px;">${translationManager.getTranslationSync('image_remove_or_upload')}</div>
-        `;
+        return editing.showImageErrorMessage(imagePreview, imageData);
     }
 
     /**
@@ -1663,14 +1328,7 @@ export class QuizManager {
      * - AI uses correctAnswer/correctAnswers, registry expects correctIndex/correctIndices
      */
     populateTypeSpecificData(questionElement, questionData) {
-        setTimeout(() => {
-            logger.debug('Populating type-specific data for:', questionData.type);
-
-            // Normalize property names from AI generator to match QuestionTypeRegistry expectations
-            const normalizedData = this.normalizeQuestionData(questionData);
-
-            QuestionTypeRegistry.populateQuestion(questionData.type, questionElement, normalizedData);
-        }, TIMING.DOM_UPDATE_DELAY);
+        return editing.populateTypeSpecificData(this, questionElement, questionData);
     }
 
     /**
@@ -1678,128 +1336,28 @@ export class QuizManager {
      * Maps AI generator output to QuestionTypeRegistry expected format
      */
     normalizeQuestionData(questionData) {
-        const normalized = { ...questionData };
-
-        switch (questionData.type) {
-            case 'multiple-choice':
-                // AI uses correctAnswer (index), registry expects correctIndex
-                if (normalized.correctAnswer !== undefined && normalized.correctIndex === undefined) {
-                    normalized.correctIndex = normalized.correctAnswer;
-                    logger.debug('Normalized correctAnswer -> correctIndex:', normalized.correctIndex);
-                }
-                break;
-
-            case 'multiple-correct':
-                // AI uses correctAnswers (array), registry expects correctIndices
-                if (normalized.correctAnswers !== undefined && normalized.correctIndices === undefined) {
-                    normalized.correctIndices = normalized.correctAnswers;
-                    logger.debug('Normalized correctAnswers -> correctIndices:', normalized.correctIndices);
-                }
-                break;
-
-            case 'true-false':
-                // AI may use string "true"/"false", registry expects boolean
-                if (typeof normalized.correctAnswer === 'string') {
-                    normalized.correctAnswer = normalized.correctAnswer.toLowerCase() === 'true';
-                    logger.debug('Normalized true-false correctAnswer string -> boolean:', normalized.correctAnswer);
-                }
-                break;
-
-            // numeric already uses correctAnswer as number, which matches registry
-        }
-
-        return normalized;
+        return editing.normalizeQuestionData(questionData);
     }
 
     /**
      * Import quiz from file
      */
     async importQuiz() {
-        const fileInput = dom.get('import-file-input');
-        if (fileInput) {
-            fileInput.click();
-        }
+        return io.importQuiz();
     }
 
     /**
      * Handle file import
      */
     async handleFileImport(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        if (!file.name.endsWith('.json')) {
-            showErrorAlert('invalid_file_format');
-            return;
-        }
-
-        await this.errorHandler.wrapAsyncOperation(async () => {
-            const text = await file.text();
-            const quizData = JSON.parse(text);
-
-            // Validate quiz data structure
-            if (!quizData.title || !quizData.questions || !Array.isArray(quizData.questions)) {
-                showErrorAlert('invalid_quiz_format');
-                return;
-            }
-
-            // Validate questions
-            const validationErrors = this.validateQuestions(quizData.questions);
-            if (validationErrors.length > 0) {
-                translationManager.showAlert('error', translationManager.getTranslationSync('invalid_quiz_questions') + '\\n' + validationErrors.join('\\n'));
-                return;
-            }
-
-            // Load the quiz — imported quizzes are new, clear loaded state
-            await this.populateQuizBuilder(quizData);
-            this._loadedFilename = null;
-            this._loadedTitle = null;
-            showSuccessAlert('quiz_imported_successfully');
-        }, {
-            context: { operation: 'importQuiz', filename: file.name },
-            fallback: () => showErrorAlert('failed_import_quiz')
-        });
-
-        // Clear file input
-        event.target.value = '';
+        return io.handleFileImport(this, event);
     }
 
     /**
      * Export quiz to file
      */
     async exportQuiz() {
-        const title = dom.get('quiz-title')?.value?.trim();
-        if (!title) {
-            showErrorAlert('please_enter_quiz_title');
-            return;
-        }
-
-        const questions = this.collectQuestions();
-        if (questions.length === 0) {
-            showErrorAlert('please_add_one_question');
-            return;
-        }
-
-        const quizData = {
-            title: title,
-            questions: questions,
-            createdAt: new Date().toISOString()
-        };
-
-        await this.errorHandler.wrapAsyncOperation(async () => {
-            const dataStr = JSON.stringify(quizData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
-            link.click();
-
-            showSuccessAlert('quiz_exported_successfully');
-        }, {
-            context: { operation: 'exportQuiz', title },
-            fallback: () => showErrorAlert('failed_export_quiz')
-        });
+        return io.exportQuiz(this);
     }
 
     /**
@@ -1808,79 +1366,14 @@ export class QuizManager {
      * @param {boolean} showAlerts - Whether to show success alerts
      */
     addGeneratedQuestion(questionData, _showAlerts = true) {
-        logger.debug('🔧 AddGeneratedQuestion - Starting with question:', {
-            type: questionData.type,
-            question: questionData.question?.substring(0, 50) + '...'
-        });
-
-        const questionElements = document.querySelectorAll('.question-item');
-
-        // Check if there's an empty default question we can replace
-        const firstQuestion = questionElements[0];
-        if (firstQuestion && this.isEmptyQuestion(firstQuestion)) {
-            logger.debug('🔧 AddGeneratedQuestion - Using existing empty question');
-
-            // Use same processing as addQuestionFromData for consistency
-            this.cleanTranslationKeysInElement(firstQuestion);
-            this.populateQuestionElement(firstQuestion, questionData);
-            translationManager.translateContainer(firstQuestion);
-            // Update preview after populating (programmatic value changes don't fire input events)
-            this.updatePreviewSafely();
-            return Promise.resolve();
-        }
-
-        // Add a new question — return a Promise that resolves when population is done
-        return new Promise((resolve, reject) => {
-            logger.debug('🔧 AddGeneratedQuestion - Creating new question element');
-            const addQuestion = this._getAddQuestionFn();
-            if (!addQuestion) {
-                logger.error('addQuestion function not available');
-                reject(new Error('addQuestion function not available'));
-                return;
-            }
-
-            const initialCount = questionElements.length;
-            addQuestion();
-
-            // Use retry mechanism to find the newly added DOM element
-            const maxRetries = 10;
-            const retryDelay = TIMING.DOM_READY_CHECK;
-            let retryCount = 0;
-
-            const findAndPopulate = () => {
-                const updatedQuestionElements = document.querySelectorAll('.question-item');
-
-                if (updatedQuestionElements.length > initialCount) {
-                    const targetElement = updatedQuestionElements[updatedQuestionElements.length - 1];
-                    logger.debug('🔧 AddGeneratedQuestion - New element created, populating data');
-                    this.cleanTranslationKeysInElement(targetElement);
-                    this.populateQuestionElement(targetElement, questionData);
-                    translationManager.translateContainer(targetElement);
-                    this.updatePreviewSafely();
-                    resolve();
-                } else if (retryCount < maxRetries) {
-                    retryCount++;
-                    setTimeout(findAndPopulate, retryDelay);
-                } else {
-                    logger.error('🔧 AddGeneratedQuestion - Failed to find new question element after retries');
-                    resolve(); // Resolve anyway to not block remaining questions
-                }
-            };
-
-            // Start checking after initial delay
-            setTimeout(findAndPopulate, TIMING.DOM_READY_CHECK);
-        });
+        return editing.addGeneratedQuestion(this, questionData, _showAlerts);
     }
 
     /**
      * Check if a question element is empty/default
      */
     isEmptyQuestion(questionElement) {
-        const questionText = questionElement.querySelector('.question-text')?.value?.trim();
-        if (questionText) return false;
-
-        const options = questionElement.querySelectorAll('.option');
-        return Array.from(options).every(opt => !opt.value?.trim());
+        return editing.isEmptyQuestion(questionElement);
     }
 
     /**

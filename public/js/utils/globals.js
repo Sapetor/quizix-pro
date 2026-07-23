@@ -926,32 +926,26 @@ window.QM.functions = globalFunctions;
 // ============================================================================
 // Window Global Assignments (Required for HTML onclick handlers)
 // ============================================================================
+//
+// INCREMENTAL MIGRATION: inline onclick/onchange handlers are being replaced by
+// real addEventListener wiring (see core/event-bindings.js). Assignments removed
+// here are for controls already migrated. The remaining globals are still needed
+// because they are called from dynamically-generated HTML strings (question-utils,
+// results-viewer, consensus-manager, etc.) or from inline attributes not yet
+// migrated. Do NOT delete a global without grepping index.html AND all JS first.
 
 // HTML onclick/onchange handlers
-window.toggleGlobalFontSize = toggleGlobalFontSize;
+window.toggleGlobalFontSize = toggleGlobalFontSize; // inline fallback defined in index.html <head>
 window.toggleTheme = toggleTheme;
-window.removeImage = removeImage;
-window.togglePreviewMode = togglePreviewMode;
-window.scrollToCurrentQuestion = scrollToCurrentQuestion;
-window.updateQuestionType = updateQuestionType;
-window.updateQuestionTypeFromPreview = updateQuestionTypeFromPreview;
-window.updateTimeLimit = updateTimeLimit;
-window.updateGlobalTime = updateGlobalTime;
-window.returnToMainFromHeader = returnToMainFromHeader;
+window.removeImage = removeImage; // generated HTML: question-utils.js
+window.updateQuestionType = updateQuestionType; // generated HTML: question-utils.js
+window.updateTimeLimit = updateTimeLimit; // generated HTML: question-utils.js
 
 // Question pagination (desktop editor)
-window.goToPreviousQuestion = goToPreviousQuestion;
-window.goToNextQuestion = goToNextQuestion;
 window.showQuestion = showQuestion;
 window.initializeQuestionPagination = initializeQuestionPagination;
 window.navigateToNewQuestion = navigateToNewQuestion;
 window.handleQuestionRemoved = handleQuestionRemoved;
-
-// Quiz settings modal
-window.openQuizSettingsModal = openQuizSettingsModal;
-window.closeQuizSettingsModal = closeQuizSettingsModal;
-window.toggleGlobalTimeModal = toggleGlobalTimeModal;
-window.toggleConsensusModeModal = toggleConsensusModeModal;
 
 // Cross-module communication
 window.setGlobalFontSize = setGlobalFontSize;

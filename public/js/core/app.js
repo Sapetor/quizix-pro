@@ -27,6 +27,7 @@ import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
 import { openModal, closeModal, createModalBindings } from '../utils/modal-utils.js';
 import { initHeaderController, syncEditorBreadcrumbTitle } from '../ui/header-controller.js';
+import { initEventBindings } from './event-bindings.js';
 // Results viewer will be lazy loaded when needed
 
 export class QuizGame {
@@ -351,6 +352,9 @@ export class QuizGame {
      * Initialize main event listeners
      */
     initializeEventListeners() {
+        // Controls migrated off inline HTML onclick/onchange attributes
+        initEventBindings();
+
         // Screen navigation
         bindElement('host-btn', 'click', () => {
             this.uiManager.showScreen('host-screen');
