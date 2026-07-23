@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# QuizMaster Pro Docker Build Script
+# Quizix Pro Docker Build Script
 # Builds and deploys the containerized application
 
 set -e  # Exit on any error
@@ -58,7 +58,7 @@ check_compose() {
 
 # Build the Docker image
 build_image() {
-    log_info "Building QuizMaster Pro Docker image..."
+    log_info "Building Quizix Pro Docker image..."
     
     # Build with docker-compose to ensure network setup
     $COMPOSE_CMD build --no-cache
@@ -73,7 +73,7 @@ build_image() {
 
 # Deploy the application
 deploy_app() {
-    log_info "Deploying QuizMaster Pro..."
+    log_info "Deploying Quizix Pro..."
     
     # Stop existing containers
     $COMPOSE_CMD down
@@ -82,9 +82,9 @@ deploy_app() {
     $COMPOSE_CMD up -d
     
     if [ $? -eq 0 ]; then
-        log_success "QuizMaster Pro deployed successfully"
+        log_success "Quizix Pro deployed successfully"
     else
-        log_error "Failed to deploy QuizMaster Pro"
+        log_error "Failed to deploy Quizix Pro"
         exit 1
     fi
 }
@@ -133,7 +133,7 @@ show_status() {
     # Get host IP for local network access
     HOST_IP=$(hostname -I | awk '{print $1}')
     if [ ! -z "$HOST_IP" ]; then
-        log_success "QuizMaster Pro is accessible at: http://$HOST_IP:3000"
+        log_success "Quizix Pro is accessible at: http://$HOST_IP:3000"
     fi
 }
 
@@ -162,7 +162,7 @@ test_gitlab_connectivity() {
 
 # Main execution
 main() {
-    log_info "Starting QuizMaster Pro Docker deployment..."
+    log_info "Starting Quizix Pro Docker deployment..."
     
     # Pre-flight checks
     check_docker
@@ -189,7 +189,7 @@ main() {
     # Show status
     show_status
     
-    log_success "QuizMaster Pro deployment completed!"
+    log_success "Quizix Pro deployment completed!"
     echo ""
     echo "Next steps:"
     echo "1. Edit .env file to configure GitLab URL and other settings"

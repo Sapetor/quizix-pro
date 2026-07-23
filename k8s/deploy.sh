@@ -1,5 +1,5 @@
 #!/bin/bash
-# Kubernetes Deployment Script for QuizMaster Pro
+# Kubernetes Deployment Script for Quizix Pro
 
 set -e  # Exit on error
 
@@ -160,7 +160,7 @@ show_access_info() {
 # Main script
 main() {
     echo "========================================"
-    echo "QuizMaster Pro - Kubernetes Deployment"
+    echo "Quizix Pro - Kubernetes Deployment"
     echo "========================================"
     echo ""
 

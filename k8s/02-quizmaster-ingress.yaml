@@ -1,4 +1,4 @@
-# Standalone Ingress for QuizMaster Pro
+# Standalone Ingress for Quizix Pro
 # Uses path-based routing matching cluster's namespace isolation policy
 # Path must match namespace name: /quizmaster for quizmaster namespace
 apiVersion: networking.k8s.io/v1
@@ -63,13 +63,13 @@ spec:
 #     nginx.ingress.kubernetes.io/affinity: "cookie"
 #     nginx.ingress.kubernetes.io/session-cookie-name: "quizmaster-affinity"
 #
-# IMPORTANT: QuizMaster Pro service must be in the same namespace as your ingress.
+# IMPORTANT: Quizix Pro service must be in the same namespace as your ingress.
 # If you want to use the 'lab' namespace instead of 'quizmaster', change the namespace
 # in 01-quizmaster-pro.yaml from 'quizmaster' to 'lab'
 
 ---
 # Option 3: Cross-namespace service reference (if keeping separate namespaces)
-# If you want to keep QuizMaster in 'quizmaster' namespace but access from 'lab' ingress:
+# If you want to keep Quizix in 'quizmaster' namespace but access from 'lab' ingress:
 #
 # Create an ExternalName service in 'lab' namespace that points to 'quizmaster':
 #

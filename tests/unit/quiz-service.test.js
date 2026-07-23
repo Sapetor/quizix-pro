@@ -22,6 +22,7 @@ const mockWslMonitor = {
 jest.mock('fs', () => ({
     promises: {
         writeFile: jest.fn(),
+        rename: jest.fn(),
         readFile: jest.fn(),
         readdir: jest.fn(),
         stat: jest.fn(),
@@ -82,6 +83,21 @@ describe('QuizService', () => {
             expect(result.filename).toMatch(/^test_quiz_\d+\.json$/);
             expect(result.id).toBeDefined();
             expect(mockWslMonitor.trackFileOperation).toHaveBeenCalled();
+        });
+
+        test('should persist atomically: write to .tmp then rename into place', async () => {
+            await quizService.saveQuiz('Atomic Quiz', [{ question: 'Q1?' }]);
+
+            // The real path is only written via a temp file + rename, never a
+            // direct write to the final destination.
+            expect(fs.writeFile).toHaveBeenCalledTimes(1);
+            const [writtenPath] = fs.writeFile.mock.calls[0];
+            expect(writtenPath).toMatch(/\.json\.tmp$/);
+
+            expect(fs.rename).toHaveBeenCalledTimes(1);
+            const [tmpArg, finalArg] = fs.rename.mock.calls[0];
+            expect(tmpArg).toBe(writtenPath);
+            expect(finalArg).toBe(writtenPath.replace(/\.tmp$/, ''));
         });
 
         test('should reject empty title', async () => {

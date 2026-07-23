@@ -1,4 +1,4 @@
-# QuizMaster Pro - Cluster Deployment Guide
+# Quizix Pro - Cluster Deployment Guide
 
 This deployment is configured to match your cluster's patterns and uses the `quizmaster` namespace.
 
@@ -16,7 +16,7 @@ This configuration has been adapted to match your cluster's deployment patterns:
 ✅ **ConfigMap with envFrom** - Consistent with your server pattern
 ✅ **imagePullPolicy** - Ready for both IfNotPresent and Always
 
-**Key additions for QuizMaster Pro:**
+**Key additions for Quizix Pro:**
 - 🔌 **Socket.IO support** - Extended timeout (3600s vs your 60s) + WebSocket annotations
 - ❤️ **Health probes** - `/health` and `/ready` endpoints
 - 💾 **Persistent storage** - 3 PVCs for quizzes, results, and uploads
@@ -125,11 +125,11 @@ kubectl create secret docker-registry dockerhub-cred \
 
 ## External Access
 
-Your cluster uses **path-based routing** (no host/domain names). QuizMaster Pro provides 3 ingress options:
+Your cluster uses **path-based routing** (no host/domain names). Quizix Pro provides 3 ingress options:
 
 ### Option 1: Standalone Ingress (Simplest)
 
-Deploy QuizMaster Pro with its own ingress:
+Deploy Quizix Pro with its own ingress:
 
 ```bash
 kubectl apply -f 02-quizmaster-ingress.yaml
@@ -138,13 +138,13 @@ kubectl apply -f 02-quizmaster-ingress.yaml
 Access at: **`http://your-cluster-ip/quiz`**
 
 This creates a separate ingress in the `quizmaster` namespace with:
-- Path: `/quiz` → QuizMaster Pro
+- Path: `/quiz` → Quizix Pro
 - Increased timeout (3600s) for Socket.IO WebSocket connections
 - Session affinity for sticky sessions
 
 ### Option 2: Integrate into Existing lab-apps Ingress (Recommended)
 
-Add QuizMaster Pro to your existing `lab-apps` ingress:
+Add Quizix Pro to your existing `lab-apps` ingress:
 
 **1. Change namespace to `lab` in `01-quizmaster-pro.yaml`:**
 ```bash
@@ -206,7 +206,7 @@ Access at: **`http://your-cluster-ip/quiz`**
 
 ### Option 3: Cross-Namespace Access
 
-Keep QuizMaster in `quizmaster` namespace but access from `lab` ingress using ExternalName service. See instructions in `02-quizmaster-ingress.yaml`.
+Keep Quizix in `quizmaster` namespace but access from `lab` ingress using ExternalName service. See instructions in `02-quizmaster-ingress.yaml`.
 
 ## Health Checks
 

@@ -1,6 +1,6 @@
-# Multi-stage Dockerfile for QuizMaster Pro
+# Multi-stage Dockerfile for Quizix Pro
 # Stage 1: Base image with dependencies
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init git
@@ -23,14 +23,14 @@ FROM base AS production-deps
 RUN npm ci --only=production
 
 # Stage 4: Manim venv (built on Alpine so C extensions are musl-compatible)
-FROM node:18-alpine AS manim-builder
+FROM node:22-alpine AS manim-builder
 RUN apk add --no-cache python3 py3-pip python3-dev ffmpeg \
     cairo-dev pango-dev gcc g++ musl-dev pkgconf
 RUN python3 -m venv /opt/manim-env && \
     /opt/manim-env/bin/pip install --no-cache-dir manim
 
 # Stage 5: Final production image
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 
 # Install dumb-init + Manim runtime deps
 RUN apk add --no-cache dumb-init python3 ffmpeg cairo pango

@@ -6,6 +6,7 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const { atomicWriteFile } = require('./atomic-write');
 
 class ResultsService {
     constructor(logger, resultsDir = 'results') {
@@ -75,11 +76,7 @@ class ResultsService {
 
         // Defense-in-depth: resolve through validatePath like the read/delete paths
         const filePath = this.validatePath(filename);
-        await fs.writeFile(
-            filePath,
-            JSON.stringify(resultsData, null, 2),
-            'utf8'
-        );
+        await atomicWriteFile(filePath, JSON.stringify(resultsData, null, 2));
 
         this.logger.debug(`Results saved successfully: ${filename}`);
 

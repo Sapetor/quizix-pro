@@ -37,13 +37,14 @@ function updateServiceWorker(version) {
     const swPath = path.join(__dirname, '..', 'public', 'sw.js');
     let content = fs.readFileSync(swPath, 'utf8');
 
-    // Update CACHE_VERSION line
-    const oldVersionMatch = content.match(/const CACHE_VERSION = '([^']+)'/);
+    // Update the BUILD_STAMP fallback. The __CACHE_VERSION__ placeholder is left
+    // untouched — the server injects the live version into it at request time.
+    const oldVersionMatch = content.match(/const BUILD_STAMP = '([^']+)'/);
     const oldVersion = oldVersionMatch ? oldVersionMatch[1] : 'unknown';
 
     content = content.replace(
-        /const CACHE_VERSION = '[^']+'/,
-        `const CACHE_VERSION = '${version}'`
+        /const BUILD_STAMP = '[^']+'/,
+        `const BUILD_STAMP = '${version}'`
     );
 
     fs.writeFileSync(swPath, content, 'utf8');

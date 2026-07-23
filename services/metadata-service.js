@@ -8,6 +8,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
+const { atomicWriteFile } = require('./atomic-write');
 
 // Password hashing constants
 const PBKDF2_ITERATIONS = 100000;
@@ -176,7 +177,7 @@ class MetadataService {
      */
     async saveMetadata() {
         await this.wslMonitor.trackFileOperation(
-            () => fs.writeFile(this.metadataPath, JSON.stringify(this.metadata, null, 2), 'utf8'),
+            () => atomicWriteFile(this.metadataPath, JSON.stringify(this.metadata, null, 2)),
             'Save quiz metadata'
         );
     }

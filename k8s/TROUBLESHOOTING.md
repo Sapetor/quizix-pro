@@ -1,6 +1,6 @@
 # Kubernetes Troubleshooting Guide
 
-This guide documents common issues and fixes for the Quizmaster Pro deployment.
+This guide documents common issues and fixes for the Quizix Pro deployment.
 
 ## Cluster Info
 

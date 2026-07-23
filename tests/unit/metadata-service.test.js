@@ -10,6 +10,7 @@ const path = require('path');
 jest.mock('fs', () => ({
     promises: {
         writeFile: jest.fn(),
+        rename: jest.fn(),
         readFile: jest.fn(),
         readdir: jest.fn(),
         access: jest.fn(),
@@ -166,6 +167,25 @@ describe('MetadataService', () => {
         test('should reject non-existent parent', async () => {
             await expect(metadataService.createFolder('Test', 'non-existent-id'))
                 .rejects.toThrow('Parent folder not found');
+        });
+
+        test('persists atomically: writes .tmp then renames onto quiz-metadata.json', async () => {
+            fs.rename.mockResolvedValue();
+
+            await metadataService.createFolder('Atomic Folder');
+
+            // The shared metadata store is never written directly — only via a
+            // temp file that is then renamed into place.
+            expect(fs.writeFile).toHaveBeenCalledTimes(1);
+            const [writtenPath, body] = fs.writeFile.mock.calls[0];
+            expect(writtenPath).toBe(path.join('quizzes', 'quiz-metadata.json.tmp'));
+            expect(() => JSON.parse(body)).not.toThrow();
+
+            expect(fs.rename).toHaveBeenCalledTimes(1);
+            expect(fs.rename).toHaveBeenCalledWith(
+                path.join('quizzes', 'quiz-metadata.json.tmp'),
+                path.join('quizzes', 'quiz-metadata.json')
+            );
         });
     });
 

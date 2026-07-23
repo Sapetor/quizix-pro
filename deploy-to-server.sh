@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# QuizMaster Pro Server Deployment Script
+# Quizix Pro Server Deployment Script
 # Deploys the containerized application to the GitLab server
 
 set -e  # Exit on any error
@@ -184,7 +184,7 @@ check_deployment() {
     fi
     
     # Show access information
-    log_success "QuizMaster Pro is accessible at: http://$GITLAB_SERVER:3000"
+    log_success "Quizix Pro is accessible at: http://$GITLAB_SERVER:3000"
     log_info "Container logs: ssh $GITLAB_USER@$GITLAB_SERVER 'docker logs quizix-pro-app'"
 }
 

@@ -1,6 +1,6 @@
-# Kubernetes Deployment Guide for QuizMaster Pro
+# Kubernetes Deployment Guide for Quizix Pro
 
-This guide walks you through deploying QuizMaster Pro to a Kubernetes cluster.
+This guide walks you through deploying Quizix Pro to a Kubernetes cluster.
 
 ## Prerequisites
 

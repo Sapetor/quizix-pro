@@ -1,11 +1,11 @@
-# Slim Dockerfile for QuizMaster Pro (no Manim)
+# Slim Dockerfile for Quizix Pro (no Manim)
 # Use for K8s/cloud deployments where disk space is limited
 # For full image with Manim, use: Dockerfile
 #
 # Build: docker build -f Dockerfile.slim -t ghcr.io/sapetor/quizmaster-pro:latest .
 
 # Stage 1: Base image with dependencies
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 RUN apk add --no-cache dumb-init git
 WORKDIR /app
 COPY package*.json ./
@@ -21,7 +21,7 @@ FROM base AS production-deps
 RUN npm ci --only=production
 
 # Stage 4: Final production image
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 RUN apk add --no-cache dumb-init
 
 # Create non-root user for security

@@ -1,11 +1,11 @@
 #!/bin/bash
-# Simple deployment script for QuizMaster Pro
+# Simple deployment script for Quizix Pro
 # Matches your cluster's deployment pattern
 
 set -e
 
 echo "========================================="
-echo "QuizMaster Pro - Cluster Deployment"
+echo "Quizix Pro - Cluster Deployment"
 echo "========================================="
 echo ""
 

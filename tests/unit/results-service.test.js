@@ -10,6 +10,7 @@ const path = require('path');
 jest.mock('fs', () => ({
     promises: {
         writeFile: jest.fn(),
+        rename: jest.fn(),
         readFile: jest.fn(),
         readdir: jest.fn(),
         access: jest.fn(),
@@ -73,6 +74,26 @@ describe('ResultsService', () => {
             expect(result.success).toBe(true);
             expect(result.filename).toMatch(/^results_123456_\d+\.json$/);
             expect(fs.writeFile).toHaveBeenCalled();
+        });
+
+        test('should persist atomically: write to .tmp then rename into place', async () => {
+            fs.writeFile.mockResolvedValue();
+            fs.rename.mockResolvedValue();
+
+            await resultsService.saveResults(
+                'Test Quiz',
+                '123456',
+                [{ name: 'Player1', score: 100 }]
+            );
+
+            expect(fs.writeFile).toHaveBeenCalledTimes(1);
+            const [writtenPath] = fs.writeFile.mock.calls[0];
+            expect(writtenPath).toMatch(/\.json\.tmp$/);
+
+            expect(fs.rename).toHaveBeenCalledTimes(1);
+            const [tmpArg, finalArg] = fs.rename.mock.calls[0];
+            expect(tmpArg).toBe(writtenPath);
+            expect(finalArg).toBe(writtenPath.replace(/\.tmp$/, ''));
         });
 
         test('should include questions data if provided', async () => {

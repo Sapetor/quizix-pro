@@ -16,6 +16,7 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
 const { hashPassword, verifyPassword } = require('../utils/password-hash');
+const { atomicWriteFile } = require('./atomic-write');
 
 const USERNAME_REGEX = /^[a-z0-9_]{3,32}$/;
 const PASSWORD_MIN_LENGTH = 8;
@@ -70,10 +71,7 @@ class UserService {
      * Atomic write: temp file + rename.
      */
     async _writeNow() {
-        const tmp = `${this.usersPath}.tmp`;
-        const body = JSON.stringify(this.data, null, 2);
-        await fs.writeFile(tmp, body, 'utf8');
-        await fs.rename(tmp, this.usersPath);
+        await atomicWriteFile(this.usersPath, JSON.stringify(this.data, null, 2));
     }
 
     /**

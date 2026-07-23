@@ -7,6 +7,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { atomicWriteFile } = require('./atomic-write');
 
 class QuizService {
     constructor(logger, wslMonitor, quizzesDir = 'quizzes') {
@@ -148,10 +149,9 @@ class QuizService {
 
         // Write file with WSL performance monitoring
         await this.wslMonitor.trackFileOperation(
-            () => fs.writeFile(
+            () => atomicWriteFile(
                 path.join(this.quizzesDir, filename),
-                JSON.stringify(quizData, null, 2),
-                'utf8'
+                JSON.stringify(quizData, null, 2)
             ),
             `Quiz save: ${filename}`
         );

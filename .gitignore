@@ -34,6 +34,7 @@ results/
 playwright-report/
 test-results/
 .playwright-mcp/
+coverage/
 
 # IDE and editor files
 .vscode/
@@ -62,3 +63,13 @@ Desktop.ini
 /ordering-host-screen.png
 test-screenshots/
 /design_handoff_landing/
+# Root-level scratch screenshots (regenerable from the running app)
+/Screenshot *.png
+/editor*.png
+/game-*.png
+/mobile-*.png
+/lobby-creation.png
+/manim-tutorial-modal.png
+/onboarding-step1.png
+# Stray spreadsheets dropped at the repo root
+/*.xlsx

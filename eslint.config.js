@@ -78,6 +78,8 @@ export default [
                 clearInterval: 'readonly',
                 requestAnimationFrame: 'readonly',
                 cancelAnimationFrame: 'readonly',
+                queueMicrotask: 'readonly',
+                DataTransfer: 'readonly',
                 HTMLElement: 'readonly',
                 Element: 'readonly',
                 Node: 'readonly',
@@ -129,11 +131,13 @@ export default [
                 confetti: 'readonly',
                 Sortable: 'readonly',
                 hljs: 'readonly',
+                XLSX: 'readonly',
                 // App-specific window globals (used in onclick handlers and global registry)
                 event: 'readonly',
                 translationManager: 'readonly',
                 showLoadQuizModal: 'readonly',
                 saveQuiz: 'readonly',
+                addQuestion: 'readonly',
                 startHosting: 'readonly',
                 togglePreviewMode: 'readonly',
                 updateEditorQuestionCount: 'readonly'
@@ -197,13 +201,27 @@ export default [
                 document: 'readonly',
                 window: 'readonly',
                 getComputedStyle: 'readonly',
-                HTMLElement: 'readonly'
+                HTMLElement: 'readonly',
+                localStorage: 'readonly',
+                sessionStorage: 'readonly',
+                requestAnimationFrame: 'readonly'
             }
         },
         rules: {
             'no-unused-vars': 'warn',
             'no-undef': 'error',
             'no-console': 'off'
+        }
+    },
+    {
+        // ESM unit tests (Babel-transformed for Jest, use import/export, jsdom env)
+        files: ['tests/unit/header-controller.test.js'],
+        languageOptions: {
+            sourceType: 'module',
+            globals: {
+                Event: 'readonly',
+                KeyboardEvent: 'readonly'
+            }
         }
     },
     {

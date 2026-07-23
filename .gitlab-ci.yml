@@ -1,7 +1,8 @@
-# GitLab CI/CD Pipeline for QuizMaster Pro
+# GitLab CI/CD Pipeline for Quizix Pro
 # Builds and deploys the container automatically
 
 stages:
+  - test
   - build
   - deploy
 
@@ -11,6 +12,30 @@ variables:
   LATEST_IMAGE: $CI_REGISTRY_IMAGE:latest
   DOCKER_DRIVER: overlay2
   
+# Run lint + unit tests before building the image
+test:
+  stage: test
+  image: node:22-alpine
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+  before_script:
+    # git is needed by npm ci for any git-based deps and by the build tooling
+    - apk add --no-cache git
+    - npm ci
+  script:
+    - npm run lint
+    - npm test
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_MERGE_REQUEST_ID  # Also validate merge requests
+  tags:
+    - docker  # Same runner as build/deploy
+
 # Build the Docker image
 build:
   stage: build
@@ -63,10 +88,10 @@ deploy:
     - sleep 10
     
     # Test deployment
-    - curl -f http://localhost:3000/api/ping || echo "Health check failed"
+    - curl -f http://localhost:3000/health || echo "Health check failed"
     
     # Show deployment info
-    - echo "QuizMaster Pro deployed successfully!"
+    - echo "Quizix Pro deployed successfully!"
     - echo "Access at http://10.80.21.11:3000"
     
   rules:

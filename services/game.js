@@ -7,6 +7,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { ScoringService } = require('./scoring-service');
 const { getLimits } = require('../config/limits');
+const { atomicWriteFile } = require('./atomic-write');
 
 /**
  * Fisher-Yates shuffle - returns shuffled copy and index mapping
@@ -748,7 +749,7 @@ class Game {
             };
 
             const filename = `results_${this.pin}_${Date.now()}.json`;
-            await fs.writeFile(path.join(resultsDir, filename), JSON.stringify(results, null, 2));
+            await atomicWriteFile(path.join(resultsDir, filename), JSON.stringify(results, null, 2));
             this.logger.info(`Results saved: ${filename}`);
         } catch (error) {
             this.logger.error('Error saving game results:', error);

@@ -28,6 +28,59 @@ function createFileUploadRoutes(options) {
 
     const router = express.Router();
 
+    // ==================== RATE LIMITING ====================
+    // Image upload is unauthenticated (anonymous quiz editing is a supported
+    // flow) and each request costs a disk write plus a sharp WebP conversion.
+    // Cap per-IP request rate so an anonymous client can't flood disk / burn
+    // CPU. Same idiom as the AI and Manim routes.
+
+    const uploadRateLimits = new Map();
+    const UPLOAD_MAX_REQUESTS_PER_MINUTE = 30;
+    const UPLOAD_WINDOW_MS = 60 * 1000; // 1 minute
+
+    function checkUploadRateLimit(ip) {
+        const now = Date.now();
+        const limit = uploadRateLimits.get(ip);
+
+        if (!limit || now > limit.resetTime) {
+            uploadRateLimits.set(ip, { count: 1, resetTime: now + UPLOAD_WINDOW_MS });
+            return { allowed: true, remaining: UPLOAD_MAX_REQUESTS_PER_MINUTE - 1 };
+        }
+
+        if (limit.count >= UPLOAD_MAX_REQUESTS_PER_MINUTE) {
+            const retryAfter = Math.ceil((limit.resetTime - now) / 1000);
+            return { allowed: false, retryAfter, remaining: 0 };
+        }
+
+        limit.count++;
+        return { allowed: true, remaining: UPLOAD_MAX_REQUESTS_PER_MINUTE - limit.count };
+    }
+
+    // Cleanup stale rate limit entries every 5 minutes
+    setInterval(() => {
+        const now = Date.now();
+        for (const [ip, limit] of uploadRateLimits.entries()) {
+            if (now > limit.resetTime + 60000) {
+                uploadRateLimits.delete(ip);
+            }
+        }
+    }, 5 * 60 * 1000);
+
+    // Guard placed BEFORE multer so a rejected request never touches disk.
+    function uploadRateLimit(req, res, next) {
+        const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+        const rateCheck = checkUploadRateLimit(clientIP);
+        if (!rateCheck.allowed) {
+            logger.warn(`Image upload rate limit exceeded for IP: ${clientIP}`);
+            return res.status(429).json({
+                error: 'Rate limit exceeded',
+                messageKey: 'error_rate_limited',
+                retryAfter: rateCheck.retryAfter
+            });
+        }
+        return next();
+    }
+
     // ==================== IMAGE UPLOAD ====================
 
     const storage = multer.diskStorage({
@@ -57,7 +110,7 @@ function createFileUploadRoutes(options) {
         }
     });
 
-    router.post('/upload', upload.single('image'), async (req, res) => {
+    router.post('/upload', uploadRateLimit, upload.single('image'), async (req, res) => {
         try {
             if (!req.file) {
                 logger.warn('Upload attempt with no file');

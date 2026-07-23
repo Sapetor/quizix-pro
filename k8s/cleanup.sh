@@ -1,5 +1,5 @@
 #!/bin/bash
-# Kubernetes Cleanup Script for QuizMaster Pro
+# Kubernetes Cleanup Script for Quizix Pro
 
 set -e  # Exit on error
 
@@ -135,7 +135,7 @@ show_remaining() {
 # Main script
 main() {
     echo "======================================"
-    echo "QuizMaster Pro - Kubernetes Cleanup"
+    echo "Quizix Pro - Kubernetes Cleanup"
     echo "======================================"
     echo ""
 
