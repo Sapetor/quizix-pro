@@ -14,6 +14,7 @@ import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 import { getJSON, setJSON, removeItem } from '../utils/storage-utils.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
 import { dom, escapeHtml, show, hide } from '../utils/dom.js';
+import { readScoringConfigFromDOM } from '../utils/scoring-config.js';
 import { getFileManager } from '../ui/file-manager.js';
 import { openModal, closeModal } from '../utils/modal-utils.js';
 import { authManager } from '../utils/auth-manager.js';
@@ -243,15 +244,9 @@ export class QuizManager {
             consensusThreshold: dom.get('consensus-threshold')?.value ?? '66',
             discussionTime: parseInt(dom.get('discussion-time')?.value) || 30,
             allowChat: dom.get('allow-chat')?.checked ?? false,
-            scoringConfig: {
-                timeBonusEnabled: dom.get('time-bonus-enabled')?.checked ?? true,
-                timeBonusThreshold: parseInt(dom.get('time-bonus-threshold')?.value) || 0,
-                difficultyMultipliers: {
-                    easy: parseFloat(dom.get('easy-multiplier')?.value) || 1,
-                    medium: parseFloat(dom.get('medium-multiplier')?.value) || 2,
-                    hard: parseFloat(dom.get('hard-multiplier')?.value) || 3
-                }
-            }
+            // Saved to the quiz file: keep the threshold in raw seconds so it
+            // round-trips with the seconds-based UI input (see restoreSettings).
+            scoringConfig: readScoringConfigFromDOM(dom, { thresholdToMs: false })
         };
     }
 

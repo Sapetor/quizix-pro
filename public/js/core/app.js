@@ -21,6 +21,7 @@ import { APIHelper } from '../utils/api-helper.js';
 import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
 import { bindElement, dom, show, escapeHtmlPreservingLatex } from '../utils/dom.js';
+import { readScoringConfigFromDOM } from '../utils/scoring-config.js';
 import { getJSON, setJSON } from '../utils/storage-utils.js';
 import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
@@ -604,18 +605,8 @@ export class QuizGame {
         const manualAdvancement = dom.get('manual-advancement')?.checked;
         const powerUpsEnabled = dom.get('enable-power-ups')?.checked || false;
 
-        // Get scoring configuration (saved to quiz file + used per-game session)
-        // timeBonusThreshold: convert seconds to milliseconds (0 = disabled)
-        const thresholdSeconds = parseInt(dom.get('time-bonus-threshold')?.value) || 0;
-        const scoringConfig = {
-            timeBonusEnabled: dom.get('time-bonus-enabled')?.checked ?? true,
-            timeBonusThreshold: thresholdSeconds * 1000, // Convert to milliseconds
-            difficultyMultipliers: {
-                easy: parseFloat(dom.get('easy-multiplier')?.value) || 1,
-                medium: parseFloat(dom.get('medium-multiplier')?.value) || 2,
-                hard: parseFloat(dom.get('hard-multiplier')?.value) || 3
-            }
-        };
+        // Get scoring configuration for the live game session (threshold in ms)
+        const scoringConfig = readScoringConfigFromDOM(dom);
 
         // Process questions
         let processedQuestions = [...questions];
@@ -1220,7 +1211,6 @@ export class QuizGame {
      * Read settings from the Quick Start panel UI
      */
     _collectQuickStartSettings() {
-        const thresholdSec = parseInt(dom.get('qs-time-bonus-threshold')?.value) || 0;
         return {
             randomizeQuestions: dom.get('qs-randomize-questions')?.checked ?? false,
             randomizeAnswers: dom.get('qs-randomize-answers')?.checked ?? false,
@@ -1232,15 +1222,7 @@ export class QuizGame {
             consensusThreshold: dom.get('qs-consensus-threshold')?.value ?? '66',
             discussionTime: parseInt(dom.get('qs-discussion-time')?.value) || 30,
             allowChat: dom.get('qs-allow-chat')?.checked ?? false,
-            scoringConfig: {
-                timeBonusEnabled: dom.get('qs-time-bonus-enabled')?.checked ?? true,
-                timeBonusThreshold: thresholdSec * 1000,
-                difficultyMultipliers: {
-                    easy: parseFloat(dom.get('qs-easy-multiplier')?.value) || 1,
-                    medium: parseFloat(dom.get('qs-medium-multiplier')?.value) || 2,
-                    hard: parseFloat(dom.get('qs-hard-multiplier')?.value) || 3
-                }
-            }
+            scoringConfig: readScoringConfigFromDOM(dom, { prefix: 'qs-' })
         };
     }
 

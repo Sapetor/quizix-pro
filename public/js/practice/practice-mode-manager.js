@@ -10,6 +10,7 @@ import { logger } from '../core/config.js';
 import { getTranslation } from '../utils/translation-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { dom, escapeHtml } from '../utils/dom.js';
+import { readScoringConfigFromDOM } from '../utils/scoring-config.js';
 
 export class PracticeModeManager {
     /**
@@ -68,18 +69,8 @@ export class PracticeModeManager {
                 dom.get('enable-power-ups')?.checked ||
                 false;
 
-            // Get scoring configuration (per-game session, not saved to quiz file)
-            // timeBonusThreshold: convert seconds to milliseconds (0 = disabled)
-            const thresholdSeconds = parseInt(dom.get('time-bonus-threshold')?.value) || 0;
-            const scoringConfig = {
-                timeBonusEnabled: dom.get('time-bonus-enabled')?.checked ?? true,
-                timeBonusThreshold: thresholdSeconds * 1000, // Convert to milliseconds
-                difficultyMultipliers: {
-                    easy: parseFloat(dom.get('easy-multiplier')?.value) || 1,
-                    medium: parseFloat(dom.get('medium-multiplier')?.value) || 2,
-                    hard: parseFloat(dom.get('hard-multiplier')?.value) || 3
-                }
-            };
+            // Get scoring configuration for the practice session (threshold in ms)
+            const scoringConfig = readScoringConfigFromDOM(dom);
 
             // Create event bus and game session
             this.eventBus = new LocalEventBus({ debug: false });

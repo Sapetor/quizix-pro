@@ -458,22 +458,13 @@ class Game {
         const correctAnswer = this.getCorrectAnswerKey(question);
         const isCorrect = consensus.answer === correctAnswer;
 
-        // Calculate team points with consensus bonus
-        let teamPoints = 0;
-        if (isCorrect) {
-            const difficultyMultiplier = this.config.SCORING.DIFFICULTY_MULTIPLIERS[question.difficulty] || 2;
-            const basePoints = this.config.SCORING.BASE_POINTS * difficultyMultiplier;
-
-            // Consensus bonus multiplier
-            let consensusBonus = 1.0;
-            if (consensus.percentage === 100) {
-                consensusBonus = 1.5; // Unanimous
-            } else if (consensus.percentage >= 75) {
-                consensusBonus = 1.2; // Strong consensus
-            }
-
-            teamPoints = Math.floor(basePoints * consensusBonus);
-        }
+        // Calculate team points with consensus bonus (centralized in ScoringService)
+        const teamPoints = ScoringService.calculateConsensusTeamPoints({
+            isCorrect,
+            consensusPercent: consensus.percentage,
+            difficulty: question.difficulty,
+            config: this.config
+        });
 
         this.teamScore += teamPoints;
 
@@ -535,22 +526,7 @@ class Game {
      * @returns {*} Correct answer key
      */
     getCorrectAnswerKey(question) {
-        const type = question.type || 'multiple-choice';
-
-        switch (type) {
-            case 'multiple-choice':
-                return question.correctIndex !== undefined ? question.correctIndex : question.correctAnswer;
-            case 'multiple-correct':
-                return question.correctIndices || question.correctAnswers || [];
-            case 'true-false':
-            case 'numeric':
-                return question.correctAnswer;
-            case 'ordering':
-                return question.correctOrder || [];
-            default:
-                this.logger.warn(`Unknown question type '${type}', using default correctAnswer field`);
-                return question.correctAnswer;
-        }
+        return ScoringService.getCorrectAnswerKey(question, question.type || 'multiple-choice');
     }
 
     /**
@@ -687,11 +663,11 @@ class Game {
      * @returns {Object} Scoring info object
      */
     getScoringInfoForQuestion(question) {
-        const customMultipliers = this.scoringConfig?.difficultyMultipliers;
-        const defaultMultipliers = this.config.SCORING.DIFFICULTY_MULTIPLIERS;
-        const difficultyMultiplier = customMultipliers?.[question.difficulty]
-            ?? defaultMultipliers[question.difficulty]
-            ?? 2;
+        const difficultyMultiplier = ScoringService.getDifficultyMultiplier(
+            question.difficulty,
+            this.config.SCORING.DIFFICULTY_MULTIPLIERS,
+            this.scoringConfig?.difficultyMultipliers
+        );
 
         const timeBonusEnabled = this.scoringConfig?.timeBonusEnabled ?? true;
         const timeBonusThreshold = this.scoringConfig?.timeBonusThreshold ?? 0;

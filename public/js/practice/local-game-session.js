@@ -7,6 +7,12 @@
 import { logger, SCORING, TIMING } from '../core/config.js';
 import QuestionTypeRegistry from '../utils/question-type-registry.js';
 import { getJSON, setJSON } from '../utils/storage-utils.js';
+import {
+    calculatePoints as computePoints,
+    DEFAULT_DIFFICULTY_MULTIPLIERS,
+    DEFAULT_TIME_BONUS_ENABLED,
+    DEFAULT_TIME_BONUS_THRESHOLD
+} from '../utils/scoring-config.js';
 
 /**
  * @typedef {Object} PracticeHistoryEntry
@@ -52,18 +58,11 @@ export class LocalGameSession {
         const scoringConfig = options.scoringConfig || null;
         this.scoringConfig = scoringConfig;
 
-        // Difficulty multipliers (matches server defaults: easy=1, medium=2, hard=3)
-        this.difficultyMultipliers = scoringConfig?.difficultyMultipliers || {
-            'easy': 1,
-            'medium': 2,
-            'hard': 3
-        };
-
-        // Time bonus enabled (matches server default: true)
-        this.timeBonusEnabled = scoringConfig?.timeBonusEnabled ?? true;
-
-        // Time bonus threshold in milliseconds (0 = disabled, answers within get max bonus)
-        this.timeBonusThreshold = scoringConfig?.timeBonusThreshold ?? 0;
+        // Difficulty multipliers, time bonus toggle, and threshold. Defaults
+        // mirror the server (see utils/scoring-config.js).
+        this.difficultyMultipliers = scoringConfig?.difficultyMultipliers || { ...DEFAULT_DIFFICULTY_MULTIPLIERS };
+        this.timeBonusEnabled = scoringConfig?.timeBonusEnabled ?? DEFAULT_TIME_BONUS_ENABLED;
+        this.timeBonusThreshold = scoringConfig?.timeBonusThreshold ?? DEFAULT_TIME_BONUS_THRESHOLD;
 
         // Power-ups state
         this.powerUpsEnabled = options.powerUpsEnabled || false;
@@ -331,81 +330,30 @@ export class LocalGameSession {
     }
 
     /**
-     * Calculate points for an answer (matches server formula exactly)
-     * Server formula: basePoints = 100 × difficultyMultiplier, timeBonus = floor((max - time) × multiplier / 10)
+     * Calculate points for an answer. Delegates to the shared client scoring
+     * module (utils/scoring-config.js), which mirrors the server formula.
      * @param {boolean|number} isCorrect - Whether correct (or partial credit)
      * @param {Object} question - Question data
      * @param {number} responseTime - Response time in ms
      * @returns {Object} Points object with total and breakdown
      */
     calculatePoints(isCorrect, question, responseTime) {
-        const difficultyMultiplier = this.difficultyMultipliers[question.difficulty] || 2;
+        // Consume the double-points power-up (even on wrong answers, matching prior behavior)
         const doublePointsMultiplier = this.getAndConsumeDoublePoints();
-
-        if (!isCorrect && typeof isCorrect !== 'number') {
-            // Return 0 points with breakdown for wrong answers
-            return {
-                points: 0,
-                breakdown: {
-                    basePoints: 0,
-                    timeBonus: 0,
-                    difficultyMultiplier: difficultyMultiplier,
-                    doublePointsMultiplier: doublePointsMultiplier
-                }
-            };
-        }
-
-        // Match server formula exactly
-        const maxBonusValue = SCORING.MAX_BONUS_TIME;
         const questionTimeSec = question.timeLimit || question.time || TIMING.DEFAULT_QUESTION_TIME;
-        const decayWindowMs = questionTimeSec * 1000;
 
-        // Calculate time bonus with optional threshold (prevents random quick guessing)
-        let timeBonus;
-        if (this.timeBonusThreshold > 0 && responseTime <= this.timeBonusThreshold) {
-            // Within threshold: award maximum time bonus
-            timeBonus = maxBonusValue;
-        } else if (this.timeBonusThreshold > 0) {
-            // Past threshold: linear decay from max at threshold to 0 at question end
-            const remaining = decayWindowMs - this.timeBonusThreshold;
-            const elapsed = responseTime - this.timeBonusThreshold;
-            const ratio = remaining > 0 ? Math.max(0, (remaining - elapsed) / remaining) : 1;
-            timeBonus = Math.floor(maxBonusValue * ratio);
-        } else {
-            // No threshold: proportional decay from 0s to question time limit
-            const ratio = Math.max(0, (decayWindowMs - responseTime) / decayWindowMs);
-            timeBonus = Math.floor(maxBonusValue * ratio);
-        }
-
-        // basePoints = 100 * difficultyMultiplier
-        const basePoints = SCORING.BASE_POINTS * difficultyMultiplier;
-
-        // scaledTimeBonus = floor(timeBonus * difficultyMultiplier / 10)
-        // Only apply if time bonus is enabled
-        const scaledTimeBonus = this.timeBonusEnabled
-            ? Math.floor(timeBonus * difficultyMultiplier / 10)
-            : 0;
-
-        // Calculate total points
-        let points = basePoints + scaledTimeBonus;
-
-        // Handle partial credit for ordering questions
-        if (typeof isCorrect === 'number') {
-            points = Math.floor(points * isCorrect);
-        }
-
-        // Apply double points multiplier if active
-        points = points * doublePointsMultiplier;
-
-        return {
-            points: points,
-            breakdown: {
-                basePoints: basePoints,
-                timeBonus: scaledTimeBonus,
-                difficultyMultiplier: difficultyMultiplier,
-                doublePointsMultiplier: doublePointsMultiplier
-            }
-        };
+        return computePoints({
+            isCorrect,
+            difficulty: question.difficulty,
+            responseTime,
+            questionTimeLimitMs: questionTimeSec * 1000,
+            config: {
+                timeBonusEnabled: this.timeBonusEnabled,
+                timeBonusThreshold: this.timeBonusThreshold,
+                difficultyMultipliers: this.difficultyMultipliers
+            },
+            doublePointsMultiplier
+        });
     }
 
     // ==================== POWER-UP METHODS ====================
