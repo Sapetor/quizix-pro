@@ -1098,21 +1098,24 @@
     margin: 0;
 }
 
-/* Quiz title input — prominent, no indigo border */
+/* Quiz title input — prominent, no indigo border.
+   No priority flag needed: this selector (2 IDs + class) outranks every desktop
+   competitor; the only flagged rival is the mobile `.quiz-editor-section
+   #quiz-title` rule (display:none on mobile) — so specificity alone decides. */
 #quiz-editor-section #quiz-title.input-field {
-    background: var(--paper-2) !important;
-    border: 1px solid var(--rule-soft) !important;
-    border-radius: 12px !important;
-    color: var(--ink) !important;
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 12px;
+    color: var(--ink);
     font-family: var(--font-display);
     font-weight: 380;
     font-size: clamp(20px, 2vw, 26px);
     letter-spacing: -0.015em;
-    padding: 14px 18px !important;
+    padding: 14px 18px;
 }
 #quiz-editor-section #quiz-title.input-field:focus {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px var(--accent-soft) !important;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
     outline: none;
 }
 #quiz-editor-section #quiz-title.input-field::placeholder {
@@ -1208,17 +1211,22 @@
     box-shadow: 0 0 0 3px var(--accent-soft) !important;
 }
 
-/* Question text editor — the large textarea */
+/* Question text editor — the large textarea.
+   Co-neutralized with the legacy `.question-text` rule in components.css: both
+   sides dropped the priority flag on background/border/border-radius/color and
+   :focus, so this higher-specificity selector (1 ID + 2 classes) wins by
+   specificity. Legacy keeps its flag only on width/min-height/padding/font-size/
+   resize, which this rule does not set. */
 #quiz-editor-section .question-text {
-    background: var(--paper) !important;
-    border: 1px solid var(--rule-soft) !important;
-    color: var(--ink) !important;
-    border-radius: 12px !important;
+    background: var(--paper);
+    border: 1px solid var(--rule-soft);
+    color: var(--ink);
+    border-radius: 12px;
     font-family: var(--font-body);
 }
 #quiz-editor-section .question-text:focus {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px var(--accent-soft) !important;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
 }
 #quiz-editor-section .question-text::placeholder {
     color: var(--ink-4);

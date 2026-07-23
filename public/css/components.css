@@ -2528,16 +2528,19 @@ button:disabled:focus-visible {
     padding: 16px !important;
     font-size: 16px !important;
     line-height: 1.5 !important;
-    background: var(--glass-medium) !important;
-    border: 2px solid var(--glass-border) !important;
-    border-radius: 12px !important;
+    /* background/border/border-radius: no priority flag — co-neutralized with the
+       editorial `#quiz-editor-section .question-text` override (app-screens.css),
+       which wins these by specificity. */
+    background: var(--glass-medium);
+    border: 2px solid var(--glass-border);
+    border-radius: 12px;
     margin-bottom: 16px !important;
     resize: vertical !important;
 }
 
 .question-text:focus {
-    border-color: var(--color-primary-500) !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* Image upload section styling */
