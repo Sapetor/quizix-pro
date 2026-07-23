@@ -1,6 +1,6 @@
 # Quizix Pro - Cluster Deployment Guide
 
-This deployment is configured to match your cluster's patterns and uses the `quizmaster` namespace.
+This deployment is configured to match your cluster's patterns and uses the `quizix` namespace.
 
 ## 🎯 Cluster Pattern Matching
 
@@ -11,7 +11,7 @@ This configuration has been adapted to match your cluster's deployment patterns:
 ✅ **RollingUpdate strategy** - Matches your server deployment pattern
 ✅ **nginx ingress** - Compatible with your existing `lab-apps` ingress
 ✅ **No SSL redirect** - Matches your cluster's HTTP configuration
-✅ **Simple labels** - Uses `{ app: quizmaster-pro }` format
+✅ **Simple labels** - Uses `{ app: quizix-pro }` format
 ✅ **ReadWriteOnce PVCs** - Uses cluster default storage class
 ✅ **ConfigMap with envFrom** - Consistent with your server pattern
 ✅ **imagePullPolicy** - Ready for both IfNotPresent and Always
@@ -28,29 +28,29 @@ This configuration has been adapted to match your cluster's deployment patterns:
 
 ```bash
 # From project root
-docker build -t quizmaster-pro:latest .
+docker build -t quizix-pro:latest .
 ```
 
 ### 2. Push to Registry (if using private registry)
 
 ```bash
 # Tag for your registry
-docker tag quizmaster-pro:latest your-registry/quizmaster-pro:latest
+docker tag quizix-pro:latest your-registry/quizix-pro:latest
 
 # Push
-docker push your-registry/quizmaster-pro:latest
+docker push your-registry/quizix-pro:latest
 ```
 
-**Important:** Update the image in `01-quizmaster-pro.yaml`:
+**Important:** Update the image in `01-quizix-pro.yaml`:
 ```yaml
-image: your-registry/quizmaster-pro:latest
+image: your-registry/quizix-pro:latest
 ```
 
 ### 3. Deploy to Cluster
 
 ```bash
 cd k8s
-kubectl apply -f 01-quizmaster-pro.yaml
+kubectl apply -f 01-quizix-pro.yaml
 ```
 
 Or use the automated script:
@@ -62,33 +62,33 @@ Or use the automated script:
 
 ```bash
 # Check pods
-kubectl get pods -n quizmaster
+kubectl get pods -n quizix
 
 # Check services
-kubectl get svc -n quizmaster
+kubectl get svc -n quizix
 
 # Check PVCs
-kubectl get pvc -n quizmaster
+kubectl get pvc -n quizix
 
 # View logs
-kubectl logs -n quizmaster -l app=quizmaster-pro -f
+kubectl logs -n quizix -l app=quizix-pro -f
 ```
 
 ### 5. Access the Application
 
 **Port forwarding (for testing):**
 ```bash
-kubectl port-forward -n quizmaster svc/quizmaster-pro 3000:3000
+kubectl port-forward -n quizix svc/quizix-pro 3000:3000
 ```
 Then visit: http://localhost:3000
 
-**For external access**, configure ingress in `02-quizmaster-ingress.yaml`
+**For external access**, configure ingress in `02-quizix-ingress.yaml`
 
 ## Configuration
 
 ### Environment Variables
 
-Edit `quizmaster-config` ConfigMap in `01-quizmaster-pro.yaml`:
+Edit `quizix-config` ConfigMap in `01-quizix-pro.yaml`:
 ```yaml
 data:
   NODE_ENV: "production"
@@ -99,15 +99,15 @@ data:
 ### Storage
 
 Three PVCs are created:
-- `quizmaster-quizzes` (1Gi) - Quiz definitions
-- `quizmaster-results` (2Gi) - Game results
-- `quizmaster-uploads` (5Gi) - Image uploads
+- `quizix-quizzes` (1Gi) - Quiz definitions
+- `quizix-results` (2Gi) - Game results
+- `quizix-uploads` (5Gi) - Image uploads
 
-Adjust sizes in `01-quizmaster-pro.yaml` if needed.
+Adjust sizes in `01-quizix-pro.yaml` if needed.
 
 ### Private Registry
 
-If using private Docker registry, uncomment in `01-quizmaster-pro.yaml`:
+If using private Docker registry, uncomment in `01-quizix-pro.yaml`:
 ```yaml
 imagePullSecrets:
   - name: dockerhub-cred
@@ -120,7 +120,7 @@ kubectl create secret docker-registry dockerhub-cred \
   --docker-username=YOUR_USERNAME \
   --docker-password=YOUR_PASSWORD \
   --docker-email=YOUR_EMAIL \
-  -n quizmaster
+  -n quizix
 ```
 
 ## External Access
@@ -132,12 +132,12 @@ Your cluster uses **path-based routing** (no host/domain names). Quizix Pro prov
 Deploy Quizix Pro with its own ingress:
 
 ```bash
-kubectl apply -f 02-quizmaster-ingress.yaml
+kubectl apply -f 02-quizix-ingress.yaml
 ```
 
 Access at: **`http://your-cluster-ip/quiz`**
 
-This creates a separate ingress in the `quizmaster` namespace with:
+This creates a separate ingress in the `quizix` namespace with:
 - Path: `/quiz` → Quizix Pro
 - Increased timeout (3600s) for Socket.IO WebSocket connections
 - Session affinity for sticky sessions
@@ -146,10 +146,10 @@ This creates a separate ingress in the `quizmaster` namespace with:
 
 Add Quizix Pro to your existing `lab-apps` ingress:
 
-**1. Change namespace to `lab` in `01-quizmaster-pro.yaml`:**
+**1. Change namespace to `lab` in `01-quizix-pro.yaml`:**
 ```bash
-# Replace all instances of 'namespace: quizmaster' with 'namespace: lab'
-sed -i 's/namespace: quizmaster/namespace: lab/g' k8s/01-quizmaster-pro.yaml
+# Replace all instances of 'namespace: quizix' with 'namespace: lab'
+sed -i 's/namespace: quizix/namespace: lab/g' k8s/01-quizix-pro.yaml
 ```
 
 **2. Update your existing `ingress.yaml` to add:**
@@ -164,9 +164,9 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"  # ⚠️ Changed from 60 to 3600
     nginx.ingress.kubernetes.io/use-regex: "true"
     # ⚠️ Add these new annotations for Socket.IO:
-    nginx.ingress.kubernetes.io/websocket-services: "quizmaster-pro"
+    nginx.ingress.kubernetes.io/websocket-services: "quizix-pro"
     nginx.ingress.kubernetes.io/affinity: "cookie"
-    nginx.ingress.kubernetes.io/session-cookie-name: "quizmaster-affinity"
+    nginx.ingress.kubernetes.io/session-cookie-name: "quizix-affinity"
 spec:
   ingressClassName: nginx
   rules:
@@ -191,14 +191,14 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: quizmaster-pro
+                name: quizix-pro
                 port:
                   number: 3000
 ```
 
 **3. Apply the changes:**
 ```bash
-kubectl apply -f 01-quizmaster-pro.yaml
+kubectl apply -f 01-quizix-pro.yaml
 kubectl apply -f your-ingress.yaml
 ```
 
@@ -206,7 +206,7 @@ Access at: **`http://your-cluster-ip/quiz`**
 
 ### Option 3: Cross-Namespace Access
 
-Keep Quizix in `quizmaster` namespace but access from `lab` ingress using ExternalName service. See instructions in `02-quizmaster-ingress.yaml`.
+Keep Quizix in `quizix` namespace but access from `lab` ingress using ExternalName service. See instructions in `02-quizix-ingress.yaml`.
 
 ## Health Checks
 
@@ -225,17 +225,17 @@ The app exposes two health endpoints:
 
 ```bash
 # Describe pod
-kubectl describe pod -n quizmaster -l app=quizmaster-pro
+kubectl describe pod -n quizix -l app=quizix-pro
 
 # Check events
-kubectl get events -n quizmaster --sort-by='.lastTimestamp'
+kubectl get events -n quizix --sort-by='.lastTimestamp'
 ```
 
 ### PVC not binding
 
 ```bash
 # Check PVC status
-kubectl get pvc -n quizmaster
+kubectl get pvc -n quizix
 
 # Check storage class
 kubectl get storageclass
@@ -249,7 +249,7 @@ storageClassName: your-storage-class
 ### Image pull errors
 
 If using private registry:
-1. Verify secret exists: `kubectl get secret dockerhub-cred -n quizmaster`
+1. Verify secret exists: `kubectl get secret dockerhub-cred -n quizix`
 2. Verify credentials are correct
 3. Uncomment `imagePullSecrets` in deployment
 
@@ -263,10 +263,10 @@ If using private registry:
 
 ```bash
 # Delete all resources
-kubectl delete -f 01-quizmaster-pro.yaml
+kubectl delete -f 01-quizix-pro.yaml
 
 # Or delete namespace (removes everything)
-kubectl delete namespace quizmaster
+kubectl delete namespace quizix
 ```
 
 **Note:** Deleting the namespace will also delete all PVCs and data!
@@ -284,13 +284,13 @@ For horizontal scaling:
 
 ```bash
 # Watch pod status
-kubectl get pods -n quizmaster -w
+kubectl get pods -n quizix -w
 
 # Stream logs
-kubectl logs -n quizmaster -l app=quizmaster-pro -f --tail=50
+kubectl logs -n quizix -l app=quizix-pro -f --tail=50
 
 # Execute into pod
-kubectl exec -it -n quizmaster deployment/quizmaster-pro -- /bin/sh
+kubectl exec -it -n quizix deployment/quizix-pro -- /bin/sh
 ```
 
 ## Key Differences from Standard K8s Setup

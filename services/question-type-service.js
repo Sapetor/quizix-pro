@@ -8,7 +8,7 @@
  */
 
 // Respect production environment - only log in development
-const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
+const isProduction = process.env.NODE_ENV === 'production';
 
 const logger = {
     warn: (msg, ...args) => {

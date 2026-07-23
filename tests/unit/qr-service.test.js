@@ -126,13 +126,17 @@ describe('QRService', () => {
         };
 
         test('should generate cloud URL in production', () => {
-            const originalEnv = process.env.RAILWAY_ENVIRONMENT;
-            process.env.RAILWAY_ENVIRONMENT = 'production';
+            const originalEnv = process.env.VERCEL_ENV;
+            process.env.VERCEL_ENV = 'production';
 
             const url = qrService._getGameUrl('123456', mockReq);
 
             expect(url).toBe('https://example.com/?pin=123456');
-            process.env.RAILWAY_ENVIRONMENT = originalEnv;
+            if (originalEnv === undefined) {
+                delete process.env.VERCEL_ENV;
+            } else {
+                process.env.VERCEL_ENV = originalEnv;
+            }
         });
 
         test('should generate local URL from detected IP when request host is unavailable', () => {

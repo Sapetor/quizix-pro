@@ -209,8 +209,7 @@ class QRService {
      * Generate environment-aware game URL
      */
     _getGameUrl(pin, req) {
-        const isCloudDeployment = process.env.RAILWAY_ENVIRONMENT === 'production' ||
-                                  process.env.VERCEL_ENV ||
+        const isCloudDeployment = process.env.VERCEL_ENV ||
                                   process.env.HEROKU_APP_NAME;
         const requestHost = this._getRequestHost(req);
         const requestHostname = this._getHostnameFromHost(requestHost);

@@ -205,7 +205,7 @@ npm run build:prod
 ```bash
 # .env file
 NODE_ENV=production
-BASE_PATH=/quizmaster/  # Or your K8s ingress path
+BASE_PATH=/quizix/  # Or your K8s ingress path
 PORT=3000
 ```
 

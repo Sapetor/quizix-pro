@@ -10,8 +10,8 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-NAMESPACE="quizmaster"
-IMAGE_NAME="quizmaster-pro"
+NAMESPACE="quizix"
+IMAGE_NAME="quizix-pro"
 IMAGE_TAG="latest"
 REGISTRY=""  # Set your registry here, e.g., "docker.io/username"
 
@@ -87,31 +87,19 @@ deploy_kubernetes() {
 
     cd "$(dirname "$0")"
 
-    # Create namespace
-    print_info "Creating namespace..."
-    kubectl apply -f namespace.yaml
-
-    # Apply ConfigMap
-    print_info "Applying ConfigMap..."
-    kubectl apply -f configmap.yaml
-
-    # Apply PVCs
-    print_info "Creating Persistent Volume Claims..."
-    kubectl apply -f pvc.yaml
+    # Apply the all-in-one manifest (namespace, ConfigMap, PVCs, Service, Deployment, PDB)
+    print_info "Applying manifests..."
+    kubectl apply -f 01-quizix-pro.yaml
 
     # Wait for PVCs to be bound
     print_info "Waiting for PVCs to be bound..."
-    kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/quizmaster-quizzes-pvc -n "$NAMESPACE" --timeout=60s || print_warning "PVC not bound yet"
-    kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/quizmaster-results-pvc -n "$NAMESPACE" --timeout=60s || print_warning "PVC not bound yet"
-    kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/quizmaster-uploads-pvc -n "$NAMESPACE" --timeout=60s || print_warning "PVC not bound yet"
+    kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/quizix-quizzes -n "$NAMESPACE" --timeout=60s || print_warning "PVC not bound yet"
+    kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/quizix-results -n "$NAMESPACE" --timeout=60s || print_warning "PVC not bound yet"
+    kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/quizix-uploads -n "$NAMESPACE" --timeout=60s || print_warning "PVC not bound yet"
 
-    # Apply Deployment
-    print_info "Deploying application..."
-    kubectl apply -f deployment.yaml
-
-    # Apply Service
-    print_info "Creating Service..."
-    kubectl apply -f service.yaml
+    # Apply Ingress
+    print_info "Applying Ingress..."
+    kubectl apply -f 02-quizix-ingress.yaml
 
     print_info "Deployment completed ✓"
 }
@@ -119,7 +107,7 @@ deploy_kubernetes() {
 wait_for_ready() {
     print_info "Waiting for deployment to be ready..."
 
-    kubectl rollout status deployment/quizmaster-pro -n "$NAMESPACE" --timeout=300s
+    kubectl rollout status deployment/quizix-pro -n "$NAMESPACE" --timeout=300s
 
     print_info "Deployment is ready ✓"
 }
@@ -129,7 +117,7 @@ show_status() {
     echo ""
 
     echo "Pods:"
-    kubectl get pods -n "$NAMESPACE" -l app=quizmaster-pro
+    kubectl get pods -n "$NAMESPACE" -l app=quizix-pro
     echo ""
 
     echo "Services:"
@@ -141,19 +129,19 @@ show_status() {
     echo ""
 
     echo "Logs (last 10 lines):"
-    kubectl logs -n "$NAMESPACE" -l app=quizmaster-pro --tail=10 || print_warning "No logs available yet"
+    kubectl logs -n "$NAMESPACE" -l app=quizix-pro --tail=10 || print_warning "No logs available yet"
 }
 
 show_access_info() {
     print_info "Access information:"
     echo ""
     echo "To access the application locally, run:"
-    echo "  kubectl port-forward -n $NAMESPACE svc/quizmaster-pro 3000:3000"
+    echo "  kubectl port-forward -n $NAMESPACE svc/quizix-pro 3000:3000"
     echo ""
     echo "Then visit: http://localhost:3000"
     echo ""
     echo "To view logs:"
-    echo "  kubectl logs -n $NAMESPACE -l app=quizmaster-pro -f"
+    echo "  kubectl logs -n $NAMESPACE -l app=quizix-pro -f"
     echo ""
 }
 

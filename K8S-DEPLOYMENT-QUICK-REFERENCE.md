@@ -112,11 +112,11 @@ Should show: `Cache-Control: no-cache, no-store, must-revalidate`
 ## K8s-Specific Notes
 
 ### Ingress Path
-If using path-based routing (e.g., `/quizmaster/`):
+If using path-based routing (e.g., `/quizix/`):
 
 **.env file:**
 ```bash
-BASE_PATH=/quizmaster/
+BASE_PATH=/quizix/
 ```
 
 ### Health Checks

@@ -55,12 +55,12 @@ const { createAttachUser, requireUser } = require('./middleware/attach-user');
 const { ManimRenderService } = require('./services/manim-render-service');
 const { registerSocketHandlers } = require('./socket');
 
-// Detect production environment (Railway sets NODE_ENV automatically)
-const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
+// Detect production environment
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Base path configuration for Kubernetes/path-based routing
-// Auto-detect: production uses /quizmaster/, development uses /
-const BASE_PATH = process.env.BASE_PATH || (isProduction ? '/quizmaster/' : '/');
+// Auto-detect: production uses /quizix/, development uses /
+const BASE_PATH = process.env.BASE_PATH || (isProduction ? '/quizix/' : '/');
 
 // Server-side logging utility
 const DEBUG = {
@@ -416,7 +416,7 @@ const serveIndexHtml = (req, res) => {
     });
 };
 
-// Serve index.html at root (Ingress strips the /quizmaster/ prefix)
+// Serve index.html at root (Ingress strips the /quizix/ prefix)
 app.get('/', serveIndexHtml);
 
 // ============================================================================
@@ -550,7 +550,6 @@ if (!isProduction) {
 
         res.json({
             environment: process.env.NODE_ENV,
-            railway_env: process.env.RAILWAY_ENVIRONMENT,
             isProduction: isProduction,
             cwd: process.cwd(),
             __dirname: __dirname,

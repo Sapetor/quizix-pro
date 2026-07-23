@@ -183,7 +183,7 @@ class SessionService {
 
 /**
  * Detect whether a request arrived over HTTPS, accounting for a TLS-terminating
- * proxy (K8s Ingress, Railway). Used to set the `Secure` cookie flag.
+ * proxy (K8s Ingress). Used to set the `Secure` cookie flag.
  */
 function isSecureRequest(req) {
     if (req.secure) return true;

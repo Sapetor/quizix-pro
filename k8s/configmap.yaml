@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: quizmaster-config
-  namespace: quizmaster
+  name: quizix-config
+  namespace: quizix
   labels:
-    app: quizmaster-pro
+    app: quizix-pro
 data:
   # Application configuration
   NODE_ENV: "production"
@@ -13,5 +13,6 @@ data:
   # Optional: Override network IP detection
   # NETWORK_IP: "your-cluster-ip"
 
-  # Note: BASE_PATH auto-detects to /quizmaster/ when NODE_ENV=production
-  # Only set this if you need to override the auto-detection
+  # BASE_PATH must match the ingress path prefix in 02-quizix-ingress.yaml.
+  # Set explicitly (the server's built-in production default is a legacy value).
+  BASE_PATH: "/quizix/"

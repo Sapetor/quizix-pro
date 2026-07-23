@@ -77,12 +77,12 @@ deploy:
         -e NODE_ENV=production \
         -e DEBUG_ENABLED=false \
         -e GITLAB_URL=https://localhost:8080 \
-        -v /opt/quizmaster-data/results:/app/results \
-        -v /opt/quizmaster-data/uploads:/app/uploads \
+        -v /opt/quizix-data/results:/app/results \
+        -v /opt/quizix-data/uploads:/app/uploads \
         $LATEST_IMAGE
     
     # Create data directories if they don't exist
-    - mkdir -p /opt/quizmaster-data/{results,uploads}
+    - mkdir -p /opt/quizix-data/{results,uploads}
     
     # Wait for application to start
     - sleep 10

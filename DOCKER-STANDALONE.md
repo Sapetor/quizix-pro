@@ -203,15 +203,15 @@ environment:
 
 ### App shows blank page
 
-Check that `BASE_PATH=/` is set in the environment. Without it, production mode defaults to `/quizmaster/` (for Kubernetes ingress).
+Check that `BASE_PATH=/` is set in the environment. Without it, production mode falls back to a subpath prefix intended for Kubernetes ingress, which breaks standalone serving.
 
 ## Comparison with Other Deployment Methods
 
-| | Standalone Docker | Kubernetes | Railway/Cloud |
-|---|---|---|---|
-| **Best for** | Single server, local network | Multi-node, high availability | Internet-facing, no infra |
-| **Setup time** | ~20 minutes | Hours | Minutes |
-| **Maintenance** | `git pull && docker compose up -d --build` | kubectl/GitOps | Git push |
-| **Cost** | Hardware only | Hardware + complexity | Monthly fee |
-| **Config file** | `docker-compose.yml` | `k8s/*.yaml` | Railway dashboard |
-| **BASE_PATH** | `/` | `/quizmaster/` (ingress) | `/` |
+| | Standalone Docker | Kubernetes |
+|---|---|---|
+| **Best for** | Single server, local network | Multi-node, high availability |
+| **Setup time** | ~20 minutes | Hours |
+| **Maintenance** | `git pull && docker compose up -d --build` | kubectl/GitOps |
+| **Cost** | Hardware only | Hardware + complexity |
+| **Config file** | `docker-compose.yml` | `k8s/*.yaml` |
+| **BASE_PATH** | `/` | `/quizix/` (ingress) |

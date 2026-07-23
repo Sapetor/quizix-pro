@@ -15,13 +15,13 @@ This guide walks you through deploying Quizix Pro to a Kubernetes cluster.
 
 ```bash
 # From the project root directory
-docker build -t quizmaster-pro:latest .
+docker build -t quizix-pro:latest .
 
 # Tag for your registry
-docker tag quizmaster-pro:latest your-registry/quizmaster-pro:latest
+docker tag quizix-pro:latest your-registry/quizix-pro:latest
 
 # Push to registry
-docker push your-registry/quizmaster-pro:latest
+docker push your-registry/quizix-pro:latest
 ```
 
 ### 2. Update Deployment Configuration
@@ -29,7 +29,7 @@ docker push your-registry/quizmaster-pro:latest
 Edit `k8s/deployment.yaml` and update the image reference:
 
 ```yaml
-image: your-registry/quizmaster-pro:latest
+image: your-registry/quizix-pro:latest
 ```
 
 ### 3. Deploy to Kubernetes
@@ -56,19 +56,19 @@ kubectl apply -f k8s/
 
 ```bash
 # Check namespace
-kubectl get namespace quizmaster
+kubectl get namespace quizix
 
 # Check all resources
-kubectl get all -n quizmaster
+kubectl get all -n quizix
 
 # Check pod status
-kubectl get pods -n quizmaster
+kubectl get pods -n quizix
 
 # View logs
-kubectl logs -n quizmaster -l app=quizmaster-pro -f
+kubectl logs -n quizix -l app=quizix-pro -f
 
 # Check health endpoints
-kubectl port-forward -n quizmaster svc/quizmaster-pro 3000:3000
+kubectl port-forward -n quizix svc/quizix-pro 3000:3000
 # Then visit: http://localhost:3000/health
 ```
 
@@ -76,7 +76,7 @@ kubectl port-forward -n quizmaster svc/quizmaster-pro 3000:3000
 
 ### Components
 
-1. **Namespace**: Isolated environment (`quizmaster`)
+1. **Namespace**: Isolated environment (`quizix`)
 2. **ConfigMap**: Application configuration (PORT, NODE_ENV)
 3. **PersistentVolumeClaims**: Storage for quizzes, results, and uploads
 4. **Deployment**: Single replica with health checks
@@ -111,8 +111,8 @@ For sensitive values like API keys, use Kubernetes Secrets:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: quizmaster-secrets
-  namespace: quizmaster
+  name: quizix-secrets
+  namespace: quizix
 type: Opaque
 stringData:
   CLAUDE_API_KEY: "sk-ant-xxxxx"  # Optional: Server-side Claude API key
@@ -148,7 +148,7 @@ storageClassName: your-storage-class  # e.g., gp2, standard, local-path
 ### Option 1: Port Forward (Development/Testing)
 
 ```bash
-kubectl port-forward -n quizmaster svc/quizmaster-pro 3000:3000
+kubectl port-forward -n quizix svc/quizix-pro 3000:3000
 ```
 
 Then access at: http://localhost:3000
@@ -166,7 +166,7 @@ Uncomment the LoadBalancer service in `k8s/ingress.yaml`:
 
 ```bash
 kubectl apply -f k8s/ingress.yaml
-kubectl get svc -n quizmaster quizmaster-pro-lb
+kubectl get svc -n quizix quizix-pro-lb
 ```
 
 Use the EXTERNAL-IP to access the application.
@@ -209,7 +209,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
-  namespace: quizmaster
+  namespace: quizix
 spec:
   replicas: 1
   selector:
@@ -255,26 +255,26 @@ curl http://localhost:3000/ready
 
 ```bash
 # All pods
-kubectl logs -n quizmaster -l app=quizmaster-pro -f
+kubectl logs -n quizix -l app=quizix-pro -f
 
 # Specific pod
-kubectl logs -n quizmaster <pod-name> -f
+kubectl logs -n quizix <pod-name> -f
 
 # Previous crashed pod
-kubectl logs -n quizmaster <pod-name> --previous
+kubectl logs -n quizix <pod-name> --previous
 ```
 
 ### Pod Status
 
 ```bash
-kubectl get pods -n quizmaster -w
-kubectl describe pod -n quizmaster <pod-name>
+kubectl get pods -n quizix -w
+kubectl describe pod -n quizix <pod-name>
 ```
 
 ### Events
 
 ```bash
-kubectl get events -n quizmaster --sort-by='.lastTimestamp'
+kubectl get events -n quizix --sort-by='.lastTimestamp'
 ```
 
 ## Troubleshooting
@@ -283,7 +283,7 @@ kubectl get events -n quizmaster --sort-by='.lastTimestamp'
 
 ```bash
 # Check pod status
-kubectl describe pod -n quizmaster -l app=quizmaster-pro
+kubectl describe pod -n quizix -l app=quizix-pro
 
 # Common issues:
 # - Image pull errors: Verify registry credentials
@@ -295,7 +295,7 @@ kubectl describe pod -n quizmaster -l app=quizmaster-pro
 
 ```bash
 # Check PVC status
-kubectl get pvc -n quizmaster
+kubectl get pvc -n quizix
 
 # If PVC is pending:
 # - Check storage class exists: kubectl get storageclass
@@ -309,7 +309,7 @@ If Socket.IO connections fail:
 
 1. Verify session affinity is configured:
    ```bash
-   kubectl get svc quizmaster-pro -n quizmaster -o yaml | grep -A 5 sessionAffinity
+   kubectl get svc quizix-pro -n quizix -o yaml | grep -A 5 sessionAffinity
    ```
 
 2. Check ingress annotations for WebSocket support
@@ -320,10 +320,10 @@ If Socket.IO connections fail:
 
 ```bash
 # Check application logs
-kubectl logs -n quizmaster -l app=quizmaster-pro --tail=100
+kubectl logs -n quizix -l app=quizix-pro --tail=100
 
 # Exec into pod for debugging
-kubectl exec -it -n quizmaster <pod-name> -- /bin/sh
+kubectl exec -it -n quizix <pod-name> -- /bin/sh
 ```
 
 ## Updates and Rollbacks
@@ -332,27 +332,27 @@ kubectl exec -it -n quizmaster <pod-name> -- /bin/sh
 
 ```bash
 # Build and push new image
-docker build -t your-registry/quizmaster-pro:v2 .
-docker push your-registry/quizmaster-pro:v2
+docker build -t your-registry/quizix-pro:v2 .
+docker push your-registry/quizix-pro:v2
 
 # Update deployment
-kubectl set image deployment/quizmaster-pro -n quizmaster quizmaster-pro=your-registry/quizmaster-pro:v2
+kubectl set image deployment/quizix-pro -n quizix quizix-pro=your-registry/quizix-pro:v2
 
 # Monitor rollout
-kubectl rollout status deployment/quizmaster-pro -n quizmaster
+kubectl rollout status deployment/quizix-pro -n quizix
 ```
 
 ### Rolling Back
 
 ```bash
 # View rollout history
-kubectl rollout history deployment/quizmaster-pro -n quizmaster
+kubectl rollout history deployment/quizix-pro -n quizix
 
 # Rollback to previous version
-kubectl rollout undo deployment/quizmaster-pro -n quizmaster
+kubectl rollout undo deployment/quizix-pro -n quizix
 
 # Rollback to specific revision
-kubectl rollout undo deployment/quizmaster-pro -n quizmaster --to-revision=2
+kubectl rollout undo deployment/quizix-pro -n quizix --to-revision=2
 ```
 
 ## Backup and Restore
@@ -361,7 +361,7 @@ kubectl rollout undo deployment/quizmaster-pro -n quizmaster --to-revision=2
 
 ```bash
 # Create a backup job
-kubectl run backup -n quizmaster --image=busybox --restart=Never --rm -it \
+kubectl run backup -n quizix --image=busybox --restart=Never --rm -it \
   --overrides='
 {
   "spec": {
@@ -375,7 +375,7 @@ kubectl run backup -n quizmaster --image=busybox --restart=Never --rm -it \
       ]
     }],
     "volumes": [
-      {"name": "data", "persistentVolumeClaim": {"claimName": "quizmaster-quizzes-pvc"}},
+      {"name": "data", "persistentVolumeClaim": {"claimName": "quizix-quizzes-pvc"}},
       {"name": "backup", "hostPath": {"path": "/tmp/backup"}}
     ]
   }
@@ -386,7 +386,7 @@ kubectl run backup -n quizmaster --image=busybox --restart=Never --rm -it \
 
 ```bash
 # Extract backup to PVC
-kubectl run restore -n quizmaster --image=busybox --restart=Never --rm -it \
+kubectl run restore -n quizix --image=busybox --restart=Never --rm -it \
   --overrides='...'  # Similar structure as backup
 ```
 
@@ -408,12 +408,12 @@ kubectl run restore -n quizmaster --image=busybox --restart=Never --rm -it \
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: quizmaster-network-policy
-  namespace: quizmaster
+  name: quizix-network-policy
+  namespace: quizix
 spec:
   podSelector:
     matchLabels:
-      app: quizmaster-pro
+      app: quizix-pro
   policyTypes:
     - Ingress
     - Egress
@@ -458,6 +458,6 @@ Before deploying to production:
 ## Support
 
 For issues or questions:
-1. Check application logs: `kubectl logs -n quizmaster -l app=quizmaster-pro`
-2. Review Kubernetes events: `kubectl get events -n quizmaster`
+1. Check application logs: `kubectl logs -n quizix -l app=quizix-pro`
+2. Review Kubernetes events: `kubectl get events -n quizix`
 3. Consult CLAUDE.md in project root for application-specific details

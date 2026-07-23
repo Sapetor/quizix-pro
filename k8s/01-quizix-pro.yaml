@@ -1,23 +1,25 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: quizmaster
+  name: quizix
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: quizmaster-config
-  namespace: quizmaster
+  name: quizix-config
+  namespace: quizix
 data:
   NODE_ENV: "production"
   PORT: "3000"
-  # Note: BASE_PATH auto-detects to /quizmaster/ when NODE_ENV=production
+  # BASE_PATH must match the ingress path prefix in 02-quizix-ingress.yaml.
+  # Set explicitly (the server's built-in production default is a legacy value).
+  BASE_PATH: "/quizix/"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: quizmaster-quizzes
-  namespace: quizmaster
+  name: quizix-quizzes
+  namespace: quizix
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
@@ -27,8 +29,8 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: quizmaster-results
-  namespace: quizmaster
+  name: quizix-results
+  namespace: quizix
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
@@ -38,8 +40,8 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: quizmaster-uploads
-  namespace: quizmaster
+  name: quizix-uploads
+  namespace: quizix
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
@@ -49,11 +51,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: quizmaster-pro
-  namespace: quizmaster
+  name: quizix-pro
+  namespace: quizix
 spec:
   selector:
-    app: quizmaster-pro
+    app: quizix-pro
   # Session affinity is critical for Socket.IO sticky sessions
   sessionAffinity: ClientIP
   sessionAffinityConfig:
@@ -67,8 +69,8 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: quizmaster-pro
-  namespace: quizmaster
+  name: quizix-pro
+  namespace: quizix
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -77,10 +79,10 @@ spec:
   strategy:
     type: Recreate
   selector:
-    matchLabels: { app: quizmaster-pro }
+    matchLabels: { app: quizix-pro }
   template:
     metadata:
-      labels: { app: quizmaster-pro }
+      labels: { app: quizix-pro }
     spec:
       # Pin to a specific node - eliminates Multi-Attach errors with RWO volumes
       # Run: kubectl get nodes -l kubernetes.io/hostname -o name
@@ -109,13 +111,13 @@ spec:
               mountPath: /app/uploads
 
       containers:
-        - name: quizmaster-pro
-          image: ghcr.io/sapetor/quizmaster-pro:latest
+        - name: quizix-pro
+          image: ghcr.io/sapetor/quizix-pro:latest
           imagePullPolicy: Always
 
           envFrom:
             - configMapRef:
-                name: quizmaster-config
+                name: quizix-config
 
           ports:
             - containerPort: 3000
@@ -163,23 +165,23 @@ spec:
       volumes:
         - name: quizzes
           persistentVolumeClaim:
-            claimName: quizmaster-quizzes
+            claimName: quizix-quizzes
         - name: results
           persistentVolumeClaim:
-            claimName: quizmaster-results
+            claimName: quizix-results
         - name: uploads
           persistentVolumeClaim:
-            claimName: quizmaster-uploads
+            claimName: quizix-uploads
 ---
 # PodDisruptionBudget - protects against voluntary evictions (node drain, upgrades)
 # Note: Does NOT protect against disk pressure evictions (those are involuntary)
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: quizmaster-pdb
-  namespace: quizmaster
+  name: quizix-pdb
+  namespace: quizix
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: quizmaster-pro
+      app: quizix-pro

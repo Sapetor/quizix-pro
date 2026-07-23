@@ -34,7 +34,7 @@ Break any and you MUST stop and explain the violation:
 
 ## Project Summary
 
-**Quizix Pro** — Interactive quiz platform for local networks with mobile optimization, cloud deployment (Railway/K8s), and modern ES6 architecture. Production-ready.
+**Quizix Pro** — Interactive quiz platform for local networks with mobile optimization, cloud deployment (Docker/K8s), and modern ES6 architecture. Production-ready.
 
 ## Commands
 

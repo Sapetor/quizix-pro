@@ -1,25 +1,25 @@
 # Standalone Ingress for Quizix Pro
 # Uses path-based routing matching cluster's namespace isolation policy
-# Path must match namespace name: /quizmaster for quizmaster namespace
+# Path must match namespace name: /quizix for quizix namespace
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: quizmaster-ingress
-  namespace: quizmaster
+  name: quizix-ingress
+  namespace: quizix
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     # Increased timeout for Socket.IO WebSocket connections
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     # Critical for Socket.IO - enables WebSocket support
-    nginx.ingress.kubernetes.io/websocket-services: "quizmaster-pro"
+    nginx.ingress.kubernetes.io/websocket-services: "quizix-pro"
     # Session affinity for Socket.IO sticky sessions
     nginx.ingress.kubernetes.io/affinity: "cookie"
-    nginx.ingress.kubernetes.io/session-cookie-name: "quizmaster-affinity"
+    nginx.ingress.kubernetes.io/session-cookie-name: "quizix-affinity"
     nginx.ingress.kubernetes.io/session-cookie-max-age: "10800"
     # Enable regex matching for path capture
     nginx.ingress.kubernetes.io/use-regex: "true"
-    # Rewrite /quizmaster/xyz to /xyz preserving the path
+    # Rewrite /quizix/xyz to /xyz preserving the path
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     # Disable NGINX proxy buffering to ensure fresh content delivery
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
@@ -28,14 +28,14 @@ spec:
   rules:
     - http:
         paths:
-          # Access at: http://your-cluster-ip/quizmaster
-          # Regex pattern captures path after /quizmaster for rewrite
-          # /quizmaster/api/ping -> /api/ping, /quizmaster -> /
-          - path: /quizmaster(/|$)(.*)
+          # Access at: http://your-cluster-ip/quizix
+          # Regex pattern captures path after /quizix for rewrite
+          # /quizix/api/ping -> /api/ping, /quizix -> /
+          - path: /quizix(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: quizmaster-pro
+                name: quizix-pro
                 port:
                   number: 3000
 
@@ -51,7 +51,7 @@ spec:
 #     pathType: Prefix
 #     backend:
 #       service:
-#         name: quizmaster-pro
+#         name: quizix-pro
 #         port:
 #           number: 3000
 #
@@ -59,34 +59,34 @@ spec:
 #
 #   annotations:
 #     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"  # Change from 60 to 3600
-#     nginx.ingress.kubernetes.io/websocket-services: "quizmaster-pro"
+#     nginx.ingress.kubernetes.io/websocket-services: "quizix-pro"
 #     nginx.ingress.kubernetes.io/affinity: "cookie"
-#     nginx.ingress.kubernetes.io/session-cookie-name: "quizmaster-affinity"
+#     nginx.ingress.kubernetes.io/session-cookie-name: "quizix-affinity"
 #
 # IMPORTANT: Quizix Pro service must be in the same namespace as your ingress.
-# If you want to use the 'lab' namespace instead of 'quizmaster', change the namespace
-# in 01-quizmaster-pro.yaml from 'quizmaster' to 'lab'
+# If you want to use the 'lab' namespace instead of 'quizix', change the namespace
+# in 01-quizix-pro.yaml from 'quizix' to 'lab'
 
 ---
 # Option 3: Cross-namespace service reference (if keeping separate namespaces)
-# If you want to keep Quizix in 'quizmaster' namespace but access from 'lab' ingress:
+# If you want to keep Quizix in 'quizix' namespace but access from 'lab' ingress:
 #
-# Create an ExternalName service in 'lab' namespace that points to 'quizmaster':
+# Create an ExternalName service in 'lab' namespace that points to 'quizix':
 #
 # apiVersion: v1
 # kind: Service
 # metadata:
-#   name: quizmaster-proxy
+#   name: quizix-proxy
 #   namespace: lab
 # spec:
 #   type: ExternalName
-#   externalName: quizmaster-pro.quizmaster.svc.cluster.local
+#   externalName: quizix-pro.quizix.svc.cluster.local
 #   ports:
 #     - port: 3000
 #
 # Then in your lab-apps ingress, reference:
 #   backend:
 #     service:
-#       name: quizmaster-proxy
+#       name: quizix-proxy
 #       port:
 #         number: 3000

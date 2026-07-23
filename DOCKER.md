@@ -77,14 +77,14 @@ The Docker setup creates a custom bridge network that allows:
 #### Default Network Settings
 - Subnet: `172.20.0.0/16`
 - Gateway: `172.20.0.1`
-- Bridge name: `quizmaster-bridge`
+- Bridge name: `quizix-bridge`
 
 #### Customizing Network Settings
 
 Edit `docker-compose.yml`:
 ```yaml
 networks:
-  quizmaster-network:
+  quizix-network:
     ipam:
       config:
         - subnet: 192.168.100.0/24  # Your custom subnet
@@ -164,7 +164,7 @@ sudo firewall-cmd --reload
 curl -f http://your-gitlab-server:8080
 
 # From container
-docker exec quizmaster-pro-app curl -f http://your-gitlab-server:8080
+docker exec quizix-pro-app curl -f http://your-gitlab-server:8080
 ```
 
 ### Common GitLab Issues
@@ -175,7 +175,7 @@ docker exec quizmaster-pro-app curl -f http://your-gitlab-server:8080
 ping gitlab.local
 
 # Check DNS resolution in container
-docker exec quizmaster-pro-app nslookup gitlab.local
+docker exec quizix-pro-app nslookup gitlab.local
 
 # Add to docker-compose.yml if needed:
 extra_hosts:
@@ -220,12 +220,12 @@ volumes:
 
 ```bash
 # Backup results
-docker exec quizmaster-pro-app tar -czf /tmp/results-backup.tar.gz /app/results
-docker cp quizmaster-pro-app:/tmp/results-backup.tar.gz ./backup/
+docker exec quizix-pro-app tar -czf /tmp/results-backup.tar.gz /app/results
+docker cp quizix-pro-app:/tmp/results-backup.tar.gz ./backup/
 
 # Backup entire data
 docker-compose down
-tar -czf quizmaster-backup-$(date +%Y%m%d).tar.gz results/ uploads/
+tar -czf quizix-backup-$(date +%Y%m%d).tar.gz results/ uploads/
 docker-compose up -d
 ```
 
@@ -239,33 +239,33 @@ The container includes built-in health checks:
 docker ps --format "table {{.Names}}\t{{.Status}}"
 
 # Manual health check
-docker exec quizmaster-pro-app curl -f http://localhost:3000/api/ping
+docker exec quizix-pro-app curl -f http://localhost:3000/api/ping
 ```
 
 ### Log Analysis
 
 ```bash
 # Real-time logs
-docker-compose logs -f quizmaster-pro
+docker-compose logs -f quizix-pro
 
 # Last 100 lines
-docker-compose logs --tail=100 quizmaster-pro
+docker-compose logs --tail=100 quizix-pro
 
 # Application-specific logs
-docker exec quizmaster-pro-app cat /app/logs/application.log
+docker exec quizix-pro-app cat /app/logs/application.log
 ```
 
 ### Performance Monitoring
 
 ```bash
 # Container resource usage
-docker stats quizmaster-pro-app
+docker stats quizix-pro-app
 
 # Network connections
-docker exec quizmaster-pro-app netstat -tlnp
+docker exec quizix-pro-app netstat -tlnp
 
 # Disk usage
-docker exec quizmaster-pro-app df -h
+docker exec quizix-pro-app df -h
 ```
 
 ### Common Issues
@@ -287,7 +287,7 @@ ports:
 sudo chown -R 1001:1001 results/ uploads/
 
 # Check container user
-docker exec quizmaster-pro-app id
+docker exec quizix-pro-app id
 ```
 
 #### 3. Memory Issues
@@ -313,7 +313,7 @@ deploy:
    # Add reverse proxy with SSL
    labels:
      - "traefik.enable=true"
-     - "traefik.http.routers.quizmaster.tls=true"
+     - "traefik.http.routers.quizix.tls=true"
    ```
 
 ### Application Security
@@ -334,7 +334,7 @@ deploy:
 2. **Read-only filesystem:** Optional
 3. **Security scanning:**
    ```bash
-   docker scan quizmaster-pro:latest
+   docker scan quizix-pro:latest
    ```
 
 ## Scaling and Load Balancing
@@ -343,7 +343,7 @@ deploy:
 
 ```bash
 # Scale to 3 instances
-docker-compose up --scale quizmaster-pro=3 -d
+docker-compose up --scale quizix-pro=3 -d
 
 # With load balancer
 docker-compose -f docker-compose.yml -f docker-compose.scale.yml up -d
@@ -362,7 +362,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
-      - quizmaster-pro
+      - quizix-pro
 ```
 
 ## Maintenance
@@ -402,16 +402,16 @@ docker-compose down -v
 
 ```bash
 # Container shell access
-docker exec -it quizmaster-pro-app sh
+docker exec -it quizix-pro-app sh
 
 # Network inspection
-docker network inspect quizmaster-pro_quizmaster-network
+docker network inspect quizix-pro_quizix-network
 
 # Volume inspection
-docker volume inspect quizmaster-pro_quiz_data
+docker volume inspect quizix-pro_quiz_data
 
 # Image information
-docker image inspect quizmaster-pro:latest
+docker image inspect quizix-pro:latest
 ```
 
 ---

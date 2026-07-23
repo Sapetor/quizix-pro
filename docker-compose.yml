@@ -1,10 +1,10 @@
 services:
-  quizmaster-pro:
+  quizix-pro:
     build:
       context: .
       dockerfile: Dockerfile
-    image: quizmaster-pro:latest
-    container_name: quizmaster-pro
+    image: quizix-pro:latest
+    container_name: quizix-pro-app
     network_mode: host
     environment:
       - NODE_ENV=production

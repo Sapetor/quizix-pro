@@ -10,7 +10,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-NAMESPACE="quizmaster"
+NAMESPACE="quizix"
 
 # Functions
 print_info() {
@@ -28,16 +28,16 @@ print_error() {
 confirm_cleanup() {
     echo ""
     print_warning "This will delete the following resources in namespace '$NAMESPACE':"
-    echo "  - Deployment: quizmaster-pro"
-    echo "  - Service: quizmaster-pro"
-    echo "  - ConfigMap: quizmaster-config"
+    echo "  - Deployment: quizix-pro"
+    echo "  - Service: quizix-pro"
+    echo "  - ConfigMap: quizix-config"
     echo ""
 
     if [ "$DELETE_PVC" = true ]; then
         print_warning "PersistentVolumeClaims will be DELETED (data will be lost!):"
-        echo "  - quizmaster-quizzes-pvc"
-        echo "  - quizmaster-results-pvc"
-        echo "  - quizmaster-uploads-pvc"
+        echo "  - quizix-quizzes-pvc"
+        echo "  - quizix-results-pvc"
+        echo "  - quizix-uploads-pvc"
     else
         print_info "PersistentVolumeClaims will be PRESERVED (use --delete-data to remove)"
     fi
@@ -55,8 +55,8 @@ confirm_cleanup() {
 delete_deployment() {
     print_info "Deleting deployment..."
 
-    if kubectl get deployment quizmaster-pro -n "$NAMESPACE" &> /dev/null; then
-        kubectl delete deployment quizmaster-pro -n "$NAMESPACE"
+    if kubectl get deployment quizix-pro -n "$NAMESPACE" &> /dev/null; then
+        kubectl delete deployment quizix-pro -n "$NAMESPACE"
         print_info "Deployment deleted ✓"
     else
         print_warning "Deployment not found, skipping"
@@ -66,8 +66,8 @@ delete_deployment() {
 delete_service() {
     print_info "Deleting service..."
 
-    if kubectl get service quizmaster-pro -n "$NAMESPACE" &> /dev/null; then
-        kubectl delete service quizmaster-pro -n "$NAMESPACE"
+    if kubectl get service quizix-pro -n "$NAMESPACE" &> /dev/null; then
+        kubectl delete service quizix-pro -n "$NAMESPACE"
         print_info "Service deleted ✓"
     else
         print_warning "Service not found, skipping"
@@ -77,8 +77,8 @@ delete_service() {
 delete_configmap() {
     print_info "Deleting ConfigMap..."
 
-    if kubectl get configmap quizmaster-config -n "$NAMESPACE" &> /dev/null; then
-        kubectl delete configmap quizmaster-config -n "$NAMESPACE"
+    if kubectl get configmap quizix-config -n "$NAMESPACE" &> /dev/null; then
+        kubectl delete configmap quizix-config -n "$NAMESPACE"
         print_info "ConfigMap deleted ✓"
     else
         print_warning "ConfigMap not found, skipping"
@@ -93,7 +93,7 @@ delete_pvcs() {
 
     print_warning "Deleting PersistentVolumeClaims (data will be lost)..."
 
-    for pvc in quizmaster-quizzes-pvc quizmaster-results-pvc quizmaster-uploads-pvc; do
+    for pvc in quizix-quizzes-pvc quizix-results-pvc quizix-uploads-pvc; do
         if kubectl get pvc "$pvc" -n "$NAMESPACE" &> /dev/null; then
             kubectl delete pvc "$pvc" -n "$NAMESPACE"
             print_info "PVC $pvc deleted ✓"

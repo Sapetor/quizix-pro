@@ -89,10 +89,9 @@ describe('CORSValidationService', () => {
     });
 
     describe('isCloudPlatformOrigin', () => {
-        test('should accept Railway origins', () => {
-            expect(corsService.isCloudPlatformOrigin('https://quizix-pro-production.up.railway.app')).toBe(true);
-            expect(corsService.isCloudPlatformOrigin('https://my-app-production.up.railway.app')).toBe(true);
-            expect(corsService.isCloudPlatformOrigin('https://my-app.railway.app')).toBe(true);
+        test('should reject Railway origins (Railway no longer a deployment target)', () => {
+            expect(corsService.isCloudPlatformOrigin('https://quizix-pro-production.up.railway.app')).toBe(false);
+            expect(corsService.isCloudPlatformOrigin('https://my-app.railway.app')).toBe(false);
         });
 
         test('should accept Heroku origins', () => {
@@ -124,8 +123,8 @@ describe('CORSValidationService', () => {
         });
 
         test('should reject HTTP cloud platform origins (security requirement)', () => {
-            expect(corsService.isCloudPlatformOrigin('http://my-app.railway.app')).toBe(false);
             expect(corsService.isCloudPlatformOrigin('http://my-app.vercel.app')).toBe(false);
+            expect(corsService.isCloudPlatformOrigin('http://my-app.herokuapp.com')).toBe(false);
         });
 
         test('should reject unknown cloud platforms', () => {
@@ -141,7 +140,7 @@ describe('CORSValidationService', () => {
 
         test('should allow both local and cloud origins', () => {
             expect(corsService.isOriginAllowed('http://192.168.1.1:3000')).toBe(true);
-            expect(corsService.isOriginAllowed('https://my-app.railway.app')).toBe(true);
+            expect(corsService.isOriginAllowed('https://my-app.vercel.app')).toBe(true);
         });
     });
 

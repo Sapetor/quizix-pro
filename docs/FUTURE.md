@@ -43,7 +43,7 @@ pkg install nodejs-lts git
 termux-setup-storage
 cd ~/storage/shared
 git clone <repository-url>
-cd quizmaster-pro
+cd quizix-pro
 npm install
 npm start
 ```
@@ -67,7 +67,7 @@ npm start
 - Cross-platform compatibility
 
 #### 4. Cloud Deployment with Mobile Management
-- Deploy to cloud platform (Railway, Heroku, DigitalOcean)
+- Deploy to cloud platform (DigitalOcean, Fly.io, Hetzner)
 - Mobile app for remote server management
 - Authentication and security implementation
 - Server status monitoring

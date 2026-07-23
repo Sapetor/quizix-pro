@@ -156,14 +156,15 @@ After Phases 1-3 (scoring extraction thins these files; tests protect the moves)
 
 ## Deferred decisions (need owner input, blocking nothing)
 
-- Railway: repo has no railway.json/toml/Procfile but docs claim Railway
-  deployment. Confirm whether Railway is still a target; add config or strip
-  the claims.
+- Cloud PaaS target: RESOLVED 2026-07-22 — owner confirmed the previously
+  documented PaaS target is no longer used. Deployment claims stripped from
+  docs; real targets are self-hosted Docker + Kubernetes only.
 - `public/css/main.bundle.css` committed-to-git vs build-time-only: current
   compromise (committed + rebuilt in Docker) works but allows stale local
   serves. Options: gitignore it + `prestart` build hook, or CI staleness check.
 - Deployed-identifier rename (docker image / container / volume / k8s resource
-  names still `quizmaster-pro`): needs a coordinated migration window; checklist
-  produced by the 2026-07-22 quick-wins run.
+  names → `quizix`): RESOLVED 2026-07-22 — applied across deployment config.
+  Operator steps for the coordinated migration window are in
+  `docs/MIGRATION-quizix-rename.md`.
 - `debug/` static mount in `server.js:356` is unconditional — confirm contents
   are safe to ship, or gate behind `!isProduction`.

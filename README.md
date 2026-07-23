@@ -171,7 +171,7 @@ Update `public/js/core/config.js` to adjust:
 ## 🔒 Security Notes
 
 - This application is designed for local network use
-- Deploy on Railway or Kubernetes for cloud access with proper HTTPS
+- Deploy on a self-hosted Docker server or Kubernetes for cloud access with proper HTTPS
 - Quiz and results data can be persisted to disk (saved in `quizzes/` and `results/` folders)
 - API keys are encrypted with AES-GCM when stored client-side
 - Server-side API keys supported via `CLAUDE_API_KEY` environment variable

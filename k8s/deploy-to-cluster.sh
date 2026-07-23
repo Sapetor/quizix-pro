@@ -26,7 +26,7 @@ echo ""
 # Build and push image
 echo "Step 1: Building Docker image..."
 cd "$(dirname "$0")/.."
-docker build -t quizmaster-pro:latest .
+docker build -t quizix-pro:latest .
 echo "✓ Image built"
 echo ""
 
@@ -34,12 +34,12 @@ echo ""
 read -p "Push to Docker registry? (y/n): " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    read -p "Enter registry/image name (e.g., yourusername/quizmaster-pro): " REGISTRY_IMAGE
-    docker tag quizmaster-pro:latest "$REGISTRY_IMAGE:latest"
+    read -p "Enter registry/image name (e.g., yourusername/quizix-pro): " REGISTRY_IMAGE
+    docker tag quizix-pro:latest "$REGISTRY_IMAGE:latest"
     docker push "$REGISTRY_IMAGE:latest"
     echo "✓ Image pushed to $REGISTRY_IMAGE:latest"
     echo ""
-    echo "⚠️  Update k8s/01-quizmaster-pro.yaml with image: $REGISTRY_IMAGE:latest"
+    echo "⚠️  Update k8s/01-quizix-pro.yaml with image: $REGISTRY_IMAGE:latest"
     echo ""
 fi
 
@@ -47,13 +47,13 @@ fi
 echo "Step 2: Deploying to Kubernetes..."
 cd k8s
 
-kubectl apply -f 01-quizmaster-pro.yaml
+kubectl apply -f 01-quizix-pro.yaml
 echo "✓ Resources created"
 echo ""
 
 # Wait for rollout
 echo "Step 3: Waiting for deployment..."
-kubectl rollout status deployment/quizmaster-pro -n quizmaster --timeout=300s
+kubectl rollout status deployment/quizix-pro -n quizix --timeout=300s
 echo "✓ Deployment ready"
 echo ""
 
@@ -61,10 +61,10 @@ echo ""
 echo "========================================="
 echo "Deployment Status:"
 echo "========================================="
-kubectl get all -n quizmaster
+kubectl get all -n quizix
 echo ""
 echo "PVCs:"
-kubectl get pvc -n quizmaster
+kubectl get pvc -n quizix
 echo ""
 
 # Access instructions
@@ -72,12 +72,12 @@ echo "========================================="
 echo "Access Instructions:"
 echo "========================================="
 echo "Port forward to access locally:"
-echo "  kubectl port-forward -n quizmaster svc/quizmaster-pro 3000:3000"
+echo "  kubectl port-forward -n quizix svc/quizix-pro 3000:3000"
 echo ""
 echo "View logs:"
-echo "  kubectl logs -n quizmaster -l app=quizmaster-pro -f"
+echo "  kubectl logs -n quizix -l app=quizix-pro -f"
 echo ""
 echo "Health check:"
-echo "  kubectl port-forward -n quizmaster svc/quizmaster-pro 3000:3000"
+echo "  kubectl port-forward -n quizix svc/quizix-pro 3000:3000"
 echo "  Then visit: http://localhost:3000/health"
 echo ""

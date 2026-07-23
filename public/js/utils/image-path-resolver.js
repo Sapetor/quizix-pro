@@ -2,12 +2,12 @@
  * Image Path Resolver
  *
  * Centralized utility for handling image paths in Kubernetes deployments
- * with path-based routing (e.g., /quizmaster/ base path).
+ * with path-based routing (e.g., /quizix/ base path).
  *
  * Key Concepts:
  * - Storage Path: Portable path saved in quiz JSON (/uploads/file.gif)
- * - Display Path: Environment-specific path for browser (/quizmaster/uploads/file.gif)
- * - Base Path: Kubernetes path prefix from <base> tag (/quizmaster/)
+ * - Display Path: Environment-specific path for browser (/quizix/uploads/file.gif)
+ * - Base Path: Kubernetes path prefix from <base> tag (/quizix/)
  *
  * Usage:
  *   import { imagePathResolver } from './utils/image-path-resolver.js';
@@ -30,7 +30,7 @@ export class ImagePathResolver {
 
     /**
      * Get the base path from <base> tag (cached for performance)
-     * @returns {string} Clean base path without trailing slash (e.g., "/quizmaster" or "")
+     * @returns {string} Clean base path without trailing slash (e.g., "/quizix" or "")
      */
     getBasePath() {
         if (this._basePath === null) {
@@ -51,7 +51,7 @@ export class ImagePathResolver {
      * @returns {string} Portable storage path (e.g., "/uploads/file.gif")
      *
      * @example
-     * toStoragePath('/quizmaster/uploads/file.gif') → '/uploads/file.gif'
+     * toStoragePath('/quizix/uploads/file.gif') → '/uploads/file.gif'
      * toStoragePath('/uploads/file.gif')            → '/uploads/file.gif'
      * toStoragePath('uploads/file.gif')             → '/uploads/file.gif'
      * toStoragePath('file.gif')                     → '/uploads/file.gif'
@@ -110,10 +110,10 @@ export class ImagePathResolver {
      * Prepends base path for Kubernetes routing
      *
      * @param {string} storagePath - Portable storage path (e.g., "/uploads/file.gif")
-     * @returns {string} Display path for browser (e.g., "/quizmaster/uploads/file.gif")
+     * @returns {string} Display path for browser (e.g., "/quizix/uploads/file.gif")
      *
      * @example
-     * toDisplayPath('/uploads/file.gif') → '/quizmaster/uploads/file.gif' (in K8s)
+     * toDisplayPath('/uploads/file.gif') → '/quizix/uploads/file.gif' (in K8s)
      * toDisplayPath('/uploads/file.gif') → '/uploads/file.gif' (local)
      */
     toDisplayPath(storagePath) {
@@ -147,7 +147,7 @@ export class ImagePathResolver {
      * Useful for game display where we need origin + path
      *
      * @param {string} storagePath - Portable storage path
-     * @returns {string} Full URL (e.g., "http://10.80.21.11/quizmaster/uploads/file.gif")
+     * @returns {string} Full URL (e.g., "http://10.80.21.11/quizix/uploads/file.gif")
      */
     toAbsoluteUrl(storagePath) {
         const displayPath = this.toDisplayPath(storagePath);

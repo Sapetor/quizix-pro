@@ -613,10 +613,10 @@ After implementing and testing:
 
 4. **Deploy to Kubernetes:**
    ```bash
-   docker build -t sapetor/quizmaster-pro:latest .
-   docker push sapetor/quizmaster-pro:latest
-   kubectl rollout restart deployment/quizmaster-pro -n quizmaster
-   kubectl rollout status deployment/quizmaster-pro -n quizmaster
+   docker build -t sapetor/quizix-pro:latest .
+   docker push sapetor/quizix-pro:latest
+   kubectl rollout restart deployment/quizix-pro -n quizix
+   kubectl rollout status deployment/quizix-pro -n quizix
    ```
 
 5. **Test in production** (clear browser cache: Ctrl+Shift+F5)

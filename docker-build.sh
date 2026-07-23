@@ -122,7 +122,7 @@ show_status() {
     
     echo ""
     log_info "Network information:"
-    docker network ls | grep quizmaster
+    docker network ls | grep quizix
     
     # Get container IP
     CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CONTAINER_NAME 2>/dev/null)

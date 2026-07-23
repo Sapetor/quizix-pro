@@ -49,10 +49,10 @@ This app uses a simple, robust configuration:
 cd /mnt/c/Users/sapet/quizix-pro
 
 # Build the image
-docker build -t ghcr.io/sapetor/quizmaster-pro:latest .
+docker build -t ghcr.io/sapetor/quizix-pro:latest .
 
 # Push to GitHub Container Registry
-docker push ghcr.io/sapetor/quizmaster-pro:latest
+docker push ghcr.io/sapetor/quizix-pro:latest
 ```
 
 **Step 2: Deploy to cluster:**
@@ -61,24 +61,24 @@ docker push ghcr.io/sapetor/quizmaster-pro:latest
 ssh labadmin@10.80.21.11
 
 # Restart deployment (pulls new image)
-kubectl rollout restart deployment/quizmaster-pro -n quizmaster
-kubectl get pods -n quizmaster -w
+kubectl rollout restart deployment/quizix-pro -n quizix
+kubectl get pods -n quizix -w
 ```
 
 ### When You Change Kubernetes Manifest
 
 **Step 1: Copy manifest to cluster (from WSL):**
 ```bash
-scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizmaster-pro.yaml labadmin@10.80.21.11:/tmp/
+scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
 ```
 
 **Step 2: Apply changes (from control plane):**
 ```bash
 ssh labadmin@10.80.21.11
 
-kubectl apply -f /tmp/01-quizmaster-pro.yaml
-kubectl rollout restart deployment/quizmaster-pro -n quizmaster
-kubectl get pods -n quizmaster -w
+kubectl apply -f /tmp/01-quizix-pro.yaml
+kubectl rollout restart deployment/quizix-pro -n quizix
+kubectl get pods -n quizix -w
 ```
 
 ### When You Change Both
@@ -86,17 +86,17 @@ kubectl get pods -n quizmaster -w
 ```bash
 # From WSL - build and push
 cd /mnt/c/Users/sapet/quizix-pro
-docker build -t ghcr.io/sapetor/quizmaster-pro:latest .
-docker push ghcr.io/sapetor/quizmaster-pro:latest
+docker build -t ghcr.io/sapetor/quizix-pro:latest .
+docker push ghcr.io/sapetor/quizix-pro:latest
 
 # Copy manifest
-scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizmaster-pro.yaml labadmin@10.80.21.11:/tmp/
+scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
 
 # From control plane - apply and restart
 ssh labadmin@10.80.21.11
-kubectl apply -f /tmp/01-quizmaster-pro.yaml
-kubectl rollout restart deployment/quizmaster-pro -n quizmaster
-kubectl get pods -n quizmaster -w
+kubectl apply -f /tmp/01-quizix-pro.yaml
+kubectl rollout restart deployment/quizix-pro -n quizix
+kubectl get pods -n quizix -w
 ```
 
 ---
@@ -126,13 +126,13 @@ toomanyrequests: You have reached your unauthenticated pull rate limit
      --docker-server=docker.io \
      --docker-username=USERNAME \
      --docker-password=PASSWORD \
-     -n quizmaster
+     -n quizix
    ```
    Then uncomment `imagePullSecrets` in deployment.
 
 ### Check for Existing Docker Credentials
 ```bash
-kubectl get secrets -n quizmaster | grep -i docker
+kubectl get secrets -n quizix | grep -i docker
 kubectl get secrets -A | grep -i docker
 ```
 
@@ -140,7 +140,7 @@ kubectl get secrets -A | grep -i docker
 
 We use GitHub Container Registry (ghcr.io) instead of Docker Hub to avoid rate limits.
 
-**Image:** `ghcr.io/sapetor/quizmaster-pro:latest`
+**Image:** `ghcr.io/sapetor/quizix-pro:latest`
 
 **One-time setup (already done):**
 
@@ -151,7 +151,7 @@ echo "YOUR_GITHUB_PAT" | docker login ghcr.io -u sapetor --password-stdin
 
 **Make the package public:**
 1. Go to github.com → Your profile → Packages tab
-2. Click quizmaster-pro → Package settings
+2. Click quizix-pro → Package settings
 3. Danger Zone → Change visibility → Public
 
 **Benefits:**
@@ -180,13 +180,13 @@ echo "YOUR_GITHUB_PAT" | docker login ghcr.io -u sapetor --password-stdin
 
 ```bash
 # Check pod status
-kubectl get pods -n quizmaster
+kubectl get pods -n quizix
 
 # Check recent events
-kubectl get events -n quizmaster --sort-by='.lastTimestamp' | tail -30
+kubectl get events -n quizix --sort-by='.lastTimestamp' | tail -30
 
 # Describe a stuck pod
-kubectl describe pod POD_NAME -n quizmaster | tail -40
+kubectl describe pod POD_NAME -n quizix | tail -40
 
 # Check disk on worker nodes
 for ip in 192.168.2.54 192.168.2.55 192.168.2.56 192.168.2.57 192.168.2.58; do
@@ -198,25 +198,25 @@ done
 
 ## Fix: Quick Recovery (Safe - Only Affects Your App)
 
-These commands only affect the `quizmaster` namespace. Safe to run.
+These commands only affect the `quizix` namespace. Safe to run.
 
 **From control plane (ssh labadmin@10.80.21.11):**
 
 ```bash
 # 1. Delete all non-running pods (cleans up zombies)
-kubectl delete pods -n quizmaster --field-selector=status.phase!=Running --force --grace-period=0
+kubectl delete pods -n quizix --field-selector=status.phase!=Running --force --grace-period=0
 
 # 2. Scale down to release volumes
-kubectl scale deployment quizmaster-pro -n quizmaster --replicas=0
+kubectl scale deployment quizix-pro -n quizix --replicas=0
 
 # 3. Wait for volumes to detach
 sleep 30
 
 # 4. Scale back up
-kubectl scale deployment quizmaster-pro -n quizmaster --replicas=1
+kubectl scale deployment quizix-pro -n quizix --replicas=1
 
 # 5. Watch it come up
-kubectl get pods -n quizmaster -w
+kubectl get pods -n quizix -w
 ```
 
 ---
@@ -226,31 +226,31 @@ kubectl get pods -n quizmaster -w
 **Step 1: From WSL on your local machine, SCP the manifest to control plane:**
 
 ```bash
-scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizmaster-pro.yaml labadmin@10.80.21.11:/tmp/
+scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
 ```
 
 **Step 2: Verify the file transferred correctly (on control plane):**
 
 ```bash
 # Check for Recreate strategy
-grep -A1 "strategy:" /tmp/01-quizmaster-pro.yaml
+grep -A1 "strategy:" /tmp/01-quizix-pro.yaml
 
 # Check for resource requests
-grep -A6 "resources:" /tmp/01-quizmaster-pro.yaml
+grep -A6 "resources:" /tmp/01-quizix-pro.yaml
 
 # Check for nodeSelector
-grep -A2 "nodeSelector:" /tmp/01-quizmaster-pro.yaml
+grep -A2 "nodeSelector:" /tmp/01-quizix-pro.yaml
 
 # Or compare checksums (run md5sum on both machines)
-md5sum /tmp/01-quizmaster-pro.yaml
+md5sum /tmp/01-quizix-pro.yaml
 ```
 
 **Step 3: Apply the manifest (on control plane):**
 
 ```bash
-kubectl apply -f /tmp/01-quizmaster-pro.yaml
-kubectl rollout restart deployment/quizmaster-pro -n quizmaster
-kubectl get pods -n quizmaster -w
+kubectl apply -f /tmp/01-quizix-pro.yaml
+kubectl rollout restart deployment/quizix-pro -n quizix
+kubectl get pods -n quizix -w
 ```
 
 ---
@@ -301,7 +301,7 @@ The app is pinned to `k8s-worker-node5` by default. To change:
    done
    ```
 
-2. Edit `k8s/01-quizmaster-pro.yaml`:
+2. Edit `k8s/01-quizix-pro.yaml`:
    ```yaml
    nodeSelector:
      kubernetes.io/hostname: k8s-worker-nodeX  # Change X
@@ -323,12 +323,12 @@ done
 
 ### 2. Check which node your app is on
 ```bash
-kubectl get pods -n quizmaster -o wide
+kubectl get pods -n quizix -o wide
 ```
 
 ### 3. Check PVC status
 ```bash
-kubectl get pvc -n quizmaster
+kubectl get pvc -n quizix
 ```
 
 ---
@@ -337,17 +337,17 @@ kubectl get pvc -n quizmaster
 
 | Task | Command |
 |------|---------|
-| List pods | `kubectl get pods -n quizmaster` |
-| Watch pods | `kubectl get pods -n quizmaster -w` |
-| Pod details | `kubectl describe pod POD_NAME -n quizmaster` |
-| Pod logs | `kubectl logs POD_NAME -n quizmaster` |
-| Recent events | `kubectl get events -n quizmaster --sort-by='.lastTimestamp'` |
+| List pods | `kubectl get pods -n quizix` |
+| Watch pods | `kubectl get pods -n quizix -w` |
+| Pod details | `kubectl describe pod POD_NAME -n quizix` |
+| Pod logs | `kubectl logs POD_NAME -n quizix` |
+| Recent events | `kubectl get events -n quizix --sort-by='.lastTimestamp'` |
 | Node status | `kubectl get nodes -o wide` |
 | All workloads | `kubectl get pods -A -o wide` |
-| Delete stuck pods | `kubectl delete pods -n quizmaster --field-selector=status.phase!=Running --force --grace-period=0` |
-| Restart deployment | `kubectl rollout restart deployment/quizmaster-pro -n quizmaster` |
-| Scale down | `kubectl scale deployment quizmaster-pro -n quizmaster --replicas=0` |
-| Scale up | `kubectl scale deployment quizmaster-pro -n quizmaster --replicas=1` |
+| Delete stuck pods | `kubectl delete pods -n quizix --field-selector=status.phase!=Running --force --grace-period=0` |
+| Restart deployment | `kubectl rollout restart deployment/quizix-pro -n quizix` |
+| Scale down | `kubectl scale deployment quizix-pro -n quizix --replicas=0` |
+| Scale up | `kubectl scale deployment quizix-pro -n quizix --replicas=1` |
 
 ---
 
@@ -373,7 +373,7 @@ kubectl get pvc -n quizmaster
 ### Symptoms
 - App pod is Running and healthy
 - `kubectl exec` into pod shows app responds on localhost
-- External URL (http://10.80.21.11/quizmaster) times out or returns blank
+- External URL (http://10.80.21.11/quizix) times out or returns blank
 - Multiple namespaces showing evicted pods
 
 ### Diagnosis
@@ -415,7 +415,7 @@ kubectl get nodes -o custom-columns='NAME:.metadata.name,DISK:.status.conditions
 
 **Step 2: Move your app to healthy node**
 
-Edit `k8s/01-quizmaster-pro.yaml`:
+Edit `k8s/01-quizix-pro.yaml`:
 ```yaml
 nodeSelector:
   kubernetes.io/hostname: k8s-worker-node2  # Pick a node without disk pressure
@@ -423,22 +423,22 @@ nodeSelector:
 
 Then redeploy:
 ```bash
-scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizmaster-pro.yaml labadmin@10.80.21.11:/tmp/
+scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
 # On control plane:
-kubectl apply -f /tmp/01-quizmaster-pro.yaml
-kubectl rollout restart deployment/quizmaster-pro -n quizmaster
+kubectl apply -f /tmp/01-quizix-pro.yaml
+kubectl rollout restart deployment/quizix-pro -n quizix
 ```
 
 **Step 3: If external access still fails, use port-forward workaround**
 ```bash
 # From control plane
-kubectl port-forward -n quizmaster svc/quizmaster-pro 3000:3000 --address=0.0.0.0
+kubectl port-forward -n quizix svc/quizix-pro 3000:3000 --address=0.0.0.0
 ```
 Then access: `http://10.80.21.11:3000`
 
 Or via SSH tunnel from local machine:
 ```bash
-ssh -L 3000:localhost:3000 labadmin@10.80.21.11 "kubectl port-forward -n quizmaster svc/quizmaster-pro 3000:3000"
+ssh -L 3000:localhost:3000 labadmin@10.80.21.11 "kubectl port-forward -n quizix svc/quizix-pro 3000:3000"
 ```
 Then access: `http://localhost:3000`
 
@@ -469,7 +469,7 @@ The cluster owner needs to:
 
 ```bash
 # Scale down
-kubectl scale deployment quizmaster-pro -n quizmaster --replicas=0
+kubectl scale deployment quizix-pro -n quizix --replicas=0
 
 # Find stuck attachments
 kubectl get volumeattachments | grep -E "(pvc-99eec36a|pvc-e08e1895|pvc-15a8a2dd)"
@@ -478,10 +478,10 @@ kubectl get volumeattachments | grep -E "(pvc-99eec36a|pvc-e08e1895|pvc-15a8a2dd
 kubectl patch volumeattachment <NAME> -p '{"metadata":{"finalizers":null}}' --type=merge
 
 # Verify gone
-kubectl get volumeattachments | grep quizmaster
+kubectl get volumeattachments | grep quizix
 
 # Scale back up
-kubectl scale deployment quizmaster-pro -n quizmaster --replicas=1
+kubectl scale deployment quizix-pro -n quizix --replicas=1
 ```
 
 ---

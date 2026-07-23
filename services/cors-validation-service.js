@@ -37,11 +37,6 @@ class CORSValidationService {
 
         // Cloud platform patterns for production deployment
         this.cloudPlatformPatterns = [
-            // Railway - specific pattern for your app
-            /^https:\/\/quizix-pro-production\.up\.railway\.app$/,
-            // Railway - general patterns
-            /^https:\/\/[a-zA-Z0-9-]+-production\.up\.railway\.app$/,
-            /^https:\/\/[a-zA-Z0-9-]+\.railway\.app$/,
             // Heroku
             /^https:\/\/[a-zA-Z0-9-]+\.herokuapp\.com$/,
             // Vercel
@@ -61,7 +56,7 @@ class CORSValidationService {
         ];
 
         // Fix environment detection - prioritize production detection
-        this.isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
+        this.isProduction = process.env.NODE_ENV === 'production';
         this.isDevelopment = !this.isProduction; // Development is simply NOT production
         this.allowedPorts = new Set(['3000', '3001', '8080', '8000']);
     }

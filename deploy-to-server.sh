@@ -143,12 +143,12 @@ deploy_image_transfer() {
             -e NODE_ENV=production \\
             -e DEBUG_ENABLED=false \\
             -e GITLAB_URL=https://localhost:8080 \\
-            -v \$HOME/quizmaster-data/results:/app/results \\
-            -v \$HOME/quizmaster-data/uploads:/app/uploads \\
+            -v \$HOME/quizix-data/results:/app/results \\
+            -v \$HOME/quizix-data/uploads:/app/uploads \\
             quizix-pro:latest
         
         # Create data directories
-        mkdir -p \$HOME/quizmaster-data/{results,uploads}
+        mkdir -p \$HOME/quizix-data/{results,uploads}
         
         # Show status
         docker ps | grep quizix-pro
