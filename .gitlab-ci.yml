@@ -29,6 +29,10 @@ test:
   script:
     - npm run lint
     - npm test
+    # The bundle is committed (Docker rebuilds it, but local serves use the
+    # committed copy) — fail if source CSS changed without a rebuild
+    - npm run build:css
+    - git diff --exit-code public/css/main.bundle.css
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
     - if: $CI_COMMIT_BRANCH == "master"

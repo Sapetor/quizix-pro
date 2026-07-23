@@ -354,8 +354,10 @@ app.use(createStaticErrorHandler(logger));
 // Special handling for JavaScript files to prevent 500 errors
 app.get('/js/*', createJsFileHandler(logger, isProduction, __dirname));
 
-// Serve debug tools from debug directory
-app.use('/debug', express.static('debug', createDebugStaticConfig()));
+// Serve debug tools from debug directory (development only)
+if (!isProduction) {
+    app.use('/debug', express.static('debug', createDebugStaticConfig()));
+}
 
 // Ensure directories exist (async startup)
 (async () => {
