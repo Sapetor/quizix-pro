@@ -12,11 +12,13 @@
     --lp-surface-2: #f4f5f8;
     --lp-ink: #14161c;
     --lp-ink-2: #454a56;
-    --lp-ink-3: #767c8a;
+    /* tertiary ink must clear 4.5:1 on --lp-bg (the darkest light ground) —
+       it carries 11–12px text: section kickers, tags, demo status */
+    --lp-ink-3: #5f6675;
     --lp-line: #d7dae2;
     --lp-line-2: #e7e9ef;
 
-    /* the five answer colors ARE the brand (shared with the in-game palette) */
+    /* the six answer colors ARE the brand (shared with the in-game palette) */
     --lp-opt-a: #2563eb;   /* blue   */
     --lp-opt-b: #059669;   /* green  */
     --lp-opt-c: #f59e0b;   /* amber  */
@@ -24,9 +26,28 @@
     --lp-opt-e: #7c3aed;   /* violet */
     --lp-opt-f: #0e7490;   /* cyan   */
 
-    --lp-primary: #4338ca;        /* indigo — "create" */
-    --lp-primary-edge: #2a2494;   /* keycap bottom edge */
-    --lp-join-edge: #04724f;      /* green keycap edge  */
+    /* AA-safe variants for small filled chips carrying WHITE text.
+       Only b and c differ; a/d/e/f already clear 4.5:1 on white. */
+    --lp-optink-a: #2563eb;   /* 5.17 */
+    --lp-optink-b: #047857;   /* 5.48  (--lp-opt-b is 3.77 — unusable with white text) */
+    --lp-optink-c: #b45309;   /* 5.02  (--lp-opt-c is 2.15 — unusable with white text) */
+    --lp-optink-d: #e11d48;   /* 4.70 */
+    --lp-optink-e: #7c3aed;   /* 5.70 */
+    --lp-optink-f: #0e7490;   /* 5.36 */
+
+    /* frog green — identity + the TEACHER action ("Create a Quiz") */
+    --lp-primary: #15803d;        /* fills, rings, large accents. 5.02 on #fff */
+    --lp-primary-edge: #0c5e2a;   /* keycap bottom edge */
+    --lp-primary-label: #ffffff;  /* label ON the primary fill. 5.02 */
+    --lp-primary-ink: #166534;    /* green TEXT below 24px/18.7-bold. 5.98 on --lp-bg */
+
+    /* buzz amber — the STUDENT action ("Entrar al juego"). Identical in dark.
+       Separating the two primary actions by hue rather than by shade of green is
+       the only version a reader parses at a glance; it also fixes a live defect
+       (the old #059669 fill with white label was 3.77:1). */
+    --lp-join: #f59e0b;
+    --lp-join-edge: #b45309;      /* 4px keycap edge AND the mandatory 1px border */
+    --lp-join-label: #14161c;     /* 8.42 on the amber fill */
 
     --lp-shadow: 0 1px 2px rgba(20,22,28,.06), 0 12px 28px -14px rgba(20,22,28,.22);
 
@@ -59,9 +80,12 @@
     --lp-ink-3: #7d8493;
     --lp-line: #2a2f3b;
     --lp-line-2: #232833;
-    --lp-primary: #6366f1;
-    --lp-primary-edge: #3b3aa0;
+    --lp-primary: #22c55e;        /* 8.41 on --lp-bg, 7.63 on --lp-surface */
+    --lp-primary-edge: #0b5e2c;
+    --lp-primary-label: #052e1a;  /* 6.53 on the fill. WHITE HERE IS 2.28 — never use it. */
+    --lp-primary-ink: #22c55e;    /* clears 4.5 on every dark surface, so one value serves both roles */
     --lp-shadow: 0 1px 2px rgba(0,0,0,.4), 0 18px 40px -18px rgba(0,0,0,.7);
+    /* --lp-join / --lp-join-edge / --lp-join-label / --lp-optink-*: inherited on purpose */
 }
 
 #main-menu.landing-v2 *,
@@ -69,7 +93,8 @@
 #main-menu.landing-v2 *::after { box-sizing: border-box; }
 
 #main-menu.landing-v2 a { color: inherit; text-decoration: none; }
-#main-menu.landing-v2 ::selection { background: var(--lp-primary); color: #fff; }
+/* the label must follow the theme: white on #22c55e is 2.28:1 */
+#main-menu.landing-v2 ::selection { background: var(--lp-primary); color: var(--lp-primary-label); }
 
 #main-menu.landing-v2 .lp-container {
     max-width: var(--lp-max);
@@ -110,7 +135,9 @@
     font-family: var(--lp-font-display);
     font-weight: 800;
     font-size: clamp(38px, 6vw, 66px);
-    line-height: 0.98;
+    /* 0.98 put a 66px face in a 64.7px line box — descenders collided with the
+       next line's ascenders. 1.04 clears it and keeps the tight Buzzer feel. */
+    line-height: 1.04;
     letter-spacing: -0.035em;
     margin: 20px 0 0;
     color: var(--lp-ink);
@@ -157,7 +184,7 @@
     white-space: nowrap;
     border: none;
     cursor: pointer;
-    color: #fff;
+    color: var(--lp-primary-label);
     background: var(--lp-primary);
     box-shadow: 0 4px 0 0 var(--lp-primary-edge), var(--lp-shadow);
     transform: translateY(0);
@@ -323,19 +350,21 @@
 #main-menu.landing-v2 .lp-pin-name input::placeholder { color: var(--lp-ink-3); }
 #main-menu.landing-v2 .lp-pin-name input:focus { outline: none; }
 
-/* join = green keycap */
+/* join = amber keycap. Green owns the teacher's action, amber the student's.
+   #f59e0b vs a white card is only 2.15:1, so the 1px --lp-join-edge border is
+   mandatory, not decorative — it is what carries the 3:1 control boundary. */
 #main-menu.landing-v2 .lp-pin-join {
     width: 100%;
     margin-top: 12px;
-    border: none;
+    border: 1px solid var(--lp-join-edge);
     border-radius: 12px;
     padding: 14px 20px;
     font-family: var(--lp-font-ui);
     font-weight: 700;
     font-size: 15px;
     cursor: pointer;
-    color: #fff;
-    background: var(--lp-opt-b);
+    color: var(--lp-join-label);
+    background: var(--lp-join);
     box-shadow: 0 4px 0 0 var(--lp-join-edge);
     display: inline-flex;
     align-items: center;
@@ -435,94 +464,1727 @@
 #main-menu.landing-v2 .lp-room-pill .lp-pin { font-family: var(--lp-font-mono); color: var(--lp-primary); }
 #main-menu.landing-v2 .lp-room-pill .lp-players { color: var(--lp-ink-3); }
 
-/* ============ CAPABILITY STRIP ============ */
-#main-menu.landing-v2 .lp-block { padding: 40px 0 0; }
-#main-menu.landing-v2 .lp-caps-lead {
+/* ============ SHARED SECTION FURNITURE ============ */
+/* Owned by A1 (§3.1–§3.6 of the design spec). Sections A2–A6 assume this exists.
+   Placed immediately before the LIVE DEMO block and after the existing
+   CAPABILITY STRIP block, so `.lp-block` here supersedes the older 40px value. */
+
+#main-menu.landing-v2 .lp-block { padding: 56px 0 0; }
+
+#main-menu.landing-v2 .lp-section-head {
+    border-top: 1px solid var(--lp-line);
+    padding-top: 56px;
+    margin: 0 0 36px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+    gap: 20px 48px;
+    align-items: end;
+}
+#main-menu.landing-v2 .lp-section-kicker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px;
     font-family: var(--lp-font-mono);
     font-size: 12px;
+    font-weight: 500;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--lp-ink-3);
-    margin: 0 0 22px;
-    padding-top: 40px;
-    border-top: 1px solid var(--lp-line);
 }
-#main-menu.landing-v2 .lp-features {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+/* micro-keycap chip — the section's identity color */
+#main-menu.landing-v2 .lp-section-kicker::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+    background: var(--sc, var(--lp-primary));
+    box-shadow: 0 2px 0 0 rgba(20, 22, 28, 0.22);
 }
-#main-menu.landing-v2 .lp-feature {
+#main-menu.landing-v2 .lp-block h2 {
+    margin: 0;
+    font-family: var(--lp-font-display);
+    font-weight: 800;
+    font-size: clamp(26px, 3.4vw, 40px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--lp-ink);
+    text-wrap: balance;
+}
+#main-menu.landing-v2 .lp-block h2 em {
+    font-style: normal;
+    color: var(--lp-primary);   /* ALWAYS green, never --sc */
+}
+#main-menu.landing-v2 .lp-aside {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--lp-ink-2);
+    max-width: 34ch;
+}
+
+/* cards */
+#main-menu.landing-v2 .lp-card {
     background: var(--lp-surface);
     border: 1px solid var(--lp-line);
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 20px;
     position: relative;
     overflow: hidden;
 }
-#main-menu.landing-v2 .lp-feature::before {
+#main-menu.landing-v2 .lp-card--raised {
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: var(--lp-shadow);
+}
+#main-menu.landing-v2 .lp-card--bar::before {
     content: "";
     position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 4px;
-    background: var(--fc, var(--lp-primary));
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: var(--fc, var(--sc, var(--lp-primary)));
 }
-#main-menu.landing-v2 .lp-feature h4 {
-    margin: 8px 0 6px;
-    font-family: var(--lp-font-display);
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    color: var(--lp-ink);
-}
-#main-menu.landing-v2 .lp-feature p {
-    margin: 0;
-    font-size: 13.5px;
-    line-height: 1.5;
-    color: var(--lp-ink-2);
-}
-#main-menu.landing-v2 .lp-feature .lp-tag {
+
+/* chips, tags, mono labels */
+#main-menu.landing-v2 .lp-tag {
     display: inline-block;
-    margin-top: 12px;
     font-family: var(--lp-font-mono);
     font-size: 11px;
     color: var(--lp-ink-3);
 }
-
-/* ============ FOOTER (slim) ============ */
-#main-menu.landing-v2 .lp-footer {
-    margin-top: 56px;
-    border-top: 1px solid var(--lp-line);
+#main-menu.landing-v2 .lp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--lp-line);
+    background: var(--lp-surface-2);
+    font-family: var(--lp-font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--lp-ink-2);
+    white-space: nowrap;
 }
+#main-menu.landing-v2 .lp-chip .lp-chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cc, var(--sc, var(--lp-primary)));
+}
+#main-menu.landing-v2 .lp-meta {
+    font-family: var(--lp-font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--lp-ink-3);
+}
+
+/* numbered step keycaps — #lp-howto only */
+#main-menu.landing-v2 .lp-step-num {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: var(--lp-surface-2);
+    border: 1px solid var(--lp-line-2);
+    box-shadow: 0 3px 0 0 var(--lp-line);
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lp-ink-2);
+}
+#main-menu.landing-v2 .lp-step:first-child .lp-step-num {
+    background: var(--lp-primary);
+    border-color: var(--lp-primary);
+    box-shadow: 0 3px 0 0 var(--lp-primary-edge);
+    color: var(--lp-primary-label);
+}
+
+/* focus — never removed */
+/* NOTE: no border-radius here — it would reshape the focused element itself
+   (a 13px answer key would square off to 4px). The outline follows the
+   element's own radius already. */
+#main-menu.landing-v2 :focus-visible {
+    outline: 2px solid var(--lp-primary);
+    outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+    #main-menu.landing-v2 .lp-section-head { grid-template-columns: 1fr; align-items: start; }
+    #main-menu.landing-v2 .lp-aside { max-width: 60ch; }
+}
+@media (max-width: 560px) {
+    #main-menu.landing-v2 .lp-block { padding-top: 36px; }
+    #main-menu.landing-v2 .lp-section-head { padding-top: 36px; margin-bottom: 24px; }
+}
+
+/* ============ LIVE DEMO ============ */
+
+#main-menu.landing-v2 .lp-demo { padding: 26px; }
+
+/* ---- HUD strip ---- */
+#main-menu.landing-v2 .lp-demo-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 34px;
+}
+#main-menu.landing-v2 .lp-demo-idx {
+    font-variant-numeric: tabular-nums;
+    color: var(--lp-ink-3);
+}
+#main-menu.landing-v2 .lp-demo-n,
+#main-menu.landing-v2 .lp-demo-total {
+    color: var(--lp-ink-2);
+    font-weight: 600;
+}
+#main-menu.landing-v2 .lp-demo-chip[data-cc="a"] { --cc: var(--lp-opt-a); }
+#main-menu.landing-v2 .lp-demo-chip[data-cc="b"] { --cc: var(--lp-opt-b); }
+#main-menu.landing-v2 .lp-demo-chip[data-cc="c"] { --cc: var(--lp-opt-c); }
+#main-menu.landing-v2 .lp-demo-chip[data-cc="d"] { --cc: var(--lp-opt-d); }
+#main-menu.landing-v2 .lp-demo-chip[data-cc="e"] { --cc: var(--lp-opt-e); }
+#main-menu.landing-v2 .lp-demo-chip[data-cc="f"] { --cc: var(--lp-opt-f); }
+
+/* ---- auto-advance track (and its reduced-motion replacement) ---- */
+#main-menu.landing-v2 .lp-demo-track {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--lp-line-2);
+    margin: 14px 0 18px;
+    overflow: hidden;
+}
+#main-menu.landing-v2 .lp-demo-fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 2px;
+    background: var(--lp-primary);
+    animation: lp-demo-tick 6s linear forwards;
+}
+/* pause on interaction — no JS class needed for hover/focus */
+#main-menu.landing-v2 .lp-demo:hover .lp-demo-fill,
+#main-menu.landing-v2 .lp-demo:focus-within .lp-demo-fill,
+#main-menu.landing-v2 .lp-demo.is-taken .lp-demo-fill { animation-play-state: paused; }
+#main-menu.landing-v2 .lp-demo.is-taken .lp-demo-track { opacity: 0.35; }
+
+#main-menu.landing-v2 .lp-demo-pips { display: none; }
+
+@keyframes lp-demo-tick { to { width: 100%; } }
+
+/* ---- question stem ---- */
+#main-menu.landing-v2 .lp-demo-q {
+    margin: 0 0 16px;
+    font-family: var(--lp-font-ui);
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    color: var(--lp-ink);
+    text-wrap: pretty;
+}
+/* The global `pre`/`code` rules in components/code-blocks.css are !important and
+   live in the same @layer, so these overrides must be !important too. */
+#main-menu.landing-v2 .lp-demo-q pre {
+    margin: 14px 0 0 !important;
+    padding: 14px 16px !important;
+    border-radius: 11px !important;
+    font-size: 13px !important;
+    line-height: 1.55 !important;
+    overflow-x: auto !important;
+    max-width: 100% !important;
+}
+#main-menu.landing-v2 .lp-demo-q pre,
+#main-menu.landing-v2 .lp-demo-q pre code {
+    font-family: var(--lp-font-mono) !important;
+    font-weight: 400 !important;
+    letter-spacing: 0 !important;
+}
+/* one scroll container, not two — a global rule also makes the inner <code>
+   scrollable, which hid the overflow inside an element with no affordance */
+#main-menu.landing-v2 .lp-demo-q pre code {
+    overflow: visible !important;
+    display: block !important;
+    min-width: 0 !important;
+}
+
+/* ---- answer options ---- */
+#main-menu.landing-v2 .lp-demo-opts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+#main-menu.landing-v2 .lp-demo-opt {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 15px;
+    border-radius: 13px;
+    border: 1px solid var(--lp-line-2);
+    background-color: var(--lp-surface-2);
+    box-shadow: 0 3px 0 0 var(--lp-line);
+    color: var(--lp-ink);
+    font: 500 15px/1.35 var(--lp-font-ui);
+    text-align: left;
+    cursor: pointer;
+    transform: translateY(0);
+    transition: transform .05s ease, box-shadow .05s ease, background-color .15s ease, border-color .15s ease, opacity .18s ease;
+}
+/* letter chips carry white text — use the AA-safe --lp-optink-* ramp (§4.4) */
+#main-menu.landing-v2 .lp-demo-opts > .lp-demo-opt:nth-child(1) { --oc: var(--lp-optink-a); }
+#main-menu.landing-v2 .lp-demo-opts > .lp-demo-opt:nth-child(2) { --oc: var(--lp-optink-b); }
+#main-menu.landing-v2 .lp-demo-opts > .lp-demo-opt:nth-child(3) { --oc: var(--lp-optink-c); }
+#main-menu.landing-v2 .lp-demo-opts > .lp-demo-opt:nth-child(4) { --oc: var(--lp-optink-d); }
+#main-menu.landing-v2 .lp-demo-opts > .lp-demo-opt:nth-child(5) { --oc: var(--lp-optink-e); }
+#main-menu.landing-v2 .lp-demo-opts > .lp-demo-opt:nth-child(6) { --oc: var(--lp-optink-f); }
+
+#main-menu.landing-v2 .lp-demo-opt:hover:not(:disabled) {
+    background-color: var(--lp-surface);
+    border-color: var(--oc);
+    box-shadow: 0 3px 0 0 var(--oc);
+}
+#main-menu.landing-v2 .lp-demo-opt:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 0 var(--oc);
+}
+#main-menu.landing-v2 .lp-demo-opt:disabled { cursor: default; }
+
+#main-menu.landing-v2 .lp-demo-letter {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--oc);
+    color: #fff;
+    font-family: var(--lp-font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+}
+#main-menu.landing-v2 .lp-demo-label { min-width: 0; }
+#main-menu.landing-v2 .lp-demo-label.is-mono {
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    font-weight: 600;
+}
+#main-menu.landing-v2 .lp-demo-mark,
+#main-menu.landing-v2 .lp-demo-pct {
+    opacity: 0;
+    transition: opacity .18s ease;
+}
+#main-menu.landing-v2 .lp-demo-mark {
+    width: 16px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1;
+}
+#main-menu.landing-v2 .lp-demo-pct {
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--lp-ink-3);
+}
+
+/* reveal */
+#main-menu.landing-v2 .lp-demo.is-revealed .lp-demo-mark,
+#main-menu.landing-v2 .lp-demo.is-revealed .lp-demo-pct { opacity: 1; }
+
+/* the distribution bar IS the option row */
+#main-menu.landing-v2 .lp-demo.is-revealed .lp-demo-opt {
+    background-image: linear-gradient(90deg, color-mix(in srgb, var(--oc) 18%, transparent) var(--pct, 0%), transparent 0);
+}
+#main-menu.landing-v2 .lp-demo.is-revealed .lp-demo-opt:not(.is-correct):not(.is-wrong) {
+    opacity: 0.5;
+    box-shadow: none;
+}
+
+/* answered — correct. Tinted, never flooded: label stays --lp-ink (≥11.98:1 both themes). */
+#main-menu.landing-v2 .lp-demo-opt.is-correct {
+    background-color: color-mix(in srgb, var(--oc) 14%, var(--lp-surface));
+    border-color: var(--oc);
+    box-shadow: inset 0 0 0 1.5px var(--oc), 0 3px 0 0 var(--oc);
+    color: var(--lp-ink);
+    animation: lp-demo-pop .22s ease-out;
+}
+#main-menu.landing-v2 .lp-demo-opt.is-correct .lp-demo-mark::before {
+    content: "\2713";
+    color: var(--oc);
+    font-weight: 700;
+}
+
+/* answered — wrong. The key stays depressed; it never came back up. */
+#main-menu.landing-v2 .lp-demo-opt.is-wrong {
+    transform: translateY(3px);
+    box-shadow: none;
+    background-color: color-mix(in srgb, var(--lp-opt-d) 12%, var(--lp-surface));
+    border-color: var(--lp-opt-d);
+}
+#main-menu.landing-v2 .lp-demo-opt.is-wrong .lp-demo-mark::before {
+    content: "\2715";
+    color: var(--lp-opt-d);
+    font-weight: 700;
+}
+
+@keyframes lp-demo-pop {
+    0%   { transform: translateY(3px); }
+    60%  { transform: translateY(-1px); }
+    100% { transform: translateY(0); }
+}
+
+/* ---- numeric entry slide ---- */
+#main-menu.landing-v2 .lp-demo-numeric {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+}
+#main-menu.landing-v2 .lp-demo-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 200px;
+    min-width: 0;
+    height: 48px;
+    padding: 0 14px;
+    border-radius: 13px;
+    border: 1px solid var(--lp-line-2);
+    background: var(--lp-surface-2);
+    box-shadow: inset 0 2px 0 0 var(--lp-line-2);
+}
+#main-menu.landing-v2 .lp-demo-field:focus-within {
+    border-color: var(--lp-primary);
+    box-shadow: inset 0 0 0 1px var(--lp-primary);
+}
+#main-menu.landing-v2 .lp-demo-numeric input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: none;
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--lp-ink);
+}
+#main-menu.landing-v2 .lp-demo-numeric input::placeholder {
+    font-weight: 400;
+    color: var(--lp-ink-3);
+}
+#main-menu.landing-v2 .lp-demo-numeric input:focus { outline: none; }
+#main-menu.landing-v2 .lp-demo-unit {
+    flex: 0 0 auto;
+    font-family: var(--lp-font-mono);
+    font-size: 12px;
+    color: var(--lp-ink-3);
+}
+#main-menu.landing-v2 .lp-demo-submit {
+    flex: 0 0 auto;
+    height: 48px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 13px;
+    font-family: var(--lp-font-ui);
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    color: var(--lp-primary-label);
+    background: var(--lp-primary);
+    box-shadow: 0 3px 0 0 var(--lp-primary-edge);
+    transform: translateY(0);
+    transition: transform .05s ease, box-shadow .05s ease;
+}
+#main-menu.landing-v2 .lp-demo-submit:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 0 var(--lp-primary-edge);
+}
+#main-menu.landing-v2 .lp-demo-submit:disabled { cursor: default; opacity: 0.55; }
+#main-menu.landing-v2 .lp-demo-tol {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+}
+#main-menu.landing-v2 .lp-demo-answer {
+    flex: 0 0 auto;
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lp-primary-ink);
+}
+#main-menu.landing-v2 .lp-demo-numeric.is-wrong .lp-demo-field {
+    border-color: var(--lp-opt-d);
+    background: color-mix(in srgb, var(--lp-opt-d) 12%, var(--lp-surface));
+}
+#main-menu.landing-v2 .lp-demo-numeric.is-correct .lp-demo-field {
+    border-color: var(--lp-primary);
+    background: color-mix(in srgb, var(--lp-primary) 14%, var(--lp-surface));
+}
+
+/* ---- foot ---- */
+#main-menu.landing-v2 .lp-demo-foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--lp-line-2);
+}
+#main-menu.landing-v2 .lp-demo-status { min-width: 0; }
+#main-menu.landing-v2 .lp-demo.is-revealed .lp-demo-status { color: var(--lp-ink-2); }
+#main-menu.landing-v2 .lp-demo-dist { margin-left: auto; }
+#main-menu.landing-v2 .lp-demo-dist.hidden + .lp-demo-next { margin-left: auto; }
+#main-menu.landing-v2 .lp-demo-next {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    border: 1px solid var(--lp-line);
+    border-radius: 13px;
+    font-family: var(--lp-font-ui);
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    color: var(--lp-ink);
+    background: var(--lp-surface);
+    box-shadow: 0 3px 0 0 var(--lp-line);
+    transform: translateY(0);
+    transition: transform .05s ease, box-shadow .05s ease, border-color .15s ease;
+}
+#main-menu.landing-v2 .lp-demo-next:hover {
+    border-color: var(--lp-primary);
+    box-shadow: 0 3px 0 0 var(--lp-primary);
+}
+#main-menu.landing-v2 .lp-demo-next:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 0 var(--lp-primary);
+}
+
+/* ---- dark theme ---- */
+[data-theme="dark"] #main-menu.landing-v2 .lp-section-kicker::before {
+    box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.5);
+}
+[data-theme="dark"] #main-menu.landing-v2 .lp-demo-letter { color: #fff; }
+[data-theme="dark"] #main-menu.landing-v2 .lp-demo-opt.is-correct {
+    background-color: color-mix(in srgb, var(--oc) 22%, var(--lp-surface));
+}
+[data-theme="dark"] #main-menu.landing-v2 .lp-demo-opt.is-wrong {
+    background-color: color-mix(in srgb, var(--lp-opt-d) 20%, var(--lp-surface));
+}
+[data-theme="dark"] #main-menu.landing-v2 .lp-demo.is-revealed .lp-demo-opt {
+    background-image: linear-gradient(90deg, color-mix(in srgb, var(--oc) 26%, transparent) var(--pct, 0%), transparent 0);
+}
+[data-theme="dark"] #main-menu.landing-v2 .lp-demo-numeric.is-wrong .lp-demo-field {
+    background: color-mix(in srgb, var(--lp-opt-d) 20%, var(--lp-surface));
+}
+[data-theme="dark"] #main-menu.landing-v2 .lp-demo-numeric.is-correct .lp-demo-field {
+    background: color-mix(in srgb, var(--lp-primary) 20%, var(--lp-surface));
+}
+
+/* ---- responsive ---- */
+@media (max-width: 900px) {
+    #main-menu.landing-v2 .lp-demo { padding: 22px; }
+}
+@media (max-width: 560px) {
+    #main-menu.landing-v2 .lp-demo-bar { flex-wrap: wrap; gap: 8px; }
+    #main-menu.landing-v2 .lp-demo-q { font-size: 18px; }
+    #main-menu.landing-v2 .lp-demo-opts { grid-template-columns: 1fr; }
+    #main-menu.landing-v2 .lp-demo-letter { width: 24px; height: 24px; }
+    #main-menu.landing-v2 .lp-demo-opt { gap: 10px; padding: 12px 13px; font-size: 14.5px; }
+    #main-menu.landing-v2 .lp-demo-foot { flex-wrap: wrap; }
+    #main-menu.landing-v2 .lp-demo-dist { display: none; }
+    #main-menu.landing-v2 .lp-demo-next { margin-left: auto; }
+    #main-menu.landing-v2 .lp-demo-field { flex-basis: 100%; }
+    #main-menu.landing-v2 .lp-demo-submit { flex: 1 1 auto; }
+    /* wrap rather than scroll on phones — the answer depends on the tail of the
+       line, and off-screen code makes the question unanswerable (house pattern,
+       see css/CLAUDE.md "Code Block Mobile Styling") */
+    #main-menu.landing-v2 .lp-demo-q pre,
+    #main-menu.landing-v2 .lp-demo-q pre code {
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+    }
+    #main-menu.landing-v2 .lp-demo-q pre { font-size: 12px !important; }
+}
+
+/* ---- reduced motion: the hairline track is replaced by static pips ---- */
+@media (prefers-reduced-motion: reduce) {
+    #main-menu.landing-v2 .lp-demo-track { display: none; }
+    #main-menu.landing-v2 .lp-demo-pips { display: flex; gap: 6px; margin: 14px 0 18px; }
+    #main-menu.landing-v2 .lp-demo-pips span {
+        width: 22px;
+        height: 3px;
+        border-radius: 2px;
+        background: var(--lp-line);
+    }
+    #main-menu.landing-v2 .lp-demo-pips span.is-on { background: var(--lp-primary); }
+}
+
+/* ============ QUESTION TYPES ============ */
+/* #lp-questions — a SET of five formats, deliberately unnumbered.
+   Each card carries a miniature of that format's real answer UI.
+   All colour comes from the six answer tokens; --sc (cyan) is the section chip. */
+
+#main-menu.landing-v2 .lp-qt-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+#main-menu.landing-v2 .lp-qt.lp-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    min-width: 0;
+}
+
+#main-menu.landing-v2 .lp-qt-txt {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+#main-menu.landing-v2 .lp-qt h5 {
+    margin: 0;
+    font-family: var(--lp-font-display);
+    font-weight: 700;
+    font-size: 14.5px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--lp-ink);
+}
+
+#main-menu.landing-v2 .lp-qt p {
+    margin: 0;
+    font-family: var(--lp-font-ui);
+    font-weight: 400;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--lp-ink-2);
+}
+
+/* the literal `type` value in the quiz JSON — a code token, not prose */
+#main-menu.landing-v2 .lp-tag.lp-qt-id {
+    display: block;
+    margin-top: auto;
+    padding-top: 9px;
+    border-top: 1px solid var(--lp-line);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+/* ---- shared mock shell ---- */
+
+#main-menu.landing-v2 .lp-qt-mock {
+    height: 96px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    padding: 12px;
+    border-radius: 11px;
+    background: var(--lp-surface-2);
+    border: 1px solid var(--lp-line-2);
+}
+
+/* cap the miniature's width so it keeps its density in a wide card */
+#main-menu.landing-v2 .lp-qt-row,
+#main-menu.landing-v2 .lp-qt-orow,
+#main-menu.landing-v2 .lp-qt-band {
+    width: 100%;
+    max-width: 180px;
+}
+
+#main-menu.landing-v2 .lp-qt-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* neutral "text" bar — one rule that reads in both themes */
+#main-menu.landing-v2 .lp-qt-fill {
+    height: 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--lp-ink-3) 38%, transparent);
+}
+
+/* ---- 1. multiple-choice: four keys, one per answer colour ---- */
+
+#main-menu.landing-v2 .lp-qt-key {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;   /* sub-scale: 33% of side, matching .lp-demo-letter's 8/26 */
+    background: var(--k, var(--sc, var(--lp-opt-f)));
+    box-shadow: 0 2px 0 0 color-mix(in srgb, var(--k, var(--sc, var(--lp-opt-f))) 62%, #000);
+}
+
+/* ---- 2. multiple-correct: real checkboxes, two ticked ---- */
+
+#main-menu.landing-v2 .lp-qt-box {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    border: 1.5px solid color-mix(in srgb, var(--lp-ink-3) 62%, transparent);
+    display: grid;
+    place-items: center;
+}
+
+#main-menu.landing-v2 .lp-qt-box.is-on {
+    background: var(--lp-opt-b);
+    border-color: var(--lp-opt-b);
+    box-shadow: 0 2px 0 0 color-mix(in srgb, var(--lp-opt-b) 62%, #000);
+}
+
+#main-menu.landing-v2 .lp-qt-box.is-on::after {
+    content: "\2713";
+    font: 700 8px/1 var(--lp-font-ui);
+    color: #fff;
+}
+
+/* ---- 3. true-false: two full-height keycaps ---- */
+
+#main-menu.landing-v2 .lp-qt-mock--tf {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: 10px;
+}
+
+#main-menu.landing-v2 .lp-qt-tf {
+    flex: 1 1 0;
+    max-width: 85px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--k);
+    box-shadow: 0 3px 0 0 color-mix(in srgb, var(--k) 62%, #000);
+    color: #fff;
+    font: 700 16px/1 var(--lp-font-ui);
+}
+
+/* ---- 4. numeric: value, accepted band, tolerance ---- */
+
+#main-menu.landing-v2 .lp-qt-mock--num {
+    align-items: center;
+    gap: 9px;
+}
+
+#main-menu.landing-v2 .lp-qt-num {
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--lp-ink);
+}
+
+#main-menu.landing-v2 .lp-qt-band {
+    position: relative;
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--lp-ink-3) 30%, transparent);
+}
+
+/* the accepted range */
+#main-menu.landing-v2 .lp-qt-band::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 33%;
+    width: 34%;
+    border-radius: 999px;
+    background: var(--sc, var(--lp-opt-f));
+}
+
+/* the exact value */
+#main-menu.landing-v2 .lp-qt-band::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    left: calc(50% - 1px);
+    width: 2px;
+    border-radius: 999px;
+    background: var(--lp-ink);
+}
+
+#main-menu.landing-v2 .lp-qt-tol {
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 10px;
+    line-height: 1.3;
+    text-align: center;
+    color: var(--lp-ink-3);
+}
+
+/* ---- 5. ordering: tinted rows, mono index, drag grip ---- */
+
+#main-menu.landing-v2 .lp-qt-mock--order {
+    gap: 6px;
+}
+
+#main-menu.landing-v2 .lp-qt-orow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 6px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--k) 20%, transparent);
+}
+
+#main-menu.landing-v2 .lp-qt-orow.is-held {
+    border-color: var(--k);
+    background: color-mix(in srgb, var(--k) 32%, transparent);
+}
+
+#main-menu.landing-v2 .lp-qt-idx {
+    flex: 0 0 auto;
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--lp-ink-2);
+}
+
+#main-menu.landing-v2 .lp-qt-grip {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    margin-left: auto;
+    background-image: repeating-linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--lp-ink-3) 70%, transparent) 0 1.5px,
+        transparent 1.5px 4px
+    );
+}
+
+#main-menu.landing-v2 .lp-qt-orow.is-held .lp-qt-grip {
+    background-image: repeating-linear-gradient(
+        to bottom,
+        var(--k) 0 1.5px,
+        transparent 1.5px 4px
+    );
+}
+
+/* ---- dark: the derived tints need more weight on the darker ground ---- */
+
+[data-theme="dark"] #main-menu.landing-v2 .lp-qt-fill {
+    background: color-mix(in srgb, var(--lp-ink-3) 52%, transparent);
+}
+
+[data-theme="dark"] #main-menu.landing-v2 .lp-qt-band {
+    background: color-mix(in srgb, var(--lp-ink-3) 42%, transparent);
+}
+
+[data-theme="dark"] #main-menu.landing-v2 .lp-qt-orow {
+    background: color-mix(in srgb, var(--k) 26%, transparent);
+}
+
+[data-theme="dark"] #main-menu.landing-v2 .lp-qt-orow.is-held {
+    background: color-mix(in srgb, var(--k) 38%, transparent);
+}
+
+/* ---- responsive ---- */
+
+@media (max-width: 900px) {
+    #main-menu.landing-v2 .lp-qt-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
+    #main-menu.landing-v2 .lp-qt.lp-card { padding: 18px; }
+    #main-menu.landing-v2 .lp-qt-mock { height: 104px; }
+}
+
+@media (max-width: 560px) {
+    #main-menu.landing-v2 .lp-qt-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+    /* the mock moves beside the text so a one-column list stays compact */
+    #main-menu.landing-v2 .lp-qt.lp-card {
+        display: grid;
+        grid-template-columns: 104px minmax(0, 1fr);
+        align-items: start;
+        gap: 14px;
+        padding: 14px;
+    }
+    #main-menu.landing-v2 .lp-qt-mock {
+        height: 92px;
+        padding: 10px;
+    }
+    #main-menu.landing-v2 .lp-qt-num { font-size: 19px; }
+    #main-menu.landing-v2 .lp-tag.lp-qt-id {
+        margin-top: 8px;
+        padding-top: 0;
+        border-top: 0;
+    }
+}
+
+/* ============ HOW IT WORKS (#lp-howto) ============ */
+/* Depends on shared furniture from spec §3 (A1 owns it):
+   .lp-section-head, .lp-section-kicker, .lp-aside, .lp-card, .lp-card--raised,
+   .lp-meta, .lp-step-num  — none of them are redefined here.
+   Reused verbatim from the existing hero CSS: .lp-pin-digit, .lp-avs, .lp-av,
+   .lp-qr-mock, and the global lp-pulse keyframes. No new keyframes. */
+
+#main-menu.landing-v2 .lp-ht-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 352px);
+    gap: 48px;
+    align-items: start;
+}
+
+/* ---------- the four steps ---------- */
+#main-menu.landing-v2 .lp-ht-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+#main-menu.landing-v2 .lp-step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 16px;
+    padding-bottom: 30px;
+}
+#main-menu.landing-v2 .lp-step:last-child { padding-bottom: 0; }
+
+/* the rail: earned here because this is the page's only real sequence */
+#main-menu.landing-v2 .lp-step:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 17.5px;
+    top: 44px;
+    bottom: 6px;
+    width: 1px;
+    background: var(--lp-line);
+}
+
+#main-menu.landing-v2 .lp-step-body h3 {
+    margin: 6px 0 6px;
+    font-family: var(--lp-font-display);
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--lp-ink);
+}
+#main-menu.landing-v2 .lp-step-body p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--lp-ink-2);
+    max-width: 46ch;
+}
+
+/* ---------- shared shell for the three inline mocks ---------- */
+#main-menu.landing-v2 .lp-ht-mini {
+    margin-top: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    max-width: 100%;
+    padding: 11px 13px;
+    border: 1px solid var(--lp-line);
+    border-radius: 11px;
+    background: var(--lp-surface);
+}
+
+/* step 01 — question being authored */
+#main-menu.landing-v2 .lp-ht-editor {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+#main-menu.landing-v2 .lp-ht-erow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#main-menu.landing-v2 .lp-ht-ebar {
+    display: block;
+    height: 7px;
+    max-width: 100%;
+    border-radius: 4px;
+    background: var(--lp-line);
+}
+#main-menu.landing-v2 .lp-ht-ebar-stem {
+    height: 8px;
+    background: color-mix(in srgb, var(--lp-ink-3) 55%, var(--lp-surface));
+}
+#main-menu.landing-v2 .lp-ht-caret {
+    display: block;
+    width: 2px;
+    height: 14px;
+    border-radius: 1px;
+    background: var(--lp-primary);
+}
+#main-menu.landing-v2 .lp-ht-echip {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+    background: var(--oc, var(--lp-primary));
+    color: #fff;
+    font-family: var(--lp-font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* step 03 — countdown + leaderboard */
+#main-menu.landing-v2 .lp-ht-timer {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+#main-menu.landing-v2 .lp-ht-timer-track {
+    display: block;
+    width: 70px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--lp-line-2);
+    overflow: hidden;
+}
+#main-menu.landing-v2 .lp-ht-timer-fill {
+    display: block;
+    width: 62%;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--lp-primary);
+}
+#main-menu.landing-v2 .lp-ht-timer-num {
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--lp-ink-2);
+}
+#main-menu.landing-v2 .lp-ht-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    height: 40px;
+}
+#main-menu.landing-v2 .lp-ht-bars > span {
+    display: block;
+    width: 8px;
+    height: var(--h, 50%);
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--lp-primary) 34%, var(--lp-surface));
+}
+#main-menu.landing-v2 .lp-ht-bars > span.is-lead { background: var(--lp-primary); }
+
+/* step 04 — per-question columns + export formats */
+#main-menu.landing-v2 .lp-ht-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 34px;
+}
+#main-menu.landing-v2 .lp-ht-chart > span {
+    display: block;
+    width: 5px;
+    height: var(--h, 50%);
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--lp-ink-3) 42%, var(--lp-surface));
+}
+#main-menu.landing-v2 .lp-ht-formats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+#main-menu.landing-v2 .lp-ht-fmt {
+    padding: 2px 7px;
+    border: 1px solid var(--lp-line);
+    border-radius: 6px;
+    font-family: var(--lp-font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--lp-ink-3);
+}
+
+/* ---------- the projector panel (step 02, at scale) ---------- */
+#main-menu.landing-v2 .lp-ht-projector {
+    display: grid;
+    gap: 16px;
+    align-self: start;
+}
+#main-menu.landing-v2 .lp-ht-head {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+#main-menu.landing-v2 .lp-ht-head-label { flex: 1 1 auto; }
+#main-menu.landing-v2 .lp-ht-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lp-ink);
+}
+#main-menu.landing-v2 .lp-ht-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--lp-opt-b);
+    animation: lp-pulse 2s ease-out infinite;
+}
+
+#main-menu.landing-v2 .lp-ht-pin {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 7px;
+}
+#main-menu.landing-v2 .lp-ht-pin .lp-pin-digit {
+    font-size: clamp(17px, 2.2vw, 24px);
+    color: var(--lp-ink);
+}
+
+#main-menu.landing-v2 .lp-ht-qr {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 12px;
+    border: 1px solid var(--lp-line-2);
+    border-radius: 11px;
+    background: var(--lp-surface-2);
+}
+#main-menu.landing-v2 .lp-ht-qr-frame {
+    flex: 0 0 auto;
+    width: 60px;
+    height: 60px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--lp-surface);
+}
+#main-menu.landing-v2 .lp-ht-qr .lp-qr-mock { width: 46px; height: 46px; }
+#main-menu.landing-v2 .lp-ht-qr-url {
+    min-width: 0;
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: var(--lp-ink-2);
+    word-break: break-all;
+}
+
+#main-menu.landing-v2 .lp-ht-roster {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+#main-menu.landing-v2 .lp-ht-roster .lp-av { border-color: var(--lp-surface); }
+#main-menu.landing-v2 .lp-ht-more {
+    padding: 3px 9px;
+    border: 1px solid var(--lp-line);
+    border-radius: 999px;
+    background: var(--lp-surface-2);
+    font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: var(--lp-ink-3);
+}
+
+/* ---------- dark theme ---------- */
+/* Everything else is token-driven and flips on its own; .lp-qr-mock does not —
+   its 0.28 opacity is tuned for dark ink on a white card and reads too faint
+   when --lp-ink inverts to near-white on --lp-surface #171a22. */
+[data-theme="dark"] #main-menu.landing-v2 .lp-ht-qr .lp-qr-mock { opacity: 0.44; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 900px) {
+    #main-menu.landing-v2 .lp-ht-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+    #main-menu.landing-v2 .lp-ht-projector {
+        max-width: 420px;
+        width: 100%;
+    }
+    #main-menu.landing-v2 .lp-step-body p { max-width: 60ch; }
+}
+@media (max-width: 560px) {
+    #main-menu.landing-v2 .lp-step {
+        grid-template-columns: 36px minmax(0, 1fr);
+        gap: 13px;
+        padding-bottom: 24px;
+    }
+    #main-menu.landing-v2 .lp-step-body h3 { font-size: 17px; }
+    #main-menu.landing-v2 .lp-ht-mini {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    #main-menu.landing-v2 .lp-ht-pin { gap: 5px; }
+    #main-menu.landing-v2 .lp-ht-pin .lp-pin-digit {
+        border-radius: 9px;
+        font-size: clamp(16px, 5vw, 22px);
+    }
+    #main-menu.landing-v2 .lp-ht-qr-frame { width: 52px; height: 52px; }
+    #main-menu.landing-v2 .lp-ht-qr .lp-qr-mock { width: 40px; height: 40px; }
+    #main-menu.landing-v2 .lp-ht-qr-url { font-size: 12px; }
+}
+
+/* ============ AI GENERATION (#lp-ai) ============ */
+/* Before/after: a prompt goes in on the left, a real FrogQuiz question comes out
+   on the right. Both panels are recessed --lp-surface-2 wells inside one raised
+   card; the output well carries the section's 4px --sc bar so it reads as the
+   thing the machine produced. No fake browser chrome anywhere. */
+
+#main-menu.landing-v2 .lp-ai-flow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr);
+    align-items: stretch;
+    gap: 20px;
+}
+
+#main-menu.landing-v2 .lp-ai-panel {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#main-menu.landing-v2 .lp-ai-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 24px;
+}
+
+/* connector keycap — decorative, aria-hidden in the markup */
+#main-menu.landing-v2 .lp-ai-arrow {
+    align-self: center;
+    justify-self: center;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--sc, var(--lp-primary));
+    box-shadow: 0 3px 0 0 rgba(20, 22, 28, .28);
+    color: #fff;
+    font-family: var(--lp-font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    user-select: none;
+}
+
+/* ---- IN: the prompt well ---- */
+#main-menu.landing-v2 .lp-ai-console {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 15px 16px;
+    border-radius: 13px;
+    border: 1px solid var(--lp-line-2);
+    background: var(--lp-surface-2);
+    font-family: var(--lp-font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.65;
+    color: var(--lp-ink);
+    overflow-wrap: anywhere;
+}
+
+#main-menu.landing-v2 .lp-ai-sigil {
+    flex: 0 0 auto;
+    color: var(--lp-primary-ink);
+    font-weight: 700;
+    user-select: none;
+}
+
+#main-menu.landing-v2 .lp-ai-line { min-width: 0; }
+
+#main-menu.landing-v2 .lp-ai-caret {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    margin-left: 4px;
+    vertical-align: -2px;
+    border-radius: 2px;
+    background: var(--lp-primary);
+    animation: lp-ai-caret-blink 1.05s steps(1) infinite;
+}
+
+@keyframes lp-ai-caret-blink {
+    0%, 50% { opacity: 1; }
+    50.01%, 100% { opacity: 0; }
+}
+
+#main-menu.landing-v2 .lp-ai-providers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+#main-menu.landing-v2 .lp-ai-providers .lp-chip,
+#main-menu.landing-v2 .lp-ai-model {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- OUT: the generated question ---- */
+#main-menu.landing-v2 .lp-ai-out {
+    position: relative;
+    padding: 22px 16px 16px;   /* extra top clears the 4px bar */
+    border-radius: 13px;
+    border: 1px solid var(--lp-line-2);
+    background: var(--lp-surface-2);
+    overflow: hidden;
+}
+
+#main-menu.landing-v2 .lp-ai-out::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: var(--sc, var(--lp-primary));
+}
+
+#main-menu.landing-v2 .lp-ai-q {
+    margin: 0 0 14px;
+    font-family: var(--lp-font-ui);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    color: var(--lp-ink);
+    overflow-wrap: anywhere;
+}
+
+#main-menu.landing-v2 .lp-ai-opts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+#main-menu.landing-v2 .lp-ai-opt {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 11px;
+    border-radius: 11px;
+    border: 1px solid var(--lp-line-2);
+    background: var(--lp-surface);
+    font-family: var(--lp-font-ui);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--lp-ink);
+}
+
+/* layout only — colour/size of .lp-demo-letter stays owned by the demo block */
+#main-menu.landing-v2 .lp-ai-opt .lp-demo-letter {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+}
+
+#main-menu.landing-v2 .lp-ai-opt-label { min-width: 0; }
+
+/* the answer key. Green = correct (spec §1.1); --lp-primary is the one green
+   that clears its contrast floor as both a 1px boundary and, via
+   --lp-primary-ink, as 11px text, in light and dark alike. */
+#main-menu.landing-v2 .lp-ai-opt.is-key {
+    border-color: var(--lp-primary);
+    background: color-mix(in srgb, var(--lp-primary) 14%, var(--lp-surface));
+}
+
+#main-menu.landing-v2 .lp-ai-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    color: var(--lp-primary-ink);
+}
+
+#main-menu.landing-v2 .lp-ai-key::before {
+    content: "✓";
+    font-weight: 700;
+}
+
+/* ---- dark ---- */
+[data-theme="dark"] #main-menu.landing-v2 .lp-ai-arrow {
+    box-shadow: 0 3px 0 0 rgba(0, 0, 0, .55);
+}
+
+/* ---- responsive ---- */
+@media (max-width: 900px) {
+    #main-menu.landing-v2 .lp-ai-flow {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+    }
+    #main-menu.landing-v2 .lp-ai-arrow { transform: rotate(90deg); }
+}
+
+@media (max-width: 560px) {
+    #main-menu.landing-v2 .lp-ai-card { padding: 18px; }
+    #main-menu.landing-v2 .lp-ai-panel-head { flex-wrap: wrap; gap: 8px; }
+    #main-menu.landing-v2 .lp-ai-console {
+        padding: 13px 14px;
+        font-size: 12.5px;
+    }
+    #main-menu.landing-v2 .lp-ai-out { padding: 20px 13px 13px; }
+    #main-menu.landing-v2 .lp-ai-q { font-size: 15px; }
+    #main-menu.landing-v2 .lp-ai-opt {
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 4px 9px;
+        padding: 8px 10px;
+        font-size: 13.5px;
+    }
+    #main-menu.landing-v2 .lp-ai-key { grid-column: 2; }
+}
+
+/* ============ CAPABILITY GRID ============ */
+/* Cards are .lp-card .lp-card--bar (§3.2). Everything below is card *internals*
+   only, namespaced .lp-feat* so it cannot collide with the other five sections.
+   The old .lp-caps-lead / .lp-features / .lp-feature rules are deleted by the
+   integrator; nothing here depends on them. */
+
+#main-menu.landing-v2 .lp-feats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    /* only two of the six cards carry a proof visual; stretching the row left
+       ~150px of dead space in the other four. Size to content instead. */
+    align-items: start;
+}
+
+#main-menu.landing-v2 .lp-feat {
+    display: flex;
+    flex-direction: column;
+    padding-top: 24px;              /* 4px accent bar + 20px air above the title */
+}
+#main-menu.landing-v2 .lp-feat h4 {
+    margin: 0 0 6px;
+    font-family: var(--lp-font-display);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--lp-ink);
+}
+#main-menu.landing-v2 .lp-feat p {
+    margin: 0 0 14px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--lp-ink-2);
+}
+/* technology footnote pins to the card floor so all six align across a row */
+#main-menu.landing-v2 .lp-feat .lp-tag {
+    align-self: flex-start;
+    margin-top: auto;
+    padding-top: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- inline proof panel (cards 3 and 6 only) ---- */
+#main-menu.landing-v2 .lp-feat-proof {
+    margin: 0 0 16px;
+    padding: 12px;
+    border-radius: 11px;
+    background: var(--lp-surface-2);
+    border: 1px solid var(--lp-line-2);
+}
+
+/* card 3 — answers landing in real time */
+#main-menu.landing-v2 .lp-feat-live-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 10px;
+    font-family: var(--lp-font-mono);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--lp-ink-3);
+}
+#main-menu.landing-v2 .lp-feat-live-n {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+#main-menu.landing-v2 .lp-feat-live-n::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--lp-opt-b);
+}
+#main-menu.landing-v2 .lp-feat-live-n b {
+    font-weight: 600;
+    color: var(--lp-ink);
+}
+#main-menu.landing-v2 .lp-feat-cells {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+}
+#main-menu.landing-v2 .lp-feat-cells i {
+    width: 6px;
+    height: 11px;
+    border-radius: 2px;
+    /* derived from --lp-ink-3 so the empty cells stay legible in BOTH themes;
+       --lp-line is too close to --lp-surface-2 on dark to read as a slot */
+    background: color-mix(in srgb, var(--lp-ink-3) 40%, transparent);
+}
+#main-menu.landing-v2 .lp-feat-cells i.is-in {
+    background: var(--lp-opt-b);
+}
+
+/* card 6 — the exported distribution (same numbers as the #lp-demo reveal) */
+#main-menu.landing-v2 .lp-feat-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+#main-menu.landing-v2 .lp-feat-col {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+#main-menu.landing-v2 .lp-feat-pct,
+#main-menu.landing-v2 .lp-feat-key {
+    font-family: var(--lp-font-mono);
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+#main-menu.landing-v2 .lp-feat-pct { color: var(--lp-ink-3); }
+#main-menu.landing-v2 .lp-feat-key { font-weight: 600; color: var(--lp-ink-2); }
+#main-menu.landing-v2 .lp-feat-track {
+    display: flex;
+    align-items: flex-end;
+    width: 100%;
+    height: 54px;
+    border-radius: 6px;
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-line);
+    overflow: hidden;
+}
+#main-menu.landing-v2 .lp-feat-bar {
+    display: block;
+    width: 100%;
+    height: var(--h, 0%);
+    min-height: 3px;
+    background: var(--bc, var(--lp-primary));
+}
+
+/* dark: every value above is a token that already flips, or is derived from one
+   (color-mix on --lp-ink-3), so no [data-theme="dark"] override is needed here. */
+
+@media (max-width: 900px) {
+    #main-menu.landing-v2 .lp-feats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+    #main-menu.landing-v2 .lp-feats { grid-template-columns: 1fr; }
+    #main-menu.landing-v2 .lp-feat-track { height: 48px; }
+}
+
+/* ============ OUTRO — CTA LIP + MEGA FOOTER ============ */
+/* Replaces the old "FOOTER (slim)" block wholesale: .lp-footer, .lp-foot,
+   .lp-wordmark and .app-version are (re)defined here and nowhere else.
+   Section colour --sc = --lp-opt-d (rose), used only as the card's top bar. */
+
+#main-menu.landing-v2 .lp-outro { padding: 72px 0 0; }
+
+/* ---------- CTA lip: raised panel straddling the footer's top rule ---------- */
+#main-menu.landing-v2 .lp-cta-lip {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    padding: 40px 32px;
+    text-align: center;
+    /* the "lip": the footer rule is drawn 44px above this card's bottom edge,
+       and the card is narrower than the container so the rule runs out either side */
+    margin: 0 auto -44px;
+}
+#main-menu.landing-v2 .lp-cta-lip h2 {
+    max-width: 20ch;
+    margin: 0 auto 12px;
+}
+#main-menu.landing-v2 .lp-cta-lip-body {
+    max-width: 46ch;
+    margin: 0 auto 24px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--lp-ink-2);
+    text-wrap: balance;
+}
+#main-menu.landing-v2 .lp-cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+/* The ghost keycap sits ON --lp-surface, so the stock ghost fill (also
+   --lp-surface) would have no body. Drop it to --lp-surface-2 and add an INSET
+   hairline — inset so the button keeps the exact height of the primary keycap
+   next to it. Same treatment as .lp-pin-name on the white hero card. */
+#main-menu.landing-v2 .lp-cta-lip .lp-btn-ghost {
+    background: var(--lp-surface-2);
+    box-shadow: inset 0 0 0 1px var(--lp-line), 0 4px 0 0 var(--lp-line), var(--lp-shadow);
+}
+#main-menu.landing-v2 .lp-cta-lip .lp-btn-ghost:active {
+    box-shadow: inset 0 0 0 1px var(--lp-line), 0 0 0 0 var(--lp-line), var(--lp-shadow);
+}
+
+/* ---------- mega footer ---------- */
+#main-menu.landing-v2 .lp-footer {
+    border-top: 1px solid var(--lp-line);   /* full-bleed on purpose: the lip interrupts it */
+    padding-top: 92px;                      /* 44px of overlap + 48px of air */
+}
+
+#main-menu.landing-v2 .lp-foot-mast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 32px;
+}
+#main-menu.landing-v2 .lp-wordmark {
+    font-family: var(--lp-font-display);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.03em;
+    color: var(--lp-ink);
+}
+#main-menu.landing-v2 .lp-wordmark em {
+    font-style: normal;
+    color: var(--lp-primary-ink);
+}
+
+#main-menu.landing-v2 .lp-foot-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 32px 40px;
+    padding-bottom: 40px;
+}
+#main-menu.landing-v2 .lp-footer h6 {
+    margin: 0 0 14px;
+    font-weight: 500;
+}
+#main-menu.landing-v2 .lp-foot-about {
+    margin: 0;
+    max-width: 34ch;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--lp-ink-2);
+}
+
+#main-menu.landing-v2 .lp-foot-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+}
+#main-menu.landing-v2 .lp-foot-links li { margin: 0; }   /* base.css gives li a 0.25em margin */
+#main-menu.landing-v2 .lp-foot-link {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: var(--lp-font-ui);
+    font-size: 13.5px;
+    line-height: 1.4;
+    text-align: left;
+    color: var(--lp-ink-2);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color .15s ease;
+}
+#main-menu.landing-v2 .lp-foot-link:hover {
+    color: var(--lp-ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+/* ---------- bottom bar (keeps #app-version / #app-version-text) ---------- */
 #main-menu.landing-v2 .lp-foot {
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 12px;
-    padding: 22px 24px;
+    padding: 18px 0 26px;
+    border-top: 1px solid var(--lp-line);   /* inset to the container */
 }
-#main-menu.landing-v2 .lp-foot-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 13px;
-    color: var(--lp-ink-3);
+/* layout.css pins .app-version to the viewport as a dark fixed pill. #app-version
+   only ever lives inside #main-menu, and here it is a bottom-bar item, so undo
+   that chrome rather than let the bar render with an empty right-hand slot. */
+#main-menu.landing-v2 .app-version {
+    position: static;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+    border-radius: 0;
 }
-#main-menu.landing-v2 .lp-foot-left a { color: var(--lp-ink-2); font-weight: 600; }
-#main-menu.landing-v2 .lp-foot-left a:hover { color: var(--lp-ink); }
-#main-menu.landing-v2 .lp-wordmark {
-    font-family: var(--lp-font-display);
-    font-weight: 800;
-    font-size: 15px;
-    letter-spacing: -0.02em;
-    color: var(--lp-ink);
-}
-#main-menu.landing-v2 .lp-wordmark em { font-style: normal; color: var(--lp-ink-3); }
+#main-menu.landing-v2 .lp-foot-copy,
 #main-menu.landing-v2 .app-version {
     font-family: var(--lp-font-mono);
+    font-variant-numeric: tabular-nums;
     font-size: 12px;
     color: var(--lp-ink-3);
+}
+
+/* ---------- dark theme ----------
+   Nothing to override: every colour above resolves through --lp-surface /
+   --lp-surface-2 / --lp-ink* / --lp-line* / --lp-primary-ink, all of which the
+   [data-theme="dark"] token block already flips. The one fixed value, the rose
+   .lp-card--bar, is decorative chrome and reads on both grounds. */
+
+/* ---------- responsive ---------- */
+@media (max-width: 900px) {
+    #main-menu.landing-v2 .lp-cta-lip { padding: 34px 26px; }
+    #main-menu.landing-v2 .lp-foot-grid { grid-template-columns: repeat(2, 1fr); gap: 28px 32px; }
+}
+@media (max-width: 560px) {
+    #main-menu.landing-v2 .lp-outro { padding-top: 48px; }
+    #main-menu.landing-v2 .lp-cta-lip { padding: 28px 20px; margin-bottom: -32px; }
+    #main-menu.landing-v2 .lp-cta-lip h2 { max-width: none; }
+    #main-menu.landing-v2 .lp-cta-actions { flex-direction: column; align-items: stretch; }
+    #main-menu.landing-v2 .lp-cta-actions .lp-btn { justify-content: center; }
+    #main-menu.landing-v2 .lp-footer { padding-top: 68px; }
+    #main-menu.landing-v2 .lp-foot-mast { margin-bottom: 26px; }
+    #main-menu.landing-v2 .lp-foot-grid { grid-template-columns: 1fr; gap: 26px; padding-bottom: 32px; }
+    #main-menu.landing-v2 .lp-foot-about { max-width: none; }
 }
 
 /* ============ MOTION ============ */
@@ -539,16 +2201,13 @@
 /* ============ RESPONSIVE ============ */
 @media (max-width: 900px) {
     #main-menu.landing-v2 .lp-hero-grid { grid-template-columns: 1fr; gap: 32px; }
-    #main-menu.landing-v2 .lp-features { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 560px) {
     #main-menu.landing-v2 .lp-hero { padding: 36px 0 28px; }
-    #main-menu.landing-v2 .lp-features { grid-template-columns: 1fr; }
     #main-menu.landing-v2 .lp-hero-stats { grid-template-columns: repeat(2, 1fr); row-gap: 22px; }
     #main-menu.landing-v2 .lp-pin-digit { font-size: 22px; border-radius: 9px; }
     #main-menu.landing-v2 .lp-pin-digits { gap: 6px; }
     #main-menu.landing-v2 .lp-foot { justify-content: center; text-align: center; }
-    #main-menu.landing-v2 .lp-foot-left { flex-wrap: wrap; justify-content: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {

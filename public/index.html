@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <base href="/">
+    <title>FrogQuiz</title>
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,12 +13,12 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=65">
+    <link rel="stylesheet" href="css/main.bundle.css?v=69">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=65" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=65" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=65" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=69" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=69" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=69" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
@@ -396,10 +397,9 @@
         <header class="app-header" role="banner">
             <div class="app-header-inner">
                 <div class="app-header-left">
-                    <a href="#" class="brand" id="header-brand" aria-label="Quizix Pro home">
-                        <span class="brand-mark" aria-hidden="true">Q</span>
-                        <span class="brand-name">Quizix</span>
-                        <span class="brand-tag" aria-hidden="true">Pro</span>
+                    <a href="#" class="brand" id="header-brand" aria-label="FrogQuiz home">
+                        <span class="brand-mark" aria-hidden="true">F</span>
+                        <span class="brand-name">FrogQuiz</span>
                     </a>
                     <div class="editor-breadcrumb" id="editor-breadcrumb" hidden>
                         <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -731,7 +731,7 @@
                                 <span data-translate="landing_hero_title_tail">en un</span> <em>PIN</em>.
                             </h1>
                             <p class="lp-lede">
-                                <strong>Quizix Pro</strong>
+                                <strong>FrogQuiz</strong>
                                 <span data-translate="landing_hero_lede">transforma cualquier clase en un juego multijugador. Generación de preguntas con IA, ecuaciones LaTeX, resultados en vivo — corriendo localmente en tu red, sin servicios externos.</span>
                             </p>
                             <div class="lp-hero-cta">
@@ -802,47 +802,540 @@
                     <div class="lp-track" id="lp-rooms-track"></div>
                 </div>
 
-                <!-- CAPABILITIES -->
-                <section class="lp-block" id="lp-features">
+                <!-- ============ LIVE DEMO (signature) ============ -->
+                <!-- Slide 1 is written statically so the section is meaningful before landing-demo.js runs.
+                     landing-demo.js rebuilds the question / options / numeric block on every slide change. -->
+                <section class="lp-block" id="lp-demo" style="--sc: var(--lp-opt-a)">
                     <div class="lp-container">
-                        <p class="lp-caps-lead" data-translate="landing_features_kicker">Características</p>
-                        <div class="lp-features">
-                            <div class="lp-feature" style="--fc: var(--lp-opt-a)">
+                        <div class="lp-section-head">
+                            <div>
+                                <p class="lp-section-kicker" data-translate="landing_demo_kicker">Pruébalo</p>
+                                <h2><em data-translate="landing_demo_title_em">Juega</em> <span data-translate="landing_demo_title">una pregunta de verdad, aquí mismo.</span></h2>
+                            </div>
+                            <p class="lp-aside" data-translate="landing_demo_aside">Nada de capturas de pantalla: MathJax compone la ecuación y highlight.js colorea el código, con el mismo motor que corre en clase.</p>
+                        </div>
+
+                        <div class="lp-demo lp-card lp-card--raised" id="lp-demo-card" role="group" aria-labelledby="lp-demo-q">
+
+                            <div class="lp-demo-bar">
+                                <span class="lp-meta lp-demo-idx">
+                                    <span data-translate="landing_qpreview_question">Pregunta</span>
+                                    <span class="lp-demo-n" id="lp-demo-n">1</span> / <span class="lp-demo-total">4</span>
+                                </span>
+                                <span class="lp-chip lp-demo-chip" id="lp-demo-chip" data-cc="a">
+                                    <span class="lp-chip-dot"></span>
+                                    <span class="lp-demo-chip-label" id="lp-demo-chip-label" data-translate="landing_qtype1_title">Opción múltiple</span>
+                                </span>
+                            </div>
+
+                            <div class="lp-demo-track" id="lp-demo-track" aria-hidden="true"><span class="lp-demo-fill"></span></div>
+                            <div class="lp-demo-pips" id="lp-demo-pips" aria-hidden="true">
+                                <span class="is-on"></span><span></span><span></span><span></span>
+                            </div>
+
+                            <div class="lp-demo-q" id="lp-demo-q">
+                                <span data-translate="landing_qpreview_qtext">¿Cuál es la solución real de la ecuación</span>
+                                <span class="tex2jax_process">\( x^{2} + 4x - 5 = 0 \)</span>?
+                            </div>
+
+                            <div class="lp-demo-opts" id="lp-demo-opts">
+                                <button type="button" class="lp-demo-opt" data-i="0" style="--pct: 64%">
+                                    <span class="lp-demo-letter" aria-hidden="true">A</span>
+                                    <span class="lp-demo-label"><span class="tex2jax_process">\(x = 1,\ x = -5\)</span></span>
+                                    <span class="lp-demo-mark" aria-hidden="true"></span>
+                                    <span class="lp-demo-pct">64%</span>
+                                </button>
+                                <button type="button" class="lp-demo-opt" data-i="1" style="--pct: 22%">
+                                    <span class="lp-demo-letter" aria-hidden="true">B</span>
+                                    <span class="lp-demo-label"><span class="tex2jax_process">\(x = 1,\ x = 5\)</span></span>
+                                    <span class="lp-demo-mark" aria-hidden="true"></span>
+                                    <span class="lp-demo-pct">22%</span>
+                                </button>
+                                <button type="button" class="lp-demo-opt" data-i="2" style="--pct: 9%">
+                                    <span class="lp-demo-letter" aria-hidden="true">C</span>
+                                    <span class="lp-demo-label"><span class="tex2jax_process">\(x = -1,\ x = 5\)</span></span>
+                                    <span class="lp-demo-mark" aria-hidden="true"></span>
+                                    <span class="lp-demo-pct">9%</span>
+                                </button>
+                                <button type="button" class="lp-demo-opt" data-i="3" style="--pct: 5%">
+                                    <span class="lp-demo-letter" aria-hidden="true">D</span>
+                                    <span class="lp-demo-label" data-translate="landing_qpreview_no_solution">Sin solución real</span>
+                                    <span class="lp-demo-mark" aria-hidden="true"></span>
+                                    <span class="lp-demo-pct">5%</span>
+                                </button>
+                            </div>
+
+                            <div class="lp-demo-numeric hidden" id="lp-demo-numeric">
+                                <div class="lp-demo-field">
+                                    <input type="text" inputmode="decimal" autocomplete="off"
+                                           id="lp-demo-num-input" aria-labelledby="lp-demo-q"
+                                           data-translate-placeholder="enter_numeric_placeholder" placeholder="Ingresa un número..." />
+                                    <span class="lp-demo-unit" id="lp-demo-unit"></span>
+                                </div>
+                                <button type="button" class="lp-demo-submit" id="lp-demo-submit" data-translate="submit_answer">Enviar Respuesta</button>
+                                <span class="lp-tag lp-demo-tol">±&nbsp;<span class="lp-demo-tol-n" id="lp-demo-tol-n">0.5</span>&nbsp;<span data-translate="landing_qtype4_tolerance">tolerancia</span></span>
+                                <span class="lp-demo-answer hidden" id="lp-demo-answer"></span>
+                            </div>
+
+                            <div class="lp-demo-foot">
+                                <span class="lp-meta lp-demo-status" id="lp-demo-status" aria-live="polite" data-translate="landing_qpreview_responses">24 respuestas recibidas</span>
+                                <span class="lp-tag lp-demo-dist hidden" id="lp-demo-dist" data-translate="landing_qpreview_live_distribution">Distribución en vivo</span>
+                                <button type="button" class="lp-demo-next" id="lp-demo-next">
+                                    <span data-translate="landing_demo_next">Siguiente pregunta</span>
+                                    <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 7h12M8 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </section>
+
+                <!-- QUESTION TYPES -->
+                <!-- The five ids below are the literal `type` values in QuestionTypeRegistry / quiz JSON. -->
+                <section class="lp-block" id="lp-questions" style="--sc: var(--lp-opt-f)">
+                    <div class="lp-container">
+                        <div class="lp-section-head">
+                            <div>
+                                <p class="lp-section-kicker" data-translate="landing_qtypes_kicker">Tipos de pregunta</p>
+                                <h2 data-translate="landing_qtypes_title">Cinco formatos, una misma experiencia.</h2>
+                            </div>
+                            <p class="lp-aside" data-translate="landing_qtypes_aside">Desde trivia clásica hasta entradas numéricas con tolerancia para laboratorios de física y química.</p>
+                        </div>
+
+                        <ul class="lp-qt-grid">
+                            <li class="lp-qt lp-card">
+                                <div class="lp-qt-mock lp-qt-mock--choice" aria-hidden="true">
+                                    <span class="lp-qt-row"><span class="lp-qt-key" style="--k: var(--lp-opt-a)"></span><span class="lp-qt-fill" style="width: 74%"></span></span>
+                                    <span class="lp-qt-row"><span class="lp-qt-key" style="--k: var(--lp-opt-b)"></span><span class="lp-qt-fill" style="width: 88%"></span></span>
+                                    <span class="lp-qt-row"><span class="lp-qt-key" style="--k: var(--lp-opt-c)"></span><span class="lp-qt-fill" style="width: 61%"></span></span>
+                                    <span class="lp-qt-row"><span class="lp-qt-key" style="--k: var(--lp-opt-d)"></span><span class="lp-qt-fill" style="width: 80%"></span></span>
+                                </div>
+                                <div class="lp-qt-txt">
+                                    <h5 data-translate="landing_qtype1_title">Opción múltiple</h5>
+                                    <p data-translate="landing_qtype1_body">A / B / C / D clásico, con bonificación por velocidad.</p>
+                                    <span class="lp-tag lp-qt-id">multiple-choice</span>
+                                </div>
+                            </li>
+
+                            <li class="lp-qt lp-card">
+                                <div class="lp-qt-mock lp-qt-mock--check" aria-hidden="true">
+                                    <span class="lp-qt-row"><span class="lp-qt-box is-on"></span><span class="lp-qt-fill" style="width: 70%"></span></span>
+                                    <span class="lp-qt-row"><span class="lp-qt-box"></span><span class="lp-qt-fill" style="width: 84%"></span></span>
+                                    <span class="lp-qt-row"><span class="lp-qt-box is-on"></span><span class="lp-qt-fill" style="width: 58%"></span></span>
+                                    <span class="lp-qt-row"><span class="lp-qt-box"></span><span class="lp-qt-fill" style="width: 77%"></span></span>
+                                </div>
+                                <div class="lp-qt-txt">
+                                    <h5 data-translate="landing_qtype2_title">Respuestas múltiples</h5>
+                                    <p data-translate="landing_qtype2_body">Marca todas las que aplican — con puntaje parcial.</p>
+                                    <span class="lp-tag lp-qt-id">multiple-correct</span>
+                                </div>
+                            </li>
+
+                            <li class="lp-qt lp-card">
+                                <div class="lp-qt-mock lp-qt-mock--tf" aria-hidden="true">
+                                    <span class="lp-qt-tf" style="--k: var(--lp-opt-b)">✓</span>
+                                    <span class="lp-qt-tf" style="--k: var(--lp-opt-d)">✕</span>
+                                </div>
+                                <div class="lp-qt-txt">
+                                    <h5 data-translate="landing_qtype3_title">Verdadero / Falso</h5>
+                                    <p data-translate="landing_qtype3_body">Respuesta binaria con feedback instantáneo.</p>
+                                    <span class="lp-tag lp-qt-id">true-false</span>
+                                </div>
+                            </li>
+
+                            <li class="lp-qt lp-card">
+                                <div class="lp-qt-mock lp-qt-mock--num" aria-hidden="true">
+                                    <span class="lp-qt-num">42.7</span>
+                                    <span class="lp-qt-band"></span>
+                                    <span class="lp-qt-tol">± 0.5 <span data-translate="landing_qtype4_tolerance">tolerancia</span></span>
+                                </div>
+                                <div class="lp-qt-txt">
+                                    <h5 data-translate="landing_qtype4_title">Entrada numérica</h5>
+                                    <p data-translate="landing_qtype4_body">Respuestas con tolerancia configurable — ideal para física y cálculo.</p>
+                                    <span class="lp-tag lp-qt-id">numeric</span>
+                                </div>
+                            </li>
+
+                            <li class="lp-qt lp-card">
+                                <div class="lp-qt-mock lp-qt-mock--order" aria-hidden="true">
+                                    <span class="lp-qt-orow" style="--k: var(--lp-opt-e)"><span class="lp-qt-idx">1</span><span class="lp-qt-fill" style="width: 52%"></span><span class="lp-qt-grip"></span></span>
+                                    <span class="lp-qt-orow is-held" style="--k: var(--lp-opt-a)"><span class="lp-qt-idx">2</span><span class="lp-qt-fill" style="width: 64%"></span><span class="lp-qt-grip"></span></span>
+                                    <span class="lp-qt-orow" style="--k: var(--lp-opt-f)"><span class="lp-qt-idx">3</span><span class="lp-qt-fill" style="width: 44%"></span><span class="lp-qt-grip"></span></span>
+                                </div>
+                                <div class="lp-qt-txt">
+                                    <h5 data-translate="landing_qtype5_title">Ordenar</h5>
+                                    <p data-translate="landing_qtype5_body">Arrastra y suelta para reordenar secuencias o pasos.</p>
+                                    <span class="lp-tag lp-qt-id">ordering</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- HOW IT WORKS -->
+                <section class="lp-block" id="lp-howto" style="--sc: var(--lp-primary)">
+                    <div class="lp-container">
+                        <div class="lp-section-head">
+                            <div>
+                                <p class="lp-section-kicker" data-translate="landing_howto_kicker">Cómo funciona</p>
+                                <h2>
+                                    <span data-translate="landing_howto_title_lead">Cuatro pasos del</span>
+                                    <em data-translate="landing_howto_title_em">silencio</em>
+                                    <span data-translate="landing_howto_title_tail">al aula conectada.</span>
+                                </h2>
+                            </div>
+                            <p class="lp-aside" data-translate="landing_howto_aside">Diseñado para que un profesor abra su laptop, proyecte el PIN y tenga a toda la clase jugando en menos de sesenta segundos.</p>
+                        </div>
+
+                        <div class="lp-ht-grid">
+                            <ol class="lp-ht-steps">
+                                <li class="lp-step">
+                                    <span class="lp-step-num" aria-hidden="true">01</span>
+                                    <div class="lp-step-body">
+                                        <h3 data-translate="landing_step1_title">Crea o genera tu quiz</h3>
+                                        <p data-translate="landing_step1_body">Escribe tus preguntas, sube un CSV, o deja que Claude o un modelo local las genere desde tu material de clase.</p>
+                                        <!-- mini editor: question stem being typed + two option rows -->
+                                        <div class="lp-ht-mini lp-ht-editor" aria-hidden="true">
+                                            <span class="lp-ht-erow">
+                                                <span class="lp-ht-ebar lp-ht-ebar-stem" style="width: 128px"></span>
+                                                <span class="lp-ht-caret"></span>
+                                            </span>
+                                            <span class="lp-ht-erow">
+                                                <span class="lp-ht-echip" style="--oc: var(--lp-optink-a)">A</span>
+                                                <span class="lp-ht-ebar" style="width: 94px"></span>
+                                            </span>
+                                            <span class="lp-ht-erow">
+                                                <span class="lp-ht-echip" style="--oc: var(--lp-optink-b)">B</span>
+                                                <span class="lp-ht-ebar" style="width: 72px"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li class="lp-step">
+                                    <span class="lp-step-num" aria-hidden="true">02</span>
+                                    <div class="lp-step-body">
+                                        <h3 data-translate="landing_step2_title">Proyecta el PIN</h3>
+                                        <p data-translate="landing_step2_body">Un código de 6 dígitos y un QR. Los estudiantes se unen desde cualquier dispositivo en la red — sin apps, sin cuentas.</p>
+                                    </div>
+                                </li>
+                                <li class="lp-step">
+                                    <span class="lp-step-num" aria-hidden="true">03</span>
+                                    <div class="lp-step-body">
+                                        <h3 data-translate="landing_step3_title">Juega en vivo</h3>
+                                        <p data-translate="landing_step3_body">Temporizadores sincronizados, puntuación por velocidad, y tablero de posiciones proyectado para toda la clase.</p>
+                                        <!-- mini live view: countdown track + leaderboard bars -->
+                                        <div class="lp-ht-mini lp-ht-play" aria-hidden="true">
+                                            <span class="lp-ht-timer">
+                                                <span class="lp-ht-timer-track"><span class="lp-ht-timer-fill"></span></span>
+                                                <span class="lp-ht-timer-num">00:18</span>
+                                            </span>
+                                            <span class="lp-ht-bars">
+                                                <span style="--h: 44%"></span>
+                                                <span style="--h: 70%"></span>
+                                                <span class="is-lead" style="--h: 100%"></span>
+                                                <span style="--h: 58%"></span>
+                                                <span style="--h: 32%"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li class="lp-step">
+                                    <span class="lp-step-num" aria-hidden="true">04</span>
+                                    <div class="lp-step-body">
+                                        <h3 data-translate="landing_step4_title">Analiza y exporta</h3>
+                                        <p data-translate="landing_step4_body">PDF, Excel, gráficos por pregunta. Compara sesiones del mismo quiz entre cursos.</p>
+                                        <!-- mini report: per-question accuracy columns + export formats -->
+                                        <div class="lp-ht-mini lp-ht-export" aria-hidden="true">
+                                            <span class="lp-ht-chart">
+                                                <span style="--h: 62%"></span>
+                                                <span style="--h: 88%"></span>
+                                                <span style="--h: 41%"></span>
+                                                <span style="--h: 76%"></span>
+                                                <span style="--h: 95%"></span>
+                                                <span style="--h: 55%"></span>
+                                                <span style="--h: 70%"></span>
+                                                <span style="--h: 34%"></span>
+                                            </span>
+                                            <span class="lp-ht-formats">
+                                                <span class="lp-ht-fmt">PDF</span>
+                                                <span class="lp-ht-fmt">XLSX</span>
+                                                <span class="lp-ht-fmt">PNG</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ol>
+
+                            <!-- Projector view — what the room sees during step 02. Decorative. -->
+                            <aside class="lp-ht-projector lp-card lp-card--raised" aria-hidden="true">
+                                <div class="lp-ht-head">
+                                    <span class="lp-step-num">02</span>
+                                    <span class="lp-meta lp-ht-head-label" data-translate="landing_step2_title">Proyecta el PIN</span>
+                                    <span class="lp-ht-count"><span class="lp-ht-dot"></span>18</span>
+                                </div>
+
+                                <div class="lp-ht-pin">
+                                    <span class="lp-pin-digit">4</span>
+                                    <span class="lp-pin-digit">8</span>
+                                    <span class="lp-pin-digit">2</span>
+                                    <span class="lp-pin-digit">1</span>
+                                    <span class="lp-pin-digit">9</span>
+                                    <span class="lp-pin-digit">3</span>
+                                </div>
+
+                                <div class="lp-ht-qr">
+                                    <span class="lp-ht-qr-frame"><span class="lp-qr-mock"></span></span>
+                                    <span class="lp-ht-qr-url">192.168.1.42:3000</span>
+                                </div>
+
+                                <div class="lp-ht-roster">
+                                    <span class="lp-avs">
+                                        <span class="lp-av" style="background: var(--lp-optink-a)">M</span>
+                                        <span class="lp-av" style="background: var(--lp-optink-c)">A</span>
+                                        <span class="lp-av" style="background: var(--lp-optink-e)">S</span>
+                                        <span class="lp-av" style="background: var(--lp-optink-f)">J</span>
+                                        <span class="lp-av" style="background: var(--lp-optink-d)">L</span>
+                                    </span>
+                                    <span class="lp-ht-more">+13</span>
+                                </div>
+                            </aside>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- AI GENERATION -->
+                <section class="lp-block" id="lp-ai" style="--sc: var(--lp-opt-e)">
+                    <div class="lp-container">
+                        <div class="lp-section-head">
+                            <div>
+                                <p class="lp-section-kicker" data-translate="landing_ai_eyebrow">Generador de preguntas con IA</p>
+                                <h2>
+                                    <span data-translate="landing_ai_title_1">Un</span>
+                                    <em data-translate="landing_ai_title_em">tema</em>,
+                                    <span data-translate="landing_ai_title_2">diez preguntas,</span>
+                                    <span data-translate="landing_ai_title_3">cero trabajo.</span>
+                                </h2>
+                            </div>
+                            <p class="lp-aside" data-translate="landing_ai_body">Escribe el concepto, pega tu material de clase, o sube un PDF. El generador detecta LaTeX y código automáticamente, y devuelve preguntas listas para jugar.</p>
+                        </div>
+
+                        <div class="lp-card lp-card--raised lp-ai-card">
+                            <div class="lp-ai-flow">
+
+                                <!-- IN — what the teacher types -->
+                                <div class="lp-ai-panel">
+                                    <div class="lp-ai-panel-head">
+                                        <span class="lp-meta" data-translate="landing_ai_prompt_label">Prompt</span>
+                                    </div>
+                                    <div class="lp-ai-console">
+                                        <span class="lp-ai-sigil" aria-hidden="true">&gt;</span>
+                                        <span class="lp-ai-line"><span data-translate="landing_ai_prompt_text">Genera 1 pregunta de opción múltiple sobre el teorema fundamental del cálculo, nivel universitario.</span><span class="lp-ai-caret" aria-hidden="true"></span></span>
+                                    </div>
+                                    <div class="lp-ai-providers">
+                                        <span class="lp-chip">Claude</span>
+                                        <span class="lp-chip">Ollama · local</span>
+                                        <span class="lp-chip">HuggingFace</span>
+                                    </div>
+                                </div>
+
+                                <div class="lp-ai-arrow" aria-hidden="true">&rarr;</div>
+
+                                <!-- OUT — a real FrogQuiz question; the LaTeX below is typeset by the same MathJax the game uses -->
+                                <div class="lp-ai-panel">
+                                    <div class="lp-ai-panel-head">
+                                        <span class="lp-meta" data-translate="landing_ai_output_label">Salida generada</span>
+                                        <span class="lp-chip lp-ai-model" style="--cc: var(--lp-opt-e)"><span class="lp-chip-dot"></span>Claude Sonnet 4.5</span>
+                                    </div>
+                                    <div class="lp-ai-out">
+                                        <p class="lp-ai-q">
+                                            <span data-translate="landing_ai_output_text">Si F es una antiderivada continua de f en [a,b], entonces</span>
+                                            <span class="tex2jax_process">\( \int_a^b f(x)\,dx \)</span>
+                                            <span data-translate="landing_ai_output_equals">es igual a:</span>
+                                        </p>
+                                        <ol class="lp-ai-opts">
+                                            <li class="lp-ai-opt is-key">
+                                                <span class="lp-demo-letter" style="--oc: var(--lp-optink-a)">A</span>
+                                                <span class="lp-ai-opt-label tex2jax_process">\( F(b) - F(a) \)</span>
+                                                <span class="lp-tag lp-ai-key" data-translate="correct_answer">Respuesta Correcta</span>
+                                            </li>
+                                            <li class="lp-ai-opt">
+                                                <span class="lp-demo-letter" style="--oc: var(--lp-optink-b)">B</span>
+                                                <span class="lp-ai-opt-label tex2jax_process">\( f(b) - f(a) \)</span>
+                                            </li>
+                                            <li class="lp-ai-opt">
+                                                <span class="lp-demo-letter" style="--oc: var(--lp-optink-c)">C</span>
+                                                <span class="lp-ai-opt-label tex2jax_process">\( F(a) - F(b) \)</span>
+                                            </li>
+                                            <li class="lp-ai-opt">
+                                                <span class="lp-demo-letter" style="--oc: var(--lp-optink-d)">D</span>
+                                                <span class="lp-ai-opt-label tex2jax_process">\( f'(b) - f'(a) \)</span>
+                                            </li>
+                                        </ol>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CAPABILITIES -->
+                <section class="lp-block" id="lp-features" style="--sc: var(--lp-opt-c)">
+                    <div class="lp-container">
+                        <div class="lp-section-head">
+                            <div>
+                                <p class="lp-section-kicker" data-translate="landing_features_kicker">Características</p>
+                                <h2>
+                                    <span data-translate="landing_features_title_lead">Hecho para la clase</span>
+                                    <em data-translate="landing_features_title_em">real</em>.
+                                </h2>
+                            </div>
+                            <p class="lp-aside" data-translate="landing_features_aside">Soporte nativo para matemáticas, código y multimedia. Corre en tu red local — sin internet, sin filtrado corporativo, sin cuentas de alumnos.</p>
+                        </div>
+
+                        <div class="lp-feats">
+                            <div class="lp-card lp-card--bar lp-feat" style="--fc: var(--lp-opt-a)">
                                 <h4 data-translate="landing_feature1_title">LaTeX nativo</h4>
                                 <p data-translate="landing_feature1_body">Ecuaciones, integrales, matrices y símbolos matemáticos renderizados con MathJax, directamente en la pregunta y en las opciones.</p>
                                 <span class="lp-tag">MathJax · KaTeX</span>
                             </div>
-                            <div class="lp-feature" style="--fc: var(--lp-opt-e)">
+
+                            <div class="lp-card lp-card--bar lp-feat" style="--fc: var(--lp-opt-e)">
                                 <h4 data-translate="landing_feature2_title">Generación con IA</h4>
                                 <p data-translate="landing_feature2_body">Claude, Ollama local, HuggingFace. Pega un PDF o un tema y obtén un quiz completo en segundos, con LaTeX y código detectados automáticamente.</p>
                                 <span class="lp-tag">Claude · Ollama · HF</span>
                             </div>
-                            <div class="lp-feature" style="--fc: var(--lp-opt-b)">
+
+                            <div class="lp-card lp-card--bar lp-feat" style="--fc: var(--lp-opt-b)">
+                                <h4 data-translate="landing_feature3_title">Tiempo real de verdad</h4>
+                                <p data-translate="landing_feature3_body">Socket.IO de baja latencia. Revelación automática de respuestas al expirar el tiempo — sin spoilers antes.</p>
+                                <div class="lp-feat-proof lp-feat-live" aria-hidden="true">
+                                    <div class="lp-feat-live-head">
+                                        <span class="lp-feat-live-n"><b>18</b>/24</span>
+                                        <span class="lp-feat-live-t">0:07</span>
+                                    </div>
+                                    <div class="lp-feat-cells">
+                                        <i class="is-in"></i><i class="is-in"></i><i class="is-in"></i><i class="is-in"></i><i class="is-in"></i><i class="is-in"></i>
+                                        <i class="is-in"></i><i class="is-in"></i><i class="is-in"></i><i class="is-in"></i><i class="is-in"></i><i class="is-in"></i>
+                                        <i class="is-in"></i><i class="is-in"></i><i class="is-in"></i><i class="is-in"></i><i class="is-in"></i><i class="is-in"></i>
+                                        <i></i><i></i><i></i><i></i><i></i><i></i>
+                                    </div>
+                                </div>
+                                <span class="lp-tag">WebSocket · polling</span>
+                            </div>
+
+                            <div class="lp-card lp-card--bar lp-feat" style="--fc: var(--lp-opt-c)">
                                 <h4 data-translate="landing_feature4_title">Red local, sin internet</h4>
                                 <p data-translate="landing_feature4_body">Todo corre en tu laptop. Los estudiantes se unen por WiFi del colegio. Sin datos externos, sin cuentas, sin riesgos de privacidad.</p>
                                 <span class="lp-tag">Socket.IO · 0.0.0.0</span>
                             </div>
-                            <div class="lp-feature" style="--fc: var(--lp-opt-c)">
+
+                            <div class="lp-card lp-card--bar lp-feat" style="--fc: var(--lp-opt-f)">
+                                <h4 data-translate="landing_feature5_title">Código y sintaxis</h4>
+                                <p data-translate="landing_feature5_body">Resalta snippets de Python, JavaScript, C++, SQL. Ideal para cursos de programación o ciencias de la computación.</p>
+                                <span class="lp-tag">highlight.js</span>
+                            </div>
+
+                            <div class="lp-card lp-card--bar lp-feat" style="--fc: var(--lp-opt-d)">
                                 <h4 data-translate="landing_feature6_title">Análisis exportable</h4>
                                 <p data-translate="landing_feature6_body">PDF formateado, Excel con 4 hojas (resumen, preguntas, jugadores, errores). Compara sesiones del mismo quiz entre cursos.</p>
+                                <div class="lp-feat-proof lp-feat-chart" aria-hidden="true">
+                                    <div class="lp-feat-col" style="--bc: var(--lp-opt-a)">
+                                        <span class="lp-feat-pct">64%</span>
+                                        <span class="lp-feat-track"><span class="lp-feat-bar" style="--h: 100%"></span></span>
+                                        <span class="lp-feat-key">A</span>
+                                    </div>
+                                    <div class="lp-feat-col" style="--bc: var(--lp-opt-b)">
+                                        <span class="lp-feat-pct">22%</span>
+                                        <span class="lp-feat-track"><span class="lp-feat-bar" style="--h: 34%"></span></span>
+                                        <span class="lp-feat-key">B</span>
+                                    </div>
+                                    <div class="lp-feat-col" style="--bc: var(--lp-opt-c)">
+                                        <span class="lp-feat-pct">9%</span>
+                                        <span class="lp-feat-track"><span class="lp-feat-bar" style="--h: 14%"></span></span>
+                                        <span class="lp-feat-key">C</span>
+                                    </div>
+                                    <div class="lp-feat-col" style="--bc: var(--lp-opt-d)">
+                                        <span class="lp-feat-pct">5%</span>
+                                        <span class="lp-feat-track"><span class="lp-feat-bar" style="--h: 8%"></span></span>
+                                        <span class="lp-feat-key">D</span>
+                                    </div>
+                                </div>
                                 <span class="lp-tag">PDF · XLSX · CSV</span>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- FOOTER -->
-                <footer class="lp-footer">
-                    <div class="lp-container lp-foot">
-                        <div class="lp-foot-left">
-                            <span class="lp-wordmark">Quizix<em>Pro</em></span>
-                            <span>© 2026 · MIT License</span>
-                            <a href="https://github.com/Sapetor/quizix-pro" target="_blank" rel="noopener">GitHub</a>
-                            <a href="https://github.com/Sapetor/quizix-pro#readme" target="_blank" rel="noopener" data-translate="landing_footer_docs">Documentación</a>
+                <!-- OUTRO — closing CTA lip + mega footer (one unit) -->
+                <section class="lp-block lp-outro" id="lp-outro" style="--sc: var(--lp-opt-d)">
+                    <div class="lp-container">
+                        <!-- CTA lip: a raised panel that straddles the footer's top rule -->
+                        <div class="lp-cta-lip lp-card lp-card--raised lp-card--bar">
+                            <h2>
+                                <span data-translate="landing_cta_block_title_lead">Tu próxima clase empieza en</span>
+                                <em data-translate="landing_cta_block_title_em">un PIN</em>.
+                            </h2>
+                            <p class="lp-cta-lip-body" data-translate="landing_cta_block_body">Gratis, de código abierto, y corre en tu laptop. Sin cuentas, sin límites.</p>
+                            <div class="lp-cta-actions">
+                                <button type="button" id="lp-outro-host" class="lp-btn lp-btn-primary lp-btn-xl">
+                                    <span data-translate="landing_cta_block_primary">Crear primer quiz</span>
+                                    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 7h12M8 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </button>
+                                <a class="lp-btn lp-btn-ghost lp-btn-xl" href="https://github.com/Sapetor/quizix-pro" target="_blank" rel="noopener" data-translate="landing_cta_block_github">Ver en GitHub</a>
+                            </div>
                         </div>
-                        <span class="lp-tag app-version" id="app-version"><span id="app-version-text">v—</span></span>
                     </div>
-                </footer>
+
+                    <footer class="lp-footer">
+                        <div class="lp-container">
+                            <div class="lp-foot-mast">
+                                <!-- mark goes here -->
+                                <span class="lp-wordmark"><em>Frog</em>Quiz</span>
+                            </div>
+
+                            <div class="lp-foot-grid">
+                                <div class="lp-foot-col lp-foot-col--about">
+                                    <h6 class="lp-meta" data-translate="landing_footer_about_title">Sobre el proyecto</h6>
+                                    <p class="lp-foot-about" data-translate="landing_footer_about_body">Plataforma de quiz interactivo de código abierto, diseñada para aulas, con soporte nativo para matemáticas y generación por IA.</p>
+                                </div>
+
+                                <div class="lp-foot-col">
+                                    <h6 class="lp-meta" data-translate="landing_footer_product_title">Producto</h6>
+                                    <ul class="lp-foot-links">
+                                        <li><button type="button" id="lp-foot-host" class="lp-foot-link" data-translate="landing_footer_host">Crear un Quiz</button></li>
+                                        <li><button type="button" id="lp-foot-join" class="lp-foot-link" data-translate="landing_footer_join">Unirse al juego</button></li>
+                                        <li><a class="lp-foot-link" href="#lp-ai" data-lp-scroll="lp-ai" data-translate="landing_footer_ai">Generador IA</a></li>
+                                        <li><a class="lp-foot-link" href="#lp-questions" data-lp-scroll="lp-questions" data-translate="landing_footer_qtypes">Tipos de pregunta</a></li>
+                                    </ul>
+                                </div>
+
+                                <div class="lp-foot-col">
+                                    <h6 class="lp-meta" data-translate="landing_footer_resources_title">Recursos</h6>
+                                    <ul class="lp-foot-links">
+                                        <li><a class="lp-foot-link" href="#lp-howto" data-lp-scroll="lp-howto" data-translate="landing_footer_howto">Cómo funciona</a></li>
+                                        <li><a class="lp-foot-link" href="#lp-features" data-lp-scroll="lp-features" data-translate="landing_footer_features">Características</a></li>
+                                        <li><a class="lp-foot-link" href="https://github.com/Sapetor/quizix-pro#readme" target="_blank" rel="noopener" data-translate="landing_footer_docs">Documentación</a></li>
+                                        <li><a class="lp-foot-link" href="https://github.com/Sapetor/quizix-pro/issues" target="_blank" rel="noopener" data-translate="landing_footer_issues">Issues</a></li>
+                                    </ul>
+                                </div>
+
+                                <div class="lp-foot-col">
+                                    <h6 class="lp-meta" data-translate="landing_footer_connect_title">Conectar</h6>
+                                    <ul class="lp-foot-links">
+                                        <li><a class="lp-foot-link" href="https://github.com/Sapetor/quizix-pro" target="_blank" rel="noopener">GitHub</a></li>
+                                        <li><a class="lp-foot-link" href="https://github.com/Sapetor/quizix-pro/blob/main/LICENSE" target="_blank" rel="noopener" data-translate="landing_footer_license">Licencia MIT</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="lp-foot">
+                                <span class="lp-foot-copy">© 2026 FrogQuiz · MIT</span>
+                                <span class="lp-tag app-version" id="app-version"><span id="app-version-text">v—</span></span>
+                            </div>
+                        </div>
+                    </footer>
+                </section>
             </div>
 
             <div id="host-screen" class="screen">
@@ -3170,8 +3663,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=65"></script>
-    <script type="module" src="js/landing.js?v=65"></script>
+    <script type="module" src="js/main.js?v=69"></script>
+    <script type="module" src="js/landing.js?v=69"></script>
+    <script type="module" src="js/landing-demo.js?v=69"></script>
+    <script type="module" src="js/landing-ai.js?v=69"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

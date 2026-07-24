@@ -361,6 +361,13 @@ export class QuizGame {
         });
         bindElement('join-btn', 'click', () => this.uiManager.showScreen('join-screen'));
 
+        // Landing outro CTA + footer links. Distinct ids on purpose: `host-btn-mobile`
+        // is the onboarding tutorial's mobileSelector (utils/onboarding-tutorial.js),
+        // so reusing it here would silently retarget the tutorial at the footer.
+        bindElement('lp-outro-host', 'click', () => this.uiManager.showScreen('host-screen'));
+        bindElement('lp-foot-host', 'click', () => this.uiManager.showScreen('host-screen'));
+        bindElement('lp-foot-join', 'click', () => this.uiManager.showScreen('join-screen'));
+
         // Quick Start buttons (desktop + mobile)
         bindElement('quick-start-btn', 'click', () => this.showQuickStartModal());
         bindElement('quick-start-btn-mobile', 'click', () => this.showQuickStartModal());
