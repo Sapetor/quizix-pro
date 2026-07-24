@@ -139,6 +139,63 @@ describe('QRService', () => {
             }
         });
 
+        // Behind a reverse tunnel (cloudflared) the origin is reached over loopback and
+        // the public hostname is not a private IPv4, so every host-sniffing branch below
+        // falls through to the detected LAN IP and prints an unreachable URL into the QR
+        // code. PUBLIC_ORIGIN is the explicit operator override and outranks all of them.
+        describe('PUBLIC_ORIGIN override', () => {
+            const originalPublicOrigin = process.env.PUBLIC_ORIGIN;
+
+            afterEach(() => {
+                if (originalPublicOrigin === undefined) {
+                    delete process.env.PUBLIC_ORIGIN;
+                } else {
+                    process.env.PUBLIC_ORIGIN = originalPublicOrigin;
+                }
+            });
+
+            test('should win over the detected LAN IP', () => {
+                process.env.PUBLIC_ORIGIN = 'https://quiz.smplecht.uk';
+
+                os.networkInterfaces.mockReturnValue({
+                    eth0: [{ family: 'IPv4', address: '172.30.175.156', internal: false }]
+                });
+                const loopbackReq = {
+                    get: jest.fn((header) => (header === 'host' ? 'localhost:3400' : null)),
+                    secure: false
+                };
+
+                expect(qrService._getGameUrl('123456', loopbackReq))
+                    .toBe('https://quiz.smplecht.uk/?pin=123456');
+            });
+
+            test('should win over the cloud-deployment branch and tolerate a trailing slash', () => {
+                process.env.PUBLIC_ORIGIN = 'https://quiz.smplecht.uk/';
+                process.env.VERCEL_ENV = 'production';
+
+                expect(qrService._getGameUrl('123456', mockReq))
+                    .toBe('https://quiz.smplecht.uk/?pin=123456');
+
+                delete process.env.VERCEL_ENV;
+            });
+
+            test('should be ignored when blank so LAN behaviour is unchanged', () => {
+                process.env.PUBLIC_ORIGIN = '   ';
+                delete process.env.VERCEL_ENV;
+                delete process.env.HEROKU_APP_NAME;
+
+                os.networkInterfaces.mockReturnValue({
+                    eth0: [{ family: 'IPv4', address: '192.168.1.50', internal: false }]
+                });
+                const loopbackReq = {
+                    get: jest.fn(() => null),
+                    secure: false
+                };
+
+                expect(qrService._getGameUrl('123456', loopbackReq)).toContain('192.168.1.50');
+            });
+        });
+
         test('should generate local URL from detected IP when request host is unavailable', () => {
             delete process.env.RAILWAY_ENVIRONMENT;
             delete process.env.NODE_ENV;

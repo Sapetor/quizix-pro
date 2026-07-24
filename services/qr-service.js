@@ -209,6 +209,19 @@ class QRService {
      * Generate environment-aware game URL
      */
     _getGameUrl(pin, req) {
+        // Explicit operator override, for when the server is reached through a reverse
+        // tunnel (cloudflared, ngrok) or any proxy whose public hostname the host-sniffing
+        // below cannot infer: the connection arrives over loopback and the public name is
+        // not a private IPv4, so every branch would fall through to the detected LAN IP
+        // and bake an unreachable URL into the QR code. e.g. PUBLIC_ORIGIN=https://quiz.example.uk
+        const publicOrigin = process.env.PUBLIC_ORIGIN?.trim();
+        if (publicOrigin) {
+            const gameUrl = `${publicOrigin.replace(/\/+$/, '')}${this.basePath}/?pin=${pin}`;
+
+            this.logger.debug(`QR Code: PUBLIC_ORIGIN URL: ${gameUrl}`);
+            return gameUrl;
+        }
+
         const isCloudDeployment = process.env.VERCEL_ENV ||
                                   process.env.HEROKU_APP_NAME;
         const requestHost = this._getRequestHost(req);
