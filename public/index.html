@@ -3445,48 +3445,20 @@ class GraphScene(Scene):
     <script type="module" src="js/landing.js?v=60"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
-        // Fetch and display app version (always runs, even without service worker support)
-        window.addEventListener('load', () => {
-            // Use base path for Kubernetes/cloud deployments
-            const basePath = document.querySelector('base')?.getAttribute('href') || '/';
-            const swPath = basePath + 'sw.js';
+        // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and
+        // derives sw.js's CACHE_VERSION from that same value, so there is nothing to
+        // fetch or parse. (This previously scraped sw.js for `CACHE_VERSION = '...'`,
+        // which stopped matching once sw.js computed that constant instead of assigning
+        // a literal — leaving the UI permanently showing "Unknown".)
+        // Un-replaced means index.html was served statically, not via the Express route.
+        const APP_VERSION_RAW = '__SW_VERSION__';
+        const APP_VERSION = APP_VERSION_RAW.startsWith('__') ? 'dev' : APP_VERSION_RAW;
 
-            // Fetch and display app version
-            console.log('[App] Fetching version from:', swPath);
-            fetch(swPath, { cache: 'no-store' })
-                .then(response => {
-                    console.log('[App] sw.js fetch response:', response.status, response.ok);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.text();
-                })
-                .then(swContent => {
-                    console.log('[App] sw.js content length:', swContent.length);
-                    const versionMatch = swContent.match(/CACHE_VERSION = '([^']+)'/);
-                    console.log('[App] Version match:', versionMatch);
-                    if (versionMatch) {
-                        const version = versionMatch[1];
-                        const versionText = document.getElementById('app-version-text');
-                        if (versionText) {
-                            versionText.textContent = version;
-                            console.log('[App] Version displayed:', version);
-                        }
-                    } else {
-                        console.warn('[App] Could not find CACHE_VERSION in sw.js');
-                        const versionText = document.getElementById('app-version-text');
-                        if (versionText) {
-                            versionText.textContent = 'Unknown';
-                        }
-                    }
-                })
-                .catch(err => {
-                    console.error('[App] Could not fetch version:', err);
-                    const versionText = document.getElementById('app-version-text');
-                    if (versionText) {
-                        versionText.textContent = 'Error';
-                    }
-                });
+        window.addEventListener('load', () => {
+            const versionText = document.getElementById('app-version-text');
+            if (versionText) {
+                versionText.textContent = APP_VERSION;
+            }
         });
 
         // Service Worker registration (secure contexts only)
@@ -3494,7 +3466,7 @@ class GraphScene(Scene):
             window.addEventListener('load', () => {
                 const basePath = document.querySelector('base')?.getAttribute('href') || '/';
                 const swPath = basePath + 'sw.js';
-                const SW_VERSION = '__SW_VERSION__';
+                const SW_VERSION = APP_VERSION_RAW;
                 const storedVersion = localStorage.getItem('quizix-sw-version');
 
                 // Detect stale SWs - check registrations (not just controller,
