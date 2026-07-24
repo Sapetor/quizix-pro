@@ -44,12 +44,17 @@
 .brand-mark {
   width: 28px;
   height: 28px;
-  border-radius: 999px;
-  background: var(--ink);
-  color: var(--paper);
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 15px;
+  border-radius: 8px;
+  /* 4-color quadrant mark — the answer-option palette as the brand */
+  background:
+    conic-gradient(
+      var(--option-0-start, #2563eb) 0 25%,
+      var(--option-2-start, #b45309) 0 50%,
+      var(--option-3-start, #dc2626) 0 75%,
+      var(--option-1-start, #047857) 0 100%
+    );
+  color: transparent;
+  font-size: 0;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -59,9 +64,9 @@
 
 .brand-name {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 800;
   font-size: 22px;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   color: var(--ink);
 }
 

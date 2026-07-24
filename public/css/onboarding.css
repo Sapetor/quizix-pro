@@ -65,13 +65,24 @@
    ============================== */
 
 .onboarding-tooltip {
+    /* Buzzer palette — scoped local overrides retarget every inner var() consumer
+       (accent, secondary text, gradients) without rewriting each rule. */
+    --accent-primary: #6366f1;
+    --color-primary-700: #4338ca;
+    --modal-bg: #ffffff;
+    --modal-text: #14161c;
+    --text-primary: #14161c;
+    --text-secondary: #767c8a;
+    --success-color: #059669;
+    --border-color: #d7dae2;
+
     position: fixed;
     z-index: 10001;
     width: 320px;
     max-width: calc(100vw - 32px);
     background: var(--modal-bg, rgba(255, 255, 255, 0.98));
     color: var(--modal-text, #1e293b);
-    border-radius: var(--border-radius, 16px);
+    border-radius: 16px;
     border: 1px solid var(--border-color, rgba(255, 255, 255, 0.3));
     box-shadow: var(--shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.2));
     padding: 20px;
@@ -88,10 +99,18 @@
 
 /* Dark theme support */
 [data-theme="dark"] .onboarding-tooltip {
-    background: #1c2128;
-    border-color: #30363d;
-    color: #f8fafc;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --accent-primary: #6366f1;
+    --color-primary-700: #4f46e5;
+    --modal-bg: #171a22;
+    --modal-text: #eef0f4;
+    --text-primary: #eef0f4;
+    --text-secondary: #7d8493;
+    --border-color: #2a2f3b;
+
+    background: #171a22;
+    border-color: #2a2f3b;
+    color: #eef0f4;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
 }
 
 /* Tooltip arrow */
@@ -450,4 +469,40 @@
 /* Ensure highlighted element is clickable during tour */
 .onboarding-overlay.active .onboarding-target {
     cursor: pointer;
+}
+
+/* ==============================
+   BUZZER REFINEMENTS
+   (appended last so they win the cascade)
+   ============================== */
+.onboarding-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+}
+.onboarding-step-icon {
+    border-radius: 9px;
+    background: var(--accent-primary);
+}
+.onboarding-btn {
+    font-weight: 700;
+    border-radius: 10px;
+}
+/* Next = flat indigo keycap with a pressable bottom edge */
+.onboarding-btn-primary {
+    background: var(--accent-primary);
+    box-shadow: 0 4px 0 0 var(--color-primary-700);
+    transition: transform 0.05s ease, box-shadow 0.05s ease;
+}
+.onboarding-btn-primary:hover {
+    transform: none;
+    box-shadow: 0 4px 0 0 var(--color-primary-700);
+}
+.onboarding-btn-primary:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--color-primary-700);
+}
+.onboarding-step-counter {
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
 }

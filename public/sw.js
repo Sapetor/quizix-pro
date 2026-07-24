@@ -13,7 +13,7 @@
 //     live ASSET_VERSION on every /sw.js request — runtime auto-invalidation.
 //  2. If served un-replaced (e.g. statically), we fall back to BUILD_STAMP,
 //     which `npm run build` (scripts/cache-bust.js) refreshes each build.
-const BUILD_STAMP = 'v20260723-3615501';
+const BUILD_STAMP = 'v20260724-55f8e1d';
 const INJECTED_VERSION = '__CACHE_VERSION__';
 const CACHE_VERSION = INJECTED_VERSION.startsWith('__') ? BUILD_STAMP : INJECTED_VERSION;
 const CACHE_NAME = `quizix-static-${CACHE_VERSION}`;

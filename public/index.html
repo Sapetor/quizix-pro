@@ -12,17 +12,17 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=60">
+    <link rel="stylesheet" href="css/main.bundle.css?v=62">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=60" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=60" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=60" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=62" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=62" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=62" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&display=swap"
         rel="stylesheet">
     <style>
         /* Fallback fonts while Inter loads */
@@ -802,131 +802,27 @@
                     <div class="lp-track" id="lp-rooms-track"></div>
                 </div>
 
-                <!-- HOW IT WORKS -->
-                <section class="lp-block" id="lp-howto">
-                    <div class="lp-container">
-                        <div class="lp-section-head">
-                            <div>
-                                <p class="lp-section-kicker" data-translate="landing_howto_kicker">Cómo funciona</p>
-                                <h2>
-                                    <span data-translate="landing_howto_title_lead">Cuatro pasos del</span>
-                                    <em data-translate="landing_howto_title_em">silencio</em>
-                                    <span data-translate="landing_howto_title_tail">al aula conectada.</span>
-                                </h2>
-                            </div>
-                            <p class="lp-aside" data-translate="landing_howto_aside">Diseñado para que un profesor abra su laptop, proyecte el PIN y tenga a toda la clase jugando en menos de sesenta segundos.</p>
-                        </div>
-
-                        <div class="lp-howto-grid">
-                            <div class="lp-steps">
-                                <div class="lp-step">
-                                    <div class="lp-num">01</div>
-                                    <div>
-                                        <h3 data-translate="landing_step1_title">Crea o genera tu quiz</h3>
-                                        <p data-translate="landing_step1_body">Escribe tus preguntas, sube un CSV, o deja que Claude o un modelo local las genere desde tu material de clase.</p>
-                                    </div>
-                                </div>
-                                <div class="lp-step">
-                                    <div class="lp-num">02</div>
-                                    <div>
-                                        <h3 data-translate="landing_step2_title">Proyecta el PIN</h3>
-                                        <p data-translate="landing_step2_body">Un código de 6 dígitos y un QR. Los estudiantes se unen desde cualquier dispositivo en la red — sin apps, sin cuentas.</p>
-                                    </div>
-                                </div>
-                                <div class="lp-step">
-                                    <div class="lp-num">03</div>
-                                    <div>
-                                        <h3 data-translate="landing_step3_title">Juega en vivo</h3>
-                                        <p data-translate="landing_step3_body">Temporizadores sincronizados, puntuación por velocidad, y tablero de posiciones proyectado para toda la clase.</p>
-                                    </div>
-                                </div>
-                                <div class="lp-step">
-                                    <div class="lp-num">04</div>
-                                    <div>
-                                        <h3 data-translate="landing_step4_title">Analiza y exporta</h3>
-                                        <p data-translate="landing_step4_body">PDF, Excel, gráficos por pregunta. Compara sesiones del mismo quiz entre cursos.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Question preview mock -->
-                            <div class="lp-qpreview">
-                                <div class="lp-chrome">
-                                    <span><span data-translate="landing_qpreview_question">Pregunta</span> 3 / 12</span>
-                                    <span class="lp-timer">
-                                        <span class="lp-timer-bar"></span>
-                                        00:18
-                                    </span>
-                                </div>
-                                <p class="lp-qtext">
-                                    <span data-translate="landing_qpreview_qtext">¿Cuál es la solución real de la ecuación</span>
-                                    <span class="lp-latex">x² + 4x − 5 = 0</span>?
-                                </p>
-                                <div class="lp-qoptions">
-                                    <div class="lp-qopt lp-a"><div class="lp-letter">A</div><span>x = 1, x = −5</span><span class="lp-pct">64%</span></div>
-                                    <div class="lp-qopt lp-b lp-correct"><div class="lp-letter">B</div><span>x = 1, x = 5</span><span class="lp-pct">22%</span></div>
-                                    <div class="lp-qopt lp-c"><div class="lp-letter">C</div><span>x = −1, x = 5</span><span class="lp-pct">9%</span></div>
-                                    <div class="lp-qopt lp-d"><div class="lp-letter">D</div><span data-translate="landing_qpreview_no_solution">Sin solución real</span><span class="lp-pct">5%</span></div>
-                                </div>
-                                <div class="lp-caption">
-                                    <span><span data-translate="landing_qpreview_responses">24 respuestas recibidas</span></span>
-                                    <span class="lp-leaderboard">
-                                        <span class="lp-lbars"><span style="height:60%"></span><span style="height:90%"></span><span style="height:40%"></span><span style="height:75%"></span><span style="height:55%"></span></span>
-                                        <span data-translate="landing_qpreview_live_distribution">Distribución en vivo</span>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- FEATURES -->
+                <!-- CAPABILITIES -->
                 <section class="lp-block" id="lp-features">
                     <div class="lp-container">
-                        <div class="lp-section-head">
-                            <div>
-                                <p class="lp-section-kicker" data-translate="landing_features_kicker">Características</p>
-                                <h2>
-                                    <span data-translate="landing_features_title_lead">Hecho para la clase</span>
-                                    <em data-translate="landing_features_title_em">real</em>.
-                                </h2>
-                            </div>
-                            <p class="lp-aside" data-translate="landing_features_aside">Soporte nativo para matemáticas, código y multimedia. Corre en tu red local — sin internet, sin filtrado corporativo, sin cuentas de alumnos.</p>
-                        </div>
-
+                        <p class="lp-caps-lead" data-translate="landing_features_kicker">Características</p>
                         <div class="lp-features">
-                            <div class="lp-feature">
-                                <span class="lp-idx">01</span>
+                            <div class="lp-feature" style="--fc: var(--lp-opt-a)">
                                 <h4 data-translate="landing_feature1_title">LaTeX nativo</h4>
                                 <p data-translate="landing_feature1_body">Ecuaciones, integrales, matrices y símbolos matemáticos renderizados con MathJax, directamente en la pregunta y en las opciones.</p>
                                 <span class="lp-tag">MathJax · KaTeX</span>
                             </div>
-                            <div class="lp-feature lp-accent">
-                                <span class="lp-idx">02</span>
+                            <div class="lp-feature" style="--fc: var(--lp-opt-e)">
                                 <h4 data-translate="landing_feature2_title">Generación con IA</h4>
                                 <p data-translate="landing_feature2_body">Claude, Ollama local, HuggingFace. Pega un PDF o un tema y obtén un quiz completo en segundos, con LaTeX y código detectados automáticamente.</p>
                                 <span class="lp-tag">Claude · Ollama · HF</span>
                             </div>
-                            <div class="lp-feature">
-                                <span class="lp-idx">03</span>
-                                <h4 data-translate="landing_feature3_title">Tiempo real de verdad</h4>
-                                <p data-translate="landing_feature3_body">Socket.IO de baja latencia. Revelación automática de respuestas al expirar el tiempo — sin spoilers antes.</p>
-                                <span class="lp-tag">Socket.IO</span>
-                            </div>
-                            <div class="lp-feature">
-                                <span class="lp-idx">04</span>
+                            <div class="lp-feature" style="--fc: var(--lp-opt-b)">
                                 <h4 data-translate="landing_feature4_title">Red local, sin internet</h4>
                                 <p data-translate="landing_feature4_body">Todo corre en tu laptop. Los estudiantes se unen por WiFi del colegio. Sin datos externos, sin cuentas, sin riesgos de privacidad.</p>
-                                <span class="lp-tag">0.0.0.0</span>
+                                <span class="lp-tag">Socket.IO · 0.0.0.0</span>
                             </div>
-                            <div class="lp-feature">
-                                <span class="lp-idx">05</span>
-                                <h4 data-translate="landing_feature5_title">Código y sintaxis</h4>
-                                <p data-translate="landing_feature5_body">Resalta snippets de Python, JavaScript, C++, SQL. Ideal para cursos de programación o ciencias de la computación.</p>
-                                <span class="lp-tag">Prism.js</span>
-                            </div>
-                            <div class="lp-feature">
-                                <span class="lp-idx">06</span>
+                            <div class="lp-feature" style="--fc: var(--lp-opt-c)">
                                 <h4 data-translate="landing_feature6_title">Análisis exportable</h4>
                                 <p data-translate="landing_feature6_body">PDF formateado, Excel con 4 hojas (resumen, preguntas, jugadores, errores). Compara sesiones del mismo quiz entre cursos.</p>
                                 <span class="lp-tag">PDF · XLSX · CSV</span>
@@ -935,183 +831,16 @@
                     </div>
                 </section>
 
-                <!-- QUESTION TYPES -->
-                <section class="lp-block" id="lp-questions">
-                    <div class="lp-container">
-                        <div class="lp-section-head">
-                            <div>
-                                <p class="lp-section-kicker" data-translate="landing_qtypes_kicker">Tipos de pregunta</p>
-                                <h2 data-translate="landing_qtypes_title">Cinco formatos, una misma experiencia.</h2>
-                            </div>
-                            <p class="lp-aside" data-translate="landing_qtypes_aside">Desde trivia clásica hasta entradas numéricas con tolerancia para laboratorios de física y química.</p>
-                        </div>
-                        <div class="lp-qtypes-row">
-                            <div class="lp-qtype">
-                                <div class="lp-mock">
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-a); width: 80%"></div>
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-b); width: 90%"></div>
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-c); width: 70%"></div>
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-d); width: 85%"></div>
-                                </div>
-                                <div>
-                                    <h5 data-translate="landing_qtype1_title">Opción múltiple</h5>
-                                    <p data-translate="landing_qtype1_body">A / B / C / D clásico, con bonificación por velocidad.</p>
-                                </div>
-                            </div>
-                            <div class="lp-qtype">
-                                <div class="lp-mock">
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-b); width: 60%"></div>
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-b); width: 85%"></div>
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-b); width: 45%"></div>
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-b); opacity: 0.3; width: 75%"></div>
-                                </div>
-                                <div>
-                                    <h5 data-translate="landing_qtype2_title">Respuestas múltiples</h5>
-                                    <p data-translate="landing_qtype2_body">Marca todas las que aplican — con puntaje parcial.</p>
-                                </div>
-                            </div>
-                            <div class="lp-qtype">
-                                <div class="lp-mock" style="flex-direction: row; gap: 6px; padding: 10px;">
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-b); flex: 1; height: 100%"></div>
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-d); flex: 1; height: 100%"></div>
-                                </div>
-                                <div>
-                                    <h5 data-translate="landing_qtype3_title">Verdadero / Falso</h5>
-                                    <p data-translate="landing_qtype3_body">Respuesta binaria con feedback instantáneo.</p>
-                                </div>
-                            </div>
-                            <div class="lp-qtype">
-                                <div class="lp-mock" style="justify-content: center; align-items: center;">
-                                    <span style="font-family: var(--lp-font-display); font-style: italic; font-size: 36px; color: var(--lp-ink);">42.7</span>
-                                    <span style="font-family: var(--lp-font-mono); font-size: 10px; color: var(--lp-ink-3);">± 0.5 <span data-translate="landing_qtype4_tolerance">tolerancia</span></span>
-                                </div>
-                                <div>
-                                    <h5 data-translate="landing_qtype4_title">Entrada numérica</h5>
-                                    <p data-translate="landing_qtype4_body">Respuestas con tolerancia configurable — ideal para física y cálculo.</p>
-                                </div>
-                            </div>
-                            <div class="lp-qtype">
-                                <div class="lp-mock" style="justify-content: center; gap: 3px;">
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-e); width: 100%"></div>
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-c); width: 100%"></div>
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-a); width: 100%"></div>
-                                    <div class="lp-mock-bar" style="background: var(--lp-opt-b); width: 100%"></div>
-                                </div>
-                                <div>
-                                    <h5 data-translate="landing_qtype5_title">Ordenar</h5>
-                                    <p data-translate="landing_qtype5_body">Arrastra y suelta para reordenar secuencias o pasos.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- AI SHOWCASE -->
-                <section class="lp-block" id="lp-ai">
-                    <div class="lp-container">
-                        <div class="lp-ai-shell">
-                            <div class="lp-ai-left">
-                                <div class="lp-ai-eyebrow" data-translate="landing_ai_eyebrow">Generador de preguntas con IA</div>
-                                <h3>
-                                    <span data-translate="landing_ai_title_1">Un</span>
-                                    <em data-translate="landing_ai_title_em">tema</em>,<br/>
-                                    <span data-translate="landing_ai_title_2">diez preguntas,</span><br/>
-                                    <span data-translate="landing_ai_title_3">cero trabajo.</span>
-                                </h3>
-                                <p data-translate="landing_ai_body">Escribe el concepto, pega tu material de clase, o sube un PDF. El generador detecta LaTeX y código automáticamente, y devuelve preguntas listas para jugar.</p>
-                                <div class="lp-ai-providers">
-                                    <span class="lp-ai-provider">Claude Sonnet 4.5</span>
-                                    <span class="lp-ai-provider">Ollama (local)</span>
-                                    <span class="lp-ai-provider">HuggingFace</span>
-                                </div>
-                            </div>
-                            <div class="lp-ai-right">
-                                <div class="lp-ai-prompt">
-                                    <span class="lp-badge" data-translate="landing_ai_prompt_label">Prompt</span>
-                                    <span data-translate="landing_ai_prompt_text">Genera 1 pregunta de opción múltiple sobre el teorema fundamental del cálculo, nivel universitario.</span>
-                                </div>
-                                <div class="lp-ai-out">
-                                    <div class="lp-head">
-                                        <span data-translate="landing_ai_output_label">Salida generada</span>
-                                        <span style="color: var(--lp-accent);">● Claude</span>
-                                    </div>
-                                    <p class="lp-q">
-                                        <span data-translate="landing_ai_output_text">Si F es una antiderivada continua de f en [a,b], entonces</span>
-                                        <span style="font-family: var(--lp-font-display); font-style: italic; background: var(--lp-paper-2); padding: 2px 6px; border-radius: 4px;">∫ₐᵇ f(x)dx</span>
-                                        <span data-translate="landing_ai_output_equals">es igual a:</span>
-                                        <span class="lp-typing"></span>
-                                    </p>
-                                    <div class="lp-mini-opts">
-                                        <div class="lp-mini-opt" style="background: var(--lp-opt-a);"><span class="lp-l">A</span>F(b) − F(a)</div>
-                                        <div class="lp-mini-opt" style="background: var(--lp-opt-b);"><span class="lp-l">B</span>f(b) − f(a)</div>
-                                        <div class="lp-mini-opt" style="background: var(--lp-opt-c);"><span class="lp-l">C</span>F(a) − F(b)</div>
-                                        <div class="lp-mini-opt" style="background: var(--lp-opt-d);"><span class="lp-l">D</span>f'(b) − f'(a)</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- CTA BLOCK -->
-                <section class="lp-cta-block">
-                    <div class="lp-container">
-                        <h2>
-                            <span data-translate="landing_cta_block_title_lead">Tu próxima clase empieza en</span>
-                            <em data-translate="landing_cta_block_title_em">un PIN</em>.
-                        </h2>
-                        <p data-translate="landing_cta_block_body">Gratis, de código abierto, y corre en tu laptop. Sin cuentas, sin límites.</p>
-                        <div class="lp-cta-actions">
-                            <button id="host-btn-mobile" class="lp-btn lp-btn-primary lp-btn-xl">
-                                <span data-translate="landing_cta_block_primary">Crear primer quiz</span>
-                                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 7h12M8 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </button>
-                            <a class="lp-btn lp-btn-ink lp-btn-xl" href="https://github.com/Sapetor/quizix-pro" target="_blank" rel="noopener" data-translate="landing_cta_block_github">Ver en GitHub</a>
-                        </div>
-                    </div>
-                </section>
-
                 <!-- FOOTER -->
                 <footer class="lp-footer">
-                    <div class="lp-container">
-                        <div class="lp-wordmark">Quizix<em>Pro</em></div>
-                        <div class="lp-grid">
-                            <div>
-                                <h6 data-translate="landing_footer_about_title">Sobre el proyecto</h6>
-                                <p style="font-size: 14px; color: var(--lp-ink-2); margin: 0; max-width: 280px; line-height: 1.6;" data-translate="landing_footer_about_body">
-                                    Plataforma de quiz interactivo de código abierto, diseñada para aulas, con soporte nativo para matemáticas y generación por IA.
-                                </p>
-                            </div>
-                            <div>
-                                <h6 data-translate="landing_footer_product_title">Producto</h6>
-                                <ul>
-                                    <li><a href="#" data-lp-action="host" data-translate="landing_footer_host">Crear un Quiz</a></li>
-                                    <li><a href="#" data-lp-action="join" data-translate="landing_footer_join">Unirse al juego</a></li>
-                                    <li><a href="#lp-ai" data-lp-scroll="lp-ai" data-translate="landing_footer_ai">Generador IA</a></li>
-                                    <li><a href="#lp-questions" data-lp-scroll="lp-questions" data-translate="landing_footer_qtypes">Tipos de pregunta</a></li>
-                                </ul>
-                            </div>
-                            <div>
-                                <h6 data-translate="landing_footer_resources_title">Recursos</h6>
-                                <ul>
-                                    <li><a href="https://github.com/Sapetor/quizix-pro#readme" target="_blank" rel="noopener" data-translate="landing_footer_docs">Documentación</a></li>
-                                    <li><a href="https://github.com/Sapetor/quizix-pro/issues" target="_blank" rel="noopener" data-translate="landing_footer_issues">Issues</a></li>
-                                    <li><a href="#lp-features" data-lp-scroll="lp-features" data-translate="landing_footer_features">Características</a></li>
-                                    <li><a href="#lp-howto" data-lp-scroll="lp-howto" data-translate="landing_footer_howto">Cómo funciona</a></li>
-                                </ul>
-                            </div>
-                            <div>
-                                <h6 data-translate="landing_footer_connect_title">Conectar</h6>
-                                <ul>
-                                    <li><a href="https://github.com/Sapetor/quizix-pro" target="_blank" rel="noopener">GitHub</a></li>
-                                    <li><a href="https://github.com/Sapetor/quizix-pro/blob/main/LICENSE" target="_blank" rel="noopener" data-translate="landing_footer_license">Licencia MIT</a></li>
-                                </ul>
-                            </div>
+                    <div class="lp-container lp-foot">
+                        <div class="lp-foot-left">
+                            <span class="lp-wordmark">Quizix<em>Pro</em></span>
+                            <span>© 2026 · MIT License</span>
+                            <a href="https://github.com/Sapetor/quizix-pro" target="_blank" rel="noopener">GitHub</a>
+                            <a href="https://github.com/Sapetor/quizix-pro#readme" target="_blank" rel="noopener" data-translate="landing_footer_docs">Documentación</a>
                         </div>
-                        <div class="lp-bottom">
-                            <span>© 2026 Quizix Pro · MIT License</span>
-                            <span class="lp-tag app-version" id="app-version"><span id="app-version-text">v—</span></span>
-                        </div>
+                        <span class="lp-tag app-version" id="app-version"><span id="app-version-text">v—</span></span>
                     </div>
                 </footer>
             </div>
@@ -3441,8 +3170,8 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=60"></script>
-    <script type="module" src="js/landing.js?v=60"></script>
+    <script type="module" src="js/main.js?v=62"></script>
+    <script type="module" src="js/landing.js?v=62"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and
