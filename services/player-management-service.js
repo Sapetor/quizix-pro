@@ -11,6 +11,16 @@
 const crypto = require('crypto');
 const { shuffleWithMapping } = require('./game');
 
+// Roster broadcasts are coalesced over this window. A Wi-Fi flap can drop
+// dozens of phones in a couple of seconds; without this, each drop fans a
+// full roster out to every socket in the room.
+const PLAYER_LIST_BROADCAST_DEBOUNCE_MS = 250;
+
+// Game states in which a roster broadcast still makes sense. The remaining states
+// ('ended', 'finished', 'pending-migration') are teardown: the room is gone, the
+// roster has been cleared, or a new game is being prepared over the top of it.
+const LIVE_BROADCAST_STATES = new Set(['lobby', 'starting', 'question', 'revealing']);
+
 class PlayerManagementService {
     constructor(logger, config) {
         this.logger = logger;
@@ -20,6 +30,50 @@ class PlayerManagementService {
         this.hostSessions = new Map();       // hostSessionId -> session object
         this.deviceToSession = new Map();    // deviceId -> hostSessionId
         this.sessionGraceTimers = new Map(); // hostSessionId -> timerId
+        this.playerListBroadcastTimers = new Map(); // gamePin -> timeoutId for coalesced roster broadcast
+    }
+
+    /**
+     * Broadcast the roster to a game room, coalescing bursts of changes into a
+     * single emit per PLAYER_LIST_BROADCAST_DEBOUNCE_MS window. The roster is
+     * built when the timer fires, so the broadcast always carries the freshest
+     * state rather than the state at the time of the first change.
+     * @param {string} pin - Game PIN
+     * @param {Object} game - Game instance
+     * @param {Object} io - Socket.IO instance
+     */
+    _broadcastPlayerList(pin, game, io) {
+        if (this.playerListBroadcastTimers.has(pin)) return;
+
+        const timerId = setTimeout(() => {
+            this.playerListBroadcastTimers.delete(pin);
+            // The game may have been torn down or migrated inside the window;
+            // Game.cleanup() also empties the roster, so broadcasting here would blank
+            // the list. Allowlist rather than denylist so any state added later defaults
+            // to "do not broadcast" — the safe direction.
+            // Read the state at flush time so a rematch (reset() -> lobby) still sends.
+            if (!LIVE_BROADCAST_STATES.has(game.gameState)) {
+                this.logger.debug(`Roster broadcast skipped: game ${pin} is ${game.gameState}`);
+                return;
+            }
+            io.to(`game-${pin}`).emit('player-list-update', {
+                players: this._getPlayerListForBroadcast(game)
+            });
+        }, PLAYER_LIST_BROADCAST_DEBOUNCE_MS);
+
+        this.playerListBroadcastTimers.set(pin, timerId);
+    }
+
+    /**
+     * Drop a pending coalesced roster broadcast (game ended or was cleaned up).
+     * @param {string} pin - Game PIN
+     */
+    clearPendingPlayerListBroadcast(pin) {
+        const timerId = this.playerListBroadcastTimers.get(pin);
+        if (timerId) {
+            clearTimeout(timerId);
+            this.playerListBroadcastTimers.delete(pin);
+        }
     }
 
     /**
@@ -129,9 +183,7 @@ class PlayerManagementService {
         });
 
         // Broadcast updated player list to all players in the game
-        io.to(`game-${pin}`).emit('player-list-update', {
-            players: currentPlayers
-        });
+        this._broadcastPlayerList(pin, game, io);
 
         // If joining mid-game, transition player to game screen
         if (game.gameState === 'revealing' || game.gameState === 'question') {
@@ -222,6 +274,12 @@ class PlayerManagementService {
         if (playerData && game) {
             const gamePlayer = game.players.get(socketId);
 
+            // The active roster is about to shrink (either branch below). Bump before
+            // branching so a pending answer-count flush can tell that "everyone
+            // answered" was reached by a departure rather than by an answer, and
+            // decline to end the question early. See QuestionFlowService.flushAnswerCount.
+            game.disconnectEpoch++;
+
             // If game is active (not lobby) and disconnect is not intentional,
             // mark player as disconnected instead of removing them
             if (!intentional && gamePlayer && gamePlayer.sessionToken && game.gameState !== 'lobby') {
@@ -251,15 +309,12 @@ class PlayerManagementService {
                 this.disconnectTimers.set(sessionToken, timerId);
 
                 // Broadcast updated player list (with disconnected flag)
-                const currentPlayers = this._getPlayerListForBroadcast(game);
-                io.to(`game-${playerData.gamePin}`).emit('player-list-update', {
-                    players: currentPlayers
-                });
+                this._broadcastPlayerList(playerData.gamePin, game, io);
 
-                // Emit player-disconnected event for audio feedback
+                // Emit player-disconnected event for audio feedback.
+                // The roster travels on player-list-update only — do not duplicate it here.
                 io.to(`game-${playerData.gamePin}`).emit('player-disconnected', {
-                    playerName: playerData.name,
-                    players: currentPlayers
+                    playerName: playerData.name
                 });
 
                 this.logger.info(`Player ${playerData.name} marked as disconnected in game ${playerData.gamePin} (grace period started)`);
@@ -267,15 +322,10 @@ class PlayerManagementService {
                 // Lobby or intentional leave: remove immediately
                 game.removePlayer(socketId);
 
-                const currentPlayers = this._getPlayerListForBroadcast(game);
-
-                io.to(`game-${playerData.gamePin}`).emit('player-list-update', {
-                    players: currentPlayers
-                });
+                this._broadcastPlayerList(playerData.gamePin, game, io);
 
                 io.to(`game-${playerData.gamePin}`).emit('player-disconnected', {
-                    playerName: playerData.name,
-                    players: currentPlayers
+                    playerName: playerData.name
                 });
 
                 this.logger.info(`Player ${playerData.name} removed from game ${playerData.gamePin}`);
@@ -339,10 +389,7 @@ class PlayerManagementService {
                 game.removePlayer(playerId);
                 this.players.delete(playerId);
 
-                const currentPlayers = this._getPlayerListForBroadcast(game);
-                io.to(`game-${game.pin}`).emit('player-list-update', {
-                    players: currentPlayers
-                });
+                this._broadcastPlayerList(game.pin, game, io);
 
                 this.logger.info(`Player ${player.name} removed after grace period expired in game ${game.pin}`);
                 break;
@@ -533,10 +580,7 @@ class PlayerManagementService {
         }
 
         // Broadcast updated player list
-        const currentPlayers = this._getPlayerListForBroadcast(game);
-        io.to(`game-${pin}`).emit('player-list-update', {
-            players: currentPlayers
-        });
+        this._broadcastPlayerList(pin, game, io);
 
         this.logger.info(`Player ${foundPlayer.name} rejoined game ${pin} (score: ${foundPlayer.score})`);
 
@@ -577,6 +621,9 @@ class PlayerManagementService {
         io.to(`game-${game.pin}`).emit('game-ended', {
             reason: 'Host disconnected'
         });
+
+        // Drop any pending roster broadcast — the room is going away
+        this.clearPendingPlayerListBroadcast(game.pin);
 
         // Clear any pending disconnect grace period timers for this game's players
         for (const player of game.players.values()) {
@@ -667,12 +714,6 @@ class PlayerManagementService {
         // Update in global player registry
         playerData.name = trimmedName;
 
-        // Get updated player list
-        const currentPlayers = Array.from(game.players.values()).map(p => ({
-            id: p.id,
-            name: p.name
-        }));
-
         // Emit success to the player who changed their name
         socket.emit('name-changed', {
             success: true,
@@ -681,9 +722,7 @@ class PlayerManagementService {
         });
 
         // Broadcast updated player list to all players in the game
-        io.to(`game-${playerData.gamePin}`).emit('player-list-update', {
-            players: currentPlayers
-        });
+        this._broadcastPlayerList(playerData.gamePin, game, io);
 
         this.logger.info(`Player changed name from "${oldName}" to "${trimmedName}" in game ${playerData.gamePin}`);
 
@@ -754,7 +793,8 @@ class PlayerManagementService {
             migratedCount++;
         }
 
-        // Clear any disconnect grace timers from old game
+        // Clear any pending roster broadcast + disconnect grace timers from old game
+        this.clearPendingPlayerListBroadcast(oldGame.pin);
         for (const [playerId, player] of oldGame.players) {
             if (player.sessionToken && this.disconnectTimers) {
                 const timerId = this.disconnectTimers.get(player.sessionToken);

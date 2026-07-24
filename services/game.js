@@ -48,6 +48,13 @@ class Game {
         this.leaderboardTimer = null;
         this.startTimer = null;
         this.earlyEndTimer = null;
+        this.answerCountTimer = null;
+        // Monotonic counter bumped whenever the active roster shrinks. The answer-count
+        // flush latches it when armed so it can tell a "everyone answered" gap closed by
+        // an answer from one closed by a disconnect. Approximate is safe: a missed bump
+        // only risks an early end, a spurious one only costs a full-length question.
+        this.disconnectEpoch = 0;
+        this.answerCountArmEpoch = 0;
         this.isAdvancing = false;
         this.endingQuestionEarly = false;
         this.startTime = null;
@@ -249,6 +256,7 @@ class Game {
             if (this.questionTimer) { clearTimeout(this.questionTimer); this.questionTimer = null; }
             if (this.advanceTimer) { clearTimeout(this.advanceTimer); this.advanceTimer = null; }
             if (this.leaderboardTimer) { clearTimeout(this.leaderboardTimer); this.leaderboardTimer = null; }
+            if (this.answerCountTimer) { clearTimeout(this.answerCountTimer); this.answerCountTimer = null; }
             this.logger.debug(`Advanced to question ${this.currentQuestion + 1}`);
         } else {
             this.logger.debug('NO MORE QUESTIONS - should end game');
@@ -270,6 +278,10 @@ class Game {
             clearTimeout(this.advanceTimer);
             this.advanceTimer = null;
         }
+        if (this.answerCountTimer) {
+            clearTimeout(this.answerCountTimer);
+            this.answerCountTimer = null;
+        }
     }
 
     /**
@@ -277,15 +289,22 @@ class Game {
      * @param {string} playerId - Socket ID of the player
      * @param {*} answer - Player's answer
      * @param {string} answerType - Type of answer
-     * @returns {Object} Result with isCorrect and points
+     * @returns {Object} `{ accepted: true, isCorrect, points, doublePointsUsed, breakdown }`
+     *                   on success, otherwise `{ accepted: false, reason }` where reason is
+     *                   'unknown-player' or 'duplicate' (the latter also carries the
+     *                   previously stored answer as `result`).
      */
     submitAnswer(playerId, answer, answerType) {
         const player = this.players.get(playerId);
-        if (!player) return false;
+        if (!player) return { accepted: false, reason: 'unknown-player' };
 
         // Guard: prevent double-scoring if player already answered this question
         if (player.answers[this.currentQuestion]) {
-            return player.answers[this.currentQuestion];
+            return {
+                accepted: false,
+                reason: 'duplicate',
+                result: player.answers[this.currentQuestion]
+            };
         }
 
         const question = this.quiz.questions[this.currentQuestion];
@@ -332,6 +351,7 @@ class Game {
         player.score += scoringResult.points;
 
         return {
+            accepted: true,
             isCorrect: scoringResult.isCorrect,
             points: scoringResult.points,
             doublePointsUsed: doublePointsMultiplier > 1,
@@ -806,6 +826,10 @@ class Game {
         if (this.leaderboardTimer) {
             clearTimeout(this.leaderboardTimer);
             this.leaderboardTimer = null;
+        }
+        if (this.answerCountTimer) {
+            clearTimeout(this.answerCountTimer);
+            this.answerCountTimer = null;
         }
     }
 

@@ -252,25 +252,36 @@ describe('Game — question advancement', () => {
         expect(game.currentQuestion).toBe(0);
     });
 
-    test('nextQuestion clears stale question/advance/leaderboard timers', () => {
+    test('nextQuestion clears stale question/advance/leaderboard/answer-count timers', () => {
         const game = makeGame({ questions: [mcQuestion(), mcQuestion()] });
         game.questionTimer = setTimeout(() => {}, 1000);
         game.advanceTimer = setTimeout(() => {}, 1000);
         game.leaderboardTimer = setTimeout(() => {}, 1000);
+        game.answerCountTimer = setTimeout(() => {}, 1000);
         game.nextQuestion();
         expect(game.questionTimer).toBeNull();
         expect(game.advanceTimer).toBeNull();
         expect(game.leaderboardTimer).toBeNull();
+        expect(game.answerCountTimer).toBeNull();
     });
 
-    test('endQuestion moves to revealing and clears question/advance timers', () => {
+    test('endQuestion moves to revealing and clears question/advance/answer-count timers', () => {
         const game = makeGame({ questions: [mcQuestion()] });
         game.questionTimer = setTimeout(() => {}, 1000);
         game.advanceTimer = setTimeout(() => {}, 1000);
+        game.answerCountTimer = setTimeout(() => {}, 1000);
         game.endQuestion();
         expect(game.gameState).toBe('revealing');
         expect(game.questionTimer).toBeNull();
         expect(game.advanceTimer).toBeNull();
+        expect(game.answerCountTimer).toBeNull();
+    });
+
+    test('clearTimers clears the answer-count timer', () => {
+        const game = makeGame({ questions: [mcQuestion()] });
+        game.answerCountTimer = setTimeout(() => {}, 1000);
+        game.clearTimers();
+        expect(game.answerCountTimer).toBeNull();
     });
 });
 
@@ -287,14 +298,16 @@ describe('Game — submitAnswer', () => {
         return game;
     }
 
-    test('returns false for an unknown player', () => {
+    test('reports unknown-player for a player not in the game', () => {
         const game = startedGame([mcQuestion()]);
-        expect(game.submitAnswer('ghost', 1, 'multiple-choice')).toBe(false);
+        expect(game.submitAnswer('ghost', 1, 'multiple-choice'))
+            .toEqual({ accepted: false, reason: 'unknown-player' });
     });
 
     test('scores a correct answer and accumulates it onto the player score', () => {
         const game = startedGame([mcQuestion({ correctAnswer: 1, correctIndex: 1 })]);
         const res = game.submitAnswer('p1', 1, 'multiple-choice');
+        expect(res.accepted).toBe(true);
         expect(res.isCorrect).toBe(true);
         expect(res.points).toBeGreaterThan(0);
         expect(game.players.get('p1').score).toBe(res.points);
@@ -313,9 +326,11 @@ describe('Game — submitAnswer', () => {
         const first = game.submitAnswer('p1', 1, 'multiple-choice');
         const scoreAfterFirst = game.players.get('p1').score;
         const second = game.submitAnswer('p1', 0, 'multiple-choice'); // even a different answer
-        expect(second).toEqual(game.players.get('p1').answers[0]);
+        expect(second.accepted).toBe(false);
+        expect(second.reason).toBe('duplicate');
+        expect(second.result).toEqual(game.players.get('p1').answers[0]);
         expect(game.players.get('p1').score).toBe(scoreAfterFirst);
-        expect(second.points).toBe(first.points);
+        expect(second.result.points).toBe(first.points);
     });
 
     test('accumulates score across two questions', () => {

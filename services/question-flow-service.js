@@ -8,6 +8,9 @@
  * - Player result distribution
  */
 
+// Window over which per-answer host count updates are coalesced into one emit
+const ANSWER_COUNT_FLUSH_MS = 100;
+
 class QuestionFlowService {
     constructor(logger, gameSessionService) {
         this.logger = logger;
@@ -42,19 +45,79 @@ class QuestionFlowService {
         }
 
         // Submit the answer
-        game.submitAnswer(socketId, answer, type);
+        const submission = game.submitAnswer(socketId, answer, type);
+
+        if (!submission.accepted) {
+            this.logger.debug(`Answer submission not accepted (${submission.reason}) for ${socketId}`);
+            if (submission.reason === 'duplicate') {
+                // Echo the answer actually on record so a client that lost its
+                // local submitted-state (retry, double-tap, reconnect replay)
+                // re-renders the locked-in answer rather than what it just re-sent.
+                socket.emit('answer-already-submitted', {
+                    reason: submission.reason,
+                    answer: submission.result.answer
+                });
+            } else {
+                socket.emit('answer-rejected', {
+                    reason: submission.reason,
+                    message: 'You are not registered in this game',
+                    messageKey: 'error_player_not_found'
+                });
+            }
+            return;
+        }
 
         // Confirm submission to player
         socket.emit('answer-submitted', { answer: answer });
 
-        // Check if all active (non-disconnected) players have answered
-        const activePlayers = Array.from(game.players.values())
-            .filter(p => !p.disconnected);
-        const connectedPlayers = activePlayers.length;
-        const answeredPlayers = activePlayers
-            .filter(player => player.answers[game.currentQuestion]).length;
+        this.scheduleAnswerCountUpdate(game, io);
+    }
 
-        this.logger.debug(`Answer submitted: ${answeredPlayers}/${connectedPlayers} active players answered`);
+    /**
+   * Schedule a coalesced answer-count flush for this game.
+   * With many players, one emit + one scan per 100ms window replaces one per answer.
+   * @param {Object} game - Game instance
+   * @param {Object} io - Socket.IO instance
+   */
+    scheduleAnswerCountUpdate(game, io) {
+        if (game.answerCountTimer) return; // flush already pending
+
+        // Latch the disconnect epoch so the flush can tell whether the roster
+        // shrank while it was pending — see flushAnswerCount.
+        game.answerCountArmEpoch = game.disconnectEpoch;
+
+        game.answerCountTimer = setTimeout(() => {
+            game.answerCountTimer = null;
+            try {
+                this.flushAnswerCount(game, io);
+            } catch (error) {
+                this.logger.error('Error flushing answer count:', error);
+            }
+        }, ANSWER_COUNT_FLUSH_MS);
+    }
+
+    /**
+   * Single scan of the player map feeding both the host count update and the
+   * "everyone answered" early-end check.
+   * @param {Object} game - Game instance
+   * @param {Object} io - Socket.IO instance
+   */
+    flushAnswerCount(game, io) {
+        // The question may have ended (timeout, host advance, teardown) while pending
+        if (game.gameState !== 'question') {
+            this.logger.debug('Answer count flush skipped: game no longer in question state');
+            return;
+        }
+
+        let connectedPlayers = 0;
+        let answeredPlayers = 0;
+        game.players.forEach(player => {
+            if (player.disconnected) return;
+            connectedPlayers++;
+            if (player.answers[game.currentQuestion]) answeredPlayers++;
+        });
+
+        this.logger.debug(`Answer count: ${answeredPlayers}/${connectedPlayers} active players answered`);
 
         // Emit live answer count update to host (only if host is connected)
         if (game.hostId) {
@@ -65,9 +128,18 @@ class QuestionFlowService {
             });
         }
 
+        // A disconnect must never be what ends a question early: a player whose
+        // Wi-Fi blips has a 2-minute grace period to rejoin, so shrinking the
+        // active roster is not consent to cut the question short. If anyone
+        // dropped while this flush was pending, the gap may have closed because
+        // the roster shrank rather than because someone answered — skip the
+        // early-end decision. The next accepted answer re-arms and re-checks;
+        // otherwise the question runs its full timer.
+        const rosterShrankWhilePending = game.disconnectEpoch !== game.answerCountArmEpoch;
+
         // If all active players answered, end question early (check flag to prevent duplicates)
         if (answeredPlayers >= connectedPlayers && connectedPlayers > 0 &&
-        game.gameState === 'question' && !game.endingQuestionEarly) {
+            !rosterShrankWhilePending && !game.endingQuestionEarly) {
             this.endQuestionEarly(game, io);
         }
     }
@@ -96,6 +168,11 @@ class QuestionFlowService {
         if (game.advanceTimer) {
             clearTimeout(game.advanceTimer);
             game.advanceTimer = null;
+        }
+
+        if (game.answerCountTimer) {
+            clearTimeout(game.answerCountTimer);
+            game.answerCountTimer = null;
         }
 
         // Wait 1 second before revealing answers (gives players time to see their submission)

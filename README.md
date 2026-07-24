@@ -1,220 +1,120 @@
-# 🧠 Quizix Pro - Advanced Interactive Quiz Platform
+# Quizix Pro
 
-A sophisticated quiz platform that runs locally on your network, featuring LaTeX equations, image support, multiple question types, and advanced scoring mechanics.
+A real-time quiz platform: a host runs a quiz on their computer, players join from any browser using a PIN, and everyone answers live with a shared timer and leaderboard. Runs on a local network out of the box; quiz generation features (Claude/Gemini) need internet.
 
-## 🚀 Features
+![Mobile question preview](public/images/mobile-question-preview.png)
 
-### Core Functionality
-- **Real-time Multiplayer**: Multiple players can join using a simple PIN
-- **Advanced Quiz Creation**: Support for multiple question types and rich content
-- **Live Scoring**: Real-time points and leaderboards with time-based bonuses
-- **Host & Player Views**: Separate interfaces optimized for each role
-- **Local Network**: No internet required - runs entirely on your local network
-- **Cross-Device**: Works on phones, tablets, and computers
-- **Responsive Design**: Adapts to different screen sizes
+## Quickstart
 
-### Question Types
-- **Multiple Choice**: Traditional A/B/C/D questions
-- **Multiple Correct Answers**: Select all that apply questions
-- **True/False**: Simple binary choice questions
-- **Numeric Input**: Mathematical calculations with tolerance settings
-- **Ordering**: Drag-and-drop sequence arrangement questions
-
-### Rich Content Support
-- **LaTeX Equations**: Full mathematical notation support ($x^2 + y^2 = z^2$)
-- **Image Questions**: Upload and display images in questions
-- **Code Syntax Highlighting**: Display formatted code snippets in questions
-- **Enhanced Timing**: Automatic answer revelation when time expires
-- **No Spoilers**: Correct answers hidden until timer ends
-
-### AI Question Generation
-- **Claude API**: Generate questions using Anthropic's Claude models
-- **Ollama**: Local AI model support for offline generation
-- **HuggingFace**: Additional AI provider options
-- **Smart Formatting**: Auto-detect LaTeX and code content
-
-### Results & Analytics
-- **PDF Reports**: Generate formatted PDF summaries with per-question analysis
-- **Excel Export**: Export to XLSX with multiple sheets (Summary, Questions, Players, Wrong Answers)
-- **Session Comparison**: Compare results across multiple games of the same quiz
-- **Question Drill-down**: Click any question for detailed answer/time distribution
-- **Distribution Charts**: Histograms for numeric answers, bar charts for multiple-correct
-- **Print Styles**: Print-friendly CSS for analytics views
-- **CSV Export**: Simple and analytics-enhanced CSV formats
-
-### Multi-Language Support
-- **9 Languages**: English, Spanish, French, German, Italian, Portuguese, Polish, Japanese, Chinese
-- **Dynamic Switching**: Change language on-the-fly without reload
-
-## 🛠️ Installation
-
-1. **Install Node.js** (version 14 or higher)
-   - Download from [nodejs.org](https://nodejs.org/)
-
-2. **Install Dependencies**
-   ```bash
-   npm install
-   ```
-   
-   Dependencies include:
-   - Express.js for web server
-   - Socket.IO for real-time communication
-   - Multer for image upload handling
-   - MathJax for LaTeX equation rendering
-
-## 🏃‍♂️ Running the Game
-
-1. **Start the Server**
-   ```bash
-   npm start
-   ```
-   
-   For development with auto-restart:
-   ```bash
-   npm run dev
-   ```
-
-2. **Access the Game**
-   - **Local access**: Open `http://localhost:3000` on the host computer
-   - **Network access**: Open `http://[YOUR_LOCAL_IP]:3000` on any device
-
-3. **Find Your Local IP Address**
-   - **Windows**: Run `ipconfig` in Command Prompt, look for "IPv4 Address"
-   - **Mac/Linux**: Run `ifconfig` or `ip addr show` in Terminal
-   - **Example**: If your IP is 192.168.1.100, players access `http://192.168.1.100:3000`
-
-## 🎮 How to Play
-
-### For Hosts:
-1. Click "Host a Game"
-2. Create your quiz with multiple question types:
-   - **Multiple Choice**: Traditional 4-option questions
-   - **Multiple Correct**: Select all correct answers
-   - **True/False**: Binary choice questions
-   - **Numeric**: Mathematical input with tolerance
-3. Add rich content:
-   - LaTeX equations: `$f(x) = x^2 + 2x + 1$`
-   - Upload images for visual questions
-4. Click "Start Game" to generate a PIN
-5. Share the PIN with players
-6. Questions automatically progress when time expires
-7. View real-time results and leaderboards
-
-### For Players:
-1. Click "Join Game"
-2. Enter the game PIN and your name
-3. Wait for the host to start
-4. Answer questions using the appropriate interface:
-   - Tap options for multiple choice
-   - Check boxes for multiple correct answers
-   - Tap TRUE/FALSE for binary questions
-   - Type numbers for numeric questions
-5. See your score and ranking after each question
-
-## 🔧 Configuration
-
-### Changing the Port
-Set the `PORT` environment variable:
 ```bash
-PORT=8080 npm start
+npm install
+npm start
 ```
 
-### Network Settings
-The server binds to `0.0.0.0` by default, making it accessible from any device on your local network. This is safe for local use but shouldn't be exposed to the internet.
+Then:
 
-## 📱 Device Compatibility
+1. Open `http://localhost:3000` on the host computer.
+2. Click **Host a Game**, build or load a quiz, click **Start Game** — this shows a PIN.
+3. On any other device on the same network, open `http://<host-IP>:3000`, click **Join Game**, enter the PIN and a name.
 
-- **Computers**: Any modern web browser
-- **Mobile Devices**: iOS Safari, Android Chrome, etc.
-- **Tablets**: Full support with responsive design
-- **No App Required**: Everything runs in the web browser
+`npm start` binds to `0.0.0.0:3000`, so anyone on the same Wi-Fi/LAN can reach the host machine's IP address. Find that IP with `ipconfig` (Windows) or `ip addr show` (Mac/Linux).
 
-## 🎨 Customization
+## Question types
 
-### Adding More Question Types
-See `docs/ADD-QUESTION-TYPE.md` for a comprehensive guide. Key files:
-- `public/js/utils/question-type-registry.js` - Question type definitions
-- `server.js` - Server-side validation
-- `public/css/components.css` - Question styling
+| Type | Description |
+|---|---|
+| Multiple choice | Single correct answer among several options |
+| Multiple correct | Select-all-that-apply |
+| True/False | Binary choice |
+| Numeric | Numeric answer with a configurable tolerance |
+| Ordering | Drag-and-drop sequence arrangement |
 
-### Styling
-Modify files in `public/css/` to change:
-- `variables.css` - Colors and themes
-- `components.css` - Component layouts
-- `animations.css` - Effects and transitions
+Questions support LaTeX (`$x^2+y^2=z^2$`), images, and syntax-highlighted code blocks. See [docs/ADD-QUESTION-TYPE.md](docs/ADD-QUESTION-TYPE.md) to add a new type.
 
-### Configuration
-Update `public/js/core/config.js` to adjust:
-- Scoring algorithms (`SCORING`)
-- Timer settings (`TIMING`)
-- Color palette (`COLORS`)
+## AI question generation
 
-## 🐛 Troubleshooting
+Quizzes can be generated from a prompt, a pasted URL, or an uploaded PDF/DOCX/PPTX file.
 
-### Can't Connect from Other Devices
-1. Check that all devices are on the same WiFi network
-2. Verify your local IP address is correct
-3. Temporarily disable firewall on the host computer
-4. Try a different port if 3000 is blocked
+| Provider | Requires |
+|---|---|
+| Claude (Anthropic) | API key — server-side `CLAUDE_API_KEY` or a client-supplied key |
+| Gemini (Google) | API key — server-side `GEMINI_API_KEY` or a client-supplied key |
+| Ollama | A local Ollama server (`OLLAMA_URL`, default `http://localhost:11434`) — no internet needed |
 
-### Game Not Loading
-1. Ensure Node.js is installed correctly
-2. Run `npm install` again
-3. Check for any error messages in the terminal
-4. Try accessing `http://localhost:3000` first
+All three call out to their provider over the network except Ollama, which is local.
 
-### Players Can't Join
-1. Verify the game PIN is correct
-2. Make sure the host has started hosting (not just created questions)
-3. Check that the game hasn't already started
+## Results & export
 
-## 🔒 Security Notes
+Results can be exported as CSV, XLSX (Summary/Questions/Players/Wrong-Answers sheets), or a formatted PDF report, and compared across multiple runs of the same quiz.
 
-- This application is designed for local network use
-- Deploy on a self-hosted Docker server or Kubernetes for cloud access with proper HTTPS
-- Quiz and results data can be persisted to disk (saved in `quizzes/` and `results/` folders)
-- API keys are encrypted with AES-GCM when stored client-side
-- Server-side API keys supported via `CLAUDE_API_KEY` environment variable
-- File uploads use cryptographically secure naming
-- Socket.IO connections are rate-limited to prevent abuse
+## Accounts and organization
 
-## 🏗️ Architecture & Code Quality
+Optional user accounts (`routes/auth.js`) let a host save quizzes to folders, and both quizzes and folders can be password-protected independently of accounts.
 
-This project follows modern best practices:
-- **Modular ES6**: Clean separation with ES6 modules and imports
-- **Service-Oriented**: Backend split into 8 specialized services
-- **Centralized Utilities**: Shared helpers for modals, storage, error handling
-- **CSS Architecture**: Utility-first classes with PostCSS bundling
-- **Type Safety**: Centralized constants and configuration
-- **Error Boundaries**: Unified error handling across codebase
-- **Memory Management**: Tracked event listeners and timer cleanup
+## Configuration
 
-**Code Stats**:
-- ~1,866 lines removed through refactoring
-- 86% reduction in inline styles
-- Centralized constants in `config.js`
-- Unified error handling patterns
+Set via environment variables (see `.env.example`):
 
-See `REFACTORING_ROADMAP.md` and `simplify-tasks.md` for technical details.
+| Variable | Purpose | Default |
+|---|---|---|
+| `PORT` | Server port | `3000` |
+| `BASE_PATH` | URL prefix, e.g. `/quizix/` for a K8s ingress | `/` |
+| `NETWORK_IP` | Overrides auto-detected LAN IP (useful under WSL) | auto-detected |
+| `CLAUDE_API_KEY` | Server-side Claude key, avoids client BYOK | unset |
+| `CLAUDE_MODEL` | Claude model override | `claude-sonnet-4-5` |
+| `GEMINI_API_KEY` | Server-side Gemini key | unset |
+| `GEMINI_MODEL` | Gemini model override | `gemini-2.5-flash` |
+| `OLLAMA_URL` | Ollama server address | `http://localhost:11434` |
 
-## 🤝 Contributing
+Without a server-side key, players can still use Claude/Gemini generation by supplying their own API key in the UI (rate-limited).
 
-Feel free to fork this project and add your own features:
-- Team-based gameplay modes
-- Custom scoring algorithms
-- Additional AI providers for question generation
-- New question types (see `docs/ADD-QUESTION-TYPE.md`)
-- Custom themes and branding
+## Commands
 
-**Developer Documentation**:
-- `CLAUDE.md` - Complete development guide
-- `REFACTORING_ROADMAP.md` - Refactoring history and decisions
-- `simplify-tasks.md` - Code simplification details
+```bash
+npm start              # production server
+npm run dev             # nodemon, auto-restart on change
+npm run build            # rebuild CSS bundle + cache-busting (required after CSS changes)
+npm run build:css         # CSS only
+npm test                 # jest unit tests
+npm run test:watch        # jest in watch mode
+npm run test:coverage     # jest with coverage report
+npm run lint              # eslint
+npm run lint:fix          # eslint --fix
+npm run format            # prettier --write
+```
 
-## 📝 License
+## Requirements
 
-MIT License - Feel free to use and modify for your needs.
+Node.js `^18.17.0 || ^20.3.0 || >=21.0.0` — this is set by `sharp` (image processing); the rest of the dependency set does not pin an engine. `package.json` has no `engines` field, so nothing enforces this at install time.
 
----
+## Deployment
 
-**Enjoy your local quiz games! 🎉**
+Designed for LAN use by default. For remote/cloud access, put it behind HTTPS via Docker or Kubernetes:
+
+- `DOCKER.md` / `DOCKER-STANDALONE.md`
+- `K8S-DEPLOYMENT-QUICK-REFERENCE.md`, `DEPLOYMENT.md`
+
+## Security notes
+
+- File uploads are validated against their actual magic bytes (not just the claimed MIME type) and saved under cryptographically random filenames.
+- Client-side API keys are encrypted with AES-GCM before being stored in the browser.
+- AI generation and file-upload endpoints are per-IP rate-limited; Socket.IO connections are rate-limited separately.
+- Outbound URL fetches (for "generate from a link") re-validate every redirect hop against private/internal IP ranges.
+
+## Documentation
+
+| Topic | File |
+|---|---|
+| System design | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| REST/Socket.IO API | [docs/API_REFERENCE.md](docs/API_REFERENCE.md) |
+| Scoring formula | [docs/SCORING_SYSTEM.md](docs/SCORING_SYSTEM.md) |
+| Adding a question type | [docs/ADD-QUESTION-TYPE.md](docs/ADD-QUESTION-TYPE.md) |
+| Known footguns | [docs/GOTCHAS.md](docs/GOTCHAS.md) |
+| Roadmap & open TODOs | [docs/FUTURE.md](docs/FUTURE.md) |
+| Docker | [DOCKER.md](DOCKER.md), [DOCKER-STANDALONE.md](DOCKER-STANDALONE.md) |
+| Kubernetes | [K8S-DEPLOYMENT-QUICK-REFERENCE.md](K8S-DEPLOYMENT-QUICK-REFERENCE.md), [DEPLOYMENT.md](DEPLOYMENT.md) |
+| Development conventions | [CLAUDE.md](CLAUDE.md) |
+
+## License
+
+MIT.

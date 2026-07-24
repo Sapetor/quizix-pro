@@ -233,6 +233,7 @@ describe('Disconnect & Reconnect Logic', () => {
             const io = createMockIO();
 
             service.handlePlayerRejoin('new-socket', '123456', 'token-bob', game, socket, io);
+            jest.advanceTimersByTime(500); // roster broadcasts are coalesced
 
             expect(io.to).toHaveBeenCalledWith('game-123456');
             expect(io.emit).toHaveBeenCalledWith('player-list-update', expect.objectContaining({
@@ -659,12 +660,14 @@ describe('Disconnect & Reconnect Logic', () => {
             service.handlePlayerJoin(socket.id, '123456', 'Bob', game, socket, io);
 
             service.handlePlayerDisconnect('player-1', game, io, false);
+            jest.advanceTimersByTime(500); // flush the disconnect's coalesced broadcast
 
             // Clear mocks so we only see calls from _finalizePlayerRemoval
             io.to.mockClear();
             io.emit.mockClear();
 
             jest.advanceTimersByTime(2 * 60 * 1000);
+            jest.advanceTimersByTime(500); // flush the removal's coalesced broadcast
 
             expect(game.removePlayer).toHaveBeenCalledWith('player-1');
             expect(io.to).toHaveBeenCalledWith('game-123456');

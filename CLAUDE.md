@@ -30,6 +30,8 @@ Break any and you MUST stop and explain the violation:
 
 9. **Goal** = lowest-defect, easiest-to-read, minimal-maintenance code.
 
+10. **Optimize on measurement, not complexity.** A big-O argument is not evidence. Before any performance change: state the number you're moving and where you measured it. Never trade a derived-by-construction value for a denormalized one kept in sync across many call sites — correctness costs more than the milliseconds.
+
 ---
 
 ## Project Summary

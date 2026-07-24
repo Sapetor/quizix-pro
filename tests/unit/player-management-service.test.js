@@ -177,6 +177,7 @@ describe('PlayerManagementService', () => {
             playerService.handlePlayerJoin(
                 socket.id, '123456', 'Player1', game, socket, io
             );
+            jest.advanceTimersByTime(500); // roster broadcasts are coalesced
 
             expect(io.to).toHaveBeenCalledWith('game-123456');
             expect(io.emit).toHaveBeenCalledWith('player-list-update', expect.any(Object));
@@ -197,6 +198,24 @@ describe('PlayerManagementService', () => {
 
             expect(game.removePlayer).toHaveBeenCalledWith(socket.id);
             expect(playerService.getPlayer(socket.id)).toBeUndefined();
+        });
+
+        // Other half of the contract QuestionFlowService.flushAnswerCount relies on:
+        // it declines to end a question early when this counter moved while its
+        // flush was pending. Asserted here so that behaviour is not covered only
+        // by a test that simulates the bump itself.
+        test('bumps the game disconnect epoch so a pending answer-count flush can see it', () => {
+            const socket = createMockSocket();
+            const io = createMockIO();
+            const game = createMockGame();
+            game.disconnectEpoch = 0;
+
+            playerService.handlePlayerJoin(socket.id, '123456', 'Player1', game, socket, io);
+            expect(game.disconnectEpoch).toBe(0);
+
+            playerService.handlePlayerDisconnect(socket.id, game, io);
+
+            expect(game.disconnectEpoch).toBe(1);
         });
 
         test('should broadcast player-disconnected event', () => {
@@ -225,6 +244,110 @@ describe('PlayerManagementService', () => {
 
             // Should emit to host for answer count update
             expect(io.to).toHaveBeenCalledWith('host-socket');
+        });
+    });
+
+    describe('roster broadcasts', () => {
+        test('player-disconnected carries no roster; player-list-update still carries the full roster', () => {
+            const io = createMockIO();
+            const game = createMockGame('lobby');
+
+            const s1 = createMockSocket('sock-1');
+            const s2 = createMockSocket('sock-2');
+            playerService.handlePlayerJoin(s1.id, '123456', 'Alice', game, s1, io);
+            playerService.handlePlayerJoin(s2.id, '123456', 'Bob', game, s2, io);
+            jest.advanceTimersByTime(500);
+
+            io.emit.mockClear();
+            playerService.handlePlayerDisconnect(s2.id, game, io);
+            jest.advanceTimersByTime(500);
+
+            const disconnectCalls = io.emit.mock.calls.filter(c => c[0] === 'player-disconnected');
+            expect(disconnectCalls).toHaveLength(1);
+            expect(disconnectCalls[0][1]).not.toHaveProperty('players');
+            expect(disconnectCalls[0][1].playerName).toBe('Bob');
+
+            const listCalls = io.emit.mock.calls.filter(c => c[0] === 'player-list-update');
+            expect(listCalls).toHaveLength(1);
+            expect(listCalls[0][1].players.map(p => p.name)).toEqual(['Alice']);
+        });
+
+        test('five roster changes in one debounce window produce one broadcast with the final roster', () => {
+            const io = createMockIO();
+            const game = createMockGame('lobby');
+
+            for (let i = 1; i <= 5; i++) {
+                const s = createMockSocket(`sock-${i}`);
+                playerService.handlePlayerJoin(s.id, '123456', `Player${i}`, game, s, io);
+            }
+
+            expect(io.emit.mock.calls.filter(c => c[0] === 'player-list-update')).toHaveLength(0);
+
+            jest.advanceTimersByTime(250);
+
+            const listCalls = io.emit.mock.calls.filter(c => c[0] === 'player-list-update');
+            expect(listCalls).toHaveLength(1);
+            expect(listCalls[0][1].players.map(p => p.name)).toEqual(
+                ['Player1', 'Player2', 'Player3', 'Player4', 'Player5']
+            );
+        });
+
+        test('a game torn down inside the debounce window emits no stale roster', () => {
+            const io = createMockIO();
+            const game = createMockGame('lobby');
+
+            const s1 = createMockSocket('sock-1');
+            playerService.handlePlayerJoin(s1.id, '123456', 'Alice', game, s1, io);
+            io.emit.mockClear();
+
+            // deleteGame -> Game.cleanup() clears the roster and marks the game ended
+            game.players.clear();
+            game.gameState = 'ended';
+
+            jest.advanceTimersByTime(500);
+
+            expect(io.emit.mock.calls.filter(c => c[0] === 'player-list-update')).toHaveLength(0);
+        });
+
+        test('a rematch inside the debounce window still broadcasts the fresh roster', () => {
+            const io = createMockIO();
+            const game = createMockGame('lobby');
+
+            const s1 = createMockSocket('sock-1');
+            playerService.handlePlayerJoin(s1.id, '123456', 'Alice', game, s1, io);
+            jest.advanceTimersByTime(250);
+            io.emit.mockClear();
+
+            // The broadcast must be ARMED while the game is dead and flushed after
+            // Game.reset() revives it — otherwise this passes under an implementation
+            // that latches the state at arm time, and covers nothing.
+            game.gameState = 'finished';
+            playerService._broadcastPlayerList('123456', game, io);
+            game.gameState = 'lobby';
+
+            jest.advanceTimersByTime(250);
+
+            const listCalls = io.emit.mock.calls.filter(c => c[0] === 'player-list-update');
+            expect(listCalls).toHaveLength(1);
+            expect(listCalls[0][1].players.map(p => p.name)).toEqual(['Alice']);
+        });
+
+        test('a roster flush into a game being migrated away is suppressed', () => {
+            const io = createMockIO();
+            const game = createMockGame('lobby');
+
+            const s1 = createMockSocket('sock-1');
+            playerService.handlePlayerJoin(s1.id, '123456', 'Alice', game, s1, io);
+            io.emit.mockClear();
+
+            // Host dropped; the 30s grace expired and setPendingMigration ran while
+            // this broadcast was still pending. Repainting the roster on top of the
+            // 'host-preparing-new-game' overlay is exactly what must not happen.
+            game.gameState = 'pending-migration';
+
+            jest.advanceTimersByTime(500);
+
+            expect(io.emit.mock.calls.filter(c => c[0] === 'player-list-update')).toHaveLength(0);
         });
     });
 

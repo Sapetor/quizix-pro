@@ -213,6 +213,7 @@ class GameSessionService {
         if (game.advanceTimer) { clearTimeout(game.advanceTimer); game.advanceTimer = null; }
         if (game.leaderboardTimer) { clearTimeout(game.leaderboardTimer); game.leaderboardTimer = null; }
         if (game.startTimer) { clearTimeout(game.startTimer); game.startTimer = null; }
+        if (game.answerCountTimer) { clearTimeout(game.answerCountTimer); game.answerCountTimer = null; }
 
         // Transition state
         game.gameState = 'pending-migration';

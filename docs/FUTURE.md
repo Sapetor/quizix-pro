@@ -362,3 +362,40 @@ Real-world engineering failure analysis:
 - **Accessibility**: Full mobile accessibility support
 
 This roadmap transforms Quizix Pro from a desktop-focused application into a truly mobile-first quiz platform, opening new possibilities for education and entertainment in mobile-centric environments.
+
+---
+
+## 🌐 TODO: Public exposure via Cloudflare Tunnel
+
+Not started. The app is written for a LAN threat model; a tunnel changes that model.
+Audited 2026-07-24 — these four items must be resolved before exposing it publicly.
+
+1. **`trust proxy` is never set.** Behind `cloudflared` every request arrives from
+   loopback, so `req.ip` is identical for all internet clients. That collapses
+   `byokLimiter` / `urlLimiter` / `ollamaLimiter` (`routes/ai-generation.js:143-145`),
+   `uploadRateLimit` (`routes/file-uploads.js:70`) and the socket rate limiter into a
+   single shared bucket — no abuse protection, and one abuser locks out the whole class.
+   Use `app.set('trust proxy', 'loopback')` and read `CF-Connecting-IP`; do **not** use
+   `trust proxy: true`, which makes `X-Forwarded-For` client-spoofable.
+
+2. **`/api/active-games` is unauthenticated and returns live PINs**
+   (`routes/quiz-management.js:199-217`), plus a `debug` block echoing all games.
+   Publicly reachable, this lets anyone join a running classroom session.
+
+3. **AI routes skip rate limiting when a server key is set.**
+   `routes/ai-generation.js:360` — `if (!serverApiKey && clientApiKey)`. Latent today
+   (no server keys configured), but setting `CLAUDE_API_KEY` or `GEMINI_API_KEY` while
+   the tunnel is up publishes an unauthenticated, unmetered LLM proxy. These routes
+   also carry no `requireUser`.
+
+4. **Ownerless quizzes are deletable by anyone** (`routes/quiz-management.js:451-453`),
+   and `/api/quizzes` lists them. Remote data loss for any pre-ownership quiz.
+
+Cheapest mitigation short of code changes: Cloudflare Access on the host-side API paths
+(`/api/save-quiz`, quiz/results DELETE, `/api/*/generate`, `/api/active-games`) with the
+player join path left public. Item 1 still needs the code fix — Access does not restore
+per-client IPs.
+
+Already handled, for the record: `/extract-url` SSRF protection is enforced per-hop after
+DNS resolution, helmet is enabled, zod validates request bodies, and upload rate limiting
+runs before multer touches disk.

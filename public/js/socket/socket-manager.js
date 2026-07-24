@@ -547,6 +547,14 @@ export class SocketManager {
             this.gameManager.showAnswerSubmitted(data.answer);
         });
 
+        // Server already has an answer on record for this question. Re-sync the
+        // local flag so a client that lost its submitted-state stops accepting input.
+        this.socket.on('answer-already-submitted', (data) => {
+            logger.debug('Answer already on record:', data);
+            this.gameManager.stateManager.markAnswerSubmitted();
+            this.gameManager.showAnswerSubmitted(data.answer);
+        });
+
         this.socket.on('answer-rejected', (data) => {
             logger.warn('Answer rejected:', data);
             this.gameManager.showAnswerRejected(this._resolveServerMessage(data, 'error_answer_rejected'));
@@ -664,17 +672,13 @@ export class SocketManager {
         this.socket.on('player-disconnected', (data) => {
             logger.debug('Player disconnected:', data);
 
-            // Play leave sound (only for host)
+            // Play leave sound (only for host). The roster itself arrives on
+            // 'player-list-update', which owns updatePlayersList and _lastPlayerCount.
             if (this.gameManager.stateManager?.getGameState().isHost) {
                 if (this.soundManager && this.soundManager.isSoundsEnabled()) {
                     this.soundManager.playPlayerLeaveSound();
                 }
             }
-
-            // Update player count tracking
-            this._lastPlayerCount = data.players ? data.players.length : 0;
-
-            this.gameManager.updatePlayersList(data.players);
         });
 
         // Handle game-ended (emitted when host disconnects mid-game)
