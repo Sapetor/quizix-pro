@@ -724,6 +724,77 @@
     transform: translateY(-1px);
 }
 
+/* === KEYCAP DEPTH PER OPTION COLOR === */
+/* Landing's .lp-btn physics on the in-game answer buttons/cards: hard bottom
+   edge in a darker shade of each option's end color, press-down on :active.
+   ID-scoped so preview/editor option styling is untouched. */
+#player-game-screen .player-option,
+#host-game-screen .option-display {
+    transition: transform 50ms ease, box-shadow 50ms ease, filter 0.3s ease;
+}
+
+#player-game-screen .player-option[data-option="0"],
+#host-game-screen .option-display[data-option="0"] {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-0-end), black 25%), 0 4px 20px var(--option-0-shadow);
+}
+#player-game-screen .player-option[data-option="0"]:hover,
+#host-game-screen .option-display[data-option="0"]:hover {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-0-end), black 25%), 0 8px 32px var(--option-0-shadow-hover);
+}
+
+#player-game-screen .player-option[data-option="1"],
+#host-game-screen .option-display[data-option="1"] {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-1-end), black 25%), 0 4px 20px var(--option-1-shadow);
+}
+#player-game-screen .player-option[data-option="1"]:hover,
+#host-game-screen .option-display[data-option="1"]:hover {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-1-end), black 25%), 0 8px 32px var(--option-1-shadow-hover);
+}
+
+#player-game-screen .player-option[data-option="2"],
+#host-game-screen .option-display[data-option="2"] {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-2-end), black 25%), 0 4px 20px var(--option-2-shadow);
+}
+#player-game-screen .player-option[data-option="2"]:hover,
+#host-game-screen .option-display[data-option="2"]:hover {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-2-end), black 25%), 0 8px 32px var(--option-2-shadow-hover);
+}
+
+#player-game-screen .player-option[data-option="3"],
+#host-game-screen .option-display[data-option="3"] {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-3-end), black 25%), 0 4px 20px var(--option-3-shadow);
+}
+#player-game-screen .player-option[data-option="3"]:hover,
+#host-game-screen .option-display[data-option="3"]:hover {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-3-end), black 25%), 0 8px 32px var(--option-3-shadow-hover);
+}
+
+#player-game-screen .player-option[data-option="4"],
+#host-game-screen .option-display[data-option="4"] {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-4-end), black 25%), 0 4px 20px var(--option-4-shadow);
+}
+#player-game-screen .player-option[data-option="4"]:hover,
+#host-game-screen .option-display[data-option="4"]:hover {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-4-end), black 25%), 0 8px 32px var(--option-4-shadow-hover);
+}
+
+#player-game-screen .player-option[data-option="5"],
+#host-game-screen .option-display[data-option="5"] {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-5-end), black 25%), 0 4px 20px var(--option-5-shadow);
+}
+#player-game-screen .player-option[data-option="5"]:hover,
+#host-game-screen .option-display[data-option="5"]:hover {
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-5-end), black 25%), 0 8px 32px var(--option-5-shadow-hover);
+}
+
+/* Press-down: keep the ambient glow, collapse the edge */
+#player-game-screen .player-option[data-option="0"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-0-end), black 25%), 0 4px 20px var(--option-0-shadow); }
+#player-game-screen .player-option[data-option="1"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-1-end), black 25%), 0 4px 20px var(--option-1-shadow); }
+#player-game-screen .player-option[data-option="2"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-2-end), black 25%), 0 4px 20px var(--option-2-shadow); }
+#player-game-screen .player-option[data-option="3"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-3-end), black 25%), 0 4px 20px var(--option-3-shadow); }
+#player-game-screen .player-option[data-option="4"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-4-end), black 25%), 0 4px 20px var(--option-4-shadow); }
+#player-game-screen .player-option[data-option="5"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-5-end), black 25%), 0 4px 20px var(--option-5-shadow); }
+
 /* Selected state - keep original color but add emphasis */
 /* NOTE: No scale() - causes blurry text */
 .player-option.selected,

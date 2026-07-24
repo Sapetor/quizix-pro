@@ -18,7 +18,7 @@
     --rule-soft: var(--rule-soft-light);
     --accent: var(--accent-terracotta);
     --accent-deep: var(--accent-terracotta-deep);
-    --accent-soft: rgba(217, 119, 87, 0.12);
+    --accent-soft: rgba(var(--accent-primary-rgb), 0.12);
     --good: #10b981;
 }
 [data-theme="dark"] {
@@ -285,13 +285,13 @@
     background: transparent;
     border: none;
     padding: 0;
-    color: var(--accent);
-    font-family: var(--font-display);
-    font-weight: 400;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
     font-size: 72px;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.12em;
     line-height: 0.95;
-    font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 1;
     text-align: left;
     user-select: all;
     transition: none;
@@ -376,12 +376,13 @@
     font-weight: 500;
     letter-spacing: 0;
     text-transform: none;
-    box-shadow: none;
+    /* landing keycap: hard bottom edge in a darker shade of the fill */
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--accent), black 35%);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, transform 50ms ease, box-shadow 50ms ease;
 }
 #game-lobby .combined-info-card .btn.large-start-btn::before,
 #game-lobby .combined-info-card .btn.large-start-btn::after {
@@ -392,6 +393,10 @@
 [data-theme="dark"] #game-lobby .combined-info-card .btn.large-start-btn:hover {
     background: var(--accent-deep);
     transform: none;
+    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--accent), black 35%);
+}
+#game-lobby .combined-info-card .btn.large-start-btn:active {
+    transform: translateY(4px);
     box-shadow: none;
 }
 
@@ -1175,7 +1180,7 @@
     border-color: transparent;
 }
 #quiz-editor-section .btn-icon.btn-remove:hover {
-    background: rgba(217, 119, 87, 0.08);
+    background: rgba(var(--accent-primary-rgb), 0.08);
     border-color: var(--accent);
     color: var(--accent-deep);
 }

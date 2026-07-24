@@ -12,17 +12,17 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=62">
+    <link rel="stylesheet" href="css/main.bundle.css?v=65">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=62" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=62" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=62" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=65" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=65" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=65" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <style>
         /* Fallback fonts while Inter loads */
@@ -33,19 +33,19 @@
     <style>
         /* Critical FOUC prevention styles - must be inline to load immediately */
         :root {
-            /* Critical theme variables for immediate application (editorial ink default) */
-            --critical-bg: #14130f;
-            --critical-text: #f3ede0;
+            /* Critical theme variables for immediate application (buzzer ink default) */
+            --critical-bg: #0d0f14;
+            --critical-text: #eef0f4;
         }
 
         [data-theme="light"] {
-            --critical-bg: #f5f1ea;
-            --critical-text: #1a1916;
+            --critical-bg: #e9ebf0;
+            --critical-text: #14161c;
         }
 
         [data-theme="dark"] {
-            --critical-bg: #14130f;
-            --critical-text: #f3ede0;
+            --critical-bg: #0d0f14;
+            --critical-text: #eef0f4;
         }
 
         html {
@@ -3170,8 +3170,8 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=62"></script>
-    <script type="module" src="js/landing.js?v=62"></script>
+    <script type="module" src="js/main.js?v=65"></script>
+    <script type="module" src="js/landing.js?v=65"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

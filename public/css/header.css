@@ -278,7 +278,7 @@
   color: var(--ink);
 }
 
-/* ----- Primary "Create Lobby" CTA ----- */
+/* ----- Primary "Create Lobby" CTA (landing keycap physics) ----- */
 .app-header #start-hosting-header-small.btn {
   font-family: var(--font-body);
   font-weight: 500;
@@ -292,11 +292,17 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: background 200ms;
+  /* edge stays darker than the fill in both themes (deep token is lighter in dark) */
+  box-shadow: 0 3px 0 0 color-mix(in srgb, var(--accent-terracotta), black 35%);
+  transition: background 200ms, transform 50ms ease, box-shadow 50ms ease;
   white-space: nowrap;
 }
 .app-header #start-hosting-header-small.btn:hover {
   background: var(--accent-terracotta-deep);
+}
+.app-header #start-hosting-header-small.btn:active {
+  transform: translateY(3px);
+  box-shadow: none;
 }
 .app-header #start-hosting-header-small.hidden { display: none; }
 

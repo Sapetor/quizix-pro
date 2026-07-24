@@ -26,8 +26,8 @@
 }
 
 .auth-modal-content {
-    background: var(--bg-primary, #fff);
-    color: var(--text-primary, #1a1a1a);
+    background: var(--modal-bg, #fff);
+    color: var(--modal-text, #1a1a1a);
     border-radius: 12px;
     padding: 28px 28px 24px;
     width: 100%;
@@ -102,8 +102,8 @@
 }
 
 .auth-tab.active {
-    color: var(--accent-color, #2563eb);
-    border-bottom-color: var(--accent-color, #2563eb);
+    color: var(--accent-primary, #4338ca);
+    border-bottom-color: var(--accent-primary, #4338ca);
 }
 
 /* Form */
@@ -128,9 +128,9 @@
 .auth-field input {
     padding: 10px 12px;
     border-radius: 8px;
-    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.16));
-    background: var(--bg-input, #fff);
-    color: var(--text-primary, #1a1a1a);
+    border: 1px solid var(--input-border, rgba(0, 0, 0, 0.16));
+    background: var(--input-bg, #fff);
+    color: var(--input-color, #1a1a1a);
     font-size: 0.95rem;
     font-family: inherit;
     transition: border-color 0.15s, box-shadow 0.15s;
@@ -138,8 +138,8 @@
 
 .auth-field input:focus {
     outline: none;
-    border-color: var(--accent-color, #2563eb);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    border-color: var(--accent-primary, #4338ca);
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.18);
 }
 
 .auth-error {
@@ -217,36 +217,9 @@
 /* ====================================================================== */
 /*  Dark Theme Adjustments                                                */
 /* ====================================================================== */
-
-:not([data-theme="light"]) .auth-modal-content {
-    background: #1f2937;
-    color: #f3f4f6;
-}
-
-:not([data-theme="light"]) .auth-modal-hint,
-:not([data-theme="light"]) .auth-tab {
-    color: #9ca3af;
-}
-
-:not([data-theme="light"]) .auth-tab.active {
-    color: #60a5fa;
-    border-bottom-color: #60a5fa;
-}
-
-:not([data-theme="light"]) .auth-field input {
-    background: #111827;
-    color: #f3f4f6;
-    border-color: rgba(255, 255, 255, 0.14);
-}
-
-:not([data-theme="light"]) .auth-field input:focus {
-    border-color: #60a5fa;
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.22);
-}
-
-:not([data-theme="light"]) .auth-modal-tabs {
-    border-bottom-color: rgba(255, 255, 255, 0.12);
-}
+/* Modal colors come from theme tokens above and need no dark overrides.
+   (The old :not([data-theme="light"]) modal rules matched via <body> even
+   in light theme, forcing the dark panel everywhere.) */
 
 :not([data-theme="light"]) .quiz-visibility-badge.private {
     background: rgba(96, 165, 250, 0.18);

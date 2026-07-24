@@ -10,18 +10,18 @@
     --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
 
-    /* === EDITORIAL PALETTE (shared with landing) === */
-    --paper: #f5f1ea;
-    --paper-2: #ebe4d7;
-    --paper-3: #e1d8c6;
-    --ink: #1a1916;
-    --ink-2: #3c3930;
-    --ink-3: #6b6658;
-    --ink-4: #9a9383;
-    --rule-soft-light: rgba(26, 25, 22, 0.12);
-    --rule-soft-dark: rgba(243, 237, 224, 0.14);
-    --accent-terracotta: #d97757;
-    --accent-terracotta-deep: #b85d3e;
+    /* === COOL NEUTRAL PALETTE (shared with landing) === */
+    --paper: #e9ebf0;
+    --paper-2: #ffffff;
+    --paper-3: #f4f5f8;
+    --ink: #14161c;
+    --ink-2: #454a56;
+    --ink-3: #767c8a;
+    --ink-4: #9aa0ad;
+    --rule-soft-light: #d7dae2;
+    --rule-soft-dark: #2a2f3b;
+    --accent-terracotta: #4338ca;
+    --accent-terracotta-deep: #312e81;
 
     /* === PREMIUM INDIGO COLOR PALETTE === */
     --color-primary-400: #818cf8;
@@ -47,9 +47,9 @@
     --duration-normal: 250ms;
     --duration-slow: 400ms;
 
-    /* Primary gradient (editorial terracotta) */
-    --gradient-primary: linear-gradient(135deg, #d97757 0%, #b85d3e 100%);
-    --gradient-primary-hover: linear-gradient(135deg, #b85d3e 0%, #9c4a30 100%);
+    /* Primary gradient (indigo) */
+    --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+    --gradient-primary-hover: linear-gradient(135deg, #4338ca 0%, #312e81 100%);
     
     /* === COLORFUL OPTIONS SYSTEM === */
     /* WCAG AA Accessible Colors: All meet ≥4.5:1 contrast with white text */
@@ -260,19 +260,17 @@
     --shadow-xl: 0 15px 40px rgba(0, 0, 0, 0.16);
     --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.25);
 
-    /* Premium Light Theme - Warmer, less clinical */
-
-    /* Light Theme Variables - Critical for theme switching (editorial cream) */
+    /* Light Theme Variables - Critical for theme switching (cool neutral) */
     --bg-primary: var(--paper);
-    --bg-secondary: rgba(217, 119, 87, 0.10);
+    --bg-secondary: rgba(67, 56, 202, 0.08);
     --text-primary: var(--ink);
-    --text-secondary: var(--accent-terracotta-deep);
+    --text-secondary: var(--ink-3);
     --modal-bg: var(--paper-2);
     --modal-text: var(--ink);
     --card-bg: var(--paper-2);
     --border-color: var(--rule-soft-light);
     --accent-primary: var(--accent-terracotta);
-    --accent-primary-rgb: 217, 119, 87;
+    --accent-primary-rgb: 67, 56, 202;
     --accent-secondary: var(--ink);
     --success-color: #10b981;
     --warning-color: #f59e0b;
@@ -295,15 +293,17 @@
 }
 
 [data-theme="dark"] {
-    /* Editorial Palette - Dark Mode (inverted from light mode) */
-    --paper: #14130f;
-    --paper-2: #1e1c17;
-    --paper-3: #27241d;
-    --ink: #f3ede0;
-    --ink-2: #d8d0be;
-    --ink-3: #a69e8b;
-    --ink-4: #746d5e;
-    --rule-soft-light: rgba(243, 237, 224, 0.14);
+    /* Cool Neutral Palette - Dark Mode (inverted from light mode) */
+    --paper: #0d0f14;
+    --paper-2: #171a22;
+    --paper-3: #1e222c;
+    --ink: #eef0f4;
+    --ink-2: #b9bfcc;
+    --ink-3: #7d8493;
+    --ink-4: #5e6472;
+    --rule-soft-light: #2a2f3b;
+    --accent-terracotta: #6366f1;
+    --accent-terracotta-deep: #818cf8;
 
     /* Modern Glass Morphism for Dark Mode */
     --glass-light: rgba(255, 255, 255, 0.05);
@@ -320,18 +320,18 @@
     /* Premium Dark Theme - Richer depth */
     --bg-dark-primary: #0f0f14;
 
-    /* Dark Theme Variables - Critical for theme switching (editorial ink) */
-    --bg-primary: #14130f;
-    --bg-secondary: rgba(217, 119, 87, 0.12);
-    --text-primary: #f3ede0;
-    --text-secondary: var(--accent-terracotta);
-    --modal-bg: #1e1c17;
-    --modal-text: #f3ede0;
-    --card-bg: #27241d;
+    /* Dark Theme Variables - Critical for theme switching (cool ink) */
+    --bg-primary: var(--paper);
+    --bg-secondary: rgba(99, 102, 241, 0.12);
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-3);
+    --modal-bg: var(--paper-2);
+    --modal-text: var(--ink);
+    --card-bg: var(--paper-3);
     --border-color: var(--rule-soft-dark);
     --accent-primary: var(--accent-terracotta);
-    --accent-primary-rgb: 217, 119, 87;
-    --accent-secondary: #f3ede0;
+    --accent-primary-rgb: 99, 102, 241;
+    --accent-secondary: var(--ink);
     --success-color: #10b981;
     --warning-color: #f59e0b;
     --error-color: #ef4444;

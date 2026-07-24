@@ -370,10 +370,9 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-    /* Was indigo (--color-primary-500 #6366f1), which read as a foreign blue
-       against the warm editorial palette. Terracotta is the app's one accent. */
+    /* Indigo is the app's one accent (shared with the landing palette). */
     border-color: var(--accent-terracotta);
-    box-shadow: inset 0 0 0 1px rgba(217, 119, 87, 0.28);
+    box-shadow: inset 0 0 0 1px rgba(var(--accent-primary-rgb), 0.28);
 }
 
 /* Theme-aware placeholder colors */
@@ -538,20 +537,20 @@ select {
 button:focus-visible {
     outline: 3px solid var(--accent-terracotta);
     outline-offset: 2px;
-    box-shadow: 0 0 0 6px rgba(217, 119, 87, 0.2), var(--shadow-md);
+    box-shadow: 0 0 0 6px rgba(var(--accent-primary-rgb), 0.2), var(--shadow-md);
 }
 
 /* Quiz option focus states */
 /* These tiles are saturated blue/green/orange/red, so the ring must read
-   against all four. Cream contrasts with every option colour; the dark outer
-   ring keeps it visible if a tile ever sits on a light surface. No transform —
-   a focus ring should not move the thing it is marking. */
+   against all four. The pale neutral contrasts with every option colour; the
+   dark outer ring keeps it visible if a tile ever sits on a light surface.
+   No transform — a focus ring should not move the thing it is marking. */
 .player-option:focus-visible,
 .checkbox-option:focus-visible,
 .tf-option:focus-visible {
     outline: 3px solid var(--paper);
     outline-offset: 2px;
-    box-shadow: 0 0 0 6px rgba(26, 25, 22, 0.55);
+    box-shadow: 0 0 0 6px rgba(20, 22, 28, 0.55);
 }
 
 .player-option:active,
@@ -566,7 +565,7 @@ select:focus-visible {
     outline: 2px solid var(--accent-terracotta);
     outline-offset: 1px;
     border-color: var(--accent-terracotta) !important;
-    box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.15);
+    box-shadow: 0 0 0 4px rgba(var(--accent-primary-rgb), 0.15);
 }
 
 /* High contrast focus for better visibility */
@@ -2671,8 +2670,10 @@ button:disabled:focus-visible {
     margin-top: 0.5rem;
 }
 
-/* Enhanced join button */
-.join-container .btn.primary {
+/* Enhanced join button — green keycap like the landing's join CTA */
+.join-container .btn.primary,
+[data-theme="light"] .join-container .btn.primary,
+[data-theme="dark"] .join-container .btn.primary {
     position: relative;
     z-index: 1;
     font-size: 1.2rem;
@@ -2681,12 +2682,20 @@ button:disabled:focus-visible {
     margin: 1rem 0 2rem 0;
     min-width: 200px;
     border-radius: var(--border-radius);
-    transition: all 0.3s ease;
+    background: #059669;
+    box-shadow: 0 4px 0 0 #04724f;
+    transition: background 0.2s ease, transform 50ms ease, box-shadow 50ms ease;
 }
 
 .join-container .btn.primary:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-xl), 0 0 30px rgba(59, 130, 246, 0.5);
+    background: #047857;
+    transform: none;
+    box-shadow: 0 4px 0 0 #04724f;
+}
+
+.join-container .btn.primary:active {
+    transform: translateY(4px);
+    box-shadow: none;
 }
 
 /* Join divider styling */
