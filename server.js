@@ -258,7 +258,13 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net'],
             imgSrc: ["'self'", 'data:', 'blob:'],
-            connectSrc: ["'self'", 'ws:', 'wss:'],
+            // The CDN hosts are required by connect-src, not just script-src/font-src:
+            // sw.js serves those hosts cache-first, and a service worker inherits the CSP
+            // of its own script — inside a worker EVERY fetch is a connect-src fetch.
+            // Omitting them makes the worker's fetch throw, respondWith() reject, and all
+            // CDN assets (MathJax included) fail with ERR_FAILED on every SW-controlled load.
+            // Keep this list in sync with CACHEABLE_CDN_HOSTS in public/sw.js.
+            connectSrc: ["'self'", 'ws:', 'wss:', 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
             objectSrc: ["'none'"],
             baseUri: ["'self'"]
         }
