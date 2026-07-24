@@ -1,8 +1,15 @@
 # Quizix Pro
 
-A real-time quiz platform: a host runs a quiz on their computer, players join from any browser using a PIN, and everyone answers live with a shared timer and leaderboard. Runs on a local network out of the box; quiz generation features (Claude/Gemini) need internet.
+A real-time quiz platform for classrooms and local networks. The host runs a quiz on their
+computer, players join from any browser with a PIN, and everyone answers live against a shared
+timer and leaderboard. Questions render LaTeX, so it works for maths and engineering material
+rather than trivia alone.
 
-![Mobile question preview](public/images/mobile-question-preview.png)
+Runs entirely on a LAN out of the box. Only the AI question-generation features reach the internet.
+
+| Lobby — players join by PIN or QR | Live question with LaTeX in every option |
+|---|---|
+| ![Game lobby showing joined players, a QR code and the game PIN](public/images/carrousel-main-menu-mobile-1.png) | ![A quadratic-formula question with LaTeX rendered in the prompt and all four answers](public/images/carrousel-main-menu-mobile-2.png) |
 
 ## Quickstart
 
@@ -11,108 +18,118 @@ npm install
 npm start
 ```
 
-Then:
-
 1. Open `http://localhost:3000` on the host computer.
-2. Click **Host a Game**, build or load a quiz, click **Start Game** — this shows a PIN.
-3. On any other device on the same network, open `http://<host-IP>:3000`, click **Join Game**, enter the PIN and a name.
+2. Click **Host a Game**, build or load a quiz, then **Start Game** — this shows a PIN and QR code.
+3. On any other device on the same network, open `http://<host-IP>:3000`, click **Join Game**, and
+   enter the PIN and a name. Scanning the QR code does the same thing.
 
-`npm start` binds to `0.0.0.0:3000`, so anyone on the same Wi-Fi/LAN can reach the host machine's IP address. Find that IP with `ipconfig` (Windows) or `ip addr show` (Mac/Linux).
+The server binds to `0.0.0.0:3000`, so anything on the same Wi-Fi can reach the host machine's IP.
+Find it with `ipconfig` (Windows) or `ip addr show` (macOS/Linux). Under WSL, set `NETWORK_IP`
+explicitly — auto-detection picks the virtual adapter.
 
 ## Question types
 
 | Type | Description |
 |---|---|
-| Multiple choice | Single correct answer among several options |
-| Multiple correct | Select-all-that-apply |
-| True/False | Binary choice |
+| Multiple choice | One correct answer among several options |
+| Multiple correct | Select all that apply; the selected set must match exactly |
+| True / False | Binary choice |
 | Numeric | Numeric answer with a configurable tolerance |
 | Ordering | Drag-and-drop sequence arrangement |
 
-Questions support LaTeX (`$x^2+y^2=z^2$`), images, and syntax-highlighted code blocks. See [docs/ADD-QUESTION-TYPE.md](docs/ADD-QUESTION-TYPE.md) to add a new type.
+Questions support LaTeX (`$x^2 + y^2 = z^2$`), images, and syntax-highlighted code blocks.
+To add a new type, see [docs/ADD-QUESTION-TYPE.md](docs/ADD-QUESTION-TYPE.md).
 
 ## AI question generation
 
-Quizzes can be generated from a prompt, a pasted URL, or an uploaded PDF/DOCX/PPTX file.
+Quizzes can be generated from a prompt, a pasted URL, or an uploaded PDF, DOCX or PPTX file.
 
-| Provider | Requires |
-|---|---|
-| Claude (Anthropic) | API key — server-side `CLAUDE_API_KEY` or a client-supplied key |
-| Gemini (Google) | API key — server-side `GEMINI_API_KEY` or a client-supplied key |
-| Ollama | A local Ollama server (`OLLAMA_URL`, default `http://localhost:11434`) — no internet needed |
+| Provider | Requires | Network |
+|---|---|---|
+| Claude (Anthropic) | `CLAUDE_API_KEY`, or a key supplied in the UI | Outbound |
+| Gemini (Google) | `GEMINI_API_KEY`, or a key supplied in the UI | Outbound |
+| Ollama | A local Ollama server | Local only |
 
-All three call out to their provider over the network except Ollama, which is local.
+Without a server-side key, hosts can paste their own API key in the UI; those requests are
+rate-limited per IP. Ollama is the only fully offline generation path.
 
-## Results & export
+## Results and export
 
-Results can be exported as CSV, XLSX (Summary/Questions/Players/Wrong-Answers sheets), or a formatted PDF report, and compared across multiple runs of the same quiz.
+Export to CSV, XLSX (Summary / Questions / Players / Wrong Answers sheets), or a formatted PDF
+report. Results from repeated runs of the same quiz can be compared side by side, and any question
+can be drilled into for its answer and timing distribution.
 
 ## Accounts and organization
 
-Optional user accounts (`routes/auth.js`) let a host save quizzes to folders, and both quizzes and folders can be password-protected independently of accounts.
+User accounts are optional. With one, a host can save quizzes into folders; both quizzes and
+folders can be password-protected independently of accounts.
+
+## Languages
+
+The interface ships in nine languages — English, Spanish, French, German, Italian, Portuguese,
+Polish, Japanese and Chinese — switchable at runtime without a reload. (The screenshots above are
+the Spanish UI.)
 
 ## Configuration
 
-Set via environment variables (see `.env.example`):
+Environment variables, via `.env` — see [.env.example](.env.example).
 
 | Variable | Purpose | Default |
 |---|---|---|
 | `PORT` | Server port | `3000` |
-| `BASE_PATH` | URL prefix, e.g. `/quizix/` for a K8s ingress | `/` |
-| `NETWORK_IP` | Overrides auto-detected LAN IP (useful under WSL) | auto-detected |
-| `CLAUDE_API_KEY` | Server-side Claude key, avoids client BYOK | unset |
+| `BASE_PATH` | URL prefix, e.g. for an ingress | `/quizix/` in production, `/` otherwise |
+| `NETWORK_IP` | Override the auto-detected LAN IP (needed under WSL) | auto-detected |
+| `CLAUDE_API_KEY` | Server-side Claude key | unset |
 | `CLAUDE_MODEL` | Claude model override | `claude-sonnet-4-5` |
 | `GEMINI_API_KEY` | Server-side Gemini key | unset |
 | `GEMINI_MODEL` | Gemini model override | `gemini-2.5-flash` |
 | `OLLAMA_URL` | Ollama server address | `http://localhost:11434` |
 
-Without a server-side key, players can still use Claude/Gemini generation by supplying their own API key in the UI (rate-limited).
-
 ## Commands
 
-```bash
-npm start              # production server
-npm run dev             # nodemon, auto-restart on change
-npm run build            # rebuild CSS bundle + cache-busting (required after CSS changes)
-npm run build:css         # CSS only
-npm test                 # jest unit tests
-npm run test:watch        # jest in watch mode
-npm run test:coverage     # jest with coverage report
-npm run lint              # eslint
-npm run lint:fix          # eslint --fix
-npm run format            # prettier --write
-```
+| Command | Purpose |
+|---|---|
+| `npm start` | Production server |
+| `npm run dev` | Auto-restarting dev server |
+| `npm run build` | Rebuild the CSS bundle and cache-bust — **required after any CSS change** |
+| `npm test` | Unit tests (Jest) |
+| `npm run test:coverage` | Tests with a coverage report |
+| `npm run lint` | ESLint |
+| `npm run format` | Prettier |
 
 ## Requirements
 
-Node.js `^18.17.0 || ^20.3.0 || >=21.0.0` — this is set by `sharp` (image processing); the rest of the dependency set does not pin an engine. `package.json` has no `engines` field, so nothing enforces this at install time.
+Node.js `^18.17.0 || ^20.3.0 || >=21.0.0`, as required by `sharp` for image processing. There is no
+`engines` field in `package.json`, so nothing enforces this at install time.
 
 ## Deployment
 
-Designed for LAN use by default. For remote/cloud access, put it behind HTTPS via Docker or Kubernetes:
+Built for LAN use. For remote access, put it behind HTTPS with
+[Docker](DOCKER.md) ([standalone](DOCKER-STANDALONE.md)) or
+[Kubernetes](K8S-DEPLOYMENT-QUICK-REFERENCE.md) — see [DEPLOYMENT.md](DEPLOYMENT.md).
 
-- `DOCKER.md` / `DOCKER-STANDALONE.md`
-- `K8S-DEPLOYMENT-QUICK-REFERENCE.md`, `DEPLOYMENT.md`
+Exposing this directly to the internet needs work first; the open items are tracked in
+[docs/FUTURE.md](docs/FUTURE.md).
 
 ## Security notes
 
-- File uploads are validated against their actual magic bytes (not just the claimed MIME type) and saved under cryptographically random filenames.
-- Client-side API keys are encrypted with AES-GCM before being stored in the browser.
-- AI generation and file-upload endpoints are per-IP rate-limited; Socket.IO connections are rate-limited separately.
-- Outbound URL fetches (for "generate from a link") re-validate every redirect hop against private/internal IP ranges.
+- Uploads are validated against actual magic bytes, not the claimed MIME type, and stored under
+  cryptographically random filenames.
+- API keys entered in the browser are encrypted with AES-GCM before being stored.
+- AI-generation and upload endpoints are rate-limited per IP; Socket.IO connections are rate-limited
+  separately.
+- Outbound URL fetches re-validate every redirect hop against private and internal IP ranges.
 
 ## Documentation
 
-| Topic | File |
+| Topic | Where |
 |---|---|
 | System design | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| REST/Socket.IO API | [docs/API_REFERENCE.md](docs/API_REFERENCE.md) |
+| REST and Socket.IO API | [docs/API_REFERENCE.md](docs/API_REFERENCE.md) |
 | Scoring formula | [docs/SCORING_SYSTEM.md](docs/SCORING_SYSTEM.md) |
 | Adding a question type | [docs/ADD-QUESTION-TYPE.md](docs/ADD-QUESTION-TYPE.md) |
 | Known footguns | [docs/GOTCHAS.md](docs/GOTCHAS.md) |
-| Roadmap & open TODOs | [docs/FUTURE.md](docs/FUTURE.md) |
-| Docker | [DOCKER.md](DOCKER.md), [DOCKER-STANDALONE.md](DOCKER-STANDALONE.md) |
-| Kubernetes | [K8S-DEPLOYMENT-QUICK-REFERENCE.md](K8S-DEPLOYMENT-QUICK-REFERENCE.md), [DEPLOYMENT.md](DEPLOYMENT.md) |
+| Roadmap and open TODOs | [docs/FUTURE.md](docs/FUTURE.md) |
 | Development conventions | [CLAUDE.md](CLAUDE.md) |
 
 ## License
