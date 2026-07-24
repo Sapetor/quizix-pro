@@ -5,16 +5,40 @@ services:
       dockerfile: Dockerfile
     image: quizix-pro:latest
     container_name: quizix-pro-app
+    # network_mode: host keeps the LAN-quiz use case working and lets a
+    # host-side cloudflared reach the origin over loopback (so getClientIp
+    # correctly trusts CF-Connecting-IP).
+    #
+    # For an INTERNET-ONLY deploy fronted by Cloudflare, prefer isolation over
+    # host networking — replace the line below with:
+    #     ports:
+    #       - "127.0.0.1:3000:3000"
+    # then point cloudflared at 127.0.0.1:3000. Note: over a docker bridge the
+    # container sees the connection from the bridge gateway, not loopback, so
+    # also set TRUSTED_PROXY_IPS to that gateway address for per-visitor limits.
     network_mode: host
     environment:
       - NODE_ENV=production
       - PORT=3000
       - BASE_PATH=/
       - OLLAMA_URL=${OLLAMA_URL:-http://localhost:11434}
+      # Expensive/abusable subsystems off by default; opt in explicitly.
+      - OLLAMA_ENABLED=${OLLAMA_ENABLED:-false}
+      - MANIM_ENABLED=${MANIM_ENABLED:-false}
+      # Exact CORS allow-list for a public deploy, e.g. https://quiz.example.cl
+      # - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
     volumes:
       - quizzes-data:/app/quizzes
       - results-data:/app/results
       - uploads-data:/app/public/uploads
+    # Isolation hardening (independent of network mode).
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    mem_limit: 2g
+    cpus: "2"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]

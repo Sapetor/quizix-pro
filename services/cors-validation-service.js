@@ -71,6 +71,34 @@ class CORSValidationService {
             this.allowedOrigins.add(`http://127.0.0.1:${ownPort}`);
             this.allowedOrigins.add(`https://127.0.0.1:${ownPort}`);
         }
+
+        // Optional explicit allow-list of exact origins (comma-separated),
+        // e.g. ALLOWED_ORIGINS='https://quiz.example.cl,https://a.example.cl'.
+        // When set in production, these origins (plus local-network patterns)
+        // are the ONLY trusted origins and the cloud-platform wildcard
+        // patterns (vercel/netlify/herokuapp/cloudfront/azure/run.app) are
+        // skipped. Unset => behavior unchanged (backward compatible).
+        // Setting ALLOWED_ORIGINS at all signals intent to lock down, so the
+        // cloud-platform wildcards are dropped even if every entry is invalid
+        // (fail closed, not open). Only valid entries are actually trusted.
+        this.hasExplicitAllowedOrigins = false;
+        const explicitOrigins = process.env.ALLOWED_ORIGINS;
+        if (explicitOrigins && explicitOrigins.trim()) {
+            this.hasExplicitAllowedOrigins = true;
+            let validCount = 0;
+            for (const raw of explicitOrigins.split(',')) {
+                const origin = raw.trim();
+                if (origin && this.isValidOrigin(origin)) {
+                    this.allowedOrigins.add(origin);
+                    validCount++;
+                } else if (origin) {
+                    logger.warn(`CORS: Ignoring invalid ALLOWED_ORIGINS entry: ${origin}`);
+                }
+            }
+            if (validCount === 0) {
+                logger.warn('CORS: ALLOWED_ORIGINS set but no valid entries; only local-network origins will be allowed.');
+            }
+        }
     }
 
     /**
@@ -92,6 +120,12 @@ class CORSValidationService {
         // Production mode: allow both local networks AND cloud platforms
         if (this.isProduction) {
             const localCheck = this.isLocalNetworkOrigin(origin);
+            // With an explicit allow-list, cloud-platform wildcard patterns are
+            // NOT trusted. Exact allow-listed origins were already added to
+            // this.allowedOrigins and matched by the exact check above.
+            if (this.hasExplicitAllowedOrigins) {
+                return localCheck;
+            }
             const cloudCheck = this.isCloudPlatformOrigin(origin);
             return localCheck || cloudCheck;
         }

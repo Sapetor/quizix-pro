@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
+const { getClientIp } = require('../middleware/client-ip');
 
 /**
  * File Upload Routes
@@ -68,7 +69,7 @@ function createFileUploadRoutes(options) {
 
     // Guard placed BEFORE multer so a rejected request never touches disk.
     function uploadRateLimit(req, res, next) {
-        const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+        const clientIP = getClientIp(req);
         const rateCheck = checkUploadRateLimit(clientIP);
         if (!rateCheck.allowed) {
             logger.warn(`Image upload rate limit exceeded for IP: ${clientIP}`);
@@ -250,7 +251,7 @@ function createFileUploadRoutes(options) {
         ]);
     }
 
-    router.post('/api/extract-pdf', pdfUpload.single('pdf'), async (req, res) => {
+    router.post('/api/extract-pdf', uploadRateLimit, pdfUpload.single('pdf'), async (req, res) => {
         const PDF_PARSE_TIMEOUT_MS = 30000; // 30 second timeout for PDF parsing
 
         try {
@@ -320,7 +321,7 @@ function createFileUploadRoutes(options) {
         }
     });
 
-    router.post('/api/extract-docx', docxUpload.single('docx'), async (req, res) => {
+    router.post('/api/extract-docx', uploadRateLimit, docxUpload.single('docx'), async (req, res) => {
         const DOCX_PARSE_TIMEOUT_MS = 30000;
 
         try {
@@ -382,7 +383,7 @@ function createFileUploadRoutes(options) {
         }
     });
 
-    router.post('/api/extract-pptx', pptxUpload.single('pptx'), async (req, res) => {
+    router.post('/api/extract-pptx', uploadRateLimit, pptxUpload.single('pptx'), async (req, res) => {
         const PPTX_PARSE_TIMEOUT_MS = 60000; // Longer timeout for large presentations
 
         try {

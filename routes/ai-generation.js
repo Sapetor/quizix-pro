@@ -1,6 +1,7 @@
 const express = require('express');
 const dns = require('dns').promises;
 const { requireUser } = require('../middleware/attach-user');
+const { getClientIp } = require('../middleware/client-ip');
 
 /**
  * POST to an upstream AI provider and normalize the outcome.
@@ -105,6 +106,7 @@ function createAIGenerationRoutes(options) {
                 }
             }
         }, 5 * 60 * 1000);
+        if (cleanupInterval.unref) cleanupInterval.unref();
 
         return { check, cleanupInterval };
     }
@@ -209,7 +211,7 @@ function createAIGenerationRoutes(options) {
 
     // Ollama endpoint is configurable via OLLAMA_URL env var or runtime API
     let ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
-    let ollamaEnabled = true;
+    let ollamaEnabled = process.env.OLLAMA_ENABLED === 'true';
 
     // Runtime Ollama configuration endpoints
     router.get('/ollama/config', (req, res) => {
@@ -274,7 +276,7 @@ function createAIGenerationRoutes(options) {
             return res.status(503).json({ error: 'Ollama is disabled', messageKey: 'error_ollama_disabled' });
         }
         try {
-            const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+            const clientIP = getClientIp(req);
             const rateCheck = ollamaLimiter.check(clientIP);
 
             if (!rateCheck.allowed) {
@@ -353,26 +355,31 @@ function createAIGenerationRoutes(options) {
         try {
             const { prompt, apiKey: clientApiKey, numQuestions, model, contentFlags } = req.validatedBody;
 
-            // Use server-side API key if available, otherwise require client key
+            // Prefer a client-provided key (BYOK); fall back to the server key.
             const serverApiKey = process.env.CLAUDE_API_KEY;
-            const apiKey = serverApiKey || clientApiKey;
+            const usingServerKey = !clientApiKey && !!serverApiKey;
+            const apiKey = clientApiKey || serverApiKey;
 
-            // Apply rate limiting for BYOK mode only (server key has no limit)
-            if (!serverApiKey && clientApiKey) {
-                const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
-                const rateCheck = byokLimiter.check(clientIP);
+            // Rate-limit every request per-IP (the server key is no longer exempt).
+            const clientIP = getClientIp(req);
+            const rateCheck = byokLimiter.check(clientIP);
+            if (!rateCheck.allowed) {
+                logger.warn(`AI generate rate limit exceeded for IP: ${clientIP}`);
+                return res.status(429).json({
+                    error: 'Rate limit exceeded',
+                    messageKey: 'error_rate_limited',
+                    message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
+                    retryAfter: rateCheck.retryAfter
+                });
+            }
+            res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
 
-                if (!rateCheck.allowed) {
-                    logger.warn(`BYOK rate limit exceeded for IP: ${clientIP}`);
-                    return res.status(429).json({
-                        error: 'Rate limit exceeded',
-                        messageKey: 'error_rate_limited',
-                        message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
-                        retryAfter: rateCheck.retryAfter
-                    });
-                }
-
-                res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
+            // Anonymous users must not be able to spend the server-side key.
+            if (usingServerKey && !req.user) {
+                return res.status(401).json({
+                    error: 'Authentication required',
+                    messageKey: 'error_auth_required'
+                });
             }
 
             if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
@@ -464,26 +471,31 @@ function createAIGenerationRoutes(options) {
         try {
             const { prompt, apiKey: clientApiKey, numQuestions, model, contentFlags } = req.validatedBody;
 
-            // Use server-side API key if available, otherwise require client key
+            // Prefer a client-provided key (BYOK); fall back to the server key.
             const serverApiKey = process.env.GEMINI_API_KEY;
-            const apiKey = serverApiKey || clientApiKey;
+            const usingServerKey = !clientApiKey && !!serverApiKey;
+            const apiKey = clientApiKey || serverApiKey;
 
-            // Apply rate limiting for BYOK mode only (server key has no limit)
-            if (!serverApiKey && clientApiKey) {
-                const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
-                const rateCheck = byokLimiter.check(clientIP);
+            // Rate-limit every request per-IP (the server key is no longer exempt).
+            const clientIP = getClientIp(req);
+            const rateCheck = byokLimiter.check(clientIP);
+            if (!rateCheck.allowed) {
+                logger.warn(`AI generate rate limit exceeded for IP: ${clientIP}`);
+                return res.status(429).json({
+                    error: 'Rate limit exceeded',
+                    messageKey: 'error_rate_limited',
+                    message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
+                    retryAfter: rateCheck.retryAfter
+                });
+            }
+            res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
 
-                if (!rateCheck.allowed) {
-                    logger.warn(`BYOK rate limit exceeded for IP: ${clientIP}`);
-                    return res.status(429).json({
-                        error: 'Rate limit exceeded',
-                        messageKey: 'error_rate_limited',
-                        message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
-                        retryAfter: rateCheck.retryAfter
-                    });
-                }
-
-                res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
+            // Anonymous users must not be able to spend the server-side key.
+            if (usingServerKey && !req.user) {
+                return res.status(401).json({
+                    error: 'Authentication required',
+                    messageKey: 'error_auth_required'
+                });
             }
 
             if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
@@ -613,7 +625,7 @@ function createAIGenerationRoutes(options) {
             const { url } = req.validatedBody;
 
             // Rate limiting
-            const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+            const clientIP = getClientIp(req);
             const rateCheck = urlLimiter.check(clientIP);
 
             if (!rateCheck.allowed) {
@@ -847,24 +859,29 @@ function createAIGenerationRoutes(options) {
             // Determine API key: server-side env var, then client-provided
             const envKeyName = provider === 'claude' ? 'CLAUDE_API_KEY' : 'GEMINI_API_KEY';
             const serverApiKey = process.env[envKeyName];
-            const apiKey = serverApiKey || clientApiKey;
+            const usingServerKey = !clientApiKey && !!serverApiKey;
+            const apiKey = clientApiKey || serverApiKey;
 
-            // BYOK rate limiting
-            if (!serverApiKey && clientApiKey) {
-                const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
-                const rateCheck = byokLimiter.check(clientIP);
+            // Rate-limit every request per-IP (the server key is no longer exempt).
+            const clientIP = getClientIp(req);
+            const rateCheck = byokLimiter.check(clientIP);
+            if (!rateCheck.allowed) {
+                logger.warn(`AI generate rate limit exceeded for IP: ${clientIP}`);
+                return res.status(429).json({
+                    error: 'Rate limit exceeded',
+                    messageKey: 'error_rate_limited',
+                    message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
+                    retryAfter: rateCheck.retryAfter
+                });
+            }
+            res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
 
-                if (!rateCheck.allowed) {
-                    logger.warn(`BYOK rate limit exceeded for IP: ${clientIP}`);
-                    return res.status(429).json({
-                        error: 'Rate limit exceeded',
-                        messageKey: 'error_rate_limited',
-                        message: `Too many requests. Please wait ${rateCheck.retryAfter} seconds.`,
-                        retryAfter: rateCheck.retryAfter
-                    });
-                }
-
-                res.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
+            // Anonymous users must not be able to spend the server-side key.
+            if (usingServerKey && !req.user) {
+                return res.status(401).json({
+                    error: 'Authentication required',
+                    messageKey: 'error_auth_required'
+                });
             }
 
             if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {

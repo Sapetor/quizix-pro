@@ -9,6 +9,7 @@
 
 const express = require('express');
 const { isSecureRequest } = require('../services/session-service');
+const { getClientIp } = require('../middleware/client-ip');
 
 function createAuthRoutes({
     userService,
@@ -32,7 +33,7 @@ function createAuthRoutes({
     }
 
     function clientIp(req) {
-        return req.ip || req.socket?.remoteAddress || 'unknown';
+        return getClientIp(req);
     }
 
     router.post('/signup', validateBody(signupSchema), async (req, res) => {

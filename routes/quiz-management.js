@@ -1,4 +1,5 @@
 const express = require('express');
+const { getClientIp } = require('../middleware/client-ip');
 
 /**
  * Quiz Management Routes
@@ -492,7 +493,7 @@ function createQuizManagementRoutes(options) {
     router.post('/api/unlock', validateBody(schemas.unlockSchema), async (req, res) => {
         try {
             const { itemId, itemType, password } = req.validatedBody;
-            const ip = req.ip || req.connection.remoteAddress || 'unknown';
+            const ip = getClientIp(req);
             const result = await metadataService.unlock(itemId, itemType, password, ip);
             res.json(result);
         } catch (error) {

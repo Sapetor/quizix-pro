@@ -1,4 +1,5 @@
 const express = require('express');
+const { getClientIp } = require('../middleware/client-ip');
 
 /**
  * Manim Animation Routes
@@ -92,7 +93,7 @@ function createManimRoutes({ logger, manimRenderService }) {
             }
 
             // Rate limit check
-            const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+            const clientIP = getClientIp(req);
             const rateCheck = checkRenderRateLimit(clientIP);
 
             if (!rateCheck.allowed) {

@@ -52,8 +52,10 @@ const { createAIGenerationRoutes } = require('./routes/ai-generation');
 const { createManimRoutes } = require('./routes/manim-routes');
 const { createAuthRoutes } = require('./routes/auth');
 const { createAttachUser, requireUser } = require('./middleware/attach-user');
+const { getClientIp } = require('./middleware/client-ip');
 const { ManimRenderService } = require('./services/manim-render-service');
 const { UploadGCService } = require('./services/upload-gc-service');
+const { createSaveQuizRateLimiter } = require('./utils/save-quiz-rate-limiter');
 const { registerSocketHandlers } = require('./socket');
 
 // Detect production environment
@@ -189,6 +191,8 @@ const CONFIG = {
 };
 
 const app = express();
+// req.ip trusts loopback only; the Cloudflare tunnel is the sole local client
+app.set('trust proxy', 'loopback');
 const server = http.createServer(app);
 
 // Initialize CORS validation service
@@ -467,8 +471,13 @@ app.use('/api/auth', createAuthRoutes({
     loginSchema
 }));
 
+// Per-IP rate limit for quiz saves. Anonymous saving is supported and each
+// save is a disk write plus a metadata mutation, so cap request rate (30/min)
+// so an anonymous client can't flood disk. Same idiom as the upload/AI limiters.
+const saveQuizRateLimiter = createSaveQuizRateLimiter({ logger, getClientIp });
+
 // Save quiz endpoint
-app.post('/api/save-quiz', validateBody(saveQuizSchema), async (req, res) => {
+app.post('/api/save-quiz', saveQuizRateLimiter.middleware, validateBody(saveQuizSchema), async (req, res) => {
     try {
         const { title, questions, settings, password, filename } = req.validatedBody;
         const ownerId = req.user?.id || null;

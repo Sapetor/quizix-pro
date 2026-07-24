@@ -13,6 +13,7 @@ describe('CORSValidationService', () => {
         process.env = { ...originalEnv };
         delete process.env.NODE_ENV;
         delete process.env.RAILWAY_ENVIRONMENT;
+        delete process.env.ALLOWED_ORIGINS;
         corsService = new CORSValidationService();
     });
 
@@ -148,6 +149,26 @@ describe('CORSValidationService', () => {
         test('should allow both local and cloud origins', () => {
             expect(corsService.isOriginAllowed('http://192.168.1.1:3000')).toBe(true);
             expect(corsService.isOriginAllowed('https://my-app.vercel.app')).toBe(true);
+        });
+    });
+
+    describe('ALLOWED_ORIGINS explicit allow-list (production)', () => {
+        beforeEach(() => {
+            process.env.NODE_ENV = 'production';
+            process.env.ALLOWED_ORIGINS = 'https://quiz.example.cl';
+            corsService = new CORSValidationService();
+        });
+
+        test('should allow the listed explicit origin', () => {
+            expect(corsService.isOriginAllowed('https://quiz.example.cl')).toBe(true);
+        });
+
+        test('should reject cloud-platform (vercel) origins when allow-list is set', () => {
+            expect(corsService.isOriginAllowed('https://my-app.vercel.app')).toBe(false);
+        });
+
+        test('should still allow local-network origins', () => {
+            expect(corsService.isOriginAllowed('http://192.168.1.1:3000')).toBe(true);
         });
     });
 
