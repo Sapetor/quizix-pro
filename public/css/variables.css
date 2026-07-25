@@ -6,9 +6,9 @@
 /* Modern Design System */
 :root {
     /* === FONT STACK === */
-    --font-display: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    --font-display: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Fira Code', 'Consolas', monospace;
 
     /* === COOL NEUTRAL PALETTE (shared with landing) === */
     --paper: #e9ebf0;
@@ -16,24 +16,83 @@
     --paper-3: #f4f5f8;
     --ink: #14161c;
     --ink-2: #454a56;
-    --ink-3: #767c8a;
+    /* tertiary ink must clear 4.5:1 on --paper, the darkest light ground: 4.83:1
+       (the old #767c8a was 3.51:1 there and carried ~143 consumers) */
+    --ink-3: #5f6675;
+    /* NON-TEXT ONLY. 2.20:1 on --paper — decorative hairlines and borders.
+       There is no light value that reads as a fourth tier AND clears 4.5:1. */
     --ink-4: #9aa0ad;
-    --rule-soft-light: #d7dae2;
-    --rule-soft-dark: #2a2f3b;
-    --accent-terracotta: #4338ca;
-    --accent-terracotta-deep: #312e81;
 
-    /* === PREMIUM INDIGO COLOR PALETTE === */
-    --color-primary-400: #818cf8;
-    --color-primary-500: #6366f1;
-    --color-primary-600: #4f46e5;
-    --color-primary-700: #4338ca;
-    --color-primary-900: #312e81;
+    /* === RULES AND BORDERS === */
+    --line: #d7dae2;         /* decorative dividers — 1.4.11 does not apply */
+    --line-2: #e7e9ef;       /* faintest divider */
+    --line-strong: #7f8697;  /* borders that ARE the control — 3.06:1 min, clears 1.4.11 */
+    /* Deprecated names. Retire once header.css and app-screens.css read --line. */
+    --rule-soft-light: var(--line);
+    --rule-soft-dark: var(--line);
 
-    /* Accent - Warm Coral (for CTAs and highlights) */
-    --color-accent: #f97316;
+    /* === PRIMARY — frog green ===
+       --primary:      fills, rings, borders, large accents (>=24px / >=18.7px bold) ONLY.
+                       4.21:1 on --paper — NOT safe as small text on the page ground.
+       --primary-ink:  mandatory for green TEXT below 24px. 5.98:1 on --paper.
+       --primary-edge: keycap bottom edge and hover fills. NEVER text
+                       (#0b5e2c is 2.01:1 on the dark card ground).
+       --primary-label: label ON the primary fill. In dark theme white is 2.28:1 — never white. */
+    --primary: #15803d;
+    --primary-edge: #0c5e2a;
+    --primary-label: #ffffff;
+    --primary-ink: #166534;
+    /* Raw triplet for rgba(); a custom property cannot alias a color inside rgba() */
+    --primary-rgb: 21, 128, 61;
 
-    /* Semantic Colors */
+    /* === JOIN — buzz amber (identical in both themes) ===
+       Never carries a white label anywhere: white on #f59e0b is 2.15:1. */
+    --join: #f59e0b;
+    --join-edge: #b45309;    /* keycap edge and the mandatory 1px border */
+    --join-label: #14161c;   /* 8.42:1 on the amber fill */
+
+    /* === CORRECTNESS ===
+       Expressed as outline + check glyph + 10% wash, never as a filled green control
+       (brand green vs correctness green measure 1.09:1 — form separates them, not hue). */
+    --correct: #047857;
+    --correct-rgb: 4, 120, 87;
+
+    /* Focus ring — 5.02:1 on white, clears the 3:1 non-text floor on every ground */
+    --focus-ring: var(--primary);
+    --focus-ring-soft: rgba(var(--primary-rgb), 0.25);
+    /* Onboarding spotlight ring, theme-invariant:
+       4.93:1 on the light-dimmed backdrop, 9.01:1 on the dark-dimmed one. */
+    --ring-spotlight: #22c55e;
+
+    /* === LANDING ANSWER-OPTION DISPLAY FILLS (theme-invariant) ===
+       Display only. --opt-b (3.77) and --opt-c (2.15) must NEVER carry a white label;
+       use the --option-N-start family below for fills that carry white text. */
+    --opt-a: #2563eb;   /* blue   */
+    --opt-b: #059669;   /* green  */
+    --opt-c: #f59e0b;   /* amber  */
+    --opt-d: #e11d48;   /* rose   */
+    --opt-e: #7c3aed;   /* violet */
+    --opt-f: #0e7490;   /* cyan   */
+
+    /* === BRAND RAMP ===
+       Names kept deliberately: ~52 declarations across the app carry stale hex fallback
+       arguments that would silently revert to dead blue/indigo if these names were
+       deleted, instead of failing visibly. Values remapped, names retained. */
+    --color-primary-400: var(--primary-ink);
+    --color-primary-500: var(--primary);
+    --color-primary-600: var(--primary-edge);
+    --color-primary-700: var(--primary-edge);
+    --color-primary-900: var(--primary-edge);
+
+    /* Deprecated: duplicates --join semantically. #f97316 was 2.80:1 as text and under a
+       white label; --join-edge is 5.02:1 both ways. Repoint the 2 call sites to
+       --join + --join-label, then delete. */
+    --color-accent: var(--join-edge);
+
+    /* Semantic Colors — FILLS ONLY, and none of them may carry a white label:
+       #10b981 is 2.54:1, #f59e0b 2.15:1, #ef4444 3.76:1 under white. Their call sites
+       are being repointed per role to --correct / --warning-color / --error-color;
+       the values are left alone here so that migration stays site-by-site. */
     --color-success-500: #10b981;
     --color-warning-500: #f59e0b;
     --color-error-500: #ef4444;
@@ -47,9 +106,11 @@
     --duration-normal: 250ms;
     --duration-slow: 400ms;
 
-    /* Primary gradient (indigo) */
-    --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-    --gradient-primary-hover: linear-gradient(135deg, #4338ca 0%, #312e81 100%);
+    /* Deprecated: a 135deg gradient is incompatible with the flat keycap spec.
+       Flattened here so nothing renders indigo; retire the names once the 3 consumers
+       (components.css:150, components.css:160, preview.css:1651) read --primary directly. */
+    --gradient-primary: var(--primary);
+    --gradient-primary-hover: var(--primary-edge);
     
     /* === COLORFUL OPTIONS SYSTEM === */
     /* WCAG AA Accessible Colors: All meet ≥4.5:1 contrast with white text */
@@ -115,7 +176,9 @@
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
-    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+    --shadow-glow: 0 0 20px rgba(var(--primary-rgb), 0.25);
+    /* Card elevation (promoted from the landing's --lp-shadow) */
+    --shadow-card: 0 1px 2px rgba(20, 22, 28, .06), 0 12px 28px -14px rgba(20, 22, 28, .22);
     
     /* === TYPOGRAPHY SCALE === */
     --text-sm: calc(0.875rem * var(--global-font-scale));
@@ -135,32 +198,38 @@
     --theme-transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --color-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 
-    /* Background Variables */
-    --bg-primary: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
-    /* Default theme values - overridden by theme-specific sections below */
-    --bg-secondary: rgba(255,255,255,0.18);
-    --bg-glass: rgba(255,255,255,0.12);
-    
+    /* === NO-THEME FALLBACKS ===
+       index.html stamps data-theme on <html> before first paint, so both theme blocks
+       below normally win. These mirror the LIGHT values so an absent data-theme still
+       renders a coherent page instead of a pre-Buzzer slate one. */
+    --bg-primary: var(--paper);
+    --bg-secondary: rgba(var(--primary-rgb), 0.08);
+    --bg-glass: rgba(255, 255, 255, 0.85);
+
     /* Text Colors */
-    --text-primary: white;
-    --text-secondary: #2563eb;
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-3);
     --text-contrast: #1e293b;
-    
+
     /* Modal and Card Backgrounds */
-    --modal-bg: rgba(255,255,255,0.98);
-    --modal-text: #1e293b;
-    --card-bg: rgba(255,255,255,0.15);
-    --bg-contrast: rgba(255,255,255,0.92);
-    
+    --modal-bg: var(--paper-2);
+    --modal-text: var(--ink);
+    --card-bg: var(--paper-2);
+    --bg-contrast: rgba(255, 255, 255, 0.98);
+
     /* Border and Accent Colors */
-    --border-color: rgba(255,255,255,0.3);
-    --accent-primary: #2563eb;
-    --accent-secondary: #dc2626;
-    
-    /* Status Colors */
-    --success-color: #16a34a;
-    --warning-color: #ea580c;
-    --error-color: #dc2626;
+    --border-color: var(--line);
+    --accent-primary: var(--primary);
+    --accent-secondary: var(--ink);
+
+    /* Status Colors — light values; every one is an AA fix over its predecessor.
+       --warning-color #b45309 is 4.21:1 on --paper: safe on cards, marginal as text
+       on the page ground (use #92400e there). Same caveat for --info-color at 4.33:1. */
+    --success-color: #047857;
+    --warning-color: #b45309;
+    --error-color: #b91c1c;
+    --error-label: #ffffff;
+    --info-color: #2563eb;
     
     /* Shadows and Effects */
     --shadow-soft: 0 8px 32px rgba(0,0,0,0.15);
@@ -175,26 +244,78 @@
     /* Glass Effect Variants */
     --bg-glass-light: rgba(255,255,255,0.1);
     
-    /* Accent Gradient */
-    --accent-secondary-gradient: #1d4ed8;
+    /* Deprecated: a stale blue with no gradient in it. 2 consumers in preview.css. */
+    --accent-secondary-gradient: var(--primary-edge);
 
     /* === LEGACY TOKEN ALIASES ===
        Orphan token names referenced across the CSS that map to canonical tokens.
        Aliases re-resolve per theme because [data-theme] overrides live on :root. */
     --primary-color: var(--accent-primary);
-    --primary-color-hover: var(--accent-terracotta-deep);
+    --primary-color-hover: var(--primary-edge);
     --danger-color: var(--error-color);
-    --info-color: #3b82f6;
     --bg-tertiary: var(--card-bg);
     --background-primary: var(--bg-primary);
     --success-green: var(--success-color);
     --color-primary: var(--color-primary-500);
     --color-danger-500: var(--color-error-500);
     --surface-color: var(--card-bg);
+    /* Deprecated: resolves to the same colour as --text-secondary; the distinction is
+       silently discarded. 2 consumers in components.css. */
     --text-tertiary: var(--text-secondary);
     --glass-dark: rgba(0, 0, 0, 0.4);
-    /* Raw RGB triplet for use inside rgba(); cannot alias a color keyword */
-    --accent-primary-rgb: 37, 99, 235;
+    /* Deprecated triplet alias. rgba() cannot take a colour, but a custom property
+       substitutes textually, so this forwards correctly. 7 consumers outside this file. */
+    --accent-primary-rgb: var(--primary-rgb);
+
+    /* === DEPRECATED ACCENT NAMES ===
+       "terracotta" has held indigo since ab052a5 and is a lie at every call site.
+       Aliased, not deleted: 9 consumers live in files this pass does not own, and two
+       of them (header.css:441 text, components.css:538-568 focus rings) would break or
+       fail AA on deletion. --accent-terracotta maps to the TEXT-safe --primary-ink
+       (#166534, 5.98:1 on --paper; --primary would be 4.21:1 at header.css:441's 22px)
+       and is visually indistinguishable from --primary. Rename the 9 call sites by role,
+       then delete both names. */
+    --accent-terracotta: var(--primary-ink);
+    --accent-terracotta-deep: var(--primary-edge);
+
+    /* === LANDING COMPAT ALIASES ===
+       Promoted out of #main-menu.landing-v2, where they SHADOWED :root inside the landing
+       subtree. Names kept global (not renamed in place) because ~380 references live in
+       landing.css and ~40 more in index.html inline styles, none of which this pass owns.
+       Rename those references to the canonical names, then delete this block. */
+    --lp-bg: var(--paper);
+    --lp-surface: var(--paper-2);
+    --lp-surface-2: var(--paper-3);
+    --lp-ink: var(--ink);
+    --lp-ink-2: var(--ink-2);
+    --lp-ink-3: var(--ink-3);
+    --lp-line: var(--line);
+    --lp-line-2: var(--line-2);
+    --lp-opt-a: var(--opt-a);
+    --lp-opt-b: var(--opt-b);
+    --lp-opt-c: var(--opt-c);
+    --lp-opt-d: var(--opt-d);
+    --lp-opt-e: var(--opt-e);
+    --lp-opt-f: var(--opt-f);
+    /* --lp-optink-* were AA-safe duplicates of the option ramp; only D differed
+       (#e11d48 vs #dc2626 — 1.03:1, the same red to a viewer). */
+    --lp-optink-a: var(--option-0-start);
+    --lp-optink-b: var(--option-1-start);
+    --lp-optink-c: var(--option-2-start);
+    --lp-optink-d: var(--option-3-start);
+    --lp-optink-e: var(--option-4-start);
+    --lp-optink-f: var(--option-5-start);
+    --lp-primary: var(--primary);
+    --lp-primary-edge: var(--primary-edge);
+    --lp-primary-label: var(--primary-label);
+    --lp-primary-ink: var(--primary-ink);
+    --lp-join: var(--join);
+    --lp-join-edge: var(--join-edge);
+    --lp-join-label: var(--join-label);
+    --lp-shadow: var(--shadow-card);
+    --lp-font-display: var(--font-display);
+    --lp-font-ui: var(--font-body);
+    --lp-font-mono: var(--font-mono);
 
     /* === CONTENT-DENSITY AWARE SPACING SYSTEM === */
     /* Base spacing units for different content densities */
@@ -258,23 +379,24 @@
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
     --shadow-xl: 0 15px 40px rgba(0, 0, 0, 0.16);
-    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.25);
+    --shadow-glow: 0 0 20px rgba(var(--primary-rgb), 0.25);
 
     /* Light Theme Variables - Critical for theme switching (cool neutral) */
     --bg-primary: var(--paper);
-    --bg-secondary: rgba(67, 56, 202, 0.08);
+    --bg-secondary: rgba(var(--primary-rgb), 0.08);
     --text-primary: var(--ink);
     --text-secondary: var(--ink-3);
     --modal-bg: var(--paper-2);
     --modal-text: var(--ink);
     --card-bg: var(--paper-2);
-    --border-color: var(--rule-soft-light);
-    --accent-primary: var(--accent-terracotta);
-    --accent-primary-rgb: 67, 56, 202;
+    --border-color: var(--line);
+    --accent-primary: var(--primary);
     --accent-secondary: var(--ink);
-    --success-color: #10b981;
-    --warning-color: #f59e0b;
-    --error-color: #ef4444;
+    --success-color: #047857;
+    --warning-color: #b45309;
+    --error-color: #b91c1c;
+    --error-label: #ffffff;
+    --info-color: #2563eb;
     --bg-glass: rgba(255, 255, 255, 0.85);
     --text-contrast: #1e293b;
     --bg-contrast: rgba(255, 255, 255, 0.98);
@@ -299,11 +421,25 @@
     --paper-3: #1e222c;
     --ink: #eef0f4;
     --ink-2: #b9bfcc;
-    --ink-3: #7d8493;
-    --ink-4: #5e6472;
-    --rule-soft-light: #2a2f3b;
-    --accent-terracotta: #6366f1;
-    --accent-terracotta-deep: #818cf8;
+    /* raised from #7d8493, which was 4.24:1 on --paper-3 (= --card-bg in dark) */
+    --ink-3: #868d9c;
+    /* raised from #5e6472 so the non-text uses clear the 3:1 UI floor (3.11:1 min) */
+    --ink-4: #676e7e;
+
+    --line: #2a2f3b;
+    --line-2: #232833;
+    --line-strong: #676e7e;
+
+    --primary: #22c55e;
+    --primary-edge: #0b5e2c;
+    --primary-label: #052e1a;  /* 6.53:1 on the fill. WHITE HERE IS 2.28:1 — never use it. */
+    --primary-ink: #22c55e;    /* clears 4.5:1 on every dark ground, so one value serves both roles */
+    --primary-rgb: 34, 197, 94;
+
+    --correct: #34d399;
+    --correct-rgb: 52, 211, 153;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, .4), 0 18px 40px -18px rgba(0, 0, 0, .7);
 
     /* Modern Glass Morphism for Dark Mode */
     --glass-light: rgba(255, 255, 255, 0.05);
@@ -315,26 +451,27 @@
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
     --shadow-xl: 0 15px 40px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.4);
+    --shadow-glow: 0 0 20px rgba(var(--primary-rgb), 0.4);
 
     /* Premium Dark Theme - Richer depth */
     --bg-dark-primary: #0f0f14;
 
     /* Dark Theme Variables - Critical for theme switching (cool ink) */
     --bg-primary: var(--paper);
-    --bg-secondary: rgba(99, 102, 241, 0.12);
+    --bg-secondary: rgba(var(--primary-rgb), 0.12);
     --text-primary: var(--ink);
     --text-secondary: var(--ink-3);
     --modal-bg: var(--paper-2);
     --modal-text: var(--ink);
     --card-bg: var(--paper-3);
-    --border-color: var(--rule-soft-dark);
-    --accent-primary: var(--accent-terracotta);
-    --accent-primary-rgb: 99, 102, 241;
+    --border-color: var(--line);
+    --accent-primary: var(--primary);
     --accent-secondary: var(--ink);
-    --success-color: #10b981;
-    --warning-color: #f59e0b;
-    --error-color: #ef4444;
+    --success-color: #34d399;
+    --warning-color: #f59e0b;  /* fill label must be --join-label #14161c (8.42:1), never white (2.15:1) */
+    --error-color: #f87171;
+    --error-label: #14161c;    /* 6.54:1 on the fill; white would be 2.77:1 */
+    --info-color: #60a5fa;
     --bg-glass: rgba(255,255,255,0.08);
     --text-contrast: #f0f6fc;
     --bg-contrast: rgba(15,15,20,0.95);

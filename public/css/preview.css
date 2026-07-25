@@ -101,8 +101,9 @@
     align-items: center;
     padding: 20px 30px;
     border-bottom: 2px solid var(--border-color);
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary-gradient) 100%);
-    color: white;
+    /* No background here: the later .preview-modal-header rule sets it transparent,
+       so the header sits on --modal-bg. White text was 1:1 against it. */
+    color: var(--ink);
 }
 
 .preview-title-section {
@@ -149,7 +150,7 @@
 .preview-modal-header .close-btn {
     background: none;
     border: none;
-    color: white;
+    color: var(--ink-2);
     font-size: 2rem;
     cursor: pointer;
     padding: 5px 10px;
@@ -172,19 +173,6 @@
     padding: 15px;
     background: var(--card-bg);
     border-bottom: 1px solid var(--border-color);
-}
-
-.nav-btn {
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary-gradient));
-    border: none;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 25px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
 /* Question counter in navigation bar - Compact design */
@@ -217,8 +205,8 @@
 .preview-type-selector {
     font-weight: 500;
     color: var(--text-primary);
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: rgba(var(--primary-rgb), 0.15);
+    border: 1px solid rgba(var(--primary-rgb), 0.3);
     border-radius: 8px;
     padding: 6px 10px;
     font-size: 0.75rem;
@@ -229,24 +217,24 @@
 }
 
 .preview-type-selector:hover {
-    background: rgba(99, 102, 241, 0.25);
-    border-color: rgba(99, 102, 241, 0.5);
+    background: rgba(var(--primary-rgb), 0.25);
+    border-color: rgba(var(--primary-rgb), 0.5);
 }
 
 .preview-type-selector:focus {
     outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 2px var(--focus-ring-soft);
 }
 
 [data-theme="light"] .preview-type-selector {
-    background: rgba(99, 102, 241, 0.1);
-    border-color: rgba(99, 102, 241, 0.25);
+    background: rgba(var(--primary-rgb), 0.1);
+    border-color: rgba(var(--primary-rgb), 0.25);
     color: var(--text-primary);
 }
 
 [data-theme="light"] .preview-type-selector:hover {
-    background: rgba(99, 102, 241, 0.18);
+    background: rgba(var(--primary-rgb), 0.18);
 }
 
 .nav-btn:hover {
@@ -295,7 +283,7 @@
     width: 100%;
     height: 100%;
     background: var(--paper-2);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     border-radius: var(--border-radius-medium);
     padding: 40px;
     color: var(--ink);
@@ -328,7 +316,9 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
     margin-bottom: 20px;
-    color: var(--ink-3);
+    /* --ink-2, not --ink-3: this sits on the tinted preview surface, not on --paper,
+       where --ink-3 is only 3.58:1 in dark. --ink-2 is 6.47:1 there. */
+    color: var(--ink-2);
     font-weight: 600;
 }
 
@@ -803,9 +793,11 @@ pre code {
     font-size: 16px;
 }
 
+/* Rule G corollary 1: a settings affordance is neither a primary action nor
+   correctness, so it gives up green. White on the dark-theme green was 2.28:1. */
 .settings-btn:hover {
-    background: var(--color-primary);
-    color: white;
+    background: var(--ink-2);
+    color: var(--paper-2);
 }
 
 /* Preview Settings Popup */
@@ -859,7 +851,8 @@ pre code {
 
 .preview-settings-popup .close-btn:hover {
     background: var(--error-color);
-    color: white;
+    /* --error-label, not white: dark --error-color #f87171 under white is 2.77:1. */
+    color: var(--error-label);
 }
 
 /* Animation defined in animations.css */
@@ -909,8 +902,10 @@ pre code {
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background: var(--color-primary);
-    color: white;
+    /* Rule G corollary 1: scroll-to-top is navigation, not a primary action —
+       no green. White on the dark-theme green fill measured 2.28:1. */
+    background: var(--ink-2);
+    color: var(--paper-2);
     border: none;
     font-size: 20px;
     cursor: pointer;
@@ -926,7 +921,7 @@ pre code {
 .back-to-top-float:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-    background: var(--color-primary-dark, #5a67d8);
+    background: var(--ink);
 }
 
 .back-to-top-float.show {
@@ -965,14 +960,9 @@ pre code {
     margin: 0 2px;
 }
 
-.nav-btn.edit-btn {
-    background: rgba(255, 215, 0, 0.2);
-    color: #FFD700;
-    font-weight: 600;
-}
-
+/* Fill/label/weight for .nav-btn.edit-btn live in the single rule further down;
+   only the smaller hover lift is specific to this compact nav bar. */
 .nav-btn.edit-btn:hover {
-    background: rgba(255, 215, 0, 0.3);
     transform: translateY(-1px);
 }
 
@@ -1342,8 +1332,10 @@ pre code {
     right: -8px;
     width: 24px;
     height: 24px;
-    background: #fff;
-    color: #16a34a;
+    /* Rule G: correctness is a check glyph, never a filled green control.
+       --correct on the white badge is 5.48:1 (the old #16a34a was 3.30:1). */
+    background: var(--paper-2);
+    color: var(--correct);
     border-radius: 50%;
     font-size: 14px;
     font-weight: 900;
@@ -1373,8 +1365,8 @@ pre code {
     right: -8px;
     width: 24px;
     height: 24px;
-    background: #fff;
-    color: #16a34a;
+    background: var(--paper-2);
+    color: var(--correct);
     border-radius: 50%;
     font-size: 14px;
     font-weight: 900;
@@ -1393,7 +1385,8 @@ pre code {
     overflow: visible;
 }
 
-/* Dark theme: inverted badge colors */
+/* Dark theme: only the drop shadow needs deepening — --paper-2 and --correct
+   are already theme-aware (--correct #34d399 on --paper-2 #171a22 = 9.05:1). */
 [data-theme="dark"] .preview-content .player-option.correct::after,
 [data-theme="dark"] .preview-content-split .player-option.correct::after,
 [data-theme="dark"] .preview-content .tf-option.correct::after,
@@ -1401,8 +1394,6 @@ pre code {
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option.correct-preview::after,
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option.correct-preview::after,
 [data-theme="dark"] .tf-option.preview-option.correct::after {
-    background: #1e293b;
-    color: #4ade80;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
@@ -1640,16 +1631,17 @@ pre code {
 [data-theme="light"] select {
     background: rgba(255, 255, 255, 0.95);
     color: var(--text-contrast);
-    border: 1px solid var(--rule-soft);
+    /* --line-strong, not --line: this border IS the control (WCAG 1.4.11).
+       #7f8697 on the field fill is 3.65:1; --line was 1.40:1. */
+    border: 1px solid var(--line-strong);
 }
 
 /* These two are NOT preview-scoped — they restyle every primary/secondary
-   button in the app. They were forcing blue over the terracotta
-   --gradient-primary, so "Rematch" was blue while "Create Lobby" was
-   terracotta on the same screen. Match the editorial primary instead. */
+   button in the app. Flat --primary fill per the Buzzer keycap spec; the
+   135deg --gradient-primary they used to carry is retired. */
 [data-theme="light"] .btn.primary {
-    background: var(--gradient-primary);
-    color: white;
+    background: var(--primary);
+    color: var(--primary-label);
     border: 1px solid transparent;
     text-shadow: none;
 }
@@ -1657,7 +1649,7 @@ pre code {
 [data-theme="light"] .btn.secondary {
     background: var(--paper-2);
     color: var(--ink);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line-strong);
 }
 
 /* ===== ENHANCED LIVE PREVIEW TITLE BAR & NAVIGATION ===== */
@@ -1802,7 +1794,9 @@ pre code {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
+    /* The translucent-white fill composites to ~#eceef2 on the light nav bar,
+       where white text was 1.16:1. --ink is 15.57:1 there, 13.64:1 in dark. */
+    color: var(--ink);
     padding: 4px 8px;
     border-radius: 4px;
     cursor: pointer;
@@ -1823,7 +1817,6 @@ pre code {
 [data-theme="dark"] .nav-btn {
     background: linear-gradient(135deg, rgba(30, 64, 175, 0.3) 0%, rgba(15, 23, 42, 0.8) 100%);
     border: 1px solid rgba(96, 165, 250, 0.4);
-    color: #f8fafc;
 }
 
 .nav-btn:hover {
@@ -1843,11 +1836,16 @@ pre code {
     transform: none;
 }
 
-/* Enhanced Edit Question Button - Overflow protection */
+/* Edit Question - Overflow protection.
+   Rule G corollary 1: "Edit" is neither a primary action nor correctness, so it
+   gives up green (dark theme was a #22c55e label on a green tint). The light gold
+   #ffd700 it replaces measured 1.34:1 on the nav bar. One neutral form, both themes:
+   --ink is 18.08:1 light / 15.25:1 dark on --paper-2; the --line-strong border is
+   3.65:1 / 3.40:1 against the fill, clearing WCAG 1.4.11. */
 .nav-btn.edit-btn {
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 152, 0, 0.15) 100%);
-    border: 1px solid rgba(255, 193, 7, 0.4);
-    color: #ffd700;
+    background: var(--paper-2);
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
     font-weight: 700;
     max-width: 120px;
     /* Prevent excessive width */
@@ -1856,22 +1854,10 @@ pre code {
     white-space: nowrap;
 }
 
-[data-theme="dark"] .nav-btn.edit-btn {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.15) 100%);
-    border: 1px solid rgba(34, 197, 94, 0.4);
-    color: #22c55e;
-}
-
 .nav-btn.edit-btn:hover {
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.3) 0%, rgba(255, 152, 0, 0.2) 100%);
-    border-color: rgba(255, 193, 7, 0.6);
-    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
-}
-
-[data-theme="dark"] .nav-btn.edit-btn:hover {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(22, 163, 74, 0.2) 100%);
-    border-color: rgba(34, 197, 94, 0.6);
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    background: var(--paper-3);
+    border-color: var(--ink-3);
+    box-shadow: 0 4px 12px var(--shadow-light);
 }
 
 /* Disable FOUC prevention that was causing invisible content */

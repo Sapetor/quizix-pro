@@ -1449,7 +1449,7 @@
 }
 
 .host-pattern {
-    background: radial-gradient(circle at 30% 70%, #4f46e5 0%, transparent 50%),
+    background: radial-gradient(circle at 30% 70%, var(--primary) 0%, transparent 50%),
                 radial-gradient(circle at 70% 30%, #06b6d4 0%, transparent 50%);
 }
 
@@ -3052,7 +3052,7 @@
     min-width: 16px;
     min-height: 16px;
     margin: 0 !important;
-    accent-color: #6366f1;
+    accent-color: var(--primary);
 }
 
 .mobile-quiz-toggle:active {

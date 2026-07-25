@@ -13,12 +13,12 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=69">
+    <link rel="stylesheet" href="css/main.bundle.css?v=75">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=69" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=69" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=69" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=75" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=75" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=75" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
@@ -33,10 +33,12 @@
     </style>
     <style>
         /* Critical FOUC prevention styles - must be inline to load immediately */
+        /* MUST match --paper / --ink in css/variables.css. No var() here — this block
+           runs before the bundle loads. Default is LIGHT, matching variables.css :root
+           and the theme bootstrap below (which defaults to 'light'). */
         :root {
-            /* Critical theme variables for immediate application (buzzer ink default) */
-            --critical-bg: #0d0f14;
-            --critical-text: #eef0f4;
+            --critical-bg: #e9ebf0;
+            --critical-text: #14161c;
         }
 
         [data-theme="light"] {
@@ -933,8 +935,8 @@
 
                             <li class="lp-qt lp-card">
                                 <div class="lp-qt-mock lp-qt-mock--tf" aria-hidden="true">
-                                    <span class="lp-qt-tf" style="--k: var(--lp-opt-b)">✓</span>
-                                    <span class="lp-qt-tf" style="--k: var(--lp-opt-d)">✕</span>
+                                    <span class="lp-qt-tf" style="--k: var(--lp-optink-b)">✓</span>
+                                    <span class="lp-qt-tf" style="--k: var(--lp-optink-d)">✕</span>
                                 </div>
                                 <div class="lp-qt-txt">
                                     <h5 data-translate="landing_qtype3_title">Verdadero / Falso</h5>
@@ -3663,10 +3665,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=69"></script>
-    <script type="module" src="js/landing.js?v=69"></script>
-    <script type="module" src="js/landing-demo.js?v=69"></script>
-    <script type="module" src="js/landing-ai.js?v=69"></script>
+    <script type="module" src="js/main.js?v=75"></script>
+    <script type="module" src="js/landing.js?v=75"></script>
+    <script type="module" src="js/landing-demo.js?v=75"></script>
+    <script type="module" src="js/landing-ai.js?v=75"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

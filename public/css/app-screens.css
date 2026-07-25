@@ -3,7 +3,7 @@
  *
  * Reuses tokens defined in variables.css:
  *   --paper / --paper-2 / --paper-3 / --ink / --ink-2..4
- *   --accent-terracotta / --accent-terracotta-deep / --rule-soft-light / --rule-soft-dark
+ *   --primary / --primary-edge / --primary-ink / --line / --correct
  *
  * Rules below match the specificity of existing game.css/layout.css rules
  * (which prefix themes with [data-theme="..."] and use !important heavily),
@@ -14,19 +14,18 @@
    Shared tokens for screen-scoped helpers
    ========================================================================== */
 
+/* Screen-scoped aliases over the global Buzzer tokens. Every call site in THIS
+   file has been repointed by role, so only the two names still read from other
+   stylesheets survive: --rule-soft (game.css 1150/1575/1618, preview.css
+   298/1643/1660) and --accent-soft (game.css 1603). Delete this block once
+   those seven declarations read --line / rgba(var(--primary-rgb), 0.12). */
 :root {
-    --rule-soft: var(--rule-soft-light);
-    --accent: var(--accent-terracotta);
-    --accent-deep: var(--accent-terracotta-deep);
-    --accent-soft: rgba(var(--accent-primary-rgb), 0.12);
-    --good: #10b981;
-}
-[data-theme="dark"] {
-    --rule-soft: var(--rule-soft-dark);
+    --rule-soft: var(--line);
+    --accent-soft: rgba(var(--primary-rgb), 0.12);
 }
 
 /* ==========================================================================
-   Lobby screen (#game-lobby) — editorial paper/ink/terracotta restyle
+   Lobby screen (#game-lobby) — editorial paper/ink/green restyle
    ========================================================================== */
 
 [data-theme="light"] #game-lobby,
@@ -61,7 +60,7 @@
 [data-theme="dark"] #game-lobby .players-list-card,
 [data-theme="dark"] #game-lobby .combined-info-card {
     background: var(--paper-2);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     border-radius: 20px;
     padding: 28px;
     box-shadow: none;
@@ -73,14 +72,14 @@
 #game-lobby .combined-info-card:hover {
     transform: none;
     box-shadow: none;
-    border-color: var(--rule-soft);
+    border-color: var(--line);
 }
 
 #game-lobby .lobby-card::before {
     content: "";
     position: absolute;
     inset: 12px;
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     border-radius: 12px;
     pointer-events: none;
 }
@@ -108,7 +107,7 @@
     content: "";
     width: 24px;
     height: 1px;
-    background: var(--accent);
+    background: var(--primary);
 }
 
 /* Injected heading below the kicker */
@@ -127,7 +126,7 @@
 }
 #game-lobby .players-list-card .card-heading em {
     font-style: italic;
-    color: var(--accent);
+    color: var(--primary-ink);
     font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
 }
 #game-lobby .players-list-card .card-heading .waiting {
@@ -142,12 +141,15 @@
     color: var(--ink-3);
     text-transform: none;
 }
+/* Rule G corollary 1: "waiting" is neither the primary action nor correctness,
+   so the dot gives up green. currentColor inherits --ink-3 from .waiting, whose
+   text already names the state — no colour-alone signal (WCAG 1.4.1). */
 #game-lobby .players-list-card .card-heading .pulse-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--good);
-    animation: appLobbyPulse 1.6s ease-out infinite;
+    background: currentColor;
+    animation: appLobbyPulse 1.6s ease-in-out infinite;
 }
 
 /* Player grid: editorial pills */
@@ -185,7 +187,7 @@
     gap: 10px;
     padding: 10px 14px;
     background: var(--paper);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     border-radius: 999px;
     min-height: 0;
     box-shadow: none;
@@ -204,8 +206,13 @@
     font-family: var(--font-display);
     font-weight: 500;
     font-size: 12px;
+    /* --chip-color is always set inline by game-manager.js:1045 from the six
+       --option-N-start values, every one of which carries white at >=4.83:1.
+       The fallback is blue, not green: a player identity chip is neither the
+       primary action nor correctness (Rule G corollary 1), and white on the
+       dark-theme green would be 2.28:1. */
     color: #fff;
-    background: var(--chip-color, var(--accent));
+    background: var(--chip-color, var(--option-0-start));
     flex-shrink: 0;
     padding: 0;
     margin: 0;
@@ -227,7 +234,8 @@
 #game-lobby .player-item.placeholder {
     border-style: dashed;
     justify-content: center;
-    color: var(--ink-4);
+    /* --ink-4 is non-text only (2.20:1 on --paper); 12px label needs --ink-3 */
+    color: var(--ink-3);
     font-size: 12px;
 }
 
@@ -248,7 +256,7 @@
     content: "";
     width: 24px;
     height: 1px;
-    background: var(--accent);
+    background: var(--primary);
 }
 
 #game-lobby .combined-info-card .combined-content {
@@ -307,7 +315,7 @@
     border: none;
     transform: none;
     box-shadow: none;
-    color: var(--accent-deep);
+    color: var(--primary-ink);
     outline: none;
 }
 
@@ -326,7 +334,7 @@
     flex-shrink: 0;
     background: var(--paper);
     padding: 10px;
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     border-radius: 14px;
 }
 #game-lobby .combined-info-card #qr-code-image {
@@ -342,7 +350,7 @@
     content: "";
     display: block;
     height: 1px;
-    background: var(--rule-soft);
+    background: var(--line);
     order: 1; /* pushed between sections below via flex order */
 }
 
@@ -367,33 +375,37 @@
     width: 100%;
     min-height: 0;
     padding: 18px 24px;
-    background: var(--accent);
+    background: var(--primary);
     border: none;
     border-radius: 14px;
-    color: #fff;
+    color: var(--primary-label);
     font-family: var(--font-body);
     font-size: 16px;
     font-weight: 500;
     letter-spacing: 0;
     text-transform: none;
-    /* landing keycap: hard bottom edge in a darker shade of the fill */
-    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--accent), black 35%);
+    /* landing keycap: hard bottom edge, tokenised (the color-mix here produced a
+       different edge than the landing's --primary-edge) */
+    box-shadow: 0 4px 0 0 var(--primary-edge);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: background 0.2s ease, transform 50ms ease, box-shadow 50ms ease;
+    transition: transform 50ms ease, box-shadow 50ms ease;
 }
 #game-lobby .combined-info-card .btn.large-start-btn::before,
 #game-lobby .combined-info-card .btn.large-start-btn::after {
     display: none;
 }
+/* No hover fill: the landing keycap (landing.css:112-133, the design source) has
+   :active only. --primary-edge as a hover fill would also put --primary-label
+   #052e1a on #0b5e2c in dark theme — 1.88:1. This rule exists solely to cancel
+   the legacy .btn:hover lift so the keycap does not float. */
 #game-lobby .combined-info-card .btn.large-start-btn:hover,
 [data-theme="light"] #game-lobby .combined-info-card .btn.large-start-btn:hover,
 [data-theme="dark"] #game-lobby .combined-info-card .btn.large-start-btn:hover {
-    background: var(--accent-deep);
     transform: none;
-    box-shadow: 0 4px 0 0 color-mix(in srgb, var(--accent), black 35%);
+    box-shadow: 0 4px 0 0 var(--primary-edge);
 }
 #game-lobby .combined-info-card .btn.large-start-btn:active {
     transform: translateY(4px);
@@ -402,7 +414,7 @@
 
 /* Quiz name at bottom */
 #game-lobby .quiz-name-section {
-    border-top: 1px solid var(--rule-soft);
+    border-top: 1px solid var(--line);
     background: transparent;
     margin: 0;
     padding: 12px 0 0;
@@ -416,10 +428,11 @@
     text-align: center;
 }
 
+/* Opacity, not a coloured halo — the halo was a hardcoded #10b981 ring, a fifth
+   green with no token behind it. Opacity is theme-invariant and hue-free. */
 @keyframes appLobbyPulse {
-    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
-    70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
 }
 @keyframes appLobbySlideIn {
     from { opacity: 0; transform: translateY(6px); }
@@ -449,7 +462,7 @@
     padding: 14px 32px;
     min-height: 64px;
     margin: 0;
-    border-bottom: 1px solid var(--rule-soft);
+    border-bottom: 1px solid var(--line);
     background: var(--paper);
     display: flex;
     align-items: center;
@@ -461,11 +474,12 @@
 [data-theme="light"] #host-game-screen .question-header #timer,
 [data-theme="dark"] #host-game-screen .question-header #timer {
     background: transparent;
-    color: var(--accent);
+    /* 20px/500 is normal text: --primary is 4.21:1 on --paper, --primary-ink 5.98:1 */
+    color: var(--primary-ink);
     font-family: var(--font-mono);
     font-size: 20px;
     font-weight: 500;
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     box-shadow: none;
     padding: 6px 14px;
     border-radius: 999px;
@@ -475,22 +489,23 @@
     animation: none;
 }
 #host-game-screen .question-header #timer.warning {
-    color: var(--accent-deep);
-    background: var(--accent-soft);
-    border-color: var(--accent);
+    color: var(--primary-ink);
+    background: rgba(var(--primary-rgb), 0.12);
+    border-color: var(--primary);
     animation: none;
 }
 #host-game-screen .question-header #timer.danger {
-    color: #fff;
-    background: var(--accent);
-    border-color: var(--accent);
+    /* white here is 2.28:1 on the dark-theme fill */
+    color: var(--primary-label);
+    background: var(--primary);
+    border-color: var(--primary);
     animation: appHostTimerBlink 0.6s ease-in-out infinite;
 }
 
 /* Timer progress bar (below header) ---------------------------------------- */
 #host-game-screen .timer-bar {
     height: 3px;
-    background: var(--rule-soft);
+    background: var(--line);
     position: relative;
     overflow: hidden;
     margin: 0;
@@ -503,7 +518,7 @@
     top: 0;
     bottom: 0;
     width: calc(var(--timer-pct, 100) * 1%);
-    background: var(--accent);
+    background: var(--primary);
     transition: width 0.9s linear;
 }
 
@@ -825,7 +840,7 @@
 #host-game-screen #numeric-stats-display,
 #host-game-screen #ordering-stats-display {
     background: var(--paper-2);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     border-radius: 16px;
     padding: 20px 24px;
     color: var(--ink);
@@ -850,7 +865,7 @@
     align-items: center;
     gap: 16px;
     padding: 8px 0;
-    border-bottom: 1px solid var(--rule-soft);
+    border-bottom: 1px solid var(--line);
 }
 #host-game-screen #numeric-stats-display .numeric-answer-item:last-child,
 #host-game-screen #ordering-stats-display .numeric-answer-item:last-child {
@@ -868,7 +883,7 @@
     position: relative;
     height: 22px;
     background: var(--paper);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     border-radius: 999px;
     overflow: hidden;
 }
@@ -878,7 +893,7 @@
     left: 0;
     top: 0;
     bottom: 0;
-    background: var(--accent);
+    background: var(--primary);
     transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 #host-game-screen #numeric-stats-display .answer-count,
@@ -930,7 +945,7 @@
 [data-theme="light"] #host-game-screen #answer-statistics .stats-controls .btn,
 [data-theme="dark"] #host-game-screen #answer-statistics .stats-controls .btn {
     background: transparent;
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     color: var(--ink);
     box-shadow: none;
     padding: 10px 18px;
@@ -976,7 +991,7 @@
 #host-game-screen #end-round-btn.btn.danger {
     background: transparent;
     color: var(--ink-3);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     box-shadow: none;
     font-family: var(--font-body);
     font-size: 13px;
@@ -989,8 +1004,8 @@
 }
 #host-game-screen #end-round-btn.btn.danger:hover {
     background: transparent;
-    color: var(--accent-deep);
-    border-color: var(--accent);
+    color: var(--primary-ink);
+    border-color: var(--primary);
 }
 
 /* Footer strip -------------------------------------------------------------- */
@@ -999,7 +1014,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 14px 32px;
-    border-top: 1px solid var(--rule-soft);
+    border-top: 1px solid var(--line);
     font-family: var(--font-body);
     font-size: 12px;
     color: var(--ink-3);
@@ -1079,7 +1094,7 @@
    editor abuts the preview pane and needs its own outline. */
 .host-container.split-screen > #quiz-editor-section {
     background: var(--paper);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     border-radius: 20px;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -1089,7 +1104,7 @@
 /* Editor heading */
 #quiz-editor-section .editor-heading-row {
     padding-bottom: 16px;
-    border-bottom: 1px solid var(--rule-soft);
+    border-bottom: 1px solid var(--line);
     margin-bottom: 20px;
 }
 #quiz-editor-section .editor-heading-row h2,
@@ -1109,7 +1124,7 @@
    #quiz-title` rule (display:none on mobile) — so specificity alone decides. */
 #quiz-editor-section #quiz-title.input-field {
     background: var(--paper-2);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     border-radius: 12px;
     color: var(--ink);
     font-family: var(--font-display);
@@ -1119,18 +1134,18 @@
     padding: 14px 18px;
 }
 #quiz-editor-section #quiz-title.input-field:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 3px var(--focus-ring-soft);
     outline: none;
 }
 #quiz-editor-section #quiz-title.input-field::placeholder {
-    color: var(--ink-4);
+    color: var(--ink-3);
 }
 
 /* Question card */
 #quiz-editor-section .question-item {
     background: var(--paper-2);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     border-radius: 18px;
     box-shadow: none;
     transition: border-color 0.2s ease, background 0.2s ease;
@@ -1144,7 +1159,7 @@
 /* Question header row */
 #quiz-editor-section .question-header {
     background: transparent;
-    border-bottom: 1px solid var(--rule-soft);
+    border-bottom: 1px solid var(--line);
     border-radius: 18px 18px 0 0;
     padding: 10px 16px;
     margin: -24px -24px 16px -24px;
@@ -1180,15 +1195,15 @@
     border-color: transparent;
 }
 #quiz-editor-section .btn-icon.btn-remove:hover {
-    background: rgba(var(--accent-primary-rgb), 0.08);
-    border-color: var(--accent);
-    color: var(--accent-deep);
+    background: rgba(var(--primary-rgb), 0.08);
+    border-color: var(--primary);
+    color: var(--primary-ink);
 }
 
 /* Question meta grid (type / difficulty / concepts / time) */
 #quiz-editor-section .question-meta {
     background: var(--paper-3);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
 }
 #quiz-editor-section .question-meta-title {
     color: var(--ink-3);
@@ -1205,15 +1220,15 @@
     /* Clear the chevron: .question-type sets `padding: 6px 12px !important`,
        which would otherwise let long option text run under it. */
     padding-right: 34px !important;
-    border: 1px solid var(--rule-soft) !important;
+    border: 1px solid var(--line) !important;
     color: var(--ink) !important;
     border-radius: 8px !important;
 }
 #quiz-editor-section .question-type:focus,
 #quiz-editor-section .question-difficulty:focus {
-    border-color: var(--accent) !important;
+    border-color: var(--focus-ring) !important;
     outline: none;
-    box-shadow: 0 0 0 3px var(--accent-soft) !important;
+    box-shadow: 0 0 0 3px var(--focus-ring-soft) !important;
 }
 
 /* Question text editor — the large textarea.
@@ -1224,17 +1239,17 @@
    resize, which this rule does not set. */
 #quiz-editor-section .question-text {
     background: var(--paper);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     color: var(--ink);
     border-radius: 12px;
     font-family: var(--font-body);
 }
 #quiz-editor-section .question-text:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 3px var(--focus-ring-soft);
 }
 #quiz-editor-section .question-text::placeholder {
-    color: var(--ink-4);
+    color: var(--ink-3);
 }
 
 /* Option text inputs — scoped to the options container so we don't affect
@@ -1243,22 +1258,22 @@
 #quiz-editor-section .options-container input[type="text"],
 #quiz-editor-section .options-container input[type="number"] {
     background: var(--paper) !important;
-    border: 1px solid var(--rule-soft) !important;
+    border: 1px solid var(--line) !important;
     color: var(--ink) !important;
     border-radius: 8px !important;
 }
 #quiz-editor-section .options-container .option-input:focus,
 #quiz-editor-section .options-container input[type="text"]:focus,
 #quiz-editor-section .options-container input[type="number"]:focus {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px var(--accent-soft) !important;
+    border-color: var(--focus-ring) !important;
+    box-shadow: 0 0 0 3px var(--focus-ring-soft) !important;
     outline: none;
 }
 
 /* Pagination controls sit above the questions list */
 #quiz-editor-section .pagination-btn {
     background: var(--paper-2);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     color: var(--ink-2);
 }
 #quiz-editor-section .pagination-btn:hover:not(:disabled) {

@@ -448,25 +448,25 @@
    ============================================================================ */
 
 [data-theme="light"] .folder-tree-row:hover {
-    background-color: #eef2ff;
-    box-shadow: 0 1px 3px rgba(99, 102, 241, 0.1);
+    background-color: var(--paper-3);
+    box-shadow: 0 1px 3px rgba(var(--primary-rgb), 0.1);
 }
 
 [data-theme="light"] .folder-tree-row.selected {
-    background-color: #6366f1 !important;
-    color: white !important;
+    background-color: var(--primary) !important;
+    color: var(--primary-label) !important;
 }
 
 [data-theme="light"] .folder-tree-row.selected .folder-tree-name,
 [data-theme="light"] .folder-tree-row.selected .folder-tree-icon,
 [data-theme="light"] .folder-tree-row.selected .folder-tree-lock,
 [data-theme="light"] .folder-tree-row.selected .folder-tree-toggle {
-    color: white !important;
+    color: var(--primary-label) !important;
 }
 
 [data-theme="light"] .context-menu-item:hover,
 [data-theme="light"] .context-menu-item:focus {
-    background-color: #eef2ff;
+    background-color: var(--paper-3);
 }
 
 /* ============================================================================

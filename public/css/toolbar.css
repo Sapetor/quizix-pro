@@ -48,7 +48,7 @@
 
 .horizontal-toolbar .toolbar-btn:hover {
     background: var(--accent-primary);
-    color: white;
+    color: var(--primary-label);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
     border-color: var(--accent-primary);
@@ -57,14 +57,14 @@
 .horizontal-toolbar .toolbar-btn:active {
     transform: translateY(0);
     background: var(--accent-primary);
-    color: white;
+    color: var(--primary-label);
 }
 
 .horizontal-toolbar .toolbar-btn.active {
     background: var(--accent-primary);
-    color: white;
+    color: var(--primary-label);
     opacity: 1;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
 }
 
 /* Toolbar Icons - Proportional scaling */
@@ -202,7 +202,8 @@ header.auto-hide-enabled.visible {
     border-radius: 0 0 12px 12px;
     padding: 4px 16px;
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    /* 12px normal text: --ink-3 is only 4.32:1 on this tinted ground, --ink-2 is 6.65:1 */
+    color: var(--ink-2);
     z-index: 999;
     /* Just below header */
     opacity: 0;
@@ -213,7 +214,8 @@ header.auto-hide-enabled.visible {
 }
 
 .header-hint.visible {
-    opacity: 0.8;
+    /* full opacity: 0.8 dropped the 12px label to 2.99:1 */
+    opacity: 1;
     pointer-events: auto;
 }
 
@@ -231,7 +233,6 @@ header.auto-hide-enabled.visible {
 [data-theme="dark"] .header-hint {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);
-    color: var(--text-secondary);
 }
 
 [data-theme="dark"] .header-hint:hover {
@@ -242,7 +243,6 @@ header.auto-hide-enabled.visible {
 [data-theme="light"] .header-hint {
     background: rgba(0, 0, 0, 0.05);
     border-color: rgba(0, 0, 0, 0.1);
-    color: var(--text-secondary);
 }
 
 [data-theme="light"] .header-hint:hover {
@@ -298,11 +298,6 @@ header.auto-hide-enabled.visible {
 [data-theme="light"] .toolbar-group {
     background: rgba(0, 0, 0, 0.02);
     border-color: rgba(0, 0, 0, 0.05);
-}
-
-/* Dark mode toolbar button contrast improvement */
-[data-theme="dark"] .horizontal-toolbar .toolbar-btn {
-    color: white;
 }
 
 /* =============================================================================
@@ -361,7 +356,7 @@ header.auto-hide-enabled.visible {
 
 .editor-toolbar .toolbar-btn:hover {
     background: var(--accent-primary);
-    color: white;
+    color: var(--primary-label);
     transform: scale(1.05);
     box-shadow: var(--shadow-md);
     border-color: var(--accent-primary);
@@ -430,10 +425,6 @@ header.auto-hide-enabled.visible {
     border-color: rgba(255, 255, 255, 0.08);
 }
 
-[data-theme="dark"] .editor-toolbar .toolbar-btn {
-    color: white;
-}
-
 /* Light theme adjustments for vertical toolbar */
 [data-theme="light"] .editor-toolbar {
     background: rgba(255, 255, 255, 0.8);
@@ -448,7 +439,7 @@ header.auto-hide-enabled.visible {
 .toolbar-divider {
     height: 1px;
     width: 60%;
-    background-color: var(--color-gray-600);
+    background-color: var(--line);
     margin: 4px 0;
 }
 
@@ -498,7 +489,7 @@ header.auto-hide-enabled.visible {
     padding: 10px 16px;
     background: transparent;
     border: none;
-    color: var(--color-gray-200);
+    color: var(--ink-2);
     text-align: left;
     cursor: pointer;
     font-size: 14px;
@@ -508,7 +499,7 @@ header.auto-hide-enabled.visible {
 
 .more-menu-item:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: white;
+    color: var(--ink);
 }
 
 .more-menu-icon {

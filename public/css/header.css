@@ -97,7 +97,7 @@
   color: var(--ink-3);
 }
 .editor-breadcrumb-separator {
-  color: var(--ink-4);
+  color: var(--ink-3);
 }
 .editor-breadcrumb-title {
   color: var(--ink);
@@ -285,20 +285,24 @@
   font-size: 14px;
   padding: 9px 16px;
   border-radius: 999px;
-  background: var(--accent-terracotta);
-  color: #fff;
+  background: var(--primary);
+  /* NOT #fff: --primary is #22c55e in dark, where white is 2.28:1.
+     --primary-label is 5.02:1 light / 6.53:1 dark. */
+  color: var(--primary-label);
   border: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  /* edge stays darker than the fill in both themes (deep token is lighter in dark) */
-  box-shadow: 0 3px 0 0 color-mix(in srgb, var(--accent-terracotta), black 35%);
-  transition: background 200ms, transform 50ms ease, box-shadow 50ms ease;
+  box-shadow: 0 3px 0 0 var(--primary-edge);
+  transition: transform 50ms ease, box-shadow 50ms ease;
   white-space: nowrap;
 }
+/* The fill does NOT move on hover: --primary-label on --primary-edge is 1.88:1 in dark.
+   Hover lifts the keycap instead, which is contrast-free and reads as raised. */
 .app-header #start-hosting-header-small.btn:hover {
-  background: var(--accent-terracotta-deep);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 0 var(--primary-edge);
 }
 .app-header #start-hosting-header-small.btn:active {
   transform: translateY(3px);
@@ -400,7 +404,8 @@ body.has-editor-toolbar .app-header #utility-overflow-toggle { display: inline-f
 .app-header .conn .ping {
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
   font-size: 11px;
-  color: var(--ink-4);
+  /* --ink-4 is 2.20:1 on --paper and 3.75:1 in dark — it is a BORDER token, not a text one */
+  color: var(--ink-3);
   padding-left: 8px;
   border-left: 1px solid var(--rule-soft-light);
 }

@@ -129,174 +129,46 @@
 
 /* === BUTTON VARIANTS === */
 
-/* Base colored button pattern */
+/* Primary = the Buzzer keycap: flat --primary fill, 4px --primary-edge bottom
+   edge, pressed flat on :active. No hover lift — a lift contradicts a key you
+   press down. `.accent` used to be a second, emerald green ("Quick Start");
+   a green that is neither the primary action nor correctness has to give up
+   green (Rule G corollary 1), and the only thing it ever meant here was
+   "commit this action", so it is now the same keycap.
+   The label is --primary-label, never `white`: white on the dark-theme fill
+   #22c55e is 2.28:1. --primary-label measures 5.02:1 light / 6.53:1 dark. */
 .btn.primary,
-.btn.danger,
-.btn.success {
-    color: white;
-    box-shadow: var(--shadow-md);
+.btn.accent {
+    background: var(--primary);
+    color: var(--primary-label);
     border: 1px solid transparent;
+    box-shadow: 0 4px 0 0 var(--primary-edge);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: transform 50ms ease, box-shadow 50ms ease;
 }
 
 .btn.primary:hover,
-.btn.danger:hover,
-.btn.success:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
+.btn.accent:hover {
+    background: var(--primary);
+    transform: none;
+    box-shadow: 0 4px 0 0 var(--primary-edge);
 }
 
-/* Primary button variant - Premium Indigo */
-.btn.primary {
-    background: var(--gradient-primary);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow:
-        0 4px 20px -5px rgba(99, 102, 241, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    font-weight: 600;
-    letter-spacing: 0.01em;
+.btn.primary:active,
+.btn.accent:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--primary-edge);
 }
 
-.btn.primary:hover {
-    background: var(--gradient-primary-hover);
-    transform: translateY(-2px) scale(1.02);
-    box-shadow:
-        0 10px 40px -10px rgba(99, 102, 241, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-/* Large start button - enhanced visibility */
+/* Large start button — size only; the fill comes from .btn.primary above.
+   (Markup is `btn primary large-start-btn`, index.html:2401.) */
 .btn.large-start-btn {
     font-size: 1.25rem;
     font-weight: 700;
     padding: 16px 32px;
     min-height: 60px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #10b981, #059669);
-    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3), 0 4px 10px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    position: relative;
-    overflow: hidden;
-    border: 2px solid transparent;
-    animation: breathingBorder 2s ease-in-out infinite;
-}
-
-/* Subtle pulsing glow animation */
-@keyframes startButtonGlow {
-
-    0%,
-    100% {
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3), 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    50% {
-        box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5), 0 4px 15px rgba(16, 185, 129, 0.2), 0 0 40px rgba(16, 185, 129, 0.15);
-    }
-}
-
-/* Subtle breathing animation */
-@keyframes breathingBorder {
-
-    0%,
-    100% {
-        border-color: rgba(16, 185, 129, 0.3);
-        box-shadow:
-            0 8px 25px rgba(16, 185, 129, 0.3),
-            0 4px 10px rgba(0, 0, 0, 0.1),
-            inset 0 0 0 1px rgba(16, 185, 129, 0.2),
-            0 0 15px rgba(16, 185, 129, 0.1);
-    }
-
-    50% {
-        border-color: rgba(16, 185, 129, 0.6);
-        box-shadow:
-            0 10px 30px rgba(16, 185, 129, 0.4),
-            0 5px 15px rgba(16, 185, 129, 0.2),
-            0 0 25px rgba(16, 185, 129, 0.2),
-            inset 0 0 0 1px rgba(16, 185, 129, 0.5),
-            0 0 35px rgba(16, 185, 129, 0.08);
-    }
-}
-
-/* Inner highlight effect */
-.btn.large-start-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
-    border-radius: 12px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-/* Animated shimmer effect */
-.btn.large-start-btn::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    animation: shimmer 4s ease-in-out infinite;
-    border-radius: 12px;
-}
-
-@keyframes shimmer {
-    0% {
-        left: -100%;
-    }
-
-    50% {
-        left: -100%;
-    }
-
-    100% {
-        left: 100%;
-    }
-}
-
-.btn.large-start-btn:hover {
-    background: linear-gradient(135deg, #059669, #047857);
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4), 0 8px 15px rgba(0, 0, 0, 0.15);
-    animation: none;
-    /* Pause the glow animation on hover */
-}
-
-.btn.large-start-btn:hover::before {
-    opacity: 1;
-    /* Show the inner highlight on hover */
-}
-
-.btn.large-start-btn:active {
-    transform: translateY(1px) scale(0.98);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Accent button variant - Quick Start (emerald green) */
-.btn.accent {
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow:
-        0 4px 20px -5px rgba(16, 185, 129, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    font-weight: 600;
-    letter-spacing: 0.01em;
-}
-
-.btn.accent:hover {
-    background: linear-gradient(135deg, #059669, #047857);
-    transform: translateY(-2px) scale(1.02);
-    box-shadow:
-        0 10px 40px -10px rgba(16, 185, 129, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* Secondary button variant */
@@ -315,24 +187,24 @@
     border-color: var(--color-primary-500);
 }
 
-/* Danger button variant */
+/* Danger button variant. Flat --error-color: the old #ef4444 fill carried a
+   white label at 3.76:1. --error-label flips per theme — #ffffff on #b91c1c is
+   6.47:1, #14161c on #f87171 is 6.54:1. */
 .btn.danger {
-    background: linear-gradient(135deg, var(--color-error-500), #dc2626);
+    background: var(--error-color);
+    color: var(--error-label);
+    border: 1px solid transparent;
+    box-shadow: var(--shadow-md);
 }
 
 .btn.danger:hover {
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
 }
 
-/* Success button variant */
-.btn.success {
-    background: linear-gradient(135deg, var(--color-success-500), #059669);
-}
-
-.btn.success:hover {
-    background: linear-gradient(135deg, #059669, #047857);
-}
-
+/* `.btn.success` deleted: zero consumers in index.html / public/js, and it was
+   an emerald green "commit this action" button (white label at 2.54:1). Use
+   `.btn.primary`. */
 
 .btn.small {
     padding: 8px 16px;
@@ -370,9 +242,9 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-    /* Indigo is the app's one accent (shared with the landing palette). */
-    border-color: var(--accent-terracotta);
-    box-shadow: inset 0 0 0 1px rgba(var(--accent-primary-rgb), 0.28);
+    /* Frog green is the app's one accent (shared with the landing palette). */
+    border-color: var(--focus-ring);
+    box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.28);
 }
 
 /* Theme-aware placeholder colors */
@@ -476,10 +348,10 @@ select {
 .card:hover {
     background: rgba(255, 255, 255, 0.05);
     transform: translateY(-4px);
-    border-color: rgba(99, 102, 241, 0.3);
+    border-color: rgba(var(--primary-rgb), 0.3);
     box-shadow:
         0 16px 48px rgba(0, 0, 0, 0.15),
-        0 0 0 1px rgba(99, 102, 241, 0.2);
+        0 0 0 1px rgba(var(--primary-rgb), 0.2);
 }
 
 .card.interactive {
@@ -528,16 +400,18 @@ select {
     outline: 2px solid var(--color-primary-500);
     outline-offset: 2px;
     border-radius: 4px;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    /* must track the outline above, which is --color-primary-500 (green since the
+       Buzzer migration); an indigo halo under a green ring is the tell of a missed repoint */
+    box-shadow: 0 0 0 4px var(--focus-ring-soft);
     transition: var(--theme-transition-fast);
 }
 
 /* Enhanced button focus states */
 .btn:focus-visible,
 button:focus-visible {
-    outline: 3px solid var(--accent-terracotta);
+    outline: 3px solid var(--focus-ring);
     outline-offset: 2px;
-    box-shadow: 0 0 0 6px rgba(var(--accent-primary-rgb), 0.2), var(--shadow-md);
+    box-shadow: 0 0 0 6px var(--focus-ring-soft), var(--shadow-md);
 }
 
 /* Quiz option focus states */
@@ -562,10 +436,10 @@ button:focus-visible {
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-    outline: 2px solid var(--accent-terracotta);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 1px;
-    border-color: var(--accent-terracotta) !important;
-    box-shadow: 0 0 0 4px rgba(var(--accent-primary-rgb), 0.15);
+    border-color: var(--focus-ring) !important;
+    box-shadow: 0 0 0 4px var(--focus-ring-soft);
 }
 
 /* High contrast focus for better visibility */
@@ -732,8 +606,8 @@ a:focus-visible {
     left: 10px;
     z-index: 10000;
     padding: 12px 24px;
-    background: var(--accent-primary);
-    color: white;
+    background: var(--primary);
+    color: var(--primary-label);
     text-decoration: none;
     border-radius: 8px;
     font-weight: 600;
@@ -804,11 +678,15 @@ button:disabled:focus-visible {
     transform: translateY(-1px);
 }
 
+/* Rule G corollary 1: a checked box means "selected", not "correct". Green
+   accent-color is reserved for `.correct-option` (the one control in the editor
+   that really does mark the correct answer); every other checkbox is --ink-2,
+   which is 7.8:1+ on every ground and clears the 3:1 non-text floor. */
 .options-checkboxes input[type="checkbox"] {
     margin-right: 10px;
     transform: scale(0.9);
     /* Reduced from 1.2 to 0.9 */
-    accent-color: var(--accent-primary);
+    accent-color: var(--ink-2);
 }
 
 /* Checkbox Labels */
@@ -824,7 +702,7 @@ button:disabled:focus-visible {
 
 .checkbox-label input[type="checkbox"] {
     transform: scale(1.1);
-    accent-color: var(--accent-primary);
+    accent-color: var(--ink-2);
 }
 
 /* === CHECKBOX OPTIONS - SIMPLE CHECKBOX LIST STYLE === */
@@ -960,22 +838,28 @@ button:disabled:focus-visible {
     margin-right: 12px !important;
     width: 18px !important;
     height: 18px !important;
-    accent-color: var(--color-primary-500) !important;
+    accent-color: var(--ink-2) !important;
     cursor: pointer !important;
     flex-shrink: 0 !important;
 }
 
 /* Checked state styling - neutral colors */
 .checkbox-option input[type="checkbox"]:checked {
-    accent-color: var(--color-primary-500) !important;
+    accent-color: var(--ink-2) !important;
 }
 
 /* When checkbox is checked, use neutral highlight */
 /* EXCLUDE preview checkboxes - they need colorful backgrounds */
+/* Rule G corollary 1: this green meant "selected", a third meaning for green
+   inside one card. --ink-2 border (7.8:1+ on every ground) carries the state.
+   Text stays --ink rather than dropping to --ink-2 — a selected row must not
+   read dimmer than an unselected one. !important kept: the whole cluster is
+   flagged and this rule has to beat the colourful `.preview-content …
+   :nth-child()` selectors documented in public/css/CLAUDE.md. */
 .checkbox-option:not(.preview-checkbox):has(input[type="checkbox"]:checked) {
     background: rgba(255, 255, 255, 0.1) !important;
-    border-color: var(--color-success-500) !important;
-    color: var(--color-success-500) !important;
+    border-color: var(--ink-2) !important;
+    color: var(--ink) !important;
 }
 
 /* Mobile-specific language dropdown fixes (body-portal rules kept — still in use) */
@@ -1025,8 +909,8 @@ button:disabled:focus-visible {
     }
 
     body>.language-dropdown-options[data-portal-moved="true"] .language-option.selected {
-        background: var(--color-primary-500);
-        color: white;
+        background: var(--primary);
+        color: var(--primary-label);
     }
 
     body>.language-dropdown-options[data-portal-moved="true"] .language-flag {
@@ -1164,7 +1048,7 @@ button:disabled:focus-visible {
     height: 16px;
     transform: scale(1) !important;
     /* Override any scaling */
-    accent-color: var(--color-primary-500);
+    accent-color: var(--ink-2);
     margin: 0 8px 0 15px;
     /* top right bottom left - added left margin for highlight visibility */
 }
@@ -1223,7 +1107,7 @@ button:disabled:focus-visible {
     background: none !important;
     border: none !important;
     box-shadow: none !important;
-    accent-color: var(--color-primary-500) !important;
+    accent-color: var(--ink-2) !important;
 }
 
 .quiz-settings label:hover,
@@ -1307,6 +1191,17 @@ button:disabled:focus-visible {
     appearance: auto !important;
     -webkit-appearance: auto !important;
     -moz-appearance: auto !important;
+}
+
+/* The one control where green IS the meaning: this marks the correct answer.
+   --correct (#047857 light / #34d399 dark) rather than --primary, so the
+   correctness green is never the same token as the primary-action green.
+   The UA draws its own check glyph inside, so the mark is not colour-alone.
+   #047857 on white is 5.48:1; #34d399 on #171a22 is 8.27:1 — both clear the
+   3:1 non-text floor with room. !important matches the size cluster above and
+   is required to beat `.options-checkboxes input[type="checkbox"]` (0,0,2,1). */
+.correct-option {
+    accent-color: var(--correct) !important;
 }
 
 /* Editor checkbox labels - prevent styling conflicts */
@@ -1583,9 +1478,12 @@ button:disabled:focus-visible {
     letter-spacing: 2px;
 }
 
+/* Rule G corollary 1: a player count is not correctness and not a primary
+   action, so it gives up green. --color-success-500 #10b981 measured 2.54:1 on
+   a white card; --ink-2 is 8.88:1 light / 9.43:1 dark. */
 .game-players-count {
     font-weight: 600;
-    color: var(--color-success-500);
+    color: var(--ink-2);
 }
 
 .game-status {
@@ -1600,10 +1498,13 @@ button:disabled:focus-visible {
     letter-spacing: 0.5px;
 }
 
+/* Rule G corollary 1: "waiting" is a lobby state, not correctness — it gives
+   up green. #10b981 on the old green wash measured 2.23:1; --ink-2 on
+   --paper-3 is 8.14:1 light / 8.62:1 dark. */
 .game-status.waiting {
-    background: rgba(34, 197, 94, 0.15);
-    color: var(--color-success-500);
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: var(--paper-3);
+    color: var(--ink-2);
+    border: 1px solid var(--line);
 }
 
 .game-status.in-progress {
@@ -1751,11 +1652,14 @@ button:disabled:focus-visible {
     line-height: 1.2;
 }
 
-/* Player Info */
+/* Player Info. 1.4rem/500 is 22.4px — under the 24px large-text threshold, so
+   it needs 4.5:1. #10b981 gave 2.54:1 on a light card; --ink-2 at opacity .9
+   composites to 6.69:1 light, 9.4:1 dark. Rule G corollary 1: not correctness,
+   so no green. */
 .player-lobby-container p {
     font-size: calc(1.4rem * var(--global-font-scale));
     font-weight: 500;
-    color: var(--color-success-500);
+    color: var(--ink-2);
     margin: 0;
     opacity: 0.9;
 }
@@ -1942,15 +1846,17 @@ button:disabled:focus-visible {
     color: var(--text-primary);
 }
 
-/* Status indicator */
+/* Status indicator. Rule G corollary 1: connection status is a third meaning
+   for green — it gives up the hue. The old #10b981 on the green wash measured
+   2.23:1; --ink-2 on --paper-3 is 8.14:1 light / 8.62:1 dark. */
 .lobby-status {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: rgba(34, 197, 94, 0.15);
-    color: var(--color-success-500);
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: var(--paper-3);
+    color: var(--ink-2);
+    border: 1px solid var(--line);
     border-radius: 20px;
     font-size: 0.9rem;
     font-weight: 600;
@@ -2026,7 +1932,6 @@ button:disabled:focus-visible {
 }
 
 [data-theme="light"] .player-lobby-container p {
-    color: #059669;
     opacity: 1;
 }
 
@@ -2049,10 +1954,10 @@ button:disabled:focus-visible {
     font-weight: 600;
 }
 
+/* `.lobby-status` is theme-aware through --paper-3 / --ink-2 / --line now, so
+   this light-theme twin only has to stop re-applying the green wash. */
 [data-theme="light"] .lobby-status {
-    background: rgba(34, 197, 94, 0.1);
-    border-color: rgba(34, 197, 94, 0.4);
-    color: #059669;
+    border-color: var(--line);
 }
 
 /* Light theme game browser styling */
@@ -2085,14 +1990,11 @@ button:disabled:focus-visible {
     border-color: rgba(59, 130, 246, 0.3);
 }
 
-[data-theme="light"] .game-players-count {
-    color: #059669;
-}
-
+/* Both base rules are theme-aware via --ink-2 / --paper-3 / --line now; these
+   twins only existed to re-state the green (#059669 measured 3.77:1 on white
+   and 3.46:1 on its own wash — both AA failures). Deleted. */
 [data-theme="light"] .game-status.waiting {
-    background: rgba(34, 197, 94, 0.1);
-    color: #059669;
-    border-color: rgba(34, 197, 94, 0.4);
+    border-color: var(--line);
 }
 
 [data-theme="light"] .game-status.in-progress {
@@ -2443,8 +2345,8 @@ button:disabled:focus-visible {
     align-items: center;
     gap: 4px;
     padding: 3px 8px;
-    background: var(--color-primary-500);
-    color: white;
+    background: var(--primary);
+    color: var(--primary-label);
     font-size: 12px;
     font-weight: 500;
     border-radius: 12px;
@@ -2495,15 +2397,18 @@ button:disabled:focus-visible {
     outline: none;
 }
 
+/* --text-tertiary is being retired (it only ever aliased --text-secondary).
+   --ink-3 is 4.83:1 on the worst light ground, 4.77:1 on the worst dark one. */
 .concept-input::placeholder {
-    color: var(--text-tertiary);
+    color: var(--ink-3);
 }
 
+/* opacity: 0.7 dropped --ink-3 to 3.05:1 on white at 10px. The token is
+   already the muted tier; fading it again is what broke AA. */
 .concept-hint {
     font-size: 10px;
-    color: var(--text-tertiary);
+    color: var(--ink-3);
     font-style: italic;
-    opacity: 0.7;
 }
 
 /* Light mode concept tag styling */
@@ -2670,7 +2575,11 @@ button:disabled:focus-visible {
     margin-top: 0.5rem;
 }
 
-/* Enhanced join button — green keycap like the landing's join CTA */
+/* Join button — the Buzzer keycap on the app's own --primary tokens. The old
+   hardcoded #059669 fill carried a 3.77:1 label; --primary + --primary-label is
+   5.02:1 light / 6.53:1 dark. (The landing's join CTA is amber --join; see the
+   note in the run report — aligning the two is a product decision, not this
+   pass's.) */
 .join-container .btn.primary,
 [data-theme="light"] .join-container .btn.primary,
 [data-theme="dark"] .join-container .btn.primary {
@@ -2682,15 +2591,15 @@ button:disabled:focus-visible {
     margin: 1rem 0 2rem 0;
     min-width: 200px;
     border-radius: var(--border-radius);
-    background: #059669;
-    box-shadow: 0 4px 0 0 #04724f;
+    background: var(--primary);
+    box-shadow: 0 4px 0 0 var(--primary-edge);
     transition: background 0.2s ease, transform 50ms ease, box-shadow 50ms ease;
 }
 
 .join-container .btn.primary:hover {
-    background: #047857;
+    background: var(--primary);
     transform: none;
-    box-shadow: 0 4px 0 0 #04724f;
+    box-shadow: 0 4px 0 0 var(--primary-edge);
 }
 
 .join-container .btn.primary:active {
@@ -3563,10 +3472,8 @@ button:disabled:focus-visible {
     top: 10px;
     width: 28px;
     height: 28px;
-    background: linear-gradient(135deg,
-            var(--color-primary-500) 0%,
-            var(--color-primary-600) 100%);
-    color: white;
+    background: var(--primary);
+    color: var(--primary-label);
     border-radius: 50%;
     font-size: 13px;
     font-weight: 700;
@@ -3934,7 +3841,7 @@ textarea:focus {
 /* Was scale(1.05) — a dropdown that grows under the cursor reads as unstable
    and shifts the click target. Border and surface shift instead. */
 .language-selector:hover {
-    border-color: var(--accent-terracotta);
+    border-color: var(--primary);
     background: var(--paper-2);
 }
 
@@ -4173,9 +4080,12 @@ html {
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
+/* Rule G corollary 1: a drop target is not correctness — it gives up green.
+   --ink-2 on --paper-3 is 8.14:1 light / 8.62:1 dark, well over the 3:1
+   non-text floor, and reads louder than the old 2.5:1 emerald hairline. */
 .ordering-item.drag-over {
-    border-color: var(--color-success-500);
-    background: rgba(34, 197, 94, 0.05);
+    border-color: var(--ink-2);
+    background: var(--paper-3);
     transform: translateY(-2px);
 }
 
@@ -4225,8 +4135,8 @@ html {
     justify-content: center;
     width: 22px;
     height: 22px;
-    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
-    color: white;
+    background: var(--primary);
+    color: var(--primary-label);
     border-radius: 50%;
     font-size: 11px;
     font-weight: 700;
@@ -4298,17 +4208,21 @@ html {
     z-index: 1000;
 }
 
+/* Drop target: neutral (Rule G corollary 1). It sat one rule away from
+   `.correct` below in the same green — the two states were indistinguishable. */
 .ordering-display-item.drag-over {
-    border-color: var(--color-success-500);
-    background: rgba(34, 197, 94, 0.1);
+    border-color: var(--ink-2);
+    background: var(--paper-3);
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(34, 197, 94, 0.2);
+    box-shadow: 0 6px 18px rgba(20, 22, 28, 0.12);
 }
 
+/* Correctness: outline + 10% wash, never a filled green control. --correct on
+   its own wash measures 4.76:1 light / 6.81:1 dark. */
 .ordering-display-item.correct {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.1));
-    border-color: var(--color-success-500);
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    background: rgba(var(--correct-rgb), 0.10);
+    border-color: var(--correct);
+    box-shadow: none;
 }
 
 .ordering-display-item.incorrect {
@@ -4329,8 +4243,8 @@ html {
     justify-content: center;
     min-width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
-    color: white;
+    background: var(--primary);
+    color: var(--primary-label);
     border-radius: 8px;
     font-size: 16px;
     font-weight: 700;
@@ -4352,8 +4266,8 @@ html {
     padding: 14px 28px;
     font-size: 16px;
     font-weight: 600;
-    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
-    color: white;
+    background: var(--primary);
+    color: var(--primary-label);
     border: none;
     border-radius: 10px;
     cursor: pointer;
@@ -4698,7 +4612,7 @@ html {
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(var(--primary-rgb), 0.1);
     border-radius: 8px;
     font-size: 0.9rem;
     color: var(--text-secondary);
@@ -4715,7 +4629,7 @@ html {
 }
 
 [data-theme="dark"] .language-indicator {
-    background: rgba(99, 102, 241, 0.15);
+    background: rgba(var(--primary-rgb), 0.15);
 }
 
 /* Question Preview Modal */
@@ -4760,9 +4674,12 @@ html {
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
+/* Selection = the app accent, not a second green. The literal was the DARK
+   --primary hardcoded into both themes. --primary as a border is 5.02:1 light /
+   7.63:1 dark, clearing the 3:1 non-text floor. */
 .preview-question-item.selected {
-    border-color: #22c55e;
-    background: rgba(34, 197, 94, 0.05);
+    border-color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.06);
 }
 
 .preview-question-item.rejected {
@@ -4806,14 +4723,17 @@ html {
     transition: all 0.2s ease;
 }
 
+/* Accept = a primary action. #22c55e on its own wash was 2.09:1 and white on
+   the hover fill was 2.28:1. --primary-ink on the wash is 6.23:1 light /
+   6.50:1 dark; the hover keycap is 5.02:1 / 6.53:1. */
 .preview-action-btn.accept {
-    background: rgba(34, 197, 94, 0.1);
-    color: #22c55e;
+    background: rgba(var(--primary-rgb), 0.10);
+    color: var(--primary-ink);
 }
 
 .preview-action-btn.accept:hover {
-    background: #22c55e;
-    color: white;
+    background: var(--primary);
+    color: var(--primary-label);
 }
 
 .preview-action-btn.reject {
@@ -4859,9 +4779,11 @@ html {
     font-size: 13px;
 }
 
+/* Correctness: outline + 10% wash on the correctness token, never the
+   primary-action green. --correct on its own wash is 4.76:1 / 6.81:1. */
 .preview-option.correct {
-    background: rgba(34, 197, 94, 0.1);
-    border-left: 3px solid #22c55e;
+    background: rgba(var(--correct-rgb), 0.10);
+    border-left: 3px solid var(--correct);
 }
 
 .preview-option-marker {
@@ -4934,11 +4856,13 @@ html {
     cursor: pointer;
 }
 
+/* Rule G corollary 1: this box means "include this question", i.e. selected,
+   not correct. --ink-2 is 8.9:1 light / 9.4:1 dark. */
 .ai-preview-checkbox input[type="checkbox"] {
     width: 22px;
     height: 22px;
     cursor: pointer;
-    accent-color: #22c55e;
+    accent-color: var(--ink-2);
 }
 
 .ai-preview-badges {
@@ -5026,9 +4950,13 @@ html {
     color: var(--text-primary);
 }
 
+/* Correctness (the badge's content is a U+2713 check, generator-templates.js:30).
+   Rule G: outline + glyph + 10% wash, never a filled green control. White on
+   #22c55e was 2.28:1; --correct on its own wash is 4.76:1 light / 6.81:1 dark. */
 .ai-correct-badge {
-    background: #22c55e;
-    color: white;
+    background: rgba(var(--correct-rgb), 0.10);
+    color: var(--correct);
+    border: 2px solid var(--correct);
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -5199,14 +5127,23 @@ html {
     transition: all 0.2s ease;
 }
 
+/* Primary action → the keycap. White on #22c55e was 2.28:1. */
 .ai-save-btn {
-    background: #22c55e;
-    color: white;
+    background: var(--primary);
+    color: var(--primary-label);
     border: none;
+    box-shadow: 0 4px 0 0 var(--primary-edge);
 }
 
+/* The keycap does not change fill on hover — #16a34a under --primary-label
+   measured 3.30:1 light. The press on :active is the feedback. */
 .ai-save-btn:hover {
-    background: #16a34a;
+    background: var(--primary);
+}
+
+.ai-save-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--primary-edge);
 }
 
 .ai-cancel-btn {
@@ -5335,7 +5272,10 @@ html {
 }
 
 .practice-results-content {
-    background: linear-gradient(135deg, #1e1b4b, #312e81);
+    /* This unscoped rule IS the dark style (light theme overrides it below), so the
+       surface is a dark literal rather than --paper-2 — which would resolve white
+       under the white h2 before data-theme is applied. */
+    background: #1e222c;
     border-radius: 24px;
     padding: 40px;
     max-width: 500px;
@@ -5422,7 +5362,8 @@ html {
 /* Personal Best */
 .new-personal-best {
     background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    color: #1e1b4b;
+    /* dark ink on amber is the established Buzzer pairing (8.42:1) */
+    color: var(--join-label);
     padding: 12px 24px;
     border-radius: 12px;
     margin-bottom: 24px;
@@ -5464,21 +5405,23 @@ html {
     justify-content: center;
 }
 
+/* Primary action → the keycap. White on #22c55e was 2.28:1. */
 .practice-actions .primary-button {
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-    color: white;
+    background: var(--primary);
+    color: var(--primary-label);
     border: none;
     padding: 14px 28px;
     border-radius: 12px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 0 0 var(--primary-edge);
+    transition: transform 50ms ease, box-shadow 50ms ease;
 }
 
-.practice-actions .primary-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
+.practice-actions .primary-button:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--primary-edge);
 }
 
 .practice-actions .secondary-button {
@@ -5616,9 +5559,9 @@ html {
 }
 
 [data-theme="light"] .quiz-item:hover {
-    background: #eef2ff;
-    border-color: #6366f1;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+    background: var(--paper-3);
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.15);
 }
 
 [data-theme="light"] .quiz-info h3 {
@@ -6368,10 +6311,10 @@ html {
 
 #send-chat-btn {
     padding: 10px 16px;
-    background: var(--color-primary-500, #3b82f6);
+    background: var(--primary);
     border: none;
     border-radius: var(--border-radius, 8px);
-    color: white;
+    color: var(--primary-label);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -6420,8 +6363,8 @@ html {
     font-weight: 600;
     font-size: 1rem;
     padding: 4px 10px;
-    background: var(--color-primary-500, #3b82f6);
-    color: white;
+    background: var(--primary);
+    color: var(--primary-label);
     border-radius: 12px;
 }
 
@@ -6443,19 +6386,21 @@ html {
     width: 100%;
     padding: 14px 24px;
     margin-top: 16px;
-    background: linear-gradient(135deg, var(--color-success-500, #22c55e), var(--color-success-600, #16a34a));
+    /* Primary action → the keycap. White on #10b981 was 2.54:1. */
+    background: var(--primary);
     border: none;
     border-radius: var(--border-radius, 8px);
-    color: white;
+    color: var(--primary-label);
+    box-shadow: 0 4px 0 0 var(--primary-edge);
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-#lock-consensus-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+#lock-consensus-btn:active:not(:disabled) {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--primary-edge);
 }
 
 #lock-consensus-btn:disabled {
@@ -6828,9 +6773,9 @@ html {
 }
 
 .video-tab.active {
-    background: var(--color-primary-500, #6366f1);
-    color: white;
-    border-color: var(--color-primary-500, #6366f1);
+    background: var(--primary);
+    color: var(--primary-label);
+    border-color: var(--primary);
 }
 
 .video-tab:hover:not(.active) {
@@ -6991,8 +6936,10 @@ html {
     color: var(--color-primary-400, #818cf8);
 }
 
+/* --success-color is the AA-fixed semantic token (#047857 light 5.48:1 /
+   #34d399 dark 8.27:1). The old --color-accent fallback #10b981 was 2.54:1. */
 .manim-ai-status.success {
-    color: var(--color-accent, #10b981);
+    color: var(--success-color);
 }
 
 .manim-ai-status.error {
@@ -7078,8 +7025,10 @@ html {
     color: var(--color-warning, #f59e0b);
 }
 
+/* --color-success was never declared anywhere, so this always rendered the
+   #10b981 fallback at 2.54:1 on a light card. */
 .render-status.success {
-    color: var(--color-success, #10b981);
+    color: var(--success-color);
 }
 
 .render-status.error {
@@ -7143,36 +7092,32 @@ html {
 }
 
 .editor-mode-btn.advanced {
-    background: var(--color-primary-500, #6366f1);
-    color: #fff;
-    border-color: var(--color-primary-500, #6366f1);
+    background: var(--primary);
+    color: var(--primary-label);
+    border-color: var(--primary);
 }
 
+/* Fill does not change on hover — --primary-edge under --primary-label is
+   1.88:1 in dark theme. The border already carries the hover state. */
 .editor-mode-btn.advanced:hover {
-    background: var(--color-primary-600, #4f46e5);
-    border-color: var(--color-primary-600, #4f46e5);
+    border-color: var(--primary-edge);
 }
 
-[data-theme="light"] .editor-mode-btn {
+/* :not(.advanced) — this rule and `.editor-mode-btn.advanced` are BOTH (0,2,0), so without
+   the exclusion source order decides and the light resting colour lands on the green fill
+   at 1.51:1. .advanced owns its own look in both themes; this styles the resting state only. */
+[data-theme="light"] .editor-mode-btn:not(.advanced) {
     border-color: rgba(0, 0, 0, 0.35);
     color: #4b5563;
 }
 
-[data-theme="light"] .editor-mode-btn:hover {
+[data-theme="light"] .editor-mode-btn:not(.advanced):hover {
     border-color: var(--color-primary-600, #4f46e5);
     color: var(--color-primary-600, #4f46e5);
 }
 
-[data-theme="light"] .editor-mode-btn.advanced {
-    background: var(--color-primary-600, #4f46e5);
-    color: #fff;
-    border-color: var(--color-primary-600, #4f46e5);
-}
-
-[data-theme="light"] .editor-mode-btn.advanced:hover {
-    background: var(--color-primary-700, #4338ca);
-    border-color: var(--color-primary-700, #4338ca);
-}
+/* The `.advanced` rules above are theme-aware through --primary /
+   --primary-label, so the light-theme twins that re-stated indigo are gone. */
 
 /* Hide video sections in basic editor mode */
 [data-editor-mode="basic"] .video-section {

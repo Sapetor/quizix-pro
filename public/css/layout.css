@@ -251,15 +251,15 @@ header.header-offscreen.header-collapsed {
     opacity: 0.8;
     height: 72px;
     width: 5px;
-    box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 12px rgba(var(--primary-rgb), 0.5);
 }
 
 .split-resize-handle.dragging::before {
-    background: var(--color-primary-400, #818cf8);
+    background: var(--color-primary-400);
     opacity: 0.9;
     height: 100px;
     width: 6px;
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.6);
 }
 
 .resize-grip {
@@ -1242,7 +1242,7 @@ header.header-offscreen.header-collapsed {
 
     .host-container.always-preview .question-content .image-upload:hover,
     .host-container.always-preview .question-content .image-upload.drag-over {
-        background: rgba(99, 102, 241, 0.1);
+        background: rgba(var(--primary-rgb), 0.1);
         border-color: var(--accent-primary);
     }
 
@@ -1334,7 +1334,7 @@ header.header-offscreen.header-collapsed {
 
     [data-theme="light"] .host-container.always-preview .question-content .image-upload:hover,
     [data-theme="light"] .host-container.always-preview .question-content .image-upload.drag-over {
-        background: rgba(99, 102, 241, 0.08);
+        background: rgba(var(--primary-rgb), 0.08);
     }
 
     /* Preview section - always visible, compact padding */

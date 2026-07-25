@@ -227,13 +227,16 @@
 #timer {
     font-size: 1.8rem;
     font-weight: 700;
-    color: white;
+    color: var(--primary-label);
     padding: 12px 24px;
-    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    /* Flat fill, not a gradient: the old --color-primary-500 -> -600 ramp now resolves to
+       #22c55e -> #0b5e2c in dark, where the label measured 1.88:1 on the dark stop.
+       Flat --primary carries --primary-label at 5.02:1 light / 6.53:1 dark. */
+    background: var(--primary);
     border-radius: 50px;
     border: 2px solid transparent;
     min-width: 100px;
-    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.35);
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
@@ -243,15 +246,20 @@
     min-height: var(--timer-height); /* Scales with font for accessibility */
 }
 
+/* Amber never carries a white label: white on #f59e0b is 2.15:1. --join-label #14161c
+   measures 3.69:1 on light #b45309 and 8.42:1 on dark #f59e0b — the pill is 28.8px/700,
+   so the 3:1 large-text floor applies. */
 #timer.warning {
-    background: linear-gradient(135deg, var(--color-warning-500), #f59e0b);
+    background: var(--warning-color);
+    color: var(--join-label);
     box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
     animation: pulse 1s infinite;
 }
 
 #timer.danger {
-    background: linear-gradient(135deg, var(--color-error-500), #dc2626);
-    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+    background: var(--error-color);
+    color: var(--error-label);
+    box-shadow: 0 8px 24px rgba(185, 28, 28, 0.35);
     animation: pulse 0.5s infinite;
 }
 
@@ -384,7 +392,7 @@
 /* Correct answer state - enhanced with pulsing */
 .option-display.correct {
     transform: scale(1.03);
-    box-shadow: 0 12px 40px rgba(16, 185, 129, 0.6);
+    box-shadow: 0 12px 40px rgba(var(--correct-rgb), 0.6);
     animation: correctPulse 2s ease-in-out infinite;
 }
 
@@ -396,29 +404,28 @@
 /* Correct answer animation */
 @keyframes correctPulse {
     0%, 100% {
-        box-shadow: 0 12px 40px rgba(16, 185, 129, 0.6);
+        box-shadow: 0 12px 40px rgba(var(--correct-rgb), 0.6);
     }
     50% {
-        box-shadow: 0 16px 50px rgba(16, 185, 129, 0.8);
+        box-shadow: 0 16px 50px rgba(var(--correct-rgb), 0.8);
     }
 }
 
-/* Light mode variant - border + background tint is more visible than glow on light backgrounds */
+/* Light mode variant - a 3px outline reads better than a glow on light backgrounds.
+   Rule G: correctness is outline, never a filled green control. The former
+   rgba(16,185,129,.15) fill is gone — it washed out .option-text's white label. */
 @keyframes correctPulseLightMode {
     0%, 100% {
-        box-shadow: 0 12px 40px rgba(16, 185, 129, 0.4);
-        border-color: #10b981;
+        box-shadow: 0 12px 40px rgba(var(--correct-rgb), 0.4);
     }
     50% {
-        box-shadow: 0 16px 50px rgba(16, 185, 129, 0.6);
-        border-color: #059669;
+        box-shadow: 0 16px 50px rgba(var(--correct-rgb), 0.6);
     }
 }
 
 [data-theme="light"] .option-display.correct {
-    box-shadow: 0 12px 40px rgba(16, 185, 129, 0.4);
-    border: 3px solid #10b981;
-    background: rgba(16, 185, 129, 0.15);
+    box-shadow: 0 12px 40px rgba(var(--correct-rgb), 0.4);
+    border: 3px solid var(--correct);
     animation-name: correctPulseLightMode;
 }
 
@@ -802,7 +809,12 @@
     transform: translateY(-4px);
     filter: brightness(1.2) saturate(1.2);
     box-shadow: 0 16px 50px rgba(0, 0, 0, 0.3);
-    border: 3px solid var(--color-primary-500);
+    /* Rule G corollary 1: "selected" is neither a primary action nor correctness, so it
+       gives up green — it used to be --color-primary-500, which is now the brand green and
+       would read as "this is the right answer" before the reveal. White reads on all six
+       option fills (they all carry a white label at >=4.83:1) and is theme-invariant like
+       the tiles themselves. */
+    border: 3px solid #ffffff;
     transition: all 0.2s ease;
     animation: selectedPulse 1.5s ease-in-out infinite;
 }
@@ -856,8 +868,11 @@
     position: absolute;
     top: 4px;
     right: 4px;
-    background: var(--color-primary-500, #3b82f6);
-    color: #fff;
+    /* Rule G corollary 1: "your pick" is not a verdict, so the badge is neutral ink.
+       It used to be --color-primary-500, which is now the brand green and would sit
+       green-on-green on the revealed correct tile. 15.16:1 light / 16.80:1 dark. */
+    background: var(--ink);
+    color: var(--paper);
     font-size: 0.65rem;
     font-weight: 700;
     padding: 2px 8px;
@@ -870,19 +885,22 @@
     animation: none;
 }
 
-/* Player chose wrong — red badge + red border */
+/* Player chose wrong — red badge + red border. --error-red was never declared anywhere,
+   so this was silently the stale #ef4444 (white label 3.76:1). --error-color +
+   --error-label measure 6.47:1 light / 6.54:1 dark. */
 .player-answered-wrong {
-    border: 3px solid var(--error-red, #ef4444) !important;
+    border: 3px solid var(--error-color) !important;
     animation: none !important;
     filter: brightness(0.85) !important;
 }
 
 .player-answered-wrong::after {
-    background: var(--error-red, #ef4444);
+    background: var(--error-color);
+    color: var(--error-label);
 }
 
-/* Player chose correct — keep green border from .correct-answer-highlight,
-   but badge stays blue to differentiate "your pick" from "correct" */
+/* Player chose correct — keep the green border from .correct-answer-highlight;
+   the badge stays neutral ink so "your pick" never reads as "correct" */
 .player-answered.correct-answer-highlight {
     animation: none !important;
 }
@@ -923,11 +941,11 @@
 .timer {
     font-size: 24px;
     font-weight: 700;
-    color: var(--accent-primary);
+    color: var(--primary-ink);
     padding: 10px 20px;
     background: var(--bg-glass);
     border-radius: 50px;
-    border: 2px solid var(--accent-primary);
+    border: 2px solid var(--primary);
     min-width: 80px;
 }
 
@@ -1089,7 +1107,9 @@
 
 .stat-fill {
     height: 100%;
-    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    /* --color-primary-500/-600 now both resolve to green, so the ramp was two dark
+       greens. Flat --primary, matching the keycap language. */
+    background: var(--primary);
     border-radius: 12px;
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
@@ -1147,7 +1167,7 @@
     padding: 0.75rem 1rem;
     margin-top: 0.5rem;
     background: var(--paper-2);
-    border: 1px solid var(--rule-soft);
+    border: 1px solid var(--line);
     border-radius: var(--border-radius);
     font-size: 0.9rem;
     color: var(--text-color, #fff);
@@ -1343,9 +1363,9 @@
 #numeric-answer-input:focus,
 #preview-numeric-input:focus,
 #preview-numeric-input-split:focus {
-    border-color: var(--color-primary-500);
+    border-color: var(--focus-ring);
     background: var(--glass-strong);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), var(--shadow-md);
+    box-shadow: 0 0 0 3px var(--focus-ring-soft), var(--shadow-md);
     transform: translateY(-2px);
     outline: none;
 }
@@ -1391,7 +1411,9 @@
 #player-multiple-correct .checkbox-option input[type="checkbox"] {
     margin-right: 12px;
     transform: scale(1.2);
-    accent-color: var(--color-primary-500);
+    /* Rule G corollary 1: a player's tick is a selection, not a verdict — green here
+       would pre-announce correctness. Green accent-color is reserved for .correct-option. */
+    accent-color: var(--ink-2);
 }
 
 /* Colorful Multiple Correct Options - Host Display */
@@ -1572,7 +1594,7 @@
 .leaderboard .leaderboard-item {
     background: transparent;
     border: none;
-    border-bottom: 1px solid var(--rule-soft);
+    border-bottom: 1px solid var(--line);
     border-left: 3px solid transparent;
     border-radius: 0;
     padding: 20px 24px;
@@ -1599,8 +1621,8 @@
 /* Rank marking for the top 3. A left rule in the medal hue reads on paper;
    the former metallic gradients and glow shadows did not. */
 .leaderboard .leaderboard-item:nth-child(1) {
-    border-left-color: var(--accent-terracotta);
-    background: var(--accent-soft);
+    border-left-color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.12);
 }
 
 .leaderboard .leaderboard-item:nth-child(2) {
@@ -1615,7 +1637,7 @@
 .final-results {
     background: transparent;
     border: none;
-    border-top: 1px solid var(--rule-soft);
+    border-top: 1px solid var(--line);
     border-radius: 0;
     padding: 48px 0 0;
     text-align: left;
@@ -1860,25 +1882,23 @@
     align-items: center;
     gap: 12px;
     padding: 16px 24px;
-    background: linear-gradient(135deg, 
-        rgba(16, 185, 129, 0.1) 0%, 
-        rgba(16, 185, 129, 0.05) 100%);
-    border: 2px solid rgba(16, 185, 129, 0.3);
+    /* Rule G correctness form: 3px outline + 10% wash + glyph. Never a filled green. */
+    background: rgba(var(--correct-rgb), 0.10);
+    border: 3px solid var(--correct);
     border-radius: var(--border-radius-large);
     backdrop-filter: var(--blur-medium);
-    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+    box-shadow: 0 8px 32px rgba(var(--correct-rgb), 0.15);
     transition: all 0.3s ease;
 }
 
 .numeric-correct-answer-content:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 12px 40px rgba(var(--correct-rgb), 0.2);
 }
 
 .correct-icon {
     font-size: 1.5rem;
-    filter: drop-shadow(0 2px 4px rgba(16, 185, 129, 0.3));
+    filter: drop-shadow(0 2px 4px rgba(var(--correct-rgb), 0.3));
 }
 
 .correct-text {
@@ -1999,59 +2019,26 @@
     font-weight: 700;
     position: relative;
     z-index: 2;
-    background: linear-gradient(135deg, 
-        var(--color-primary-500) 0%, 
-        var(--color-primary-600) 50%, 
-        var(--color-primary-700) 100%);
-    border: 2px solid var(--color-primary-500);
+    /* Rule G: the host's primary action, so it is a flat keycap. The old 3-stop
+       --color-primary-500/600/700 ramp now resolves to three near-identical greens and
+       its white label measured 1.88:1 on the darkest stop in dark theme. */
+    background: var(--primary);
+    color: var(--primary-label);
+    border: none;
     border-radius: var(--border-radius);
-    box-shadow: 
-        var(--shadow-md),
-        var(--shadow-glow),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 0 0 var(--primary-edge), var(--shadow-card);
     transform: translateY(0);
-    overflow: hidden;
+    transition: transform .05s ease, box-shadow .05s ease;
     white-space: nowrap;
     min-width: 160px;
-    color: white;
 }
 
-#next-question::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, 
-        transparent, 
-        rgba(255, 255, 255, 0.2), 
-        transparent);
-    transition: left 0.5s ease;
-}
-
-.leaderboard-header #next-question:hover {
-    transform: translateY(-2px);
-    box-shadow: 
-        var(--shadow-lg),
-        0 0 25px rgba(59, 130, 246, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    border-color: rgba(59, 130, 246, 0.6);
-    background: linear-gradient(135deg, 
-        var(--color-primary-600) 0%, 
-        var(--color-primary-700) 50%, 
-        var(--color-primary-900) 100%);
-}
-
-.leaderboard-header #next-question:hover::before {
-    left: 100%;
-}
-
+/* No hover recolor: --primary-edge is DARKER than --primary in dark theme, so a hover
+   fill of --primary-edge would put --primary-label #052e1a on #0b5e2c at 1.88:1.
+   The keycap signals with the press, exactly as landing.css .lp-btn does. */
 .leaderboard-header #next-question:active {
-    transform: translateY(-1px);
-    transition: transform 0.1s ease;
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--primary-edge), var(--shadow-card);
 }
 
 
@@ -2131,7 +2118,9 @@
 .player-score {
     font-size: 20px;
     font-weight: 600;
-    color: var(--accent-primary);
+    /* 20px/600 is normal text under WCAG, so green text must be --primary-ink
+       (5.98:1 on --paper); --primary would be 4.21:1. */
+    color: var(--primary-ink);
 }
 
 /* Final Leaderboard (Player screens) */
@@ -2282,14 +2271,15 @@
 .final-score {
     font-size: 1.8rem;
     font-weight: 700;
-    color: var(--color-success-500);
-    background: linear-gradient(135deg, 
-        rgba(16, 185, 129, 0.2) 0%, 
-        rgba(5, 150, 105, 0.1) 100%);
+    /* A final score is neither correctness nor an action — it takes the brand green,
+       not --correct. #10b981 measured 2.54:1 here and failed even the large-text floor.
+       --primary-ink on the 12% wash measures 5.23:1 light / 5.80:1 dark. */
+    color: var(--primary-ink);
+    background: rgba(var(--primary-rgb), 0.12);
     padding: 12px 24px;
     border-radius: var(--border-radius);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(var(--primary-rgb), 0.3);
+    box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.2);
     position: relative;
     z-index: 1;
 }
@@ -2410,20 +2400,23 @@
     max-width: 480px;
 }
 
-.result-feedback.correct {
-    border-color: var(--color-success-500);
-    background: linear-gradient(135deg, 
-        rgba(16, 185, 129, 0.15) 0%, 
-        rgba(5, 150, 105, 0.1) 100%);
-    box-shadow: 0 20px 60px rgba(16, 185, 129, 0.3);
+/* Rule G correctness form: outline + 10% wash, never a filled green.
+   The [data-theme] twins are needed because [data-theme="light"] .result-feedback below
+   is (0,0,2,0) and would otherwise win on source order. */
+.result-feedback.correct,
+[data-theme="light"] .result-feedback.correct,
+[data-theme="dark"] .result-feedback.correct {
+    border-color: var(--correct);
+    background: rgba(var(--correct-rgb), 0.10);
+    box-shadow: 0 20px 60px rgba(var(--correct-rgb), 0.3);
 }
 
-.result-feedback.incorrect {
-    border-color: var(--color-error-500);
-    background: linear-gradient(135deg, 
-        rgba(239, 68, 68, 0.15) 0%, 
-        rgba(220, 38, 38, 0.1) 100%);
-    box-shadow: 0 20px 60px rgba(239, 68, 68, 0.3);
+.result-feedback.incorrect,
+[data-theme="light"] .result-feedback.incorrect,
+[data-theme="dark"] .result-feedback.incorrect {
+    border-color: var(--error-color);
+    background: color-mix(in srgb, var(--error-color) 10%, transparent);
+    box-shadow: 0 20px 60px color-mix(in srgb, var(--error-color) 30%, transparent);
 }
 
 /* Result text styling */
@@ -2434,14 +2427,15 @@
     line-height: 1.2;
 }
 
+/* --correct on the 10% wash: 4.73:1 light / 7.49:1 dark (40px/700, floor is 3:1). */
 .result-text.correct {
-    color: var(--color-success-500);
-    text-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    color: var(--correct);
+    text-shadow: none;
 }
 
 .result-text.incorrect {
-    color: var(--color-error-500);
-    text-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    color: var(--error-color);
+    text-shadow: none;
 }
 
 /* Basic feedback container for inline feedback */
@@ -2457,18 +2451,18 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.feedback.correct {
-    border-color: var(--color-success-500);
-    background: linear-gradient(135deg, 
-        rgba(16, 185, 129, 0.1) 0%, 
-        rgba(5, 150, 105, 0.05) 100%);
+.feedback.correct,
+[data-theme="light"] .feedback.correct,
+[data-theme="dark"] .feedback.correct {
+    border-color: var(--correct);
+    background: rgba(var(--correct-rgb), 0.10);
 }
 
-.feedback.incorrect {
-    border-color: var(--color-error-500);
-    background: linear-gradient(135deg, 
-        rgba(239, 68, 68, 0.1) 0%, 
-        rgba(220, 38, 38, 0.05) 100%);
+.feedback.incorrect,
+[data-theme="light"] .feedback.incorrect,
+[data-theme="dark"] .feedback.incorrect {
+    border-color: var(--error-color);
+    background: color-mix(in srgb, var(--error-color) 10%, transparent);
 }
 
 /* Feedback message styling */
@@ -2480,12 +2474,14 @@
     line-height: 1.3;
 }
 
+/* No [data-theme] twins needed here: #feedback-message is an ID, so (0,1,2,0) already
+   out-specifies the (0,1,1,0) theme rules below. */
 .feedback.correct #feedback-message {
-    color: var(--color-success-500);
+    color: var(--correct);
 }
 
 .feedback.incorrect #feedback-message {
-    color: var(--color-error-500);
+    color: var(--error-color);
 }
 
 /* Score display styling */
@@ -2502,16 +2498,19 @@
     min-width: 200px;
 }
 
+/* The score chip sits INSIDE the already-washed .feedback box, so its own wash doubles
+   up: --correct on that composite is 4.16:1 at 19.2px/500, a fail. Per Rule G the text on
+   a correctness wash is --ink (>=15:1); the wash and border carry the verdict hue. */
 .feedback.correct #score-display {
-    background: rgba(16, 185, 129, 0.15);
-    border-color: rgba(16, 185, 129, 0.3);
-    color: var(--color-success-500);
+    background: rgba(var(--correct-rgb), 0.10);
+    border-color: rgba(var(--correct-rgb), 0.3);
+    color: var(--ink);
 }
 
 .feedback.incorrect #score-display {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: var(--color-error-500);
+    background: color-mix(in srgb, var(--error-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--error-color) 30%, transparent);
+    color: var(--ink);
 }
 
 /* Light theme adjustments for feedback */
@@ -2521,44 +2520,14 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
-[data-theme="light"] .result-feedback.correct {
-    background: rgba(240, 253, 244, 0.95);
-    border-color: #059669;
-    box-shadow: 0 20px 60px rgba(5, 150, 105, 0.2);
-}
-
-[data-theme="light"] .result-feedback.incorrect {
-    background: rgba(254, 242, 242, 0.95);
-    border-color: #dc2626;
-    box-shadow: 0 20px 60px rgba(220, 38, 38, 0.2);
-}
-
 [data-theme="light"] .feedback {
     background: rgba(255, 255, 255, 0.9);
     border-color: rgba(0, 0, 0, 0.15);
     color: #1e293b;
 }
 
-[data-theme="light"] .feedback.correct {
-    background: rgba(240, 253, 244, 0.9);
-    border-color: #059669;
-}
-
-[data-theme="light"] .feedback.incorrect {
-    background: rgba(254, 242, 242, 0.9);
-    border-color: #dc2626;
-}
-
 [data-theme="light"] #feedback-message {
     color: #1e293b;
-}
-
-[data-theme="light"] .feedback.correct #feedback-message {
-    color: #059669;
-}
-
-[data-theme="light"] .feedback.incorrect #feedback-message {
-    color: #dc2626;
 }
 
 [data-theme="light"] #score-display {
@@ -2567,35 +2536,11 @@
     color: #64748b;
 }
 
-[data-theme="light"] .feedback.correct #score-display {
-    background: rgba(240, 253, 244, 0.8);
-    border-color: rgba(5, 150, 105, 0.3);
-    color: #059669;
-}
-
-[data-theme="light"] .feedback.incorrect #score-display {
-    background: rgba(254, 242, 242, 0.8);
-    border-color: rgba(220, 38, 38, 0.3);
-    color: #dc2626;
-}
-
 /* Dark theme adjustments for better readability */
 [data-theme="dark"] #score-display {
     color: #f8fafc;
     background: rgba(255, 255, 255, 0.15);
     border-color: rgba(255, 255, 255, 0.3);
-}
-
-[data-theme="dark"] .feedback.correct #score-display {
-    color: #ffffff;
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.4);
-}
-
-[data-theme="dark"] .feedback.incorrect #score-display {
-    color: #ffffff;
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
 }
 
 /* === MODAL FEEDBACK SYSTEM === */
@@ -2659,68 +2604,83 @@
     z-index: -1;
 }
 
-/* Modal feedback states */
+/* Modal feedback states.
+   All four states live here, not split across the [data-theme] blocks at the end of the
+   file — every value below is now a theme-aware token, so one rule covers both themes.
+   The bare `[data-theme]` prefix on the text rules exists only to out-specify the neutral
+   `[data-theme="dark"|"light"] .feedback-modal .feedback-message` rules further down,
+   which are (0,0,3,0) and would otherwise win on source order. */
 .feedback-modal.correct {
-    border-color: var(--color-success-500);
-    box-shadow: 0 20px 60px rgba(16, 185, 129, 0.4);
-}
-
-.feedback-modal.submission {
-    border-color: var(--color-primary-500);
-    box-shadow: 0 20px 60px rgba(59, 130, 246, 0.3);
+    border-color: var(--correct);
+    box-shadow: 0 20px 60px rgba(var(--correct-rgb), 0.4);
 }
 
 .feedback-modal.correct::before {
-    background: linear-gradient(135deg, 
-        rgba(16, 185, 129, 0.2) 0%, 
-        rgba(5, 150, 105, 0.1) 100%);
+    background: rgba(var(--correct-rgb), 0.10);
     opacity: 1;
+}
+
+.feedback-modal.correct .feedback-message,
+.feedback-modal.correct .feedback-icon,
+[data-theme] .feedback-modal.correct .feedback-message,
+[data-theme] .feedback-modal.correct .feedback-icon {
+    color: var(--correct);
+}
+
+/* "Answer submitted" is an acknowledgement, not a verdict, so it must never be green —
+   --color-primary-500 now resolves to the brand green. --info-color is exactly the
+   #2563eb / #60a5fa this modal already rendered via its old theme overrides, so this is
+   a hazard removal with no visual change. */
+.feedback-modal.submission {
+    border-color: var(--info-color);
+    box-shadow: 0 20px 60px rgba(37, 99, 235, 0.3);
 }
 
 .feedback-modal.submission::before {
-    background: linear-gradient(135deg, 
-        rgba(59, 130, 246, 0.15) 0%, 
-        rgba(37, 99, 235, 0.1) 100%);
+    background: color-mix(in srgb, var(--info-color) 10%, transparent);
     opacity: 1;
+}
+
+.feedback-modal.submission .feedback-message,
+.feedback-modal.submission .feedback-icon,
+[data-theme] .feedback-modal.submission .feedback-message,
+[data-theme] .feedback-modal.submission .feedback-icon {
+    color: var(--info-color);
 }
 
 .feedback-modal.incorrect {
-    border-color: var(--color-error-500);
-    box-shadow: 0 20px 60px rgba(239, 68, 68, 0.4);
+    border-color: var(--error-color);
+    box-shadow: 0 20px 60px color-mix(in srgb, var(--error-color) 40%, transparent);
 }
 
 .feedback-modal.incorrect::before {
-    background: linear-gradient(135deg,
-        rgba(239, 68, 68, 0.2) 0%,
-        rgba(220, 38, 38, 0.1) 100%);
+    background: color-mix(in srgb, var(--error-color) 10%, transparent);
     opacity: 1;
+}
+
+.feedback-modal.incorrect .feedback-message,
+.feedback-modal.incorrect .feedback-icon,
+[data-theme] .feedback-modal.incorrect .feedback-message,
+[data-theme] .feedback-modal.incorrect .feedback-icon {
+    color: var(--error-color);
 }
 
 /* Partially correct state (ordering questions with partial credit) */
 .feedback-modal.partial {
-    border-color: var(--color-warning-500, #f59e0b);
-    box-shadow: 0 20px 60px rgba(245, 158, 11, 0.4);
+    border-color: var(--warning-color);
+    box-shadow: 0 20px 60px color-mix(in srgb, var(--warning-color) 40%, transparent);
 }
 
 .feedback-modal.partial::before {
-    background: linear-gradient(135deg,
-        rgba(245, 158, 11, 0.2) 0%,
-        rgba(217, 119, 6, 0.1) 100%);
+    background: color-mix(in srgb, var(--warning-color) 10%, transparent);
     opacity: 1;
 }
 
-.feedback-modal.partial .feedback-message {
-    color: var(--color-warning-500, #f59e0b);
-}
-
-.feedback-modal.partial .feedback-icon {
-    color: var(--color-warning-500, #f59e0b);
-}
-
-.feedback-modal.partial .score-display {
-    background: rgba(245, 158, 11, 0.15);
-    border-color: rgba(245, 158, 11, 0.4);
-    color: var(--color-warning-500, #f59e0b);
+.feedback-modal.partial .feedback-message,
+.feedback-modal.partial .feedback-icon,
+[data-theme] .feedback-modal.partial .feedback-message,
+[data-theme] .feedback-modal.partial .feedback-icon {
+    color: var(--warning-color);
 }
 
 /* Modal feedback message styling */
@@ -2744,30 +2704,6 @@
     transition: none !important;
 }
 
-.feedback-modal.correct .feedback-message {
-    color: var(--color-success-500);
-}
-
-.feedback-modal.correct .feedback-icon {
-    color: var(--color-success-500);
-}
-
-.feedback-modal.submission .feedback-message {
-    color: var(--color-primary-500);
-}
-
-.feedback-modal.submission .feedback-icon {
-    color: var(--color-primary-500);
-}
-
-.feedback-modal.incorrect .feedback-message {
-    color: var(--color-error-500);
-}
-
-.feedback-modal.incorrect .feedback-icon {
-    color: var(--color-error-500);
-}
-
 /* Player's submitted answer shown inside the modal */
 .feedback-modal .modal-player-answer {
     display: none;
@@ -2785,22 +2721,29 @@
     display: block;
 }
 
-.feedback-modal.incorrect .modal-player-answer {
-    color: var(--color-error-500, #ef4444);
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.25);
+/* The echoed answer is a factual restatement, not the verdict — the tinted chip carries
+   the state, the text stays --ink (>=14:1). The old #10b981 text measured 2.54:1 at
+   15.2px against the light-theme chip. The [data-theme] prefix out-specifies the neutral
+   [data-theme="light"] .feedback-modal .modal-player-answer rule below. */
+.feedback-modal.correct .modal-player-answer,
+[data-theme] .feedback-modal.correct .modal-player-answer {
+    color: var(--ink);
+    background: rgba(var(--correct-rgb), 0.10);
+    border-color: rgba(var(--correct-rgb), 0.25);
 }
 
-.feedback-modal.correct .modal-player-answer {
-    color: var(--color-success-500, #10b981);
-    background: rgba(16, 185, 129, 0.1);
-    border-color: rgba(16, 185, 129, 0.25);
+.feedback-modal.incorrect .modal-player-answer,
+[data-theme] .feedback-modal.incorrect .modal-player-answer {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--error-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--error-color) 25%, transparent);
 }
 
-.feedback-modal.partial .modal-player-answer {
-    color: var(--color-warning-500, #f59e0b);
-    background: rgba(245, 158, 11, 0.1);
-    border-color: rgba(245, 158, 11, 0.25);
+.feedback-modal.partial .modal-player-answer,
+[data-theme] .feedback-modal.partial .modal-player-answer {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--warning-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--warning-color) 25%, transparent);
 }
 
 [data-theme="light"] .feedback-modal .modal-player-answer {
@@ -2828,16 +2771,26 @@
     display: inline-block;
 }
 
-.feedback-modal.correct .score-display {
-    background: rgba(16, 185, 129, 0.15);
-    border-color: rgba(16, 185, 129, 0.4);
-    color: var(--color-success-500);
+/* Score chip: the wash and border carry the verdict, the figure stays --ink. */
+.feedback-modal.correct .score-display,
+[data-theme] .feedback-modal.correct .score-display {
+    background: rgba(var(--correct-rgb), 0.15);
+    border-color: rgba(var(--correct-rgb), 0.4);
+    color: var(--ink);
 }
 
-.feedback-modal.incorrect .score-display {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.4);
-    color: var(--color-error-500);
+.feedback-modal.incorrect .score-display,
+[data-theme] .feedback-modal.incorrect .score-display {
+    background: color-mix(in srgb, var(--error-color) 15%, transparent);
+    border-color: color-mix(in srgb, var(--error-color) 40%, transparent);
+    color: var(--ink);
+}
+
+.feedback-modal.partial .score-display,
+[data-theme] .feedback-modal.partial .score-display {
+    background: color-mix(in srgb, var(--warning-color) 15%, transparent);
+    border-color: color-mix(in srgb, var(--warning-color) 40%, transparent);
+    color: var(--ink);
 }
 
 /* Modal explanation display */
@@ -2936,47 +2889,11 @@
     color: #f8fafc;
 }
 
-[data-theme="dark"] .feedback-modal.correct .feedback-message,
-[data-theme="dark"] .feedback-modal.correct .feedback-icon {
-    color: #22c55e;
-}
-
-[data-theme="dark"] .feedback-modal.submission .feedback-message,
-[data-theme="dark"] .feedback-modal.submission .feedback-icon {
-    color: #60a5fa;
-}
-
-[data-theme="dark"] .feedback-modal.incorrect .feedback-message,
-[data-theme="dark"] .feedback-modal.incorrect .feedback-icon {
-    color: #f87171;
-}
-
+/* Per-state colours are declared once, theme-aware, up at "Modal feedback states".
+   Only the neutral surfaces remain theme-specific. */
 [data-theme="dark"] .feedback-modal .score-display {
     background: rgba(15, 23, 42, 0.8);
     color: #f8fafc;
-}
-
-[data-theme="dark"] .feedback-modal.correct .score-display {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.4);
-    color: #22c55e;
-}
-
-[data-theme="dark"] .feedback-modal.incorrect .score-display {
-    background: rgba(248, 113, 113, 0.2);
-    border-color: rgba(248, 113, 113, 0.4);
-    color: #f87171;
-}
-
-[data-theme="dark"] .feedback-modal.partial .feedback-message,
-[data-theme="dark"] .feedback-modal.partial .feedback-icon {
-    color: #fbbf24;
-}
-
-[data-theme="dark"] .feedback-modal.partial .score-display {
-    background: rgba(251, 191, 36, 0.2);
-    border-color: rgba(251, 191, 36, 0.4);
-    color: #fbbf24;
 }
 
 /* Light theme modal adjustments */
@@ -2990,47 +2907,9 @@
     color: #1e293b;
 }
 
-[data-theme="light"] .feedback-modal.correct .feedback-message,
-[data-theme="light"] .feedback-modal.correct .feedback-icon {
-    color: #059669;
-}
-
-[data-theme="light"] .feedback-modal.submission .feedback-message,
-[data-theme="light"] .feedback-modal.submission .feedback-icon {
-    color: #2563eb;
-}
-
-[data-theme="light"] .feedback-modal.incorrect .feedback-message,
-[data-theme="light"] .feedback-modal.incorrect .feedback-icon {
-    color: #dc2626;
-}
-
 [data-theme="light"] .feedback-modal .score-display {
     background: rgba(248, 250, 252, 0.9);
     color: #1e293b;
-}
-
-[data-theme="light"] .feedback-modal.correct .score-display {
-    background: rgba(240, 253, 244, 0.9);
-    border-color: rgba(5, 150, 105, 0.3);
-    color: #059669;
-}
-
-[data-theme="light"] .feedback-modal.incorrect .score-display {
-    background: rgba(254, 242, 242, 0.9);
-    border-color: rgba(220, 38, 38, 0.3);
-    color: #dc2626;
-}
-
-[data-theme="light"] .feedback-modal.partial .feedback-message,
-[data-theme="light"] .feedback-modal.partial .feedback-icon {
-    color: #d97706;
-}
-
-[data-theme="light"] .feedback-modal.partial .score-display {
-    background: rgba(255, 251, 235, 0.9);
-    border-color: rgba(217, 119, 6, 0.3);
-    color: #d97706;
 }
 
 /* Mobile optimizations for modal feedback */
@@ -3614,8 +3493,9 @@
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: var(--accent-primary);
-    color: white;
+    background: var(--primary);
+    /* white on the dark-theme green fill is 2.28:1; --primary-label is 5.02 / 6.53 */
+    color: var(--primary-label);
     border: none;
     font-size: 24px;
     cursor: pointer;
