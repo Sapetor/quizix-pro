@@ -74,6 +74,11 @@ async function createContext(browser, device) {
             ],
         }],
     };
+    // Freeze timed UI so every run captures the same frame. In particular the
+    // landing demo card (#lp-demo) rotates through 4 slides of different
+    // heights on a 6s CSS-animation cadence; under prefers-reduced-motion it
+    // stays on slide 0 (landing-demo.js).
+    options.reducedMotion = 'reduce';
     return browser.newContext(options);
 }
 
@@ -107,12 +112,22 @@ function screenshotOpts(page, name, extraMasks = []) {
         {
             mask: getDynamicMasks(page, extraMasks),
             maxDiffPixelRatio: 0.02,
+            animations: 'disabled',
         },
     ];
 }
 
 /** Load '/' and wait for the app to be interactive. */
 async function bootLanding(page) {
+    // Landing hydrates the hero card, PIN, joiners and rooms ticker from
+    // active games (landing.js fetchActiveGames). The game-flow spec runs in
+    // parallel against the same server, so without this the hero card height
+    // depends on whether a game happens to be live — pin the empty state.
+    await page.route('**/api/active-games*', route => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ games: [] }),
+    }));
     await page.goto('/');
     await page.waitForSelector('body.loaded', { timeout: 15000 });
     await page.waitForFunction(() => !!window.game, { timeout: 15000 });

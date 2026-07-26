@@ -98,6 +98,9 @@ async function createContext(browser, device) {
             ],
         }],
     };
+    // Freeze timed UI (landing demo rotation, decorative animations) so every
+    // run captures the same frame.
+    options.reducedMotion = 'reduce';
     return browser.newContext(options);
 }
 
@@ -227,12 +230,19 @@ async function waitForHostQuestion(page, questionNumber, timeout = 30000) {
 
 /**
  * Wait for host answer statistics to appear (question ended).
+ *
+ * #answer-statistics is also shown DURING the question in 'counting-only'
+ * mode (live response counter, statistics-manager.js) — the class is only
+ * removed when the round ends and the real distribution arrives, so require
+ * its absence or this fires mid-question and screenshots the wrong phase.
  */
 async function waitForHostStats(page, timeout = 20000) {
     await page.waitForFunction(
         () => {
             const stats = document.querySelector('#answer-statistics');
-            return stats && !stats.classList.contains('hidden');
+            return stats
+                && !stats.classList.contains('hidden')
+                && !stats.classList.contains('counting-only');
         },
         null,
         { timeout }
@@ -247,25 +257,27 @@ async function waitForLeaderboard(page, timeout = 20000) {
 }
 
 /**
- * Wait for the player to receive result feedback (modal overlay appears).
+ * Wait for the player's RESULT modal (🎉/❌ + score).
+ *
+ * The same overlay first shows a transient "Answer submitted" modal with a
+ * RANDOM emoji (modal-feedback.js submissionIcons) right after the click —
+ * matching on overlay visibility alone screenshots whichever modal is up.
+ * The result modal is distinguished by its correct/incorrect class.
  */
 async function waitForPlayerResult(page, timeout = 15000) {
     await page.waitForFunction(
         () => {
-            // Check for modal feedback overlay
             const overlay = document.getElementById('feedback-modal-overlay');
-            if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') {
-                return true;
+            if (!overlay || overlay.classList.contains('hidden') || overlay.style.display === 'none') {
+                return false;
             }
-            // Fallback: check for correct-answer-highlight on options
-            const highlight = document.querySelector('.correct-answer-highlight');
-            return !!highlight;
+            const modal = overlay.querySelector('.feedback-modal');
+            return !!modal
+                && (modal.classList.contains('correct') || modal.classList.contains('incorrect'));
         },
         null,
         { timeout }
-    ).catch(() => {
-        // Non-fatal: result display may vary by question type
-    });
+    );
 }
 
 /**
@@ -339,6 +351,7 @@ function screenshotOpts(page, name, extraMasks = []) {
         {
             mask: [...getDynamicMasks(page), ...extraMasks],
             maxDiffPixelRatio: 0.02,
+            animations: 'disabled',
         },
     ];
 }
@@ -426,29 +439,12 @@ test.describe('Visual Regression', () => {
                         ...screenshotOpts(playerPage, 'desktop-mc-question-player')
                     );
 
-                    // Player selects correct answer (Paris = index 1)
+                    // Player selects correct answer (Paris = index 1). No
+                    // "selected" screenshot: with a single player the answer
+                    // ends the round and the submission modal covers the
+                    // options within ~0.5s — the state is too transient to
+                    // capture deterministically.
                     await playerPage.click('#player-multiple-choice .player-option[data-option="1"]');
-
-                    // Wait for selected state
-                    await playerPage.waitForSelector(
-                        '#player-multiple-choice .player-option.selected',
-                        { timeout: 5000 }
-                    );
-
-                    // Screenshot: answer selected
-                    await expect(playerPage).toHaveScreenshot(
-                        ...screenshotOpts(playerPage, 'desktop-mc-selected-player')
-                    );
-
-                    // Wait for host to show all responses answered
-                    await hostPage.waitForFunction(
-                        () => {
-                            const el = document.querySelector('#responses-count');
-                            return el && parseInt(el.textContent) >= 1;
-                        },
-                        null,
-                        { timeout: 15000 }
-                    );
 
                     // Wait for question end / stats phase
                     await waitForHostStats(hostPage);
@@ -488,18 +484,9 @@ test.describe('Visual Regression', () => {
                         ...screenshotOpts(playerPage, 'desktop-tf-question-player')
                     );
 
-                    // Player selects correct answer (True)
+                    // Player selects correct answer (True). Selected state is
+                    // too transient to capture — see Q1.
                     await playerPage.click('#player-true-false .tf-option[data-answer="true"]');
-
-                    await playerPage.waitForSelector(
-                        '#player-true-false .tf-option.selected',
-                        { timeout: 5000 }
-                    );
-
-                    // Screenshot: answer selected
-                    await expect(playerPage).toHaveScreenshot(
-                        ...screenshotOpts(playerPage, 'desktop-tf-selected-player')
-                    );
 
                     await waitForHostStats(hostPage);
                     await waitForPlayerResult(playerPage);
@@ -744,16 +731,9 @@ test.describe('Visual Regression', () => {
                         ...screenshotOpts(playerPage, 'mobile-mc-question-player')
                     );
 
+                    // Selected state is too transient to capture — see the
+                    // desktop test.
                     await playerPage.click('#player-multiple-choice .player-option[data-option="1"]');
-
-                    await playerPage.waitForSelector(
-                        '#player-multiple-choice .player-option.selected',
-                        { timeout: 5000 }
-                    );
-
-                    await expect(playerPage).toHaveScreenshot(
-                        ...screenshotOpts(playerPage, 'mobile-mc-selected-player')
-                    );
 
                     await waitForHostStats(hostPage);
                     await waitForPlayerResult(playerPage);
@@ -779,15 +759,6 @@ test.describe('Visual Regression', () => {
                     );
 
                     await playerPage.click('#player-true-false .tf-option[data-answer="true"]');
-
-                    await playerPage.waitForSelector(
-                        '#player-true-false .tf-option.selected',
-                        { timeout: 5000 }
-                    );
-
-                    await expect(playerPage).toHaveScreenshot(
-                        ...screenshotOpts(playerPage, 'mobile-tf-selected-player')
-                    );
 
                     await waitForHostStats(hostPage);
                     await waitForPlayerResult(playerPage);

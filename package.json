@@ -19,8 +19,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:stress": "jest --testMatch='**/tests/stress/**/*.test.js' --testTimeout=120000 --no-coverage --forceExit",
-    "test:visual": "npx playwright test tests/e2e/visual-regression.spec.js",
-    "test:visual:update": "npx playwright test tests/e2e/visual-regression.spec.js --update-snapshots"
+    "test:visual": "npx playwright test tests/e2e/visual-regression.spec.js tests/e2e/visual-static.spec.js --project=chromium",
+    "test:visual:update": "npx playwright test tests/e2e/visual-regression.spec.js tests/e2e/visual-static.spec.js --project=chromium --update-snapshots"
   },
   "dependencies": {
     "cheerio": "^1.2.0",
