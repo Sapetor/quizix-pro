@@ -476,27 +476,6 @@
         display: none !important;
     }
     
-    /* Time container - Ultra compact */
-    .quiz-editor-section .question-meta .time-container {
-        display: flex !important;
-        flex-direction: row !important;
-        justify-content: center !important;
-        align-items: center !important;
-        gap: 2px !important;
-    }
-
-    .quiz-editor-section .question-meta .time-container input {
-        width: 36px !important;
-        height: 24px !important;
-        font-size: 0.65rem !important;
-        padding: 2px !important;
-        text-align: center !important;
-    }
-
-    .quiz-editor-section .question-meta .time-container label {
-        font-size: 0.6rem !important;
-    }
-    
     /* Light mode question meta */
     [data-theme="light"] .quiz-editor-section .question-meta,
     .light-theme .quiz-editor-section .question-meta {
@@ -506,9 +485,9 @@
     
     /* Light mode selectors */
     [data-theme="light"] .quiz-editor-section .question-meta .question-type,
-    [data-theme="light"] .quiz-editor-section .question-meta .time-container input,
+    [data-theme="light"] .quiz-editor-section .time-limit-container input,
     .light-theme .quiz-editor-section .question-meta .question-type,
-    .light-theme .quiz-editor-section .question-meta .time-container input {
+    .light-theme .quiz-editor-section .time-limit-container input {
         background: rgba(255, 255, 255, 0.8) !important;
         border: 1px solid rgba(59, 130, 246, 0.2) !important;
         color: rgba(30, 41, 59, 0.9) !important;
@@ -520,16 +499,19 @@
         align-items: center !important;
     }
 
+    /* Label beside the input: the stacked layout made the cell taller than
+       the settings row and the label overflowed the box border */
     .quiz-editor-section .time-limit-container label {
         display: flex !important;
-        flex-direction: column !important;
+        flex-direction: row !important;
         align-items: center !important;
-        gap: 2px !important;
+        gap: 4px !important;
     }
 
     .quiz-editor-section .time-limit-container label span {
-        font-size: 0.55rem !important;
+        font-size: 0.6rem !important;
         color: var(--text-secondary) !important;
+        white-space: nowrap !important;
     }
 
     .quiz-editor-section .time-limit-container input {
@@ -1901,6 +1883,12 @@
         display: flex !important;
     }
 
+    /* Bottom clearance so editor content can scroll clear of the fixed FAB
+       (56px tall + 30px offset) instead of being permanently covered by it */
+    .quiz-editor-section {
+        padding-bottom: 110px !important;
+    }
+
     .mobile-quiz-fab:hover {
         transform: scale(1.1);
         box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
@@ -2974,11 +2962,6 @@
         content: " / " !important;
     }
 
-    /* Hide "Question X" from question header since it's now in pagination */
-    .quiz-editor-section .question-header h3 {
-        display: none !important;
-    }
-
     /* Make collapse indicator clickable for the whole header */
     .quiz-editor-section .question-header .collapse-indicator {
         font-size: 12px !important;
@@ -3081,4 +3064,30 @@
 [data-theme="light"] .mobile-quiz-toggle {
     background: rgba(0, 0, 0, 0.05);
     color: #1e293b;
+}
+
+/* ============================================
+   PHONE HEADER COMPACTION — overrides the universal
+   44px touch-target rule, whose :not() chain gives it
+   (0,3,1) specificity: IDs required, not just !important.
+   Heights stay >=44px via its min-height.
+   ============================================ */
+@media (max-width: 639px) {
+    .app-header #user-chip {
+        padding: 4px !important;
+    }
+
+    #language-selector .lang-pill {
+        padding: 7px 8px !important;
+        gap: 4px !important;
+    }
+
+    .app-header #start-hosting-header-small.btn {
+        padding: 8px 10px !important;
+    }
+
+    /* Label alone is enough at this width */
+    .app-header #start-hosting-header-small.btn svg {
+        display: none;
+    }
 }

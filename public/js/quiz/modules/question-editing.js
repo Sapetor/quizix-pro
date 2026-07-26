@@ -47,29 +47,10 @@ const TRANSLATION_FALLBACKS = {
 };
 
 /**
- * Create or get remove button for a question item
- */
-export function ensureRemoveButton(manager, questionItem) {
-    let removeButton = questionItem.querySelector('.remove-question');
-    if (removeButton) return removeButton;
-
-    removeButton = document.createElement('button');
-    removeButton.className = 'btn secondary remove-question';
-    removeButton.onclick = () => {
-        questionItem.remove();
-        updateQuestionsUI(manager);
-    };
-    removeButton.setAttribute('data-translate', 'remove');
-    removeButton.textContent = translationManager.getTranslationSync('remove') || 'Remove';
-    questionItem.appendChild(removeButton);
-    return removeButton;
-}
-
-/**
  * Combined update method for questions UI - prevents visual glitches
  * Updates both remove button visibility and question numbering in single operation
  */
-export function updateQuestionsUI(manager) {
+export function updateQuestionsUI(_manager) {
     const questionsContainer = dom.get('questions-container');
     if (!questionsContainer) return;
 
@@ -91,12 +72,10 @@ export function updateQuestionsUI(manager) {
             }
         }
 
-        // Handle remove button visibility
-        const removeButton = ensureRemoveButton(manager, questionItem);
-        if (hasMultipleQuestions) {
-            show(removeButton, 'visible-block');
-        } else {
-            hide(removeButton);
+        // Header ✕ removes the question; hide it when it's the only one left
+        const removeButton = questionItem.querySelector('.btn-remove');
+        if (removeButton) {
+            removeButton.classList.toggle('hidden', !hasMultipleQuestions);
         }
     });
 

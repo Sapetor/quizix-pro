@@ -1002,9 +1002,6 @@ export class QuizManager {
                     () => false
                 );
 
-                // Update preview AFTER everything else (completely separate)
-                this.updatePreviewSafely();
-
             } else {
                 // Only show error for truly invalid data structure
                 logger.error('Invalid quiz data structure for:', filename);
@@ -1169,6 +1166,11 @@ export class QuizManager {
 
             logger.debug('populateQuizBuilder completed successfully');
 
+            // Refresh the live preview for every populate path (load, import,
+            // programmatic) — callers previously had to remember this themselves
+            // and the import path didn't, leaving the preview stale.
+            this.updatePreviewSafely();
+
         } catch (error) {
             logger.error('Critical error in populateQuizBuilder:', error);
             // Only throw if a truly critical operation failed
@@ -1177,13 +1179,6 @@ export class QuizManager {
 
         // NOTE: Preview update is now handled separately in updatePreviewSafely()
         // This ensures it can't break the quiz loading flow
-    }
-
-    /**
-     * Create or get remove button for a question item
-     */
-    ensureRemoveButton(questionItem) {
-        return editing.ensureRemoveButton(this, questionItem);
     }
 
     /**

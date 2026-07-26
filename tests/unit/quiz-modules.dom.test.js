@@ -9,7 +9,7 @@
 
 import { dom } from '../../public/js/utils/dom.js';
 import { collectSettings, restoreSettings } from '../../public/js/quiz/modules/settings-persistence.js';
-import { updateQuestionsUI, ensureRemoveButton } from '../../public/js/quiz/modules/question-editing.js';
+import { updateQuestionsUI } from '../../public/js/quiz/modules/question-editing.js';
 import { exportQuiz } from '../../public/js/quiz/modules/import-export.js';
 
 beforeEach(() => {
@@ -86,12 +86,17 @@ describe('settings-persistence round-trip', () => {
 });
 
 describe('question-editing updateQuestionsUI', () => {
-    const fakeManager = {}; // updateQuestionsUI/ensureRemoveButton only need it as an opaque token
+    const fakeManager = {}; // updateQuestionsUI only needs it as an opaque token
 
     function addQuestion(container, index) {
         const item = document.createElement('div');
         item.className = 'question-item';
-        item.innerHTML = `<h3><span data-translate="question">Question</span> ${index + 1}</h3>
+        item.innerHTML = `<div class="question-header">
+                              <h3><span data-translate="question">Question</span> ${index + 1}</h3>
+                              <div class="question-header-actions">
+                                  <button type="button" class="btn-icon btn-remove">✕</button>
+                              </div>
+                          </div>
                           <div class="question-meta"></div>`;
         container.appendChild(item);
         return item;
@@ -104,38 +109,35 @@ describe('question-editing updateQuestionsUI', () => {
         return container;
     }
 
-    test('single question: remove button is hidden and numbering set', () => {
+    test('single question: header remove button is hidden and numbering set', () => {
         const container = buildContainer(1);
         updateQuestionsUI(fakeManager);
 
         const items = container.querySelectorAll('.question-item');
         expect(items).toHaveLength(1);
-        const removeBtn = items[0].querySelector('.remove-question');
+        const removeBtn = items[0].querySelector('.btn-remove');
         expect(removeBtn).not.toBeNull();
         expect(removeBtn.classList.contains('hidden')).toBe(true);
         expect(items[0].getAttribute('data-question')).toBe('0');
     });
 
-    test('multiple questions: every remove button is shown', () => {
+    test('multiple questions: every header remove button is shown', () => {
         const container = buildContainer(3);
         updateQuestionsUI(fakeManager);
 
         const items = container.querySelectorAll('.question-item');
         expect(items).toHaveLength(3);
         items.forEach((item, i) => {
-            const removeBtn = item.querySelector('.remove-question');
-            expect(removeBtn.classList.contains('visible-block')).toBe(true);
+            const removeBtn = item.querySelector('.btn-remove');
+            expect(removeBtn.classList.contains('hidden')).toBe(false);
             expect(item.getAttribute('data-question')).toBe(String(i));
         });
     });
 
-    test('ensureRemoveButton is idempotent (does not duplicate)', () => {
+    test('no bottom remove bar is created', () => {
         const container = buildContainer(2);
-        const first = container.querySelector('.question-item');
-        const a = ensureRemoveButton(fakeManager, first);
-        const b = ensureRemoveButton(fakeManager, first);
-        expect(a).toBe(b);
-        expect(first.querySelectorAll('.remove-question')).toHaveLength(1);
+        updateQuestionsUI(fakeManager);
+        expect(container.querySelector('.remove-question')).toBeNull();
     });
 
     test('removing a question below the multi-threshold hides the remaining button', () => {
@@ -147,7 +149,7 @@ describe('question-editing updateQuestionsUI', () => {
 
         const items = container.querySelectorAll('.question-item');
         expect(items).toHaveLength(1);
-        expect(items[0].querySelector('.remove-question').classList.contains('hidden')).toBe(true);
+        expect(items[0].querySelector('.btn-remove').classList.contains('hidden')).toBe(true);
     });
 });
 

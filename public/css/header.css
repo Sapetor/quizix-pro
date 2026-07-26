@@ -558,10 +558,22 @@ body.in-host-game .app-header .live-game-controls { display: flex; }
   .app-header .live-game-progress { gap: 8px; }
   .app-header .live-game-progress #question-counter { font-size: 12px; }
   body.in-host-game .app-header .brand-name { display: none; }
+
+  /* Editor mode: the right cluster (…/home/lang/CTA/chip) needs the full
+     width — drop the breadcrumb and divider, compact the CTA and chip.
+     Padding overrides live in responsive.css (PHONE HEADER COMPACTION):
+     they must out-cascade the universal touch-target !important rule. */
+  .app-header .editor-breadcrumb { display: none; }
+  .app-header .divider { display: none; }
+  .app-header .user-chip-name { display: none; }
+  .app-header #start-hosting-header-small.btn { font-size: 13px; }
+  /* In the editor the Tools sheet covers these; the phone header can't fit
+     the utilities toggle alongside home/lang/CTA/account. */
+  body.has-editor-toolbar .app-header #utility-overflow-toggle { display: none; }
+  .app-header-left { flex-shrink: 0; }
+  .app-header-right { gap: 4px; }
 }
 
 @media (max-width: 479px) {
   .brand-name { display: none; }
-  .app-header .user-chip-name { display: none; }
-  .app-header-right { gap: 4px; }
 }
