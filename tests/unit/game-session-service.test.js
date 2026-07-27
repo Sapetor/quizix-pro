@@ -16,7 +16,7 @@ jest.mock('../../services/atomic-write', () => ({
     atomicWriteFile: jest.fn().mockResolvedValue(undefined)
 }));
 
-const { GameSessionService } = require('../../services/game-session-service');
+const { GameSessionService, ANSWER_REVEAL_MS } = require('../../services/game-session-service');
 
 const CONFIG = {
     TIMING: {
@@ -375,6 +375,32 @@ describe('GameSessionService — handleQuestionTimeout', () => {
         }));
         expect(game.isAdvancing).toBe(true); // advanceToNextQuestion was entered
     });
+
+    // Must stay payload-compatible with the early-end path in
+    // question-flow-service.buildCorrectAnswerData: the host reveal for ordering
+    // needs the canonical index order, not just the joined display string.
+    test('sends the correct order array for an ordering question', () => {
+        const io = makeIo();
+        const game = svc.createGame('host-1', sampleQuiz({
+            questions: [{
+                type: 'ordering',
+                question: 'Sort these',
+                options: ['First', 'Second', 'Third'],
+                correctOrder: [2, 0, 1],
+                timeLimit: 20
+            }]
+        }));
+        game.currentQuestion = 0;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now();
+
+        svc.handleQuestionTimeout(game, io, game.quiz.questions[0]);
+
+        expect(io.emit).toHaveBeenCalledWith('question-timeout', expect.objectContaining({
+            questionType: 'ordering',
+            correctOrder: [2, 0, 1]
+        }));
+    });
 });
 
 describe('GameSessionService — advanceToNextQuestion', () => {
@@ -393,6 +419,44 @@ describe('GameSessionService — advanceToNextQuestion', () => {
         const timerBefore = game.advanceTimer;
         svc.advanceToNextQuestion(game, io);
         expect(game.advanceTimer).toBe(timerBefore); // no new timer armed
+    });
+
+    // The reveal window (answer + host statistics on screen) is deliberately
+    // longer than the leaderboard dwell: a class needs time to discuss the
+    // answer distribution before the leaderboard takes the screen.
+    test('holds the reveal for ANSWER_REVEAL_MS, well past the leaderboard dwell', () => {
+        const io = makeIo();
+        const game = svc.createGame('host-1', sampleQuiz());
+        game.manualAdvancement = true; // stop after the reveal to isolate the window
+
+        svc.advanceToNextQuestion(game, io);
+
+        jest.advanceTimersByTime(CONFIG.TIMING.LEADERBOARD_DISPLAY_TIME);
+        expect(io.emit).not.toHaveBeenCalledWith('question-end', expect.anything());
+
+        jest.advanceTimersByTime(ANSWER_REVEAL_MS - CONFIG.TIMING.LEADERBOARD_DISPLAY_TIME);
+        expect(io.emit).toHaveBeenCalledWith('question-end', { showStatistics: true });
+        expect(ANSWER_REVEAL_MS).toBeGreaterThanOrEqual(5000);
+    });
+
+    test('auto-advance shows the leaderboard after the reveal, then starts the next question', () => {
+        const io = makeIo();
+        const game = svc.createGame('host-1', sampleQuiz());
+        game.manualAdvancement = false;
+        const startQuestion = jest.spyOn(svc, 'startQuestion').mockImplementation(() => {});
+
+        svc.advanceToNextQuestion(game, io);
+
+        jest.advanceTimersByTime(ANSWER_REVEAL_MS);
+        expect(io.emit).toHaveBeenCalledWith('show-leaderboard', expect.objectContaining({
+            leaderboard: expect.any(Array)
+        }));
+        expect(startQuestion).not.toHaveBeenCalled();
+
+        // Leaderboard dwell itself is unchanged.
+        jest.advanceTimersByTime(CONFIG.TIMING.LEADERBOARD_DISPLAY_TIME);
+        expect(startQuestion).toHaveBeenCalled();
+        expect(game.isAdvancing).toBe(false);
     });
 });
 

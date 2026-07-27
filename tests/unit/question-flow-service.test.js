@@ -161,6 +161,50 @@ describe('QuestionFlowService', () => {
             }));
         });
 
+        // The host's End Round defers game.endQuestion() by 1s, so gameState is
+        // still 'question' during the reveal delay. Answers landing in that
+        // window used to be accepted AND speed-bonus-scored after the round was
+        // called — the flag must gate submission too.
+        test('rejects an answer submitted after the host ended the round', () => {
+            const socket = createMockSocket('player-1');
+            const io = createMockIO();
+            const game = createMockGame({
+                players: [{ id: 'player-1', name: 'Player1', score: 0 }]
+            });
+            game.endingQuestionEarly = true;
+            const playerData = { gamePin: '123456', name: 'Player1' };
+
+            questionFlowService.handleAnswerSubmission(
+                socket.id, 0, 'multiple-choice', playerData, game, socket, io
+            );
+
+            expect(game.submitAnswer).not.toHaveBeenCalled();
+            expect(socket.emit).toHaveBeenCalledWith('answer-rejected', expect.objectContaining({
+                reason: 'question_ended'
+            }));
+            expect(socket.emit).not.toHaveBeenCalledWith('answer-submitted', expect.anything());
+        });
+
+        test('scores nothing and arms no count flush once the round is ending', () => {
+            const socket = createMockSocket('player-1');
+            const io = createMockIO();
+            const game = createMockGame({
+                players: [{ id: 'player-1', name: 'Player1', score: 0 }]
+            });
+            game.endingQuestionEarly = true;
+            const playerData = { gamePin: '123456', name: 'Player1' };
+
+            questionFlowService.handleAnswerSubmission(
+                socket.id, 0, 'multiple-choice', playerData, game, socket, io
+            );
+            jest.advanceTimersByTime(100);
+
+            expect(game.players.get('player-1').score || 0).toBe(0);
+            expect(game.players.get('player-1').answers[0]).toBeUndefined();
+            expect(game.answerCountTimer).toBeNull();
+            expect(io.emit).not.toHaveBeenCalledWith('answer-count-update', expect.anything());
+        });
+
         test('should emit answer count update to host', () => {
             const socket = createMockSocket('player-1');
             const io = createMockIO();
@@ -444,6 +488,33 @@ describe('QuestionFlowService', () => {
             expect(game.advanceTimer).toBeNull();
         });
 
+        // The log line is read when reconstructing what ended a round; it must
+        // not claim "all players answered" when the host pressed End Round.
+        test('logs the all-answered trigger by default', () => {
+            const io = createMockIO();
+            const game = createMockGame();
+
+            questionFlowService.endQuestionEarly(game, io);
+
+            expect(mockLogger.debug).toHaveBeenCalledWith(
+                expect.stringContaining('All players answered')
+            );
+        });
+
+        test('logs the host trigger when the host force-ended the round', () => {
+            const io = createMockIO();
+            const game = createMockGame();
+
+            questionFlowService.endQuestionEarly(game, io, 'host');
+
+            expect(mockLogger.debug).toHaveBeenCalledWith(
+                expect.stringContaining('Host ended the round')
+            );
+            expect(mockLogger.debug).not.toHaveBeenCalledWith(
+                expect.stringContaining('All players answered')
+            );
+        });
+
         test('should emit question-timeout after delay', () => {
             const io = createMockIO();
             const game = createMockGame({
@@ -529,6 +600,30 @@ describe('QuestionFlowService', () => {
             const result = questionFlowService.buildCorrectAnswerData(question);
 
             expect(result.correctOption).toBe('First → Second → Third');
+        });
+
+        // The joined string is display text only. The host reveal needs the
+        // canonical index order to number the item tiles.
+        test('should send the correct order array for ordering questions', () => {
+            const question = {
+                type: 'ordering',
+                options: ['First', 'Second', 'Third'],
+                correctOrder: [2, 0, 1]
+            };
+
+            const result = questionFlowService.buildCorrectAnswerData(question);
+
+            expect(result.correctOrder).toEqual([2, 0, 1]);
+        });
+
+        test('should not send a correct order array for non-ordering questions', () => {
+            const result = questionFlowService.buildCorrectAnswerData({
+                type: 'multiple-choice',
+                options: ['A', 'B'],
+                correctAnswer: 0
+            });
+
+            expect(result.correctOrder).toBeUndefined();
         });
 
         test('should handle invalid indices in correctOrder', () => {

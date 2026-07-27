@@ -787,16 +787,53 @@
     background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end));
 }
 
-#host-game-screen .option-display.correct {
+/* Correct-answer tile at reveal. The live host path
+   (game-manager.js highlightCorrectAnswers) tags the winning tile with
+   `.host-correct-answer`; `.correct` is the class the player-side/registry code
+   uses. Both must land on the same editorial treatment: an ink inset ring.
+   base.css gives `.host-correct-answer` a 5px green border + green fill + green
+   bold text with `!important`, which is the old (pre-reskin) look and fights the
+   gradient tiles — those four declarations are co-neutralized here (same layer,
+   later + higher specificity, so `!important` beats `!important`).
+   Rule G: correctness is signalled by FORM (the ring), never by hue. */
+#host-game-screen .option-display.correct,
+#host-game-screen .option-display.host-correct-answer,
+#host-game-screen .tf-option.correct,
+#host-game-screen .tf-option.host-correct-answer {
     transform: scale(1.02);
     box-shadow: 0 0 0 3px var(--ink) inset;
     animation: none;
+    border: none !important;
+    background-color: transparent !important;
+    color: #fff !important;
+    font-weight: inherit !important;
 }
-#host-game-screen .option-display.correct::after {
+#host-game-screen .option-display.correct::after,
+#host-game-screen .option-display.host-correct-answer::after,
+#host-game-screen .tf-option.correct::after,
+#host-game-screen .tf-option.host-correct-answer::after {
     color: #fff;
 }
 #host-game-screen .option-display:hover {
     transform: translateY(-2px);
+}
+
+/* Ordering reveal. game-manager.revealHostOrdering() reorders the host tiles
+   into the correct sequence, renumbers the badges, and tags each tile. Same
+   Rule G treatment as the cluster above: an ink ring plus a mono numeral, never
+   a green fill. The tiles carry an inline translucent background from
+   renderHostOptions, which is left alone. Both rules out-specify the
+   components.css `.ordering-display-item` / `.ordering-item-number` defaults
+   (same @layer, higher specificity), so no !important is involved. */
+#host-game-screen .ordering-display-item.host-correct-order {
+    box-shadow: 0 0 0 2px var(--ink) inset;
+    border-color: var(--ink-2);
+}
+#host-game-screen .ordering-display-item.host-correct-order .ordering-item-number {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-mono);
+    box-shadow: none;
 }
 
 /* Stats block: keep the controls (Next Question / End Round / score breakdown)
@@ -814,8 +851,14 @@
     max-width: 100%;
 }
 #host-game-screen #answer-statistics .stats-header h3,
-#host-game-screen #answer-statistics .response-summary,
 #host-game-screen #answer-statistics .host-score-breakdown {
+    display: none !important;
+}
+/* Reveal phase only: the distribution is overlaid on the option tiles, so the
+   textual "N of M answered" summary would be a duplicate. During the answering
+   phase (.counting-only) it is the host's ONLY answered-count readout — see the
+   counting-only strip further down. */
+#host-game-screen #answer-statistics:not(.counting-only) .response-summary {
     display: none !important;
 }
 /* Hide the default .stat-item bars (MC/multi-correct/TF distribution is
@@ -935,6 +978,48 @@
    (which wraps the Next Question button) should stay hidden like before. */
 #host-game-screen #answer-statistics.counting-only .stats-header {
     display: none;
+}
+
+/* --- Counting-only strip (answering phase) --------------------------------
+   With the stats grid, header and score breakdown all hidden, the only visible
+   children left are .response-summary and #end-round-container. Lay them out as
+   one compact row instead of a stack of empty blocks: the live answered count on
+   the left, End Round on the right. No `!important` on `display` here — `.hidden`
+   must still win (for `!important` declarations the @layer order REVERSES, so an
+   `!important` in the app layer would beat utilities' `.hidden`). */
+#host-game-screen #answer-statistics.counting-only {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 0 56px 14px;
+}
+#host-game-screen #answer-statistics.counting-only .response-summary {
+    display: block;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+#host-game-screen #answer-statistics.counting-only #responses-count,
+#host-game-screen #answer-statistics.counting-only #total-players {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--ink);
+}
+#host-game-screen #answer-statistics.counting-only #end-round-container {
+    margin: 0;
+    padding: 0;
+    flex: 0 0 auto;
 }
 #host-game-screen #answer-statistics .stats-controls {
     display: inline-flex;

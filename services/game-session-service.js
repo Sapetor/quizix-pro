@@ -11,6 +11,12 @@
 const { getLimits, isMobileMode } = require('../config/limits');
 const { Game, shuffleWithMapping } = require('./game');
 
+// How long the answer reveal stays on screen — correct answer plus the host's
+// answer distribution — before the leaderboard replaces it. Deliberately longer
+// than CONFIG.TIMING.LEADERBOARD_DISPLAY_TIME (the leaderboard's own dwell):
+// 3s was not enough for a teacher to talk through the distribution with a class.
+const ANSWER_REVEAL_MS = 5500;
+
 class GameSessionService {
     constructor(logger, config) {
         this.logger = logger;
@@ -569,6 +575,13 @@ class GameSessionService {
             timeoutData.correctAnswers = question.correctAnswers || [];
         }
 
+        // Keep the ordering payload identical to the early-end path
+        // (question-flow-service.buildCorrectAnswerData): the host reveal numbers
+        // the item tiles from the canonical index order.
+        if (question.type === 'ordering') {
+            timeoutData.correctOrder = question.correctOrder || [];
+        }
+
         io.to(`game-${game.pin}`).emit('question-timeout', timeoutData);
 
         // Get statistics and emit to host
@@ -684,7 +697,7 @@ class GameSessionService {
                 this.logger.error(`Error in advanceToNextQuestion for game ${game.pin}:`, error);
                 game.isAdvancing = false;
             }
-        }, this.config.TIMING.LEADERBOARD_DISPLAY_TIME);
+        }, ANSWER_REVEAL_MS);
     }
 
     /**
@@ -788,4 +801,4 @@ class GameSessionService {
     }
 }
 
-module.exports = { GameSessionService };
+module.exports = { GameSessionService, ANSWER_REVEAL_MS };

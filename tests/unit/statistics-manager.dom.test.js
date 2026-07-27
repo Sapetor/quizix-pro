@@ -104,6 +104,82 @@ describe('StatisticsManager', () => {
     });
   });
 
+  describe('updateLiveAnswerCount (answering-phase indicator)', () => {
+    test('writes the live answered/connected counts and reveals the counting-only strip', () => {
+      buildHostStatsDom(4);
+      const sm = new StatisticsManager(hostStateManager());
+
+      sm.updateLiveAnswerCount({ answeredPlayers: 3, connectedPlayers: 12, totalPlayers: 12 });
+
+      expect(document.getElementById('responses-count').textContent).toBe('3');
+      expect(document.getElementById('total-players').textContent).toBe('12');
+      expect(document.getElementById('host-header-total').textContent).toBe('12');
+
+      // The "N of M answered" strip is CSS-gated on exactly these two classes
+      // (#host-game-screen #answer-statistics.counting-only in app-screens.css):
+      // hidden must be off and counting-only on, or the host sees no count at all.
+      const container = document.getElementById('answer-statistics');
+      expect(container.classList.contains('hidden')).toBe(false);
+      expect(container.classList.contains('counting-only')).toBe(true);
+    });
+
+    test('denominator falls back to totalPlayers when connectedPlayers is absent', () => {
+      buildHostStatsDom(4);
+      const sm = new StatisticsManager(hostStateManager());
+
+      sm.updateLiveAnswerCount({ answeredPlayers: 1, totalPlayers: 4 });
+
+      expect(document.getElementById('responses-count').textContent).toBe('1');
+      expect(document.getElementById('total-players').textContent).toBe('4');
+      expect(document.getElementById('disconnected-indicator').classList.contains('hidden')).toBe(true);
+    });
+
+    test('shows the disconnected indicator only while someone is missing', () => {
+      buildHostStatsDom(4);
+      const sm = new StatisticsManager(hostStateManager());
+
+      sm.updateLiveAnswerCount({ answeredPlayers: 2, connectedPlayers: 3, totalPlayers: 5 });
+      // Text is translated ('disconnected_count' + count) — with no translation
+      // bundle loaded in jsdom only the key comes back, so assert visibility only.
+      const indicator = document.getElementById('disconnected-indicator');
+      expect(indicator.classList.contains('hidden')).toBe(false);
+      expect(indicator.textContent).not.toBe('');
+
+      sm.updateLiveAnswerCount({ answeredPlayers: 2, connectedPlayers: 5, totalPlayers: 5 });
+      expect(indicator.classList.contains('hidden')).toBe(true);
+    });
+
+    test('ignores updates when not host', () => {
+      buildHostStatsDom(4);
+      const sm = new StatisticsManager({ getGameState: () => ({ isHost: false }) });
+
+      sm.updateLiveAnswerCount({ answeredPlayers: 3, connectedPlayers: 12, totalPlayers: 12 });
+
+      expect(document.getElementById('responses-count').textContent).toBe('0');
+      expect(document.getElementById('answer-statistics').classList.contains('counting-only')).toBe(false);
+    });
+
+    test('reveal drops counting-only so the strip gives way to the distribution', () => {
+      buildHostStatsDom(4);
+      const sm = new StatisticsManager(hostStateManager());
+
+      sm.updateLiveAnswerCount({ answeredPlayers: 4, connectedPlayers: 4, totalPlayers: 4 });
+      expect(document.getElementById('answer-statistics').classList.contains('counting-only')).toBe(true);
+
+      sm.updateAnswerStatistics({
+        questionType: 'multiple-choice',
+        optionCount: 4,
+        answeredPlayers: 4,
+        totalPlayers: 4,
+        answerCounts: { 0: 4, 1: 0, 2: 0, 3: 0 }
+      });
+
+      const container = document.getElementById('answer-statistics');
+      expect(container.classList.contains('counting-only')).toBe(false);
+      expect(container.classList.contains('hidden')).toBe(false);
+    });
+  });
+
   describe('updateAnswerStatistics (multiple-choice distribution)', () => {
     test('writes response totals and per-option fills for a known distribution', () => {
       buildHostStatsDom(4);

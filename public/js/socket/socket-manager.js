@@ -358,6 +358,14 @@ export class SocketManager {
                 if (stopBtn) show(stopBtn);
                 const endRoundContainer = this._getElement('end-round-container');
                 if (endRoundContainer) show(endRoundContainer, 'visible-flex');
+                // Undo the latch app.js forceEndQuestion() applied on the previous round
+                const endRoundBtn = this._getElement('end-round-btn');
+                if (endRoundBtn) {
+                    endRoundBtn.disabled = false;
+                    endRoundBtn.removeAttribute('aria-busy');
+                    endRoundBtn.setAttribute('data-translate', 'end_round');
+                    endRoundBtn.textContent = translationManager.getTranslationSync('end_round');
+                }
             }
 
             // Switch to playing state for immersive gameplay
@@ -562,11 +570,20 @@ export class SocketManager {
 
         this.socket.on('rate-limited', (data) => {
             logger.warn('Rate limited:', data);
-            // Undo optimistic submit so the player can retry
+            const message = this._resolveServerMessage(data, 'error_rate_limited');
+
+            // Only answer submission belongs in the player's answer-feedback modal.
+            // Everything else (host controls like force-end-question, rejoins,
+            // power-ups) would otherwise raise a red "wrong answer" modal — on the
+            // host's projected screen, for a throttled button press.
             if (data?.event === 'submit-answer') {
+                // Undo optimistic submit so the player can retry
                 this.gameManager.stateManager.answerSubmitted = false;
+                this.gameManager.showAnswerRejected(message);
+                return;
             }
-            this.gameManager.showAnswerRejected(this._resolveServerMessage(data, 'error_rate_limited'));
+
+            window.toastNotifications?.warning(message);
         });
 
         // Show leaderboard

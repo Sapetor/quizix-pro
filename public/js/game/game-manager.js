@@ -682,7 +682,10 @@ export class GameManager {
         if (!gameState.isHost) return;
 
         const questionType = data.questionType || data.type;
-        const options = document.querySelectorAll('.option-display');
+        // Scoped to the host screen: `.option-display` also exists in the editor
+        // preview and the player view, and an unscoped query indexes into
+        // whichever look-alike tiles happen to be in the DOM.
+        const options = document.querySelectorAll('#host-game-screen .option-display');
 
         if (questionType === 'multiple-choice') {
             // Support both correctAnswer and correctIndex (server may use either)
@@ -706,7 +709,43 @@ export class GameManager {
                     }
                 });
             }
+        } else if (questionType === 'ordering') {
+            this.revealHostOrdering(data.correctOrder);
         }
+    }
+
+    /**
+     * Reveal the correct sequence of an ordering question on the host screen.
+     * The host tiles are rendered in a random order (renderHostOptions in
+     * question-type-registry.js) and nobody drags them there, so the reveal
+     * reorders them into the correct sequence, renumbers the badges, and rings
+     * each tile — correctness by FORM, not hue.
+     * @param {number[]} correctOrder - Canonical option indices in correct order
+     */
+    revealHostOrdering(correctOrder) {
+        if (!Array.isArray(correctOrder) || correctOrder.length === 0) {
+            logger.warn('Ordering reveal skipped: no correctOrder in payload');
+            return;
+        }
+
+        const container = document.querySelector('#host-game-screen .ordering-display');
+        if (!container) return;
+
+        const byOriginalIndex = new Map();
+        container.querySelectorAll('.ordering-display-item').forEach(item => {
+            byOriginalIndex.set(Number(item.dataset.originalIndex), item);
+        });
+
+        correctOrder.forEach((originalIndex, position) => {
+            const item = byOriginalIndex.get(Number(originalIndex));
+            if (!item) return;
+
+            const number = item.querySelector('.ordering-item-number');
+            if (number) number.textContent = String(position + 1);
+            item.dataset.orderIndex = String(position);
+            item.classList.add('host-correct-order');
+            container.appendChild(item); // moves the tile into correct-order position
+        });
     }
 
     /**

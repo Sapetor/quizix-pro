@@ -88,7 +88,7 @@ function registerGameplayEvents(io, socket, options) {
             if (!game || game.gameState !== 'question') return;
 
             logger.info(`Host force-ended question ${game.currentQuestion + 1} in game ${game.pin}`);
-            questionFlowService.endQuestionEarly(game, io);
+            questionFlowService.endQuestionEarly(game, io, 'host');
         } catch (error) {
             logger.error('Error in force-end-question handler:', error);
         }

@@ -126,7 +126,9 @@ describe('gameplay-events: force-end-question', () => {
 
         h['force-end-question']();
 
-        expect(options.questionFlowService.endQuestionEarly).toHaveBeenCalledWith(game, io);
+        // The 'host' trigger keeps the service log truthful — this path is not
+        // "all players answered".
+        expect(options.questionFlowService.endQuestionEarly).toHaveBeenCalledWith(game, io, 'host');
     });
 
     it('does nothing when the game is not in question state', () => {

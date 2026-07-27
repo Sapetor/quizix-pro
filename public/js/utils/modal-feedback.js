@@ -16,6 +16,23 @@ import {
     MODAL_MODES
 } from './modal-utils.js';
 
+/**
+ * The submission confirmation and the result share one overlay, so a round that
+ * ends right after the last answer used to swap one modal for the other within
+ * ~1.5s of the tap. Two constants keep that from reading as a flash:
+ *
+ *  - the tapped tile locks into `.selected` immediately, so the confirmation
+ *    modal is only worth rendering to a player who is actually left waiting —
+ *    it is deferred this long, and dropped outright if a result arrives first
+ *    (the server reveals ~1.1s after the last answer, see
+ *    QuestionFlowService.endQuestionEarly);
+ *  - if it did render, it holds the overlay this long before a result may take
+ *    it over, so a result landing just past the defer window cannot flash it
+ *    away either.
+ */
+export const SUBMISSION_DEFER_MS = 1200;
+export const SUBMISSION_MIN_VISIBLE_MS = 800;
+
 export class ModalFeedback {
     constructor() {
         this.overlay = null;
@@ -28,6 +45,9 @@ export class ModalFeedback {
         this.currentTimer = null;
         this.modalBindings = null;
         this.contentHandler = null;
+        this.pendingSubmissionTimer = null;
+        this.submissionShownAt = 0;
+        this.deferredResultTimer = null;
 
         this.initializeElements();
         this.setupEventListeners();
@@ -75,6 +95,25 @@ export class ModalFeedback {
     }
 
     /**
+     * Take the overlay for a result, cancelling a confirmation that has not been
+     * rendered yet.
+     * @returns {number} ms the caller must wait before rendering (0 = render now)
+     */
+    claimOverlayForResult() {
+        if (this.pendingSubmissionTimer) {
+            // Round ended before the player was left waiting — the confirmation
+            // is no longer worth showing at all.
+            clearTimeout(this.pendingSubmissionTimer);
+            this.pendingSubmissionTimer = null;
+            return 0;
+        }
+
+        if (!this.submissionShownAt) return 0;
+
+        return Math.max(0, SUBMISSION_MIN_VISIBLE_MS - (Date.now() - this.submissionShownAt));
+    }
+
+    /**
      * Show feedback modal with specified state
      * @param {boolean} isCorrect - Whether the answer was correct
      * @param {string} message - Custom feedback message
@@ -85,6 +124,16 @@ export class ModalFeedback {
     show(isCorrect, message = null, score = null, autoDismissTime = 3000, explanation = null) {
         if (!this.overlay || !this.modal) {
             logger.error('❌ Cannot show modal feedback - elements not initialized');
+            return;
+        }
+
+        const wait = this.claimOverlayForResult();
+        if (wait > 0) {
+            clearTimeout(this.deferredResultTimer);
+            this.deferredResultTimer = setTimeout(() => {
+                this.deferredResultTimer = null;
+                this.show(isCorrect, message, score, autoDismissTime, explanation);
+            }, wait);
             return;
         }
 
@@ -179,10 +228,34 @@ export class ModalFeedback {
             this.currentTimer = null;
         }
 
+        // A confirmation that has not rendered yet is moot once the overlay is
+        // dismissed. A result waiting out the confirmation's minimum visible
+        // time is not — dropping it would cost the player their score modal.
+        this.cancelPendingSubmission();
+
         // Hide modal with animation using modal-utils
         closeModal(this.overlay, { mode: MODAL_MODES.CLASS, activeClass: 'active', unlockScroll: true });
 
         logger.debug('🎭 Modal feedback hidden');
+    }
+
+    /**
+     * Drop a confirmation that has not rendered yet.
+     */
+    cancelPendingSubmission() {
+        clearTimeout(this.pendingSubmissionTimer);
+        this.pendingSubmissionTimer = null;
+        this.submissionShownAt = 0;
+    }
+
+    /**
+     * Drop every render still waiting on a timer, so nothing from the finished
+     * question can surface on the next one.
+     */
+    cancelDeferredRenders() {
+        this.cancelPendingSubmission();
+        clearTimeout(this.deferredResultTimer);
+        this.deferredResultTimer = null;
     }
 
     /**
@@ -206,6 +279,8 @@ export class ModalFeedback {
      * Called when starting a new question to ensure clean state
      */
     clearContent() {
+        this.cancelDeferredRenders();
+
         if (this.feedbackIcon) {
             this.feedbackIcon.textContent = '';
         }
@@ -349,6 +424,16 @@ export class ModalFeedback {
             return;
         }
 
+        const wait = this.claimOverlayForResult();
+        if (wait > 0) {
+            clearTimeout(this.deferredResultTimer);
+            this.deferredResultTimer = setTimeout(() => {
+                this.deferredResultTimer = null;
+                this.showPartial(message, score, autoDismissTime, explanation, partialScore);
+            }, wait);
+            return;
+        }
+
         // Clear any existing timer
         if (this.currentTimer) {
             clearTimeout(this.currentTimer);
@@ -431,11 +516,28 @@ export class ModalFeedback {
             return;
         }
 
+        // Deferred: a result arriving inside the window cancels this instead of
+        // flashing the confirmation on screen. See SUBMISSION_DEFER_MS.
+        clearTimeout(this.pendingSubmissionTimer);
+        this.pendingSubmissionTimer = setTimeout(() => {
+            this.pendingSubmissionTimer = null;
+            this.renderSubmission(message, autoDismissTime);
+        }, SUBMISSION_DEFER_MS);
+    }
+
+    /**
+     * Render the submission confirmation now.
+     * @param {string} message - Submission message
+     * @param {number} autoDismissTime - Auto-dismiss time in ms
+     */
+    renderSubmission(message, autoDismissTime) {
         // Clear any existing timer
         if (this.currentTimer) {
             clearTimeout(this.currentTimer);
             this.currentTimer = null;
         }
+
+        this.submissionShownAt = Date.now();
 
         // Set modal state - neutral styling
         this.modal.className = 'feedback-modal submission';
@@ -461,11 +563,11 @@ export class ModalFeedback {
      * @param {string} message - Submission message
      */
     updateSubmissionContent(message) {
-        // Set exciting submission icon - CSS handles animation reset via .feedback-icon styles
+        // Fixed submission icon — a random pick per submission made the screen
+        // non-reproducible for the visual regression suite with no UX gain.
+        // CSS handles animation reset via .feedback-icon styles.
         if (this.feedbackIcon) {
-            const submissionIcons = ['🚀', '⚡', '🎯', '💫', '✨', '🔥'];
-            const randomIcon = submissionIcons[Math.floor(Math.random() * submissionIcons.length)];
-            this.feedbackIcon.textContent = randomIcon;
+            this.feedbackIcon.textContent = '🚀';
         }
 
         // Set submission message
@@ -493,6 +595,8 @@ export class ModalFeedback {
             clearTimeout(this.currentTimer);
             this.currentTimer = null;
         }
+
+        this.cancelDeferredRenders();
 
         // Clean up modal bindings (overlay click and escape key handlers)
         if (this.modalBindings?.cleanup) {

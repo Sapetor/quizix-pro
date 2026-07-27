@@ -1,14 +1,18 @@
 /**
  * Answer Reveal Manager Module
- * Handles displaying correct/incorrect answer feedback
- * Extracted from game-manager.js for modularity
+ * Player-side answer feedback: submission/rejection modals and the correct-answer
+ * highlight on the player's own option list.
+ *
+ * The HOST reveal (highlighting the winning tile on #host-game-screen, the numeric
+ * answer card and the explanation card) lives in game-manager.js — that is the copy
+ * socket-manager's `question-timeout` handler calls. The duplicate host methods that
+ * used to sit here queried `.host-option`, a selector no screen renders any more, so
+ * they were dead and have been removed.
  */
 
 import { getTranslation } from '../../utils/translation-manager.js';
 import { logger } from '../../core/config.js';
 import { modalFeedback } from '../../utils/modal-feedback.js';
-import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
-import { dom, escapeHtml, escapeHtmlPreservingLatex } from '../../utils/dom.js';
 
 export class AnswerRevealManager {
     /**
@@ -177,162 +181,12 @@ export class AnswerRevealManager {
     }
 
     /**
-     * Show correct answer on host screen
-     * @param {Object} data - Answer data
-     */
-    showCorrectAnswer(data) {
-        const gameState = this.stateManager.getGameState();
-        if (!gameState.isHost) return;
-
-        const questionType = data.questionType || data.type;
-
-        if (questionType === 'numeric') {
-            this.showNumericCorrectAnswer(data.correctAnswer, data.tolerance);
-        } else {
-            this.highlightCorrectAnswers(data);
-        }
-
-        if (data.explanation) {
-            this.showExplanation(data.explanation);
-        }
-    }
-
-    /**
      * Apply correct answer styling to element
      * @param {Element} element - DOM element
      */
     applyCorrectAnswerStyle(element) {
         if (!element) return;
         element.classList.add('correct-answer', 'correct-answer-highlight');
-    }
-
-    /**
-     * Show numeric correct answer
-     * @param {number} correctAnswer - The correct answer
-     * @param {number} tolerance - Acceptable tolerance
-     */
-    showNumericCorrectAnswer(correctAnswer, tolerance) {
-        const gameState = this.stateManager.getGameState();
-        if (!gameState.isHost) return;
-
-        const existingAnswer = document.querySelector('.numeric-correct-answer-display');
-        if (existingAnswer) {
-            existingAnswer.remove();
-        }
-
-        const questionDisplay = document.getElementById('host-question-display');
-        if (questionDisplay) {
-            let answerText = `${getTranslation('correct_answer')}: ${escapeHtml(String(correctAnswer))}`;
-            if (tolerance) {
-                answerText += ` (±${escapeHtml(String(tolerance))})`;
-            }
-
-            const correctAnswerDiv = document.createElement('div');
-            correctAnswerDiv.className = 'numeric-correct-answer-display';
-            correctAnswerDiv.innerHTML = `
-                <div class="numeric-correct-answer-content">
-                    <div class="correct-icon">✅</div>
-                    <div class="correct-text">${answerText}</div>
-                </div>
-            `;
-
-            questionDisplay.appendChild(correctAnswerDiv);
-        }
-
-        const optionsContainer = document.getElementById('answer-options');
-        if (optionsContainer) {
-            optionsContainer.classList.add('hidden');
-        }
-
-        const hostMultipleChoice = document.getElementById('host-multiple-choice');
-        if (hostMultipleChoice) {
-            hostMultipleChoice.classList.add('numeric-question-type');
-        }
-    }
-
-    /**
-     * Highlight correct answers in the options grid
-     * @param {Object} data - Answer data with correctAnswer(s)
-     */
-    highlightCorrectAnswers(data) {
-        const questionType = data.questionType || data.type;
-
-        if (questionType === 'multiple_correct' || questionType === 'multiple-correct') {
-            const correctIndices = data.correctAnswers || [];
-            const options = document.querySelectorAll('.host-option');
-            correctIndices.forEach(index => {
-                if (options[index]) {
-                    this.applyCorrectAnswerStyle(options[index]);
-                }
-            });
-        } else if (questionType === 'true_false') {
-            const correctIndex = data.correctAnswer === true ? 0 : 1;
-            const options = document.querySelectorAll('.host-option');
-            if (options[correctIndex]) {
-                this.applyCorrectAnswerStyle(options[correctIndex]);
-            }
-        } else if (questionType === 'ordering') {
-            // For ordering, highlight items with correct/incorrect per-position feedback
-            const orderItems = document.querySelectorAll('.ordering-display-item');
-            const rawOrder = data.correctAnswer ?? data.correctOrder ?? null;
-            const correctOrder = Array.isArray(rawOrder) ? rawOrder : [];
-            orderItems.forEach((item, displayIndex) => {
-                const originalIndex = parseInt(item.dataset.originalIndex);
-                if (correctOrder[displayIndex] === originalIndex) {
-                    item.classList.add('correct');
-                } else {
-                    item.classList.add('incorrect');
-                }
-            });
-            // If no per-item data available, just highlight all as correct
-            if (correctOrder.length === 0) {
-                orderItems.forEach(item => this.applyCorrectAnswerStyle(item));
-            }
-        } else {
-            // Multiple choice
-            const correctIndex = data.correctAnswer;
-            const options = document.querySelectorAll('.host-option');
-            if (typeof correctIndex === 'number' && options[correctIndex]) {
-                this.applyCorrectAnswerStyle(options[correctIndex]);
-            }
-        }
-    }
-
-    /**
-     * Show explanation for the correct answer
-     * @param {string} explanation - Explanation text
-     */
-    showExplanation(explanation) {
-        const existingExplanation = document.querySelector('.question-explanation-display');
-        if (existingExplanation) {
-            existingExplanation.remove();
-        }
-
-        const questionDisplay = document.getElementById('host-question-display');
-        if (questionDisplay && explanation) {
-            const explanationDiv = document.createElement('div');
-            explanationDiv.className = 'question-explanation-display';
-
-            const content = document.createElement('div');
-            content.className = 'explanation-content';
-
-            const icon = document.createElement('div');
-            icon.className = 'explanation-icon';
-            icon.textContent = '💡';
-
-            const textDiv = document.createElement('div');
-            textDiv.className = 'explanation-text';
-            textDiv.innerHTML = escapeHtmlPreservingLatex(explanation);
-
-            content.appendChild(icon);
-            content.appendChild(textDiv);
-            explanationDiv.appendChild(content);
-            questionDisplay.appendChild(explanationDiv);
-
-            simpleMathJaxService.render([textDiv]).catch(err => {
-                logger.warn('MathJax render error in explanation (non-blocking):', err);
-            });
-        }
     }
 
 }

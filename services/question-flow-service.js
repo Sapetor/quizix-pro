@@ -33,7 +33,10 @@ class QuestionFlowService {
             return;
         }
 
-        if (!game || game.gameState !== 'question') {
+        // `endingQuestionEarly` covers the reveal delay in endQuestionEarly: the
+        // round is already called but gameState is still 'question' for ~1s.
+        // Without this gate late answers were accepted and speed-bonus-scored.
+        if (!game || game.gameState !== 'question' || game.endingQuestionEarly) {
             this.logger.warn('Answer submission rejected: game not in question state');
             // Inform player their answer was rejected (too late or game not ready)
             socket.emit('answer-rejected', {
@@ -145,11 +148,12 @@ class QuestionFlowService {
     }
 
     /**
-   * End question early when all players have answered
+   * End question early (all players answered, or the host pressed End Round)
    * @param {Object} game - Game instance
    * @param {Object} io - Socket.IO instance
+   * @param {string} [trigger] - 'all-answered' (default) or 'host'
    */
-    endQuestionEarly(game, io) {
+    endQuestionEarly(game, io, trigger = 'all-answered') {
     // Prevent duplicate calls with flag
         if (game.endingQuestionEarly) {
             this.logger.debug('Already ending question early, ignoring duplicate call');
@@ -157,7 +161,8 @@ class QuestionFlowService {
         }
         game.endingQuestionEarly = true;
 
-        this.logger.debug(`All players answered, ending question early for game ${game.pin}`);
+        const reason = trigger === 'host' ? 'Host ended the round' : 'All players answered';
+        this.logger.debug(`${reason}, ending question early for game ${game.pin}`);
 
         // Clear existing timers
         if (game.questionTimer) {
@@ -286,6 +291,12 @@ class QuestionFlowService {
         // For multiple-correct questions, also send the correctAnswers array
         if (question.type === 'multiple-correct') {
             data.correctAnswers = question.correctAnswers || [];
+        }
+
+        // Ordering needs the canonical index order (not just the joined display
+        // string) so the host reveal can number the item tiles.
+        if (question.type === 'ordering') {
+            data.correctOrder = question.correctOrder || [];
         }
 
         return data;

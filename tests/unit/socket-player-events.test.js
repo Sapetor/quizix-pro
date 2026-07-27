@@ -177,6 +177,64 @@ describe('player-events: host-rejoin', () => {
         expect(findEmit(io.toEmits, 'host-reconnected')).toBeTruthy();
         expect(findEmit(socket.emits, 'host-rejoin-success')).toBeTruthy();
     });
+
+    // host-rejoin-success only switches screens: without a replayed
+    // question-start the reconnected host sees an empty host-game-screen (no
+    // question, no statistics block, no End Round) for the rest of the question.
+    it('replays question-start and the live answer count when rejoining mid-question', () => {
+        const game = disconnectedGame();
+        game.quiz = {
+            title: 'Q',
+            questions: [{
+                type: 'multiple-choice',
+                question: 'Q1?',
+                options: ['A', 'B'],
+                correctAnswer: 0,
+                timeLimit: 20
+            }]
+        };
+        game.questionStartTime = Date.now();
+        game.questionEndsAt = Date.now() + 12000;
+        game.players = new Map([
+            ['p1', { id: 'p1', name: 'Al', score: 10, answers: { 0: { answer: 0 } } }],
+            ['p2', { id: 'p2', name: 'Bo', score: 0, answers: {} }],
+            ['p3', { id: 'p3', name: 'Cy', score: 0, answers: {}, disconnected: true }]
+        ]);
+        const { socket, options, h } = setup();
+        options.gameSessionService.getGame.mockReturnValue(game);
+
+        h['host-rejoin']({ pin: '123456', token: 'secret' });
+
+        const replay = findEmit(socket.emits, 'question-start');
+        expect(replay).toBeTruthy();
+        expect(replay.data).toMatchObject({
+            questionNumber: 1,
+            totalQuestions: 1,
+            question: 'Q1?',
+            type: 'multiple-choice',
+            options: ['A', 'B']
+        });
+        expect(replay.data.remainingTimeMs).toBeGreaterThan(0);
+        expect(replay.data.remainingTimeMs).toBeLessThanOrEqual(12000);
+
+        expect(findEmit(socket.emits, 'answer-count-update').data).toEqual({
+            answeredPlayers: 1,
+            connectedPlayers: 2,
+            totalPlayers: 3
+        });
+    });
+
+    it('does not replay question-start when the game is not in a question', () => {
+        const game = disconnectedGame();
+        game.gameState = 'lobby';
+        const { socket, options, h } = setup();
+        options.gameSessionService.getGame.mockReturnValue(game);
+
+        h['host-rejoin']({ pin: '123456', token: 'secret' });
+
+        expect(findEmit(socket.emits, 'question-start')).toBeFalsy();
+        expect(findEmit(socket.emits, 'host-rejoin-success')).toBeTruthy();
+    });
 });
 
 describe('player-events: session-check', () => {

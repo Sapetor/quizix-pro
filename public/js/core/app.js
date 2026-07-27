@@ -803,8 +803,20 @@ export class QuizGame {
      * Force end the current question early (host only)
      */
     forceEndQuestion() {
-        if (this.socketManager?.socket) {
-            this.socketManager.socket.emit('force-end-question');
+        if (!this.socketManager?.socket) return;
+        this.socketManager.socket.emit('force-end-question');
+
+        // Latch the control: the server holds the reveal for ~1s, and an
+        // unlatched button gives no feedback, so hosts click again and hit the
+        // 2/s rate limiter. Restored on the next question-start (socket-manager).
+        const btn = document.getElementById('end-round-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.setAttribute('aria-busy', 'true');
+            // Keep the label translation-managed: data-translate is what
+            // translation-manager re-renders on a language switch.
+            btn.setAttribute('data-translate', 'waiting_for_results');
+            btn.textContent = translationManager.getTranslationSync('waiting_for_results');
         }
     }
 

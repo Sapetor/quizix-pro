@@ -167,6 +167,40 @@ function registerPlayerEvents(io, socket, options) {
                 quizTitle: game.quiz.title
             });
 
+            // host-rejoin-success only switches screens. If a question is still
+            // running, replay the standard question-start (+ current answer count)
+            // to this socket so the existing client handlers rebuild the question,
+            // the statistics block and the End Round control. The client's
+            // startTimer() clears any previous interval, so replaying is safe.
+            const currentQ = game.gameState === 'question'
+                ? game.quiz?.questions?.[game.currentQuestion]
+                : null;
+            if (currentQ) {
+                const timeLimit = currentQ.timeLimit || currentQ.time || 20;
+                // questionEndsAt is the authoritative deadline (extend-time moves it)
+                const endsAt = game.questionEndsAt || ((game.questionStartTime || Date.now()) + timeLimit * 1000);
+
+                socket.emit('question-start', {
+                    questionNumber: game.currentQuestion + 1,
+                    totalQuestions: game.quiz.questions.length,
+                    question: currentQ.question,
+                    type: currentQ.type || 'multiple-choice',
+                    image: currentQ.image || '',
+                    video: currentQ.video || '',
+                    timeLimit,
+                    // Host always sees the canonical (unshuffled) option order
+                    options: currentQ.options,
+                    remainingTimeMs: Math.max(0, endsAt - Date.now())
+                });
+
+                const activePlayers = Array.from(game.players.values()).filter(p => !p.disconnected);
+                socket.emit('answer-count-update', {
+                    answeredPlayers: activePlayers.filter(p => p.answers && p.answers[game.currentQuestion]).length,
+                    connectedPlayers: activePlayers.length,
+                    totalPlayers: game.players.size
+                });
+            }
+
             logger.info(`Host reconnected to game ${game.pin}`);
         } catch (error) {
             logger.error('Error in host-rejoin handler:', error);

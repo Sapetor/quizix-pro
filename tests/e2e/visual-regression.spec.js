@@ -259,10 +259,11 @@ async function waitForLeaderboard(page, timeout = 20000) {
 /**
  * Wait for the player's RESULT modal (🎉/❌ + score).
  *
- * The same overlay first shows a transient "Answer submitted" modal with a
- * RANDOM emoji (modal-feedback.js submissionIcons) right after the click —
- * matching on overlay visibility alone screenshots whichever modal is up.
- * The result modal is distinguished by its correct/incorrect class.
+ * The same overlay can first show a transient "Answer submitted" modal
+ * (modal-feedback.js showSubmission; deferred ~1.2s, so it only renders when
+ * the result is slow) — matching on overlay visibility alone screenshots
+ * whichever modal is up. The result modal is distinguished by its
+ * correct/incorrect class.
  */
 async function waitForPlayerResult(page, timeout = 15000) {
     await page.waitForFunction(
@@ -441,9 +442,9 @@ test.describe('Visual Regression', () => {
 
                     // Player selects correct answer (Paris = index 1). No
                     // "selected" screenshot: with a single player the answer
-                    // ends the round and the submission modal covers the
-                    // options within ~0.5s — the state is too transient to
-                    // capture deterministically.
+                    // ends the round and the result modal replaces the view
+                    // within ~1.1s (the submission modal is deferred and never
+                    // paints here) — still too transient to capture reliably.
                     await playerPage.click('#player-multiple-choice .player-option[data-option="1"]');
 
                     // Wait for question end / stats phase
