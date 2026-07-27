@@ -44,6 +44,8 @@ Hard-won lessons from debugging Quizix Pro. Consult this when working on the rel
 
 16. **Service Worker Cache** — bump `CACHE_VERSION` in `public/sw.js` when deploying JS changes, otherwise browsers serve stale cached files.
 
+17. **Visual gate can't see subtle theme drift** — pixelmatch's per-pixel threshold tolerates full-field tint shifts (measured: the old-beige → grey reskin was ~0.025 normalized luma, invisible to any flake-free threshold). A green `npm run test:visual` does NOT prove baselines are current. After any reskin or design-token change, regenerate baselines wholesale: `rm -rf` both `tests/e2e/*-snapshots` dirs, run once with `PW_PORT=3210` to write, run again to verify, then eyeball the new PNGs.
+
 ## AI Integration
 
-17. **Gemini thinking models return multiple `parts`** — Gemini 2.5+/3.x responses have `parts[0]` as the thinking/reasoning text (with `thought: true`) and the actual output in a later part. Always iterate parts in reverse to find the last non-thought part. Never hardcode `parts[0]`. Also: Gemini 3 uses `thinkingLevel` (string), Gemini 2.5 uses `thinkingBudget` (int) — they cannot be mixed.
+18. **Gemini thinking models return multiple `parts`** — Gemini 2.5+/3.x responses have `parts[0]` as the thinking/reasoning text (with `thought: true`) and the actual output in a later part. Always iterate parts in reverse to find the last non-thought part. Never hardcode `parts[0]`. Also: Gemini 3 uses `thinkingLevel` (string), Gemini 2.5 uses `thinkingBudget` (int) — they cannot be mixed.
