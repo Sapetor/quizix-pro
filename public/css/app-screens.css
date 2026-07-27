@@ -1371,3 +1371,843 @@
     color: var(--ink-3);
     letter-spacing: 0.02em;
 }
+
+/* ==========================================================================
+   EDITOR DESIGN PASS — completes the pilot above and carries the Buzzer
+   language through the rest of the editor screen (chrome, settings modal,
+   preview pane, mobile).
+
+   CASCADE NOTE. app-screens.css is the LAST @import in `layer(app)`
+   (main.css:94), so every rule below is later in source order than
+   layout.css / components.css / preview.css / toolbar.css / responsive.css.
+   That is deliberate and is what makes this block work without stripping a
+   single `!important` from those files: same layer + later source means an
+   `!important` here beats an `!important` there at equal specificity, and a
+   plain declaration here beats a plain one there. `!important` is therefore
+   used ONLY where the rule it must displace already carries it — see the
+   per-cluster notes. Never move this block earlier in the import list.
+
+   The four legacy accent bars (`.question-meta` blue, `.question-content`
+   green, `.answer-options` amber, `.explanation-section` blue — all in
+   components.css around 2489-2507) are neutralized SCOPED to
+   #quiz-editor-section rather than deleted at source: those class names are
+   also used by the results/analytics views, which this pass does not own.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. ONE AUTHORITATIVE QUESTION-POSITION INDICATOR
+   The same position was stated three times: this nav bar, the card's
+   "Question N" heading, and the preview kicker. The nav bar wins — it is the
+   only one that is also a CONTROL (prev/next), it owns the JS-updated
+   #current-question-num / #total-question-num, and #question-pagination is an
+   onboarding-tutorial target (onboarding-tutorial.js:94).
+   -------------------------------------------------------------------------- */
+
+#quiz-editor-section #question-pagination {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    padding: 0 2px 10px;
+    margin: 0 0 14px;
+}
+
+/* Label left, controls right — without reordering the DOM (prev, indicator,
+   next), so keyboard/tab order still reads as a navigation group. */
+#quiz-editor-section #question-pagination .question-indicator {
+    order: -1;
+    margin-right: auto;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+
+/* Figures in mono, current in full ink, total demoted — the Buzzer numeral
+   treatment used by the lobby PIN and the landing stat row. */
+#quiz-editor-section #question-pagination #current-question-num,
+#quiz-editor-section #question-pagination #total-question-num {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+}
+#quiz-editor-section #question-pagination #current-question-num {
+    color: var(--ink);
+}
+#quiz-editor-section #question-pagination #total-question-num {
+    color: var(--ink-3);
+}
+
+/* Quiet square outline buttons instead of the 40px glass circles.
+   Two IDs (0,2,1,0) are required, not style: this must outrank BOTH
+   `.quiz-editor-section .question-pagination .pagination-btn` (0,0,3,0
+   !important, responsive.css:2940) and the universal touch-target rule
+   `button:not(.onboarding-dot):not(.carousel-dot):not(.preview-carousel-dot)`
+   (0,0,3,1 !important, responsive.css:2703). The mobile block further down
+   restores a >=44px target. */
+#quiz-editor-section #question-pagination .pagination-btn {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 8px !important;
+    background: var(--paper-2);
+    color: var(--ink-2);
+    font-size: 14px !important;
+    line-height: 1;
+    transform: none;
+    box-shadow: none;
+    transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+#quiz-editor-section #question-pagination .pagination-btn:hover:not(:disabled) {
+    background: var(--paper-3);
+    border-color: var(--ink-4) !important;
+    color: var(--ink);
+    transform: none;
+    box-shadow: none;
+}
+#quiz-editor-section #question-pagination .pagination-btn:disabled {
+    opacity: 0.3;
+}
+
+/* The card heading repeated the number the bar above already states. Dropped
+   while EXPANDED only: a collapsed card is the one place the heading is the
+   card's sole label, and the .collapsed-* badges beside it are refreshed only
+   by toggleQuestionCollapse() (globals.js:255), so they cannot replace it.
+   The <h3> stays in the DOM — question-editing.js:68 rewrites its innerHTML
+   on renumber, and translateContainer() re-runs over it. */
+#quiz-editor-section .question-item:not(.collapsed) .question-header h3 {
+    display: none;
+}
+
+/* Expanded header is no longer a titled bar, just the card's action strip.
+   Negative top margin pulls the ✕ into the card's own padding so the strip
+   costs no vertical band of its own. */
+#quiz-editor-section .question-item:not(.collapsed) .question-header {
+    background: transparent;
+    border-bottom: none;
+    border-radius: 0;
+    justify-content: flex-end;
+    min-height: 0;
+    padding: 0;
+    margin: -4px 0 -8px;
+}
+
+/* The question textarea matched neither #quiz-title nor the option fields —
+   it kept the recessed --paper fill from the pilot while everything around it
+   became paper-2 + hairline on a white card. Unified. */
+#quiz-editor-section .question-text {
+    background: var(--paper-2);
+}
+
+/* Collapse is disabled in always-preview (globals.js:250 early-returns), so
+   the caret is a dead affordance there. */
+.host-container.always-preview #quiz-editor-section .collapse-indicator {
+    display: none;
+}
+
+/* --------------------------------------------------------------------------
+   2. QUESTION BODY — de-boxed, hairline-ruled
+   Boxes-in-boxes (tinted meta panel + accent bars + tinted sub-panels) were
+   the loudest "different app" signal. Sections are now separated by rules.
+   -------------------------------------------------------------------------- */
+
+/* `!important` matched per-property against responsive.css:438 and 480
+   (background/border/border-radius/padding/display/grid, all flagged). */
+#quiz-editor-section .question-meta {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    padding: 0 0 14px !important;
+    margin: 0 0 14px !important;
+    /* `end` left the two unlabelled selects stranded at the bottom of a row
+       sized by the (label + field + hint) concepts cell. */
+    align-items: center !important;
+    gap: 8px 14px !important;
+}
+
+#quiz-editor-section .question-meta-title {
+    color: var(--ink-3);
+    font-family: var(--font-body);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin: 0 0 6px;
+}
+
+/* Retire the four legacy accent bars (components.css:2489-2507). Plain
+   declarations: the source rules are unflagged, and (0,1,1,0) outranks them. */
+#quiz-editor-section .question-content,
+#quiz-editor-section .answer-options,
+#quiz-editor-section .options-container,
+#quiz-editor-section .explanation-section {
+    border-left: none;
+    padding-left: 0;
+}
+
+#quiz-editor-section .explanation-section {
+    margin-top: 18px;
+}
+#quiz-editor-section .explanation-section details {
+    background: var(--paper-3);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+#quiz-editor-section .explanation-section summary {
+    color: var(--ink-2);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+#quiz-editor-section .question-explanation {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--ink);
+}
+
+/* Field labels become mono-adjacent kickers, matching .question-meta-title.
+   font-size is flagged to clear the FONT SCALING UTILITY block in
+   variables.css:543-562, which puts `.quiz-editor-section label` at
+   `calc(1.1rem * var(--global-font-scale)) !important`. variables.css is the
+   FIRST @import in layer(app), so a flagged declaration here (later source,
+   higher specificity) wins — see the cascade note at the top of this section.
+   The calc() is preserved so the A/A+/A++ accessibility scale keeps working. */
+#quiz-editor-section .concept-tags-container > label,
+#quiz-editor-section .time-limit-container label > span,
+#quiz-editor-section .image-upload > label,
+#quiz-editor-section .answer-options > label {
+    color: var(--ink-3);
+    font-size: calc(0.66rem * var(--global-font-scale)) !important;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+#quiz-editor-section .concept-hint {
+    color: var(--ink-3);
+    font-size: 0.7rem;
+    font-style: normal;
+}
+#quiz-editor-section .concept-tags-input {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+#quiz-editor-section .concept-tags-input:focus-within {
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 3px var(--focus-ring-soft);
+}
+
+/* Time limit is a figure — mono. Flagged to match components.css:2297
+   (`.question-time-limit`) and responsive.css:517. */
+#quiz-editor-section .question-time-limit {
+    font-family: var(--font-mono) !important;
+    background: var(--paper-2) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 8px !important;
+    color: var(--ink) !important;
+    text-align: center;
+}
+#quiz-editor-section .question-time-limit:focus {
+    border-color: var(--focus-ring) !important;
+    box-shadow: 0 0 0 3px var(--focus-ring-soft) !important;
+    outline: none;
+}
+
+/* Answer-option text fields. The pilot above scoped these to
+   `.options-container`, but the live markup nests them in
+   `.answer-options > .options-checkboxes`, so they never matched. */
+#quiz-editor-section .answer-options input[type="text"],
+#quiz-editor-section .answer-options input[type="number"] {
+    background: var(--paper-2) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 8px !important;
+    color: var(--ink) !important;
+}
+#quiz-editor-section .answer-options input[type="text"]:focus,
+#quiz-editor-section .answer-options input[type="number"]:focus {
+    border-color: var(--focus-ring) !important;
+    box-shadow: 0 0 0 3px var(--focus-ring-soft) !important;
+    outline: none;
+}
+#quiz-editor-section .ordering-instruction {
+    color: var(--ink-3);
+    font-size: 0.72rem;
+}
+
+/* Manim / video panels — paper, not glass. */
+#quiz-editor-section .manim-ai-section,
+#quiz-editor-section .manim-code-editor {
+    background: var(--paper-3);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+}
+#quiz-editor-section .manim-ai-input {
+    background: var(--paper-2) !important;
+    border: 1px solid var(--line) !important;
+    color: var(--ink) !important;
+    border-radius: 10px !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. EDITOR TOOLBAR — paper rail, ink icons
+   -------------------------------------------------------------------------- */
+
+/* (0,0,3,0) beats the flat `[data-theme="…"] .editor-toolbar` pair
+   (0,0,2,0) at toolbar.css:423/429. */
+.host-container.always-preview .editor-toolbar {
+    background: var(--paper-2);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-right: 1px solid var(--line);
+}
+.host-container.always-preview .editor-toolbar .toolbar-btn {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--ink-2);
+}
+.host-container.always-preview .editor-toolbar .toolbar-btn:hover {
+    background: var(--paper-3);
+    border-color: var(--line);
+    color: var(--ink);
+    transform: none;
+    box-shadow: none;
+}
+/* Add / save / load keep the brand fill on hover; the rest stay quiet. */
+.host-container.always-preview .editor-toolbar .toolbar-btn.primary-action:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--primary-label);
+}
+.host-container.always-preview .editor-toolbar .toolbar-divider {
+    background: var(--line);
+}
+.host-container.always-preview .editor-toolbar .toolbar-btn[title]:hover::after {
+    background: var(--ink);
+    color: var(--paper-2);
+    border: none;
+    border-radius: 8px;
+    box-shadow: var(--shadow-card);
+    font-family: var(--font-body);
+}
+.toolbar-more-menu {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: var(--shadow-card);
+}
+.toolbar-more-menu .more-menu-item:hover {
+    background: var(--paper-3);
+    color: var(--ink);
+}
+
+/* --------------------------------------------------------------------------
+   4. LIVE PREVIEW PANE — reads as a simulated player screen
+   It occupies ~30% of the editor (split-layout-manager.js:145 defaults to
+   70/30), so it has to say what it is. preview.css:732 hides .preview-header
+   in always-preview; it is restored here as a translated kicker rail, which
+   is what makes the counter inside the pane read as PLAYER content rather
+   than a third copy of the editor's position chrome.
+   -------------------------------------------------------------------------- */
+
+#quiz-preview-section .preview-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 0 2px 10px;
+    margin: 0 0 12px;
+    border-bottom: 1px solid var(--line);
+}
+#quiz-preview-section .preview-header h4 {
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-shadow: none;
+}
+/* #toggle-preview calls togglePreviewMode(), which runs
+   hideDesktopSplitPreview() and would leave column 4 of the always-preview
+   grid empty with no way back. The rail is a label here, not a control. */
+.host-container.always-preview #quiz-preview-section .preview-header-controls {
+    display: none;
+}
+
+/* The simulated screen: one paper sheet with a hairline, no tint, no glow.
+   `background` was `var(--bg-secondary)` — an 8-12% green wash that read as a
+   status colour in dark theme. */
+#quiz-preview-section .preview-viewport-split {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+#quiz-preview-section .preview-content-split {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: none;
+    color: var(--ink);
+}
+#quiz-preview-section .player-question-area {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    padding: 0 0 16px;
+    margin: 0 0 18px;
+}
+/* Player-facing counter: kept (it mirrors the real #player-question-counter,
+   index.html:2679) but demoted from a 12%-tracked uppercase heading to a
+   quiet mono meta line, so it no longer competes with the editor's indicator. */
+/* Both font-sizes are flagged against the variables.css font-scale utilities
+   (`#preview-question-counter-display-split` at 1rem !important, line 536;
+   `#preview-question-text-split` at 1.2rem !important, line 568, further
+   raised to 1.75rem !important later in preview.css). calc(... *
+   --global-font-scale) is kept so the accessibility text-size toggle still
+   moves them. */
+#quiz-preview-section #preview-question-counter-display-split {
+    font-family: var(--font-mono);
+    font-size: calc(0.7rem * var(--global-font-scale)) !important;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: none;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+}
+/* updateSplitPreviewNavigation() (preview-manager.js:433) rebuilds this node's
+   innerHTML as `<span data-translate="question">…</span> N <span
+   data-translate="of">…</span> M`, and the injected spans get caught by
+   `.preview-content-split *` (variables.css:566, 1.2rem !important) — so the
+   words rendered larger than the figures between them. */
+#quiz-preview-section #preview-question-counter-display-split span {
+    font-size: inherit !important;
+    letter-spacing: inherit;
+}
+#quiz-preview-section #preview-question-text-split {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: calc(1.35rem * var(--global-font-scale)) !important;
+    letter-spacing: -0.015em;
+    line-height: 1.28;
+    color: var(--ink);
+    margin: 0;
+    text-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   5. QUIZ SETTINGS MODAL
+   This — not the inline `.quiz-settings` block — is the settings UI users
+   actually reach: `.quiz-settings` is display:none in BOTH breakpoints
+   (layout.css:1378 desktop always-preview, responsive.css:2873 mobile) yet is
+   load-bearing as the model that settings-persistence.js reads, so it is left
+   untouched. The modal was a stack of tinted cards inside a tinted card under
+   an indigo gradient header; it becomes one paper sheet with hairline-ruled
+   groups.
+   -------------------------------------------------------------------------- */
+
+#quiz-settings-modal {
+    background: rgba(20, 22, 28, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+#quiz-settings-modal .settings-modal {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    max-width: 480px;
+    box-shadow: var(--shadow-card);
+}
+#quiz-settings-modal .settings-modal-header {
+    background: transparent;
+    border-bottom: 1px solid var(--line);
+    padding: 18px 22px 14px;
+}
+#quiz-settings-modal .settings-modal-header h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.3rem;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+}
+#quiz-settings-modal .settings-modal-close {
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink-3);
+}
+#quiz-settings-modal .settings-modal-close:hover {
+    background: var(--paper-3);
+    border-color: var(--ink-4);
+    color: var(--ink);
+    transform: none;
+}
+#quiz-settings-modal .settings-modal-content {
+    padding: 2px 22px 18px;
+}
+/* Groups separated by rules, not by nested tinted cards. */
+#quiz-settings-modal .settings-modal-content .settings-section {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    padding: 16px 0;
+    margin: 0;
+}
+#quiz-settings-modal .settings-modal-content .settings-section:last-child {
+    border-bottom: none;
+    padding-bottom: 4px;
+}
+#quiz-settings-modal .settings-modal-content .settings-section h4 {
+    color: var(--ink-3);
+    font-family: var(--font-body);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    margin: 0 0 8px;
+}
+#quiz-settings-modal .settings-modal-content label {
+    padding: 8px;
+    margin: 0 -8px;
+    border-radius: 8px;
+}
+#quiz-settings-modal .settings-modal-content label:hover {
+    background: var(--paper-3);
+}
+#quiz-settings-modal .settings-modal-content label span,
+#quiz-settings-modal .settings-modal-content label strong {
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+#quiz-settings-modal .settings-modal-content label strong {
+    font-weight: 600;
+}
+/* Help copy hangs under its control, aligned past the checkbox gutter. */
+#quiz-settings-modal .scoring-help-text {
+    color: var(--ink-3);
+    font-size: 0.76rem;
+    line-height: 1.45;
+    margin: 0 0 10px 30px;
+}
+#quiz-settings-modal .multipliers-label,
+#quiz-settings-modal .threshold-label > span:first-child {
+    color: var(--ink-3);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+#quiz-settings-modal .difficulty-multipliers {
+    border-top: 1px solid var(--line);
+    margin-top: 10px;
+    padding-top: 14px;
+}
+#quiz-settings-modal .settings-modal-content .multiplier-input {
+    background: var(--paper-3);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+#quiz-settings-modal .settings-modal-content .multiplier-input:hover {
+    background: var(--paper-3);
+    border-color: var(--ink-4);
+}
+#quiz-settings-modal .settings-modal-content .multiplier-input span {
+    color: var(--ink-3);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+/* Every figure in the modal is mono. */
+#quiz-settings-modal .settings-modal-content .multiplier-input input[type="number"],
+#quiz-settings-modal .settings-modal-content .time-input,
+#quiz-settings-modal .threshold-label input[type="number"],
+#quiz-settings-modal .form-group input[type="number"] {
+    font-family: var(--font-mono);
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+}
+#quiz-settings-modal .settings-modal-content .multiplier-input input[type="number"]:focus,
+#quiz-settings-modal .settings-modal-content .time-input:focus,
+#quiz-settings-modal .threshold-label input[type="number"]:focus {
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 3px var(--focus-ring-soft);
+    outline: none;
+}
+#quiz-settings-modal .settings-modal-content .time-setting-container,
+#quiz-settings-modal .consensus-settings {
+    background: var(--paper-3);
+    border: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+    border-radius: 10px;
+}
+#quiz-settings-modal .threshold-unit {
+    color: var(--ink-3);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+}
+#quiz-settings-modal .help-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--ink-3);
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
+    padding: 0;
+    font-size: 0.72rem;
+    line-height: 1;
+}
+#quiz-settings-modal .help-btn:hover {
+    background: var(--paper-3);
+    border-color: var(--ink-4);
+    color: var(--ink);
+}
+#quiz-settings-modal .help-popover {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow-card);
+    color: var(--ink-2);
+    font-size: 0.78rem;
+}
+#quiz-settings-modal #restart-tour-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--ink-2);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    font-size: 0.82rem;
+    padding: 8px 18px;
+}
+#quiz-settings-modal #restart-tour-btn:hover {
+    background: var(--paper-3);
+    border-color: var(--ink-4);
+    color: var(--ink);
+    transform: none;
+    box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. MOBILE (<=768px)
+   Every override here is ID-scoped on purpose. The mobile editor rules in
+   responsive.css are `!important` at up to (0,0,3,0), and the universal
+   touch-target rule is (0,0,3,1) `!important` — a class-only selector loses
+   to both no matter how many flags it carries.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+
+    /* Page ground, not a translucent gradient panel (responsive.css:301). */
+    #quiz-editor-section {
+        background: var(--paper) !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        padding: 6px 14px 18px !important;
+    }
+
+    #quiz-editor-section > h2 {
+        font-family: var(--font-display) !important;
+        font-weight: 400 !important;
+        font-size: 1.35rem !important;
+        letter-spacing: -0.02em !important;
+        color: var(--ink) !important;
+    }
+
+    /* Paper card; drops the blue/purple gradient fill, the blue glow, and the
+       gradient ::before spine (responsive.css:529-549). */
+    #quiz-editor-section .question-item {
+        background: var(--paper-2) !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 14px !important;
+        box-shadow: none !important;
+        padding: 12px 14px !important;
+        margin-bottom: 10px !important;
+    }
+    #quiz-editor-section .question-item::before {
+        display: none !important;
+    }
+
+    /* Position bar: same treatment as desktop, touch-sized controls. */
+    #quiz-editor-section #question-pagination.desktop-only {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+        background: transparent !important;
+        border: none !important;
+        border-bottom: 1px solid var(--line) !important;
+        border-radius: 0 !important;
+        padding: 0 0 10px !important;
+        margin: 0 0 12px !important;
+    }
+    #quiz-editor-section #question-pagination .pagination-btn {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        font-size: 1rem !important;
+    }
+    /* responsive.css:2955 hides the words and 2961 appends " / " after the
+       current number, giving the compact "1 / 2" form. Kept; only restyled. */
+    #quiz-editor-section #question-pagination .question-indicator {
+        font-size: 0.9rem !important;
+    }
+
+    /* space-between, not flex-end: with the heading gone the caret is the
+       collapse affordance and belongs on the leading edge, ✕ on the trailing. */
+    #quiz-editor-section .question-item:not(.collapsed) .question-header {
+        background: transparent !important;
+        border-bottom: none !important;
+        padding: 0 !important;
+        margin: -6px 0 -6px !important;
+        min-height: 0 !important;
+        justify-content: space-between !important;
+    }
+    /* The universal touch-target rule (responsive.css:2703) gives every button
+       a 44px box with an 8px radius; ✕ keeps the target but loses the chip. */
+    #quiz-editor-section .question-header-actions .btn-icon.btn-remove {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: var(--ink-3) !important;
+    }
+    #quiz-editor-section .question-header .collapse-indicator {
+        color: var(--ink-3) !important;
+    }
+    #quiz-editor-section .question-item.collapsed .question-header {
+        background: transparent !important;
+        padding: 2px 0 !important;
+        margin: 0 !important;
+    }
+    #quiz-editor-section .question-item.collapsed .question-header h3 {
+        font-family: var(--font-display) !important;
+        font-size: 0.9rem !important;
+        color: var(--ink) !important;
+    }
+    #quiz-editor-section .collapsed-type-badge,
+    #quiz-editor-section .collapsed-difficulty-badge {
+        font-size: 0.62rem !important;
+        padding: 2px 7px !important;
+        background: var(--paper-3) !important;
+        color: var(--ink-2) !important;
+        border-radius: 999px !important;
+    }
+
+    /* --- GOAL 5: truncated selects ("Multi…", "Medi…") -------------------
+       Measured before: the type/difficulty boxes were 79.4px wide with 4px
+       left + 34px right padding, leaving 41.4px for "Multiple Choice" at
+       10.4px. The 34px came from `#quiz-editor-section .question-type`
+       (app-screens.css:1289) reserving room for the chevron that
+       `select {padding-right:40px !important}` (components.css:299) also
+       reserves — neither of which responsive.css's `padding:2px 4px` could
+       undo, being (0,0,3,0) against (0,1,1,0).
+
+       Fix: give the two selects a row of their own (the time field was
+       eating ~104px of a 262px track set), pull the chevron in to 9px,
+       and raise the text to 16px — which both fits the labels and stops iOS
+       zooming the viewport on focus. Type gets the wider track because its
+       longest option is "Multiple Correct Answers". */
+    #quiz-editor-section .question-meta {
+        display: grid !important;
+        /* Measured at 390px: the two tracks share 262.4px. Budget (English):
+           type needs 129px of text room ("Numeric Answer"), difficulty 60px
+           ("Medium"); 30px of chrome each leaves 202px of text for 189px of
+           demand. 1.75:1 spends the 13px of slack on the type column, giving
+           137px / 65px. Only "Multiple Correct Answers" (195px) still
+           ellipsises — as "Multiple Correct Answe…", which is unambiguous;
+           no two-column split fits it at this width in every locale, and
+           `text-overflow: ellipsis` below is the graceful fallback. */
+        grid-template-columns: 1.75fr 1fr !important;
+        gap: 8px !important;
+        align-items: end !important;
+        padding: 0 0 12px !important;
+        margin: 0 0 12px !important;
+    }
+    #quiz-editor-section .question-meta .question-type,
+    #quiz-editor-section .question-meta .question-difficulty {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: auto !important;
+        min-height: 44px !important;
+        padding: 8px 22px 8px 8px !important;
+        /* 16px, not the 0.65rem it was: below 16px iOS zooms the viewport on
+           focus, and the extra room is bought back from the chevron gutter
+           (40px in components.css:299, 34px in the pilot above) instead. */
+        font-size: 16px !important;
+        background-color: var(--paper-2) !important;
+        background-position: right 8px center !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 8px !important;
+        color: var(--ink) !important;
+        text-overflow: ellipsis !important;
+    }
+    /* Time sits on its own row now that the selects own the first one. */
+    #quiz-editor-section .question-meta .time-limit-container {
+        grid-column: 1 / -1 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    #quiz-editor-section .question-meta .time-limit-container label > span {
+        font-size: 0.62rem !important;
+        color: var(--ink-3) !important;
+    }
+    #quiz-editor-section .question-meta .time-limit-container input {
+        width: 68px !important;
+        height: auto !important;
+        min-height: 36px !important;
+        padding: 6px 8px !important;
+        font-family: var(--font-mono) !important;
+        font-size: 0.9rem !important;
+        background: var(--paper-2) !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 8px !important;
+        color: var(--ink) !important;
+    }
+
+    /* Option rows: paper, hairline, no white-on-white glass tint
+       (responsive.css:590). */
+    #quiz-editor-section .options-checkboxes label {
+        background: var(--paper-3) !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 10px !important;
+        padding: 6px 8px !important;
+    }
+    #quiz-editor-section .question-text {
+        background: var(--paper-2) !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 10px !important;
+        color: var(--ink) !important;
+    }
+}
