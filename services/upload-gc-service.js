@@ -14,6 +14,8 @@
  * the question copies saved inside result files — and it naturally survives
  * malformed JSON without a parse step. Any match keeps the file, so the sweep
  * errs toward keeping: it never deletes a file it is unsure about.
+ *
+ * Dotfiles are skipped outright — they are directory markers, not uploads.
  */
 
 const fs = require('fs').promises;
@@ -101,6 +103,10 @@ class UploadGCService {
         let keptYoung = 0;
 
         for (const name of uploadFiles) {
+            // Dotfiles are infrastructure markers (.gitkeep, .DS_Store), never
+            // uploads, so no quiz ever references them and they always look like
+            // old orphans. Never sweep them.
+            if (name.startsWith('.')) continue;
             if (referenced.has(name)) continue;
 
             const filePath = path.join(this.uploadsDir, name);

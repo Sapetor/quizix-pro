@@ -152,6 +152,36 @@ describe('UploadGCService.sweep', () => {
         expect(summary.deleted).toBe(1);
     });
 
+    test('dotfiles are never deleted, but orphans in the same sweep still are', async () => {
+        setup({
+            refFiles: { quizzes: {}, results: {} },
+            uploads: {
+                '.gitkeep': fileStat(0, OLD_MTIME),
+                '.DS_Store': fileStat(6148, OLD_MTIME),
+                'orphan.png': fileStat(200, OLD_MTIME)
+            }
+        });
+
+        const svc = new UploadGCService(mockLogger);
+        const summary = await svc.sweep();
+
+        expect(fs.unlink).toHaveBeenCalledTimes(1);
+        expect(fs.unlink).toHaveBeenCalledWith('public/uploads/orphan.png');
+        expect(summary).toMatchObject({ deleted: 1, bytesFreed: 200, keptYoung: 0 });
+    });
+
+    test('dry-run does not report dotfiles as deletable', async () => {
+        setup({
+            refFiles: { quizzes: {}, results: {} },
+            uploads: { '.gitkeep': fileStat(0, OLD_MTIME) }
+        });
+
+        const svc = new UploadGCService(mockLogger);
+        const summary = await svc.sweep({ dryRun: true });
+
+        expect(summary).toMatchObject({ deleted: 0, bytesFreed: 0, dryRun: true });
+    });
+
     test('dry-run reports would-be deletions but deletes nothing', async () => {
         setup({
             refFiles: { quizzes: {}, results: {} },
