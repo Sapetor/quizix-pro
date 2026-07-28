@@ -205,7 +205,17 @@ const QUESTION_TYPES = {
                         // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
                         option.classList.add('tex2jax_process');
                         option.classList.remove('MathJax_Processed');
-                        option.innerHTML = `<span class="option-text">${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}</span>`;
+
+                        // Map index to shape logic (must match renderPlayerOptions)
+                        const shapes = ['triangle', 'diamond', 'circle', 'square'];
+                        const icons = ['▲', '◆', '●', '■'];
+                        const shapeClass = shapes[index % shapes.length];
+                        const shapeIcon = icons[index % icons.length];
+
+                        option.innerHTML = `
+                            <span class="option-shape" data-shape="${shapeClass}">${shapeIcon}</span>
+                            <span class="option-text">${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}</span>
+                        `;
                         option.classList.remove('hidden');
                     } else {
                         option.classList.add('hidden');
@@ -428,7 +438,17 @@ const QUESTION_TYPES = {
                         // FOUC Prevention: Add class BEFORE innerHTML so CSS hides raw LaTeX
                         option.classList.add('tex2jax_process');
                         option.classList.remove('MathJax_Processed');
-                        option.innerHTML = `<span class="option-text">${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}</span>`;
+
+                        // Map index to shape logic (must match renderPlayerOptions)
+                        const shapes = ['triangle', 'diamond', 'circle', 'square'];
+                        const icons = ['▲', '◆', '●', '■'];
+                        const shapeClass = shapes[index % shapes.length];
+                        const shapeIcon = icons[index % icons.length];
+
+                        option.innerHTML = `
+                            <span class="option-shape" data-shape="${shapeClass}">${shapeIcon}</span>
+                            <span class="option-text">${translationManager.getOptionLetter(index)}: ${formatCodeBlocks(safeOptionText)}</span>
+                        `;
                         option.classList.remove('hidden');
                     } else {
                         option.classList.add('hidden');
@@ -540,8 +560,8 @@ const QUESTION_TYPES = {
                 : { true: translationManager.getTranslationSync?.('true') || 'True', false: translationManager.getTranslationSync?.('false') || 'False' };
             container.innerHTML = `
                 <div class="true-false-options">
-                    <div class="tf-option true-btn" data-answer="true"><span class="option-text">${tfText.true}</span></div>
-                    <div class="tf-option false-btn" data-answer="false"><span class="option-text">${tfText.false}</span></div>
+                    <div class="tf-option true-btn" data-answer="true"><span class="option-text ed-serif">${tfText.true}</span></div>
+                    <div class="tf-option false-btn" data-answer="false"><span class="option-text ed-serif">${tfText.false}</span></div>
                 </div>
             `;
             container.classList.remove('hidden');
@@ -779,7 +799,7 @@ const QUESTION_TYPES = {
                 // FOUC Prevention: Add tex2jax_process class in HTML template
                 html += `
                     <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
-                        <div class="ordering-item-number">${displayIndex + 1}</div>
+                        <div class="ordering-item-number ed-mono">${displayIndex + 1}</div>
                         <div class="ordering-item-content tex2jax_process">${formatCodeBlocks(safeOption)}</div>
                     </div>
                 `;
@@ -817,7 +837,7 @@ const QUESTION_TYPES = {
                 // FOUC Prevention: Add tex2jax_process class in HTML template
                 html += `
                     <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
-                        <div class="ordering-item-number">${displayIndex + 1}</div>
+                        <div class="ordering-item-number ed-mono">${displayIndex + 1}</div>
                         <div class="ordering-item-content tex2jax_process">${formatCodeBlocks(safeOption)}</div>
                     </div>
                 `;

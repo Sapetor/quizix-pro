@@ -203,11 +203,14 @@ export class LeaderboardManager {
             else if (index === 2) item.classList.add('third');
 
             const position = index + 1;
-            const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}.`;
+            // The rank numeral is its own mono column now, so the "N." fallback
+            // the medal used to carry for positions 4+ would just be a duplicate.
+            const medal = position === 1 ? '🥇 ' : position === 2 ? '🥈 ' : position === 3 ? '🥉 ' : '';
 
             item.innerHTML = `
-                <span>${medal} ${escapeHtml(player.name)}</span>
-                <span>${player.score} ${ptsLabel}</span>
+                <span class="lb-rank ed-mono">${position}</span>
+                <span class="lb-name">${medal}${escapeHtml(player.name)}</span>
+                <span class="lb-score ed-mono">${player.score} ${ptsLabel}</span>
             `;
 
             leaderboardList.appendChild(item);
@@ -356,9 +359,10 @@ export class LeaderboardManager {
             const medal = ['🥇', '🥈', '🥉'][index] || '🏅';
 
             item.innerHTML = `
+                <span class="lb-rank ed-mono">${position}</span>
                 <span class="medal">${medal}</span>
                 <span class="player-name">${escapeHtml(player.name)}</span>
-                <span class="player-score">${player.score} ${ptsLabel}</span>
+                <span class="player-score ed-mono">${player.score} ${ptsLabel}</span>
             `;
 
             if (position === 1) item.classList.add('first');

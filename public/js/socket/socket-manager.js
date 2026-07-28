@@ -623,7 +623,7 @@ export class SocketManager {
 
             // Update player count in lobby if we're in player lobby
             if (this.uiManager.currentScreen === 'player-lobby') {
-                const lobbyPlayerCount = this._getElement('lobby-player-count');
+                const lobbyPlayerCount = this._getElement('player-lobby-player-count');
                 if (lobbyPlayerCount && data.players) {
                     lobbyPlayerCount.textContent = data.players.length;
                 }
@@ -999,8 +999,9 @@ export class SocketManager {
             lobbyPinDisplay.textContent = gamePin;
         }
 
-        // Update player count
-        const lobbyPlayerCount = this._getElement('lobby-player-count');
+        // Update player count (player lobby has its own element; the host lobby's
+        // #lobby-player-count is written by GameManager.updatePlayersList)
+        const lobbyPlayerCount = this._getElement('player-lobby-player-count');
         if (lobbyPlayerCount && players) {
             lobbyPlayerCount.textContent = players.length;
         }

@@ -219,10 +219,10 @@ export class StatisticsManager {
         const percentage = totalAnswers > 0 ? Math.round((count / totalAnswers) * 100) : 0;
         return `
                         <div class="numeric-answer-item">
-                            <span class="answer-value">${escapeHtml(String(answer))}</span>
+                            <span class="answer-value ed-mono">${escapeHtml(String(answer))}</span>
                             <div class="answer-bar-container">
                                 <div class="answer-bar" style="width: ${percentage}%"></div>
-                                <span class="answer-count">${count}</span>
+                                <span class="answer-count ed-mono">${count}</span>
                             </div>
                         </div>
                     `;

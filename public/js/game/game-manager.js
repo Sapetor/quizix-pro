@@ -1088,7 +1088,7 @@ export class GameManager {
             // unpaired high surrogate that renders as a replacement glyph.
             const initial = Array.from(name.trim())[0] || '•';
             playerElement.innerHTML = `
-                <span class="player-avatar" aria-hidden="true">${escapeHtml(initial)}</span>
+                <span class="player-avatar ed-serif" aria-hidden="true">${escapeHtml(initial)}</span>
                 <span class="player-name">${escapeHtml(name)}</span>
             `;
             playersListElement.appendChild(playerElement);
@@ -1106,10 +1106,10 @@ export class GameManager {
             const newCount = players.length;
 
             if (currentCount !== newCount) {
+                // Write the number immediately: the old 150ms delay left this count
+                // disagreeing with the "N in the room" headline above for 150ms.
+                lobbyPlayerCount.textContent = newCount;
                 lobbyPlayerCount.classList.add('scale-pulse');
-                setTimeout(() => {
-                    lobbyPlayerCount.textContent = newCount;
-                }, 150);
                 // Remove class after animation completes so it can be triggered again
                 setTimeout(() => {
                     lobbyPlayerCount.classList.remove('scale-pulse');
