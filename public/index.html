@@ -13,12 +13,12 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=109">
+    <link rel="stylesheet" href="css/main.bundle.css?v=110">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=109" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=109" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=109" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=110" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=110" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=110" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
@@ -199,6 +199,25 @@
             });
         })();
 
+        // Single writer for the data-theme attributes. Defined here (not in a
+        // module) because the pre-module fallback below needs it too.
+        // `.theme-switching` suppresses every CSS transition for the frame in
+        // which the theme flips — crossfading ~2100 elements' `color` costs
+        // 4 dropped frames per toggle (see the THEME SWAP GUARD note in
+        // css/main.css). Class and attribute land in the same style recalc,
+        // so no transition is ever generated.
+        window.applyThemeAttributes = function (theme) {
+            const html = document.documentElement;
+            html.classList.add('theme-switching');
+            html.setAttribute('data-theme', theme);
+            if (document.body) document.body.setAttribute('data-theme', theme);
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    html.classList.remove('theme-switching');
+                });
+            });
+        };
+
         // Fallback theme toggle function for immediate use
         window.toggleTheme = function () {
             const body = document.body;
@@ -208,8 +227,7 @@
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
             // Set theme on both html and body for consistent CSS matching
-            body.setAttribute('data-theme', newTheme);
-            document.documentElement.setAttribute('data-theme', newTheme);
+            window.applyThemeAttributes(newTheme);
 
             // Update the theme button's icon state and aria-pressed
             // (SVG swap is driven by CSS via [data-icon-state]; header-controller.js
@@ -3814,10 +3832,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=109"></script>
-    <script type="module" src="js/landing.js?v=109"></script>
-    <script type="module" src="js/landing-demo.js?v=109"></script>
-    <script type="module" src="js/landing-ai.js?v=109"></script>
+    <script type="module" src="js/main.js?v=110"></script>
+    <script type="module" src="js/landing.js?v=110"></script>
+    <script type="module" src="js/landing-demo.js?v=110"></script>
+    <script type="module" src="js/landing-ai.js?v=110"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

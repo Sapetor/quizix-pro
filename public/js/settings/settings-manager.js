@@ -101,8 +101,9 @@ export class SettingsManager {
         if (theme === 'dark') {
             body.classList.add('dark-theme');
             body.classList.remove('light-theme');
-            body.setAttribute('data-theme', 'dark');
-            document.documentElement.setAttribute('data-theme', 'dark');
+            // Sets data-theme on <html> + <body> with transitions suppressed
+            // for the swap frame (defined in index.html's critical script).
+            window.applyThemeAttributes('dark');
 
             // Update all theme toggle buttons - show moon (current state: dark)
             themeToggleButtons.forEach(themeToggle => {
@@ -119,8 +120,7 @@ export class SettingsManager {
         } else {
             body.classList.add('light-theme');
             body.classList.remove('dark-theme');
-            body.setAttribute('data-theme', 'light');
-            document.documentElement.setAttribute('data-theme', 'light');
+            window.applyThemeAttributes('light');
 
             // Update all theme toggle buttons - show sun (current state: light)
             themeToggleButtons.forEach(themeToggle => {

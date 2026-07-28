@@ -720,8 +720,8 @@ function applyThemeFallback() {
     // Apply theme classes
     body.classList.toggle('dark-theme', newTheme === 'dark');
     body.classList.toggle('light-theme', newTheme === 'light');
-    body.setAttribute('data-theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
+    // Suppresses transitions for the swap frame (see index.html)
+    window.applyThemeAttributes(newTheme);
 
     // Update all theme toggle buttons
     const themeButtons = [

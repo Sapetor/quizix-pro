@@ -1514,8 +1514,8 @@ export class QuizGame {
         const currentTheme = body.getAttribute('data-theme') || 'light';
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
-        body.setAttribute('data-theme', newTheme);
-        document.documentElement.setAttribute('data-theme', newTheme);
+        // Suppresses transitions for the swap frame (see index.html)
+        window.applyThemeAttributes(newTheme);
         if (themeToggle) {
             // New SVG-based header: swap via data-icon-state (see header.css)
             themeToggle.dataset.iconState = newTheme;

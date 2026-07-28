@@ -31,7 +31,7 @@
  * relative order stays exactly the @import order below and they share the
  * single `app` important-context (no !important reversal between them).
  */
-@layer app, utilities;
+@layer guards, app, utilities;
 
 /* CSS Variables - MUST be first for theme switching */
 @import './variables.css' layer(app);
@@ -97,6 +97,37 @@
 @import './utilities.css' layer(utilities);
 
 /* Mobile enhancements consolidated into responsive.css */
+
+/*
+ * THEME SWAP GUARD (must stay in the `guards` layer, declared FIRST above).
+ *
+ * base.css:353 puts `transition: background-color/color/border-color/box-shadow
+ * .3s` on *every* element. Flipping data-theme therefore animates ~2100
+ * elements at once; the `color` leg alone re-rasterizes all text every frame.
+ * Measured on the landing screen (headless chromium, 1440x900, 3 toggles):
+ *   with the crossfade : 4 dropped frames per toggle, worst frame 116-166ms
+ *   with this guard    : 0 dropped frames, worst frame 16.8ms (steady 60fps)
+ * Dropping only `box-shadow`, or shortening the duration, changed nothing;
+ * dropping `color` was the whole win. Since colour cannot lag behind its
+ * background without a readability flash, the swap is instantaneous instead.
+ *
+ * Hover/focus/interaction transitions are untouched — the class is present
+ * only for the frame in which data-theme changes (see window.applyThemeAttributes
+ * in index.html).
+ *
+ * `guards` is the earliest layer, and !important REVERSES layer order, so this
+ * beats every `transition: ... !important` in `app` regardless of specificity.
+ * It is !important-only, so it adds no normal-declaration precedence and
+ * cannot flip any existing !important pair inside `app`.
+ */
+@layer guards {
+    html.theme-switching,
+    html.theme-switching *,
+    html.theme-switching *::before,
+    html.theme-switching *::after {
+        transition: none !important;
+    }
+}
 
 
 /**
