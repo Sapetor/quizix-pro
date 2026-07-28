@@ -24,7 +24,6 @@ describe('event-bindings binder', () => {
         document.body.innerHTML = `
             <a href="#" id="header-brand"></a>
             <button id="toolbar-settings"></button>
-            <button id="toggle-preview"></button>
             <button id="scroll-to-question"></button>
             <div id="quiz-settings-modal"></div>
             <button id="settings-modal-close-btn"></button>
@@ -57,11 +56,6 @@ describe('event-bindings binder', () => {
         const evt = fire('header-brand', 'click');
         expect(window.game.resetAndReturnToMenu).toHaveBeenCalledTimes(1);
         expect(evt.defaultPrevented).toBe(true);
-    });
-
-    test('toggle-preview click delegates to previewManager.togglePreviewMode', () => {
-        fire('toggle-preview', 'click');
-        expect(window.game.previewManager.togglePreviewMode).toHaveBeenCalledTimes(1);
     });
 
     test('scroll-to-question click delegates to previewManager.scrollToCurrentQuestion', () => {

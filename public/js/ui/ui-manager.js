@@ -11,6 +11,9 @@ import { APIHelper } from '../utils/api-helper.js';
 import { initializeAutoHideToolbar, disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
 import { updateMobileReturnButtonVisibility } from '../utils/globals.js';
 import { escapeHtml, dom } from '../utils/dom.js';
+import { initQuestionSidebar } from './question-sidebar.js';
+import { initEditorFormChrome } from './editor-form-chrome.js';
+import { initEditorValidation } from '../quiz/editor-validation.js';
 
 /**
  * Toggle editor header state (toolbar and breadcrumb visibility)
@@ -468,6 +471,15 @@ export class UIManager {
             }
             if (window.initializeQuestionPagination) {
                 window.initializeQuestionPagination();
+            }
+            // Question-list sidebar + preview chrome (Editor 2a Stage B) and
+            // question-form chrome (Stage C), desktop-only like the split
+            // preview above.
+            if (window.innerWidth >= 769) {
+                initQuestionSidebar();
+                initEditorFormChrome();
+                // Validation surfaces + autosave stamp (Stage D)
+                initEditorValidation();
             }
         }, 100);
     }

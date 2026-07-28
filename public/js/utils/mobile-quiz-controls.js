@@ -243,8 +243,6 @@ function handleMobilePreview() {
     // Use existing preview functionality
     if (typeof togglePreviewMode === 'function') {
         togglePreviewMode();
-    } else if (dom.get('toolbar-preview')) {
-        dom.get('toolbar-preview').click();
     } else {
         logger.warn('Preview functionality not available');
     }

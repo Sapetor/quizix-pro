@@ -30,46 +30,74 @@ export class QuestionUtils {
             <div class="question-body">
             <div class="question-meta">
                 <h4 class="question-meta-title" data-translate="question_settings">Question Settings</h4>
-                <select class="question-type" onchange="updateQuestionType(this)">
-                    <option value="multiple-choice" data-translate="multiple_choice">Multiple Choice</option>
-                    <option value="multiple-correct" data-translate="multiple_correct">Multiple Correct Answers</option>
-                    <option value="true-false" data-translate="true_false">True/False</option>
-                    <option value="numeric" data-translate="numeric_answer">Numeric Answer</option>
-                    <option value="ordering" data-translate="ordering">Ordering</option>
-                </select>
+                <div class="qm-field qm-field--type">
+                    <span class="qm-label ed-mono" data-translate="type_label">Type</span>
+                    <select class="question-type" onchange="updateQuestionType(this)">
+                        <option value="multiple-choice" data-translate="multiple_choice">Multiple Choice</option>
+                        <option value="multiple-correct" data-translate="multiple_correct">Multiple Correct Answers</option>
+                        <option value="true-false" data-translate="true_false">True/False</option>
+                        <option value="numeric" data-translate="numeric_answer">Numeric Answer</option>
+                        <option value="ordering" data-translate="ordering">Ordering</option>
+                    </select>
+                </div>
 
-                <select class="question-difficulty">
-                    <option value="easy" data-translate="easy">Easy</option>
-                    <option value="medium" selected data-translate="medium">Medium</option>
-                    <option value="hard" data-translate="hard">Hard</option>
-                </select>
+                <div class="qm-field qm-field--difficulty">
+                    <span class="qm-label ed-mono" data-translate="difficulty_label">Difficulty</span>
+                    <select class="question-difficulty">
+                        <option value="easy" data-translate="easy">Easy</option>
+                        <option value="medium" selected data-translate="medium">Medium</option>
+                        <option value="hard" data-translate="hard">Hard</option>
+                    </select>
+                </div>
+
+                <div class="qm-field qm-field--time time-limit-container">
+                    <label>
+                        <span class="qm-label" data-translate="time_seconds">Time (sec)</span>
+                        <span class="qm-stepper">
+                            <input type="number" class="question-time-limit ed-mono" min="5" max="300" value="20" onchange="updateTimeLimit(this)">
+                            <span class="qm-step-btns">
+                                <button type="button" class="qm-step" data-step="1" tabindex="-1" aria-hidden="true">▲</button>
+                                <button type="button" class="qm-step" data-step="-1" tabindex="-1" aria-hidden="true">▼</button>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="qm-field qm-field--points">
+                    <span class="qm-label ed-mono" data-translate="points_label">Points</span>
+                    <span class="question-points-display ed-mono">200</span>
+                </div>
 
                 <div class="concept-tags-container">
                     <label data-translate="concepts">Concepts</label>
+                    <span class="concept-max ed-mono" data-translate="concepts_max">· max 5</span>
                     <div class="concept-tags-input">
                         <div class="concept-tags-list"></div>
                         <input type="text" class="concept-input" placeholder="Add concept..." data-translate-placeholder="add_concept" maxlength="30">
                     </div>
                     <div class="concept-hint" data-translate="concept_hint">Press Enter to add (max 5)</div>
                 </div>
-
-                <div class="time-limit-container">
-                    <label>
-                        <span data-translate="time_seconds">Time (sec)</span>
-                        <input type="number" class="question-time-limit" min="5" max="300" value="20" onchange="updateTimeLimit(this)">
-                    </label>
-                </div>
             </div>
 
             <div class="question-content">
-                <textarea class="question-text" placeholder="Enter your question (supports LaTeX and code blocks)" data-translate-placeholder="enter_question_with_latex"></textarea>
+                <div class="question-text-row">
+                    <div class="question-text-card">
+                        <textarea class="question-text" placeholder="Enter your question (supports LaTeX and code blocks)" data-translate-placeholder="enter_question_with_latex"></textarea>
+                        <div class="qt-card-footer" aria-hidden="true">
+                            <span class="qt-hint ed-mono tex2jax_ignore">LATEX $x^2$</span>
+                            <span class="qt-count ed-mono">0</span>
+                        </div>
+                    </div>
 
-                <div class="image-upload">
-                    <label data-translate="add_image">Add Image</label>
-                    <input type="file" class="image-input" accept="image/*" onchange="uploadImage(this)">
-                    <div class="image-preview" style="display: none;">
-                        <img class="question-image" src="" alt="Question Image" style="max-width: 200px; max-height: 150px;">
-                        <button type="button" class="remove-image" onclick="removeImage(this)" data-translate="remove_image">Remove Image</button>
+                    <div class="image-upload">
+                        <label data-translate="add_image">Add Image</label>
+                        <span class="image-zone-label ed-mono" data-translate="image_label">Image</span>
+                        <span class="image-drop-hint" data-translate="image_drop_hint">drag &amp; drop or click</span>
+                        <input type="file" class="image-input" accept="image/*" onchange="uploadImage(this)">
+                        <div class="image-preview" style="display: none;">
+                            <img class="question-image" src="" alt="Question Image" style="max-width: 200px; max-height: 150px;">
+                            <button type="button" class="remove-image" onclick="removeImage(this)" data-translate="remove_image">Remove Image</button>
+                        </div>
                     </div>
                 </div>
 
@@ -176,41 +204,86 @@ export class QuestionUtils {
                 <div class="options-checkboxes">
                     <label class="option-wrapper" data-option="0">
                         <input type="radio" class="correct-option" name="mc-correct-${questionCount}" data-option="0" checked>
+                        <span class="opt-drag" aria-hidden="true"></span>
                         <span class="option-shape" data-shape="triangle">▲</span>
                         <input type="text" class="option" placeholder="Option A" data-translate-placeholder="option_a">
+                        <span class="opt-pill ed-mono"><span class="opt-pill-on" data-translate="correct_pill">✓ Correct</span><span class="opt-pill-off" data-translate="mark_correct_pill">Mark</span></span>
                     </label>
                     <label class="option-wrapper" data-option="1">
                         <input type="radio" class="correct-option" name="mc-correct-${questionCount}" data-option="1">
+                        <span class="opt-drag" aria-hidden="true"></span>
                         <span class="option-shape" data-shape="diamond">◆</span>
                         <input type="text" class="option" placeholder="Option B" data-translate-placeholder="option_b">
+                        <span class="opt-pill ed-mono"><span class="opt-pill-on" data-translate="correct_pill">✓ Correct</span><span class="opt-pill-off" data-translate="mark_correct_pill">Mark</span></span>
                     </label>
                     <label class="option-wrapper" data-option="2">
                         <input type="radio" class="correct-option" name="mc-correct-${questionCount}" data-option="2">
+                        <span class="opt-drag" aria-hidden="true"></span>
                         <span class="option-shape" data-shape="circle">●</span>
                         <input type="text" class="option" placeholder="Option C" data-translate-placeholder="option_c">
+                        <span class="opt-pill ed-mono"><span class="opt-pill-on" data-translate="correct_pill">✓ Correct</span><span class="opt-pill-off" data-translate="mark_correct_pill">Mark</span></span>
                     </label>
                     <label class="option-wrapper" data-option="3">
                         <input type="radio" class="correct-option" name="mc-correct-${questionCount}" data-option="3">
+                        <span class="opt-drag" aria-hidden="true"></span>
                         <span class="option-shape" data-shape="square">■</span>
                         <input type="text" class="option" placeholder="Option D" data-translate-placeholder="option_d">
+                        <span class="opt-pill ed-mono"><span class="opt-pill-on" data-translate="correct_pill">✓ Correct</span><span class="opt-pill-off" data-translate="mark_correct_pill">Mark</span></span>
                     </label>
                 </div>
             </div>
-            
+
             <div class="answer-options multiple-correct-options" style="display: none;">
                 <div class="options-checkboxes">
-                    <label><input type="checkbox" class="correct-option" data-option="0"> <input type="text" class="option" placeholder="Option A" data-translate-placeholder="option_a"></label>
-                    <label><input type="checkbox" class="correct-option" data-option="1"> <input type="text" class="option" placeholder="Option B" data-translate-placeholder="option_b"></label>
-                    <label><input type="checkbox" class="correct-option" data-option="2"> <input type="text" class="option" placeholder="Option C" data-translate-placeholder="option_c"></label>
-                    <label><input type="checkbox" class="correct-option" data-option="3"> <input type="text" class="option" placeholder="Option D" data-translate-placeholder="option_d"></label>
+                    <label class="option-wrapper" data-option="0">
+                        <input type="checkbox" class="correct-option" data-option="0">
+                        <span class="opt-drag" aria-hidden="true"></span>
+                        <span class="option-shape" data-shape="triangle">▲</span>
+                        <input type="text" class="option" placeholder="Option A" data-translate-placeholder="option_a">
+                        <span class="opt-pill ed-mono"><span class="opt-pill-on" data-translate="correct_pill">✓ Correct</span><span class="opt-pill-off" data-translate="mark_correct_pill">Mark</span></span>
+                    </label>
+                    <label class="option-wrapper" data-option="1">
+                        <input type="checkbox" class="correct-option" data-option="1">
+                        <span class="opt-drag" aria-hidden="true"></span>
+                        <span class="option-shape" data-shape="diamond">◆</span>
+                        <input type="text" class="option" placeholder="Option B" data-translate-placeholder="option_b">
+                        <span class="opt-pill ed-mono"><span class="opt-pill-on" data-translate="correct_pill">✓ Correct</span><span class="opt-pill-off" data-translate="mark_correct_pill">Mark</span></span>
+                    </label>
+                    <label class="option-wrapper" data-option="2">
+                        <input type="checkbox" class="correct-option" data-option="2">
+                        <span class="opt-drag" aria-hidden="true"></span>
+                        <span class="option-shape" data-shape="circle">●</span>
+                        <input type="text" class="option" placeholder="Option C" data-translate-placeholder="option_c">
+                        <span class="opt-pill ed-mono"><span class="opt-pill-on" data-translate="correct_pill">✓ Correct</span><span class="opt-pill-off" data-translate="mark_correct_pill">Mark</span></span>
+                    </label>
+                    <label class="option-wrapper" data-option="3">
+                        <input type="checkbox" class="correct-option" data-option="3">
+                        <span class="opt-drag" aria-hidden="true"></span>
+                        <span class="option-shape" data-shape="square">■</span>
+                        <input type="text" class="option" placeholder="Option D" data-translate-placeholder="option_d">
+                        <span class="opt-pill ed-mono"><span class="opt-pill-on" data-translate="correct_pill">✓ Correct</span><span class="opt-pill-off" data-translate="mark_correct_pill">Mark</span></span>
+                    </label>
                 </div>
             </div>
-            
+
             <div class="answer-options true-false-options" style="display: none;">
+                <span class="qm-label ed-mono tf-label" data-translate="correct_answer">Correct Answer</span>
                 <select class="correct-answer">
                     <option value="true" data-translate="true">True</option>
                     <option value="false" data-translate="false">False</option>
                 </select>
+                <div class="tf-cards">
+                    <button type="button" class="tf-card tf-card--true" data-tf="true">
+                        <span class="tf-card-word ed-serif" data-translate="true">True</span>
+                        <span class="tf-card-state tf-card-state--on ed-mono" data-translate="correct_pill">✓ Correct</span>
+                        <span class="tf-card-state tf-card-state--off ed-mono" data-translate="mark_correct_pill">Mark</span>
+                    </button>
+                    <button type="button" class="tf-card tf-card--false" data-tf="false">
+                        <span class="tf-card-word ed-serif" data-translate="false">False</span>
+                        <span class="tf-card-state tf-card-state--on ed-mono" data-translate="correct_pill">✓ Correct</span>
+                        <span class="tf-card-state tf-card-state--off ed-mono" data-translate="mark_correct_pill">Mark</span>
+                    </button>
+                </div>
             </div>
             
             <div class="answer-options numeric-options" style="display: none;">
@@ -248,7 +321,7 @@ export class QuestionUtils {
 
             <div class="explanation-section">
                 <details>
-                    <summary data-translate="explanation_optional">Explanation (optional)</summary>
+                    <summary><span data-translate="explanation_optional">Explanation (optional)</span><span class="explanation-hint" data-translate="explanation_hint">shown after answering</span></summary>
                     <textarea class="question-explanation" placeholder="Explain why the correct answer is correct..." data-translate-placeholder="explanation_placeholder"></textarea>
                 </details>
             </div>
@@ -326,6 +399,22 @@ export class QuestionUtils {
 
 // Create global instance for backward compatibility
 const questionUtils = new QuestionUtils();
+
+/**
+ * Effective time limit (seconds) for a `.question-item`, honoring the
+ * global-time setting. Single source of truth shared by the save path
+ * (quiz-manager.extractQuestionData) and the sidebar/preview displays.
+ * @param {Element} questionItem - a `.question-item` DOM node
+ * @returns {number} seconds (default 30 when the field is empty/invalid)
+ */
+export function resolveTimeLimit(questionItem) {
+    if (document.getElementById('use-global-time')?.checked) {
+        const globalVal = parseInt(document.getElementById('global-time-limit')?.value, 10);
+        if (!isNaN(globalVal)) return globalVal;
+    }
+    const val = parseInt(questionItem?.querySelector('.question-time-limit')?.value, 10);
+    return isNaN(val) ? 30 : val;
+}
 
 /**
  * Add a new question to the quiz builder

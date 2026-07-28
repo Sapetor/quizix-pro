@@ -343,6 +343,9 @@ export function updatePaginationUI(index, total) {
     if (nextBtn) nextBtn.disabled = index >= total - 1;
     if (currentNum) currentNum.textContent = index + 1;
     if (totalNum) totalNum.textContent = total;
+
+    // Notify listeners (question-sidebar active-row sync) of pagination change
+    document.dispatchEvent(new CustomEvent('questionShown', { detail: { index, total } }));
 }
 
 /**

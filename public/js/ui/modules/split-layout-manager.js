@@ -17,8 +17,8 @@ const MIN_RATIO = 20;
 const MAX_RATIO = 85;
 const RATIO_STEP = 5; // Keyboard resize step
 
-// Fixed widths for the new 4-column grid layout
-const TOOLBAR_WIDTH = 48; // Vertical toolbar width in pixels
+// Fixed widths for the 5-column grid layout (app-screens.css, EDITOR 2a section)
+const FIXED_LEFT_WIDTH = 292; // Fixed left columns: icon rail (60px) + question sidebar (232px)
 const HANDLE_WIDTH = 16;  // Resize handle width in pixels
 
 export class SplitLayoutManager {
@@ -195,10 +195,10 @@ export class SplitLayoutManager {
             const containerWidth = containerRect.width;
 
             // Calculate mouse position relative to the editor start (after toolbar)
-            const mouseX = e.clientX - containerRect.left - TOOLBAR_WIDTH;
+            const mouseX = e.clientX - containerRect.left - FIXED_LEFT_WIDTH;
 
             // Available width for editor + preview (excluding toolbar and handle)
-            const availableWidth = containerWidth - TOOLBAR_WIDTH - HANDLE_WIDTH;
+            const availableWidth = containerWidth - FIXED_LEFT_WIDTH - HANDLE_WIDTH;
 
             // Calculate new ratio based on available space
             let newRatio = (mouseX / availableWidth) * 100;

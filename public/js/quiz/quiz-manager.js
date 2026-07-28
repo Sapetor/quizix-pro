@@ -17,6 +17,7 @@ import { getFileManager } from '../ui/file-manager.js';
 import { openModal, closeModal } from '../utils/modal-utils.js';
 import { authManager } from '../utils/auth-manager.js';
 import { manimEditor } from './manim-editor.js';
+import { resolveTimeLimit } from '../utils/question-utils.js';
 import * as settings from './modules/settings-persistence.js';
 import * as io from './modules/import-export.js';
 import * as editing from './modules/question-editing.js';
@@ -295,17 +296,8 @@ export class QuizManager {
         const questionType = questionElement.querySelector('.question-type')?.value;
         if (!questionText || !questionType) return null;
 
-        // Check if global time is enabled
-        const useGlobalTime = dom.get('use-global-time')?.checked;
-        const globalTimeLimit = parseInt(dom.get('global-time-limit')?.value);
-
-        // Use global time if enabled, otherwise use per-question time
-        let timeLimit;
-        if (useGlobalTime && !isNaN(globalTimeLimit)) {
-            timeLimit = globalTimeLimit;
-        } else {
-            timeLimit = parseInt(questionElement.querySelector('.question-time-limit')?.value) || 30;
-        }
+        // Global-vs-per-question time resolution shared with the sidebar/preview
+        const timeLimit = resolveTimeLimit(questionElement);
 
         const questionData = {
             question: questionText,
@@ -965,14 +957,9 @@ export class QuizManager {
                     logger.debug('Quiz populated successfully');
 
                     // Track which file is loaded so saves overwrite it
+                    // (populateQuizBuilder dispatches quizLoaded itself)
                     this._loadedFilename = filename;
                     this._loadedTitle = cleanedData.title || null;
-
-                    // Dispatch quizLoaded event for editor question count update
-                    const event = new CustomEvent('quizLoaded', {
-                        detail: { questionCount: cleanedData.questions.length, title: cleanedData.title }
-                    });
-                    document.dispatchEvent(event);
                 } catch (populateError) {
                     logger.warn('Error in populateQuizBuilder, but continuing:', populateError);
                     // Continue anyway - don't let this break the flow
@@ -1170,6 +1157,15 @@ export class QuizManager {
             // programmatic) — callers previously had to remember this themselves
             // and the import path didn't, leaving the preview stale.
             this.updatePreviewSafely();
+
+            // Notify listeners (sidebar, breadcrumb, question count, save
+            // status) for EVERY populate path — load, import, autosave restore.
+            document.dispatchEvent(new CustomEvent('quizLoaded', {
+                detail: {
+                    questionCount: Array.isArray(quizData.questions) ? quizData.questions.length : 0,
+                    title: quizData.title
+                }
+            }));
 
         } catch (error) {
             logger.error('Critical error in populateQuizBuilder:', error);
@@ -1389,6 +1385,8 @@ export class QuizManager {
                 logger.debug('Auto-saved quiz data');
             }
         }
+        // Header autosave stamp (editor-validation.js): "GUARDADO HH:MM"
+        document.dispatchEvent(new CustomEvent('editorAutosaveDone'));
     }
 
     /**
@@ -1501,6 +1499,8 @@ export class QuizManager {
     scheduleAutoSave() {
         clearTimeout(this.autoSaveTimeout);
         this.autoSaveTimeout = setTimeout(() => this.autoSaveQuiz(), TIMING.AUTO_SAVE_DELAY);
+        // Header autosave stamp (editor-validation.js) shows "Guardando…"
+        document.dispatchEvent(new CustomEvent('editorAutosavePending'));
     }
 
     /**
@@ -1513,9 +1513,11 @@ export class QuizManager {
             titleInput.addEventListener('input', () => this.scheduleAutoSave());
         }
 
-        // Auto-save on question changes with tracked listener
+        // Auto-save on question changes with tracked listener.
+        // (Was '.question' — a class that exists nowhere; the editor's
+        // question nodes are '.question-item', so edits never autosaved.)
         this.addDocumentListenerTracked('input', (event) => {
-            if (event.target.closest('.question')) {
+            if (event.target.closest('.question-item')) {
                 this.scheduleAutoSave();
             }
         });

@@ -420,6 +420,7 @@ export class QuizGame {
         bindElement('import-file-input', 'change', (e) => this.quizManager.handleFileImport(e));
         bindElement('preview-quiz', 'click', () => this.showQuizPreview());
         bindElement('cancel-preview', 'click', () => this.hideQuizPreview());
+        bindElement('close-preview', 'click', () => this.hideQuizPreview());
 
         // Game controls
         bindElement('start-hosting', 'click', () => this.startHosting());
@@ -874,7 +875,10 @@ export class QuizGame {
             return;
         }
 
-        const modal = dom.get('preview-modal');
+        // The overlay is the element that carries visibility (its inner
+        // #preview-modal is just the sheet) — opening the inner div leaves
+        // the overlay display:none and nothing appears.
+        const modal = dom.get('preview-modal-overlay');
         const previewContainer = dom.get('quiz-preview-container');
 
         if (!modal || !previewContainer) return;
@@ -938,7 +942,7 @@ export class QuizGame {
      * Hide quiz preview modal
      */
     hideQuizPreview() {
-        const modal = dom.get('preview-modal');
+        const modal = dom.get('preview-modal-overlay');
         if (modal) {
             closeModal(modal);
         }
@@ -953,7 +957,6 @@ export class QuizGame {
             { id: 'toolbar-add-question', handler: () => this.addQuestionAndScrollToIt() },
             { id: 'toolbar-save', handler: () => this.quizManager.saveQuiz() },
             { id: 'toolbar-load', handler: () => this.quizManager.showLoadQuizModal() },
-            { id: 'toolbar-preview', handler: () => this.togglePreviewMode() },
             { id: 'toolbar-ai-gen', handler: () => this.openAIGeneratorModal() },
             { id: 'toolbar-import', handler: () => this.quizManager.importQuiz() },
             { id: 'toolbar-export', handler: () => this.quizManager.exportQuiz() },
@@ -964,7 +967,6 @@ export class QuizGame {
 
         // Vertical toolbar buttons (in left sidebar for always-preview mode)
         const verticalToolbarButtons = [
-            { id: 'vtoolbar-add-question', handler: () => this.addQuestionAndScrollToIt() },
             { id: 'vtoolbar-save', handler: () => this.quizManager.saveQuiz() },
             { id: 'vtoolbar-load', handler: () => this.quizManager.showLoadQuizModal() },
             { id: 'vtoolbar-ai-gen', handler: () => this.openAIGeneratorModal() },

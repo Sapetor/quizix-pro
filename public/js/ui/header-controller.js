@@ -95,6 +95,9 @@ function bindBreadcrumbSync() {
   const input = el(QUIZ_TITLE_INPUT);
   if (!input) return;
   input.addEventListener('input', syncEditorBreadcrumbTitle);
+  // Programmatic title changes (load / import / autosave restore) fire no
+  // 'input' — re-sync on the loaded event too.
+  document.addEventListener('quizLoaded', syncEditorBreadcrumbTitle);
   syncEditorBreadcrumbTitle();
 }
 
