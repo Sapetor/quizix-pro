@@ -738,18 +738,28 @@ button:disabled:focus-visible {
 }
 
 /* Geometric Shape Identifiers */
+/* One fixed square, always. The chip measured 38px at index 0 against 32px at
+   1–3: `width` was declared but `box-sizing` was not, so any inherited padding
+   grew the box on top of it, and `flex-shrink: 0` alone let it stay grown.
+   border-box + `padding: 0` + `flex: 0 0 auto` + aspect-ratio pin it. Deliberately
+   NO min/max-width — app-screens.css narrows the chip to 30px in the editor row
+   and must still be able to. Radius is the {10,12,14} scale's smallest step. */
 .option-shape {
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
+    flex: 0 0 auto;
     width: 32px;
     height: 32px;
-    border-radius: 8px;
+    aspect-ratio: 1 / 1;
+    padding: 0;
+    border-radius: var(--r-sm, 10px);
     font-size: 14px;
+    line-height: 1;
     font-weight: bold;
     color: white;
-    flex-shrink: 0;
-    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -758,25 +768,39 @@ button:disabled:focus-visible {
     transform: scale(1.1) rotate(5deg);
 }
 
-/* Shape-specific styling (reusing game show colors) */
+/* Chip colors are keyed by OPTION INDEX, not shape: the shape order is
+   fixed (triangle=0, diamond=1, circle=2, square=3), so each chip carries
+   the same --option-N gradient as option N's button everywhere (editor
+   rows, preview, in-game). */
 .option-shape[data-shape="triangle"] {
-    background: linear-gradient(135deg, #ef4444, #b91c1c);
-    /* Red */
+    background: linear-gradient(135deg, var(--option-0-start), var(--option-0-end));
+    /* Option 1 - Blue */
 }
 
 .option-shape[data-shape="diamond"] {
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    /* Blue */
+    background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end));
+    /* Option 2 - Green */
 }
 
 .option-shape[data-shape="circle"] {
-    background: linear-gradient(135deg, #f59e0b, #b45309);
-    /* Yellow/Orange */
+    background: linear-gradient(135deg, var(--option-2-start), var(--option-2-end));
+    /* Option 3 - Amber */
 }
 
 .option-shape[data-shape="square"] {
-    background: linear-gradient(135deg, #10b981, #047857);
-    /* Green */
+    background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end));
+    /* Option 4 - Red */
+}
+
+/* Chips sitting INSIDE an already-colored option button (preview split
+   .player-option nth-child gradients, in-game [data-option] gradients)
+   drop their own fill and read as white-on-tint markers instead of
+   fighting the button color. Same-specificity as the data-shape rules
+   above where classes tie — later source wins. */
+.player-option .option-shape,
+.option-display .option-shape,
+#player-multiple-correct .checkbox-option .option-shape {
+    background: rgba(255, 255, 255, 0.22);
 }
 
 /* Adjust text container to take remaining space */
@@ -1204,14 +1228,19 @@ button:disabled:focus-visible {
     accent-color: var(--correct) !important;
 }
 
-/* Editor checkbox labels - prevent styling conflicts */
+/* Editor checkbox labels - prevent styling conflicts.
+   display: co-neutralized (flag dropped) for the Editor 2a Stage C option
+   rows in app-screens.css, which need display:flex on desktop without putting
+   `!important` on display (utility .hidden/.visible-* must stay authoritative).
+   Mobile is unaffected: responsive.css:590 forces its own display:flex
+   !important on these labels inside max-768px. */
 .multiple-correct-options label,
 .options-checkboxes label {
     background: transparent !important;
     padding: 10px !important;
     margin: 10px 0 !important;
     border-radius: 8px !important;
-    display: block !important;
+    display: block;
     cursor: pointer !important;
     color: var(--text-primary) !important;
     font-size: 1rem !important;
@@ -1608,30 +1637,16 @@ button:disabled:focus-visible {
     max-width: 600px;
     margin: 0 auto;
     padding: 40px 20px;
-    background: var(--glass-medium);
-    backdrop-filter: var(--blur-medium);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-large);
-    box-shadow: var(--shadow-lg);
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
+    box-shadow: var(--shadow-card);
     position: relative;
     overflow: hidden;
 }
 
-/* Glass overlay effect */
-.player-lobby-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.1) 0%,
-            rgba(255, 255, 255, 0.05) 50%,
-            rgba(255, 255, 255, 0.1) 100%);
-    pointer-events: none;
-    z-index: 1;
-}
+/* .player-lobby-container::before removed — a white sheen over a glass sheet
+   that no longer exists. */
 
 .player-lobby-container>* {
     position: relative;
@@ -1639,15 +1654,16 @@ button:disabled:focus-visible {
 }
 
 /* Lobby Title */
+/* Solid ink in the display face. The gradient-clipped green text read as a
+   correctness signal (Rule G) and went invisible wherever background-clip
+   failed. */
 .player-lobby-container h2 {
+    font-family: var(--font-display);
     font-size: calc(2.2rem * var(--global-font-scale));
-    font-weight: 700;
-    color: var(--text-primary);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--ink);
     margin: 0 0 16px 0;
-    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
     text-align: center;
     line-height: 1.2;
 }
@@ -1697,17 +1713,17 @@ button:disabled:focus-visible {
     max-width: 100%;
     padding: 10px 14px;
     font-size: 1rem;
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-small);
-    background: var(--glass-light);
-    color: var(--text-primary);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm, 10px);
+    background: var(--paper-2);
+    color: var(--ink);
     text-align: center;
 }
 
 .edit-name-input:focus {
     outline: none;
-    border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 3px var(--focus-ring-soft);
 }
 
 /* Edit action buttons */
@@ -1721,16 +1737,8 @@ button:disabled:focus-visible {
     font-size: 0.9rem !important;
 }
 
-/* Light theme adjustments */
-[data-theme="light"] .edit-name-input {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(0, 0, 0, 0.2);
-    color: #1e293b;
-}
-
-[data-theme="light"] .edit-name-input:focus {
-    border-color: var(--color-primary-500);
-}
+/* No [data-theme] twins for .edit-name-input: --paper-2 / --line-strong /
+   --ink all flip. */
 
 /* Mobile responsive */
 @media (max-width: 768px) {
@@ -1819,9 +1827,9 @@ button:disabled:focus-visible {
     gap: 16px;
     margin-top: 32px;
     padding: 24px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--paper-3);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--line);
     width: 100%;
     max-width: 400px;
 }
@@ -1831,7 +1839,7 @@ button:disabled:focus-visible {
     align-items: center;
     justify-content: space-between;
     font-size: 1rem;
-    color: var(--text-secondary);
+    color: var(--ink-2);
 }
 
 .lobby-detail-label {
@@ -1843,7 +1851,8 @@ button:disabled:focus-visible {
 
 .lobby-detail-value {
     font-weight: 600;
-    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
 }
 
 /* Status indicator. Rule G corollary 1: connection status is a third meaning
@@ -1905,53 +1914,16 @@ button:disabled:focus-visible {
 }
 
 /* Dark theme adjustments */
-[data-theme="dark"] .player-lobby-container {
-    background: rgba(15, 23, 42, 0.8);
-    border-color: rgba(255, 255, 255, 0.15);
-}
+/* No [data-theme] override for .player-lobby-container: --paper-2 and --line
+   both flip. data-theme sits on html AND body, so a hard-coded sheet here used
+   to win over the token in one of the two. */
 
-[data-theme="dark"] .lobby-info {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.08);
-}
+/* --paper-3 / --line flip on their own; no [data-theme] twins needed for
+   .lobby-info and its rows. */
 
 /* Light theme adjustments */
-[data-theme="light"] .player-lobby-container {
-    background: rgba(255, 255, 255, 0.95);
-    border-color: rgba(0, 0, 0, 0.25);
-    color: #1e293b;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="light"] .player-lobby-container h2 {
-    color: #1e293b;
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
 [data-theme="light"] .player-lobby-container p {
     opacity: 1;
-}
-
-[data-theme="light"] .lobby-info {
-    background: rgba(248, 250, 252, 0.8);
-    border-color: rgba(0, 0, 0, 0.2);
-    color: #1e293b;
-}
-
-[data-theme="light"] .lobby-detail {
-    color: #64748b;
-}
-
-[data-theme="light"] .lobby-detail-label {
-    color: #64748b;
-}
-
-[data-theme="light"] .lobby-detail-value {
-    color: #1e293b;
-    font-weight: 600;
 }
 
 /* `.lobby-status` is theme-aware through --paper-3 / --ink-2 / --line now, so
@@ -2795,7 +2767,10 @@ button:disabled:focus-visible {
 }
 
 #font-size-icon {
-    font-family: 'Inter', sans-serif;
+    /* Inherit: the face is `.iconbtn.text-icon`'s --font-display on the parent
+       button, which carries `ed-serif` so it survives the critical-CSS Inter
+       override in index.html. Hardcoding Inter here re-broke it. */
+    font-family: inherit;
     font-weight: 600;
     font-size: 16px;
     line-height: 1;
@@ -3758,13 +3733,14 @@ button:disabled:focus-visible {
     position: relative;
 }
 
+/* Lift only — no scale() (it blurs the label) and no 0 10px 30px drop bloom,
+   which was the last of the glass-era shadow stack on answer buttons. */
 .player-option:not(:disabled):hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
 }
 
 .player-option:not(:disabled):active {
-    transform: translateY(-1px) scale(1.01);
+    transform: translateY(1px);
     transition: transform 0.1s ease;
 }
 

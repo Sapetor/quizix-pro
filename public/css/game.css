@@ -39,15 +39,6 @@
     margin-bottom: 15px; /* Reduced from 30px to close the gap */
 }
 
-.game-pin {
-    font-family: var(--font-mono);
-    font-size: calc(48px * var(--global-font-scale));
-    font-weight: 700;
-    color: var(--accent-primary);
-    margin: 20px 0;
-    letter-spacing: 0.15em;
-}
-
 .qr-code-container {
     display: flex;
     flex-direction: column;
@@ -233,7 +224,7 @@
        #22c55e -> #0b5e2c in dark, where the label measured 1.88:1 on the dark stop.
        Flat --primary carries --primary-label at 5.02:1 light / 6.53:1 dark. */
     background: var(--primary);
-    border-radius: 50px;
+    border-radius: var(--r-pill, 999px);
     border: 2px solid transparent;
     min-width: 100px;
     box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.35);
@@ -392,7 +383,9 @@
 /* Correct answer state - enhanced with pulsing */
 .option-display.correct {
     transform: scale(1.03);
-    box-shadow: 0 12px 40px rgba(var(--correct-rgb), 0.6);
+    /* Matches the correctPulse ring below — the static 0 12px 40px bloom it
+       used to carry was overridden by frame 0 anyway and only flashed. */
+    box-shadow: 0 0 0 3px var(--ink);
     animation: correctPulse 2s ease-in-out infinite;
 }
 
@@ -402,12 +395,14 @@
 }
 
 /* Correct answer animation */
+/* Form, not glow: the ring breathes in width. The old 40–50px coloured bloom
+   was the last of the neon stack on the reveal. */
 @keyframes correctPulse {
     0%, 100% {
-        box-shadow: 0 12px 40px rgba(var(--correct-rgb), 0.6);
+        box-shadow: 0 0 0 3px var(--ink);
     }
     50% {
-        box-shadow: 0 16px 50px rgba(var(--correct-rgb), 0.8);
+        box-shadow: 0 0 0 6px var(--ink);
     }
 }
 
@@ -416,15 +411,15 @@
    rgba(16,185,129,.15) fill is gone — it washed out .option-text's white label. */
 @keyframes correctPulseLightMode {
     0%, 100% {
-        box-shadow: 0 12px 40px rgba(var(--correct-rgb), 0.4);
+        box-shadow: 0 0 0 3px var(--ink);
     }
     50% {
-        box-shadow: 0 16px 50px rgba(var(--correct-rgb), 0.6);
+        box-shadow: 0 0 0 6px var(--ink);
     }
 }
 
 [data-theme="light"] .option-display.correct {
-    box-shadow: 0 12px 40px rgba(var(--correct-rgb), 0.4);
+    box-shadow: 0 0 0 3px var(--ink);
     border: 3px solid var(--correct);
     animation-name: correctPulseLightMode;
 }
@@ -623,43 +618,50 @@
     min-width: 50px;
 }
 
+/* Mono micro-label on paper, pill-shaped. Was a glass chip at 20px radius —
+   off the {10,12,14,999} scale. */
 #player-question-counter {
-    font-size: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--text-secondary);
-    background: var(--glass-light);
+    letter-spacing: 0.04em;
+    color: var(--ink-2);
+    background: var(--paper-2);
     padding: 8px 16px;
-    border-radius: 20px;
-    border: 1px solid var(--glass-border);
+    border-radius: var(--r-pill, 999px);
+    border: 1px solid var(--line);
     display: inline-block;
 }
 
 /* Player Question Area */
 .player-question-area {
-    background: var(--glass-medium);
-    backdrop-filter: var(--blur-medium);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-large);
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
     padding: 32px;
     text-align: center;
     box-shadow: var(--shadow-md);
     margin-bottom: 24px;
 }
 
+/* Same display family as the host's projected question (#current-question is
+   --font-display w360). w500 rather than w360 because the player renders it at
+   ~25px on a phone, where 360 goes thin. */
 #player-question-text {
+    font-family: var(--font-display);
     font-size: 1.5rem;
-    font-weight: 600;
-    line-height: 1.4;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
     margin: 0;
-    color: var(--text-primary);
+    color: var(--ink);
 }
 
 /* Player Answer Types Container */
 .player-answer-type {
-    background: var(--glass-light);
-    backdrop-filter: var(--blur-light);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius);
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
     padding: 24px;
     box-shadow: var(--shadow-sm);
 }
@@ -677,9 +679,7 @@
 
 /* Modern Player Option Buttons - COLORFUL LIKE LIVE PREVIEW */
 .player-option {
-    backdrop-filter: var(--blur-medium);
-    border: 2px solid transparent;
-    border-radius: var(--border-radius);
+    border-radius: var(--r-lg, 14px);
     padding: 20px;
     font-size: 1.1rem;
     font-weight: 500;
@@ -731,92 +731,100 @@
     transform: translateY(-1px);
 }
 
-/* === KEYCAP DEPTH PER OPTION COLOR === */
-/* Landing's .lp-btn physics on the in-game answer buttons/cards: hard bottom
-   edge in a darker shade of each option's end color, press-down on :active.
-   ID-scoped so preview/editor option styling is untouched. */
-#player-game-screen .player-option,
+/* === KEYCAP DEPTH PER OPTION COLOR (HOST PROJECTION ONLY) === */
+/* Landing's .lp-btn physics survives on the host's projected option cards,
+   where the bevel reads at projection distance. The player screens dropped it
+   in the paper pass below — see PLAYER ANSWER TILES. */
 #host-game-screen .option-display {
     transition: transform 50ms ease, box-shadow 50ms ease, filter 0.3s ease;
 }
 
-#player-game-screen .player-option[data-option="0"],
 #host-game-screen .option-display[data-option="0"] {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-0-end), black 25%), 0 4px 20px var(--option-0-shadow);
 }
-#player-game-screen .player-option[data-option="0"]:hover,
 #host-game-screen .option-display[data-option="0"]:hover {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-0-end), black 25%), 0 8px 32px var(--option-0-shadow-hover);
 }
 
-#player-game-screen .player-option[data-option="1"],
 #host-game-screen .option-display[data-option="1"] {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-1-end), black 25%), 0 4px 20px var(--option-1-shadow);
 }
-#player-game-screen .player-option[data-option="1"]:hover,
 #host-game-screen .option-display[data-option="1"]:hover {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-1-end), black 25%), 0 8px 32px var(--option-1-shadow-hover);
 }
 
-#player-game-screen .player-option[data-option="2"],
 #host-game-screen .option-display[data-option="2"] {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-2-end), black 25%), 0 4px 20px var(--option-2-shadow);
 }
-#player-game-screen .player-option[data-option="2"]:hover,
 #host-game-screen .option-display[data-option="2"]:hover {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-2-end), black 25%), 0 8px 32px var(--option-2-shadow-hover);
 }
 
-#player-game-screen .player-option[data-option="3"],
 #host-game-screen .option-display[data-option="3"] {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-3-end), black 25%), 0 4px 20px var(--option-3-shadow);
 }
-#player-game-screen .player-option[data-option="3"]:hover,
 #host-game-screen .option-display[data-option="3"]:hover {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-3-end), black 25%), 0 8px 32px var(--option-3-shadow-hover);
 }
 
-#player-game-screen .player-option[data-option="4"],
 #host-game-screen .option-display[data-option="4"] {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-4-end), black 25%), 0 4px 20px var(--option-4-shadow);
 }
-#player-game-screen .player-option[data-option="4"]:hover,
 #host-game-screen .option-display[data-option="4"]:hover {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-4-end), black 25%), 0 8px 32px var(--option-4-shadow-hover);
 }
 
-#player-game-screen .player-option[data-option="5"],
 #host-game-screen .option-display[data-option="5"] {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-5-end), black 25%), 0 4px 20px var(--option-5-shadow);
 }
-#player-game-screen .player-option[data-option="5"]:hover,
 #host-game-screen .option-display[data-option="5"]:hover {
     box-shadow: 0 4px 0 0 color-mix(in srgb, var(--option-5-end), black 25%), 0 8px 32px var(--option-5-shadow-hover);
 }
 
-/* Press-down: keep the ambient glow, collapse the edge */
-#player-game-screen .player-option[data-option="0"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-0-end), black 25%), 0 4px 20px var(--option-0-shadow); }
-#player-game-screen .player-option[data-option="1"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-1-end), black 25%), 0 4px 20px var(--option-1-shadow); }
-#player-game-screen .player-option[data-option="2"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-2-end), black 25%), 0 4px 20px var(--option-2-shadow); }
-#player-game-screen .player-option[data-option="3"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-3-end), black 25%), 0 4px 20px var(--option-3-shadow); }
-#player-game-screen .player-option[data-option="4"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-4-end), black 25%), 0 4px 20px var(--option-4-shadow); }
-#player-game-screen .player-option[data-option="5"]:active { transform: translateY(4px); box-shadow: 0 0 0 0 color-mix(in srgb, var(--option-5-end), black 25%), 0 4px 20px var(--option-5-shadow); }
+/* === PLAYER ANSWER TILES — FLAT PAPER TREATMENT === */
+/* The index colour is the fill; a hairline edge carries the boundary. No
+   bevel, no coloured halo, no backdrop blur. Press/hover are FORM changes
+   (translate + a neutral ring), so nothing competes with the reveal colours. */
+#player-game-screen .player-option {
+    transition: transform 60ms ease, box-shadow 60ms ease, filter 0.2s ease;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.16);
+}
+
+#player-game-screen .player-option:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.06);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.24);
+}
+
+#player-game-screen .player-option:active {
+    transform: translateY(1px);
+    filter: brightness(0.94);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
 
 /* Selected state - keep original color but add emphasis */
 /* NOTE: No scale() - causes blurry text */
 .player-option.selected,
 .tf-option.selected {
-    transform: translateY(-4px);
-    filter: brightness(1.2) saturate(1.2);
-    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
     /* Rule G corollary 1: "selected" is neither a primary action nor correctness, so it
        gives up green — it used to be --color-primary-500, which is now the brand green and
        would read as "this is the right answer" before the reveal. White reads on all six
        option fills (they all carry a white label at >=4.83:1) and is theme-invariant like
        the tiles themselves. */
     border: 3px solid #ffffff;
-    transition: all 0.2s ease;
+    /* Form, not glow: a hard ring outside the white border. The former
+       0 16px 50px black bloom was the last of the neon stack. */
+    box-shadow: 0 0 0 2px var(--ink-2);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
     animation: selectedPulse 1.5s ease-in-out infinite;
+}
+
+/* Beats the (1,1,0) #player-game-screen tile rules above, which would
+   otherwise keep their inset hairline and swallow the selection ring. */
+#player-game-screen .player-option.selected,
+#player-game-screen .tf-option.selected {
+    box-shadow: 0 0 0 2px var(--ink-2);
 }
 
 /* Style reset class for clearing interaction states */
@@ -837,23 +845,25 @@
 /* Scope to game screens only — preview uses its own colorful backgrounds + checkmark badge */
 .player-option.correct:not(.preview-option) {
     background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end)) !important;
-    box-shadow: 0 12px 40px var(--true-shadow-hover) !important;
+    /* Hard ring, not a 40px bloom — correctness is carried by form. */
+    box-shadow: 0 0 0 3px var(--ink) !important;
     animation: correctPulse 2s ease-in-out infinite;
 }
 
 .player-option.incorrect:not(.preview-option) {
     background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end)) !important;
-    box-shadow: 0 12px 40px var(--false-shadow-hover) !important;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.16) !important;
     filter: brightness(0.8);
 }
 
 /* Animation for selected state */
+/* Ring breathes in width, not in blur — the pulse stays a form cue. */
 @keyframes selectedPulse {
     0%, 100% {
-        box-shadow: 0 16px 50px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 0 0 2px var(--ink-2);
     }
     50% {
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 0 0 5px var(--ink-2);
     }
 }
 
@@ -943,9 +953,9 @@
     font-weight: 700;
     color: var(--primary-ink);
     padding: 10px 20px;
-    background: var(--bg-glass);
-    border-radius: 50px;
-    border: 2px solid var(--primary);
+    background: var(--paper-2);
+    border-radius: var(--r-pill, 999px);
+    border: 1px solid var(--line-strong);
     min-width: 80px;
 }
 
@@ -1168,30 +1178,28 @@
     margin-top: 0.5rem;
     background: var(--paper-2);
     border: 1px solid var(--line);
-    border-radius: var(--border-radius);
+    border-radius: var(--r-md, 12px);
     font-size: 0.9rem;
-    color: var(--text-color, #fff);
+    color: var(--ink);
 }
 
+/* Mono micro-label. Was rgb(139,92,246) — a remnant of the retired violet
+   accent, which commit ef1a2fd took out of the palette. */
 .host-score-breakdown .breakdown-label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     font-weight: 600;
-    color: var(--accent-color, #8b5cf6);
+    color: var(--ink-3);
 }
 
 .host-score-breakdown .breakdown-content {
     font-family: var(--font-mono, monospace);
-    color: var(--text-secondary, #9ca3af);
+    color: var(--ink-2);
 }
 
-[data-theme="light"] .host-score-breakdown {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
-    border-color: rgba(139, 92, 246, 0.25);
-    color: #1f2937;
-}
-
-[data-theme="light"] .host-score-breakdown .breakdown-content {
-    color: #4b5563;
-}
+/* No per-theme override needed: --paper-2/--line/--ink all flip. */
 
 @media (max-width: 768px) {
     .host-score-breakdown {
@@ -1213,9 +1221,8 @@
 }
 
 .tf-option {
-    backdrop-filter: var(--blur-medium);
     border: 2px solid transparent;
-    border-radius: var(--border-radius);
+    border-radius: var(--r-lg, 14px);
     padding: 30px;
     text-align: center;
     font-size: 1.5rem;
@@ -1234,26 +1241,17 @@
 .tf-option.true-btn {
     background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end));
     border-color: var(--true-color-start);
-    box-shadow: 0 4px 20px var(--true-shadow);
 }
 
 .tf-option.false-btn {
     background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end));
     border-color: var(--false-color-start);
-    box-shadow: 0 4px 20px var(--false-shadow);
 }
 
 .tf-option:hover {
-    transform: translateY(-3px) scale(1.02);
-    filter: brightness(1.1);
-}
-
-.tf-option.true-btn:hover {
-    box-shadow: 0 8px 32px var(--true-shadow-hover);
-}
-
-.tf-option.false-btn:hover {
-    box-shadow: 0 8px 32px var(--false-shadow-hover);
+    /* No scale() — it blurs the label. Lift only. */
+    transform: translateY(-2px);
+    filter: brightness(1.06);
 }
 
 /* === PLAYER TRUE/FALSE OPTIONS === */
@@ -1266,9 +1264,8 @@
 }
 
 #player-true-false .tf-option {
-    backdrop-filter: var(--blur-medium);
     border: 2px solid transparent;
-    border-radius: var(--border-radius);
+    border-radius: var(--r-lg, 14px);
     padding: 24px;
     font-size: 1.3rem;
     font-weight: 600;
@@ -1284,47 +1281,48 @@
     overflow: visible; /* Was hidden — clipped .player-answered badge */
 }
 
+/* Flat index-keyed fills. The coloured 0 4px 20px halos are gone with the
+   rest of the neon stack; a hairline inset carries the edge instead. */
 #player-true-false .tf-option[data-answer="true"] {
     background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end)) !important;
     border-color: var(--true-color-start) !important;
-    box-shadow: 0 4px 20px var(--true-shadow) !important;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.16) !important;
 }
 
 #player-true-false .tf-option[data-answer="false"] {
     background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end)) !important;
     border-color: var(--false-color-start) !important;
-    box-shadow: 0 4px 20px var(--false-shadow) !important;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.16) !important;
 }
 
 #player-true-false .tf-option:hover {
-    transform: translateY(-4px) scale(1.02);
-    filter: brightness(1.1);
+    /* No scale() — it blurs the label. */
+    transform: translateY(-2px);
+    filter: brightness(1.06);
 }
 
-#player-true-false .tf-option[data-answer="true"]:hover {
-    box-shadow: 0 8px 32px var(--true-shadow-hover) !important;
-}
-
-#player-true-false .tf-option[data-answer="false"]:hover {
-    box-shadow: 0 8px 32px var(--false-shadow-hover) !important;
+#player-true-false .tf-option:active {
+    transform: translateY(1px);
+    filter: brightness(0.94);
 }
 
 #player-true-false .tf-option.selected {
-    transform: translateY(-4px) scale(1.05);
-    filter: brightness(1.2) saturate(1.2);
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 2px var(--ink-2) !important;
     animation: selectedPulse 1.5s ease-in-out infinite;
 }
 
-/* WCAG AA accessible colors for correct/incorrect states */
+/* Reveal states: correctness reads from FORM (the .player-answered badge and
+   the correct/incorrect markers), not from a bloom. */
 #player-true-false .tf-option.correct {
     background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end)) !important;
-    box-shadow: 0 12px 40px var(--true-shadow-hover) !important;
+    box-shadow: 0 0 0 3px var(--ink) !important;
     animation: correctPulse 2s ease-in-out infinite;
 }
 
 #player-true-false .tf-option.incorrect {
     background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end)) !important;
-    box-shadow: 0 12px 40px var(--false-shadow-hover) !important;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.16) !important;
     filter: brightness(0.8);
 }
 
@@ -1349,14 +1347,14 @@
     text-align: center;
     max-width: 300px;
     width: 100%;
-    background: var(--glass-medium);
-    backdrop-filter: var(--blur-medium);
-    border: 2px solid var(--glass-border);
-    border-radius: var(--border-radius);
-    color: var(--text-primary);
+    background: var(--paper-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md, 12px);
+    color: var(--ink);
     font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-sm);
+    font-variant-numeric: tabular-nums;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: none;
 }
 
 .numeric-input:focus,
@@ -1364,9 +1362,8 @@
 #preview-numeric-input:focus,
 #preview-numeric-input-split:focus {
     border-color: var(--focus-ring);
-    background: var(--glass-strong);
-    box-shadow: 0 0 0 3px var(--focus-ring-soft), var(--shadow-md);
-    transform: translateY(-2px);
+    background: var(--paper-2);
+    box-shadow: 0 0 0 3px var(--focus-ring-soft);
     outline: none;
 }
 
@@ -1396,7 +1393,7 @@
     align-items: center;
     padding: 16px 20px;
     border: 2px solid transparent;
-    border-radius: var(--border-radius);
+    border-radius: var(--r-lg, 14px);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     margin: 8px 0;
@@ -1405,7 +1402,6 @@
     font-weight: 600;
     width: 100%;
     max-width: 500px;
-    backdrop-filter: var(--blur-medium);
 }
 
 #player-multiple-correct .checkbox-option input[type="checkbox"] {
@@ -1444,9 +1440,8 @@
 
 /* Colorful Multiple Correct Player Options */
 .player-checkbox-option {
-    backdrop-filter: var(--blur-medium);
     border: 2px solid transparent;
-    border-radius: var(--border-radius);
+    border-radius: var(--r-lg, 14px);
     padding: 16px 20px;
     font-size: 1.1rem;
     font-weight: 500;
@@ -1529,9 +1524,9 @@
         justify-content: center;
         border-radius: 0;
         box-shadow: none;
-        background: linear-gradient(135deg, 
-            rgba(59, 130, 246, 0.15) 0%, 
-            rgba(147, 51, 234, 0.15) 100%);
+        /* Was a blue→violet wash from the retired --accent-primary/secondary
+           era (ef1a2fd). The leaderboard sits on paper on every viewport. */
+        background: var(--paper);
     }
     
     /* Final Results (Player) - Mobile fullscreen layout */
@@ -1591,7 +1586,13 @@
     z-index: 1;
 }
 
-.leaderboard .leaderboard-item {
+/* THE leaderboard row. This is the single base block — the second,
+   glass/podium `.leaderboard-item` definition that used to live further down
+   this file was deleted; it only ever contributed justify-content, which is
+   folded in here. Top-3 distinction is a form treatment owned by
+   app-screens.css (later import), so nothing here fights it. */
+.leaderboard .leaderboard-item,
+.final-leaderboard .final-leaderboard-item {
     background: transparent;
     border: none;
     border-bottom: 1px solid var(--line);
@@ -1601,35 +1602,55 @@
     margin-bottom: 0;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 20px;
     transition: var(--transition-smooth);
     position: relative;
     z-index: 1;
 }
 
-.leaderboard .leaderboard-item:hover {
+.leaderboard .leaderboard-item:last-child,
+.final-leaderboard .final-leaderboard-item:last-child {
+    border-bottom: none;
+}
+
+.leaderboard .leaderboard-item:hover,
+.final-leaderboard .final-leaderboard-item:hover {
     background: var(--paper-2);
 }
 
-/* Scores are a column of figures — tabular numerals keep them aligned. */
-.leaderboard .leaderboard-item > span:last-child {
+/* Scores are a column of figures — tabular numerals keep them aligned.
+   `.lb-score` is the explicit hook; the :last-child form covers rows still
+   emitted as bare spans. */
+.lb-score,
+.leaderboard .leaderboard-item > span:last-child,
+.final-leaderboard .final-leaderboard-item .player-score {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
     color: var(--ink-2);
 }
 
-/* Rank marking for the top 3. A left rule in the medal hue reads on paper;
-   the former metallic gradients and glow shadows did not. */
-.leaderboard .leaderboard-item:nth-child(1) {
-    border-left-color: var(--primary);
-    background: rgba(var(--primary-rgb), 0.12);
+.lb-name,
+.final-leaderboard .final-leaderboard-item .player-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
-.leaderboard .leaderboard-item:nth-child(2) {
+/* Rank marking for the top 3: a left rule only. The rank-1 green wash
+   rgba(--primary-rgb, .12) is gone — green means correctness here, and the
+   top-3 treatment belongs to app-screens.css. */
+.leaderboard .leaderboard-item:nth-child(1),
+.final-leaderboard .final-leaderboard-item:nth-child(1) {
+    border-left-color: var(--ink-2);
+}
+
+.leaderboard .leaderboard-item:nth-child(2),
+.final-leaderboard .final-leaderboard-item:nth-child(2) {
     border-left-color: var(--ink-3);
 }
 
-.leaderboard .leaderboard-item:nth-child(3) {
+.leaderboard .leaderboard-item:nth-child(3),
+.final-leaderboard .final-leaderboard-item:nth-child(3) {
     border-left-color: var(--ink-4);
 }
 
@@ -1935,19 +1956,17 @@
     gap: 12px;
     padding: 16px 20px;
     max-width: 600px;
-    background: linear-gradient(135deg,
-        rgba(59, 130, 246, 0.1) 0%,
-        rgba(59, 130, 246, 0.05) 100%);
-    border: 2px solid rgba(59, 130, 246, 0.3);
-    border-radius: var(--border-radius-large);
-    backdrop-filter: var(--blur-medium);
-    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
+    /* Was a hard-coded indigo tint from the retired --accent-primary era
+       (ef1a2fd). Explanations are informational, so they take the option-0
+       (informational blue) tint via token, on paper, with a hairline. */
+    background: color-mix(in srgb, var(--option-0-start) 8%, var(--paper-2));
+    border: 1px solid color-mix(in srgb, var(--option-0-start) 28%, var(--line));
+    border-radius: var(--r-lg, 14px);
 }
 
 .explanation-icon {
     font-size: 1.3rem;
     flex-shrink: 0;
-    filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
 }
 
 .explanation-text {
@@ -2042,60 +2061,16 @@
 }
 
 
-.leaderboard-title {
-    text-align: left;
-    font-family: var(--font-display);
-    font-size: clamp(28px, 2.6vw, 38px);
-    font-weight: 400;
-    letter-spacing: -0.02em;
-    color: var(--ink);
-    margin-bottom: 30px;
-}
-
 .leaderboard-list {
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
-.leaderboard-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--bg-glass);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 20px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: var(--transition-smooth);
-}
-
-.leaderboard-item:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-}
-
-.leaderboard-item.podium-1 {
-    background: linear-gradient(135deg, #ffd700, #ffed4e);
-    color: #1a1a1a;
-    border-color: #ffd700;
-    font-weight: 600;
-}
-
-.leaderboard-item.podium-2 {
-    background: linear-gradient(135deg, #c0c0c0, #e5e5e5);
-    color: #1a1a1a;
-    border-color: #c0c0c0;
-    font-weight: 600;
-}
-
-.leaderboard-item.podium-3 {
-    background: linear-gradient(135deg, #cd7f32, #d4955b);
-    color: white;
-    border-color: #cd7f32;
-    font-weight: 600;
-}
+/* The competing glass `.leaderboard-item` block and the `.podium-1/2/3`
+   metallic gradients that used to sit here were removed: the single base row
+   lives with `.leaderboard .leaderboard-item` above, and no JS ever wrote a
+   `podium-*` class (rows get .first/.second/.third). */
 
 .player-info {
     display: flex;
@@ -2125,12 +2100,11 @@
 
 /* Final Leaderboard (Player screens) */
 .final-leaderboard {
-    background: var(--glass-medium);
-    backdrop-filter: var(--blur-medium);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-large);
-    padding: 32px;
-    box-shadow: var(--shadow-lg);
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
+    padding: 8px 0;
+    box-shadow: var(--shadow-card);
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
@@ -2138,59 +2112,19 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 16px;
 }
 
-.final-leaderboard::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.05) 0%, 
-        rgba(255, 255, 255, 0.02) 50%, 
-        rgba(255, 255, 255, 0.05) 100%);
-    pointer-events: none;
-}
+/* .final-leaderboard::before removed — a white sheen over a glass sheet that
+   no longer exists. */
 
-.final-leaderboard .leaderboard-item {
-    background: var(--glass-light);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius);
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    transition: var(--transition-smooth);
-    position: relative;
-    z-index: 1;
-}
-
-.final-leaderboard .leaderboard-item:hover {
-    background: var(--glass-medium);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-}
-
-/* Medal styling for top 3 players */
-.final-leaderboard .leaderboard-item:nth-child(1) {
-    border-color: #ffd700;
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
-}
-
-.final-leaderboard .leaderboard-item:nth-child(2) {
-    border-color: #c0c0c0;
-    background: linear-gradient(135deg, rgba(192, 192, 192, 0.1) 0%, rgba(192, 192, 192, 0.05) 100%);
-}
-
-.final-leaderboard .leaderboard-item:nth-child(3) {
-    border-color: #cd7f32;
-    background: linear-gradient(135deg, rgba(205, 127, 50, 0.1) 0%, rgba(205, 127, 50, 0.05) 100%);
-}
+/* The `.final-leaderboard .leaderboard-item` glass rows and their metallic
+   medal gradients were dead — leaderboard-manager.js emits
+   `.final-leaderboard-item`. That live class is styled with the single base
+   row block above. */
 
 /* Player Final Container */
+/* Flat paper sheet. The blue→violet wash came from the retired
+   --accent-primary/--accent-secondary pair (ef1a2fd). */
 .player-final-container {
     max-width: 1400px;
     margin: 0 auto;
@@ -2199,70 +2133,61 @@
     flex-direction: column;
     gap: 32px;
     align-items: center;
-    background: linear-gradient(135deg, 
-        rgba(59, 130, 246, 0.1) 0%, 
-        rgba(147, 51, 234, 0.1) 100%);
-    border-radius: var(--border-radius-large);
-    backdrop-filter: var(--blur-medium);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-lg);
+    background: var(--paper);
+    border-radius: var(--r-lg, 14px);
+    border: 1px solid var(--line);
+    box-shadow: none;
     animation: slideInUp 0.6s ease-out;
 }
 
+/* Solid ink in the display face, matching the host's result headings. The
+   gradient-clipped text and its blue glow are gone. */
 .player-final-container h2 {
+    font-family: var(--font-display);
     font-size: 2.5rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--ink);
     text-align: center;
     margin-bottom: 16px;
-    text-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
 }
 
 /* Player Final Rank Card */
 .player-rank {
-    background: var(--glass-strong);
-    backdrop-filter: var(--blur-strong);
-    border: 2px solid var(--glass-border);
-    border-radius: var(--border-radius-large);
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
     padding: 40px;
     text-align: center;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-card);
     min-width: 320px;
     position: relative;
     overflow: hidden;
 }
 
-.player-rank::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.1) 0%, 
-        rgba(255, 255, 255, 0.05) 50%, 
-        rgba(255, 255, 255, 0.1) 100%);
-    pointer-events: none;
-}
+/* .player-rank::before removed — a white sheen over a glass card that no
+   longer exists. */
 
+/* Mono micro-label above the rank figure. */
 .player-rank h3 {
-    font-size: 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--ink-3);
     margin-bottom: 20px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.08em;
 }
 
+/* The blue glow was a remnant of the retired indigo accent (ef1a2fd). A rank
+   figure at 4rem needs no halo. */
 .final-position {
+    font-family: var(--font-display);
     font-size: 4rem;
-    font-weight: 900;
-    color: var(--accent-primary);
-    text-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
     margin-bottom: 16px;
     position: relative;
     z-index: 1;
@@ -2277,9 +2202,9 @@
     color: var(--primary-ink);
     background: rgba(var(--primary-rgb), 0.12);
     padding: 12px 24px;
-    border-radius: var(--border-radius);
+    border-radius: var(--r-md, 12px);
     border: 1px solid rgba(var(--primary-rgb), 0.3);
-    box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.2);
+    font-variant-numeric: tabular-nums;
     position: relative;
     z-index: 1;
 }
@@ -2291,22 +2216,22 @@
 }
 
 .top-players h3 {
+    font-family: var(--font-display);
     font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--text-primary);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--ink);
     text-align: center;
     margin-bottom: 24px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Player Concept Mastery Section */
 .player-concept-mastery {
     width: 100%;
     max-width: 600px;
-    background: var(--glass-strong);
-    backdrop-filter: var(--blur-strong);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-large);
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
     padding: 24px;
     margin-top: 8px;
 }
@@ -2387,13 +2312,12 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: var(--glass-strong);
-    backdrop-filter: var(--blur-strong);
-    border: 2px solid var(--glass-border);
-    border-radius: var(--border-radius-large);
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
     padding: 48px 40px;
     text-align: center;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-card);
     z-index: 1000;
     animation: resultPop 0.5s ease-out;
     min-width: 320px;
@@ -2440,10 +2364,9 @@
 
 /* Basic feedback container for inline feedback */
 .feedback {
-    background: var(--glass-medium);
-    backdrop-filter: var(--blur-medium);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius);
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
     padding: 24px;
     margin: 20px 0;
     text-align: center;
@@ -2753,9 +2676,9 @@
 
 /* Modal score display styling */
 .feedback-modal .score-display {
-    background: var(--glass-light);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
+    background: var(--paper-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md, 12px);
     padding: 20px 24px;
     font-size: 1.4rem;
     font-weight: 700;
@@ -2763,7 +2686,8 @@
     color: var(--text-primary);
     display: none;
     min-width: 140px;
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-variant-numeric: tabular-nums;
+    box-shadow: none;
 }
 
 /* Show score when has-score class is present */
@@ -2796,9 +2720,10 @@
 /* Modal explanation display */
 .feedback-modal .modal-explanation {
     display: none;
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    border-radius: 10px;
+    /* Token-based informational tint (option-0), not the retired indigo. */
+    background: color-mix(in srgb, var(--option-0-start) 8%, var(--paper-2));
+    border: 1px solid color-mix(in srgb, var(--option-0-start) 28%, var(--line));
+    border-radius: var(--r-sm, 10px);
     padding: 12px 16px;
     margin-top: 16px;
     margin-left: auto;
@@ -2837,10 +2762,11 @@
     }
 }
 
-/* Dark theme explanation */
+/* Dark theme explanation — --paper-2 and --option-0-start both flip/hold, but
+   the tint needs a touch more weight to separate from the dark sheet. */
 [data-theme="dark"] .feedback-modal .modal-explanation {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.4);
+    background: color-mix(in srgb, var(--option-0-start) 16%, var(--paper-2));
+    border-color: color-mix(in srgb, var(--option-0-start) 42%, var(--line));
 }
 
 /* Modal animations - feedbackBounce removed, confetti provides celebration */
@@ -3200,10 +3126,6 @@
     .final-leaderboard {
         padding: 24px 16px;
     }
-    
-    .leaderboard-title {
-        font-size: 24px;
-    }
 }
 
 @media (max-width: 480px) {
@@ -3535,9 +3457,9 @@
         /* Question header stays but becomes more compact */
         .question-header {
             padding: 8px 12px;
-            background: var(--glass-medium);
-            backdrop-filter: var(--blur-medium);
-            border-radius: 12px;
+            background: var(--paper-2);
+            border: 1px solid var(--line);
+            border-radius: var(--r-md, 12px);
             margin-bottom: 15px;
         }
         
@@ -3715,3 +3637,18 @@
     }
 }
 
+
+/* === MOBILE RADIUS CORRECTION (PLAYER ANSWER SURFACES) ===================
+   responsive.css's universal 44px touch-target rule (≤768px) also forces
+   `border-radius: 8px !important` on .player-option/.tf-option/.checkbox-option.
+   8px is off the {10,12,14,999} scale, so phones rendered a different corner
+   than desktop. ID-scoped (1,1,0) beats that rule's (0,3,1) so the correction
+   lands. RADIUS ONLY — min-height/min-width/padding are left to the touch-target
+   rule, which is what keeps these ≥44px. */
+@media (max-width: 768px) {
+    #player-game-screen .player-option,
+    #player-true-false .tf-option,
+    #player-multiple-correct .checkbox-option {
+        border-radius: var(--r-lg, 14px) !important;
+    }
+}

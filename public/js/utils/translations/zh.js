@@ -1506,4 +1506,41 @@ export default {
     landing_footer_howto: '工作原理',
     landing_footer_connect_title: '联系',
     landing_footer_license: 'MIT 许可证',
+
+    // Editor 2a Stage B: question sidebar + preview column
+    qs_no_text: '无文本',
+    minutes_short: '分',
+    try_full_quiz: '试玩完整测验',
+
+    // Editor 2a Stage C: question form restyle
+    type_label: '类型',
+    difficulty_label: '难度',
+    points_label: '分数',
+    concepts_max: '· 最多5个',
+    correct_pill: '✓ 正确',
+    mark_correct_pill: '标记',
+    image_label: '图片',
+    image_drop_hint: '拖放或点击',
+    explanation_hint: '回答后显示',
+    duplicate_question: '复制',
+    delete_question: '删除',
+
+    // Editor 2a Stage D — validation surfaces + autosave stamp
+    val_no_text: '无文本',
+    val_no_correct: '未设置正确答案',
+    val_correct_empty: '正确选项为空',
+    val_too_few_options: '至少需要2个选项',
+    val_no_numeric: '无数值答案',
+    val_strip_one: '创建房间前有1道题需要处理',
+    val_strip_many: '创建房间前有{0}道题需要处理',
+    val_go_first: '跳到第一个',
+    val_dismiss: '关闭',
+    quiz_status_title: '测验状态',
+    val_ready_one: '1 道题已就绪',
+    val_ready_many: '{0} 道题已就绪',
+    val_pill_one: '1 条提醒 · 查看',
+    val_pill_many: '{0} 条提醒 · 查看',
+    val_option_empty_helper: '创建房间前请填写或删除该选项',
+    editor_saving: '保存中…',
+    editor_saved: '已保存',
 };

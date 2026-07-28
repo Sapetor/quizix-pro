@@ -1520,4 +1520,41 @@ export default {
     landing_footer_howto: 'How it works',
     landing_footer_connect_title: 'Connect',
     landing_footer_license: 'MIT License',
+
+    // Editor 2a Stage B: question sidebar + preview column
+    qs_no_text: 'No text',
+    minutes_short: 'MIN',
+    try_full_quiz: 'Try the full quiz',
+
+    // Editor 2a Stage C: question form restyle
+    type_label: 'Type',
+    difficulty_label: 'Difficulty',
+    points_label: 'Points',
+    concepts_max: '· max 5',
+    correct_pill: '✓ Correct',
+    mark_correct_pill: 'Mark',
+    image_label: 'Image',
+    image_drop_hint: 'drag & drop or click',
+    explanation_hint: 'shown after answering',
+    duplicate_question: 'Duplicate',
+    delete_question: 'Delete',
+
+    // Editor 2a Stage D — validation surfaces + autosave stamp
+    val_no_text: 'no text',
+    val_no_correct: 'no correct answer',
+    val_correct_empty: 'correct option is empty',
+    val_too_few_options: 'needs 2 options',
+    val_no_numeric: 'no numeric answer',
+    val_strip_one: '1 question needs attention before creating the room',
+    val_strip_many: '{0} questions need attention before creating the room',
+    val_go_first: 'Go to first',
+    val_dismiss: 'Dismiss',
+    quiz_status_title: 'Quiz status',
+    val_ready_one: '1 question ready',
+    val_ready_many: '{0} questions ready',
+    val_pill_one: '1 warning · view',
+    val_pill_many: '{0} warnings · view',
+    val_option_empty_helper: 'Write the option or remove it before creating the room',
+    editor_saving: 'Saving…',
+    editor_saved: 'Saved',
 };

@@ -1509,4 +1509,41 @@ export default {
     landing_footer_howto: 'So funktioniert es',
     landing_footer_connect_title: 'Verbinden',
     landing_footer_license: 'MIT-Lizenz',
+
+    // Editor 2a Stage B: question sidebar + preview column
+    qs_no_text: 'Kein Text',
+    minutes_short: 'MIN',
+    try_full_quiz: 'Ganzes Quiz testen',
+
+    // Editor 2a Stage C: question form restyle
+    type_label: 'Typ',
+    difficulty_label: 'Schwierigkeit',
+    points_label: 'Punkte',
+    concepts_max: '· max. 5',
+    correct_pill: '✓ Richtig',
+    mark_correct_pill: 'Markieren',
+    image_label: 'Bild',
+    image_drop_hint: 'ziehen oder klicken',
+    explanation_hint: 'wird nach der Antwort gezeigt',
+    duplicate_question: 'Duplizieren',
+    delete_question: 'Löschen',
+
+    // Editor 2a Stage D — validation surfaces + autosave stamp
+    val_no_text: 'kein Text',
+    val_no_correct: 'keine richtige Antwort',
+    val_correct_empty: 'richtige Option ist leer',
+    val_too_few_options: 'braucht 2 Optionen',
+    val_no_numeric: 'keine numerische Antwort',
+    val_strip_one: '1 Frage braucht Aufmerksamkeit, bevor der Raum erstellt wird',
+    val_strip_many: '{0} Fragen brauchen Aufmerksamkeit, bevor der Raum erstellt wird',
+    val_go_first: 'Zur ersten',
+    val_dismiss: 'Ausblenden',
+    quiz_status_title: 'Quiz-Status',
+    val_ready_one: '1 Frage bereit',
+    val_ready_many: '{0} Fragen bereit',
+    val_pill_one: '1 Hinweis · ansehen',
+    val_pill_many: '{0} Hinweise · ansehen',
+    val_option_empty_helper: 'Fülle die Option aus oder entferne sie, bevor der Raum erstellt wird',
+    editor_saving: 'Speichern…',
+    editor_saved: 'Gespeichert',
 };

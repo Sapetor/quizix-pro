@@ -442,7 +442,7 @@ header.header-offscreen.header-collapsed {
 .lobby-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
-    border-color: rgba(59, 130, 246, 0.3);
+    border-color: rgba(var(--primary-rgb), 0.3);
 }
 
 .players-list-card:hover {
@@ -454,7 +454,7 @@ header.header-offscreen.header-collapsed {
 }
 
 .info-card:hover {
-    border-color: rgba(59, 130, 246, 0.4);
+    border-color: rgba(var(--primary-rgb), 0.4);
 }
 
 .action-card:hover {
@@ -517,8 +517,8 @@ header.header-offscreen.header-collapsed {
 
 /* Combined info card should match left column height */
 .combined-info-card {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1));
-    border-color: rgba(59, 130, 246, 0.2);
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05), rgba(var(--primary-rgb), 0.1));
+    border-color: rgba(var(--primary-rgb), 0.2);
     flex: 1;
     /* Take up all available height to match left column */
     display: flex;
@@ -619,8 +619,8 @@ header.header-offscreen.header-collapsed {
 
 /* Card 3: Info Card (PIN + Player Count) Styling */
 .info-card {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1));
-    border-color: rgba(59, 130, 246, 0.2);
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05), rgba(var(--primary-rgb), 0.1));
+    border-color: rgba(var(--primary-rgb), 0.2);
 }
 
 .game-info-row {
@@ -653,9 +653,11 @@ header.header-offscreen.header-collapsed {
     margin-bottom: 4px;
 }
 
+/* Sits INSIDE .pin-display, i.e. on the tinted ground, not on the card.
+   --ink-3 (= --text-secondary) is only 4.05:1 there in dark; --ink-2 is 7.3:1. */
 .pin-text {
     font-size: 0.7rem;
-    color: var(--text-secondary);
+    color: var(--ink-2);
     text-align: center;
     margin-bottom: 2px;
     font-weight: 400;
@@ -665,10 +667,10 @@ header.header-offscreen.header-collapsed {
     font-size: 1.8rem;
     font-weight: 800;
     color: var(--color-primary-500);
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(var(--primary-rgb), 0.1);
     padding: 8px 16px;
     border-radius: 8px;
-    border: 2px dashed rgba(59, 130, 246, 0.3);
+    border: 2px dashed rgba(var(--primary-rgb), 0.3);
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: all;
@@ -678,11 +680,11 @@ header.header-offscreen.header-collapsed {
 
 .pin-display:hover,
 .pin-display:focus {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.5);
+    background: rgba(var(--primary-rgb), 0.15);
+    border-color: rgba(var(--primary-rgb), 0.5);
     transform: scale(1.05);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 3px var(--focus-ring-soft);
 }
 
 .pin-display:active {
@@ -695,15 +697,20 @@ header.header-offscreen.header-collapsed {
     gap: 6px;
 }
 
+/* Emoji glyph — `color` was a no-op on colour-presentation 👥 and a retired-amber
+   literal on the text-presentation fallback. Inherits --text-primary now. */
 .player-icon {
     font-size: 1.5rem;
-    color: rgba(245, 158, 11, 0.8);
 }
 
+/* Ink + mono, matching the numeric treatment used elsewhere in the lobby.
+   Amber here read as a warning state on a purely informational count. */
 .player-count-number {
     font-size: 2rem;
     font-weight: 800;
-    color: rgba(245, 158, 11, 0.9);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     transform-origin: center;
 }
@@ -742,8 +749,11 @@ header.header-offscreen.header-collapsed {
     align-items: center;
     gap: 8px;
     padding: 6px 10px;
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    /* Neutral chip: --line-2/--line stay distinguishable from --card-bg in BOTH
+       themes (light #e7e9ef on #fff, dark #232833 on #1e222c), which a brand tint
+       at these alphas does not. */
+    background: var(--line-2);
+    border: 1px solid var(--line);
     border-radius: 6px;
     transition: all 0.2s ease;
     min-width: 0;
@@ -751,8 +761,8 @@ header.header-offscreen.header-collapsed {
 }
 
 .player-item:hover {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.5);
+    background: var(--line);
+    border-color: var(--line-strong);
 }
 
 .player-avatar {
@@ -1027,8 +1037,10 @@ header.header-offscreen.header-collapsed {
         gap: 0;
         max-width: none;
         width: 100%;
-        height: calc(100dvh - 50px);
-        /* Reduced header height (was 65px) */
+        /* Fill the height #host-screen was given (viewport minus real chrome);
+           see the body:has(...) block at the end of this file. */
+        height: 100%;
+        min-height: 0;
         padding: 0;
         margin: 0;
         overflow: hidden !important;
@@ -1121,24 +1133,21 @@ header.header-offscreen.header-collapsed {
         padding: 6px 12px;
     }
 
-    /* Questions container - fill remaining space */
+    /* Questions container - fill remaining space and OWN the vertical
+       scroll (a visible scrollbar on the form column, not an invisible
+       inner scroller on .question-body). */
     .host-container.always-preview #questions-container {
         flex: 1;
-        overflow: hidden !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
         position: relative;
         min-height: 0;
         /* Important for flex overflow */
     }
 
-    /* Individual question items - fill container, compact padding */
+    /* Individual question items - natural height inside the scrolling
+       container; visibility toggled via pagination. */
     .host-container.always-preview .question-item {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        overflow: hidden !important;
-        /* No scroll on container */
         display: none;
         /* Hidden by default, shown via pagination */
         flex-direction: column;
@@ -1163,15 +1172,10 @@ header.header-offscreen.header-collapsed {
         /* Compact header padding */
     }
 
-    /* Question body - ONLY this should scroll */
+    /* Question body - natural height; #questions-container scrolls */
     .host-container.always-preview .question-item .question-body {
-        flex: 1;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
         padding: 8px;
         /* Reduced from 16px */
-        min-height: 0;
-        /* Important for flex overflow */
     }
 
     /* Multiple correct options - align checkbox with text input */
@@ -1397,14 +1401,28 @@ header.header-offscreen.header-collapsed {
         overflow: hidden !important;
     }
 
+    /* The editor fills exactly the viewport minus the real chrome above and
+       below it, measured instead of guessed: .container is a flex column of
+       [sticky .app-header, main], with 12px padding top and bottom. Pinning
+       .container to 100dvh and letting main take the remainder (flex:1 +
+       min-height:0) makes the leftover exact, so the grid never spills past
+       the window. The old `calc(100dvh - 50px)` under-counted the chrome by
+       39px (12 + 65 + 12 = 89, not 50) and pushed the action bar 27px below
+       the fold. */
+    body:has(#host-screen.active .host-container.always-preview) .container {
+        height: 100dvh;
+    }
+
     body:has(#host-screen.active .host-container.always-preview) main {
         overflow: hidden !important;
+        flex: 1;
+        min-height: 0;
     }
 
     body:has(#host-screen.active .host-container.always-preview) #host-screen {
         overflow: hidden !important;
-        height: calc(100dvh - 50px);
-        /* Reduced header height (was 65px) */
+        height: 100%;
+        min-height: 0;
     }
 }
 
@@ -1514,15 +1532,15 @@ header.header-offscreen.header-collapsed {
 }
 
 .settings-modal {
-    background: #1a1f26;
-    border: 1px solid #30363d;
-    border-radius: 12px;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
     padding: 0;
     max-width: 440px;
     width: 100%;
     max-height: 85vh;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    box-shadow: var(--shadow-card);
 }
 
 .settings-modal-header {
@@ -1530,39 +1548,40 @@ header.header-offscreen.header-collapsed {
     align-items: center;
     justify-content: space-between;
     padding: 20px 24px;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(139, 92, 246, 0.1));
-    border-bottom: 1px solid var(--border-color);
+    background: transparent;
+    border-bottom: 1px solid var(--line);
 }
 
 .settings-modal-header h3 {
     margin: 0;
+    font-family: var(--font-display);
     font-size: 1.15rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--ink);
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
 .settings-modal-close {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
+    background: transparent;
+    border: 1px solid var(--line);
     font-size: 1.25rem;
-    color: var(--text-secondary);
+    color: var(--ink-3);
     cursor: pointer;
     width: 32px;
     height: 32px;
-    border-radius: 8px;
+    border-radius: var(--r-sm, 10px);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .settings-modal-close:hover {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-    transform: scale(1.05);
+    background: var(--paper-3);
+    border-color: var(--ink-4);
+    color: var(--ink);
 }
 
 .settings-modal-content {
@@ -1577,10 +1596,10 @@ header.header-offscreen.header-collapsed {
 /* Settings sections */
 .settings-modal-content .settings-section {
     padding: 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 12px;
+    background: var(--paper-3);
+    border-radius: var(--r-md, 12px);
     margin-bottom: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
 }
 
 .settings-modal-content .settings-section:last-child {
@@ -1591,7 +1610,7 @@ header.header-offscreen.header-collapsed {
     margin: 0 0 12px 0;
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--ink-3);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -1602,13 +1621,13 @@ header.header-offscreen.header-collapsed {
     gap: 12px;
     padding: 10px 12px;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: var(--r-sm, 10px);
     transition: background 0.15s ease;
     margin: 0 -4px;
 }
 
 .settings-modal-content label:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--paper-2);
 }
 
 .settings-modal-content label input[type="checkbox"] {
@@ -1623,7 +1642,7 @@ header.header-offscreen.header-collapsed {
 
 .settings-modal-content label span,
 .settings-modal-content label strong {
-    color: var(--text-primary);
+    color: var(--ink);
     font-size: 0.95rem;
     line-height: 1.4;
 }
@@ -1632,13 +1651,13 @@ header.header-offscreen.header-collapsed {
 .settings-modal-content .difficulty-multipliers {
     margin-top: 8px;
     padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--line);
 }
 
 .settings-modal-content .multipliers-label {
     display: block;
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--ink-3);
     margin-bottom: 12px;
 }
 
@@ -1654,20 +1673,20 @@ header.header-offscreen.header-collapsed {
     align-items: center;
     gap: 6px;
     padding: 12px 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--paper-2);
+    border-radius: var(--r-sm, 10px);
+    border: 1px solid var(--line);
     margin: 0;
 }
 
 .settings-modal-content .multiplier-input:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(102, 126, 234, 0.3);
+    background: var(--paper-2);
+    border-color: var(--ink-4);
 }
 
 .settings-modal-content .multiplier-input span {
     font-size: 0.8rem;
-    color: var(--text-secondary);
+    color: var(--ink-3);
     font-weight: 500;
 }
 
@@ -1677,25 +1696,25 @@ header.header-offscreen.header-collapsed {
     text-align: center;
     font-size: 1rem;
     font-weight: 600;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(0, 0, 0, 0.2);
-    color: var(--text-primary);
+    border-radius: var(--r-sm, 10px);
+    border: 1px solid var(--line);
+    background: var(--paper-2);
+    color: var(--ink);
 }
 
 .settings-modal-content .multiplier-input input[type="number"]:focus {
     outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 3px var(--focus-ring-soft);
 }
 
 /* Time setting container */
 .settings-modal-content .time-setting-container {
     margin: 8px 0 0 30px;
     padding: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 8px;
-    border-left: 3px solid var(--accent-primary);
+    background: var(--paper-2);
+    border-radius: var(--r-sm, 10px);
+    border: 1px solid var(--line);
 }
 
 .settings-modal-content .time-input-label {
@@ -1714,10 +1733,10 @@ header.header-offscreen.header-collapsed {
     width: 70px;
     padding: 8px 12px;
     text-align: center;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(0, 0, 0, 0.2);
-    color: var(--text-primary);
+    border-radius: var(--r-sm, 10px);
+    border: 1px solid var(--line);
+    background: var(--paper-2);
+    color: var(--ink);
     font-size: 0.95rem;
 }
 
@@ -1731,85 +1750,17 @@ header.header-offscreen.header-collapsed {
 }
 
 .settings-modal-content::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--ink-4);
     border-radius: 3px;
 }
 
 .settings-modal-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--ink-3);
 }
 
-/* Light theme adjustments */
-[data-theme="light"] .settings-modal {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .settings-modal-header {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(139, 92, 246, 0.05));
-    border-bottom-color: #e2e8f0;
-}
-
-[data-theme="light"] .settings-modal-header h3 {
-    color: #1a202c;
-}
-
-[data-theme="light"] .settings-modal-close {
-    background: rgba(0, 0, 0, 0.05);
-    color: #4a5568;
-}
-
-[data-theme="light"] .settings-modal-close:hover {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-}
-
-[data-theme="light"] .settings-modal-content .settings-section {
-    background: #f7fafc;
-    border-color: #e2e8f0;
-}
-
-[data-theme="light"] .settings-modal-content .settings-section h4 {
-    color: #4a5568;
-}
-
-[data-theme="light"] .settings-modal-content label span,
-[data-theme="light"] .settings-modal-content label strong {
-    color: #1a202c;
-}
-
-[data-theme="light"] .settings-modal-content label:hover {
-    background: rgba(0, 0, 0, 0.03);
-}
-
-[data-theme="light"] .settings-modal-content .multiplier-input {
-    background: #ffffff;
-    border-color: #e2e8f0;
-}
-
-[data-theme="light"] .settings-modal-content .multiplier-input:hover {
-    background: #f7fafc;
-}
-
-[data-theme="light"] .settings-modal-content .multiplier-input span {
-    color: #4a5568;
-}
-
-[data-theme="light"] .settings-modal-content .multiplier-input input[type="number"],
-[data-theme="light"] .settings-modal-content .time-input {
-    background: #ffffff;
-    border-color: #e2e8f0;
-    color: #1a202c;
-}
-
-[data-theme="light"] .settings-modal-content .multipliers-label {
-    color: #4a5568;
-}
-
-[data-theme="light"] .settings-modal-content .difficulty-multipliers {
-    border-top-color: #e2e8f0;
-}
+/* No [data-theme="light"] block: every colour above is a --paper/--ink/--line
+   token, and those already flip with the theme. The block that used to sit here
+   restated the same rules in a private #1a1f26/#e2e8f0 palette. */
 
 /* Hide settings on mobile - they use the existing inline layout */
 @media (max-width: 768px) {

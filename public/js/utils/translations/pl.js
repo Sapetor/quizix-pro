@@ -1523,4 +1523,41 @@ export default {
     landing_footer_howto: 'Jak to działa',
     landing_footer_connect_title: 'Kontakt',
     landing_footer_license: 'Licencja MIT',
+
+    // Editor 2a Stage B: question sidebar + preview column
+    qs_no_text: 'Brak tekstu',
+    minutes_short: 'MIN',
+    try_full_quiz: 'Wypróbuj cały quiz',
+
+    // Editor 2a Stage C: question form restyle
+    type_label: 'Typ',
+    difficulty_label: 'Trudność',
+    points_label: 'Punkty',
+    concepts_max: '· maks. 5',
+    correct_pill: '✓ Poprawna',
+    mark_correct_pill: 'Zaznacz',
+    image_label: 'Obraz',
+    image_drop_hint: 'przeciągnij lub kliknij',
+    explanation_hint: 'wyświetlane po odpowiedzi',
+    duplicate_question: 'Duplikuj',
+    delete_question: 'Usuń',
+
+    // Editor 2a Stage D — validation surfaces + autosave stamp
+    val_no_text: 'brak treści',
+    val_no_correct: 'brak poprawnej odpowiedzi',
+    val_correct_empty: 'poprawna opcja jest pusta',
+    val_too_few_options: 'wymaga 2 opcji',
+    val_no_numeric: 'brak odpowiedzi liczbowej',
+    val_strip_one: '1 pytanie wymaga uwagi przed utworzeniem pokoju',
+    val_strip_many: '{0} pytań wymaga uwagi przed utworzeniem pokoju',
+    val_go_first: 'Przejdź do pierwszego',
+    val_dismiss: 'Zamknij',
+    quiz_status_title: 'Stan quizu',
+    val_ready_one: '1 pytanie gotowe',
+    val_ready_many: '{0} pytań gotowych',
+    val_pill_one: '1 uwaga · zobacz',
+    val_pill_many: '{0} uwag · zobacz',
+    val_option_empty_helper: 'Uzupełnij opcję lub usuń ją przed utworzeniem pokoju',
+    editor_saving: 'Zapisywanie…',
+    editor_saved: 'Zapisano',
 };

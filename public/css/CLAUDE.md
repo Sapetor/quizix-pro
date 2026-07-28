@@ -144,7 +144,7 @@ Multiple correct questions should display as **simple checkbox lists**, NOT styl
 The preview system includes colorful options for visual distinction.
 All colors meet WCAG AA contrast requirements (≥4.5:1) with white text:
 - Option A: Blue (`#2563eb` → `#1d4ed8`) - 5.17:1 / 6.70:1
-- Option B: Green (`#047857` → `#065f46`) - 5.48:1 / 7.68:1
+- Option B: Teal (`#0f766e` → `#115e59`) - 5.47:1 / 7.58:1 (teal, not green: green was `--correct`)
 - Option C: Orange (`#b45309` → `#92400e`) - 5.02:1 / 7.09:1
 - Option D: Red (`#dc2626` → `#b91c1c`) - 4.83:1 / 6.47:1
 - Option E: Purple (`#7c3aed` → `#6d28d9`) - 5.70:1 / 7.10:1

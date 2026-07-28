@@ -61,7 +61,8 @@
 [data-theme="dark"] #game-lobby .combined-info-card {
     background: var(--paper-2);
     border: 1px solid var(--line);
-    border-radius: 20px;
+    /* Radius scale is {10,12,14,999} only — 20px was off-system. */
+    border-radius: var(--r-lg, 14px);
     padding: 28px;
     box-shadow: none;
     position: relative;
@@ -80,7 +81,7 @@
     position: absolute;
     inset: 12px;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--r-md, 12px);
     pointer-events: none;
 }
 
@@ -91,11 +92,15 @@
     background: transparent;
     border: none;
 }
+/* Micro-label system: mono 10px/600/uppercase/0.12em. One idiom for every
+   kicker on the in-game screens (card kickers, PIN label, stats headings,
+   answered-count). The font-family declaration stays here so the treatment
+   holds whether or not the markup carries WP-A's `ed-mono` escape hatch. */
 #game-lobby .players-list-card .card-header .card-title {
-    font-family: var(--font-body);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.18em;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--ink-3);
     display: inline-flex;
@@ -124,10 +129,11 @@
     align-items: baseline;
     gap: 12px;
 }
+/* No font-variation-settings: the game screens are Space Grotesk (Fraunces is
+   editor-only), and "opsz"/"SOFT"/"WONK" are inert axes there. */
 #game-lobby .players-list-card .card-heading em {
     font-style: italic;
     color: var(--primary-ink);
-    font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
 }
 #game-lobby .players-list-card .card-heading .waiting {
     display: inline-flex;
@@ -162,6 +168,9 @@
 #game-lobby .players-list-card .players-grid {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* The card is taller than its rows; without this the implicit rows stretch
+       to fill it and each chip grew to the full row height (196x379px). */
+    align-content: start;
     gap: 10px;
     padding: 0;
     min-height: 0;
@@ -241,10 +250,10 @@
 
 /* Combined info card: PIN + QR + start */
 #game-lobby .combined-info-card .card-header .card-title {
-    font-family: var(--font-body);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.18em;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--ink-3);
     display: inline-flex;
@@ -278,10 +287,10 @@
 }
 
 #game-lobby .combined-info-card .pin-text {
-    font-family: var(--font-body);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.18em;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--ink-3);
     margin-bottom: 0;
@@ -292,6 +301,9 @@
 [data-theme="dark"] #game-lobby .pin-display {
     background: transparent;
     border: none;
+    /* components.css:979 leaves --border-radius-medium (15px) on the box, which
+       is off-system and shows on the focus ring. */
+    border-radius: var(--r-lg, 14px);
     padding: 0;
     color: var(--ink);
     font-family: var(--font-mono);
@@ -319,9 +331,15 @@
     outline: none;
 }
 
-#game-lobby .combined-info-card .game-url {
+/* Micro-label weight/size/tracking, but NOT `text-transform: uppercase`: this
+   is a URL players read off a projector and retype, and case-folding it both
+   misrepresents the path and costs word-shape legibility. */
+#game-lobby .combined-info-card .game-url,
+#game-lobby #game-url {
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
     color: var(--ink-3);
     margin-top: 8px;
     text-align: left;
@@ -335,12 +353,12 @@
     background: var(--paper);
     padding: 10px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: var(--r-lg, 14px);
 }
 #game-lobby .combined-info-card #qr-code-image {
     width: 100%;
     height: auto;
-    border-radius: 6px;
+    border-radius: var(--r-sm, 10px);
     box-shadow: none;
     background: #fff;
 }
@@ -377,7 +395,7 @@
     padding: 18px 24px;
     background: var(--primary);
     border: none;
-    border-radius: 14px;
+    border-radius: var(--r-lg, 14px);
     color: var(--primary-label);
     font-family: var(--font-body);
     font-size: 16px;
@@ -410,6 +428,37 @@
 #game-lobby .combined-info-card .btn.large-start-btn:active {
     transform: translateY(4px);
     box-shadow: none;
+}
+
+/* Release All Players is a rare escape hatch, not a second CTA. Ghost text
+   button under Start Game: no fill, no edge, hairline only on hover. The
+   `.hidden` state stays with utilities — nothing here touches `display`. */
+#game-lobby .combined-info-card #release-session-btn.btn,
+[data-theme="light"] #game-lobby .combined-info-card #release-session-btn.btn,
+[data-theme="dark"] #game-lobby .combined-info-card #release-session-btn.btn {
+    align-self: center;
+    width: auto;
+    min-height: 0;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--r-pill, 999px);
+    box-shadow: none;
+    color: var(--ink-3);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    transition: color var(--duration-fast) var(--ease-smooth),
+                border-color var(--duration-fast) var(--ease-smooth);
+}
+#game-lobby .combined-info-card #release-session-btn.btn:hover {
+    background: transparent;
+    transform: none;
+    box-shadow: none;
+    color: var(--ink);
+    border-color: var(--line);
 }
 
 /* Quiz name at bottom */
@@ -554,7 +603,8 @@
     max-width: 1000px;
     margin: 0 auto;
     text-align: center;
-    font-variation-settings: "opsz" 144, "SOFT" 40, "WONK" 0;
+    /* (No font-variation-settings — same dead Fraunces axes as the lobby
+       heading; the projected question is Space Grotesk.) */
     /* #current-question also carries .question-display, which paints a
        glass card (white 0.9 + shadow-lg). The projected question is type on
        paper, not a card — reset it here rather than at the generic class,
@@ -620,14 +670,28 @@
     /* reserve ~80px on the right for the ::after percentage label */
     padding: 22px 84px 22px 26px;
     border: none;
-    border-radius: 14px;
+    border-radius: var(--r-lg, 14px);
     min-height: 84px;
     backdrop-filter: none;
     display: flex;
     align-items: center;
+    gap: 16px;
     justify-content: flex-start;
     box-shadow: none;
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Kill the per-option coloured keycap edge + ambient glow that game.css:743-796
+   paints on `#host-game-screen .option-display[data-option="N"]` (the audit's
+   "red glow on option D"). The host tiles are flat projected surfaces; the
+   press physics belong to the player's tappable buttons, which keep them.
+   Same specificity as game.css, later import → wins without `!important`.
+   Placed BEFORE the `.correct` cluster below so the ink inset ring still wins. */
+#host-game-screen .option-display[data-option] {
+    box-shadow: none;
+}
+#host-game-screen .option-display[data-option]:hover {
+    box-shadow: none;
 }
 
 #host-game-screen .option-display::before {
@@ -675,6 +739,29 @@
     padding-right: 26px;
 }
 
+/* Index-keyed shape chip on the host tile — same idiom as the player button:
+   translucent white on the option's own gradient, never a second hue.
+   Sized up for projection (the 32px components.css chip is a phone size).
+   NOTE: as of this pass the host markup has no `.option-shape` span —
+   QuestionTypeRegistry.renderHostOptions (question-type-registry.js:208 and
+   :431) writes only `<span class="option-text">`, unlike renderPlayerOptions.
+   These rules are inert until that markup is emitted; that edit belongs to
+   WP-A / question-type-registry, not to this file. */
+#host-game-screen .option-display .option-shape {
+    position: relative;
+    z-index: 1;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md, 12px);
+    font-size: 18px;
+    background: rgba(255, 255, 255, 0.22);
+    box-shadow: none;
+    transition: none;
+}
+#host-game-screen .option-display:hover .option-shape {
+    transform: none;
+}
+
 #host-game-screen .option-display .option-text {
     position: relative;
     z-index: 1;
@@ -720,7 +807,7 @@
     overflow: hidden;
     padding: 32px 28px;
     border: none;
-    border-radius: 14px;
+    border-radius: var(--r-lg, 14px);
     min-height: 120px;
     display: flex;
     align-items: center;
@@ -778,13 +865,17 @@
 #host-game-screen .tf-option:not([data-pct])::after {
     content: "";
 }
+/* Use the semantic true/false tokens, not raw ramp entries: TRUE/FALSE is a
+   blue/red binary and must not drift with the option ramp (see variables.css).
+   The player side already reads these tokens — the host must match or the two
+   views disagree. */
 #host-game-screen .tf-option.true-btn,
 [data-theme="light"] #host-game-screen .tf-option.true-btn {
-    background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end));
+    background: linear-gradient(135deg, var(--true-color-start), var(--true-color-end));
 }
 #host-game-screen .tf-option.false-btn,
 [data-theme="light"] #host-game-screen .tf-option.false-btn {
-    background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end));
+    background: linear-gradient(135deg, var(--false-color-start), var(--false-color-end));
 }
 
 /* Correct-answer tile at reveal. The live host path
@@ -884,7 +975,7 @@
 #host-game-screen #ordering-stats-display {
     background: var(--paper-2);
     border: 1px solid var(--line);
-    border-radius: 16px;
+    border-radius: var(--r-lg, 14px);
     padding: 20px 24px;
     color: var(--ink);
     max-width: 1200px;
@@ -893,10 +984,10 @@
 }
 #host-game-screen #numeric-stats-display .numeric-stats-header h4,
 #host-game-screen #ordering-stats-display .numeric-stats-header h4 {
-    font-family: var(--font-body);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.18em;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--ink-3);
     margin: 0 0 14px 0;
@@ -994,19 +1085,26 @@
     gap: 24px;
     padding: 0 56px 14px;
 }
-#host-game-screen #answer-statistics.counting-only .response-summary {
-    display: block;
+/* Micro-label, matching the card kickers: game.css:1138 leaves it at 1.1rem
+   (17.6px) Inter, which read as body copy next to the 20px count. The two
+   figures below carry the information at projector size; the surrounding
+   words are a label, not a sentence. */
+#host-game-screen #answer-statistics.counting-only .response-summary,
+#host-game-screen #response-summary {
     background: transparent;
     border-radius: 0;
     padding: 0;
     margin: 0;
     text-align: left;
-    font-family: var(--font-body);
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: 0.14em;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--ink-3);
+}
+#host-game-screen #answer-statistics.counting-only .response-summary {
+    display: block;
 }
 #host-game-screen #answer-statistics.counting-only #responses-count,
 #host-game-screen #answer-statistics.counting-only #total-players {
@@ -1106,11 +1204,6 @@
     background: var(--paper);
     margin-top: auto;
 }
-#host-game-screen .host-game-footer .pin-hint {
-    font-family: var(--font-mono);
-    color: var(--ink);
-}
-
 @keyframes appHostTimerBlink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
@@ -2209,5 +2302,2132 @@
         border: 1px solid var(--line) !important;
         border-radius: 10px !important;
         color: var(--ink) !important;
+    }
+}
+
+/* ==========================================================================
+   EDITOR 2a — STAGE A: LAYOUT SHELL
+   Concept "Integración" (editor-concepts SPEC-2a). Desktop always-preview
+   only (>=769px); the mobile stacked editor is untouched. This stage builds
+   the chrome: Fraunces editorial type (--font-editorial), the --ed-* token
+   hookups, the 5-column grid (rail 60 | sidebar 232 | form | handle 16 |
+   preview), the 60px icon rail, the header autosave stamp, and the form
+   column's h1 / mode pill / title input / counter row.
+
+   CASCADE. Same contract as the EDITOR DESIGN PASS above: last file in
+   layer(app), so plain declarations beat earlier plain ones and a flag here
+   beats a flag there at equal specificity. Flags are used ONLY against rules
+   that already carry them (per-property notes inline). No `!important` on
+   `display`.
+
+   RESIZE HANDLE. Kept functional between form and preview: columns 3/5 still
+   consume --split-left/--split-right (inline-set by split-layout-manager.js,
+   whose FIXED_LEFT_WIDTH is now 292 = 60 rail + 232 sidebar). The mock's fixed
+   372px preview is approximated by the 70/30 default ratio.
+   ========================================================================== */
+
+/* Sidebar exists in the DOM on every viewport but is a desktop-only surface;
+   Stage B fills it. Plain `display: none` (own element, nothing to fight). */
+.question-sidebar {
+    display: none;
+}
+
+/* Header autosave stamp — empty until Stage D wires save events; :empty keeps
+   the flex gap from double-counting it meanwhile. */
+.save-status {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    white-space: nowrap;
+}
+.save-status:empty {
+    display: none;
+}
+
+@media (min-width: 769px) {
+
+    /* header.css now owns the editorial face at every width; only the desktop
+       weight bump lives here. */
+    .app-header .editor-breadcrumb-title {
+        font-weight: 500;
+    }
+
+    /* ----------------------------------------------------------------------
+       1. GRID — 60px rail | 232px sidebar | form | 16px handle | preview
+       Overrides layout.css:1022's 4-column template (same (0,2,0) selector,
+       later source). Column assignments below re-place every named region.
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview {
+        grid-template-columns: 60px 232px var(--split-left, 70fr) 16px var(--split-right, 30fr);
+        background: var(--ed-canvas);
+    }
+    .host-container.always-preview .editor-toolbar {
+        grid-column: 1;
+        grid-row: 1;
+    }
+    .host-container.always-preview .question-sidebar {
+        grid-column: 2;
+        grid-row: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 14px 10px;
+        background: var(--ed-surface);
+        border-right: 1px solid var(--line);
+    }
+    .host-container.always-preview .quiz-editor-section {
+        grid-column: 3;
+        grid-row: 1;
+    }
+    .host-container.always-preview .split-resize-handle {
+        grid-column: 4;
+        grid-row: 1;
+    }
+    .host-container.always-preview .quiz-preview-section {
+        grid-column: 5;
+        grid-row: 1;
+    }
+
+    /* Form column sits on the canvas, not on a second card of its own
+       (kills the .split-screen paper card from app-screens.css:1180). */
+    .host-container.always-preview #quiz-editor-section,
+    .host-container.split-screen.always-preview > #quiz-editor-section {
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        padding: 20px 26px 0;
+    }
+
+    /* ----------------------------------------------------------------------
+       2. ICON RAIL — 60px, 40×40 buttons, radius 10
+       Widths flag-free: toolbar.css:307 sets 48px unflagged and this is later
+       source at higher specificity.
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview .editor-toolbar {
+        width: 60px;
+        min-width: 60px;
+        gap: 4px;
+        padding: 12px 10px;
+        background: var(--ed-surface);
+        border-right: 1px solid var(--line);
+    }
+    .host-container.always-preview .editor-toolbar .toolbar-btn {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+        border-radius: 10px;
+        color: var(--ink-3);
+    }
+    /* AI is the one non-brand accent on the rail — terracotta. */
+    .host-container.always-preview .editor-toolbar #vtoolbar-ai-gen {
+        color: var(--ed-ai);
+    }
+    .host-container.always-preview .editor-toolbar #vtoolbar-ai-gen:hover {
+        background: var(--paper-3);
+        color: var(--ed-ai);
+    }
+    .host-container.always-preview .editor-toolbar .toolbar-divider {
+        margin: 8px 0;
+    }
+
+    /* ----------------------------------------------------------------------
+       3. FORM COLUMN TOP — h1, mode pill, title input, counter row
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview #quiz-editor-section .editor-heading-row {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 16px;
+    }
+    .host-container.always-preview #quiz-editor-section .editor-heading-row h2 {
+        font-family: var(--font-editorial);
+        font-weight: 500;
+        font-size: 24px;
+        letter-spacing: -0.015em;
+        line-height: 1.2;
+    }
+
+    /* Básico/Avanzado — one physical button styled as the active segment of a
+       pill on a shaded track (the markup has a single toggle, not two
+       segments; the label flips). Geometry beats components.css:7077 by
+       specificity; the [data-theme="light"] :not(.advanced) colour pair is
+       (0,3,0) like this selector, so later source wins. */
+    .host-container.always-preview .editor-mode-toggle {
+        display: flex;
+        padding: 3px;
+        background: var(--ed-shade);
+        border-radius: 999px;
+    }
+    .host-container.always-preview .editor-mode-btn {
+        padding: 5px 14px;
+        border: none;
+        border-radius: 999px;
+        background: var(--ed-surface);
+        color: var(--ink);
+        font-size: 11.5px;
+        font-weight: 600;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+    .host-container.always-preview .editor-mode-btn:hover {
+        color: var(--primary-ink);
+    }
+    .host-container.always-preview .editor-mode-btn.advanced {
+        background: var(--primary);
+        color: var(--primary-label);
+    }
+    .host-container.always-preview .editor-mode-btn.advanced:hover {
+        color: var(--primary-label);
+    }
+
+    /* Title input — 52px Fraunces. Height wins over layout.css:1097's padding
+       shim; box-sizing already border-box globally. */
+    .host-container.always-preview #quiz-editor-section #quiz-title.input-field {
+        height: 52px;
+        padding: 0 18px;
+        margin-bottom: 16px;
+        border-radius: 14px;
+        background: var(--ed-surface);
+        font-family: var(--font-editorial);
+        font-weight: 500;
+        font-size: 18px;
+        letter-spacing: normal;
+    }
+
+    /* Counter row — `PREGUNTA NN / NN` all-mono micro-label (the design pass
+       above split label/figures across two faces; 2a unifies them). */
+    .host-container.always-preview #quiz-editor-section #question-pagination {
+        border-bottom: none;
+        padding: 2px 2px 0;
+        margin: 0 0 10px;
+    }
+    .host-container.always-preview #quiz-editor-section #question-pagination .question-indicator {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        color: var(--ink-3);
+        gap: 5px;
+    }
+    .host-container.always-preview #quiz-editor-section #question-pagination #current-question-num,
+    .host-container.always-preview #quiz-editor-section #question-pagination #total-question-num {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+    }
+    .host-container.always-preview #quiz-editor-section #question-pagination #total-question-num {
+        color: var(--ink-3);
+    }
+    /* 32px arrows per mock. Flags match the design pass above (which matched
+       responsive.css:2940 / the touch-target rule); later source wins. */
+    .host-container.always-preview #quiz-editor-section #question-pagination .pagination-btn {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
+        border-radius: 9px !important;
+    }
+}
+
+/* ==========================================================================
+   EDITOR 2a — STAGE B: QUESTION-LIST SIDEBAR + PREVIEW PANEL
+   Concept "Integración" (editor-concepts SPEC-2a §question-list / §preview
+   column). Desktop always-preview only (>=769px); mobile untouched. The
+   sidebar rows are rendered by public/js/ui/question-sidebar.js into the
+   Stage A `#question-sidebar` placeholder; the preview column keeps every
+   preview-*-split ID and all preview-manager behavior — only presentation
+   changes, plus three new leaf elements (audience toggle, timer chip,
+   meta line / status card / full-quiz button).
+
+   CASCADE. Same contract as the Stage A section above: last file in
+   layer(app). Flags appear ONLY against rules that already carry them:
+   - .preview-navigation-bar display — preview.css:733 hides it with
+     `display:none !important` in always-preview; re-shown here the same way
+     the design pass re-showed .preview-header (flag vs flag, later source).
+   - font-size on the split counter/question text — the variables.css
+     font-scale utilities flag those (see design pass §4 notes).
+   ========================================================================== */
+
+@media (min-width: 769px) {
+
+    /* ----------------------------------------------------------------------
+       1. SIDEBAR — header row, question rows, footer actions
+       All content lives inside #question-sidebar (Stage A: flex column,
+       gap 4, padding 14px 10px, overflow-y auto, --ed-surface).
+       ---------------------------------------------------------------------- */
+    .question-sidebar .qs-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0 6px 8px;
+        flex-shrink: 0;
+    }
+    .question-sidebar .qs-header-label,
+    .question-sidebar .qs-header-count {
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .question-sidebar .qs-header-label {
+        color: var(--ink-4);
+    }
+    .question-sidebar .qs-header-count {
+        color: var(--ink-3);
+        letter-spacing: 0.02em;
+    }
+
+    .question-sidebar .qs-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+    .question-sidebar .qs-row {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        width: 100%;
+        padding: 8px 9px;
+        border: none;
+        border-radius: 10px;
+        background: transparent;
+        color: var(--ink-2);
+        font-family: var(--font-body);
+        text-align: left;
+        cursor: pointer;
+    }
+    .question-sidebar .qs-row:hover {
+        background: var(--paper-3);
+    }
+    /* Active row: canvas tone + inset 3px brand bar (mock) */
+    .question-sidebar .qs-row--active,
+    .question-sidebar .qs-row--active:hover {
+        background: var(--ed-canvas);
+        box-shadow: inset 3px 0 0 var(--primary);
+        color: var(--ink);
+    }
+    .question-sidebar .qs-row-index {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--ink-3);
+        flex-shrink: 0;
+    }
+    .question-sidebar .qs-row--active .qs-row-index {
+        color: var(--primary-ink);
+    }
+    /* 7px type glyph on the shared option ramp: mc blue square, tf green
+       circle, numeric purple square, ordering amber plain square; empty
+       question = dashed amber circle (mock row 07). */
+    .question-sidebar .qs-glyph {
+        width: 7px;
+        height: 7px;
+        flex-shrink: 0;
+    }
+    .question-sidebar .qs-glyph--mc {
+        border-radius: 2px;
+        background: var(--option-0-start);
+    }
+    .question-sidebar .qs-glyph--tf {
+        border-radius: 999px;
+        background: var(--option-1-start);
+    }
+    .question-sidebar .qs-glyph--num {
+        border-radius: 2px;
+        background: var(--option-4-start);
+    }
+    .question-sidebar .qs-glyph--ord {
+        background: var(--option-2-start);
+    }
+    .question-sidebar .qs-row--empty .qs-glyph {
+        background: transparent;
+        border: 1.4px dashed var(--option-2-start);
+        border-radius: 999px;
+    }
+    .question-sidebar .qs-row-text {
+        flex: 1;
+        min-width: 0;
+        font-size: 12.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .question-sidebar .qs-row--active .qs-row-text {
+        font-weight: 600;
+    }
+    .question-sidebar .qs-row-text--empty {
+        color: var(--ink-4);
+    }
+    .question-sidebar .qs-row-time {
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        color: var(--ink-3);
+        flex-shrink: 0;
+    }
+    /* Stage D fills this (amber ! badge); carries .hidden until then. */
+    .question-sidebar .qs-warning {
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        flex-shrink: 0;
+    }
+
+    .question-sidebar .qs-footer {
+        display: flex;
+        flex-direction: column;
+        margin-top: auto;
+        padding-top: 10px;
+        flex-shrink: 0;
+    }
+    .question-sidebar .qs-add-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        height: 40px;
+        border: none;
+        border-radius: 11px;
+        background: var(--ink);
+        color: var(--paper);
+        font-family: var(--font-body);
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .question-sidebar .qs-add-btn:hover {
+        background: var(--ink-2);
+    }
+    /* ----------------------------------------------------------------------
+       2. PREVIEW COLUMN — shade ground, left hairline, mono kicker
+       Base card chrome from layout.css:176 (glass card) is neutralized; the
+       shade tone makes the column read as backstage, per mock.
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview .quiz-preview-section {
+        background: var(--ed-shade);
+        border: none;
+        border-left: 1px solid var(--line);
+        border-radius: 0;
+        box-shadow: none;
+        padding: 20px;
+    }
+
+    /* Header: VISTA PREVIA mono kicker.
+       Overrides the design pass §4 header (same #-selector, later source). */
+    #quiz-preview-section .preview-header {
+        border-bottom: none;
+        padding: 0 2px 2px;
+        margin: 0 0 12px;
+        gap: 10px;
+        justify-content: flex-start;
+    }
+    #quiz-preview-section .preview-header h4 {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        color: var(--ink-3);
+        margin-right: auto;
+        white-space: nowrap;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    /* Nav row: kept in the layout only as the preview header's spacing shim
+       (flag vs preview.css:733's display:none !important — later source,
+       same spec). All of its controls are hidden: type selector and Edit
+       duplicate the form column, and prev/next + counter duplicate the
+       question sidebar, which owns navigation. JS still writes the counter
+       text; hiding (not deleting) keeps those writes harmless. */
+    .host-container.always-preview .preview-navigation-bar {
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        padding: 0 2px 10px;
+        margin: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        flex-shrink: 0;
+    }
+    .host-container.always-preview .preview-navigation-bar .preview-type-selector,
+    .host-container.always-preview .preview-navigation-bar #scroll-to-question,
+    .host-container.always-preview .preview-navigation-bar #preview-prev-split,
+    .host-container.always-preview .preview-navigation-bar #preview-next-split,
+    .host-container.always-preview #preview-question-counter-split {
+        display: none;
+    }
+    .host-container.always-preview .preview-navigation-bar .preview-nav-section {
+        display: flex;
+        gap: 6px;
+    }
+    .host-container.always-preview .preview-navigation-bar .nav-btn {
+        width: 26px;
+        height: 26px;
+        min-width: 26px;
+        min-height: 26px;
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--ed-surface);
+        color: var(--ink-2);
+        font-size: 10px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    .host-container.always-preview .preview-navigation-bar .nav-btn:disabled {
+        opacity: 0.4;
+        cursor: default;
+    }
+    /* ----------------------------------------------------------------------
+       3. STUDENT CARD — white radius-16 sheet that hugs its content
+       ---------------------------------------------------------------------- */
+    /* Viewport stops greedily filling the column (layout.css:1359 flex:1) so
+       the meta line sits right under the card and the full-quiz button can
+       take the leftover space via margin-top:auto. Scroll behavior kept:
+       overflow-y auto + min-height 0 still apply from layout.css. */
+    .host-container.always-preview .quiz-preview-section .preview-viewport-split {
+        flex: 0 1 auto;
+        height: auto; /* preview.css:738 stretches it to 100% of the column */
+    }
+    #quiz-preview-section .preview-content-split {
+        background: var(--ed-surface);
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+        padding: 18px;
+        height: auto;
+    }
+    /* Timer chip anchors to the card header's top-right corner. The lingering
+       drop shadow (the "chip" behind the question text) goes with it. */
+    #quiz-preview-section .player-question-area {
+        position: relative;
+        box-shadow: none;
+    }
+    .preview-timer-split {
+        position: absolute;
+        top: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--primary-ink);
+    }
+    .preview-timer-split:empty {
+        display: none;
+    }
+    .preview-timer-split::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--primary);
+    }
+    /* Counter reads as the mock's PREGUNTA 3 DE 8 micro-label (uppercase
+       flips the design pass §4 `text-transform: none`; the flagged font-size
+       stays the design pass's — already 9.5-10px equivalent). Padded right so
+       it never runs under the absolute timer chip. */
+    #quiz-preview-section #preview-question-counter-display-split {
+        text-transform: uppercase;
+        font-weight: 600;
+        padding-right: 56px;
+    }
+    /* Question text goes editorial (mock: Fraunces 19px/1.35 medium). */
+    #quiz-preview-section #preview-question-text-split {
+        font-family: var(--font-editorial);
+        font-weight: 500;
+        font-size: calc(1.19rem * var(--global-font-scale)) !important;
+        line-height: 1.35;
+        text-align: left;
+    }
+    /* Option rows: 46px, radius 11, 14px label — gradients stay on the
+       shared --option-N ramp from preview.css's nth-child rules. */
+    #quiz-preview-section .preview-content-split .player-options {
+        gap: 8px;
+    }
+    #quiz-preview-section .preview-content-split .player-option {
+        min-height: 46px;
+        padding: 10px 14px;
+        border-radius: 11px;
+        gap: 10px;
+        margin: 0;
+        width: 100%;
+        max-width: 100%;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: none;
+    }
+
+    /* ----------------------------------------------------------------------
+       4. UNDER THE CARD — meta line, quiz-status placeholder, full-quiz CTA
+       ---------------------------------------------------------------------- */
+    .preview-meta-split {
+        flex-shrink: 0;
+        margin: 12px 2px 0;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 500;
+        line-height: 1.7;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+    }
+    .preview-meta-split:empty {
+        display: none;
+    }
+    /* Empty until Stage D renders ESTADO DEL QUIZ into it. */
+    .quiz-status-card {
+        flex-shrink: 0;
+        margin-top: 12px;
+        padding: 14px;
+        background: var(--ed-surface);
+        border-radius: 14px;
+    }
+    .quiz-status-card:empty {
+        display: none;
+    }
+    .preview-full-quiz-btn {
+        flex-shrink: 0;
+        margin-top: auto;
+        padding: 0 12px;
+        height: 38px;
+        border: 1px solid var(--line-strong);
+        border-radius: 10px;
+        background: transparent;
+        color: var(--ink-2);
+        font-family: var(--font-body);
+        font-size: 12.5px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .preview-full-quiz-btn:hover {
+        background: var(--ed-surface);
+        color: var(--ink);
+    }
+    /* margin-top:auto on the button collapses to 0 when the column has no
+       slack; the preceding block's bottom margin guarantees a gap then. */
+    .preview-meta-split,
+    .quiz-status-card {
+        margin-bottom: 12px;
+    }
+}
+
+/* Stage B, cont. — FULL-QUIZ PREVIEW MODAL (outside the desktop media query:
+   the modal overlays whatever viewport it was opened from).
+   #preview-modal's single-question viewport + nav bar have no JS driver
+   (nothing binds preview-prev/next or fills #preview-content); the modal's
+   one live path is showQuizPreview() rendering the whole quiz into
+   #quiz-preview-container, so the dead chrome is retired visually. */
+#preview-modal .preview-navigation-bar,
+#preview-modal #preview-viewport {
+    display: none;
+}
+#preview-modal .quiz-preview-container {
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1;
+    padding: 4px 2px;
+}
+#preview-modal .quiz-preview-container .preview-question {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+}
+#preview-modal .quiz-preview-container .preview-question h3 {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 8px;
+}
+/* Legacy .preview-option colors assumed a dark glass sheet — on the paper
+   modal the non-correct options rendered white-on-white. */
+#preview-modal .quiz-preview-container .preview-option {
+    background: var(--paper-3);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 6px 0;
+    color: var(--ink-2);
+}
+#preview-modal .quiz-preview-container .preview-option.correct {
+    background: var(--ed-accent-tint);
+    color: var(--primary-ink);
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   EDITOR 2a — STAGE C: QUESTION FORM RESTYLE
+   Concept "Integración" (editor-concepts SPEC-2a §form column). Desktop
+   always-preview only (>=769px); the mobile stacked editor keeps its current
+   appearance — every NEW template element (micro-labels, stepper arrows,
+   PUNTOS field, text-card footer, image-zone labels, drag dots, CORRECTA
+   pills, V/F cards, explanation hint, footer action bar) is hidden by a
+   plain base rule below and only revealed inside the desktop media query.
+   The wrapper divs added to the template (.qm-field, .question-text-row,
+   .question-text-card) are transparent blocks on mobile.
+
+   CASCADE. Same contract as Stages A/B: last file in layer(app); a flag here
+   is used ONLY against rules that already carry one (design pass §2 above,
+   components.css, and the variables.css font-scale utilities — per-property
+   notes inline). No `!important` on `display`; the one display conflict
+   (components.css `.options-checkboxes label { display:block !important }`)
+   was co-neutralized at source (flag dropped there; mobile keeps its own
+   flagged display:flex in responsive.css:590).
+   ========================================================================== */
+
+/* Base: new Stage C chrome is desktop-only. All of these class names exist
+   only inside the editor templates. (.qm-label inside the TIME <label> is NOT
+   hidden — it is the pre-existing mobile "Time (s)" text, now classed.) */
+.qm-field > .qm-label,
+.qm-field--points,
+.qm-step-btns,
+.concept-max,
+.qt-card-footer,
+.image-zone-label,
+.image-drop-hint,
+.opt-drag,
+.opt-pill,
+.tf-label,
+.tf-cards,
+.explanation-hint,
+.editor-action-bar {
+    display: none;
+}
+
+@media (min-width: 769px) {
+
+    /* ----------------------------------------------------------------------
+       1. QUESTION CARD — white sheet, radius 14, no per-question header
+       (the collapse caret / "Question N" h3 / header ✕ are mobile chrome;
+       the footer action bar owns delete on desktop).
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview #quiz-editor-section .question-item {
+        border-radius: 14px;
+        padding: 22px;
+    }
+    .host-container.always-preview #quiz-editor-section .question-header {
+        display: none;
+    }
+
+    /* Shared micro-label (TIPO / DIFICULTAD / TIEMPO / PUNTOS / RESPUESTA
+       CORRECTA). font-size flagged: the design pass flags the TIME span via
+       `.time-limit-container label > span` and variables.css font-scale
+       utilities flag editor labels — later source + flag wins; calc keeps the
+       A/A+ accessibility scale working. */
+    .host-container.always-preview #quiz-editor-section .qm-label {
+        font-family: var(--font-mono);
+        font-size: calc(0.594rem * var(--global-font-scale)) !important;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+    }
+
+    /* ----------------------------------------------------------------------
+       2. SETTINGS GRID — 1.25fr 1fr .8fr .8fr, labeled 40px controls
+       Flags per property match design pass §2 (which matched responsive.css).
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview #quiz-editor-section .question-meta {
+        display: grid;
+        grid-template-columns: 1.25fr 1fr 0.8fr 0.8fr;
+        gap: 14px !important;
+        /* start, not stretch: the DIFICULTAD dot is anchored to the cell's
+           bottom edge, which must coincide with the 40px control. */
+        align-items: start !important;
+        background: transparent !important;
+        border: none !important;
+        border-bottom: 1px solid var(--line) !important;
+        border-radius: 0 !important;
+        padding: 0 0 18px !important;
+        margin: 0 0 18px !important;
+    }
+    /* The mock's settings row has no "Question Settings" kicker. */
+    .host-container.always-preview #quiz-editor-section .question-meta-title {
+        display: none;
+    }
+    .host-container.always-preview #quiz-editor-section .qm-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+    }
+    .host-container.always-preview #quiz-editor-section .qm-field > .qm-label {
+        display: block;
+    }
+
+    /* 40px selects. Geometry/color flags clear design pass §1 (background-
+       color/border/color/radius, all flagged there) and components.css
+       select padding flags. */
+    .host-container.always-preview #quiz-editor-section .question-meta .question-type,
+    .host-container.always-preview #quiz-editor-section .question-meta .question-difficulty {
+        width: 100%;
+        height: 40px !important;
+        min-height: 40px !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        font-size: calc(0.84rem * var(--global-font-scale)) !important;
+        background-color: var(--paper-2) !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 10px !important;
+        color: var(--ink) !important;
+        /* layout.css:113 gives editor selects a 20px bottom margin, which
+           pushed the cell (and the DIFICULTAD dot anchor) past the control. */
+        margin-bottom: 0;
+    }
+
+    /* DIFICULTAD colored dot — state read straight off the select via
+       :has(option:checked), no JS class sync. Ramp tokens: easy green,
+       medium amber, hard red (shared option ramp, Rule G: difficulty is
+       encoded by position+label, the dot is a redundant cue). */
+    .host-container.always-preview #quiz-editor-section .qm-field--difficulty {
+        position: relative;
+    }
+    .host-container.always-preview #quiz-editor-section .qm-field--difficulty .question-difficulty {
+        padding-left: 28px !important;
+    }
+    .host-container.always-preview #quiz-editor-section .qm-field--difficulty::after {
+        content: '';
+        position: absolute;
+        left: 13px;
+        bottom: 16.5px;
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--option-2-start);
+        pointer-events: none;
+    }
+    .host-container.always-preview #quiz-editor-section .qm-field--difficulty:has(option[value="easy"]:checked)::after {
+        background: var(--option-1-start);
+    }
+    .host-container.always-preview #quiz-editor-section .qm-field--difficulty:has(option[value="hard"]:checked)::after {
+        background: var(--option-3-start);
+    }
+
+    /* TIEMPO — mono value + ▲▼ stepper in one 40px bordered control. */
+    .host-container.always-preview #quiz-editor-section .question-meta .time-limit-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .host-container.always-preview #quiz-editor-section .question-meta .time-limit-container label {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+    .host-container.always-preview #quiz-editor-section .qm-stepper {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        height: 40px;
+        padding: 0 4px 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper-2);
+    }
+    .host-container.always-preview #quiz-editor-section .qm-stepper:focus-within {
+        border-color: var(--focus-ring);
+        box-shadow: 0 0 0 3px var(--focus-ring-soft);
+    }
+    /* Flags clear components.css .question-time-limit (width/min-height/
+       padding/font-size) and design pass §2 (bg/border/radius/color/focus). */
+    .host-container.always-preview #quiz-editor-section .qm-stepper .question-time-limit {
+        flex: 1;
+        width: auto !important;
+        min-width: 0;
+        min-height: 0 !important;
+        height: auto;
+        padding: 0 !important;
+        margin: 0;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        font-family: var(--font-mono) !important;
+        font-size: calc(0.875rem * var(--global-font-scale)) !important;
+        font-weight: 500;
+        text-align: left;
+        color: var(--ink) !important;
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+    .host-container.always-preview #quiz-editor-section .qm-stepper .question-time-limit::-webkit-outer-spin-button,
+    .host-container.always-preview #quiz-editor-section .qm-stepper .question-time-limit::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    .host-container.always-preview #quiz-editor-section .qm-stepper .question-time-limit:focus {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none;
+    }
+    .host-container.always-preview #quiz-editor-section .qm-step-btns {
+        display: grid;
+        gap: 2px;
+        flex-shrink: 0;
+    }
+    .host-container.always-preview #quiz-editor-section .qm-step {
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 15px;
+        min-width: 0;
+        min-height: 0;
+        padding: 0;
+        border: none;
+        border-radius: 6px;
+        background: var(--paper-3);
+        color: var(--ink-2);
+        font-size: 8px;
+        line-height: 1;
+        cursor: pointer;
+    }
+    .host-container.always-preview #quiz-editor-section .qm-step:hover {
+        background: var(--line);
+        color: var(--ink);
+    }
+
+    /* PUNTOS — read-only derived display (100 × difficulty multiplier,
+       written by editor-form-chrome.js; never stored per question). */
+    .host-container.always-preview #quiz-editor-section .qm-field--points {
+        display: flex;
+    }
+    .host-container.always-preview #quiz-editor-section .question-points-display {
+        display: flex;
+        align-items: center;
+        height: 40px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper-2);
+        font-family: var(--font-mono);
+        font-size: calc(0.875rem * var(--global-font-scale));
+        font-weight: 500;
+        color: var(--ink);
+    }
+
+    /* ----------------------------------------------------------------------
+       3. CONCEPTOS — green-tint chips + dashed ghost input, MÁX 5 kicker
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview #quiz-editor-section .question-meta .concept-tags-container {
+        grid-column: 1 / -1;
+        display: block;
+        min-width: 0;
+    }
+    /* Kicker + `· MÁX 5` inline on one line. font-size flag clears the
+       variables.css font-scale utility (same pattern as design pass §2). */
+    .host-container.always-preview #quiz-editor-section .concept-tags-container > label {
+        display: inline-block;
+        margin-bottom: 0;
+        font-family: var(--font-mono);
+        font-size: calc(0.594rem * var(--global-font-scale)) !important;
+        letter-spacing: 0.09em;
+        color: var(--ink-3);
+    }
+    .host-container.always-preview #quiz-editor-section .concept-max {
+        display: inline-block;
+        margin-left: 2px;
+        font-size: calc(0.594rem * var(--global-font-scale));
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+    }
+    /* The bordered input-box chrome dissolves; chips + ghost pill sit
+       directly on the card. */
+    .host-container.always-preview #quiz-editor-section .concept-tags-input {
+        margin-top: 8px;
+        padding: 0;
+        min-height: 30px;
+        background: transparent;
+        border: none;
+        gap: 7px;
+    }
+    .host-container.always-preview #quiz-editor-section .concept-tags-input:focus-within {
+        border: none;
+        box-shadow: none;
+    }
+    .host-container.always-preview #quiz-editor-section .concept-tags-list {
+        gap: 7px;
+    }
+    .host-container.always-preview #quiz-editor-section .concept-tag {
+        height: 30px;
+        padding: 0 11px;
+        gap: 7px;
+        background: var(--ed-accent-tint);
+        color: var(--primary-ink);
+        font-size: 12px;
+        font-weight: 500;
+        border-radius: 999px;
+    }
+    .host-container.always-preview #quiz-editor-section .concept-tag-remove {
+        background: transparent;
+        color: var(--primary-ink);
+        opacity: 0.55;
+    }
+    .host-container.always-preview #quiz-editor-section .concept-tag-remove:hover {
+        background: transparent;
+        opacity: 1;
+    }
+    .host-container.always-preview #quiz-editor-section .concept-input {
+        flex: 0 1 auto;
+        width: 150px;
+        min-width: 110px;
+        height: 30px;
+        padding: 0 11px;
+        border: 1px dashed var(--line-strong);
+        border-radius: 999px;
+        background: transparent;
+        font-size: 12px;
+        color: var(--ink-2);
+        margin-bottom: 0; /* layout.css:113 editor-input spacing */
+    }
+    .host-container.always-preview #quiz-editor-section .concept-input:focus {
+        border-style: solid;
+        border-color: var(--focus-ring);
+    }
+    /* MÁX 5 kicker replaces the italic press-enter hint. */
+    .host-container.always-preview #quiz-editor-section .concept-hint {
+        display: none;
+    }
+
+    /* ----------------------------------------------------------------------
+       4. TEXT ROW — question card (textarea + LATEX/count footer) | 168px
+          dashed IMAGEN zone
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview #quiz-editor-section .question-content {
+        margin-top: 0;
+    }
+    .host-container.always-preview #quiz-editor-section .question-text-row {
+        display: grid;
+        grid-template-columns: 1fr 168px;
+        gap: 16px;
+        align-items: stretch;
+    }
+    .host-container.always-preview #quiz-editor-section .question-text-card {
+        display: flex;
+        flex-direction: column;
+        min-height: 130px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--paper-2);
+    }
+    .host-container.always-preview #quiz-editor-section .question-text-card:focus-within {
+        border-color: var(--focus-ring);
+        box-shadow: 0 0 0 3px var(--focus-ring-soft);
+    }
+    /* Flags clear components.css .question-text (min-height/padding/
+       font-size/margin-bottom, all flagged there). Border/background lost
+       their flags in the co-neutralization the design pass documents. */
+    .host-container.always-preview #quiz-editor-section .question-text-card .question-text {
+        flex: 1;
+        min-height: 96px !important;
+        padding: 14px 16px !important;
+        margin-bottom: 0 !important;
+        font-size: calc(0.94rem * var(--global-font-scale)) !important;
+        line-height: 1.55;
+        background: transparent;
+        border: none;
+        border-radius: 12px 12px 0 0;
+    }
+    .host-container.always-preview #quiz-editor-section .question-text-card .question-text:focus {
+        border: none;
+        box-shadow: none;
+    }
+    .host-container.always-preview #quiz-editor-section .qt-card-footer {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 8px 14px;
+        border-top: 1px solid var(--line);
+        font-size: 9.5px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: var(--ink-3);
+    }
+    .host-container.always-preview #quiz-editor-section .qt-count {
+        margin-left: auto;
+        font-weight: 500;
+    }
+
+    /* IMAGEN drop zone — dashed, centered stack; the native file input
+       stretches invisibly over the whole zone so click and drag-drop
+       (app.js delegation on .image-upload) keep working unchanged. */
+    .host-container.always-preview #quiz-editor-section .image-upload {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin: 0;
+        padding: 12px;
+        min-height: 130px;
+        background: var(--paper-3);
+        border: 1.5px dashed var(--line-strong);
+        border-radius: 12px;
+        text-align: center;
+    }
+    .host-container.always-preview #quiz-editor-section .image-upload.drag-over {
+        border-color: var(--primary);
+        background: var(--ed-accent-tint);
+    }
+    .host-container.always-preview #quiz-editor-section .image-upload > label {
+        display: none;
+    }
+    .host-container.always-preview #quiz-editor-section .image-upload::before {
+        content: '';
+        width: 30px;
+        height: 24px;
+        border: 1.4px solid var(--ink-4);
+        border-radius: 5px;
+        font-size: 0;
+    }
+    /* Retire the legacy always-preview drop-zone ::after ('Drop image' /
+       'Image added', layout.css:1274) — the labeled zone replaces it. */
+    .host-container.always-preview #quiz-editor-section .image-upload::after {
+        content: none;
+    }
+    .host-container.always-preview #quiz-editor-section .image-zone-label {
+        display: block;
+        font-size: 9.5px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+    }
+    .host-container.always-preview #quiz-editor-section .image-drop-hint {
+        display: block;
+        font-size: 11px;
+        color: var(--ink-3);
+    }
+    /* min-height flag clears the universal input sizing in components.css. */
+    .host-container.always-preview #quiz-editor-section .image-upload .image-input {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 0 !important;
+        margin: 0;
+        padding: 0 !important;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 1;
+    }
+    /* Uploaded state: placeholder chrome yields to the thumbnail.
+       .visible-block is how show() reveals the preview (utilities layer). */
+    .host-container.always-preview #quiz-editor-section .image-upload:has(.image-preview.visible-block)::before,
+    .host-container.always-preview #quiz-editor-section .image-upload:has(.image-preview.visible-block) .image-zone-label,
+    .host-container.always-preview #quiz-editor-section .image-upload:has(.image-preview.visible-block) .image-drop-hint {
+        display: none;
+    }
+    .host-container.always-preview #quiz-editor-section .image-preview {
+        position: relative;
+        z-index: 2;
+    }
+    /* Beats the template's inline max-width:200px inside the 168px track. */
+    .host-container.always-preview #quiz-editor-section .image-preview .question-image {
+        max-width: 100% !important;
+        border-radius: 8px;
+    }
+
+    /* ----------------------------------------------------------------------
+       5. OPTION ROWS (multiple-choice + multiple-correct) — 52px rows:
+          drag-dots · 30px shape chip · text input · CORRECTA/MARCAR pill.
+          The radio/checkbox stays the state carrier (visually hidden; the
+          whole <label> row toggles it natively). :has(:checked) drives the
+          pill — no JS.
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview #quiz-editor-section .options-checkboxes {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    /* padding/margin/border-radius/background flags clear components.css's
+       label cluster (same flags there); display is flag-free after the
+       source co-neutralization. */
+    .host-container.always-preview #quiz-editor-section .options-checkboxes label.option-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        /* flags match components.css's label cluster (height/min-height:
+           auto !important there). */
+        height: 52px !important;
+        min-height: 52px !important;
+        padding: 0 12px 0 8px !important;
+        margin: 0 !important;
+        background: var(--paper-2) !important;
+        border: 1px solid var(--line);
+        border-radius: 12px !important;
+    }
+    .host-container.always-preview #quiz-editor-section .options-checkboxes label.option-wrapper:hover {
+        border-color: var(--ink-4);
+        transform: none;
+    }
+    /* State carrier: invisible but still focusable; ring drawn on the row. */
+    .host-container.always-preview #quiz-editor-section .option-wrapper .correct-option {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        margin: 0 !important;
+    }
+    .host-container.always-preview #quiz-editor-section .option-wrapper:has(.correct-option:focus-visible) {
+        outline: 2px solid var(--focus-ring);
+        outline-offset: 2px;
+    }
+    /* Decorative 2×3 drag dots (no reorder feature exists yet). */
+    .host-container.always-preview #quiz-editor-section .opt-drag {
+        display: block;
+        width: 7px;
+        height: 12px;
+        flex-shrink: 0;
+        background-image: radial-gradient(var(--ink) 1px, transparent 1.1px);
+        background-size: 5px 5px;
+        opacity: 0.35;
+    }
+    .host-container.always-preview #quiz-editor-section .option-wrapper .option-shape {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        font-size: 13px;
+        box-shadow: none;
+    }
+    /* Option text: bare field on the row (bg/border flags clear design
+       pass §2's answer-options input cluster). */
+    .host-container.always-preview #quiz-editor-section .option-wrapper input.option {
+        flex: 1;
+        min-width: 0;
+        height: 100%;
+        min-height: 0 !important;
+        padding: 0 4px !important;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important; /* base input --shadow-sm */
+        font-size: calc(0.91rem * var(--global-font-scale));
+        color: var(--ink) !important;
+        margin-bottom: 0; /* layout.css:113 editor-input spacing */
+    }
+    .host-container.always-preview #quiz-editor-section .option-wrapper input.option:focus {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none;
+    }
+    /* CORRECTA / MARCAR pill — presentation of the hidden radio/checkbox. */
+    .host-container.always-preview #quiz-editor-section .opt-pill {
+        display: flex;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+    .host-container.always-preview #quiz-editor-section .opt-pill-on,
+    .host-container.always-preview #quiz-editor-section .opt-pill-off {
+        align-items: center;
+        gap: 6px;
+        height: 30px;
+        padding: 0 12px;
+        border-radius: 999px;
+        font-size: 9.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .host-container.always-preview #quiz-editor-section .opt-pill-on {
+        display: none;
+        /* Correctness green = --correct (Rule G), label token shared with
+           the primary fill; Stage E revisits for dark. */
+        background: var(--correct);
+        color: var(--primary-label);
+        font-weight: 600;
+    }
+    .host-container.always-preview #quiz-editor-section .opt-pill-off {
+        display: flex;
+        border: 1px solid var(--line-strong);
+        color: var(--ink-2);
+        font-weight: 500;
+    }
+    .host-container.always-preview #quiz-editor-section .option-wrapper:has(.correct-option:checked) .opt-pill-on {
+        display: flex;
+    }
+    .host-container.always-preview #quiz-editor-section .option-wrapper:has(.correct-option:checked) .opt-pill-off {
+        display: none;
+    }
+
+    /* ----------------------------------------------------------------------
+       6. TRUE / FALSE — two large selectable cards over the (hidden) select.
+       Selection state reads off the select via :has(option:checked); clicks
+       are wired by editor-form-chrome.js (set value + native change).
+       Colors come off the shared option ramp: green square family for
+       Verdadero, red for Falso.
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview #quiz-editor-section .true-false-options .correct-answer {
+        display: none;
+    }
+    .host-container.always-preview #quiz-editor-section .tf-label {
+        display: block;
+        margin-bottom: 10px;
+    }
+    .host-container.always-preview #quiz-editor-section .tf-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+    .host-container.always-preview #quiz-editor-section .tf-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        height: 104px;
+        padding: 0;
+        border: 1.5px solid var(--line);
+        border-radius: 14px;
+        background: var(--paper-2);
+        font-family: var(--font-body);
+        cursor: pointer;
+    }
+    .host-container.always-preview #quiz-editor-section .tf-card-word {
+        font-family: var(--font-editorial);
+        font-size: 24px;
+        font-weight: 500;
+        text-transform: none; /* global button uppercase */
+        letter-spacing: normal;
+    }
+    .host-container.always-preview #quiz-editor-section .tf-card--true {
+        border-color: var(--option-1-shadow);
+    }
+    .host-container.always-preview #quiz-editor-section .tf-card--true .tf-card-word {
+        color: var(--option-1-end);
+    }
+    .host-container.always-preview #quiz-editor-section .tf-card--false {
+        border-color: var(--option-3-shadow);
+    }
+    .host-container.always-preview #quiz-editor-section .tf-card--false .tf-card-word {
+        color: var(--option-3-end);
+    }
+    .host-container.always-preview #quiz-editor-section .tf-card-state {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+    .host-container.always-preview #quiz-editor-section .tf-card-state--on {
+        display: none;
+        height: 22px;
+        padding: 0 10px;
+        border-radius: 999px;
+        /* White-alpha chip on the FIXED option-ramp gradient (theme-stable,
+           same convention as the preview option rows). Label is literal white
+           for the same reason: --primary-label flips to #052e1a in dark,
+           which is ~2:1 on the invariant gradient. */
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
+        line-height: 22px;
+    }
+    .host-container.always-preview #quiz-editor-section .tf-card--true .tf-card-state--off {
+        color: var(--option-1-end);
+    }
+    .host-container.always-preview #quiz-editor-section .tf-card--false .tf-card-state--off {
+        color: var(--option-3-end);
+    }
+    /* Selected card: full ramp gradient + CORRECTA chip. */
+    .host-container.always-preview #quiz-editor-section .true-false-options:has(.correct-answer option[value="true"]:checked) .tf-card--true {
+        background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end));
+        border-color: transparent;
+        box-shadow: 0 6px 18px var(--option-1-shadow);
+    }
+    .host-container.always-preview #quiz-editor-section .true-false-options:has(.correct-answer option[value="false"]:checked) .tf-card--false {
+        background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end));
+        border-color: transparent;
+        box-shadow: 0 6px 18px var(--option-3-shadow);
+    }
+    /* Literal white: text ON the invariant gradient (theme-stable — see the
+       .tf-card-state--on note; light --primary-label was #fff anyway). */
+    .host-container.always-preview #quiz-editor-section .true-false-options:has(.correct-answer option[value="true"]:checked) .tf-card--true .tf-card-word,
+    .host-container.always-preview #quiz-editor-section .true-false-options:has(.correct-answer option[value="false"]:checked) .tf-card--false .tf-card-word {
+        color: #fff;
+    }
+    .host-container.always-preview #quiz-editor-section .true-false-options:has(.correct-answer option[value="true"]:checked) .tf-card--true .tf-card-state--on,
+    .host-container.always-preview #quiz-editor-section .true-false-options:has(.correct-answer option[value="false"]:checked) .tf-card--false .tf-card-state--on {
+        display: inline-block;
+    }
+    .host-container.always-preview #quiz-editor-section .true-false-options:has(.correct-answer option[value="true"]:checked) .tf-card--true .tf-card-state--off,
+    .host-container.always-preview #quiz-editor-section .true-false-options:has(.correct-answer option[value="false"]:checked) .tf-card--false .tf-card-state--off {
+        display: none;
+    }
+
+    /* ----------------------------------------------------------------------
+       7. NUMERIC + ORDERING — consistent quiet restyle (labels are already
+       mono kickers from the design pass; rows pick up the 2a geometry).
+       ---------------------------------------------------------------------- */
+    /* The shown container carries utility .visible-block (display:block
+       !important, utilities layer), so the stack is built with block children
+       + margins rather than fighting that display. */
+    .host-container.always-preview #quiz-editor-section .numeric-options > label {
+        display: block;
+        margin: 0 0 6px;
+    }
+    .host-container.always-preview #quiz-editor-section .numeric-options > label + input {
+        margin-bottom: 14px;
+    }
+    .host-container.always-preview #quiz-editor-section .numeric-options input {
+        display: block;
+        width: 200px;
+        height: 40px;
+        border-radius: 10px !important;
+        font-family: var(--font-mono) !important;
+        margin-bottom: 0;
+    }
+    .host-container.always-preview #quiz-editor-section .ordering-options,
+    .host-container.always-preview #quiz-editor-section .ordering-items {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+    }
+    .host-container.always-preview #quiz-editor-section .ordering-item {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-height: 52px;
+        padding: 0 12px;
+        margin: 0 0 8px;
+        background: var(--paper-2);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+    }
+    .host-container.always-preview #quiz-editor-section .ordering-handle {
+        color: var(--ink-4);
+    }
+    /* Quiet mono index instead of the filled green badge (green is reserved
+       for correctness; order is already encoded by position). */
+    .host-container.always-preview #quiz-editor-section .ordering-number {
+        width: auto;
+        height: auto;
+        min-width: 0;
+        padding: 0;
+        background: transparent;
+        border: none;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--ink-3);
+    }
+    /* Bare text field on the row, like the option rows (flags clear design
+       pass §2's answer-options input cluster). */
+    .host-container.always-preview #quiz-editor-section .ordering-item input.ordering-option {
+        flex: 1;
+        min-width: 0;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important; /* base input --shadow-sm */
+        margin-bottom: 0;
+        font-size: calc(0.91rem * var(--global-font-scale));
+        color: var(--ink) !important;
+    }
+    .host-container.always-preview #quiz-editor-section .ordering-item input.ordering-option:focus {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none;
+    }
+
+    /* ----------------------------------------------------------------------
+       8. EXPLICACIÓN — 44px collapse row on the canvas tone
+       (native <details>; caret is a styled ::before, marker suppressed).
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview #quiz-editor-section .explanation-section details {
+        background: var(--paper);
+        border: none;
+        border-radius: 12px;
+        padding: 0;
+    }
+    .host-container.always-preview #quiz-editor-section .explanation-section summary {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 0 14px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink-2);
+        cursor: pointer;
+        list-style: none;
+    }
+    .host-container.always-preview #quiz-editor-section .explanation-section summary::-webkit-details-marker {
+        display: none;
+    }
+    .host-container.always-preview #quiz-editor-section .explanation-section summary::before {
+        content: '▶';
+        font-size: 10px;
+        color: var(--ink-3);
+    }
+    .host-container.always-preview #quiz-editor-section .explanation-section details[open] summary::before {
+        content: '▼';
+    }
+    .host-container.always-preview #quiz-editor-section .explanation-hint {
+        display: inline;
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--ink-3);
+    }
+    .host-container.always-preview #quiz-editor-section .question-explanation {
+        display: block;
+        width: calc(100% - 28px);
+        margin: 0 14px 14px;
+    }
+
+    /* ----------------------------------------------------------------------
+       9. FOOTER ACTION BAR — Duplicar · Eliminar · (right)
+       #editor-warnings-pill slot for Stage D. (Add lives in the sidebar.)
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview .editor-action-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 60px;
+        margin-top: 2px;
+        border-top: 1px solid var(--line);
+    }
+    .host-container.always-preview .eab-secondary {
+        display: flex;
+        align-items: center;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper-2);
+        color: var(--ink-2);
+        font-family: var(--font-body);
+        font-size: 12.5px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .host-container.always-preview .eab-secondary:hover:not(:disabled) {
+        border-color: var(--ink-4);
+        color: var(--ink);
+    }
+    .host-container.always-preview .eab-secondary:disabled {
+        opacity: 0.4;
+        cursor: default;
+    }
+    .host-container.always-preview .editor-warnings-pill {
+        margin-left: auto;
+    }
+    .host-container.always-preview .editor-warnings-pill:empty {
+        display: none;
+    }
+}
+
+/* ==========================================================================
+   EDITOR 2a — STAGE D: VALIDATION SURFACES + AUTOSAVE STAMP
+   Concept "Integración" (editor-concepts SPEC-2a §behavior / mock lines
+   31-38 strip, 57/60 sidebar badges, 147 pill, 168-173 status card, 1a
+   280-288 option error). One validation pass (editor-validation.js) feeds
+   the strip, sidebar badges, inline option errors, status card and footer
+   pill. Everything amber runs on the --ed-warn* family (variables.css);
+   Stage E supplies dark values. No `!important` on `display`.
+   ========================================================================== */
+
+/* Mobile ground state: Stage D chrome is desktop-only. The strip/notes exist
+   in the DOM on every viewport; badges/status card/pill live inside surfaces
+   that are already desktop-only, but the strip and injected error notes need
+   their own base hide. */
+.editor-validation-strip,
+.opt-error-note {
+    display: none;
+}
+/* The stamp sits in the shared app header — keep the mobile header untouched. */
+@media (max-width: 768px) {
+    .save-status {
+        display: none;
+    }
+}
+
+@media (min-width: 769px) {
+
+    /* ----------------------------------------------------------------------
+       1. VALIDATION STRIP — full-width amber bar above the editor columns.
+       The strip is host-container's first child spanning all 5 columns in
+       row 1; every Stage A region drops to row 2 (overrides Stage A's
+       grid-row: 1 at equal specificity, later source). A hidden strip
+       collapses row 1 to 0.
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview {
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+    .host-container.always-preview .editor-validation-strip {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 40px;
+        padding: 0 18px;
+        background: var(--ed-warn-tint);
+        border-bottom: 1px solid var(--ed-warn-border);
+    }
+    .host-container.always-preview .editor-toolbar,
+    .host-container.always-preview .question-sidebar,
+    .host-container.always-preview .quiz-editor-section,
+    .host-container.always-preview .split-resize-handle,
+    .host-container.always-preview .quiz-preview-section {
+        grid-row: 2;
+    }
+    .editor-validation-strip .evs-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--ed-warn);
+        flex-shrink: 0;
+    }
+    .editor-validation-strip .evs-text {
+        font-size: 12.5px;
+        color: var(--ed-warn-text);
+        white-space: nowrap;
+    }
+    .editor-validation-strip .evs-summary {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ed-warn-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+    .editor-validation-strip .evs-goto {
+        margin-left: auto;
+        flex-shrink: 0;
+        height: 26px;
+        padding: 0 12px;
+        border: 1px solid var(--ed-warn-border);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ed-warn-text);
+        font-family: var(--font-body);
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .editor-validation-strip .evs-goto:hover {
+        background: var(--ed-warn-tint-strong);
+    }
+    .editor-validation-strip .evs-dismiss {
+        flex-shrink: 0;
+        border: none;
+        background: transparent;
+        padding: 2px 6px;
+        color: var(--ed-warn-text);
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    /* ----------------------------------------------------------------------
+       2. SIDEBAR ROW BADGES — 16px amber "!" circle replaces the time slot.
+       Geometry (16px circle) comes from Stage B's .qs-warning shell; the
+       .hidden utility still hides the empty slot on clean rows.
+       ---------------------------------------------------------------------- */
+    .question-sidebar .qs-warning {
+        display: grid;
+        place-items: center;
+        background: var(--ed-warn-tint-strong);
+        color: var(--ed-warn);
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 600;
+    }
+    .question-sidebar .qs-row--warn .qs-row-time {
+        display: none;
+    }
+
+    /* ----------------------------------------------------------------------
+       3. INLINE OPTION ERRORS — 1.5px red border on the offending row +
+       indented helper line (sibling node injected by editor-validation.js).
+       Stage C's row border is flag-free, so the extra class wins on
+       specificity alone. Indent 51px = 8 pad + 7 dots + 11 gap + 30 chip
+       - 5 dot offset (mock 1a line 287).
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview #quiz-editor-section .options-checkboxes label.option-wrapper.option-wrapper--error {
+        border: 1.5px solid var(--error-color);
+    }
+    .host-container.always-preview #quiz-editor-section .opt-error-note {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: -2px 0 0 51px;
+        font-size: 11px;
+        color: var(--error-color);
+    }
+    .host-container.always-preview #quiz-editor-section .opt-error-note::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        border-radius: 999px;
+        background: var(--error-color);
+        flex-shrink: 0;
+    }
+
+    /* ----------------------------------------------------------------------
+       4. ESTADO DEL QUIZ card — mono kicker + ✓ ready line + one amber line
+       per warning (buttons → showQuestion). Card shell from Stage B.
+       ---------------------------------------------------------------------- */
+    .quiz-status-card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .quiz-status-card .qsc-title {
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+    }
+    .quiz-status-card .qsc-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        background: transparent;
+        padding: 0;
+        font-family: var(--font-body);
+        font-size: 12px;
+        color: var(--ink-2);
+        text-align: left;
+    }
+    .quiz-status-card button.qsc-line {
+        cursor: pointer;
+    }
+    .quiz-status-card button.qsc-line:hover {
+        color: var(--ink);
+    }
+    .quiz-status-card .qsc-icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 600;
+    }
+    .quiz-status-card .qsc-icon--ok {
+        background: var(--ed-accent-tint);
+        color: var(--primary-ink);
+    }
+    .quiz-status-card .qsc-icon--warn {
+        background: var(--ed-warn-tint-strong);
+        color: var(--ed-warn);
+    }
+
+    /* ----------------------------------------------------------------------
+       5. FOOTER WARNINGS PILL — "N avisos · ver" amber tint pill; Stage C's
+       :empty { display:none } (higher specificity) still wins when clear.
+       ---------------------------------------------------------------------- */
+    .host-container.always-preview .editor-warnings-pill {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        height: 30px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: var(--ed-warn-tint);
+        color: var(--ed-warn-text);
+        font-size: 11.5px;
+        font-weight: 500;
+        cursor: pointer;
+        user-select: none;
+    }
+    .host-container.always-preview .editor-warnings-pill .ewp-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--ed-warn);
+        flex-shrink: 0;
+    }
+}
+
+/* ==========================================================================
+   EDITOR 2a — STAGE E: DARK THEME
+   Token flips live in variables.css ([data-theme="dark"] --ed-* block); this
+   section holds only the rules whose LIGHT form encodes a light-theme
+   assumption that no token flip can fix. Dark selectors repeat the original
+   selector with a [data-theme="dark"] prefix, so each override is one
+   attribute-selector step above its base rule (GOTCHAS #4) AND later source.
+   ========================================================================== */
+
+@media (min-width: 769px) {
+
+    /* Segmented tracks: the light recipe (track darker than its segment via
+       --ed-shade / --line) collapses in dark — --ed-shade sits below the
+       canvas, so the track vanished and the active segment read darker than
+       its ground. White-alpha track (SPEC-2a dark hairline convention) with
+       a raised --paper-3 active segment restores the affordance. */
+    [data-theme="dark"] .host-container.always-preview .editor-mode-toggle {
+        background: rgba(255, 255, 255, 0.07);
+    }
+
+    /* Unselected V/F card words/state: the fixed option-ramp ENDS
+       (#065f46 / #b91c1c) are ~2:1 on dark card surfaces. The dark ramp's
+       correct/error greens+reds carry the same meaning at contrast. */
+    [data-theme="dark"] .host-container.always-preview #quiz-editor-section .tf-card--true .tf-card-word,
+    [data-theme="dark"] .host-container.always-preview #quiz-editor-section .tf-card--true .tf-card-state--off {
+        color: var(--correct);
+    }
+    [data-theme="dark"] .host-container.always-preview #quiz-editor-section .tf-card--false .tf-card-word,
+    [data-theme="dark"] .host-container.always-preview #quiz-editor-section .tf-card--false .tf-card-state--off {
+        color: var(--error-color);
+    }
+}
+
+/* ==========================================================================
+   RESULTS SCREENS — #leaderboard-screen and #player-final-screen
+
+   Both screens still wore pre-reskin chrome: the host leaderboard had ZERO
+   rules in this file, and the player final screen is glass + blue glow +
+   metallic medal gradients (game.css 2140-2300). Treatment here is the same
+   paper/ink language as the lobby and host screens: one contained list card,
+   hairline row rules, mono tabular figures, and rank marked by FORM — an ink
+   inset rule whose weight steps down 3/2/1px — never by a colour wash.
+
+   CASCADE. game.css is imported before this file in the same @layer, and its
+   competing rules are class-only (`.leaderboard .leaderboard-item`,
+   `.final-leaderboard .leaderboard-item:nth-child(1)`, …). Every selector
+   below adds the screen ID, so it wins on specificity alone — no !important.
+   WP-C owns those game.css rules; if they are rewritten, these still hold.
+   ========================================================================== */
+
+[data-theme="light"] #leaderboard-screen,
+[data-theme="dark"] #leaderboard-screen,
+#leaderboard-screen {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+}
+
+#leaderboard-screen .leaderboard-container {
+    gap: 20px;
+    padding: 32px 24px 40px;
+}
+
+#leaderboard-screen .leaderboard-header h2,
+#leaderboard-screen .leaderboard-container h2 {
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: clamp(30px, 3.2vw, 44px);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    color: var(--ink);
+    margin: 0;
+}
+
+/* The list is the card. Rows are hairline-separated, so the card keeps only a
+   small inset padding and clips the first/last row corners. */
+#leaderboard-screen #leaderboard-list.leaderboard,
+#leaderboard-screen .leaderboard {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
+    padding: 6px 0;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+#leaderboard-screen .leaderboard .leaderboard-item {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 13px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line-2, var(--line));
+    border-radius: 0;
+    margin: 0;
+    box-shadow: none;
+    transform: none;
+}
+#leaderboard-screen .leaderboard .leaderboard-item:last-child {
+    border-bottom: none;
+}
+#leaderboard-screen .leaderboard .leaderboard-item:hover {
+    background: var(--paper-3);
+    transform: none;
+    box-shadow: none;
+}
+
+/* Rank numeral, emitted by leaderboard-manager.js as the row's first child.
+   The medal glyph for the top three still rides inside the name span. */
+#leaderboard-screen .leaderboard .leaderboard-item .lb-rank {
+    flex: 0 0 auto;
+    min-width: 2.5ch;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+}
+
+#leaderboard-screen .leaderboard .leaderboard-item .lb-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#leaderboard-screen .leaderboard .leaderboard-item .lb-score {
+    flex: 0 0 auto;
+    margin-left: auto;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    letter-spacing: 0;
+    color: var(--ink-2);
+}
+
+/* Top three by FORM: an ink inset rule that thins with rank, plus full-ink
+   name weight on first. No medal hues, no green wash — the medal glyph the
+   renderer already emits carries the ornament. */
+#leaderboard-screen .leaderboard .leaderboard-item.first {
+    box-shadow: inset 3px 0 0 0 var(--ink);
+}
+#leaderboard-screen .leaderboard .leaderboard-item.second {
+    box-shadow: inset 2px 0 0 0 var(--ink-3);
+}
+#leaderboard-screen .leaderboard .leaderboard-item.third {
+    box-shadow: inset 1px 0 0 0 var(--ink-4);
+}
+#leaderboard-screen .leaderboard .leaderboard-item.first .lb-name {
+    font-weight: 700;
+}
+#leaderboard-screen .leaderboard .leaderboard-item.first .lb-rank,
+#leaderboard-screen .leaderboard .leaderboard-item.first .lb-score {
+    color: var(--ink);
+}
+
+/* --- Player final screen --------------------------------------------------- */
+
+[data-theme="light"] #player-final-screen,
+[data-theme="dark"] #player-final-screen,
+#player-final-screen {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+}
+
+/* The container was a blue→purple glass panel; the screen is paper. */
+#player-final-screen .player-final-container {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+    gap: 28px;
+}
+
+#player-final-screen .player-final-container > h2 {
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: clamp(28px, 3.2vw, 42px);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    color: var(--ink);
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    text-shadow: none;
+}
+
+#player-final-screen .player-rank {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
+    padding: 28px 32px;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+#player-final-screen .player-rank::before {
+    display: none;
+}
+#player-final-screen .player-rank h3 {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 14px;
+}
+
+#player-final-screen .final-position {
+    font-family: var(--font-display);
+    font-weight: 380;
+    font-size: clamp(48px, 9vw, 76px);
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--ink);
+    text-shadow: none;
+    margin-bottom: 14px;
+}
+
+/* A score is a figure, not a badge: mono tabular in a hairline pill. */
+#player-final-screen .final-score {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill, 999px);
+    box-shadow: none;
+    padding: 8px 18px;
+}
+
+#player-final-screen .top-players h3 {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-shadow: none;
+    margin-bottom: 14px;
+}
+
+/* The top-3 list card. NOTE: leaderboard-manager.js:353 emits rows classed
+   `.final-leaderboard-item`, while game.css:2158+ styles
+   `.final-leaderboard .leaderboard-item` — those legacy rules never matched.
+   Both class names are covered here so the treatment holds either way. */
+#player-final-screen .final-leaderboard {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
+    padding: 6px 0;
+    gap: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    overflow: hidden;
+}
+#player-final-screen .final-leaderboard::before {
+    display: none;
+}
+#player-final-screen .final-leaderboard .final-leaderboard-item,
+#player-final-screen .final-leaderboard .leaderboard-item {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 12px 18px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line-2, var(--line));
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+}
+#player-final-screen .final-leaderboard .final-leaderboard-item:last-child,
+#player-final-screen .final-leaderboard .leaderboard-item:last-child {
+    border-bottom: none;
+}
+#player-final-screen .final-leaderboard .final-leaderboard-item:hover,
+#player-final-screen .final-leaderboard .leaderboard-item:hover {
+    background: var(--paper-3);
+    transform: none;
+    box-shadow: none;
+}
+#player-final-screen .final-leaderboard .lb-rank {
+    flex: 0 0 auto;
+    min-width: 2.5ch;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+}
+#player-final-screen .final-leaderboard .final-leaderboard-item.first .lb-rank {
+    color: var(--ink);
+}
+#player-final-screen .final-leaderboard .medal {
+    flex: 0 0 auto;
+    font-size: 15px;
+    line-height: 1;
+}
+#player-final-screen .final-leaderboard .player-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#player-final-screen .final-leaderboard .player-score {
+    flex: 0 0 auto;
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+}
+/* Rank by form, same 3/2/1px ink rule as the host leaderboard. */
+#player-final-screen .final-leaderboard .final-leaderboard-item.first,
+#player-final-screen .final-leaderboard .leaderboard-item.first {
+    box-shadow: inset 3px 0 0 0 var(--ink);
+}
+#player-final-screen .final-leaderboard .final-leaderboard-item.second,
+#player-final-screen .final-leaderboard .leaderboard-item.second {
+    box-shadow: inset 2px 0 0 0 var(--ink-3);
+}
+#player-final-screen .final-leaderboard .final-leaderboard-item.third,
+#player-final-screen .final-leaderboard .leaderboard-item.third {
+    box-shadow: inset 1px 0 0 0 var(--ink-4);
+}
+
+@media (max-width: 768px) {
+    #leaderboard-screen .leaderboard-container {
+        padding: 20px 16px 28px;
+    }
+    #leaderboard-screen .leaderboard .leaderboard-item {
+        padding: 12px 14px;
+        gap: 12px;
     }
 }

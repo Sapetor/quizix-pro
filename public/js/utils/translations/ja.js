@@ -1507,4 +1507,41 @@ export default {
     landing_footer_howto: '使い方',
     landing_footer_connect_title: 'つながる',
     landing_footer_license: 'MITライセンス',
+
+    // Editor 2a Stage B: question sidebar + preview column
+    qs_no_text: 'テキストなし',
+    minutes_short: '分',
+    try_full_quiz: 'クイズ全体を試す',
+
+    // Editor 2a Stage C: question form restyle
+    type_label: '種類',
+    difficulty_label: '難易度',
+    points_label: 'ポイント',
+    concepts_max: '· 最大5',
+    correct_pill: '✓ 正解',
+    mark_correct_pill: '選択',
+    image_label: '画像',
+    image_drop_hint: 'ドラッグまたはクリック',
+    explanation_hint: '回答後に表示',
+    duplicate_question: '複製',
+    delete_question: '削除',
+
+    // Editor 2a Stage D — validation surfaces + autosave stamp
+    val_no_text: 'テキストなし',
+    val_no_correct: '正解未設定',
+    val_correct_empty: '正解の選択肢が空',
+    val_too_few_options: '選択肢が2つ必要',
+    val_no_numeric: '数値回答なし',
+    val_strip_one: 'ルーム作成前に1問の確認が必要です',
+    val_strip_many: 'ルーム作成前に{0}問の確認が必要です',
+    val_go_first: '最初へ移動',
+    val_dismiss: '閉じる',
+    quiz_status_title: 'クイズの状態',
+    val_ready_one: '1問準備完了',
+    val_ready_many: '{0}問準備完了',
+    val_pill_one: '1件の注意 · 表示',
+    val_pill_many: '{0}件の注意 · 表示',
+    val_option_empty_helper: 'ルーム作成前に選択肢を入力するか削除してください',
+    editor_saving: '保存中…',
+    editor_saved: '保存済み',
 };

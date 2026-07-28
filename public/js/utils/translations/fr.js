@@ -1514,4 +1514,41 @@ export default {
     landing_footer_howto: 'Comment ça marche',
     landing_footer_connect_title: 'Se connecter',
     landing_footer_license: 'Licence MIT',
+
+    // Editor 2a Stage B: question sidebar + preview column
+    qs_no_text: 'Sans texte',
+    minutes_short: 'MIN',
+    try_full_quiz: 'Tester le quiz complet',
+
+    // Editor 2a Stage C: question form restyle
+    type_label: 'Type',
+    difficulty_label: 'Difficulté',
+    points_label: 'Points',
+    concepts_max: '· max 5',
+    correct_pill: '✓ Correcte',
+    mark_correct_pill: 'Marquer',
+    image_label: 'Image',
+    image_drop_hint: 'glisser ou cliquer',
+    explanation_hint: 'affichée après la réponse',
+    duplicate_question: 'Dupliquer',
+    delete_question: 'Supprimer',
+
+    // Editor 2a Stage D — validation surfaces + autosave stamp
+    val_no_text: 'sans texte',
+    val_no_correct: 'sans bonne réponse',
+    val_correct_empty: 'bonne réponse vide',
+    val_too_few_options: 'il faut 2 options',
+    val_no_numeric: 'sans réponse numérique',
+    val_strip_one: '1 question demande votre attention avant de créer la salle',
+    val_strip_many: '{0} questions demandent votre attention avant de créer la salle',
+    val_go_first: 'Aller à la première',
+    val_dismiss: 'Fermer',
+    quiz_status_title: 'État du quiz',
+    val_ready_one: '1 question prête',
+    val_ready_many: '{0} questions prêtes',
+    val_pill_one: '1 alerte · voir',
+    val_pill_many: '{0} alertes · voir',
+    val_option_empty_helper: 'Écrivez l’option ou supprimez-la avant de créer la salle',
+    editor_saving: 'Enregistrement…',
+    editor_saved: 'Enregistré',
 };

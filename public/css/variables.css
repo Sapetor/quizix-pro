@@ -9,6 +9,29 @@
     --font-display: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    /* Editorial serif — quiz-editor surfaces ONLY (breadcrumb title, editor h1,
+       quiz-title input, preview question). Do not use for the brand lockup. */
+    --font-editorial: 'Fraunces', Georgia, 'Times New Roman', serif;
+
+    /* ---- EDITOR 2a TOKENS (--ed-*) ------------------------------------------
+       Scoped to the quiz editor's 2a layout (app-screens.css, EDITOR 2a section).
+       Aliases to the paper/ink ramp are deliberate: they flip with the theme
+       for free; only hues the ramp lacks get literals — those get explicit
+       overrides in the [data-theme="dark"] block below (Stage E). */
+    --ed-canvas: var(--paper);                            /* editor canvas behind the columns */
+    --ed-surface: var(--paper-2);                         /* rail / sidebar / cards */
+    --ed-shade: #dfe3ea;                                  /* darker-than-canvas tone (preview column, segmented track) — ramp has no step below --paper */
+    --ed-accent-tint: rgba(var(--primary-rgb), 0.10);     /* active rail button / correct pill wash */
+    --ed-ai: #b85d3e;                                     /* terracotta AI accent (light chrome; dark uses #d97757 in Stage E) */
+    /* Stage D — validation amber family (mock: #b45309 dot/icon, #7a3d08 text,
+       .09/.15 tints, .20 border). --ed-warn aliases --warning-color so Stage E
+       gets the dark amber (#f59e0b) for free; text/tints need explicit dark
+       overrides in Stage E. */
+    --ed-warn: var(--warning-color);                      /* dots, ! badges, pill dot */
+    --ed-warn-text: #7a3d08;                              /* strip/pill text on amber tint */
+    --ed-warn-tint: rgba(180, 83, 9, 0.09);               /* strip / pill ground */
+    --ed-warn-tint-strong: rgba(180, 83, 9, 0.15);        /* ! badge circle ground */
+    --ed-warn-border: rgba(180, 83, 9, 0.20);             /* strip hairline / goto pill outline */
 
     /* === COOL NEUTRAL PALETTE (shared with landing) === */
     --paper: #e9ebf0;
@@ -121,11 +144,16 @@
     --option-0-shadow: rgba(37, 99, 235, 0.3);
     --option-0-shadow-hover: rgba(37, 99, 235, 0.5);
 
-    /* Option B - Green (contrast: 5.48:1 / 7.68:1) */
-    --option-1-start: #047857;
-    --option-1-end: #065f46;
-    --option-1-shadow: rgba(4, 120, 87, 0.3);
-    --option-1-shadow-hover: rgba(4, 120, 87, 0.5);
+    /* Option B - Teal (contrast: 5.47:1 / 7.58:1)
+       Was #047857/#065f46 — byte-identical to --correct, so every 4-option
+       question pre-painted option B in the correctness colour. Rotated to teal
+       at matched luminance (L 0.1418 vs the old 0.1415, 0.0884 vs 0.0884), so
+       only the hue moves: nothing else in the ramp changes weight.
+       teal-600 (#0d9488) was rejected — 3.68:1 on white, below AA. */
+    --option-1-start: #0f766e;
+    --option-1-end: #115e59;
+    --option-1-shadow: rgba(15, 118, 110, 0.3);
+    --option-1-shadow-hover: rgba(15, 118, 110, 0.5);
 
     /* Option C - Orange (contrast: 5.02:1 / 7.09:1) */
     --option-2-start: #b45309;
@@ -151,12 +179,15 @@
     --option-5-shadow: rgba(14, 116, 144, 0.3);
     --option-5-shadow-hover: rgba(14, 116, 144, 0.5);
     
-    /* True/False Colors */
-    --true-color-start: var(--option-1-start);
-    --true-color-end: var(--option-1-end);
-    --true-shadow: var(--option-1-shadow);
-    --true-shadow-hover: var(--option-1-shadow-hover);
-    
+    /* True/False Colors — theme-invariant (the --option-N-* ramp has no dark flip).
+       TRUE is BLUE (option A). It was green until --option-1-start was the exact
+       value of --correct; option B is teal now, but TRUE stays blue — blue/red is
+       the clearer binary pair and nothing here depends on the ramp entry B. */
+    --true-color-start: var(--option-0-start);
+    --true-color-end: var(--option-0-end);
+    --true-shadow: var(--option-0-shadow);
+    --true-shadow-hover: var(--option-0-shadow-hover);
+
     --false-color-start: var(--option-3-start);
     --false-color-end: var(--option-3-end);
     --false-shadow: var(--option-3-shadow);
@@ -232,6 +263,15 @@
     --info-color: #2563eb;
     
     /* Shadows and Effects */
+    /* === RADIUS SCALE (Buzzer) ===
+       Shared contract with app-screens.css / game.css / components.css, which read
+       these as var(--r-lg, 14px). Theme-invariant. The older --border-radius* names
+       below are unrelated and are NOT being retired by this pass. */
+    --r-sm: 10px;
+    --r-md: 12px;
+    --r-lg: 14px;
+    --r-pill: 999px;
+
     --shadow-soft: 0 8px 32px rgba(0,0,0,0.15);
     --shadow-hover: 0 12px 40px rgba(0,0,0,0.2);
     --shadow-light: rgba(0,0,0,0.1);
@@ -438,6 +478,23 @@
 
     --correct: #34d399;
     --correct-rgb: 52, 211, 153;
+
+    /* ---- EDITOR 2a TOKENS — dark values (Stage E) ---------------------------
+       --ed-canvas/--ed-surface/--ed-warn stay aliased to the ramp above and
+       need no entry here. SPEC-2a's warm 1c chrome (#14130f/#1e1c17) is NOT
+       used: the editor sits inside the app's cool-navy dark shell (header,
+       modals, game screens all flip to the #0d0f14 ramp), and a warm-brown
+       editor at the same lightness would read as hue drift, not design.
+       The 1c cues kept: deepest-recessed preview column, raised card
+       surfaces, faint hairlines, amber #f59e0b (via --warning-color),
+       terracotta #d97757. */
+    --ed-shade: #0a0c11;                             /* recessed step BELOW --paper (preview column, segmented track ground) */
+    --ed-accent-tint: rgba(var(--primary-rgb), 0.14); /* .10 is sub-visible on #171a22 surfaces */
+    --ed-ai: #d97757;                                /* SPEC-2a: terracotta on dark chrome */
+    --ed-warn-text: #fbbf24;                         /* light amber — #7a3d08 is unreadable on dark tints */
+    --ed-warn-tint: rgba(245, 158, 11, 0.10);        /* strip / pill ground over dark canvas */
+    --ed-warn-tint-strong: rgba(245, 158, 11, 0.18); /* ! badge circle ground */
+    --ed-warn-border: rgba(245, 158, 11, 0.28);      /* strip hairline / goto pill outline */
 
     --shadow-card: 0 1px 2px rgba(0, 0, 0, .4), 0 18px 40px -18px rgba(0, 0, 0, .7);
 

@@ -1524,4 +1524,41 @@ export default {
     landing_footer_howto: 'Cómo funciona',
     landing_footer_connect_title: 'Conectar',
     landing_footer_license: 'Licencia MIT',
+
+    // Editor 2a Stage B: question sidebar + preview column
+    qs_no_text: 'Sin texto',
+    minutes_short: 'MIN',
+    try_full_quiz: 'Probar el quiz completo',
+
+    // Editor 2a Stage C: question form restyle
+    type_label: 'Tipo',
+    difficulty_label: 'Dificultad',
+    points_label: 'Puntos',
+    concepts_max: '· máx 5',
+    correct_pill: '✓ Correcta',
+    mark_correct_pill: 'Marcar',
+    image_label: 'Imagen',
+    image_drop_hint: 'arrastra o haz clic',
+    explanation_hint: 'se muestra tras responder',
+    duplicate_question: 'Duplicar',
+    delete_question: 'Eliminar',
+
+    // Editor 2a Stage D — validation surfaces + autosave stamp
+    val_no_text: 'sin texto',
+    val_no_correct: 'sin respuesta correcta',
+    val_correct_empty: 'respuesta correcta vacía',
+    val_too_few_options: 'necesita 2 opciones',
+    val_no_numeric: 'sin respuesta numérica',
+    val_strip_one: '1 pregunta necesita atención antes de crear la sala',
+    val_strip_many: '{0} preguntas necesitan atención antes de crear la sala',
+    val_go_first: 'Ir a la primera',
+    val_dismiss: 'Descartar',
+    quiz_status_title: 'Estado del quiz',
+    val_ready_one: '1 pregunta lista',
+    val_ready_many: '{0} preguntas listas',
+    val_pill_one: '1 aviso · ver',
+    val_pill_many: '{0} avisos · ver',
+    val_option_empty_helper: 'Escribe la opción o elimínala antes de crear la sala',
+    editor_saving: 'Guardando…',
+    editor_saved: 'Guardado',
 };

@@ -13,17 +13,17 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=80">
+    <link rel="stylesheet" href="css/main.bundle.css?v=108">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=80" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=80" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=80" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=108" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=108" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=108" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&display=swap"
         rel="stylesheet">
     <style>
         /* Fallback fonts while Inter loads */
@@ -67,8 +67,11 @@
             opacity: 1;
         }
 
-        /* Prevent Inter font loading shift - exclude MathJax elements and display headings */
-        *:not(mjx-container):not(mjx-container *):not(.MathJax):not(.MathJax *):not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(.serif):not(.lp-serif):not(.lp-wordmark) {
+        /* Prevent Inter font loading shift - exclude MathJax elements and display headings.
+           .ed-serif/.ed-mono (Editor 2a): unlayered opt-outs — this rule beats the whole
+           @layer app bundle, so editor surfaces needing Fraunces/JetBrains Mono must be
+           tagged with these classes or they silently render Inter. */
+        *:not(mjx-container):not(mjx-container *):not(.MathJax):not(.MathJax *):not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(.serif):not(.lp-serif):not(.lp-wordmark):not(.ed-serif):not(.ed-serif *):not(.ed-mono):not(.ed-mono *) {
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
@@ -401,7 +404,7 @@
                 <div class="app-header-left">
                     <a href="#" class="brand" id="header-brand" aria-label="FrogQuiz home">
                         <span class="brand-mark" aria-hidden="true">F</span>
-                        <span class="brand-name">FrogQuiz</span>
+                        <span class="brand-name ed-serif">FrogQuiz</span>
                     </a>
                     <div class="editor-breadcrumb" id="editor-breadcrumb" hidden>
                         <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -411,9 +414,12 @@
                         </svg>
                         <span data-translate="header_editor">Editor</span>
                         <span class="editor-breadcrumb-separator" aria-hidden="true">·</span>
-                        <span class="editor-breadcrumb-title" id="editor-breadcrumb-title"
+                        <span class="editor-breadcrumb-title ed-serif" id="editor-breadcrumb-title"
                               data-translate="header_untitled_quiz">Untitled quiz</span>
                     </div>
+                    <!-- Autosave stamp (Stage D fills "Saving… / SAVED HH:MM"; ed-mono opts out
+                         of the critical-CSS Inter override) -->
+                    <span class="save-status ed-mono" id="save-status" aria-live="polite"></span>
                     <!-- Connection status pill (main-menu state) -->
                     <div class="conn" id="header-conn-pill">
                         <span class="dot" aria-hidden="true"></span>
@@ -423,7 +429,7 @@
                     <div class="live-game-cluster" id="header-live-game-cluster" hidden>
                         <span class="live-game-pin">
                             <span class="live-game-pin-kicker" data-translate="pin">PIN</span>
-                            <span class="live-game-pin-value" id="host-header-pin">------</span>
+                            <span class="live-game-pin-value ed-serif" id="host-header-pin">------</span>
                         </span>
                         <span class="live-game-progress">
                             <span class="live-game-players">
@@ -548,7 +554,7 @@
 
                 <div class="app-header-right">
                     <div class="app-header-utilities" id="app-header-utilities">
-                        <button id="font-size-toggle" class="iconbtn text-icon"
+                        <button id="font-size-toggle" class="iconbtn text-icon ed-serif"
                                 data-translate-title="adjust_font_size_tooltip" aria-label="Adjust font size"
                                 data-translate-aria-label="adjust_font_size_tooltip" onclick="toggleGlobalFontSize();">
                             <span id="font-size-icon" aria-hidden="true">A</span>
@@ -690,7 +696,7 @@
                     <button id="user-chip" class="user-chip anonymous" type="button"
                             data-translate-title="auth_signin_tooltip" aria-label="Sign in to your account"
                             data-translate-aria-label="auth_signin_tooltip">
-                        <span class="user-chip-avatar" aria-hidden="true">?</span>
+                        <span class="user-chip-avatar ed-serif" aria-hidden="true">?</span>
                         <span class="user-chip-name" data-translate="auth_signin_short">Sign in</span>
                     </button>
                 </div>
@@ -1344,16 +1350,22 @@
                 <!-- Old vertical toolbar removed - now using horizontal toolbar in header -->
 
                 <div class="host-container" id="host-container">
+                    <!-- Editor 2a Stage D: amber validation strip — full-width grid row above the
+                         editor columns. editor-validation.js fills the dynamic spans and toggles
+                         .hidden; base CSS hides it on mobile. -->
+                    <div class="editor-validation-strip hidden" id="editor-validation-strip" role="status">
+                        <span class="evs-dot" aria-hidden="true"></span>
+                        <span class="evs-text"></span>
+                        <span class="evs-summary ed-mono"></span>
+                        <button type="button" class="evs-goto" id="evs-goto"
+                            data-translate="val_go_first">Ir a la primera</button>
+                        <button type="button" class="evs-dismiss" id="evs-dismiss" aria-label="Dismiss"
+                            data-translate-aria-label="val_dismiss">×</button>
+                    </div>
+
                     <!-- Vertical Editor Toolbar (Desktop always-preview mode) -->
                     <aside class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="Quiz editing tools">
                         <!-- Primary Actions -->
-                        <button class="toolbar-btn primary-action" id="vtoolbar-add-question"
-                            data-translate-title="add_question_tooltip" aria-label="Add question"
-                            data-translate-aria-label="add_question_tooltip">
-                            <span class="toolbar-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                            </span>
-                        </button>
                         <button class="toolbar-btn primary-action" id="vtoolbar-save"
                             data-translate-title="save_quiz_tooltip" aria-label="Save quiz"
                             data-translate-aria-label="save_quiz_tooltip">
@@ -1414,6 +1426,10 @@
                         </div>
                     </aside>
 
+                    <!-- Question-list sidebar (Stage A: empty layout placeholder; Stage B renders rows) -->
+                    <nav class="question-sidebar" id="question-sidebar" aria-label="Questions"
+                        data-translate-aria-label="questions_total"></nav>
+
                     <div class="quiz-editor-section" id="quiz-editor-section">
                         <div class="editor-heading-row">
                             <h2 data-translate="create_quiz">Create Your Quiz</h2>
@@ -1426,7 +1442,7 @@
                         </div>
 
                         <div class="quiz-builder">
-                            <input type="text" id="quiz-title" placeholder="Quiz Title" class="input-field"
+                            <input type="text" id="quiz-title" placeholder="Quiz Title" class="input-field ed-serif"
                                 data-translate-placeholder="quiz_title" aria-label="Quiz title"
                                 data-translate-aria-label="quiz_title">
 
@@ -1515,7 +1531,7 @@
                                                 <span data-translate="time_bonus_threshold">Equal-points window:</span>
                                                 <input type="number" id="time-bonus-threshold" value="0" min="0"
                                                     max="30" step="1">
-                                                <span class="threshold-unit" data-translate="seconds_short">sec</span>
+                                                <span class="threshold-unit ed-mono" data-translate="seconds_short">sec</span>
                                             </label>
                                             <p class="scoring-help-text" data-translate="time_bonus_threshold_help">If set above 0, all players who answer within this many seconds get full bonus — no speed advantage. After this window, the bonus decreases linearly. Set to 0 to reward speed from the start.</p>
                                         </div>
@@ -1559,7 +1575,7 @@
                                     disabled aria-label="Previous question" data-translate-aria-label="previous">
                                     ←
                                 </button>
-                                <span class="question-indicator" id="question-indicator">
+                                <span class="question-indicator ed-mono" id="question-indicator">
                                     <span data-translate="question">Question</span> <span
                                         id="current-question-num">1</span> <span data-translate="of">of</span> <span
                                         id="total-question-num">1</span>
@@ -1596,27 +1612,61 @@
                                         <div class="question-meta">
                                             <h4 class="question-meta-title" data-translate="question_settings">Question
                                                 Settings</h4>
-                                            <select class="question-type" onchange="updateQuestionType(this)">
-                                                <option value="multiple-choice" data-translate="multiple_choice">
-                                                    Multiple Choice</option>
-                                                <option value="multiple-correct" data-translate="multiple_correct">
-                                                    Multiple Correct Answers</option>
-                                                <option value="true-false" data-translate="true_false">True/False
-                                                </option>
-                                                <option value="numeric" data-translate="numeric_answer">Numeric Answer
-                                                </option>
-                                                <option value="ordering" data-translate="ordering">Ordering</option>
-                                            </select>
+                                            <div class="qm-field qm-field--type">
+                                                <span class="qm-label ed-mono" data-translate="type_label">Type</span>
+                                                <select class="question-type" onchange="updateQuestionType(this)">
+                                                    <option value="multiple-choice" data-translate="multiple_choice">
+                                                        Multiple Choice</option>
+                                                    <option value="multiple-correct" data-translate="multiple_correct">
+                                                        Multiple Correct Answers</option>
+                                                    <option value="true-false" data-translate="true_false">True/False
+                                                    </option>
+                                                    <option value="numeric" data-translate="numeric_answer">Numeric
+                                                        Answer
+                                                    </option>
+                                                    <option value="ordering" data-translate="ordering">Ordering</option>
+                                                </select>
+                                            </div>
 
-                                            <select class="question-difficulty">
-                                                <option value="easy" data-translate="easy">Easy (100 pts)</option>
-                                                <option value="medium" selected data-translate="medium">Medium (200 pts)
-                                                </option>
-                                                <option value="hard" data-translate="hard">Hard (300 pts)</option>
-                                            </select>
+                                            <div class="qm-field qm-field--difficulty">
+                                                <span class="qm-label ed-mono"
+                                                    data-translate="difficulty_label">Difficulty</span>
+                                                <select class="question-difficulty">
+                                                    <option value="easy" data-translate="easy">Easy (100 pts)</option>
+                                                    <option value="medium" selected data-translate="medium">Medium (200
+                                                        pts)
+                                                    </option>
+                                                    <option value="hard" data-translate="hard">Hard (300 pts)</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="qm-field qm-field--time time-limit-container">
+                                                <label>
+                                                    <span class="qm-label" data-translate="time_seconds">Time
+                                                        (sec):</span>
+                                                    <span class="qm-stepper">
+                                                        <input type="number" class="question-time-limit ed-mono" min="5"
+                                                            max="300" value="20" onchange="updateTimeLimit(this)">
+                                                        <span class="qm-step-btns">
+                                                            <button type="button" class="qm-step" data-step="1"
+                                                                tabindex="-1" aria-hidden="true">▲</button>
+                                                            <button type="button" class="qm-step" data-step="-1"
+                                                                tabindex="-1" aria-hidden="true">▼</button>
+                                                        </span>
+                                                    </span>
+                                                </label>
+                                            </div>
+
+                                            <div class="qm-field qm-field--points">
+                                                <span class="qm-label ed-mono"
+                                                    data-translate="points_label">Points</span>
+                                                <span class="question-points-display ed-mono">200</span>
+                                            </div>
 
                                             <div class="concept-tags-container">
                                                 <label data-translate="concepts">Concepts</label>
+                                                <span class="concept-max ed-mono" data-translate="concepts_max">· max
+                                                    5</span>
                                                 <div class="concept-tags-input">
                                                     <div class="concept-tags-list"></div>
                                                     <input type="text" class="concept-input"
@@ -1626,31 +1676,35 @@
                                                 <div class="concept-hint" data-translate="concept_hint">Press Enter to
                                                     add (max 5)</div>
                                             </div>
-
-                                            <div class="time-limit-container">
-                                                <label>
-                                                    <span data-translate="time_seconds">Time (sec):</span>
-                                                    <input type="number" class="question-time-limit" min="5" max="300"
-                                                        value="20" onchange="updateTimeLimit(this)">
-                                                </label>
-                                            </div>
                                         </div>
 
                                         <div class="question-content">
-                                            <textarea class="question-text"
-                                                placeholder="Enter your question (supports LaTeX: $x^2$ and code: ```python```)"
-                                                data-translate-placeholder="enter_question"></textarea>
+                                            <div class="question-text-row">
+                                                <div class="question-text-card">
+                                                    <textarea class="question-text"
+                                                        placeholder="Enter your question (supports LaTeX: $x^2$ and code: ```python```)"
+                                                        data-translate-placeholder="enter_question"></textarea>
+                                                    <div class="qt-card-footer" aria-hidden="true">
+                                                        <span class="qt-hint ed-mono tex2jax_ignore">LATEX $x^2$</span>
+                                                        <span class="qt-count ed-mono">0</span>
+                                                    </div>
+                                                </div>
 
-                                            <div class="image-upload">
-                                                <label data-translate="add_image">Add Image (optional):</label>
-                                                <input type="file" class="image-input" accept="image/*"
-                                                    onchange="uploadImage(this)">
-                                                <div class="image-preview" style="display: none;">
-                                                    <img class="question-image" src="" alt="Question Image"
-                                                        style="max-width: 200px; max-height: 150px;">
-                                                    <button type="button" class="remove-image"
-                                                        onclick="removeImage(this)"
-                                                        data-translate="remove_image">Remove</button>
+                                                <div class="image-upload">
+                                                    <label data-translate="add_image">Add Image (optional):</label>
+                                                    <span class="image-zone-label ed-mono"
+                                                        data-translate="image_label">Image</span>
+                                                    <span class="image-drop-hint"
+                                                        data-translate="image_drop_hint">drag &amp; drop or click</span>
+                                                    <input type="file" class="image-input" accept="image/*"
+                                                        onchange="uploadImage(this)">
+                                                    <div class="image-preview" style="display: none;">
+                                                        <img class="question-image" src="" alt="Question Image"
+                                                            style="max-width: 200px; max-height: 150px;">
+                                                        <button type="button" class="remove-image"
+                                                            onclick="removeImage(this)"
+                                                            data-translate="remove_image">Remove</button>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -1808,30 +1862,58 @@
                                                 <label class="option-wrapper" data-option="0">
                                                     <input type="radio" class="correct-option" name="mc-correct-initial"
                                                         data-option="0" checked>
+                                                    <span class="opt-drag" aria-hidden="true"></span>
                                                     <span class="option-shape" data-shape="triangle">▲</span>
                                                     <input type="text" class="option" placeholder="Option A"
                                                         data-translate-placeholder="option_a">
+                                                    <span class="opt-pill ed-mono">
+                                                        <span class="opt-pill-on" data-translate="correct_pill">✓
+                                                            Correct</span>
+                                                        <span class="opt-pill-off"
+                                                            data-translate="mark_correct_pill">Mark</span>
+                                                    </span>
                                                 </label>
                                                 <label class="option-wrapper" data-option="1">
                                                     <input type="radio" class="correct-option" name="mc-correct-initial"
                                                         data-option="1">
+                                                    <span class="opt-drag" aria-hidden="true"></span>
                                                     <span class="option-shape" data-shape="diamond">◆</span>
                                                     <input type="text" class="option" placeholder="Option B"
                                                         data-translate-placeholder="option_b">
+                                                    <span class="opt-pill ed-mono">
+                                                        <span class="opt-pill-on" data-translate="correct_pill">✓
+                                                            Correct</span>
+                                                        <span class="opt-pill-off"
+                                                            data-translate="mark_correct_pill">Mark</span>
+                                                    </span>
                                                 </label>
                                                 <label class="option-wrapper" data-option="2">
                                                     <input type="radio" class="correct-option" name="mc-correct-initial"
                                                         data-option="2">
+                                                    <span class="opt-drag" aria-hidden="true"></span>
                                                     <span class="option-shape" data-shape="circle">●</span>
                                                     <input type="text" class="option" placeholder="Option C"
                                                         data-translate-placeholder="option_c">
+                                                    <span class="opt-pill ed-mono">
+                                                        <span class="opt-pill-on" data-translate="correct_pill">✓
+                                                            Correct</span>
+                                                        <span class="opt-pill-off"
+                                                            data-translate="mark_correct_pill">Mark</span>
+                                                    </span>
                                                 </label>
                                                 <label class="option-wrapper" data-option="3">
                                                     <input type="radio" class="correct-option" name="mc-correct-initial"
                                                         data-option="3">
+                                                    <span class="opt-drag" aria-hidden="true"></span>
                                                     <span class="option-shape" data-shape="square">■</span>
                                                     <input type="text" class="option" placeholder="Option D"
                                                         data-translate-placeholder="option_d">
+                                                    <span class="opt-pill ed-mono">
+                                                        <span class="opt-pill-on" data-translate="correct_pill">✓
+                                                            Correct</span>
+                                                        <span class="opt-pill-off"
+                                                            data-translate="mark_correct_pill">Mark</span>
+                                                    </span>
                                                 </label>
                                             </div>
                                         </div>
@@ -1840,36 +1922,84 @@
                                             <div class="options-checkboxes">
                                                 <label class="option-wrapper" data-option="0">
                                                     <input type="checkbox" class="correct-option" data-option="0">
+                                                    <span class="opt-drag" aria-hidden="true"></span>
                                                     <span class="option-shape" data-shape="triangle">▲</span>
                                                     <input type="text" class="option" placeholder="Option A"
                                                         data-translate-placeholder="option_a">
+                                                    <span class="opt-pill ed-mono">
+                                                        <span class="opt-pill-on" data-translate="correct_pill">✓
+                                                            Correct</span>
+                                                        <span class="opt-pill-off"
+                                                            data-translate="mark_correct_pill">Mark</span>
+                                                    </span>
                                                 </label>
                                                 <label class="option-wrapper" data-option="1">
                                                     <input type="checkbox" class="correct-option" data-option="1">
+                                                    <span class="opt-drag" aria-hidden="true"></span>
                                                     <span class="option-shape" data-shape="diamond">◆</span>
                                                     <input type="text" class="option" placeholder="Option B"
                                                         data-translate-placeholder="option_b">
+                                                    <span class="opt-pill ed-mono">
+                                                        <span class="opt-pill-on" data-translate="correct_pill">✓
+                                                            Correct</span>
+                                                        <span class="opt-pill-off"
+                                                            data-translate="mark_correct_pill">Mark</span>
+                                                    </span>
                                                 </label>
                                                 <label class="option-wrapper" data-option="2">
                                                     <input type="checkbox" class="correct-option" data-option="2">
+                                                    <span class="opt-drag" aria-hidden="true"></span>
                                                     <span class="option-shape" data-shape="circle">●</span>
                                                     <input type="text" class="option" placeholder="Option C"
                                                         data-translate-placeholder="option_c">
+                                                    <span class="opt-pill ed-mono">
+                                                        <span class="opt-pill-on" data-translate="correct_pill">✓
+                                                            Correct</span>
+                                                        <span class="opt-pill-off"
+                                                            data-translate="mark_correct_pill">Mark</span>
+                                                    </span>
                                                 </label>
                                                 <label class="option-wrapper" data-option="3">
                                                     <input type="checkbox" class="correct-option" data-option="3">
+                                                    <span class="opt-drag" aria-hidden="true"></span>
                                                     <span class="option-shape" data-shape="square">■</span>
                                                     <input type="text" class="option" placeholder="Option D"
                                                         data-translate-placeholder="option_d">
+                                                    <span class="opt-pill ed-mono">
+                                                        <span class="opt-pill-on" data-translate="correct_pill">✓
+                                                            Correct</span>
+                                                        <span class="opt-pill-off"
+                                                            data-translate="mark_correct_pill">Mark</span>
+                                                    </span>
                                                 </label>
                                             </div>
                                         </div>
 
                                         <div class="answer-options true-false-options" style="display: none;">
+                                            <span class="qm-label ed-mono tf-label"
+                                                data-translate="correct_answer">Correct Answer:</span>
                                             <select class="correct-answer">
                                                 <option value="true" data-translate="true">True</option>
                                                 <option value="false" data-translate="false">False</option>
                                             </select>
+                                            <div class="tf-cards">
+                                                <button type="button" class="tf-card tf-card--true" data-tf="true">
+                                                    <span class="tf-card-word ed-serif"
+                                                        data-translate="true">True</span>
+                                                    <span class="tf-card-state tf-card-state--on ed-mono"
+                                                        data-translate="correct_pill">✓ Correct</span>
+                                                    <span class="tf-card-state tf-card-state--off ed-mono"
+                                                        data-translate="mark_correct_pill">Mark</span>
+                                                </button>
+                                                <button type="button" class="tf-card tf-card--false" data-tf="false">
+                                                    <span class="tf-card-word ed-serif"
+                                                        data-translate="false">False</span>
+                                                    <span class="tf-card-state tf-card-state--on ed-mono"
+                                                        data-translate="correct_pill">✓ Correct</span>
+                                                    <span class="tf-card-state tf-card-state--off ed-mono"
+                                                        data-translate="mark_correct_pill">Mark</span>
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <div class="answer-options numeric-options" style="display: none;">
@@ -1919,8 +2049,10 @@
 
                                         <div class="explanation-section">
                                             <details>
-                                                <summary data-translate="explanation_optional">Explanation (optional)
-                                                </summary>
+                                                <summary><span data-translate="explanation_optional">Explanation
+                                                        (optional)</span><span class="explanation-hint"
+                                                        data-translate="explanation_hint">shown after
+                                                        answering</span></summary>
                                                 <textarea class="question-explanation"
                                                     placeholder="Explain why the correct answer is correct..."
                                                     data-translate-placeholder="explanation_placeholder"></textarea>
@@ -1928,6 +2060,17 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Editor 2a Stage C: desktop footer action bar (single instance —
+                                 acts on the active question; hidden on mobile). Warnings pill is
+                                 an empty slot Stage D fills. -->
+                            <div class="editor-action-bar" id="editor-action-bar">
+                                <button type="button" class="eab-secondary" id="editor-duplicate-question"
+                                    data-translate="duplicate_question">Duplicate</button>
+                                <button type="button" class="eab-secondary" id="editor-delete-question"
+                                    data-translate="delete_question">Delete</button>
+                                <span class="editor-warnings-pill" id="editor-warnings-pill"></span>
                             </div>
 
 
@@ -1955,10 +2098,6 @@
                     <div class="quiz-preview-section hidden" id="quiz-preview-section">
                         <div class="preview-header">
                             <h4 data-translate="live_preview">Live Preview</h4>
-                            <div class="preview-header-controls">
-                                <button id="toggle-preview" class="btn secondary"
-                                    data-translate="close_live_preview">Close Live Preview</button>
-                            </div>
                         </div>
 
                         <div class="preview-navigation-bar">
@@ -1977,7 +2116,7 @@
                                 <option value="numeric" data-translate="numeric">Numeric</option>
                                 <option value="ordering" data-translate="ordering">Ordering</option>
                             </select>
-                            <span id="preview-question-counter-split">Q1/1</span>
+                            <span id="preview-question-counter-split" class="ed-mono">Q1/1</span>
                             <div class="preview-nav-section">
                                 <button id="scroll-to-question" class="nav-btn edit-btn"><span
                                         data-translate="edit_question">Edit</span></button>
@@ -1987,10 +2126,12 @@
                         <div id="preview-viewport-split" class="preview-viewport-split desktop-viewport">
                             <div id="preview-content-split" class="preview-content-split">
                                 <div class="player-question-area">
-                                    <div id="preview-question-counter-display-split"><span
+                                    <div id="preview-question-counter-display-split" class="ed-mono"><span
                                             data-translate="question">Question</span> 1 <span
                                             data-translate="of">of</span> 1</div>
-                                    <div id="preview-question-text-split" data-translate="select_question_preview">
+                                    <!-- Editor 2a Stage B: timer chip (question-sidebar.js fills it) -->
+                                    <span id="preview-timer-split" class="preview-timer-split ed-mono" aria-hidden="true"></span>
+                                    <div id="preview-question-text-split" class="ed-serif" data-translate="select_question_preview">
                                         Select a question to preview</div>
                                     <div id="preview-question-image-split" class="hidden">
                                         <img id="preview-question-img-split" src="" alt="Question Image">
@@ -2078,6 +2219,14 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Editor 2a Stage B: meta line (pts · difficulty · concepts, question-sidebar.js),
+                             quiz status card placeholder (Stage D fills it), full-quiz preview button
+                             (id preview-quiz reuses the existing app.js binding to showQuizPreview()) -->
+                        <div id="preview-meta-split" class="preview-meta-split ed-mono"></div>
+                        <div id="quiz-status-card" class="quiz-status-card"></div>
+                        <button type="button" id="preview-quiz" class="preview-full-quiz-btn"
+                            data-translate="try_full_quiz">Try the full quiz</button>
                     </div>
                 </div>
             </div>
@@ -2105,8 +2254,8 @@
                     <h2 id="preview-modal-title"><span aria-hidden="true">📱</span> <span
                             data-translate="question_preview">Question Preview</span></h2>
                 </div>
-                <button id="close-preview" class="close-btn" onclick="closePreviewModal()"
-                    data-translate-aria-label="close">×</button>
+                <!-- Bound in app.js (close-preview); the old inline closePreviewModal() global never existed -->
+                <button id="close-preview" class="close-btn" data-translate-aria-label="close">×</button>
             </div>
 
             <div class="preview-navigation-bar">
@@ -2198,6 +2347,11 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Full-quiz preview: showQuizPreview() (app.js) renders every question here.
+                 Was missing entirely, which dead-ended that method; the single-question
+                 viewport above it has no JS driver and is hidden via app-screens.css. -->
+            <div id="quiz-preview-container" class="quiz-preview-container"></div>
         </div>
     </div>
 
@@ -2231,7 +2385,7 @@
                         <label class="time-input-label">
                             <span data-translate="global_time_limit">Global time limit (seconds):</span>
                             <input type="number" id="modal-global-time-limit" min="5" max="300" value="20"
-                                class="time-input">
+                                class="time-input ed-mono">
                         </label>
                     </div>
                 </div>
@@ -2279,7 +2433,7 @@
                         </div>
                         <div class="form-group">
                             <label data-translate="discussion_time">Discussion Time (seconds)</label>
-                            <input type="number" id="modal-discussion-time" value="30" min="10" max="120" step="5">
+                            <input type="number" id="modal-discussion-time" class="ed-mono" value="30" min="10" max="120" step="5">
                         </div>
                         <div class="form-group">
                             <label>
@@ -2310,7 +2464,7 @@
                     <div class="time-bonus-threshold-container">
                         <label class="threshold-label">
                             <span data-translate="time_bonus_threshold">Equal-points window:</span>
-                            <input type="number" id="modal-time-bonus-threshold" value="0" min="0" max="30" step="1">
+                            <input type="number" id="modal-time-bonus-threshold" class="ed-mono" value="0" min="0" max="30" step="1">
                             <span class="threshold-unit" data-translate="seconds_short">sec</span>
                         </label>
                         <p class="scoring-help-text" data-translate="time_bonus_threshold_help">If set above 0, all players who answer within this many seconds get full bonus — no speed advantage. After this window, the bonus decreases linearly. Set to 0 to reward speed from the start.</p>
@@ -2326,16 +2480,16 @@
                         <div class="multiplier-inputs">
                             <label class="multiplier-input">
                                 <span data-translate="easy">Easy</span>
-                                <input type="number" id="modal-easy-multiplier" value="1" min="0.5" max="5" step="0.5">
+                                <input type="number" id="modal-easy-multiplier" class="ed-mono" value="1" min="0.5" max="5" step="0.5">
                             </label>
                             <label class="multiplier-input">
                                 <span data-translate="medium">Medium</span>
-                                <input type="number" id="modal-medium-multiplier" value="2" min="0.5" max="5"
+                                <input type="number" id="modal-medium-multiplier" class="ed-mono" value="2" min="0.5" max="5"
                                     step="0.5">
                             </label>
                             <label class="multiplier-input">
                                 <span data-translate="hard">Hard</span>
-                                <input type="number" id="modal-hard-multiplier" value="3" min="0.5" max="5" step="0.5">
+                                <input type="number" id="modal-hard-multiplier" class="ed-mono" value="3" min="0.5" max="5" step="0.5">
                             </label>
                         </div>
                     </div>
@@ -2354,7 +2508,7 @@
                         data-translate-aria-label="students_connected">
                         <div class="card-header">
                             <h3 class="card-title" data-translate="students_connected">Students connected</h3>
-                            <div class="card-heading">
+                            <div class="card-heading ed-serif">
                                 <span><em id="lobby-headline-count">0</em> <span data-translate="in_the_room">in the room</span></span>
                                 <span class="waiting"><span class="pulse-dot"></span><span data-translate="waiting">Waiting</span></span>
                             </div>
@@ -2381,12 +2535,12 @@
                                     <img id="qr-code-image" class="hidden" alt="QR Code to join game">
                                 </div>
                                 <div class="pin-section">
-                                    <div id="game-pin" class="pin-display" role="button" tabindex="0"
+                                    <div id="game-pin" class="pin-display ed-mono" role="button" tabindex="0"
                                         aria-label="Click to copy PIN" data-translate-aria-label="click_to_copy_pin">
-                                        <div class="pin-text" data-translate="game_pin">Game PIN</div>
-                                        <div class="pin-digits">------</div>
+                                        <div class="pin-text ed-mono" data-translate="game_pin">Game PIN</div>
+                                        <div class="pin-digits ed-mono">------</div>
                                     </div>
-                                    <p id="game-url" class="game-url"></p>
+                                    <p id="game-url" class="game-url ed-mono"></p>
                                 </div>
                             </div>
 
@@ -2394,7 +2548,7 @@
                             <div class="action-section">
                                 <div class="player-count-display" aria-live="polite">
                                     <span class="player-icon" aria-hidden="true">👥</span>
-                                    <span id="lobby-player-count" class="player-count-number">0</span>
+                                    <span id="lobby-player-count" class="player-count-number ed-mono">0</span>
                                     <span class="info-label" data-translate="players">players</span>
                                 </div>
                                 <button id="start-game" class="btn primary large-start-btn"
@@ -2422,7 +2576,7 @@
         <div class="host-game-container">
             <!-- Host-specific timer (PIN, counter, controls moved to .app-header live-game cluster) -->
             <div class="question-header">
-                <div id="timer" class="timer" role="timer" aria-live="off" aria-label="Time remaining"
+                <div id="timer" class="timer ed-mono" role="timer" aria-live="off" aria-label="Time remaining"
                     data-translate-aria-label="time_remaining">20</div>
             </div>
             <div class="timer-bar" aria-hidden="true"></div>
@@ -2441,7 +2595,6 @@
             <div id="answer-statistics" class="answer-stats hidden" role="region" aria-label="Live answer statistics"
                 data-translate-aria-label="live_answer_statistics">
                 <div class="stats-header">
-                    <h3 data-translate="live_answer_statistics">Live Answer Statistics</h3>
                     <!-- Game control buttons for statistics phase - moved to top for visibility -->
                     <div class="stats-controls" id="game-controls" style="display: none;">
                         <button id="next-question-stats" class="btn primary" style="display: none;"
@@ -2494,9 +2647,9 @@
                         <div class="stat-count" id="stat-count-5">0</div>
                     </div>
                 </div>
-                <div class="response-summary" id="response-summary" aria-live="polite">
-                    <span id="responses-count">0</span> <span data-translate="of">of</span> <span
-                        id="total-players">0</span> <span data-translate="players_have_answered">players have
+                <div class="response-summary ed-mono" id="response-summary" aria-live="polite">
+                    <span id="responses-count" class="ed-mono">0</span> <span data-translate="of">of</span> <span
+                        id="total-players" class="ed-mono">0</span> <span data-translate="players_have_answered">players have
                         answered</span>
                     <span id="disconnected-indicator" class="disconnected-indicator hidden"></span>
                 </div>
@@ -2505,7 +2658,7 @@
                 </div>
                 <!-- Score Breakdown (host-only display) -->
                 <div class="host-score-breakdown" id="host-score-breakdown" style="display: none;">
-                    <span class="breakdown-label" data-translate="scoring">Scoring:</span>
+                    <span class="breakdown-label ed-mono" data-translate="scoring">Scoring:</span>
                     <span class="breakdown-content" id="breakdown-content"></span>
                 </div>
             </div>
@@ -2550,8 +2703,6 @@
             <!-- Use client-style options -->
             <!-- Moved below statistics for better information hierarchy -->
             <div id="host-multiple-choice" class="player-answer-type">
-                <div class="question-alternatives-header" data-translate="question_alternatives">Question Alternatives
-                </div>
                 <div id="answer-options" class="player-options">
                     <div class="option-display" data-option="0"></div>
                     <div class="option-display" data-option="1"></div>
@@ -2560,7 +2711,6 @@
                 </div>
             </div>
         </div>
-    </div>
     </div>
 
     <div id="join-screen" class="screen">
@@ -2642,7 +2792,7 @@
                         <span>👥</span>
                         <span data-translate="players_joined">Players</span>
                     </span>
-                    <span class="lobby-detail-value" id="lobby-player-count">1</span>
+                    <span class="lobby-detail-value" id="player-lobby-player-count">1</span>
                 </div>
             </div>
 
@@ -2675,7 +2825,7 @@
 
         <div class="player-game-container">
             <div class="question-info">
-                <span id="player-question-counter">Question 1 of 5</span>
+                <span id="player-question-counter" class="ed-mono">Question 1 of 5</span>
                 <div id="player-timer" class="timer hidden"></div>
             </div>
 
@@ -2845,10 +2995,10 @@
     <div id="player-final-screen" class="screen">
         <div class="player-final-container">
             <h2 data-translate="quiz_complete"><span aria-hidden="true">🎉</span> Quiz Complete!</h2>
-            <div id="player-final-rank" class="player-rank" role="status" aria-live="polite">
+            <div id="player-final-rank" class="player-rank ed-mono" role="status" aria-live="polite">
                 <h3 data-translate="your_final_rank">Your Final Rank</h3>
-                <div id="final-position" class="final-position">#1</div>
-                <div id="final-score" class="final-score">0 <span data-translate="points">points</span></div>
+                <div id="final-position" class="final-position ed-serif">#1</div>
+                <div id="final-score" class="final-score ed-mono">0 <span data-translate="points">points</span></div>
             </div>
             <div id="top-players" class="top-players">
                 <h3 data-translate="top_players"><span aria-hidden="true">🏆</span> Top Players</h3>
@@ -3664,10 +3814,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=80"></script>
-    <script type="module" src="js/landing.js?v=80"></script>
-    <script type="module" src="js/landing-demo.js?v=80"></script>
-    <script type="module" src="js/landing-ai.js?v=80"></script>
+    <script type="module" src="js/main.js?v=108"></script>
+    <script type="module" src="js/landing.js?v=108"></script>
+    <script type="module" src="js/landing-demo.js?v=108"></script>
+    <script type="module" src="js/landing-ai.js?v=108"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and
