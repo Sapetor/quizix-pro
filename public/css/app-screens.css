@@ -76,14 +76,10 @@
     border-color: var(--line);
 }
 
-#game-lobby .lobby-card::before {
-    content: "";
-    position: absolute;
-    inset: 12px;
-    border: 1px solid var(--line);
-    border-radius: var(--r-md, 12px);
-    pointer-events: none;
-}
+/* No inset ::before ring. A frame-inside-a-frame is not an idiom the editor
+   uses anywhere — it separates surfaces with a single hairline and spacing.
+   The nested rule also fought the card padding, reading as a 12px dead gutter
+   on cards that are already mostly whitespace. */
 
 /* Editorial card header: kicker + serif "N en la sala" */
 #game-lobby .players-list-card .card-header {
@@ -355,6 +351,16 @@
     border: 1px solid var(--line);
     border-radius: var(--r-lg, 14px);
 }
+/* Transient "Generating QR Code…" state. Had no rule of its own and centred
+   only by inheritance from .lobby-container, which no longer centres. */
+#game-lobby .combined-info-card .qr-loading {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+    text-align: center;
+}
+
 #game-lobby .combined-info-card #qr-code-image {
     width: 100%;
     height: auto;

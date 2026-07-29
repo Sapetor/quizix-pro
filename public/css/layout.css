@@ -362,8 +362,12 @@ header.header-offscreen.header-collapsed {
     pointer-events: none;
 }
 
+/* No text-align here: the lobby inherits the editor's flush-left rhythm, so the
+   mono kickers hang on the same left edge as the headings under them. The two
+   descendants that are genuinely centred compositions (.quiz-title-display,
+   .qr-loading) carry their own text-align; everything else in the right column
+   centres via flex (justify-content / align-self), not inheritance. */
 .lobby-container {
-    text-align: center;
     max-width: 1000px;
     /* Increased for side-by-side layout */
     margin: 0 auto;
@@ -414,51 +418,16 @@ header.header-offscreen.header-collapsed {
     align-self: start;
 }
 
-/* Individual Lobby Cards - Increased sizes for better space utilization */
+/* Layout only. All lobby card chrome (background, border, radius, padding,
+   shadow) lives in app-screens.css; the paper/ink pass overrode every visual
+   declaration that used to sit here, and the hover lift with it. The dead
+   .qr-card/.info-card/.action-card rules went with them — none of those class
+   tokens exist in the markup (`combined-info-card` is a different token). */
 .lobby-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 24px;
-    /* Increased padding */
-    box-shadow: var(--shadow-sm);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     min-height: calc(160px * var(--global-font-scale));
     /* Scales with font for accessibility */
-}
-
-/* Bottom cards with increased heights for better space usage */
-.info-card,
-.action-card {
-    min-height: calc(100px * var(--global-font-scale));
-    /* Scales with font for accessibility */
-    padding: 20px;
-    /* Increased from 12px */
-}
-
-
-.lobby-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-    border-color: rgba(var(--primary-rgb), 0.3);
-}
-
-.players-list-card:hover {
-    border-color: rgba(245, 158, 11, 0.4);
-}
-
-.qr-card:hover {
-    border-color: rgba(16, 185, 129, 0.4);
-}
-
-.info-card:hover {
-    border-color: rgba(var(--primary-rgb), 0.4);
-}
-
-.action-card:hover {
-    border-color: rgba(16, 185, 129, 0.4);
 }
 
 .card-header {
@@ -484,8 +453,6 @@ header.header-offscreen.header-collapsed {
 
 /* Card 1: Players List Card Styling - Fill full height */
 .players-list-card {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.1));
-    border-color: rgba(245, 158, 11, 0.2);
     flex: 1;
     /* Take up all available height in left column */
     display: flex;
@@ -517,8 +484,6 @@ header.header-offscreen.header-collapsed {
 
 /* Combined info card should match left column height */
 .combined-info-card {
-    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05), rgba(var(--primary-rgb), 0.1));
-    border-color: rgba(var(--primary-rgb), 0.2);
     flex: 1;
     /* Take up all available height to match left column */
     display: flex;
