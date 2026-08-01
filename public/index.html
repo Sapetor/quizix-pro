@@ -13,12 +13,12 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=112">
+    <link rel="stylesheet" href="css/main.bundle.css?v=114">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=112" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=112" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=112" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=114" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=114" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=114" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
@@ -434,6 +434,18 @@
                         <span class="editor-breadcrumb-separator" aria-hidden="true">·</span>
                         <span class="editor-breadcrumb-title ed-serif" id="editor-breadcrumb-title"
                               data-translate="header_untitled_quiz">Untitled quiz</span>
+                    </div>
+                    <!-- Lobby breadcrumb: carries the quiz title while the lobby is
+                         up. Separate from #editor-breadcrumb because that one is
+                         owned by setEditorHeaderState, which the lobby turns off. -->
+                    <div class="lobby-breadcrumb" id="lobby-breadcrumb" hidden>
+                        <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                             aria-hidden="true">
+                            <path d="M9 18l6-6-6-6"></path>
+                        </svg>
+                        <span class="lobby-breadcrumb-title ed-serif" id="lobby-breadcrumb-title"
+                              data-translate="quiz_title">Quiz Title</span>
                     </div>
                     <!-- Autosave stamp (Stage D fills "Saving… / SAVED HH:MM"; ed-mono opts out
                          of the critical-CSS Inter override) -->
@@ -2585,10 +2597,9 @@
                 </div>
             </div>
 
-            <!-- Quiz Name at Bottom -->
-            <div class="quiz-name-section">
-                <h2 id="lobby-quiz-title" class="quiz-title-display" data-translate="quiz_title">Quiz Title</h2>
-            </div>
+            <!-- The quiz name now lives in the header breadcrumb (#lobby-breadcrumb-title).
+                 It used to sit here on bare canvas below a full-width rule, outside
+                 both cards, with no owning surface. -->
         </div>
     </div>
 
@@ -3834,10 +3845,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=112"></script>
-    <script type="module" src="js/landing.js?v=112"></script>
-    <script type="module" src="js/landing-demo.js?v=112"></script>
-    <script type="module" src="js/landing-ai.js?v=112"></script>
+    <script type="module" src="js/main.js?v=114"></script>
+    <script type="module" src="js/landing.js?v=114"></script>
+    <script type="module" src="js/landing-demo.js?v=114"></script>
+    <script type="module" src="js/landing-ai.js?v=114"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

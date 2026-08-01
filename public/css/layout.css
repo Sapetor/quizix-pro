@@ -364,8 +364,8 @@ header.header-offscreen.header-collapsed {
 
 /* No text-align here: the lobby inherits the editor's flush-left rhythm, so the
    mono kickers hang on the same left edge as the headings under them. The two
-   descendants that are genuinely centred compositions (.quiz-title-display,
-   .qr-loading) carry their own text-align; everything else in the right column
+   descendant that is a genuinely centred composition (.qr-loading) carries its
+   own text-align; everything else in the right column
    centres via flex (justify-content / align-self), not inheritance. */
 .lobby-container {
     max-width: 1000px;
@@ -557,28 +557,6 @@ header.header-offscreen.header-collapsed {
     margin-top: 8px;
     color: var(--text-secondary);
     word-break: break-all;
-    text-align: center;
-}
-
-/* Quiz Name Section at Bottom */
-.quiz-name-section {
-    margin-top: auto;
-    /* Push to bottom */
-    padding: 8px 0;
-    /* Reduced from 15px to make it smaller */
-    border-top: 1px solid var(--border-color);
-    background: rgba(var(--accent-primary-rgb), 0.03);
-    border-radius: 8px;
-    flex-shrink: 0;
-}
-
-.quiz-title-display {
-    margin: 0;
-    font-size: 1rem;
-    /* Reduced from 1.2rem */
-    font-weight: 500;
-    /* Reduced from 600 for less visual weight */
-    color: var(--text-primary);
     text-align: center;
 }
 

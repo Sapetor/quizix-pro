@@ -99,10 +99,14 @@
 .editor-breadcrumb-separator {
   color: var(--ink-3);
 }
-/* Editor-only surface, so this is the one header node that takes Fraunces.
-   The `ed-serif` class on the markup is what lets it past the unlayered Inter
-   override in index.html; this declaration picks the face. */
-.editor-breadcrumb-title {
+/* The breadcrumb title is the header node that takes Fraunces — in the editor
+   and now in the lobby, which reuses the same chrome. This is a header surface,
+   not a game screen, so it does not contradict the Space-Grotesk-on-game-screens
+   rule in app-screens.css. The `ed-serif` class on the markup is what lets it
+   past the unlayered Inter override in index.html; this declaration picks the
+   face. */
+.editor-breadcrumb-title,
+.lobby-breadcrumb-title {
   color: var(--ink);
   font-family: var(--font-editorial);
   font-style: italic;
@@ -111,6 +115,22 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 280px;
+}
+
+/* Lobby breadcrumb: same geometry as the editor's, minus the "Editor ·"
+   segment — the quiz title alone is the context once the game room is up. */
+.lobby-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink-3);
+  min-width: 0;
+}
+.lobby-breadcrumb[hidden] { display: none; }
+.lobby-breadcrumb .chevron {
+  flex-shrink: 0;
+  color: var(--ink-3);
 }
 
 /* ----- Contained editor toolbar ----- */
@@ -543,6 +563,7 @@ body.has-editor-toolbar .app-header .conn { display: none; }
 /* Visibility orchestration: in-host-game state */
 body.in-host-game .app-header .conn,
 body.in-host-game .app-header .editor-breadcrumb,
+body.in-host-game .app-header .lobby-breadcrumb,
 body.in-host-game .app-header .app-header-utilities,
 body.in-host-game .app-header #utility-overflow-toggle,
 body.in-host-game .app-header #start-hosting-header-small,
@@ -570,6 +591,8 @@ body.in-host-game .app-header .live-game-controls { display: flex; }
      Padding overrides live in responsive.css (PHONE HEADER COMPACTION):
      they must out-cascade the universal touch-target !important rule. */
   .app-header .editor-breadcrumb { display: none; }
+  /* Same reason in the lobby: on a phone the title loses to brand/lang/account. */
+  .app-header .lobby-breadcrumb { display: none; }
   .app-header .divider { display: none; }
   .app-header .user-chip-name { display: none; }
   .app-header #start-hosting-header-small.btn { font-size: 13px; }

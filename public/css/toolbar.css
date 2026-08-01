@@ -134,120 +134,10 @@ header .horizontal-toolbar {
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
 }
 
-/* Auto-hide functionality for header - try different approach with negative margins */
-header.auto-hide-enabled {
-    position: fixed;
-    /* Changed from relative to fixed to prevent clipping */
-    top: 0;
-    left: 0;
-    right: 0;
-    transform: translateY(-100%);
-    opacity: 0;
-    pointer-events: none;
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
-    z-index: 1000;
-    margin-bottom: -100px;
-    /* Negative margin to pull content up - adjust as needed */
-}
-
-/* Hide the app title when header is in auto-hide mode to prevent clipping */
-header.auto-hide-enabled h1[data-translate="app_title"] {
-    display: none !important;
-}
-
-/* When header is auto-hide enabled, pull content up but leave more breathing room */
-body.header-auto-hide-mode .container {
-    margin-top: -20px !important;
-    /* Further reduced since header is now shorter without title */
-}
-
-header.auto-hide-enabled.visible {
-    transform: translateY(0);
-    opacity: 1;
-    pointer-events: auto;
-    z-index: 1001;
-    /* Ensure header appears above content when visible */
-}
-
-/* When auto-hide is active on lobby, move content up to fill header space */
-#game-lobby.header-auto-hide-active {
-    /* Override any default spacing */
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-#game-lobby.header-auto-hide-active .container {
-    padding-top: 50px !important;
-    /* Increased to ensure header doesn't clip frames when hovering */
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-    padding-bottom: 12px !important;
-    margin-top: 0 !important;
-}
-
-#game-lobby.header-auto-hide-active .lobby-container {
-    padding-top: 20px !important;
-    /* Increased padding to ensure proper spacing */
-    margin-top: 0 !important;
-}
-
-/* Visual hint system for hidden header */
-.header-hint {
-    position: fixed;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(8px);
-    border-radius: 0 0 12px 12px;
-    padding: 4px 16px;
-    font-size: 0.75rem;
-    /* 12px normal text: --ink-3 is only 4.32:1 on this tinted ground, --ink-2 is 6.65:1 */
-    color: var(--ink-2);
-    z-index: 999;
-    /* Just below header */
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-top: none;
-}
-
-.header-hint.visible {
-    /* full opacity: 0.8 dropped the 12px label to 2.99:1 */
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.header-hint:hover {
-    opacity: 1;
-    background: rgba(0, 0, 0, 0.15);
-    transform: translateX(-50%) translateY(2px);
-}
-
-.header-hint-icon {
-    margin-right: 4px;
-}
-
-/* Dark theme adjustments for hint */
-[data-theme="dark"] .header-hint {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .header-hint:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-/* Light theme adjustments for hint */
-[data-theme="light"] .header-hint {
-    background: rgba(0, 0, 0, 0.05);
-    border-color: rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="light"] .header-hint:hover {
-    background: rgba(0, 0, 0, 0.08);
-}
+/* Auto-hide header removed: the lobby was the only consumer, and it hid all
+   app chrome behind a "▼ Menu" hint tab. The lobby now keeps its header.
+   Gone with it: header.auto-hide-enabled, body.header-auto-hide-mode,
+   #game-lobby.header-auto-hide-active and the .header-hint tab. */
 
 @keyframes slideDown {
     from {
@@ -259,24 +149,6 @@ header.auto-hide-enabled.visible {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-/* Auto-hide slideIn animation */
-@keyframes slideIn {
-    from {
-        transform: translateY(-100%);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-/* Apply slideIn animation when header becomes visible */
-header.auto-hide-enabled.visible {
-    animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Theme-specific adjustments */

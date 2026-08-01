@@ -18,7 +18,6 @@ import { translationManager, showErrorAlert, createQuestionCounter } from '../ut
 import { toastNotifications } from '../utils/toast-notifications.js';
 import { connectionStatus } from '../utils/connection-status.js';
 import { APIHelper } from '../utils/api-helper.js';
-import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
 import { bindElement, dom, show, escapeHtmlPreservingLatex } from '../utils/dom.js';
 import { readScoringConfigFromDOM } from '../utils/scoring-config.js';
@@ -1634,12 +1633,6 @@ export class QuizGame {
         if (this.abortController) {
             this.abortController.abort();
             logger.debug('AbortController aborted - document listeners removed');
-        }
-
-        // Disable auto-hide toolbar if active
-        if (isAutoHideToolbarActive()) {
-            disableAutoHideToolbar();
-            logger.debug('Auto-hide toolbar disabled during cleanup');
         }
 
         // Clear any timers or intervals if needed

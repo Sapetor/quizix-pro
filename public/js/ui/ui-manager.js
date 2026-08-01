@@ -8,7 +8,6 @@ import { TIMING, logger } from '../core/config.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 import { uiStateManager } from '../utils/ui-state-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
-import { initializeAutoHideToolbar, disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/auto-hide-toolbar-manager.js';
 import { updateMobileReturnButtonVisibility } from '../utils/globals.js';
 import { escapeHtml, dom } from '../utils/dom.js';
 import { initQuestionSidebar } from './question-sidebar.js';
@@ -47,6 +46,23 @@ function setLiveGameHeaderState(visible) {
         if (want) el.removeAttribute('hidden');
         else el.setAttribute('hidden', '');
     });
+}
+
+/**
+ * Toggle lobby header state (brand + quiz-title breadcrumb).
+ *
+ * The lobby keeps the full header. It gets its OWN breadcrumb element rather
+ * than reusing #editor-breadcrumb: that one is owned by setEditorHeaderState,
+ * which the lobby branch calls with `false`, so sharing it meant the two
+ * fought over the `hidden` attribute depending on call order.
+ */
+function setLobbyHeaderState(visible) {
+    const want = !!visible;
+    document.body.classList.toggle('in-lobby', want);
+    const crumb = document.getElementById('lobby-breadcrumb');
+    if (!crumb) return;
+    if (want) crumb.removeAttribute('hidden');
+    else crumb.setAttribute('hidden', '');
 }
 
 export class UIManager {
@@ -116,12 +132,6 @@ export class UIManager {
             return;
         }
 
-        // Centralized cleanup: runs for ALL transitions (including host-screen)
-        // to prevent CSS classes and state from leaking between screens
-        if (isAutoHideToolbarActive()) {
-            disableAutoHideToolbar();
-        }
-
         // Remove always-preview overflow:hidden when leaving editor
         if (screenId !== 'host-screen') {
             const hostContainer = dom.get('host-container');
@@ -131,6 +141,9 @@ export class UIManager {
         }
 
         setLiveGameHeaderState(screenId === 'host-game-screen');
+        // Before the host-screen early return below, so leaving the lobby for
+        // the editor still clears the lobby breadcrumb.
+        setLobbyHeaderState(screenId === 'game-lobby');
 
         // Special handling for host-screen: prepare-then-fade pattern
         if (screenId === 'host-screen') {
@@ -162,7 +175,9 @@ export class UIManager {
         const mobileQuizFab = dom.get('mobile-quiz-fab');
 
         if (screenId === 'game-lobby') {
-                // Hide editing toolbar on lobby screen, but enable header auto-hide
+                // Hide the editing toolbar, but keep the header itself. The lobby
+                // used to auto-hide the whole header behind a "▼ Menu" hint tab,
+                // which meant all app chrome vanished between editor and lobby.
                 if (headerStartBtn) headerStartBtn.classList.add('hidden');
                 if (horizontalToolbar) {
                     horizontalToolbar.classList.add('hidden');
@@ -174,13 +189,6 @@ export class UIManager {
                     mobileQuizFab.classList.add('hidden');
                     mobileQuizFab.classList.remove('visible-flex');
                 }
-
-                // Initialize auto-hide functionality for HEADER on lobby screen
-                setTimeout(() => {
-                    if (!isAutoHideToolbarActive()) {
-                        initializeAutoHideToolbar();
-                    }
-                }, 100); // Small delay to ensure DOM is ready
             } else {
                 // Hide toolbar and start button for other screens
                 if (headerStartBtn) headerStartBtn.classList.add('hidden');
@@ -504,15 +512,15 @@ export class UIManager {
     }
 
     updateQuizTitle(title) {
-        const titleElement = dom.get('lobby-quiz-title');
+        // Target is the header breadcrumb; the old bottom-of-lobby #lobby-quiz-title
+        // block is gone (it sat outside both cards on bare canvas).
+        const titleElement = dom.get('lobby-breadcrumb-title');
         logger.debug('updateQuizTitle called with:', title);
-        logger.debug('Title element found:', !!titleElement);
         if (titleElement && title) {
             // Remove translation attribute to prevent override
             titleElement.removeAttribute('data-translate');
             titleElement.textContent = title;
-            logger.debug('Updated quiz title in lobby:', title);
-            logger.debug('Title element text after update:', titleElement.textContent);
+            logger.debug('Updated quiz title in lobby header:', title);
         } else {
             logger.warn('Failed to update quiz title - element or title missing');
         }

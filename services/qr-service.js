@@ -290,8 +290,13 @@ class QRService {
             return cached.data;
         }
 
+        // 600, not 300: the lobby QR container is 220px with 10px padding, so
+        // the image paints at 200 CSS px — 400 device px on the 2x displays and
+        // projectors this gets scanned from, which a 300px source cannot cover
+        // without resampling the module edges soft. A QR is 2-colour, so the
+        // larger PNG costs little.
         const qrCodeDataUrl = await QRCode.toDataURL(gameUrl, {
-            width: 300,
+            width: 600,
             margin: 2,
             color: {
                 dark: '#000000',

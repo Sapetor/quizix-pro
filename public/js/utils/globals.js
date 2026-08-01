@@ -7,7 +7,6 @@
  *
  * Specialized functionality has been extracted to dedicated managers:
  * - language-dropdown-manager.js: Language selection and dropdown positioning
- * - auto-hide-toolbar-manager.js: Header auto-hide during gameplay
  * - back-to-top-manager.js: Scroll-based button visibility
  * - editor-question-count.js: Question count tracking
  */

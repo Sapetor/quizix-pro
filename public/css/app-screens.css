@@ -315,7 +315,10 @@
     font-family: var(--font-mono);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    font-size: 72px;
+    /* 56, down from 72: the enlarged QR takes the width this was using. Six
+       tabular digits at 56px still read across a room, and the QR is now the
+       affordance carrying the load. */
+    font-size: 56px;
     letter-spacing: 0.12em;
     line-height: 0.95;
     text-align: left;
@@ -352,9 +355,13 @@
     word-break: break-all;
 }
 
+/* 220, up from 160. The QR is the primary join path — students scan it from
+   their seats — so it should dominate the card, not sit level with the PIN.
+   The row is width-bound (220 + 24 gap + the PIN block must clear ~494px of
+   card interior), which is why .pin-display drops from 72px to 56px below. */
 #game-lobby .combined-info-card .qr-container {
-    width: 160px;
-    max-width: 180px;
+    width: 220px;
+    max-width: 220px;
     flex-shrink: 0;
     background: var(--paper);
     padding: 10px;
@@ -485,22 +492,6 @@
     font-family: var(--font-body);
     font-size: 12px;
     color: var(--ink-3);
-    text-align: center;
-}
-
-/* Quiz name at bottom */
-#game-lobby .quiz-name-section {
-    border-top: 1px solid var(--line);
-    background: transparent;
-    margin: 0;
-    padding: 12px 0 0;
-}
-#game-lobby .quiz-title-display {
-    font-family: var(--font-display);
-    font-weight: 380;
-    font-size: 18px;
-    letter-spacing: -0.01em;
-    color: var(--ink-2);
     text-align: center;
 }
 
@@ -2371,6 +2362,12 @@
     white-space: nowrap;
 }
 .save-status:empty {
+    display: none;
+}
+/* The stamp is editor state and is never cleared once written (see
+   editor-validation.js setSaveStatusSaved), so with the lobby now keeping the
+   header it would sit there showing a stale "SAVED HH:MM" over a live room. */
+body.in-lobby .save-status {
     display: none;
 }
 
