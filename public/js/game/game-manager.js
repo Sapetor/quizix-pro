@@ -1077,6 +1077,22 @@ export class GameManager {
             'var(--option-5-start)'
         ];
 
+        // Empty roster: a dashed "waiting" chip rather than a blank card. The
+        // lobby card is ~500px tall, so with no players at all the card read as
+        // a rendering failure. textContent, not innerHTML — this is plain text.
+        //
+        // It reuses `.player-item` for the chip geometry, so it is picked up by
+        // a bare `.player-item` query. ANY code counting players must filter
+        // `:not(.placeholder)` — this already broke the visual suite's
+        // waitForPlayerCount, which resolved instantly at zero players.
+        if (players.length === 0) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'player-item placeholder placeholder-full';
+            placeholder.textContent =
+                getTranslation('waiting_for_players') || 'Waiting for players...';
+            playersListElement.appendChild(placeholder);
+        }
+
         players.forEach((player, idx) => {
             const playerElement = document.createElement('div');
             playerElement.className = 'player-item';

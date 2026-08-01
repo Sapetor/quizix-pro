@@ -170,7 +170,13 @@ async function waitForPlayerCount(page, count, timeout = 15000) {
         (expected) => {
             const list = document.querySelector('#players-list');
             if (!list) return false;
-            const items = list.querySelectorAll('.player-item, .player-card, [class*="player"]');
+            // `:not(.placeholder)` is required: the empty-state chip is a
+            // .player-item too, so counting it made this resolve instantly at
+            // zero players and the run continued before anyone had joined.
+            // The old `[class*="player"]` catch-all is gone — it matched the
+            // .player-avatar/.player-name children inside each chip and so
+            // counted 3 per player; `>=` hid the over-count.
+            const items = list.querySelectorAll('.player-item:not(.placeholder), .player-card');
             return items.length >= expected;
         },
         count,

@@ -13,12 +13,12 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=111">
+    <link rel="stylesheet" href="css/main.bundle.css?v=112">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=111" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=111" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=111" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=112" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=112" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=112" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
@@ -2564,8 +2564,10 @@
 
                             <!-- Start Game Section with Player Count -->
                             <div class="action-section">
+                                <!-- No icon: the editor's stat lines ("2 · 1 MIN",
+                                     "200 PTS · MEDIUM") are icon-free mono text, and
+                                     the count plus its label already say "players". -->
                                 <div class="player-count-display" aria-live="polite">
-                                    <span class="player-icon" aria-hidden="true">👥</span>
                                     <span id="lobby-player-count" class="player-count-number ed-mono">0</span>
                                     <span class="info-label" data-translate="players">players</span>
                                 </div>
@@ -2573,10 +2575,10 @@
                                     aria-label="Start the quiz game" data-translate-aria-label="start_game">
                                     <span data-translate="start_game">Start Game</span>
                                 </button>
-                                <div id="session-expected-count" class="hidden" style="font-size:0.85em; opacity:0.7; margin-top:8px;">
+                                <div id="session-expected-count" class="hidden">
                                     <span id="expected-player-count">0</span> <span data-translate="players_expected">players expected</span>
                                 </div>
-                                <button id="release-session-btn" class="btn btn-secondary btn-sm hidden" data-translate="release_players" style="margin-top:8px;">Release All Players</button>
+                                <button id="release-session-btn" class="btn btn-secondary btn-sm hidden" data-translate="release_players">Release All Players</button>
                             </div>
                         </div>
                     </div>
@@ -3832,10 +3834,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=111"></script>
-    <script type="module" src="js/landing.js?v=111"></script>
-    <script type="module" src="js/landing-demo.js?v=111"></script>
-    <script type="module" src="js/landing-ai.js?v=111"></script>
+    <script type="module" src="js/main.js?v=112"></script>
+    <script type="module" src="js/landing.js?v=112"></script>
+    <script type="module" src="js/landing-demo.js?v=112"></script>
+    <script type="module" src="js/landing-ai.js?v=112"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

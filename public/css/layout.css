@@ -662,12 +662,6 @@ header.header-offscreen.header-collapsed {
     gap: 6px;
 }
 
-/* Emoji glyph — `color` was a no-op on colour-presentation 👥 and a retired-amber
-   literal on the text-presentation fallback. Inherits --text-primary now. */
-.player-icon {
-    font-size: 1.5rem;
-}
-
 /* Ink + mono, matching the numeric treatment used elsewhere in the lobby.
    Amber here read as a warning state on a purely informational count. */
 .player-count-number {

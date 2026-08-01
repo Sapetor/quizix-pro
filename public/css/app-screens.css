@@ -244,6 +244,16 @@
     font-size: 12px;
 }
 
+/* The empty-state chip is a message, not a missing player: it spans the whole
+   grid row so it never reads as one absent seat in a repeat(3, 1fr) track.
+   Background stays --paper-2 (the card) rather than --paper, so the dashed
+   outline reads as an empty slot instead of a filled chip. */
+#game-lobby .player-item.placeholder.placeholder-full {
+    grid-column: 1 / -1;
+    background: transparent;
+    animation: none;
+}
+
 /* Combined info card: PIN + QR + start */
 #game-lobby .combined-info-card .card-header .card-title {
     font-family: var(--font-mono);
@@ -465,6 +475,17 @@
     box-shadow: none;
     color: var(--ink);
     border-color: var(--line);
+}
+
+/* Was three inline styles on the element (font-size/opacity/margin-top). The
+   0.7 opacity is dropped rather than ported: --ink-3 is already the muted step
+   and is contrast-checked at this size, whereas fading it further is not.
+   Spacing comes from .action-section's gap, so no margin here. */
+#game-lobby .combined-info-card #session-expected-count {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--ink-3);
+    text-align: center;
 }
 
 /* Quiz name at bottom */
