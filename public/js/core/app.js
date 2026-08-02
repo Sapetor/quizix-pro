@@ -433,13 +433,21 @@ export class QuizGame {
         });
         bindElement('join-game', 'click', () => this.joinGame());
 
-        // Enter submits the join form from either field (phone keyboards show "Go").
-        ['game-pin-input', 'player-name'].forEach(id => {
-            bindElement(id, 'keydown', (e) => {
-                if (e.key !== 'Enter') return;
-                e.preventDefault();
-                this.joinGame();
-            });
+        // Enter walks the join form the way the markup's enterkeyhint promises:
+        // "next" on the PIN advances, "go" on the name submits. Advancing also
+        // selects the name setDefaultPlayerName() prefilled, so typing replaces it.
+        bindElement('game-pin-input', 'keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const nameInput = dom.get('player-name');
+            if (!nameInput) return;
+            nameInput.focus();
+            nameInput.select();
+        });
+        bindElement('player-name', 'keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            this.joinGame();
         });
 
         bindElement('new-game', 'click', () => this.newGame());

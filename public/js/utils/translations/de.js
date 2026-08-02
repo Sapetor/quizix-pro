@@ -57,10 +57,8 @@ export default {
     quiz_title: 'Quiz-Titel',
     add_question: 'Frage hinzufügen',
     save_quiz: 'Quiz speichern',
-    load_quiz: 'Quiz laden',
     import_quiz: 'Quiz importieren',
     preview_quiz: 'Quiz-Vorschau',
-    tools: 'Werkzeuge',
     create_quiz: 'Erstellen Sie Ihr Quiz',
     live_preview: 'Live-Vorschau',
     toggle_live_preview: 'Live-Vorschau',
@@ -231,8 +229,6 @@ export default {
     unknown: 'Unbekannt',
     loading: 'Laden...',
     view_all_results: 'Alle Ergebnisse Anzeigen',
-    please_add_question_alert: 'Bitte fügen Sie mindestens eine Frage hinzu, bevor Sie das Spiel starten.',
-    confirm_start_without_title: 'Ihr Quiz hat keinen Titel. Trotzdem starten?',
     start_quiz_tooltip: 'Quiz mit aktuellen Fragen starten',
     toggle_fullscreen_tooltip: 'Vollbildmodus umschalten',
     toggle_dark_mode_tooltip: 'Dunkles/helles Design umschalten',
@@ -296,7 +292,6 @@ export default {
     normal: 'Normal',
     settings: 'Einstellungen',
     navigate: 'Navigieren',
-    preview: 'Vorschau',
     hide: 'Verstecken',
     reset: 'Zurücksetzen',
     submit: 'Absenden',
@@ -553,16 +548,6 @@ export default {
     preview_description: 'Erleben Sie interaktive Fragen mit mathematischen Gleichungen, Bildern und Multiple-Choice-Optionen',
 
     // Mobile tools menu keys
-    quiz_actions: 'Quiz-Aktionen',
-    quiz_settings_title: 'Quiz-Einstellungen',
-    randomize_questions_short: 'Fragen Zufällig',
-    randomize_answers_short: 'Antworten Zufällig',
-    manual_short: 'Host-Steuerung',
-    power_ups_short: 'Power-Ups',
-    open_saved_quiz: 'Gespeichertes Quiz öffnen',
-    begin_hosting: 'Hosting beginnen',
-    save_progress: 'Fortschritt speichern',
-    test_questions: 'Fragen testen',
     more_options: 'Weitere Optionen',
     no_options: 'Keine Optionen',
 
@@ -814,15 +799,12 @@ export default {
     // Missing validation/status keys
     no_questions_to_preview: 'Keine Fragen zur Vorschau',
     scroll_to_top: 'Nach oben',
-    import: 'Importieren',
-    export: 'Exportieren',
     to_top: 'Nach oben',
 
     // Additional missing keys
     ready_to_start: 'Bereit zum Starten?',
     game_info: 'Spielinfo',
     to_bottom: 'Nach unten',
-    results: 'Ergebnisse',
 
     // Manim Editor & Tutorial
     manim_enter_code_first: 'Please enter Manim code first',

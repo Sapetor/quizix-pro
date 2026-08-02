@@ -57,10 +57,8 @@ export default {
     quiz_title: 'Titolo Quiz',
     add_question: 'Aggiungi Domanda',
     save_quiz: 'Salva Quiz',
-    load_quiz: 'Carica Quiz',
     import_quiz: 'Importa Quiz',
     preview_quiz: 'Anteprima Quiz',
-    tools: 'Strumenti',
     create_quiz: 'Crea il tuo Quiz',
     live_preview: 'Anteprima Live',
     toggle_live_preview: 'Anteprima Live',
@@ -217,8 +215,6 @@ export default {
     unknown: 'Sconosciuto',
     loading: 'Caricamento...',
     view_all_results: 'Visualizza Tutti i Risultati',
-    please_add_question_alert: 'Aggiungi almeno una domanda prima di iniziare il gioco.',
-    confirm_start_without_title: 'Il tuo quiz non ha un titolo. Iniziare comunque?',
     start_quiz_tooltip: 'Inizia il quiz con le domande attuali',
     toggle_fullscreen_tooltip: 'Attiva/disattiva modalità schermo intero',
     toggle_dark_mode_tooltip: 'Attiva/disattiva tema scuro/chiaro',
@@ -282,7 +278,6 @@ export default {
     normal: 'Normale',
     settings: 'Impostazioni',
     navigate: 'Naviga',
-    preview: 'Anteprima',
     hide: 'Nascondi',
     reset: 'Reimposta',
     submit: 'Invia',
@@ -548,16 +543,6 @@ export default {
     preview_description: 'Sperimenta domande interattive con equazioni matematiche, immagini e opzioni a scelta multipla',
 
     // Mobile tools menu keys
-    quiz_actions: 'Azioni Quiz',
-    quiz_settings_title: 'Impostazioni Quiz',
-    randomize_questions_short: 'Domande Casuali',
-    randomize_answers_short: 'Risposte Casuali',
-    manual_short: 'Controllo Host',
-    power_ups_short: 'Power-Ups',
-    open_saved_quiz: 'Apri quiz salvato',
-    begin_hosting: 'Inizia hosting',
-    save_progress: 'Salva progresso',
-    test_questions: 'Testa domande',
     more_options: 'Altre Opzioni',
     no_options: 'Nessuna opzione',
 
@@ -809,8 +794,6 @@ export default {
     // Missing validation/status keys
     no_questions_to_preview: 'Nessuna domanda da visualizzare',
     scroll_to_top: 'In Alto',
-    import: 'Importa',
-    export: 'Esporta',
     to_top: 'In Alto',
 
     // Additional missing keys
@@ -820,7 +803,6 @@ export default {
     status: 'Stato',
     ping: 'Ping',
     quality: 'Qualità',
-    results: 'Risultati',
 
     // Manim Editor & Tutorial
     manim_enter_code_first: 'Please enter Manim code first',

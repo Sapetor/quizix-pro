@@ -57,10 +57,8 @@ export default {
     quiz_title: 'Título do Quiz',
     add_question: 'Adicionar Pergunta',
     save_quiz: 'Salvar Quiz',
-    load_quiz: 'Carregar Quiz',
     import_quiz: 'Importar Quiz',
     preview_quiz: 'Visualizar Quiz',
-    tools: 'Ferramentas',
     create_quiz: 'Crie seu Quiz',
     live_preview: 'Visualização ao Vivo',
     toggle_live_preview: 'Visualização ao Vivo',
@@ -223,8 +221,6 @@ export default {
     unknown: 'Desconhecido',
     loading: 'Carregando...',
     view_all_results: 'Ver Todos os Resultados',
-    please_add_question_alert: 'Adicione pelo menos uma pergunta antes de iniciar o jogo.',
-    confirm_start_without_title: 'Seu quiz não tem título. Iniciar mesmo assim?',
     start_quiz_tooltip: 'Iniciar o quiz com as perguntas atuais',
     toggle_fullscreen_tooltip: 'Alternar modo tela cheia',
     toggle_dark_mode_tooltip: 'Alternar tema escuro/claro',
@@ -288,7 +284,6 @@ export default {
     normal: 'Normal',
     settings: 'Configurações',
     navigate: 'Navegar',
-    preview: 'Visualizar',
     hide: 'Ocultar',
     reset: 'Redefinir',
     submit: 'Enviar',
@@ -539,16 +534,6 @@ export default {
     preview_description: 'Experimente perguntas interativas com equações matemáticas, imagens e opções de múltipla escolha',
 
     // Mobile tools menu keys
-    quiz_actions: 'Ações do Quiz',
-    quiz_settings_title: 'Configurações do Quiz',
-    randomize_questions_short: 'Perguntas Aleatórias',
-    randomize_answers_short: 'Respostas Aleatórias',
-    manual_short: 'Controle do Anfitrião',
-    power_ups_short: 'Power-Ups',
-    open_saved_quiz: 'Abrir quiz salvo',
-    begin_hosting: 'Iniciar hospedagem',
-    save_progress: 'Salvar progresso',
-    test_questions: 'Testar perguntas',
     more_options: 'Mais Opções',
     no_options: 'Sem opções',
 
@@ -800,8 +785,6 @@ export default {
     // Missing validation/status keys
     no_questions_to_preview: 'Nenhuma pergunta para visualizar',
     scroll_to_top: 'Ir ao Topo',
-    import: 'Importar',
-    export: 'Exportar',
     to_top: 'Ir ao Topo',
     exit_to_main: 'Voltar ao Menu Principal',
     stop_quiz: 'Parar Quiz',
@@ -818,7 +801,6 @@ export default {
     question_will_appear_here: 'A pergunta aparecerá aqui',
     question_alternatives: 'Alternativas da Pergunta',
     players_have_answered: 'jogadores responderam',
-    results: 'Resultados',
 
     // Manim Editor & Tutorial
     manim_enter_code_first: 'Please enter Manim code first',

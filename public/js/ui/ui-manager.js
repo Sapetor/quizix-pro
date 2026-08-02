@@ -264,23 +264,8 @@ export class UIManager {
                     }
                     break;
                 case 'game-browser':
-                    uiStateManager.setState('lobby');
-                    break;
                 case 'join-screen':
                     uiStateManager.setState('lobby');
-                    // Phone only: drop the caret into the first empty field so the
-                    // keyboard opens on the PIN. Desktop focus behavior is unchanged.
-                    if (isPhone()) {
-                        setTimeout(() => {
-                            const pinInput = dom.get('game-pin-input');
-                            if (pinInput && !pinInput.value) {
-                                pinInput.focus();
-                                return;
-                            }
-                            const nameInput = dom.get('player-name');
-                            if (nameInput && !nameInput.value) nameInput.focus();
-                        }, TIMING.DOM_UPDATE_DELAY);
-                    }
                     break;
                 default:
                     // Default to lobby state for other screens
