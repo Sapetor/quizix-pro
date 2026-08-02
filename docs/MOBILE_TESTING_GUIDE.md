@@ -1,14 +1,19 @@
 # Mobile Enhancements Testing Guide
 
+> **Partially stale.** This guide predates the join-only mobile scope
+> (`docs/MOBILE_JOIN_ONLY.md`) and some of its references have rotted. Verified
+> 2026-08-02: `window.mobileEnhancements` still exists and the console snippets
+> below still work, but the standalone test page referenced by the old "Method 1"
+> was deleted, and the `main.css?v=modular-4.4-mobile` filename below is obsolete
+> (the bundle is now `main.bundle.css` with a generated `?v=` stamp). Treat the
+> touch-feedback checklists as current and the file/URL references as suspect.
+
 ## 🧪 Quick Testing Methods
 
-### Method 1: Use the Test Page
-1. **Open the test page**: Navigate to `http://localhost:3000/test-mobile-enhancements.html` on your Android device
-2. **Run automatic tests**: Click "Run Automated Tests" to see integration status
-3. **Test touch interactions**: Touch the buttons and quiz options to feel the enhanced feedback
-
-### Method 2: Test on the Main App
-1. **Start a quiz**: Go to Host a Game → Create questions
+### Test on the Main App
+1. **Get to gameplay**: hosting is desktop-only on a phone, so start the quiz
+   from a desktop browser and join from the phone with the PIN. (On a phone the
+   editor redirects to the join screen by design — see `docs/MOBILE_JOIN_ONLY.md`.)
 2. **Test touch feedback**: Touch quiz options and buttons
 3. **Check mobile optimizations**: Look for better spacing and visual feedback
 

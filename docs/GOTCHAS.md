@@ -49,3 +49,7 @@ Hard-won lessons from debugging Quizix Pro. Consult this when working on the rel
 ## AI Integration
 
 18. **Gemini thinking models return multiple `parts`** — Gemini 2.5+/3.x responses have `parts[0]` as the thinking/reasoning text (with `thought: true`) and the actual output in a later part. Always iterate parts in reverse to find the last non-thought part. Never hardcode `parts[0]`. Also: Gemini 3 uses `thinkingLevel` (string), Gemini 2.5 uses `thinkingBudget` (int) — they cannot be mixed.
+
+## Mobile Gating
+
+19. **Phones are join-and-play only — gate with `isPhone()`, never `isMobile()`** — `isMobile()` (`innerWidth <= 768`) is for LAYOUT only; the gate is `isPhone()` (`pointer: coarse` + `max-width: 768px`), mirrored byte-identically by the single media query in `public/css/mobile-gate.css`. A width-only gate strips the editor from a mouse-driven desktop at 200% zoom or in a half-snapped window (see #5). Only `host-screen` is gated in `showScreen()` — `game-lobby` and `host-game-screen` arrive by server push, and gating those ejects a live host mid-game (see #12/#13). This is UX gating, **not security**: server routes are unauthenticated and "Request desktop site" bypasses it by design. Also: `fullPage: true` screenshots destroy touch emulation in Playwright, so a mobile visual test using it silently photographs the *ungated* desktop UI. Full detail and the un-gating checklist: `docs/MOBILE_JOIN_ONLY.md`.
