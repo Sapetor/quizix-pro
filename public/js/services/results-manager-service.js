@@ -373,42 +373,6 @@ export class ResultsManagerService {
     }
 
     /**
-     * Search and filter results
-     */
-    filterResults(results, searchTerm = '', sortBy = 'date-desc') {
-        let filtered = results;
-
-        // Apply search filter
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            filtered = results.filter(result =>
-                result.quizTitle?.toLowerCase().includes(term) ||
-                result.gamePin?.toString().includes(term)
-            );
-        }
-
-        // Apply sorting
-        filtered.sort((a, b) => {
-            switch (sortBy) {
-                case 'date-desc':
-                    return new Date(b.saved || 0) - new Date(a.saved || 0);
-                case 'date-asc':
-                    return new Date(a.saved || 0) - new Date(b.saved || 0);
-                case 'title-asc':
-                    return (a.quizTitle || '').localeCompare(b.quizTitle || '');
-                case 'participants-desc':
-                    const aParticipants = a.results?.length || 0;
-                    const bParticipants = b.results?.length || 0;
-                    return bParticipants - aParticipants;
-                default:
-                    return 0;
-            }
-        });
-
-        return filtered;
-    }
-
-    /**
      * Clear cache
      */
     clearCache() {

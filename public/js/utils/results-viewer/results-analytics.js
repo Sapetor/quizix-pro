@@ -7,6 +7,12 @@ import { logger } from '../../core/config.js';
 import { escapeHtml } from '../dom.js';
 import { getTranslation } from '../translation-manager.js';
 import { getSuccessRateClass } from './results-filter-manager.js';
+import { getChartTheme, baseChartOptions, themedScale } from './chart-theme.js';
+import {
+    formatAnswerLabel,
+    resolveCorrectAnswerLabel,
+    normalizeAnswerRecord
+} from './answer-format.js';
 
 /**
  * Calculate comprehensive question analytics for identifying problematic questions
@@ -26,11 +32,12 @@ export function calculateQuestionAnalytics(result) {
             text: question.text || question.question || `Question ${qIndex + 1}`,
             type: question.type || 'multiple-choice',
             difficulty: question.difficulty || 'medium',
-            correctAnswer: question.correctAnswer,
+            correctAnswerLabel: resolveCorrectAnswerLabel(question),
 
             // Performance metrics
             totalResponses: 0,
             correctResponses: 0,
+            timedResponses: 0,
             averageTime: 0,
             totalTime: 0,
             averagePoints: 0,
@@ -39,6 +46,7 @@ export function calculateQuestionAnalytics(result) {
             // Analysis metrics
             successRate: 0,
             timeEfficiency: 0,
+            unanswered: false,
             strugglingPlayers: [],
             commonWrongAnswers: {},
 
@@ -49,35 +57,45 @@ export function calculateQuestionAnalytics(result) {
 
         // Analyze each player's response to this question
         result.results.forEach(player => {
-            const answer = player.answers && player.answers[qIndex];
-            if (answer) {
-                questionAnalysis.totalResponses++;
-                questionAnalysis.totalTime += (answer.timeMs || 0) / 1000;
-                questionAnalysis.totalPoints += answer.points || 0;
+            const answer = normalizeAnswerRecord(player.answers?.[qIndex]);
+            if (!answer) return;
 
-                if (answer.isCorrect) {
-                    questionAnalysis.correctResponses++;
-                } else {
-                    questionAnalysis.strugglingPlayers.push({
-                        name: player.name,
-                        answer: answer.answer,
-                        time: (answer.timeMs || 0) / 1000,
-                        points: answer.points || 0
-                    });
+            questionAnalysis.totalResponses++;
+            questionAnalysis.totalPoints += answer.points;
 
-                    const wrongAnswer = Array.isArray(answer.answer) ?
-                        answer.answer.join(', ') : String(answer.answer);
-                    questionAnalysis.commonWrongAnswers[wrongAnswer] =
-                        (questionAnalysis.commonWrongAnswers[wrongAnswer] || 0) + 1;
-                }
+            // A record without timing would otherwise report an artificial 0s
+            // response time for the whole question.
+            if (answer.timeMs !== null) {
+                questionAnalysis.timedResponses++;
+                questionAnalysis.totalTime += answer.timeMs / 1000;
             }
+
+            if (answer.isCorrect) {
+                questionAnalysis.correctResponses++;
+                return;
+            }
+
+            const label = formatAnswerLabel(answer.value, question);
+            questionAnalysis.strugglingPlayers.push({
+                name: player.name,
+                answer: label,
+                time: (answer.timeMs || 0) / 1000,
+                points: answer.points
+            });
+            questionAnalysis.commonWrongAnswers[label] =
+                (questionAnalysis.commonWrongAnswers[label] || 0) + 1;
         });
 
         // Calculate derived metrics
         if (questionAnalysis.totalResponses > 0) {
             questionAnalysis.successRate = (questionAnalysis.correctResponses / questionAnalysis.totalResponses) * 100;
-            questionAnalysis.averageTime = questionAnalysis.totalTime / questionAnalysis.totalResponses;
             questionAnalysis.averagePoints = questionAnalysis.totalPoints / questionAnalysis.totalResponses;
+        } else {
+            questionAnalysis.unanswered = true;
+        }
+
+        if (questionAnalysis.timedResponses > 0) {
+            questionAnalysis.averageTime = questionAnalysis.totalTime / questionAnalysis.timedResponses;
             questionAnalysis.timeEfficiency = questionAnalysis.successRate / Math.max(questionAnalysis.averageTime, 1);
         }
 
@@ -93,6 +111,14 @@ export function calculateQuestionAnalytics(result) {
  * @param {Object} analysis - Question analysis object to evaluate
  */
 function flagProblematicQuestion(analysis) {
+    // A question nobody answered carries no evidence about its quality; a 0%
+    // success rate here means "no data", not "knowledge gap".
+    if (analysis.totalResponses === 0) {
+        analysis.problemFlags = [];
+        analysis.isPotentiallyProblematic = false;
+        return;
+    }
+
     const flags = [];
 
     // Low success rate (knowledge gap)
@@ -100,34 +126,37 @@ function flagProblematicQuestion(analysis) {
         flags.push({
             type: 'low_success',
             severity: 'high',
-            message: `Only ${analysis.successRate.toFixed(1)}% success rate - potential knowledge gap`
+            message: getTranslation('analytics_flag_low_success', [analysis.successRate.toFixed(1)])
         });
         analysis.isPotentiallyProblematic = true;
     } else if (analysis.successRate < 60) {
         flags.push({
             type: 'moderate_success',
             severity: 'medium',
-            message: `${analysis.successRate.toFixed(1)}% success rate - room for improvement`
+            message: getTranslation('analytics_flag_moderate_success', [analysis.successRate.toFixed(1)])
         });
     }
 
-    // High time with low success (conceptual difficulty)
-    if (analysis.averageTime > 15 && analysis.successRate < 50) {
-        flags.push({
-            type: 'time_vs_success',
-            severity: 'high',
-            message: `High time (${analysis.averageTime.toFixed(1)}s) with low success - conceptual difficulty`
-        });
-        analysis.isPotentiallyProblematic = true;
-    }
+    // Timing flags need timing data.
+    if (analysis.timedResponses > 0) {
+        // High time with low success (conceptual difficulty)
+        if (analysis.averageTime > 15 && analysis.successRate < 50) {
+            flags.push({
+                type: 'time_vs_success',
+                severity: 'high',
+                message: getTranslation('analytics_flag_slow_and_wrong', [analysis.averageTime.toFixed(1)])
+            });
+            analysis.isPotentiallyProblematic = true;
+        }
 
-    // Quick wrong answers (misconceptions)
-    if (analysis.averageTime < 8 && analysis.successRate < 70) {
-        flags.push({
-            type: 'quick_wrong',
-            severity: 'medium',
-            message: 'Quick responses with errors - potential misconceptions'
-        });
+        // Quick wrong answers (misconceptions)
+        if (analysis.averageTime < 8 && analysis.successRate < 70) {
+            flags.push({
+                type: 'quick_wrong',
+                severity: 'medium',
+                message: getTranslation('analytics_flag_quick_wrong')
+            });
+        }
     }
 
     // Common wrong answer (misleading option)
@@ -136,11 +165,11 @@ function flagProblematicQuestion(analysis) {
         current[1] > (max[1] || 0) ? current : max, [null, 0]
     );
 
-    if (mostCommonWrong[1] >= analysis.totalResponses * 0.4) {
+    if (mostCommonWrong[0] !== null && mostCommonWrong[1] >= analysis.totalResponses * 0.4) {
         flags.push({
             type: 'common_wrong_answer',
             severity: 'medium',
-            message: `${mostCommonWrong[1]} students chose "${mostCommonWrong[0]}" - potentially misleading option`
+            message: getTranslation('analytics_flag_common_wrong', [mostCommonWrong[1], mostCommonWrong[0]])
         });
     }
 
@@ -159,28 +188,36 @@ export function getQuizSummaryStats(questionAnalytics) {
 
     const totalQuestions = questionAnalytics.length;
     const problematicCount = questionAnalytics.filter(q => q.isPotentiallyProblematic).length;
-    const avgSuccessRate = questionAnalytics.reduce((sum, q) => sum + q.successRate, 0) / totalQuestions;
-    const avgTime = questionAnalytics.reduce((sum, q) => sum + q.averageTime, 0) / totalQuestions;
 
-    const sortedBySuccess = [...questionAnalytics].sort((a, b) => a.successRate - b.successRate);
-    const hardestQuestion = sortedBySuccess[0];
-    const easiestQuestion = sortedBySuccess[sortedBySuccess.length - 1];
+    // Questions nobody answered would otherwise pull every average toward zero.
+    const answered = questionAnalytics.filter(q => !q.unanswered);
+    const timed = answered.filter(q => q.timedResponses > 0);
+
+    const avgSuccessRate = answered.length
+        ? answered.reduce((sum, q) => sum + q.successRate, 0) / answered.length
+        : 0;
+    const avgTime = timed.length
+        ? timed.reduce((sum, q) => sum + q.averageTime, 0) / timed.length
+        : 0;
+
+    const sortedBySuccess = [...answered].sort((a, b) => a.successRate - b.successRate);
+    const hardestQuestion = sortedBySuccess[0] || null;
+    const easiestQuestion = sortedBySuccess[sortedBySuccess.length - 1] || null;
+
+    const summarize = (q) => q && {
+        number: q.questionNumber,
+        text: q.text,
+        successRate: q.successRate
+    };
 
     return {
         totalQuestions,
+        answeredQuestions: answered.length,
         problematicCount,
         avgSuccessRate,
         avgTime,
-        hardestQuestion: {
-            number: hardestQuestion.questionNumber,
-            text: hardestQuestion.text,
-            successRate: hardestQuestion.successRate
-        },
-        easiestQuestion: {
-            number: easiestQuestion.questionNumber,
-            text: easiestQuestion.text,
-            successRate: easiestQuestion.successRate
-        },
+        hardestQuestion: summarize(hardestQuestion) || null,
+        easiestQuestion: summarize(easiestQuestion) || null,
         needsReview: problematicCount / totalQuestions > 0.3
     };
 }
@@ -224,48 +261,80 @@ export function reconstructQuestionsFromResults(results) {
 }
 
 /**
- * Infer the correct answer by analyzing which answers received points
+ * Infer the correct answer from the graded answer records.
+ *
+ * A record marked correct is authoritative; otherwise fall back to the answer
+ * that earned the highest average points. Both live on `player.answers[i]` —
+ * there is no per-player `scores` array in any saved result.
  * @param {Array} results - Player results array
  * @param {number} questionIndex - Index of the question
  * @returns {*} Inferred correct answer
  */
 function inferCorrectAnswer(results, questionIndex) {
     const answerStats = new Map();
-    let firstCorrectAnswer = null;
+    let firstCorrectAnswer;
 
     for (const player of results) {
-        const answer = player.answers?.[questionIndex];
-        const score = player.scores?.[questionIndex] || 0;
+        const record = normalizeAnswerRecord(player.answers?.[questionIndex]);
+        if (!record || record.value === undefined || record.value === null) continue;
 
-        if (answer == null) continue;
-
-        const stats = answerStats.get(answer) || { count: 0, totalScore: 0 };
+        const key = Array.isArray(record.value) ? record.value.join(',') : record.value;
+        const stats = answerStats.get(key) || { count: 0, totalPoints: 0, value: record.value };
         stats.count++;
-        stats.totalScore += score;
-        answerStats.set(answer, stats);
+        stats.totalPoints += record.points;
+        answerStats.set(key, stats);
 
-        if (score > 0 && !firstCorrectAnswer) {
-            firstCorrectAnswer = answer;
+        if (record.isCorrect && firstCorrectAnswer === undefined) {
+            firstCorrectAnswer = record.value;
         }
     }
 
-    if (firstCorrectAnswer) {
+    if (firstCorrectAnswer !== undefined) {
         return firstCorrectAnswer;
     }
 
-    // Fallback: find answer with highest average score
+    // Fallback: the answer that earned the highest average points
     let bestAnswer = null;
-    let highestAvgScore = 0;
+    let highestAvgPoints = 0;
 
-    for (const [answer, stats] of answerStats) {
-        const avgScore = stats.totalScore / stats.count;
-        if (avgScore > highestAvgScore) {
-            highestAvgScore = avgScore;
-            bestAnswer = answer;
+    for (const stats of answerStats.values()) {
+        const avgPoints = stats.totalPoints / stats.count;
+        if (avgPoints > highestAvgPoints) {
+            highestAvgPoints = avgPoints;
+            bestAnswer = stats.value;
         }
     }
 
-    return bestAnswer || 'Unknown';
+    return bestAnswer ?? getTranslation('unknown');
+}
+
+/**
+ * Render one hardest/easiest insight card, or a placeholder when no question
+ * has any responses to rank.
+ * @param {string} titleKey - Translation key for the card title
+ * @param {Object|null} extreme - Summary entry {number, text, successRate}
+ * @returns {string} HTML string
+ */
+function renderExtremeInsight(titleKey, extreme) {
+    if (!extreme) {
+        return `
+            <div class="insight-item">
+                <h4>${getTranslation(titleKey)}</h4>
+                <p class="no-issues">${getTranslation('analytics_unanswered_note')}</p>
+            </div>
+        `;
+    }
+
+    const text = extreme.text || '';
+    const truncated = text.length > 80 ? `${text.substring(0, 80)}...` : text;
+
+    return `
+        <div class="insight-item">
+            <h4>${getTranslation(titleKey)}</h4>
+            <p><strong>Q${extreme.number}:</strong> ${escapeHtml(truncated)}</p>
+            <p>${getTranslation('analytics_success_rate')}: ${extreme.successRate.toFixed(1)}%</p>
+        </div>
+    `;
 }
 
 /**
@@ -319,11 +388,11 @@ export function createAnalyticsModal(result, analytics, summary, conceptData = n
             <div class="tab-content active" id="overview-tab">
                 <div class="summary-stats">
                     <div class="stat-card">
-                        <div class="stat-value">${summary.avgSuccessRate.toFixed(1)}%</div>
+                        <div class="stat-value">${(summary.avgSuccessRate || 0).toFixed(1)}%</div>
                         <div class="stat-label">${getTranslation('analytics_avg_success_rate')}</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">${summary.avgTime.toFixed(1)}s</div>
+                        <div class="stat-value">${(summary.avgTime || 0).toFixed(1)}s</div>
                         <div class="stat-label">${getTranslation('analytics_avg_response_time')}</div>
                     </div>
                     <div class="stat-card ${summary.problematicCount > 0 ? 'warning' : 'success'}">
@@ -349,16 +418,20 @@ export function createAnalyticsModal(result, analytics, summary, conceptData = n
                 <p class="click-hint">${getTranslation('analytics_click_hint')}</p>
                 <div class="questions-analytics-list">
                     ${analytics.map((q, idx) => `
-                        <div class="question-analytics-item clickable ${q.isPotentiallyProblematic ? 'problematic' : ''}" data-question-index="${idx}">
+                        <div class="question-analytics-item clickable ${q.isPotentiallyProblematic ? 'problematic' : ''} ${q.unanswered ? 'unanswered' : ''}" data-question-index="${idx}">
                             <div class="question-header">
                                 <span class="question-number">Q${q.questionNumber}</span>
-                                <span class="success-rate ${getSuccessRateClass(q.successRate)}">${q.successRate.toFixed(1)}%</span>
+                                ${q.unanswered
+        ? `<span class="success-rate unanswered">${getTranslation('analytics_unanswered')}</span>`
+        : `<span class="success-rate ${getSuccessRateClass(q.successRate)}">${q.successRate.toFixed(1)}%</span>`}
                             </div>
-                            <div class="question-text">${escapeHtml(q.text)}</div>
+                            <div class="qa-question-text">${escapeHtml(q.text)}</div>
                             <div class="question-metrics">
-                                <span class="metric">${q.averageTime.toFixed(1)}s ${getTranslation('analytics_avg')}</span>
-                                <span class="metric">${q.totalResponses} ${getTranslation('analytics_responses')}</span>
-                                <span class="metric">${q.averagePoints.toFixed(0)} ${getTranslation('analytics_avg_points')}</span>
+                                ${q.unanswered ? `<span class="metric">${getTranslation('analytics_unanswered_note')}</span>` : `
+                                    ${q.timedResponses > 0 ? `<span class="metric">${q.averageTime.toFixed(1)}s ${getTranslation('analytics_avg')}</span>` : ''}
+                                    <span class="metric">${q.totalResponses} ${getTranslation('analytics_responses')}</span>
+                                    <span class="metric">${q.averagePoints.toFixed(0)} ${getTranslation('analytics_avg_points')}</span>
+                                `}
                             </div>
                             ${q.problemFlags.length > 0 ? `
                                 <div class="problem-flags">
@@ -383,16 +456,8 @@ export function createAnalyticsModal(result, analytics, summary, conceptData = n
 
                     <h3>${getTranslation('analytics_performance_insights_title')}</h3>
                     <div class="insights-grid">
-                        <div class="insight-item">
-                            <h4>${getTranslation('analytics_hardest_question')}</h4>
-                            <p><strong>Q${summary.hardestQuestion.number}:</strong> ${escapeHtml(summary.hardestQuestion.text.substring(0, 80))}...</p>
-                            <p>${getTranslation('analytics_success_rate')}: ${summary.hardestQuestion.successRate.toFixed(1)}%</p>
-                        </div>
-                        <div class="insight-item">
-                            <h4>${getTranslation('analytics_easiest_question')}</h4>
-                            <p><strong>Q${summary.easiestQuestion.number}:</strong> ${escapeHtml(summary.easiestQuestion.text.substring(0, 80))}...</p>
-                            <p>${getTranslation('analytics_success_rate')}: ${summary.easiestQuestion.successRate.toFixed(1)}%</p>
-                        </div>
+                        ${renderExtremeInsight('analytics_hardest_question', summary.hardestQuestion)}
+                        ${renderExtremeInsight('analytics_easiest_question', summary.easiestQuestion)}
                     </div>
 
                     ${summary.needsReview ? `
@@ -513,37 +578,34 @@ export function createSuccessRateChart(analytics) {
         return null;
     }
 
+    const theme = getChartTheme();
+    // Unanswered questions have no rate to plot; a 0% bar would read as "everyone
+    // got it wrong". They stay out of the chart and are listed in the Questions tab.
+    const plotted = analytics.filter(q => !q.unanswered);
+    const options = baseChartOptions(theme, getTranslation('chart_success_rate_by_question'));
+
     return new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: analytics.map(q => `Q${q.questionNumber}`),
+            labels: plotted.map(q => `Q${q.questionNumber}`),
             datasets: [{
                 label: getTranslation('chart_success_rate_pct'),
-                data: analytics.map(q => q.successRate),
-                backgroundColor: analytics.map(q => {
-                    if (q.successRate >= 80) return '#10b981';
-                    if (q.successRate >= 60) return '#f59e0b';
-                    if (q.successRate >= 40) return '#f97316';
-                    return '#ef4444';
-                }),
-                borderColor: '#374151',
-                borderWidth: 1
+                data: plotted.map(q => q.successRate),
+                // One colour for the series; emphasis only where it means something.
+                backgroundColor: plotted.map(q => q.isPotentiallyProblematic ? theme.emphasis : theme.series),
+                borderWidth: 0,
+                borderRadius: 4
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            ...options,
             plugins: {
-                title: {
-                    display: true,
-                    text: getTranslation('chart_success_rate_by_question')
-                },
-                legend: {
-                    display: false
-                }
+                ...options.plugins,
+                legend: { display: false }
             },
             scales: {
-                y: {
+                x: themedScale(theme),
+                y: themedScale(theme, {
                     beginAtZero: true,
                     max: 100,
                     ticks: {
@@ -551,7 +613,7 @@ export function createSuccessRateChart(analytics) {
                             return value + '%';
                         }
                     }
-                }
+                })
             }
         }
     });
@@ -567,30 +629,44 @@ export function createTimeVsSuccessChart(analytics) {
         return null;
     }
 
+    const theme = getChartTheme();
+    const options = baseChartOptions(theme, getTranslation('chart_time_vs_success'));
+
+    // Only questions with timing data can be placed on the x-axis.
+    const plotted = analytics.filter(q => !q.unanswered && q.timedResponses > 0);
+    const toPoint = q => ({
+        x: q.averageTime,
+        y: q.successRate,
+        questionNumber: q.questionNumber,
+        text: q.text
+    });
+
+    // Two datasets rather than per-point colours: the legend then names what the
+    // emphasis colour means, so the flag is not communicated by colour alone.
+    const datasets = [
+        {
+            label: getTranslation('analytics_questions_tab'),
+            data: plotted.filter(q => !q.isPotentiallyProblematic).map(toPoint),
+            backgroundColor: theme.series,
+            pointRadius: 5,
+            borderWidth: 0
+        },
+        {
+            label: getTranslation('analytics_questions_need_review'),
+            data: plotted.filter(q => q.isPotentiallyProblematic).map(toPoint),
+            backgroundColor: theme.emphasis,
+            pointRadius: 5,
+            borderWidth: 0
+        }
+    ];
+
     return new Chart(ctx, {
         type: 'scatter',
-        data: {
-            datasets: [{
-                label: getTranslation('analytics_questions_tab'),
-                data: analytics.map(q => ({
-                    x: q.averageTime,
-                    y: q.successRate,
-                    questionNumber: q.questionNumber,
-                    text: q.text
-                })),
-                backgroundColor: analytics.map(q => q.isPotentiallyProblematic ? '#ef4444' : '#3b82f6'),
-                borderColor: '#374151',
-                borderWidth: 1
-            }]
-        },
+        data: { datasets },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            ...options,
             plugins: {
-                title: {
-                    display: true,
-                    text: getTranslation('chart_time_vs_success')
-                },
+                ...options.plugins,
                 tooltip: {
                     callbacks: {
                         title: function(context) {
@@ -600,29 +676,29 @@ export function createTimeVsSuccessChart(analytics) {
                         label: function(context) {
                             const point = context.raw;
                             return [
-                                `Success: ${point.y.toFixed(1)}%`,
-                                `Time: ${point.x.toFixed(1)}s`,
-                                `Text: ${point.text.substring(0, 50)}...`
+                                `${getTranslation('analytics_success_rate')}: ${point.y.toFixed(1)}%`,
+                                `${getTranslation('analytics_avg_time')}: ${point.x.toFixed(1)}s`,
+                                point.text.length > 50 ? `${point.text.substring(0, 50)}...` : point.text
                             ];
                         }
                     }
                 }
             },
             scales: {
-                x: {
+                x: themedScale(theme, {
                     title: {
                         display: true,
                         text: getTranslation('chart_avg_time_seconds')
                     }
-                },
-                y: {
+                }),
+                y: themedScale(theme, {
                     title: {
                         display: true,
                         text: getTranslation('chart_success_rate_pct')
                     },
                     beginAtZero: true,
                     max: 100
-                }
+                })
             }
         }
     });
@@ -634,11 +710,16 @@ export function createTimeVsSuccessChart(analytics) {
  * @param {string} tabName - Tab identifier
  */
 export function switchAnalyticsTab(event, tabName) {
-    document.querySelectorAll('.analytics-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    // Scope to the analytics modal: a document-wide `.tab-content` query also
+    // deactivates tab panels belonging to any other open modal.
+    const button = event.currentTarget || event.target;
+    const modal = button.closest('.analytics-modal-overlay') || document;
 
-    event.target.classList.add('active');
-    const tabContent = document.getElementById(`${tabName}-tab`);
+    modal.querySelectorAll('.analytics-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+    modal.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+    button.classList.add('active');
+    const tabContent = modal.querySelector(`#${tabName}-tab`);
     if (tabContent) {
         tabContent.classList.add('active');
     }
@@ -666,17 +747,25 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
     const qText = questionAnalysis.text || `Question ${qNum}`;
     const qType = questionAnalysis.type || 'multiple-choice';
 
+    // The question carries the option list, so answers render as text rather
+    // than as the raw indices actually stored in the result file.
+    const correctLabel = question
+        ? resolveCorrectAnswerLabel(question)
+        : questionAnalysis.correctAnswerLabel || getTranslation('unknown');
+
     // Build answer distribution data
     const answerCounts = {};
     const timeBuckets = { '0-5s': 0, '5-10s': 0, '10-15s': 0, '15-20s': 0, '20s+': 0 };
     let correctCount = 0;
     let incorrectCount = 0;
+    let timedCount = 0;
 
-    playerAnswers.forEach(pa => {
+    playerAnswers.forEach(raw => {
+        const pa = normalizeAnswerRecord(raw);
         if (!pa) return;
 
         // Count answers
-        const answerKey = Array.isArray(pa.answer) ? pa.answer.join(', ') : String(pa.answer ?? 'No answer');
+        const answerKey = formatAnswerLabel(pa.value, question);
         answerCounts[answerKey] = (answerCounts[answerKey] || 0) + 1;
 
         // Count correct/incorrect
@@ -686,8 +775,10 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
             incorrectCount++;
         }
 
-        // Time buckets
-        const timeSec = (pa.timeMs || 0) / 1000;
+        // Time buckets (legacy records have no timing at all)
+        if (pa.timeMs === null) return;
+        timedCount++;
+        const timeSec = pa.timeMs / 1000;
         if (timeSec <= 5) timeBuckets['0-5s']++;
         else if (timeSec <= 10) timeBuckets['5-10s']++;
         else if (timeSec <= 15) timeBuckets['10-15s']++;
@@ -695,22 +786,22 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
         else timeBuckets['20s+']++;
     });
 
+    const responseTotal = correctCount + incorrectCount;
+
     // Sort answers by count (descending)
     const sortedAnswers = Object.entries(answerCounts)
         .sort((a, b) => b[1] - a[1]);
 
     // Build answer distribution HTML
     const answerDistHtml = sortedAnswers.map(([answer, count]) => {
-        const percentage = ((count / questionAnalysis.totalResponses) * 100).toFixed(1);
-        const isCorrect = answer === String(questionAnalysis.correctAnswer) ||
-            (Array.isArray(questionAnalysis.correctAnswer) && answer === questionAnalysis.correctAnswer.join(', '));
-        const barColor = isCorrect ? '#10b981' : '#ef4444';
+        const percentage = responseTotal > 0 ? ((count / responseTotal) * 100).toFixed(1) : '0.0';
+        const isCorrect = answer === correctLabel;
 
         return `
             <div class="answer-dist-row">
                 <div class="answer-text ${isCorrect ? 'correct' : ''}">${escapeHtml(answer.substring(0, 50))}${answer.length > 50 ? '...' : ''}</div>
                 <div class="answer-bar-container">
-                    <div class="answer-bar" style="width: ${percentage}%; background: ${barColor};"></div>
+                    <div class="answer-bar ${isCorrect ? 'correct' : 'incorrect'}" style="width: ${percentage}%;"></div>
                 </div>
                 <div class="answer-count">${count} (${percentage}%)</div>
             </div>
@@ -759,6 +850,11 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
                     ${escapeHtml(qText)}
                 </div>
 
+                <div class="drilldown-correct-answer">
+                    <span class="drilldown-correct-label">${getTranslation('analytics_correct_answer')}:</span>
+                    <span class="drilldown-correct-value">${escapeHtml(correctLabel)}</span>
+                </div>
+
                 <div class="drilldown-stats">
                     <div class="drilldown-stat">
                         <div class="stat-value ${questionAnalysis.successRate >= 60 ? 'good' : 'poor'}">${questionAnalysis.successRate.toFixed(1)}%</div>
@@ -785,12 +881,14 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
                     </div>
                 </div>
 
-                <div class="drilldown-section">
-                    <h4>${getTranslation('analytics_response_time_dist')}</h4>
-                    <div class="time-distribution">
-                        ${timeDistHtml}
+                ${timedCount > 0 ? `
+                    <div class="drilldown-section">
+                        <h4>${getTranslation('analytics_response_time_dist')}</h4>
+                        <div class="time-distribution">
+                            ${timeDistHtml}
+                        </div>
                     </div>
-                </div>
+                ` : ''}
 
                 <div class="drilldown-section">
                     <h4>${getTranslation('analytics_common_wrong')}</h4>
@@ -848,10 +946,8 @@ export function createComparisonChart(canvasId, sessionsData) {
 
     // Create datasets for each question
     const datasets = [];
-    const colors = [
-        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-        '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
-    ];
+    const theme = getChartTheme();
+    const colors = theme.categorical;
 
     // Overall average dataset (always shown)
     const avgData = sessionsData.map(s => {
@@ -860,11 +956,13 @@ export function createComparisonChart(canvasId, sessionsData) {
         return analytics.reduce((sum, q) => sum + q.successRate, 0) / analytics.length;
     });
 
+    // The average is the headline, so it reads as ink rather than as another
+    // categorical series (and stays visible when the theme flips).
     datasets.push({
         label: getTranslation('chart_overall_average'),
         data: avgData,
-        borderColor: '#1f2937',
-        backgroundColor: '#1f293720',
+        borderColor: theme.text,
+        backgroundColor: theme.text,
         borderWidth: 3,
         tension: 0.3,
         fill: false
@@ -880,13 +978,15 @@ export function createComparisonChart(canvasId, sessionsData) {
         datasets.push({
             label: `Q${i + 1}`,
             data: questionData,
-            borderColor: colors[i % colors.length],
-            backgroundColor: colors[i % colors.length] + '20',
+            borderColor: colors[i],
+            backgroundColor: colors[i],
             borderWidth: 2,
             tension: 0.3,
             fill: false
         });
     }
+
+    const options = baseChartOptions(theme, getTranslation('chart_success_rate_comparison'));
 
     return new Chart(ctx, {
         type: 'line',
@@ -895,20 +995,16 @@ export function createComparisonChart(canvasId, sessionsData) {
             datasets: datasets
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            ...options,
             plugins: {
-                title: {
-                    display: true,
-                    text: getTranslation('chart_success_rate_comparison')
-                },
+                ...options.plugins,
                 tooltip: {
                     mode: 'index',
                     intersect: false
                 }
             },
             scales: {
-                y: {
+                y: themedScale(theme, {
                     beginAtZero: true,
                     max: 100,
                     title: {
@@ -920,13 +1016,13 @@ export function createComparisonChart(canvasId, sessionsData) {
                             return value + '%';
                         }
                     }
-                },
-                x: {
+                }),
+                x: themedScale(theme, {
                     title: {
                         display: true,
                         text: getTranslation('chart_session_date')
                     }
-                }
+                })
             },
             interaction: {
                 mode: 'nearest',
@@ -1155,7 +1251,6 @@ export function inferConceptDependencies(conceptMastery, result) {
 
             // Check correlation: when one is weak, is the other also weak?
             let bothWeak = 0;
-            let oneStrongOneWeak = 0;
             let validPairs = 0;
 
             Object.values(playerConceptPerformance).forEach(playerPerf => {
@@ -1165,9 +1260,6 @@ export function inferConceptDependencies(conceptMastery, result) {
                 if (perfA !== null && perfB !== null) {
                     validPairs++;
                     if (perfA < 0.5 && perfB < 0.5) bothWeak++;
-                    if ((perfA >= 0.7 && perfB < 0.5) || (perfB >= 0.7 && perfA < 0.5)) {
-                        oneStrongOneWeak++;
-                    }
                 }
             });
 
@@ -1182,7 +1274,7 @@ export function inferConceptDependencies(conceptMastery, result) {
                     foundational: weaker,
                     dependent: stronger,
                     confidence: (bothWeak / validPairs * 100).toFixed(0),
-                    message: `Strengthen "${weaker}" to improve "${stronger}"`,
+                    message: getTranslation('analytics_dependency_suggestion', [weaker, stronger]),
                     severity: statsA.masteryRate < 50 || statsB.masteryRate < 50 ? 'high' : 'medium'
                 });
             }
@@ -1212,7 +1304,7 @@ export function generateConceptInsights(conceptMastery, dependencies) {
         insights.push({
             type: 'focus-areas',
             title: getTranslation('analytics_focus_areas'),
-            message: `${needsWork.length} concept${needsWork.length > 1 ? 's' : ''} need${needsWork.length === 1 ? 's' : ''} improvement`,
+            message: getTranslation('analytics_concepts_need_work', [needsWork.length]),
             concepts: needsWork.map(c => c.name),
             severity: needsWork.some(c => c.masteryRate < 40) ? 'high' : 'medium'
         });
@@ -1224,7 +1316,7 @@ export function generateConceptInsights(conceptMastery, dependencies) {
         insights.push({
             type: 'strengths',
             title: getTranslation('analytics_strong_areas'),
-            message: `${strengths.length} concept${strengths.length > 1 ? 's' : ''} mastered`,
+            message: getTranslation('analytics_concepts_mastered', [strengths.length]),
             concepts: strengths.map(c => c.name),
             severity: 'success'
         });
@@ -1263,14 +1355,11 @@ export function createConceptMasteryChart(canvasId, conceptMastery) {
     const sortedConcepts = Object.values(concepts)
         .sort((a, b) => b.masteryRate - a.masteryRate);
 
+    const theme = getChartTheme();
+    const options = baseChartOptions(theme, getTranslation('chart_concept_mastery_levels'));
+
     const labels = sortedConcepts.map(c => c.name.length > 25 ? c.name.substring(0, 22) + '...' : c.name);
     const data = sortedConcepts.map(c => c.masteryRate);
-    const colors = sortedConcepts.map(c => {
-        if (c.masteryRate >= 80) return '#10b981'; // green
-        if (c.masteryRate >= 60) return '#f59e0b'; // yellow
-        if (c.masteryRate >= 40) return '#f97316'; // orange
-        return '#ef4444'; // red
-    });
 
     return new Chart(ctx, {
         type: 'bar',
@@ -1278,39 +1367,37 @@ export function createConceptMasteryChart(canvasId, conceptMastery) {
             labels: labels,
             datasets: [{
                 label: getTranslation('analytics_concept_mastery'),
+                // Bar length already encodes mastery; a colour ramp on top of it
+                // adds no information. The mastery *bands* stay in the list below,
+                // where each row carries a level icon and a legend entry.
                 data: data,
-                backgroundColor: colors,
-                borderColor: '#374151',
-                borderWidth: 1
+                backgroundColor: theme.series,
+                borderWidth: 0,
+                borderRadius: 4
             }]
         },
         options: {
+            ...options,
             indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
             plugins: {
-                title: {
-                    display: true,
-                    text: getTranslation('chart_concept_mastery_levels')
-                },
-                legend: {
-                    display: false
-                },
+                ...options.plugins,
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
                         afterLabel: function(context) {
                             const concept = sortedConcepts[context.dataIndex];
                             return [
-                                `Questions: ${concept.questionCount}`,
-                                `Responses: ${concept.totalResponses}`,
-                                `Avg Time: ${concept.averageTime.toFixed(1)}s`
+                                `${getTranslation('analytics_questions_tab')}: ${concept.questionCount}`,
+                                `${getTranslation('analytics_responses')}: ${concept.totalResponses}`,
+                                `${getTranslation('analytics_avg_time')}: ${concept.averageTime.toFixed(1)}s`
                             ];
                         }
                     }
                 }
             },
             scales: {
-                x: {
+                y: themedScale(theme),
+                x: themedScale(theme, {
                     beginAtZero: true,
                     max: 100,
                     ticks: {
@@ -1318,7 +1405,7 @@ export function createConceptMasteryChart(canvasId, conceptMastery) {
                             return value + '%';
                         }
                     }
-                }
+                })
             }
         }
     });

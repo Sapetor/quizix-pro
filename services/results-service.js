@@ -7,6 +7,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { atomicWriteFile } = require('./atomic-write');
+const { ScoringService } = require('./scoring-service');
 
 class ResultsService {
     constructor(logger, resultsDir = 'results') {
@@ -297,41 +298,8 @@ class ResultsService {
                     if (answer) {
                         const question = questions[qIndex];
                         const questionText = question ? (question.text || question.question || `Question ${qIndex + 1}`) : `Question ${qIndex + 1}`;
-                        let correctAnswer = question ? question.correctAnswer : 'Unknown';
-                        let playerAnswer = answer.answer;
-
-                        // Handle different question types
-                        if (question?.type === 'ordering') {
-                            // For ordering questions, show with option text if available
-                            if (question.correctOrder && question.correctOrder.length > 0) {
-                                if (question.options && question.options.length > 0) {
-                                    correctAnswer = question.correctOrder.map(idx => question.options[idx] || `#${idx}`).join(' → ');
-                                } else {
-                                    correctAnswer = question.correctOrder.join(' → ');
-                                }
-                            }
-                            if (Array.isArray(playerAnswer)) {
-                                if (question.options && question.options.length > 0) {
-                                    playerAnswer = playerAnswer.map(idx => question.options[idx] || `#${idx}`).join(' → ');
-                                } else {
-                                    playerAnswer = playerAnswer.join(' → ');
-                                }
-                            }
-                        } else if (question?.type === 'multiple-correct' && question.correctAnswers) {
-                            // For multiple correct
-                            correctAnswer = question.correctAnswers.join(', ');
-                            if (Array.isArray(playerAnswer)) {
-                                playerAnswer = playerAnswer.join(', ');
-                            }
-                        } else {
-                            // Handle array answers for other types
-                            if (Array.isArray(correctAnswer)) {
-                                correctAnswer = correctAnswer.join(', ');
-                            }
-                            if (Array.isArray(playerAnswer)) {
-                                playerAnswer = playerAnswer.join(', ');
-                            }
-                        }
+                        const correctAnswer = this._formatCorrectAnswer(question);
+                        const playerAnswer = this._formatAnswerValue(answer.answer, question);
 
                         const isCorrectText = answer.isCorrect ? 'Yes' : 'No';
                         const timeSeconds = Math.round((answer.timeMs || 0) / 1000);
@@ -341,7 +309,7 @@ class ResultsService {
                             this._sanitizeCsvValue(player.name || 'Anonymous'),
                             qIndex + 1,
                             this._sanitizeCsvValue(questionText),
-                            this._sanitizeCsvValue(playerAnswer || 'No Answer'),
+                            this._sanitizeCsvValue(playerAnswer),
                             this._sanitizeCsvValue(correctAnswer),
                             `"${isCorrectText}"`,
                             timeSeconds,
@@ -384,7 +352,6 @@ class ResultsService {
         // Add analytics columns
         header.push('Success Rate %');
         header.push('Avg Time (s)');
-        header.push('Total Points Possible');
         header.push('Total Points Earned');
         header.push('Hardest For');
         header.push('Common Wrong Answer');
@@ -394,22 +361,7 @@ class ResultsService {
         // Generate question rows
         data.questions.forEach((question, qIndex) => {
             const questionText = (question.text || '').replace(/"/g, '""');
-            let correctAnswer = question.correctAnswer;
-
-            // Handle different question types
-            if (question.type === 'ordering' && question.correctOrder && question.correctOrder.length > 0) {
-                // For ordering questions, show the sequence with option text if available
-                if (question.options && question.options.length > 0) {
-                    correctAnswer = question.correctOrder.map(idx => question.options[idx] || `#${idx}`).join(' → ');
-                } else {
-                    correctAnswer = question.correctOrder.join(' → ');
-                }
-            } else if (question.type === 'multiple-correct' && question.correctAnswers && question.correctAnswers.length > 0) {
-                // For multiple correct, show comma-separated
-                correctAnswer = question.correctAnswers.join(', ');
-            } else if (Array.isArray(correctAnswer)) {
-                correctAnswer = correctAnswer.join(', ');
-            }
+            const correctAnswer = this._formatCorrectAnswer(question);
 
             const row = [
                 this._sanitizeCsvValue(questionText),
@@ -421,7 +373,6 @@ class ResultsService {
             let correctCount = 0;
             let totalTime = 0;
             let responseCount = 0;
-            let totalPointsPossible = 0;
             let totalPointsEarned = 0;
             const playerPerformances = [];
             const wrongAnswers = {};
@@ -431,10 +382,7 @@ class ResultsService {
                 const playerAnswer = player.answers && player.answers[qIndex];
 
                 if (playerAnswer) {
-                    let displayAnswer = playerAnswer.answer;
-                    if (Array.isArray(displayAnswer)) {
-                        displayAnswer = displayAnswer.join(', ');
-                    }
+                    const displayAnswer = this._formatAnswerValue(playerAnswer.answer, question);
 
                     row.push(this._sanitizeCsvValue(displayAnswer));
                     row.push(Math.round((playerAnswer.timeMs || 0) / 1000));
@@ -456,13 +404,12 @@ class ResultsService {
                     if (playerAnswer.isCorrect || (playerAnswer.partialScore && playerAnswer.partialScore === 1)) {
                         correctCount++;
                     } else {
-                        wrongAnswers[String(displayAnswer)] = (wrongAnswers[String(displayAnswer)] || 0) + 1;
+                        wrongAnswers[displayAnswer] = (wrongAnswers[displayAnswer] || 0) + 1;
                     }
 
                     totalTime += (playerAnswer.timeMs || 0) / 1000;
                     totalPointsEarned += playerAnswer.points || 0;
                     responseCount++;
-                    totalPointsPossible = Math.max(totalPointsPossible, playerAnswer.points || 100);
 
                     playerPerformances.push({
                         name: player.name,
@@ -488,7 +435,6 @@ class ResultsService {
             // Calculate analytics
             const successRate = responseCount > 0 ? (correctCount / responseCount * 100).toFixed(1) : '0';
             const avgTime = responseCount > 0 ? (totalTime / responseCount).toFixed(1) : '0';
-            totalPointsPossible *= players.length;
 
             // Find who struggled most
             const strugglers = playerPerformances
@@ -508,7 +454,6 @@ class ResultsService {
             // Add analytics columns
             row.push(`${successRate}%`);
             row.push(avgTime);
-            row.push(totalPointsPossible);
             row.push(totalPointsEarned);
             row.push(this._sanitizeCsvValue(hardestFor));
             row.push(this._sanitizeCsvValue(commonWrongText));
@@ -528,9 +473,12 @@ class ResultsService {
     _generateSummary(data, totalColumns) {
         const totalPlayers = data.results.length;
         const totalQuestions = data.questions.length;
-        const gameScore = data.results.reduce((sum, p) => sum + (p.score || 0), 0);
-        const maxPossibleScore = totalPlayers * totalQuestions * 100;
-        const overallSuccess = maxPossibleScore > 0 ? (gameScore / maxPossibleScore * 100).toFixed(1) : '0';
+
+        // Correctness, not points: scores carry difficulty multipliers and time
+        // bonuses, so a points/(players x questions x 100) ratio routinely
+        // reports rates well over 100%. Same computation as the score shown
+        // beside this game in the results list.
+        const overallSuccess = this._computeAverageScore(data.results).toFixed(1);
 
         const emptyCols = '"' + '","'.repeat(Math.max(0, totalColumns - 2)) + '"';
 
@@ -567,6 +515,51 @@ class ResultsService {
         });
 
         return csv;
+    }
+
+    /**
+     * Format a saved answer value for export, resolving option indices to the
+     * option text. Answers are stored as indices for option-based question
+     * types, and "1" tells an educator nothing that "Paris" does.
+     * @param {*} value - Raw answer value
+     * @param {Object} [question] - Question the answer belongs to
+     * @returns {string} Display string
+     */
+    _formatAnswerValue(value, question) {
+        if (value === undefined || value === null || value === '') return 'No Answer';
+
+        const options = question?.options;
+        const component = (item) => (
+            Number.isInteger(item) && Array.isArray(options) && item >= 0 && item < options.length
+                ? String(options[item])
+                : String(item)
+        );
+
+        if (Array.isArray(value)) {
+            if (value.length === 0) return 'No Answer';
+            const separator = question?.type === 'ordering' ? ' → ' : ', ';
+            return value.map(component).join(separator);
+        }
+
+        return component(value);
+    }
+
+    /**
+     * Format a question's correct answer for export.
+     * Which field holds it depends on the type (`correctOrder` for ordering,
+     * `correctAnswers`/`correctIndices` for multiple-correct, ...), so the field
+     * priority comes from ScoringService rather than being re-derived here.
+     * @param {Object} [question] - Question data
+     * @returns {string} Display string
+     */
+    _formatCorrectAnswer(question) {
+        if (!question) return 'Unknown';
+
+        const correct = ScoringService.getCorrectAnswerKey(question, question.type);
+        const missing = correct === undefined || correct === null ||
+            (Array.isArray(correct) && correct.length === 0);
+
+        return missing ? 'Unknown' : this._formatAnswerValue(correct, question);
     }
 
     /**

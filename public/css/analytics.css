@@ -176,7 +176,22 @@
     color: white;
 }
 
-.question-text {
+/* No responses at all: a verdict colour would imply a result there isn't one */
+.success-rate.unanswered {
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.question-analytics-item.unanswered {
+    opacity: 0.72;
+}
+
+/* Deliberately NOT `.question-text`: that class is the editor's question
+   TEXTAREA (components.css, min-height 100px + glass fill, all !important), and
+   reusing the name here inherited a 100px empty box into the analytics list. */
+.qa-question-text {
     font-weight: 500;
     color: var(--text-primary);
     margin-bottom: 12px;
@@ -609,6 +624,27 @@
     border-left: 4px solid var(--primary-color);
 }
 
+.drilldown-correct-answer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 0 4px;
+}
+
+.drilldown-correct-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.drilldown-correct-value {
+    font-weight: 600;
+    color: var(--success-color);
+}
+
 .question-type-badge {
     display: inline-block;
     background: var(--primary-color);
@@ -716,6 +752,15 @@
     height: 100%;
     border-radius: 4px;
     transition: width 0.3s ease;
+    background: var(--info-color);
+}
+
+.answer-bar.correct {
+    background: var(--success-color);
+}
+
+.answer-bar.incorrect {
+    background: var(--danger-color);
 }
 
 .answer-count {

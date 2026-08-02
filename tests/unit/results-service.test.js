@@ -284,6 +284,77 @@ describe('ResultsService', () => {
             )).rejects.toThrow('Unsupported export format');
         });
 
+        describe('analytics CSV content', () => {
+            // Scores carry difficulty multipliers and time bonuses, so a single
+            // question is routinely worth far more than 100 points. The summary
+            // must report correctness, not a points ratio against a 100/question
+            // denominator that produces impossible rates.
+            const inflatedScores = {
+                quizTitle: 'Scored Quiz',
+                gamePin: '123456',
+                results: [
+                    {
+                        name: 'Player1',
+                        score: 4365,
+                        answers: [
+                            { answer: 1, isCorrect: true, timeMs: 484, points: 2183 },
+                            { answer: 0, isCorrect: false, timeMs: 900, points: 0 }
+                        ]
+                    },
+                    {
+                        name: 'Player2',
+                        score: 2100,
+                        answers: [
+                            { answer: 1, isCorrect: true, timeMs: 600, points: 2100 },
+                            { answer: 1, isCorrect: true, timeMs: 700, points: 2000 }
+                        ]
+                    }
+                ],
+                questions: [
+                    { text: 'Capital of France?', type: 'multiple-choice', correctAnswer: 1, options: ['London', 'Paris'], difficulty: 'medium' },
+                    { text: 'Order these', type: 'ordering', correctOrder: [1, 0], options: ['B', 'A'], difficulty: 'hard' }
+                ]
+            };
+
+            test('overall success rate stays within 0-100% for high-scoring games', async () => {
+                fs.readFile.mockResolvedValue(JSON.stringify(inflatedScores));
+
+                const result = await resultsService.exportResults(
+                    'results_123456_1704067200000.json', 'csv', 'analytics'
+                );
+
+                const match = result.content.match(/"Overall Success Rate","([\d.]+)%"/);
+                expect(match).not.toBeNull();
+                // 3 correct out of 4 answers.
+                expect(parseFloat(match[1])).toBeCloseTo(75, 1);
+            });
+
+            test('player answers are written as option text, not raw indices', async () => {
+                fs.readFile.mockResolvedValue(JSON.stringify(inflatedScores));
+
+                const result = await resultsService.exportResults(
+                    'results_123456_1704067200000.json', 'csv', 'analytics'
+                );
+
+                // Player1 answered index 1 on Q1 (Paris) and index 0 on Q2 (option B).
+                expect(result.content).toContain('"Paris"');
+                expect(result.content).toContain('"B"');
+                // The common-wrong-answer column names the option, not its index.
+                expect(result.content).toContain('""B"" (1 players)');
+            });
+
+            test('drops the meaningless total-points-possible column', async () => {
+                fs.readFile.mockResolvedValue(JSON.stringify(inflatedScores));
+
+                const result = await resultsService.exportResults(
+                    'results_123456_1704067200000.json', 'csv', 'analytics'
+                );
+
+                expect(result.content).not.toContain('Total Points Possible');
+                expect(result.content).toContain('Total Points Earned');
+            });
+        });
+
         test('should reject invalid export type', async () => {
             await expect(resultsService.exportResults(
                 'results_123456_1704067200000.json',

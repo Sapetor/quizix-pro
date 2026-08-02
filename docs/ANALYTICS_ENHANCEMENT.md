@@ -1,228 +1,171 @@
-# Enhanced Quiz Analytics Implementation
+# Quiz Analytics
 
-## Overview
+Post-game analytics for identifying weak questions, misconceptions, and concept
+gaps. This document describes what the code actually does; earlier revisions
+described a server-side analytics pipeline (`questionAnalytics`,
+`questionMetadata`, `gameMetrics` written into the result file) that was never
+implemented.
 
-Enhanced Quizix Pro with comprehensive per-question analytics and interactive visualizations for identifying learning weaknesses and improving quiz quality. Implementation includes both server-side analytics calculation and client-side interactive dashboard.
+## Where the work happens
 
-## Key Features Implemented
+| Concern | File |
+|---|---|
+| Saving results | `services/results-service.js` (`saveResults`) |
+| CSV export (analytics + simple) | `services/results-service.js` |
+| Reading saved answers (labels, correct answer) | `public/js/utils/results-viewer/answer-format.js` |
+| Analytics maths, modal, charts | `public/js/utils/results-viewer/results-analytics.js` |
+| Chart colours & theme | `public/js/utils/results-viewer/chart-theme.js` |
+| PDF / Excel export | `public/js/utils/results-viewer/results-exporter.js` |
+| Cross-session comparison modals | `public/js/utils/results-viewer/results-comparison.js` |
+| Orchestration & wiring | `public/js/utils/results-viewer.js` |
 
-### 1. Enhanced Data Collection (`saveResults()` method)
-- **Preserves existing format**: Original player results structure maintained
-- **Adds three new analytics sections**:
-  - `questionAnalytics`: Detailed per-question performance metrics
-  - `questionMetadata`: Complete question information for analysis
-  - `gameMetrics`: Overall game performance statistics
+Analytics are **computed on demand in the browser** from the saved result file.
+Nothing analytical is persisted, so improvements to the maths apply retroactively
+to every game already on disk.
 
-### 2. Per-Question Analytics (`calculateQuestionAnalytics()`)
-Each question now includes:
-- **Success Rate**: Percentage of correct answers
-- **Response Time Analysis**: Average, median, speed categorization
-- **Wrong Answer Patterns**: Most common incorrect answers and frequencies
-- **Difficulty-Adjusted Performance**: Success rate weighted by question difficulty
-- **Learning Insights**: Automated recommendations based on performance data
+## Saved result format
 
-### 3. Question Metadata Extraction (`extractQuestionMetadata()`)
-Captures comprehensive question details:
-- Question text, type, difficulty, time limits
-- Correct answers formatted for all question types
-- Question complexity scoring
-- Image presence, text length, option counts
-
-### 4. Game-Level Metrics (`calculateGameMetrics()`)
-Provides overall assessment:
-- Completion rates and participation statistics
-- Score distribution analysis (mean, median, standard deviation)
-- Game duration tracking
-- Automated game-level insights and recommendations
-
-### 5. Enhanced CSV Export
-- **Analytics-focused CSV**: Per-question performance summary
-- **Learning insights included**: Primary recommendations for each question
-- **Game summary section**: Overall performance metrics
-- **Backward compatibility**: Falls back to original format for older data
-
-## Data Structure
-
-### Enhanced Results Format
 ```json
 {
   "quizTitle": "Quiz Name",
   "gamePin": "123456",
-  "results": [...], // Original format preserved
-  "startTime": "2025-01-01T10:00:00Z",
-  "endTime": "2025-01-01T10:30:00Z",
-  "questionAnalytics": [
+  "startTime": "2026-01-01T10:00:00Z",
+  "endTime": "2026-01-01T10:30:00Z",
+  "saved": "2026-01-01T10:30:02Z",
+  "questions": [
     {
-      "questionIndex": 1,
-      "questionId": "q_0",
-      "totalAttempts": 25,
-      "correctAnswers": 18,
-      "wrongAnswers": 7,
-      "successRate": 72.0,
-      "adjustedSuccessRate": 48.0,
-      "averageTimeSeconds": 8.5,
-      "timeAnalysis": {
-        "speedCategory": "fast",
-        "rushedAnswers": 3,
-        "pattern": "confident-quick"
-      },
-      "wrongAnswerPatterns": {
-        "mostCommonWrong": {"answer": "Option B", "percentage": 57.14},
-        "patterns": [{"type": "dominant-misconception"}],
-        "insights": ["57.14% of incorrect answers chose: Option B"]
-      },
-      "learningInsights": [
-        {
-          "type": "difficulty",
-          "level": "medium",
-          "message": "This question was challenging for many students",
-          "recommendation": "Review common misconceptions and provide targeted practice"
-        }
+      "questionNumber": 1,
+      "text": "What is the capital of France?",
+      "type": "multiple-choice",
+      "options": ["London", "Paris", "Berlin", "Madrid"],
+      "correctAnswer": 1,
+      "difficulty": "medium",
+      "timeLimit": 60,
+      "concepts": ["Geography"]
+    }
+  ],
+  "results": [
+    {
+      "name": "Ana",
+      "score": 2183,
+      "answers": [
+        { "answer": 1, "isCorrect": true, "points": 2183, "timeMs": 484,
+          "breakdown": { "basePoints": 200, "timeBonus": 1983,
+                         "difficultyMultiplier": 2, "doublePointsMultiplier": 1 } }
       ]
     }
-  ],
-  "questionMetadata": [
-    {
-      "questionIndex": 1,
-      "questionId": "q_0",
-      "questionText": "What is the capital of France?",
-      "questionType": "multiple-choice",
-      "difficulty": "easy",
-      "timeLimit": 20,
-      "correctAnswer": "Paris",
-      "options": ["London", "Berlin", "Paris", "Madrid"],
-      "estimatedComplexity": 0.8
-    }
-  ],
-  "gameMetrics": {
-    "playerCount": 25,
-    "questionCount": 10,
-    "completionRate": 94.0,
-    "averageScore": 756.8,
-    "scoreAnalysis": {
-      "highest": 950,
-      "lowest": 420,
-      "median": 780,
-      "standardDeviation": 156.2
-    },
-    "gameDurationMinutes": 12.5,
-    "gameInsights": [
-      {
-        "type": "overall-performance",
-        "message": "Overall performance was below expectations",
-        "recommendation": "Content review needed before advancing to next topic"
-      }
-    ]
-  }
+  ]
 }
 ```
 
-## Learning Insights Categories
+Notes that matter when reading this data:
 
-### Question-Level Insights
-1. **Difficulty Analysis**: Compares expected vs actual performance
-2. **Time Pattern Analysis**: Identifies rushed answers or confusion
-3. **Misconception Detection**: Highlights common wrong answers
-4. **Expectation Mismatches**: Flags when easy questions perform poorly
+- **Answers are option indices**, not text, for `multiple-choice`,
+  `multiple-correct` and `ordering`. Anything user-facing must resolve them
+  against `question.options` — `formatAnswerLabel()` / `_formatAnswerValue()`.
+- **The correct answer lives in a different field per type**: `correctAnswer`
+  (multiple-choice, true-false, numeric), `correctAnswers` (multiple-correct),
+  `correctOrder` (ordering). Use `getCorrectAnswerValue()` /
+  `_formatCorrectAnswer()` rather than reading `correctAnswer` directly; both
+  defer to `ScoringService.getCorrectAnswerKey()`'s field priority.
+- **A missing answer is a `null` slot**, left by players who never reached the
+  question (99 of them across the corpus). Test for presence, not truthiness:
+  an answer of `0` (option A) or `false` is a real response.
+- **Verdicts are read, never recomputed.** `isCorrect` is whatever the server
+  recorded while grading; nothing in the analytics path re-grades an answer.
+- **Points are not percentages.** Difficulty multipliers and time bonuses make a
+  single question worth thousands of points, so any "success rate" must be
+  computed from `isCorrect` counts, never from a points ratio.
+- The listing endpoint (`GET /api/results`) omits the per-player `results`
+  array and sends `participantCount` + `averageScore` instead; the detail
+  endpoint (`GET /api/results/:filename`) returns the full file.
 
-### Game-Level Insights
-1. **Engagement Issues**: Low completion rates
-2. **Difficulty Balance**: Score distribution analysis
-3. **Overall Performance**: Benchmark comparisons
+## Per-question analytics
 
-## Implementation Benefits
+`calculateQuestionAnalytics(result)` returns one object per question:
 
-### For Educators
-- **Identify Learning Gaps**: See exactly which concepts need reinforcement
-- **Optimize Question Design**: Get feedback on question clarity and difficulty
-- **Track Student Engagement**: Monitor completion and response patterns
-- **Data-Driven Decisions**: Use analytics to guide curriculum adjustments
+| Field | Meaning |
+|---|---|
+| `totalResponses` / `correctResponses` | Answer counts (an index-`0` answer counts) |
+| `timedResponses` | Responses that carry a `timeMs`; averages use this, not `totalResponses` |
+| `successRate` | `correctResponses / totalResponses × 100` |
+| `averageTime` / `averagePoints` | Averaged over timed / all responses |
+| `correctAnswerLabel` | Correct answer as display text |
+| `commonWrongAnswers` | `{ "London": 2 }` — keyed by option text |
+| `unanswered` | `true` when nobody reached the question |
+| `problemFlags` | Review flags (see below) |
 
-### For Students
-- **Targeted Practice**: Focus on areas with low success rates
-- **Learning Pattern Recognition**: Understand common misconceptions
-- **Performance Benchmarking**: Compare against group performance
+A question with zero responses is marked `unanswered`, is never flagged, and is
+excluded from the summary averages and from hardest/easiest — a 0% rate there
+means "no data", not "everyone failed".
 
-### Technical Benefits
-- **Backward Compatibility**: Existing tools continue to work
-- **Scalable Analytics**: Efficient calculation methods
-- **Export Flexibility**: Both detailed JSON and summary CSV formats
-- **Error Handling**: Robust error management for all analytics functions
+### Review flags
 
-## Usage
+| Flag | Trigger |
+|---|---|
+| `low_success` (high) | success rate < 40% |
+| `moderate_success` (medium) | success rate 40–59% |
+| `time_vs_success` (high) | avg time > 15s and success < 50% (needs timing) |
+| `quick_wrong` (medium) | avg time < 8s and success < 70% (needs timing) |
+| `common_wrong_answer` (medium) | one wrong option took ≥ 40% of responses |
 
-### Accessing Enhanced Data
-1. **Play a quiz** - Analytics are automatically calculated and saved
-2. **Export results** - Use `/api/results/{filename}/export/csv` for analytics CSV
-3. **Download JSON** - Full analytics available in JSON export
-4. **View in application** - Results viewer can display enhanced data
+Flag messages are translated (`analytics_flag_*` keys, all 10 locales).
 
-### CSV Export Features
-- **Per-question breakdown**: Success rates, timing, common errors
-- **Learning recommendations**: Automated insights for each question
-- **Game summary**: Overall performance metrics
-- **Educator-friendly format**: Ready for spreadsheet analysis
+## Concept mastery
 
-## Node.js Best Practices Implemented
+Questions may carry a `concepts` array. `calculateConceptMastery()` aggregates
+per-concept success into four bands (mastered ≥ 80, proficient ≥ 60,
+developing ≥ 40, needs-work). `inferConceptDependencies()` looks for concept
+pairs where the same players are weak in both and suggests strengthening the
+weaker one. This is a co-occurrence heuristic, not a causal claim — it needs at
+least 3 players with data in both concepts before it says anything.
 
-1. **Async/await patterns** - Maintained existing async architecture
-2. **Error handling** - Comprehensive try/catch blocks with detailed logging
-3. **Modular code** - Analytics functions properly separated and documented
-4. **Performance optimization** - Efficient data processing with minimal memory usage
-5. **Input validation** - Robust checking for data integrity
-6. **Security** - No additional attack vectors introduced
-7. **Logging** - Detailed debug information for troubleshooting
-8. **Memory management** - Proper cleanup and garbage collection friendly
+## Charts
 
-## Client-Side Analytics Dashboard (August 2025)
+`chart-theme.js` owns colour. Chart chrome (tick text, gridlines) follows the
+app's design tokens so charts stay legible in both themes; data colour comes
+from a fixed, validated palette:
 
-### Interactive Visualization Features
-- **📊 Analytics Modal**: Comprehensive three-tab interface (Overview, Questions, Insights)
-- **📈 Chart.js Integration**: Success rate bar charts and time vs success scatter plots
-- **🔍 Problematic Question Detection**: Automated flagging with severity indicators
-- **📱 Mobile Responsive**: Optimized analytics interface for all devices
+- one series colour, plus one emphasis colour for questions flagged for review
+  (light `#2563eb`/`#b91c1c`, dark `#3b82f6`/`#ef4444`);
+- a six-slot categorical set for the cross-session comparison chart, assigned by
+  position and never cycled.
 
-### User Interface Components
-1. **Analytics Button**: Added to each quiz result in the results viewer
-2. **Summary Statistics Cards**: Key performance indicators at a glance
-3. **Interactive Charts**: Visual representation of question performance
-4. **Question-by-Question Analysis**: Detailed breakdown with problem flags
-5. **Insights Panel**: Automated recommendations and content review suggestions
+Both palettes pass lightness-band, chroma, CVD-separation, normal-vision and
+contrast checks in both modes. The previous green/amber/orange/red ramp did not:
+its middle two steps were ΔE 4.1 apart in normal vision (0.1 under
+deuteranopia), and it double-encoded bar length as hue. Mastery *bands* still
+appear as colour in the concepts list, where each row carries an icon and the
+legend names the levels.
 
-### Technical Implementation
-- **Files Enhanced**: `results-viewer.js`, `analytics.css`, `index.html`
-- **Chart.js Integration**: Lightweight CDN-based visualization library
-- **Responsive Design**: Mobile-optimized analytics interface
-- **Progressive Enhancement**: Graceful fallback if visualization fails
+## Exports
 
-### Problem Detection Algorithms
-- **Low Success Rate** (<40%): Identifies knowledge gaps
-- **High Time + Low Success**: Flags conceptual difficulty
-- **Quick Wrong Answers** (<8s + <70%): Detects misconceptions  
-- **Common Wrong Answers**: Highlights misleading options
+| Export | Produced by | Contents |
+|---|---|---|
+| Analytics CSV | server | One row per question: correct answer, per-player answer/time/points/verdict, success rate, avg time, total points earned, hardest-for, most common wrong answer, plus a game summary block |
+| Simple CSV | server | One row per player-answer |
+| Excel (XLSX) | client (SheetJS) | Summary / Question analysis / Player results / Common wrong answers sheets |
+| PDF | client (jsPDF, lazy-loaded) | Summary page plus per-question analysis (first 20 questions) |
+| Comparison PDF | client | Session-over-session trends |
 
-### Educational Benefits
-- **Data-Driven Improvement**: Visual insights for quiz refinement
-- **Targeted Remediation**: Identify specific concepts needing attention
-- **Content Quality Assessment**: Flag poorly constructed questions
-- **Learning Pattern Recognition**: Understand student response behaviors
+All CSV values pass through `_sanitizeCsvValue()` (formula-injection defence).
+The analytics CSV's "Overall Success Rate" is a correctness ratio; it is not
+derived from points.
 
-## Future Enhancements
+## Entry points
 
-Potential additional features that could be built on this foundation:
-- **Analytics Report Export**: Downloadable comprehensive reports (partially implemented)
-- **Historical trend analysis**: Track question performance over time
-- **Comparison tools**: Compare different quiz iterations
-- **Real-time analytics dashboard**: Live monitoring during quiz sessions
-- **Predictive difficulty scoring**: AI-powered question difficulty prediction
-- **Integration with learning management systems**: Export to external platforms
-- **Advanced statistical analysis**: Item response theory implementation
+- Results viewer → per-result **Analytics** button.
+- Results viewer → result row → detail modal → **Quiz Analytics** button.
+- Analytics modal → **Questions** tab → click a question for the drill-down
+  (answer distribution, response-time buckets, common wrong answers).
+- Results viewer → **Compare Sessions** (quizzes with 2+ saved sessions).
 
-## Testing
+## Tests
 
-To test the enhanced analytics:
-1. Create a quiz with varied question types and difficulties
-2. Host a game with multiple players
-3. Export results as CSV to see enhanced analytics format
-4. Review JSON export for complete data structure
-5. Verify backward compatibility with existing result viewers
+| Scope | File |
+|---|---|
+| Analytics maths | `tests/unit/results-analytics.dom.test.js` |
+| Modal DOM & tab scoping | `tests/unit/results-analytics-modal.dom.test.js` |
+| Comparison modal DOM | `tests/unit/results-comparison.dom.test.js` |
+| Server export/CSV | `tests/unit/results-service.test.js` |
+| End-to-end wiring | `tests/e2e/analytics-modal.spec.js` (seeds and removes its own result file) |

@@ -49,28 +49,11 @@ async function loadJsPDF() {
     return jsPDFLoadPromise;
 }
 
+// Question-centric analytics CSV is the default download; the format-selection
+// modal passes an explicit format when the user picks the player-centric one.
+const DEFAULT_EXPORT_FORMAT = 'analytics';
+
 export class ResultsExporter {
-    constructor() {
-        this.currentExportFormat = 'analytics';
-    }
-
-    /**
-     * Set the current export format
-     * @param {string} format - Export format key
-     */
-    setExportFormat(format) {
-        this.currentExportFormat = format;
-        logger.debug(`Export format changed to: ${this.currentExportFormat}`);
-    }
-
-    /**
-     * Get the current export format
-     * @returns {string} Current format key
-     */
-    getExportFormat() {
-        return this.currentExportFormat;
-    }
-
     /**
      * Download a result with the specified or current format
      * @param {string} filename - Result filename
@@ -78,7 +61,7 @@ export class ResultsExporter {
      * @returns {Promise<void>}
      */
     async downloadResult(filename, format = null) {
-        const exportFormat = format || this.currentExportFormat;
+        const exportFormat = format || DEFAULT_EXPORT_FORMAT;
         logger.debug(`Downloading result ${filename} as ${exportFormat}`);
 
         try {
@@ -118,7 +101,7 @@ export class ResultsExporter {
      * @param {Array} formats - Available format options
      */
     showFormatSelectionModal(filename, formats) {
-        const modal = createFormatSelectionModal(filename, formats, this.currentExportFormat);
+        const modal = createFormatSelectionModal(filename, formats, DEFAULT_EXPORT_FORMAT);
         document.body.appendChild(modal);
 
         const content = modal.querySelector('div');
@@ -165,10 +148,9 @@ export class ResultsExporter {
     /**
      * Export results to PDF format
      * @param {Object} resultData - Full result data object
-     * @param {Object} options - PDF generation options
      * @returns {Promise<void>}
      */
-    async exportToPDF(resultData, options = {}) {
+    async exportToPDF(resultData) {
         try {
             // Lazy-load jsPDF
             const jspdfLib = await loadJsPDF();
@@ -227,8 +209,8 @@ export class ResultsExporter {
             doc.setFontSize(11);
             doc.setFont('helvetica', 'normal');
 
-            const avgSuccessRate = summary.avgSuccessRate?.toFixed(1) || '0';
-            const avgTime = summary.avgTime?.toFixed(1) || '0';
+            const avgSuccessRate = (summary.avgSuccessRate ?? 0).toFixed(1);
+            const avgTime = (summary.avgTime ?? 0).toFixed(1);
             const problematicCount = summary.problematicCount || 0;
             const totalQuestions = summary.totalQuestions || questionAnalytics.length;
 
@@ -247,7 +229,7 @@ export class ResultsExporter {
                 doc.text(`${getTranslation('export_most_challenging')}:`, margin, yPos);
                 yPos += 7;
                 doc.setFont('helvetica', 'normal');
-                const hardestText = `Q${summary.hardestQuestion.number}: ${summary.hardestQuestion.text.substring(0, 60)}...`;
+                const hardestText = `Q${summary.hardestQuestion.number}: ${this._truncateForPdf(summary.hardestQuestion.text)}`;
                 doc.text(hardestText, margin + 5, yPos);
                 yPos += 7;
                 doc.text(`${getTranslation('export_success_rate_label')}: ${summary.hardestQuestion.successRate.toFixed(1)}%`, margin + 5, yPos);
@@ -259,7 +241,7 @@ export class ResultsExporter {
                 doc.text(`${getTranslation('export_easiest_question')}:`, margin, yPos);
                 yPos += 7;
                 doc.setFont('helvetica', 'normal');
-                const easiestText = `Q${summary.easiestQuestion.number}: ${summary.easiestQuestion.text.substring(0, 60)}...`;
+                const easiestText = `Q${summary.easiestQuestion.number}: ${this._truncateForPdf(summary.easiestQuestion.text)}`;
                 doc.text(easiestText, margin + 5, yPos);
                 yPos += 7;
                 doc.text(`${getTranslation('export_success_rate_label')}: ${summary.easiestQuestion.successRate.toFixed(1)}%`, margin + 5, yPos);
@@ -297,29 +279,37 @@ export class ResultsExporter {
                     doc.setFont('helvetica', 'bold');
                     doc.text(`Q${q.questionNumber}`, margin + 3, yPos + 3);
 
-                    // Success rate badge
-                    const successColor = q.successRate >= 80 ? [16, 185, 129] :
-                        q.successRate >= 60 ? [245, 158, 11] :
-                            q.successRate >= 40 ? [249, 115, 22] : [239, 68, 68];
-                    doc.setFillColor(...successColor);
-                    doc.rect(margin + 20, yPos - 3, 30, 10, 'F');
-                    doc.setTextColor(255, 255, 255);
+                    // Success rate badge (a question nobody answered has no rate)
                     doc.setFontSize(9);
-                    doc.text(`${q.successRate.toFixed(0)}%`, margin + 25, yPos + 4);
+                    if (q.unanswered) {
+                        doc.setFillColor(107, 114, 128);
+                        doc.rect(margin + 20, yPos - 3, 30, 10, 'F');
+                        doc.setTextColor(255, 255, 255);
+                        doc.text(this._sanitizePdfText(getTranslation('analytics_unanswered')), margin + 22, yPos + 4);
+                    } else {
+                        const successColor = q.successRate >= 80 ? [16, 185, 129] :
+                            q.successRate >= 60 ? [245, 158, 11] :
+                                q.successRate >= 40 ? [249, 115, 22] : [239, 68, 68];
+                        doc.setFillColor(...successColor);
+                        doc.rect(margin + 20, yPos - 3, 30, 10, 'F');
+                        doc.setTextColor(255, 255, 255);
+                        doc.text(`${q.successRate.toFixed(0)}%`, margin + 25, yPos + 4);
+                    }
                     doc.setTextColor(0, 0, 0);
 
                     // Question text
                     doc.setFontSize(10);
                     doc.setFont('helvetica', 'normal');
-                    const qText = this._sanitizePdfText(q.text || getTranslation('export_question_text_not_available'));
-                    const truncatedQText = qText.length > 80 ? qText.substring(0, 77) + '...' : qText;
-                    doc.text(truncatedQText, margin + 55, yPos + 3);
+                    const qText = q.text || getTranslation('export_question_text_not_available');
+                    doc.text(this._truncateForPdf(qText, 77), margin + 55, yPos + 3);
 
                     // Metrics
                     yPos += 12;
                     doc.setFontSize(9);
                     doc.text(`${getTranslation('export_responses_label')}: ${q.totalResponses}`, margin + 5, yPos);
-                    doc.text(`${getTranslation('export_avg_time_label')}: ${q.averageTime.toFixed(1)}s`, margin + 50, yPos);
+                    if (q.timedResponses > 0) {
+                        doc.text(`${getTranslation('export_avg_time_label')}: ${q.averageTime.toFixed(1)}s`, margin + 50, yPos);
+                    }
                     doc.text(`${getTranslation('export_avg_points_label')}: ${q.averagePoints.toFixed(0)}`, margin + 100, yPos);
 
                     // Problem flags
@@ -382,6 +372,17 @@ export class ResultsExporter {
     }
 
     /**
+     * Sanitize and truncate a question text for a single PDF line.
+     * @param {string} text - Raw question text
+     * @param {number} [limit] - Maximum characters before truncation
+     * @returns {string} Sanitized, length-bounded text
+     */
+    _truncateForPdf(text, limit = 60) {
+        const clean = this._sanitizePdfText(text);
+        return clean.length > limit ? `${clean.substring(0, limit)}...` : clean;
+    }
+
+    /**
      * Export results to Excel (XLSX) format
      * @param {Object} resultData - Full result data object
      * @returns {Promise<void>}
@@ -428,13 +429,16 @@ export class ResultsExporter {
             XLSX.utils.book_append_sheet(wb, summarySheet, getTranslation('export_summary_sheet'));
 
             // === Sheet 2: Question Analysis ===
-            const questionHeaders = [getTranslation('export_question_num', ['#']), getTranslation('export_question_text'), getTranslation('export_type_label'), getTranslation('export_success_rate_label'), getTranslation('export_avg_time_label'), getTranslation('export_responses_label'), getTranslation('export_avg_points_label'), getTranslation('export_problematic'), getTranslation('export_issues')];
+            const questionHeaders = [getTranslation('export_question_num', ['#']), getTranslation('export_question_text'), getTranslation('export_type_label'), getTranslation('analytics_correct_answer'), getTranslation('export_success_rate_label'), getTranslation('export_avg_time_label'), getTranslation('export_responses_label'), getTranslation('export_avg_points_label'), getTranslation('export_problematic'), getTranslation('export_issues')];
             const questionRows = questionAnalytics.map(q => [
                 q.questionNumber,
                 this._sanitizeExcelText(q.text || ''),
                 q.type || 'multiple-choice',
-                `${q.successRate.toFixed(1)}%`,
-                q.averageTime.toFixed(1),
+                this._sanitizeExcelText(q.correctAnswerLabel || ''),
+                // An unanswered question has no rate; reporting 0.0% would read as
+                // "everyone got it wrong".
+                q.unanswered ? getTranslation('analytics_unanswered') : `${q.successRate.toFixed(1)}%`,
+                q.timedResponses > 0 ? q.averageTime.toFixed(1) : '',
                 q.totalResponses,
                 q.averagePoints.toFixed(0),
                 q.isPotentiallyProblematic ? getTranslation('export_yes') : getTranslation('export_no'),
@@ -443,7 +447,7 @@ export class ResultsExporter {
             const questionData = [questionHeaders, ...questionRows];
             const questionSheet = XLSX.utils.aoa_to_sheet(questionData);
             questionSheet['!cols'] = [
-                { wch: 12 }, { wch: 50 }, { wch: 15 }, { wch: 12 },
+                { wch: 12 }, { wch: 50 }, { wch: 15 }, { wch: 30 }, { wch: 12 },
                 { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 40 }
             ];
             XLSX.utils.book_append_sheet(wb, questionSheet, getTranslation('export_questions_sheet'));

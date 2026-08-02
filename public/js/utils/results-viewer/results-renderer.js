@@ -72,7 +72,9 @@ export function renderEmptyState(iconKey, title, message) {
  * @returns {string} HTML string
  */
 export function renderResultItem(result, formattedDate, avgScore) {
-    const participantCount = result.results?.length || 0;
+    // The listing API drops the heavy per-player `results` array and sends
+    // `participantCount` instead; reading only `results.length` shows 0 for every row.
+    const participantCount = result.participantCount ?? result.results?.length ?? 0;
     const safeFilename = escapeHtml(result.filename);
 
     return `

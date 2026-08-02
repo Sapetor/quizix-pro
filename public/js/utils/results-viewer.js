@@ -20,6 +20,7 @@ import {
     closeModal,
     bindOverlayClose,
     bindEscapeClose,
+    createModalBindings,
     getModal
 } from './modal-utils.js';
 
@@ -32,6 +33,7 @@ import {
 
 import {
     calculateAverageScore,
+    filterAndSortResults,
     formatDate,
     formatTime,
     getScoreClass,
@@ -147,6 +149,7 @@ export class ResultsViewer {
         bindElement('refresh-results', 'click', () => this.refreshResults());
         bindElement('download-result-csv', 'click', () => this.downloadCurrentResult());
         bindElement('delete-result', 'click', () => this.deleteCurrentResult());
+        bindElement('view-result-analytics', 'click', () => this.showCurrentResultAnalytics());
 
         // Delegated action-button handler bound ONCE on the persistent #results-list
         // container (it survives re-renders that only replace innerHTML). Binding it here
@@ -170,13 +173,6 @@ export class ResultsViewer {
                     break;
             }
         });
-
-        const formatSelect = dom.get('export-format-select');
-        if (formatSelect) {
-            formatSelect.addEventListener('change', (e) => {
-                resultsExporter.setExportFormat(e.target.value);
-            });
-        }
 
         // Setup modal bindings using modal-utils
         const resultsModal = getModal('results-viewing-modal');
@@ -335,7 +331,7 @@ export class ResultsViewer {
         const searchTerm = dom.get('search-results')?.value.toLowerCase() || '';
         const sortBy = dom.get('sort-results')?.value || 'date-desc';
 
-        this.filteredResults = resultsManagerService.filterResults(allResults, searchTerm, sortBy);
+        this.filteredResults = filterAndSortResults(allResults, searchTerm, sortBy);
         this.renderResults();
     }
 
@@ -498,6 +494,14 @@ export class ResultsViewer {
     // Analytics
     // ========================================
 
+    /**
+     * Open analytics for the result currently shown in the detail modal.
+     */
+    async showCurrentResultAnalytics() {
+        if (!this.currentDetailResult) return;
+        await this.showQuestionAnalytics(this.currentDetailResult);
+    }
+
     async showQuestionAnalytics(result) {
         try {
             this.showLoading();
@@ -584,7 +588,7 @@ export class ResultsViewer {
 
         // Attach question drill-down handlers
         modal.querySelectorAll('.question-analytics-item.clickable').forEach(item => {
-            item.addEventListener('click', (e) => {
+            item.addEventListener('click', () => {
                 const questionIndex = parseInt(item.dataset.questionIndex, 10);
                 this.showQuestionDrilldown(questionIndex);
             });
@@ -614,15 +618,39 @@ export class ResultsViewer {
 
         // Destroy Chart.js instances when the modal closes, then remove it
         modal._charts = [];
-        modal.querySelectorAll('[data-action="close-analytics"]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                modal._charts.forEach(chart => chart?.destroy());
-                modal.remove();
-            });
-        });
+        modal._closed = false;
+        let bindings = null;
+        const closeAnalytics = () => {
+            if (modal._closed) return;
+            modal._closed = true;
+            bindings?.cleanup();
+            modal._charts.forEach(chart => chart?.destroy());
+            modal.remove();
+        };
 
-        // Create charts after modal is in DOM
+        modal.querySelectorAll('[data-action="close-analytics"]').forEach(btn => {
+            btn.addEventListener('click', closeAnalytics);
+        });
+        bindings = createModalBindings(modal, closeAnalytics);
+
+        // Setup toggle for study suggestions (independent of chart creation)
+        const toggle = modal.querySelector('#show-study-suggestions');
+        const insightsContent = modal.querySelector('#concept-insights-content');
+        if (toggle && insightsContent) {
+            toggle.addEventListener('change', () => {
+                if (toggle.checked) {
+                    show(insightsContent, 'visible-flex');
+                } else {
+                    hide(insightsContent);
+                }
+            });
+        }
+
+        // Create charts after modal is in DOM. If the user closed it first,
+        // skip creation — charts built into a detached canvas are never destroyed.
         setTimeout(() => {
+            if (modal._closed) return;
+
             modal._charts = [
                 createSuccessRateChart(analytics),
                 createTimeVsSuccessChart(analytics)
@@ -632,21 +660,8 @@ export class ResultsViewer {
             if (conceptData?.hasConcepts) {
                 const conceptChart = createConceptMasteryChart('concept-mastery-chart', conceptData);
                 if (conceptChart) modal._charts.push(conceptChart);
-
-                // Setup toggle for study suggestions
-                const toggle = modal.querySelector('#show-study-suggestions');
-                const content = modal.querySelector('#concept-insights-content');
-                if (toggle && content) {
-                    toggle.addEventListener('change', () => {
-                        if (toggle.checked) {
-                            show(content, 'visible-flex');
-                        } else {
-                            hide(content);
-                        }
-                    });
-                }
             }
-        }, 100);
+        }, TIMING.DOM_UPDATE_DELAY);
     }
 
     /**
@@ -667,12 +682,14 @@ export class ResultsViewer {
             return;
         }
 
-        // Get player answers for this question
+        // Get player answers for this question. A saved answer of `0` (option A)
+        // or `false` is a real response, so test for presence, not truthiness.
         const playerAnswers = [];
         if (result.results) {
             result.results.forEach(player => {
-                if (player.answers && player.answers[questionIndex]) {
-                    playerAnswers.push(player.answers[questionIndex]);
+                const answer = player.answers?.[questionIndex];
+                if (answer !== undefined && answer !== null) {
+                    playerAnswers.push(answer);
                 }
             });
         }
