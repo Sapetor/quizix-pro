@@ -2370,8 +2370,11 @@ body.in-lobby .save-status {
 @media (min-width: 769px) {
 
     /* header.css now owns the editorial face at every width; only the desktop
-       weight bump lives here. */
-    .app-header .editor-breadcrumb-title {
+       weight bump lives here. Both breadcrumbs take it — the lobby reuses the
+       editor's chrome, and listing only the editor here left the lobby title
+       computing 400 against the editor's 500 on the same shared rule. */
+    .app-header .editor-breadcrumb-title,
+    .app-header .lobby-breadcrumb-title {
         font-weight: 500;
     }
 

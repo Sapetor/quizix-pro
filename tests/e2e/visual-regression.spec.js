@@ -344,6 +344,11 @@ function getDynamicMasks(page) {
         page.locator('#modal-score-display'),
         // Reveal-modal title carries live "+N points" text
         page.locator('#modal-feedback-text'),
+        // Autosave stamp: renders "SAVED HH:MM" off the wall clock.
+        page.locator('#save-status'),
+        // Connection pill's latency readout ("17ms"): re-measured per run. Only
+        // the value is masked — the dot and "Connected" label still compare.
+        page.locator('.app-header .conn .ping'),
         // canvas-confetti appends an unclassed full-screen canvas to <body>
         page.locator('body > canvas'),
     ];

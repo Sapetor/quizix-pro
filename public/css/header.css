@@ -83,7 +83,12 @@
   transform: translateY(-3px);
 }
 
-.editor-breadcrumb {
+/* One chrome, two hosts: the lobby breadcrumb is geometrically identical to the
+   editor's and only omits the "Editor ·" segment, since the quiz title alone is
+   the context once the game room is up. Kept as one rule so the two cannot
+   drift — they already had, on font-weight. */
+.editor-breadcrumb,
+.lobby-breadcrumb {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -91,8 +96,10 @@
   color: var(--ink-3);
   min-width: 0;
 }
-.editor-breadcrumb[hidden] { display: none; }
-.editor-breadcrumb .chevron {
+.editor-breadcrumb[hidden],
+.lobby-breadcrumb[hidden] { display: none; }
+.editor-breadcrumb .chevron,
+.lobby-breadcrumb .chevron {
   flex-shrink: 0;
   color: var(--ink-3);
 }
@@ -118,22 +125,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 280px;
-}
-
-/* Lobby breadcrumb: same geometry as the editor's, minus the "Editor ·"
-   segment — the quiz title alone is the context once the game room is up. */
-.lobby-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: var(--ink-3);
-  min-width: 0;
-}
-.lobby-breadcrumb[hidden] { display: none; }
-.lobby-breadcrumb .chevron {
-  flex-shrink: 0;
-  color: var(--ink-3);
 }
 
 /* ----- Contained editor toolbar ----- */

@@ -102,6 +102,12 @@ function getDynamicMasks(page, extra = []) {
         // Load-quiz modal body: real quiz names from quizzes/ (non-deterministic)
         '#quiz-tree-container',
         '#quiz-list',
+        // Autosave stamp: renders "SAVED HH:MM" off the wall clock, so every
+        // regeneration an hour apart rewrote the editor baselines for free.
+        '#save-status',
+        // Connection pill's latency readout ("17ms"): re-measured per run. Only
+        // the value is masked — the dot and "Connected" label still compare.
+        '.app-header .conn .ping',
     ];
     return [...selectors.map(s => page.locator(s)), ...extra];
 }

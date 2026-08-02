@@ -13,15 +13,21 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=122">
+    <link rel="stylesheet" href="css/main.bundle.css?v=124">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=122" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=122" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=122" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=124" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=124" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=124" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
-    <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
+    <!-- Font stack: Space Grotesk for display, Inter for body, JetBrains Mono for
+         code/numbers, Source Serif 4 for editorial.
+         Plus Jakarta Sans is NOT requested: it sits behind Space Grotesk in
+         --font-display and never paints, so the browser never fetched a byte of
+         it — but its @font-face blocks still cost 8,360 bytes of render-blocking
+         CSS in the Google Fonts response. It stays in the stack as a local-only
+         fallback. -->
     <!-- Source Serif 4 (--font-editorial) is requested upright-only; the `ital`
          axis was dropped with the breadcrumb's slant. The `opsz` axis is kept
          DELIBERATELY, and this was measured, so don't "optimise" it away again:
@@ -35,7 +41,7 @@
          fetched on the editor/lobby screens (nothing on the landing page uses
          it), so the 71KB buys real rendering quality on the screens that pay it. -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400..600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400..600&display=swap"
         rel="stylesheet">
     <style>
         /* Fallback fonts while Inter loads */
@@ -3859,10 +3865,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=122"></script>
-    <script type="module" src="js/landing.js?v=122"></script>
-    <script type="module" src="js/landing-demo.js?v=122"></script>
-    <script type="module" src="js/landing-ai.js?v=122"></script>
+    <script type="module" src="js/main.js?v=124"></script>
+    <script type="module" src="js/landing.js?v=124"></script>
+    <script type="module" src="js/landing-demo.js?v=124"></script>
+    <script type="module" src="js/landing-ai.js?v=124"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and
