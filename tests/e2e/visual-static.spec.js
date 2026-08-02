@@ -6,8 +6,10 @@ const { test, expect, devices } = require('@playwright/test');
  *
  * Covers the non-game screens that visual-regression.spec.js does NOT touch:
  *   - Landing page (/) — desktop + mobile
+ *   - Join screen — mobile (the only game-entry path a phone has)
  *   - Quiz editor (host-screen) — desktop empty, desktop 2-question fixture,
- *     desktop quiz-settings modal, mobile question carousel
+ *     desktop quiz-settings modal. Desktop only: the editor is gated off phone
+ *     viewports (UIManager.showScreen).
  *   - Load-quiz modal chrome (quiz library — data-driven body masked)
  *
  * These are the prerequisite baselines for an upcoming CSS refactor.
@@ -123,6 +125,32 @@ function screenshotOpts(page, name, extraMasks = []) {
     ];
 }
 
+/**
+ * Grow the viewport to the full document height so a viewport-sized capture
+ * covers the whole page.
+ *
+ * Do NOT substitute `fullPage: true` here on a touch-emulated device. In
+ * Playwright 1.57 a full-page capture permanently drops the context's touch
+ * emulation (`pointer: coarse` flips true -> false, `navigator.maxTouchPoints`
+ * 1 -> 0). toHaveScreenshot captures a stabilization pair, so the first frame
+ * is gated and every later one is not, and the ungated frame is what gets
+ * compared — the phone landing measured 1464px on capture 1 and 8156px on
+ * capture 2. Resizing the viewport keeps emulation intact and repeat captures
+ * byte-identical, which matters because the mobile gate
+ * (public/css/mobile-gate.css) is a `(pointer: coarse)` media query.
+ *
+ * Resizing reflows, so re-measure and settle before returning.
+ */
+async function expandViewportToContent(page) {
+    for (let i = 0; i < 3; i++) {
+        const height = await page.evaluate(() => document.body.scrollHeight);
+        const { width } = page.viewportSize();
+        if (height === page.viewportSize().height) break;
+        await page.setViewportSize({ width, height });
+        await page.waitForTimeout(200);
+    }
+}
+
 /** Load '/' and wait for the app to be interactive. */
 async function bootLanding(page) {
     // Landing hydrates the hero card, PIN, joiners and rooms ticker from
@@ -197,12 +225,13 @@ test.describe('Static Visual Regression', () => {
         const page = await ctx.newPage();
         try {
             await bootLanding(page);
+            // Viewport-grow instead of `fullPage` — see expandViewportToContent.
+            await expandViewportToContent(page);
             await expect(page).toHaveScreenshot(
                 `landing-mobile.png`,
                 {
                     mask: getDynamicMasks(page),
                     maxDiffPixelRatio: 0.02,
-                    fullPage: true,
                     animations: 'disabled',
                 }
             );
@@ -250,26 +279,26 @@ test.describe('Static Visual Regression', () => {
     });
 
     // -----------------------------------------------------------------------
-    // Quiz editor — mobile viewport
+    // Join flow — mobile viewport
     //
-    // NOTE: The MobileQuestionCarousel (mobile-question-carousel.js) is dead
-    // code — .mobile-carousel-container is `display:none !important` in BOTH
-    // responsive.css breakpoints (max-width:768 line ~945, min-width:769 line
-    // ~2061, "carousel removed for simplicity"). The real mobile editor renders
-    // the plain stacked #questions-container. This captures that actual screen.
+    // Replaces the old "quiz editor — mobile viewport" case: the editor
+    // (host-screen) is now unreachable from a phone viewport by design —
+    // UIManager.showScreen() routes every host-only screen to join-screen —
+    // so that baseline asserted a screen a phone can no longer render. The
+    // join screen is what a phone actually gets, so that is what we pin.
     // -----------------------------------------------------------------------
-    test('quiz editor — mobile viewport', async ({ browser }) => {
+    test('join flow — mobile', async ({ browser }) => {
         const ctx = await createContext(browser, DEVICE_MOBILE);
         const page = await ctx.newPage();
         try {
             await bootLanding(page);
-            await gotoEditor(page);
-            await seedFixture(page);
-            await page.waitForSelector('#questions-container .question-item', { timeout: 10000 });
-            await page.waitForTimeout(500);
+            await page.click('#join-btn');
+            await page.waitForSelector('#join-screen.active', { timeout: 10000 });
+            // showScreen defers the PIN-field focus by TIMING.DOM_UPDATE_DELAY.
+            await page.waitForTimeout(600);
 
             await expect(page).toHaveScreenshot(
-                `editor-mobile.png`,
+                `join-mobile.png`,
                 {
                     mask: getDynamicMasks(page),
                     maxDiffPixelRatio: 0.02,

@@ -86,6 +86,27 @@ describe('PlayerInteractionManager selectAnswer / submitAnswer', () => {
         expect(document.getElementById('player-timer').classList.contains('hidden')).toBe(true);
     });
 
+    test('the highlight lands on the answer button, not a consensus proposal bar', () => {
+        // Consensus mode renders .proposal-bar[data-answer] into the discussion feed,
+        // which sits ABOVE #player-multiple-choice in index.html. An unscoped
+        // [data-answer] lookup would highlight the proposal bar instead.
+        document.body.innerHTML = `
+            <div id="player-timer"></div>
+            <div class="consensus-proposals">
+                <div class="proposal-bar" data-answer="1">B</div>
+            </div>
+            <div class="player-options">
+                <button class="player-option" data-answer="0">A</button>
+                <button class="player-option" data-answer="1">B</button>
+            </div>
+        `;
+        const { pim } = makeManager();
+        pim.selectAnswer(1);
+
+        expect(document.querySelector('.proposal-bar').classList.contains('selected')).toBe(false);
+        expect(document.querySelector('.player-option[data-answer="1"]').classList.contains('selected')).toBe(true);
+    });
+
     test('submitAnswer with no eventBus and no socket does not throw or mark submitted', () => {
         const stateManager = new GameStateManager();
         stateManager.initializeQuestionState({ type: 'multiple-choice' });

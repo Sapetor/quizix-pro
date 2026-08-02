@@ -611,8 +611,16 @@
     margin-bottom: 20px;
 }
 
-/* Player timer — smaller variant of .timer for mobile player screens */
+/* Player timer — smaller variant of .timer for mobile player screens.
+   Mono + tabular figures so the digits stop reflowing once a second on the most
+   time-critical surface; matches its sibling #player-question-counter below.
+   Requires class="… ed-mono" on the element: the unlayered critical-CSS Inter
+   rule in index.html (~line 92) beats every @layer app font-family, and
+   .ed-mono is only its opt-out — it declares no font itself, so this rule has
+   to supply --font-mono. */
 #player-timer {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
     font-size: 18px;
     padding: 4px 14px;
     min-width: 50px;
@@ -1502,21 +1510,27 @@
 }
 
 /* Mobile Results Screens - Hide header ghost space for in-game consistency */
+/* dvh, not vh: with mobile Safari's URL bar visible, 100vh is the LARGER
+   viewport, so `min-height: 100vh` + `justify-content: center` + a
+   `max-height: 100vh` scroll box centres the content into a box taller than
+   what is actually on screen and clips the heading and the button. The
+   gameplay rules already use 100dvh (see .player-game-container below).
+   This whole block is mobile-only, so desktop is untouched. */
 @media (max-width: 768px) {
     /* REMOVED: Duplicate header/toolbar rules - now handled by consolidated game state rules below */
-    
+
     /* Quiz Results (Leaderboard) - Mobile fullscreen layout */
     #leaderboard-screen .container {
         padding: 0 !important;
         margin: 0 !important;
-        min-height: 100vh !important;
+        min-height: 100dvh !important;
         height: auto !important;
         width: 100vw !important;
         max-width: none !important;
     }
-    
+
     #leaderboard-screen .leaderboard-container {
-        min-height: 100vh;
+        min-height: 100dvh;
         margin: 0;
         padding: 20px;
         display: flex;
@@ -1533,28 +1547,37 @@
     #player-final-screen .container {
         padding: 0 !important;
         margin: 0 !important;
-        min-height: 100vh !important;
+        min-height: 100dvh !important;
         height: auto !important;
         width: 100vw !important;
         max-width: none !important;
     }
-    
+
     #player-final-screen .player-final-container {
-        min-height: 100vh;
+        min-height: 100dvh;
         margin: 0;
-        padding: 20px;
+        /* Bottom inset so the action does not sit under the home indicator.
+           index.html has viewport-fit=cover; the 0px fallback keeps
+           non-notched devices at exactly the old 20px. */
+        padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         text-align: center;
     }
-    
+
+    /* The only action on this screen — a 108px button in a 390px column. */
+    #player-final-screen #play-again {
+        width: 100%;
+        max-width: 320px;
+    }
+
     /* Ensure content is still scrollable if too tall */
     #leaderboard-screen .leaderboard-container,
     #player-final-screen .player-final-container {
         overflow-y: auto;
-        max-height: 100vh;
+        max-height: 100dvh;
     }
 }
 
@@ -3059,7 +3082,17 @@
         min-height: 60px;
         max-width: 100%;
     }
-    
+
+    /* Same 60px, ID-scoped and !important. The live options are <button>s, so
+       responsive.css's universal touch-target rule matches them through its
+       `button:not(…):not(…):not(…)` arm at (0,3,1) + !important and its 44px
+       floor otherwise wins outright (measured: min-height resolved to 44px at
+       390px). (1,1,0) + !important is the cheapest thing that beats it, and
+       60px > 44px so the floor is not weakened. */
+    #player-game-screen .player-option {
+        min-height: 60px !important;
+    }
+
     .player-answer-type {
         padding: 16px;
     }
@@ -3070,10 +3103,14 @@
         gap: 16px;
     }
     
+    /* !important for the same reason as #player-game-screen .player-option
+       above — the universal touch-target rule's 44px floor is !important and
+       beat this (measured: .tf-option rendered 54.9px at 390px). This selector
+       is already (1,1,0), which is enough. */
     #player-true-false .tf-option {
         padding: 16px;
         font-size: 1.2rem;
-        min-height: 80px;
+        min-height: 80px !important;
     }
     
     /* Numeric Input Mobile */
@@ -3147,6 +3184,11 @@
         padding: 12px;
         font-size: 0.95rem;
         min-height: 50px;
+    }
+
+    /* Same 50px, ID-scoped — see the ≤768px block for why. */
+    #player-game-screen .player-option {
+        min-height: 50px !important;
     }
     
     #player-question-text {
@@ -3521,7 +3563,12 @@
             width: 100% !important;
             height: 100dvh !important;
             margin: 0 !important;
-            padding: 10px !important;
+            /* Bottom safe-area inset — see the same treatment on the rule that
+               actually ships this container, responsive.css ".player-game-container"
+               inside @media (max-width: 768px). NOTE: this whole
+               `@media (max-width:768px) { .game-state-playing { … } }` block is
+               currently inert; see the comment on the touch-action rule below. */
+            padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
             background: var(--bg-primary) !important;
             z-index: 9999 !important;
             overflow-y: auto !important;
@@ -3539,7 +3586,7 @@
             width: 100% !important;
             height: auto !important;
             min-height: 100dvh !important;
-            padding: 15px !important;
+            padding: 15px 15px calc(15px + env(safe-area-inset-bottom, 0px)) !important;
             z-index: 9999 !important;
         }
         
@@ -3558,15 +3605,36 @@
             touch-action: pan-y !important;
         }
         
-        /* Prevent bounce scrolling for short content */
+        /* Prevent bounce scrolling for short content.
+           touch-action was `none`, which applies to the whole subtree and so
+           killed finger panning inside .player-game-container even though that
+           container is `overflow-y: auto` (see the fixed-container rule above).
+           The short/tall classification comes from mobile-layout-manager.js
+           (measureContentHeight): it measures a clone attached to document.body
+           — descendant-scoped padding rules do not apply to that clone — 100-150ms
+           after the event, i.e. before MathJax has finished typesetting. A LaTeX
+           question that ends up taller than estimated is classified short and the
+           player then physically cannot scroll to the last option.
+           `pan-y` keeps the double-tap-zoom/horizontal-drag suppression and makes
+           that misclassification survivable; bounce is still suppressed by the
+           `overscroll-behavior: none` in this same rule, not by touch-action.
+           MEASURED CAVEAT (pre-existing, not introduced here): this rule does not
+           currently match anything. It is nested inside `.game-state-playing { }`
+           above, so it resolves to `.game-state-playing .game-state-playing:not(…)`,
+           and ui-state-manager.js:217 puts `game-state-playing` on exactly one
+           element (`document.querySelector('.container')`) — which is not even an
+           ancestor of `.player-game-container`. The whole block is therefore inert;
+           the live mobile player container is responsive.css ".player-game-container"
+           in its own @media (max-width: 768px) block. Fixing the nesting/hook is a
+           separate job; pan-y is the correct value for when it is. */
         .game-state-playing:not(.tall-content) {
             overscroll-behavior: none !important;
-            touch-action: none !important;
+            touch-action: pan-y !important;
         }
         
         /* Code snippet specific optimizations */
         .game-state-playing.has-code .player-game-container {
-            padding: 10px !important;
+            padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
         }
         
         .game-state-playing.has-code .question-content pre,
@@ -3580,7 +3648,7 @@
         /* Image content optimizations */
         .game-state-playing.has-image .player-game-container,
         .game-state-playing.has-image .host-game-container {
-            padding: 12px !important;
+            padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
         }
         
         .game-state-playing.has-image img {
@@ -3637,18 +3705,8 @@
     }
 }
 
-
-/* === MOBILE RADIUS CORRECTION (PLAYER ANSWER SURFACES) ===================
-   responsive.css's universal 44px touch-target rule (≤768px) also forces
-   `border-radius: 8px !important` on .player-option/.tf-option/.checkbox-option.
-   8px is off the {10,12,14,999} scale, so phones rendered a different corner
-   than desktop. ID-scoped (1,1,0) beats that rule's (0,3,1) so the correction
-   lands. RADIUS ONLY — min-height/min-width/padding are left to the touch-target
-   rule, which is what keeps these ≥44px. */
-@media (max-width: 768px) {
-    #player-game-screen .player-option,
-    #player-true-false .tf-option,
-    #player-multiple-correct .checkbox-option {
-        border-radius: var(--r-lg, 14px) !important;
-    }
-}
+/* MOBILE RADIUS CORRECTION removed: it re-asserted `border-radius: var(--r-lg)`
+   on .player-option/.tf-option/.checkbox-option to undo the universal
+   touch-target rule's forced 8px. That rule no longer sets border-radius (see
+   the split in responsive.css), so the base declarations at game.css:682, 1225
+   and 1391 supply 14px directly. Verified 14px still resolves for all three. */

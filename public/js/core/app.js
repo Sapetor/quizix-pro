@@ -19,9 +19,9 @@ import { toastNotifications } from '../utils/toast-notifications.js';
 import { connectionStatus } from '../utils/connection-status.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { imagePathResolver } from '../utils/image-path-resolver.js';
-import { bindElement, dom, show, escapeHtmlPreservingLatex } from '../utils/dom.js';
+import { bindElement, dom, show, escapeHtmlPreservingLatex, isPhone } from '../utils/dom.js';
 import { readScoringConfigFromDOM } from '../utils/scoring-config.js';
-import { getJSON, setJSON } from '../utils/storage-utils.js';
+import { getItem, setItem, getJSON, setJSON } from '../utils/storage-utils.js';
 import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
 import { openModal, closeModal, createModalBindings } from '../utils/modal-utils.js';
@@ -358,25 +358,25 @@ export class QuizGame {
         bindElement('host-btn', 'click', () => {
             this.uiManager.showScreen('host-screen');
         });
-        bindElement('join-btn', 'click', () => this.uiManager.showScreen('join-screen'));
+        // Carry the PIN the hero card is already displaying into the join form.
+        // landing.js publishes it as data-live-pin, and only for a real active
+        // game — never for the decorative animated digits.
+        bindElement('join-btn', 'click', (event) => {
+            const livePin = event.currentTarget?.dataset?.livePin;
+            const pinInput = dom.get('game-pin-input');
+            if (livePin && pinInput && !pinInput.value) pinInput.value = livePin;
+            this.uiManager.showScreen('join-screen');
+        });
 
-        // Landing outro CTA + footer links. Distinct ids on purpose: `host-btn-mobile`
-        // is the onboarding tutorial's mobileSelector (utils/onboarding-tutorial.js),
-        // so reusing it here would silently retarget the tutorial at the footer.
+        // Landing outro CTA + footer links.
         bindElement('lp-outro-host', 'click', () => this.uiManager.showScreen('host-screen'));
         bindElement('lp-foot-host', 'click', () => this.uiManager.showScreen('host-screen'));
         bindElement('lp-foot-join', 'click', () => this.uiManager.showScreen('join-screen'));
 
-        // Quick Start buttons (desktop + mobile)
+        // Quick Start buttons
         bindElement('quick-start-btn', 'click', () => this.showQuickStartModal());
-        bindElement('quick-start-btn-mobile', 'click', () => this.showQuickStartModal());
         bindElement('cancel-quick-start', 'click', () => this.hideQuickStartModal());
 
-        // Mobile button handlers (same functionality as desktop)
-        bindElement('host-btn-mobile', 'click', () => {
-            this.uiManager.showScreen('host-screen');
-        });
-        bindElement('join-btn-mobile', 'click', () => this.uiManager.showScreen('join-screen'));
         bindElement('browse-games', 'click', () => this.uiManager.showGameBrowser());
         bindElement('refresh-games', 'click', () => this.uiManager.refreshActiveGames());
         bindElement('back-to-join', 'click', () => this.uiManager.showScreen('join-screen'));
@@ -432,6 +432,16 @@ export class QuizGame {
             this.nextQuestion();
         });
         bindElement('join-game', 'click', () => this.joinGame());
+
+        // Enter submits the join form from either field (phone keyboards show "Go").
+        ['game-pin-input', 'player-name'].forEach(id => {
+            bindElement(id, 'keydown', (e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                this.joinGame();
+            });
+        });
+
         bindElement('new-game', 'click', () => this.newGame());
         bindElement('rematch-game', 'click', () => this.triggerRematch());
         bindElement('play-again', 'click', () => this.handlePlayAgain());
@@ -580,6 +590,14 @@ export class QuizGame {
      * Start hosting a game
      */
     startHosting() {
+        // Phones are join-and-play only. Checked before the debounce so the
+        // flag is not consumed by a call that never hosts anything.
+        if (isPhone()) {
+            logger.info('Hosting is not available on a phone; routing to join');
+            this.uiManager.showScreen('join-screen');
+            return;
+        }
+
         // Debounce to prevent multiple rapid calls
         if (this.startHostingCalled) {
             logger.debug('startHosting already in progress, ignoring');
@@ -688,6 +706,7 @@ export class QuizGame {
             return;
         }
 
+        setItem('quizix_player_name', name);
         this.socketManager.joinGame(pin, name);
     }
 
@@ -716,6 +735,7 @@ export class QuizGame {
             return;
         }
 
+        setItem('quizix_player_name', newName);
         this.socketManager.changePlayerName(newName);
     }
 
@@ -1036,6 +1056,12 @@ export class QuizGame {
      * Show the Quick Start modal with the quiz file browser
      */
     async showQuickStartModal() {
+        // Quick Start creates a live game; hosting is not available on a phone.
+        if (isPhone()) {
+            logger.info('Quick Start is not available on a phone; routing to join');
+            this.uiManager.showScreen('join-screen');
+            return;
+        }
         if (this._quickStartLoading) return;
 
         const modal = dom.get('quick-start-modal');
@@ -1254,6 +1280,13 @@ export class QuizGame {
      * Quick start a quiz: fetch it and go straight to the game lobby
      */
     async quickStartQuiz(filename) {
+        // No modal, no fetch, no game creation on a phone.
+        if (isPhone()) {
+            logger.info('Quick Start is not available on a phone; routing to join');
+            this.uiManager.showScreen('join-screen');
+            return;
+        }
+
         // Check if quiz requires authentication before proceeding
         try {
             const authResponse = await APIHelper.fetchAPI(`api/requires-auth/quiz/${filename}`);
@@ -1589,13 +1622,18 @@ export class QuizGame {
      * Set default player name
      */
     setDefaultPlayerName() {
-        const playerNameInput = dom.get('player-name');
-        if (playerNameInput && !playerNameInput.value) {
-            // Generate a random player number between 1-999
-            const playerNumber = Math.floor(Math.random() * LIMITS.MAX_PLAYER_NUMBER) + 1;
-            const defaultName = `${translationManager.getTranslationSync('default_player_name') || 'Player'}${playerNumber}`;
-            playerNameInput.value = defaultName;
+        const el = dom.get('player-name');
+        if (!el || el.value) return;
+        // Prefill the last name used on this device; a first visit (the common
+        // case for a phone scanning the QR) still gets a random name so Join
+        // works without typing.
+        const stored = getItem('quizix_player_name', '');
+        if (stored) {
+            el.value = stored;
+            return;
         }
+        const playerNumber = Math.floor(Math.random() * LIMITS.MAX_PLAYER_NUMBER) + 1;
+        el.value = `${translationManager.getTranslationSync('default_player_name') || 'Player'}${playerNumber}`;
     }
 
     /**

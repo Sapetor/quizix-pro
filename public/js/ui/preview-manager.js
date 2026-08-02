@@ -654,8 +654,7 @@ export class PreviewManager {
             document.querySelector('.quiz-editor-section'),
             document.querySelector('header'),
             document.querySelector('.banner'),
-            document.querySelector('.page-header'),
-            document.querySelector('.mobile-quiz-fab')
+            document.querySelector('.page-header')
         ];
 
         elementsToHide.forEach((element, index) => {

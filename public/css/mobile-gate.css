@@ -1,0 +1,100 @@
+/*
+ * MOBILE GATE — phones are join-and-play only.
+ *
+ * ONE GATE, ONE QUERY.
+ * Every rule in this file lives inside
+ * `@media (pointer: coarse) and (max-width: 768px)`, byte-identical to
+ * `isPhone()` in `public/js/utils/dom.js`. The JS guards in
+ * `UIManager.showScreen()`, `startHosting()` and `quickStartQuiz()` use that
+ * same predicate, so the CSS gate and the JS gate can never disagree — there
+ * is no viewport where a host control is visible but unreachable, or
+ * reachable but invisible.
+ * The `pointer: coarse` half is load-bearing: width alone would strip the
+ * editor from a mouse-driven desktop at 150-200% zoom or in a half-snapped
+ * window (docs/GOTCHAS.md #5). Do not add a second breakpoint here.
+ *
+ * WHY `!important` IS SAFE (and load-bearing) HERE.
+ * This file is imported with `layer(app)`; `.hidden` / `.visible-flex` /
+ * `.visible-inline-block` live in `layer(utilities)`. The cascade REVERSES
+ * @layer order for `!important` declarations, so an `!important` rule in the
+ * EARLIER `app` layer beats an `!important` rule in `utilities`. That is the
+ * point: a stray JS `show(el, 'visible-flex')` cannot resurrect a gated host
+ * control on a phone. Rules that only need to beat normal declarations (the
+ * landing layout below) are left un-`!important` on purpose.
+ *
+ * THIS IS UX GATING, NOT SECURITY.
+ * "Request desktop site" reports a wide viewport and bypasses everything here,
+ * by design. The server routes are unchanged and unauthenticated; nothing in
+ * this file should be relied on as an access control.
+ */
+
+@media (pointer: coarse) and (max-width: 768px) {
+    /* --- (a) Host entry points — hard-hidden ------------------------------ */
+    /* Non-host header chrome (theme, sound, font size, fullscreen, language,
+       user chip, brand, overflow) is deliberately untouched. */
+    #host-btn,
+    #quick-start-btn,
+    #lp-outro-host,
+    #lp-foot-host,
+    #horizontal-toolbar,
+    #start-hosting-header-small,
+    #editor-breadcrumb {
+        display: none !important;
+    }
+
+    /* --- (b) Join-first hero --------------------------------------------- */
+    /* The two-column hero pushed #join-btn to y~970 on a 664px-tall viewport.
+       Collapsing to a single block and dropping the host-facing copy puts the
+       PIN card above the fold. The <h1> and the eyebrow stay: they are the
+       only branding left on the phone landing. */
+    #main-menu.landing-v2 .lp-hero {
+        padding: 24px 0 16px;
+    }
+
+    #main-menu.landing-v2 .lp-hero-grid {
+        display: block;
+    }
+
+    /* .lp-pin-name is a decorative input: no id, no listener, nothing reads
+       it. Hide it rather than pretend a name typed there is kept. */
+    #main-menu.landing-v2 .lp-lede,
+    #main-menu.landing-v2 .lp-hero-cta,
+    #main-menu.landing-v2 .lp-hero-stats,
+    #main-menu.landing-v2 .lp-joiners,
+    #main-menu.landing-v2 .lp-pin-name {
+        display: none;
+    }
+
+    #main-menu.landing-v2 .lp-pin-card {
+        margin-top: 12px;
+    }
+
+    #main-menu.landing-v2 .lp-pin-join {
+        width: 100%;
+    }
+
+    /* --- (c) Trim the marketing body ------------------------------------- */
+    /* ~8,200px tall at 390px wide, almost all host-facing pitch. #lp-demo
+       stays (it is the one section that teaches a student how to answer), as
+       does #lp-rooms-strip. The footer goes too: <footer class="lp-footer">
+       is nested INSIDE #lp-outro (index.html), so hiding that section hides
+       the footer with it. Reversible: delete this block. */
+    #main-menu.landing-v2 #lp-questions,
+    #main-menu.landing-v2 #lp-howto,
+    #main-menu.landing-v2 #lp-ai,
+    #main-menu.landing-v2 #lp-features,
+    #main-menu.landing-v2 #lp-outro {
+        display: none;
+    }
+
+    /* --- (d) Join screen -------------------------------------------------- */
+    /* The primary action measured ~126x48px under two 319px inputs. `width`
+       is not set by the universal touch-target rule, so a plain ID selector
+       wins; padding/border-radius are left alone on purpose (that rule owns
+       them). */
+    #join-screen #join-game,
+    #join-screen #browse-games,
+    #join-screen #return-to-main {
+        width: 100%;
+    }
+}
