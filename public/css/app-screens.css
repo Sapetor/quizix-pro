@@ -125,8 +125,6 @@
     align-items: baseline;
     gap: 12px;
 }
-/* No font-variation-settings: the game screens are Space Grotesk (Fraunces is
-   editor-only), and "opsz"/"SOFT"/"WONK" are inert axes there. */
 #game-lobby .players-list-card .card-heading em {
     font-style: italic;
     color: var(--primary-ink);
@@ -621,8 +619,6 @@
     max-width: 1000px;
     margin: 0 auto;
     text-align: center;
-    /* (No font-variation-settings — same dead Fraunces axes as the lobby
-       heading; the projected question is Space Grotesk.) */
     /* #current-question also carries .question-display, which paints a
        glass card (white 0.9 + shadow-lg). The projected question is type on
        paper, not a card — reset it here rather than at the generic class,
@@ -2327,7 +2323,7 @@
    EDITOR 2a — STAGE A: LAYOUT SHELL
    Concept "Integración" (editor-concepts SPEC-2a). Desktop always-preview
    only (>=769px); the mobile stacked editor is untouched. This stage builds
-   the chrome: Fraunces editorial type (--font-editorial), the --ed-* token
+   the chrome: the editorial serif (--font-editorial), the --ed-* token
    hookups, the 5-column grid (rail 60 | sidebar 232 | form | handle 16 |
    preview), the 60px icon rail, the header autosave stamp, and the form
    column's h1 / mode pill / title input / counter row.
@@ -2508,7 +2504,7 @@ body.in-lobby .save-status {
         color: var(--primary-label);
     }
 
-    /* Title input — 52px Fraunces. Height wins over layout.css:1097's padding
+    /* Title input — 52px editorial serif. Height wins over layout.css:1097's padding
        shim; box-sizing already border-box globally. */
     .host-container.always-preview #quiz-editor-section #quiz-title.input-field {
         height: 52px;
@@ -2870,7 +2866,7 @@ body.in-lobby .save-status {
         font-weight: 600;
         padding-right: 56px;
     }
-    /* Question text goes editorial (mock: Fraunces 19px/1.35 medium). */
+    /* Question text goes editorial (mock: serif 19px/1.35 medium). */
     #quiz-preview-section #preview-question-text-split {
         font-family: var(--font-editorial);
         font-weight: 500;

@@ -99,17 +99,20 @@
 .editor-breadcrumb-separator {
   color: var(--ink-3);
 }
-/* The breadcrumb title is the header node that takes Fraunces — in the editor
-   and now in the lobby, which reuses the same chrome. This is a header surface,
-   not a game screen, so it does not contradict the Space-Grotesk-on-game-screens
-   rule in app-screens.css. The `ed-serif` class on the markup is what lets it
-   past the unlayered Inter override in index.html; this declaration picks the
-   face. */
+/* The breadcrumb title is the header node that takes the editorial serif — in
+   the editor and now in the lobby, which reuses the same chrome. This is a
+   header surface, not a game screen, so it does not contradict the
+   Space-Grotesk-on-game-screens rule in app-screens.css. The `ed-serif` class on
+   the markup is what lets it past the unlayered Inter override in index.html;
+   this declaration picks the face.
+
+   Upright, not italic: this node holds a user-authored quiz title at 15px, and
+   a slanted serif at that size is the hardest thing in the chrome to read.
+   (The font request is pinned upright — see --font-editorial in variables.css.) */
 .editor-breadcrumb-title,
 .lobby-breadcrumb-title {
   color: var(--ink);
   font-family: var(--font-editorial);
-  font-style: italic;
   font-size: 15px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -469,8 +472,6 @@ body.has-editor-toolbar .app-header .conn { display: none; }
   font-size: 22px;
   letter-spacing: 0.08em;
   color: var(--accent-terracotta);
-  /* No font-variation-settings: the live-game cluster is game chrome, so it is
-     Space Grotesk (Fraunces is editor-only) and opsz/SOFT/WONK are inert. */
 }
 
 .app-header .live-game-progress {

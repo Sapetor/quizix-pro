@@ -9,9 +9,18 @@
     --font-display: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    /* Editorial serif — quiz-editor surfaces ONLY (breadcrumb title, editor h1,
-       quiz-title input, preview question). Do not use for the brand lockup. */
-    --font-editorial: 'Fraunces', Georgia, 'Times New Roman', serif;
+    /* Editorial serif — the quiz editor's reading surfaces (editor h1,
+       quiz-title input, preview question, True/False words) plus the header
+       breadcrumb, which the lobby reuses. Do not use for the brand lockup.
+       Source Serif 4, not a display serif: these are surfaces you read, so the
+       face is a low-contrast screen serif rather than a mannered one.
+
+       CANONICAL: the request in index.html is upright-only and carries no
+       `ital` axis, so adding `font-style: italic` to an editorial surface
+       synthesises an oblique — widen the request in the same change or don't
+       add the slant. Rendered weights today are 400 (lobby breadcrumb) and 500
+       (everything else); the request covers 400..600. */
+    --font-editorial: 'Source Serif 4', Georgia, 'Times New Roman', serif;
 
     /* ---- EDITOR 2a TOKENS (--ed-*) ------------------------------------------
        Scoped to the quiz editor's 2a layout (app-screens.css, EDITOR 2a section).

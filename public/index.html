@@ -13,17 +13,29 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=114">
+    <link rel="stylesheet" href="css/main.bundle.css?v=122">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=114" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=114" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=114" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=122" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=122" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=122" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Premium font stack: Plus Jakarta Sans for headings, Inter for body, JetBrains Mono for code/numbers -->
+    <!-- Source Serif 4 (--font-editorial) is requested upright-only; the `ital`
+         axis was dropped with the breadcrumb's slant. The `opsz` axis is kept
+         DELIBERATELY, and this was measured, so don't "optimise" it away again:
+           opsz,wght@8..60,400..600 -> 122,360-byte latin subset
+           wght@400;500 (no opsz)   ->  50,824-byte latin subset
+         Narrowing the opsz RANGE saves nothing (Google serves the same variable
+         file for any sub-range); only dropping the axis slices it. But dropping
+         it also drops automatic optical sizing, which measurably reloosens the
+         type — same strings render 1px wider at 15px and 16px wider at 24px,
+         which moves the breadcrumb's 280px ellipsis boundary. The face is only
+         fetched on the editor/lobby screens (nothing on the landing page uses
+         it), so the 71KB buys real rendering quality on the screens that pay it. -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400..600&display=swap"
         rel="stylesheet">
     <style>
         /* Fallback fonts while Inter loads */
@@ -69,7 +81,7 @@
 
         /* Prevent Inter font loading shift - exclude MathJax elements and display headings.
            .ed-serif/.ed-mono (Editor 2a): unlayered opt-outs — this rule beats the whole
-           @layer app bundle, so editor surfaces needing Fraunces/JetBrains Mono must be
+           @layer app bundle, so editor surfaces needing Source Serif 4/JetBrains Mono must be
            tagged with these classes or they silently render Inter. */
         *:not(mjx-container):not(mjx-container *):not(.MathJax):not(.MathJax *):not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(.serif):not(.lp-serif):not(.lp-wordmark):not(.ed-serif):not(.ed-serif *):not(.ed-mono):not(.ed-mono *) {
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -3847,10 +3859,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=114"></script>
-    <script type="module" src="js/landing.js?v=114"></script>
-    <script type="module" src="js/landing-demo.js?v=114"></script>
-    <script type="module" src="js/landing-ai.js?v=114"></script>
+    <script type="module" src="js/main.js?v=122"></script>
+    <script type="module" src="js/landing.js?v=122"></script>
+    <script type="module" src="js/landing-demo.js?v=122"></script>
+    <script type="module" src="js/landing-ai.js?v=122"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

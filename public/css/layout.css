@@ -641,13 +641,21 @@ header.header-offscreen.header-collapsed {
 }
 
 /* Ink + mono, matching the numeric treatment used elsewhere in the lobby.
-   Amber here read as a warning state on a purely informational count. */
+   Amber here read as a warning state on a purely informational count.
+
+   20/600, not 32/800: its own label ("players") is 12px — see
+   `#game-lobby .combined-info-card .player-count-display` in app-screens.css —
+   so the old pair ran 2.7x, far past any other figure/label ratio in the lobby.
+   Worse, JetBrains Mono's zero is a dotted zero: at 800 the ring thickens until
+   the counter is a slit around the dot, and a white 32px "0" on the dark theme
+   read as a solid box rather than a numeral. 600 also seats it under the PIN
+   (700), which is the card's actual hero figure. */
 .player-count-number {
-    font-size: 2rem;
-    font-weight: 800;
+    font-size: 20px;
+    font-weight: 600;
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    color: var(--text-primary);
+    color: var(--ink);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     transform-origin: center;
 }
@@ -762,9 +770,7 @@ header.header-offscreen.header-collapsed {
         font-size: 0.75rem;
     }
 
-    .player-count-number {
-        font-size: 1.8rem;
-    }
+    /* .player-count-number needs no mobile step at its 20px base. */
 
     .game-info-row {
         gap: 15px;
