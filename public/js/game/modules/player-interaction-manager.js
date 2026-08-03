@@ -91,7 +91,10 @@ export class PlayerInteractionManager {
         });
 
         // Highlight current selection (CSS .selected class handles border and styling)
-        const selectedOption = document.querySelector(`[data-answer="${answer}"]`);
+        // Scoped: consensus mode renders .proposal-bar[data-answer] into the discussion
+        // feed above #player-multiple-choice, so an unscoped lookup can highlight it.
+        const selectedOption = document.querySelector(
+            `.player-option[data-answer="${answer}"], .tf-option[data-answer="${answer}"]`);
         if (selectedOption) {
             selectedOption.classList.add('selected');
 

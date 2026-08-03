@@ -9,7 +9,7 @@ import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-hand
 import { uiStateManager } from '../utils/ui-state-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { updateMobileReturnButtonVisibility } from '../utils/globals.js';
-import { escapeHtml, dom } from '../utils/dom.js';
+import { escapeHtml, dom, isPhone } from '../utils/dom.js';
 import { initQuestionSidebar } from './question-sidebar.js';
 import { initEditorFormChrome } from './editor-form-chrome.js';
 import { initEditorValidation } from '../quiz/editor-validation.js';
@@ -116,6 +116,24 @@ export class UIManager {
     showScreen(screenId) {
         logger.debug('Switching to screen:', screenId);
 
+        // Single choke point for the phone gate. Covers every editor entry point:
+        // #host-btn, #lp-outro-host, #lp-foot-host, the dynamically generated
+        // "Create first quiz" empty-state button in quiz/quiz-manager.js, the
+        // onboarding tutorial's programmatic navigation, and window.game.showScreen().
+        // Recursion is bounded: 'join-screen' is not gated.
+        //
+        // ONLY 'host-screen'. 'game-lobby' and 'host-game-screen' are entered by
+        // server push (socket-manager: game-created, game-started, game-reset,
+        // host-rejoin-success), not by a gesture — gating them would eject a live
+        // host mid-game without resetGameState() (GOTCHAS #12/#13). A phone cannot
+        // reach them anyway: startHosting()/quickStartQuiz() are guarded, so a
+        // socket-driven arrival means this client legitimately IS the host.
+        if (isPhone() && screenId === 'host-screen') {
+            logger.info('The quiz editor is not available on a phone; routing to join');
+            this.showScreen('join-screen');
+            return;
+        }
+
         // Clear DOM caches on screen transition to prevent stale references
         dom.clearCache();
 
@@ -172,7 +190,6 @@ export class UIManager {
         const headerStartBtn = dom.get('start-hosting-header-small');
         const horizontalToolbar = dom.get('horizontal-toolbar');
         const header = document.querySelector('header');
-        const mobileQuizFab = dom.get('mobile-quiz-fab');
 
         if (screenId === 'game-lobby') {
                 // Hide the editing toolbar, but keep the header itself. The lobby
@@ -184,11 +201,6 @@ export class UIManager {
                     horizontalToolbar.classList.remove('visible-flex');
                 }
                 setEditorHeaderState(false);
-                // Hide mobile FAB on lobby screen
-                if (mobileQuizFab) {
-                    mobileQuizFab.classList.add('hidden');
-                    mobileQuizFab.classList.remove('visible-flex');
-                }
             } else {
                 // Hide toolbar and start button for other screens
                 if (headerStartBtn) headerStartBtn.classList.add('hidden');
@@ -197,11 +209,6 @@ export class UIManager {
                     horizontalToolbar.classList.remove('visible-flex');
                 }
                 setEditorHeaderState(false);
-                // Hide mobile FAB on all other screens
-                if (mobileQuizFab) {
-                    mobileQuizFab.classList.add('hidden');
-                    mobileQuizFab.classList.remove('visible-flex');
-                }
 
                 // Remove transition classes for non-game screens
                 if (!['host-game-screen', 'player-game-screen'].includes(screenId)) {
@@ -435,7 +442,6 @@ export class UIManager {
     postHostScreenSetup() {
         const headerStartBtn = dom.get('start-hosting-header-small');
         const horizontalToolbar = dom.get('horizontal-toolbar');
-        const mobileQuizFab = dom.get('mobile-quiz-fab');
         const header = document.querySelector('header');
 
         // Restore header visibility (may be hidden from player-game-screen)
@@ -450,10 +456,6 @@ export class UIManager {
             horizontalToolbar.classList.add('visible-flex');
         }
         setEditorHeaderState(true);
-        if (mobileQuizFab) {
-            mobileQuizFab.classList.remove('hidden');
-            mobileQuizFab.classList.add('visible-flex');
-        }
 
         // Remove any transition classes
         const container = document.querySelector('.container');

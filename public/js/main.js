@@ -16,7 +16,6 @@ import { mobileLayoutManager } from './utils/mobile-layout-manager.js'; // Smart
 import './utils/mobile-enhancements.js'; // Mobile UX enhancements and touch interactions
 import './utils/mobile-carousel.js'; // Airbnb-style mobile carousel for main menu
 import './utils/main-menu-carousel.js'; // Main menu preview carousel
-import './utils/mobile-quiz-controls.js'; // Mobile quiz management controls (FAB and bottom sheet)
 import { onboardingTutorial } from './utils/onboarding-tutorial.js'; // First-time user onboarding
 import { initAuthChip } from './ui/auth-chip.js'; // Optional user accounts (login/signup chip)
 
@@ -244,12 +243,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.querySelectorAll('.first-game-hint').forEach(el => el.classList.add('hidden'));
         }
 
-        // Skip onboarding when joining via QR code (PIN in URL) - go straight to lobby
+        // Skip onboarding when joining via QR code (PIN in URL) - go straight to lobby.
+        // Also skip it on a phone viewport: the 8-step tour is host-oriented (steps 2-7
+        // declare requiredScreen: 'host-screen', which the mobile gate now blocks) and its
+        // overlay intercepts pointer events over the PIN card. The language picker still runs.
         if (!pinFromURL) {
             // First visit: show language picker, then onboarding; returning: delayed onboarding check
             if (!getItem('language')) {
-                showLanguagePicker().then(() => tryStartOnboarding(0));
-            } else {
+                showLanguagePicker().then(() => { if (!isMobile()) tryStartOnboarding(0); });
+            } else if (!isMobile()) {
                 tryStartOnboarding(800);
             }
         }

@@ -127,6 +127,7 @@ These cause the most bugs. Full list with details: **`docs/GOTCHAS.md`**
 - **Socket events** — every server `emit()` needs a matching client `on()` handler
 - **Service Worker** — bump `CACHE_VERSION` in `public/sw.js` when deploying JS changes
 - **`hidden` + `visible-flex` conflict** — always remove one when adding the other (both use `!important`)
+- **Phones are join-and-play only** — gate with `isPhone()` (pointer-based), never `isMobile()` (layout-only); only `host-screen` is gated. See `docs/MOBILE_JOIN_ONLY.md`
 
 ---
 

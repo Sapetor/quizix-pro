@@ -13,12 +13,12 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=124">
+    <link rel="stylesheet" href="css/main.bundle.css?v=131">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=124" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=124" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=124" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=131" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/core/app.js?v=131" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/utils/translation-manager.js?v=131" as="script" crossorigin="anonymous">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Font stack: Space Grotesk for display, Inter for body, JetBrains Mono for
@@ -2287,12 +2287,6 @@
         <span aria-hidden="true">⬆️</span>
     </button>
 
-    <!-- Mobile Quiz Management FAB - Outside container to ensure position:fixed works on mobile -->
-    <button id="mobile-quiz-fab" class="mobile-quiz-fab" onclick="showMobileQuizSheet()" aria-label="Editing Tools"
-        data-translate-aria-label="tools">
-        🔧 <span data-translate="tools">Tools</span>
-    </button>
-
     <!-- Preview Modal Overlay -->
     <div id="preview-modal-overlay" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true"
         aria-labelledby="preview-modal-title">
@@ -2767,23 +2761,23 @@
             <h2 data-translate="join_game">Join Game</h2>
             <input type="text" id="game-pin-input" placeholder="Enter Game PIN" class="input-field"
                 data-translate-placeholder="enter_game_pin" aria-label="Game PIN" data-translate-aria-label="game_pin"
-                inputmode="numeric" pattern="[0-9]{6}" maxlength="6">
+                inputmode="numeric" pattern="[0-9]{6}" maxlength="6" enterkeyhint="next">
             <p class="first-game-hint" data-translate="pin_format_hint">Enter the 6-digit PIN shown on the host's screen
             </p>
             <input type="text" id="player-name" placeholder="Your Name" class="input-field"
                 data-translate-placeholder="your_name" aria-label="Your name" data-translate-aria-label="your_name"
-                autocomplete="nickname">
+                autocomplete="nickname" maxlength="20" enterkeyhint="go">
             <button id="join-game" class="btn primary" data-translate="join_game">Join Game</button>
 
             <div class="join-divider">
                 <span data-translate="or">OR</span>
             </div>
 
-            <button id="browse-games" class="btn secondary">🔍 <span data-translate="browse_games">Browse Available
+            <button id="browse-games" class="btn secondary"><span data-translate="browse_games">Browse Available
                     Games</span></button>
 
             <div class="join-actions">
-                <button id="return-to-main" class="btn secondary return-btn">🏠 <span
+                <button id="return-to-main" class="btn secondary return-btn"><span
                         data-translate="return_to_main">Return to Main Menu</span></button>
             </div>
         </div>
@@ -2828,17 +2822,15 @@
                 </div>
             </div>
 
-            <div class="lobby-info" id="lobby-info" style="display: none;">
+            <div class="lobby-info hidden" id="lobby-info">
                 <div class="lobby-detail">
                     <span class="lobby-detail-label">
-                        <span>🎯</span>
                         <span data-translate="game_pin">Game PIN</span>
                     </span>
                     <span class="lobby-detail-value" id="lobby-pin-display">------</span>
                 </div>
                 <div class="lobby-detail">
                     <span class="lobby-detail-label">
-                        <span>👥</span>
                         <span data-translate="players_joined">Players</span>
                     </span>
                     <span class="lobby-detail-value" id="player-lobby-player-count">1</span>
@@ -2860,7 +2852,6 @@
     <div id="player-game-screen" class="screen">
         <!-- Practice Mode Indicator Badge -->
         <div id="practice-mode-indicator" class="practice-mode-badge hidden">
-            <span class="badge-icon">🎯</span>
             <span class="badge-text" data-translate="practice_mode">Practice Mode</span>
             <button id="practice-home-btn" class="practice-home-btn" title="Exit to Home"
                 data-translate-title="exit_to_home">
@@ -2875,7 +2866,7 @@
         <div class="player-game-container">
             <div class="question-info">
                 <span id="player-question-counter" class="ed-mono">Question 1 of 5</span>
-                <div id="player-timer" class="timer hidden"></div>
+                <div id="player-timer" class="timer hidden ed-mono"></div>
             </div>
 
             <div id="player-question-display" class="player-question-area">
@@ -3046,7 +3037,7 @@
             <h2 data-translate="quiz_complete"><span aria-hidden="true">🎉</span> Quiz Complete!</h2>
             <div id="player-final-rank" class="player-rank ed-mono" role="status" aria-live="polite">
                 <h3 data-translate="your_final_rank">Your Final Rank</h3>
-                <div id="final-position" class="final-position ed-serif">#1</div>
+                <div id="final-position" class="final-position">#1</div>
                 <div id="final-score" class="final-score ed-mono">0 <span data-translate="points">points</span></div>
             </div>
             <div id="top-players" class="top-players">
@@ -3746,117 +3737,6 @@ class GraphScene(Scene):
         </div>
     </div>
 
-    <!-- Mobile Quiz Actions Bottom Sheet -->
-    <div id="mobile-quiz-sheet-overlay" class="mobile-quiz-sheet-overlay" onclick="hideMobileQuizSheet()" role="dialog"
-        aria-modal="true" aria-labelledby="mobile-quiz-sheet-title">
-        <div id="mobile-quiz-sheet" class="mobile-quiz-sheet" onclick="event.stopPropagation()">
-            <div class="mobile-quiz-sheet-header">
-                <div class="mobile-quiz-sheet-handle" onclick="hideMobileQuizSheet()" role="button"
-                    aria-label="Close sheet" data-translate-aria-label="close" tabindex="0"></div>
-                <h3 id="mobile-quiz-sheet-title" class="mobile-quiz-sheet-title" data-translate="quiz_actions">Quiz
-                    Actions</h3>
-                <button class="mobile-quiz-sheet-close" onclick="hideMobileQuizSheet()"
-                    data-translate-aria-label="close">×</button>
-            </div>
-
-            <div class="mobile-quiz-sheet-content">
-                <!-- Quiz Settings (Mobile Only) -->
-                <div class="mobile-quiz-settings-section">
-                    <div class="mobile-quiz-settings-title" data-translate="quiz_settings_title">Quiz Settings</div>
-
-                    <!-- Quiz Title -->
-                    <div class="mobile-quiz-title-row">
-                        <input type="text" id="mobile-quiz-title" placeholder="Quiz Title"
-                            class="mobile-quiz-title-input" data-translate-placeholder="quiz_title"
-                            oninput="syncMobileQuizTitle(this)">
-                    </div>
-
-                    <!-- Quick Toggles -->
-                    <div class="mobile-quiz-toggles">
-                        <label class="mobile-quiz-toggle">
-                            <input type="checkbox" id="mobile-randomize-questions"
-                                onchange="syncMobileToggle('randomize-questions', this.checked)">
-                            <span data-translate="randomize_questions_short">Randomize Questions</span>
-                        </label>
-                        <label class="mobile-quiz-toggle">
-                            <input type="checkbox" id="mobile-randomize-answers"
-                                onchange="syncMobileToggle('randomize-answers', this.checked)">
-                            <span data-translate="randomize_answers_short">Randomize Answers</span>
-                        </label>
-                        <label class="mobile-quiz-toggle">
-                            <input type="checkbox" id="mobile-manual-advancement"
-                                onchange="syncMobileToggle('manual-advancement', this.checked)">
-                            <span data-translate="manual_short">Host Control</span>
-                        </label>
-                        <label class="mobile-quiz-toggle">
-                            <input type="checkbox" id="mobile-power-ups"
-                                onchange="syncMobileToggle('enable-power-ups', this.checked)">
-                            <span data-translate="power_ups_short">Power-Ups</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Primary Actions -->
-                <div class="mobile-quiz-primary-actions">
-                    <button class="mobile-quiz-action-btn primary" onclick="handleMobileAddQuestion()">
-                        <div class="mobile-quiz-action-icon">➕</div>
-                        <div class="mobile-quiz-action-label" data-translate="add_question">Add Question</div>
-                        <div class="mobile-quiz-action-subtitle" data-translate="add_question_tooltip">Add a new
-                            question</div>
-                    </button>
-
-                    <button class="mobile-quiz-action-btn primary" onclick="handleMobileLoadQuiz()">
-                        <div class="mobile-quiz-action-icon">📂</div>
-                        <div class="mobile-quiz-action-label" data-translate="load_quiz">Load Quiz</div>
-                        <div class="mobile-quiz-action-subtitle" data-translate="open_saved_quiz">Open saved quiz</div>
-                    </button>
-
-                    <button class="mobile-quiz-action-btn primary" onclick="handleMobileStartGame()">
-                        <div class="mobile-quiz-action-icon">🎯</div>
-                        <div class="mobile-quiz-action-label" data-translate="start_game">Start Game</div>
-                        <div class="mobile-quiz-action-subtitle" data-translate="begin_hosting">Begin hosting</div>
-                    </button>
-
-                    <button class="mobile-quiz-action-btn" onclick="handleMobileSaveQuiz()">
-                        <div class="mobile-quiz-action-icon">💾</div>
-                        <div class="mobile-quiz-action-label" data-translate="save_quiz">Save Quiz</div>
-                        <div class="mobile-quiz-action-subtitle" data-translate="save_progress">Save progress</div>
-                    </button>
-
-                    <button class="mobile-quiz-action-btn" onclick="handleMobilePreview()">
-                        <div class="mobile-quiz-action-icon">👁️</div>
-                        <div class="mobile-quiz-action-label" data-translate="preview">Preview</div>
-                        <div class="mobile-quiz-action-subtitle" data-translate="test_questions">Test questions</div>
-                    </button>
-                </div>
-
-                <!-- Secondary Actions -->
-                <div class="mobile-quiz-secondary-actions">
-                    <div class="mobile-quiz-secondary-title" data-translate="more_options">More Options</div>
-                    <div class="mobile-quiz-secondary-grid">
-                        <button class="mobile-quiz-secondary-btn" onclick="handleMobileAI()">
-                            <div class="mobile-quiz-secondary-icon">🤖</div>
-                            <div class="mobile-quiz-secondary-label" data-translate="ai_generator">AI Generator</div>
-                        </button>
-
-                        <button class="mobile-quiz-secondary-btn" onclick="handleMobileImport()">
-                            <div class="mobile-quiz-secondary-icon">📥</div>
-                            <div class="mobile-quiz-secondary-label" data-translate="import">Import</div>
-                        </button>
-
-                        <button class="mobile-quiz-secondary-btn" onclick="handleMobileExport()">
-                            <div class="mobile-quiz-secondary-icon">📤</div>
-                            <div class="mobile-quiz-secondary-label" data-translate="export">Export</div>
-                        </button>
-
-                        <button class="mobile-quiz-secondary-btn" onclick="handleMobileResults()">
-                            <div class="mobile-quiz-secondary-icon">📊</div>
-                            <div class="mobile-quiz-secondary-label" data-translate="results">Results</div>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
         </main>
     </div>
 
@@ -3865,10 +3745,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=124"></script>
-    <script type="module" src="js/landing.js?v=124"></script>
-    <script type="module" src="js/landing-demo.js?v=124"></script>
-    <script type="module" src="js/landing-ai.js?v=124"></script>
+    <script type="module" src="js/main.js?v=131"></script>
+    <script type="module" src="js/landing.js?v=131"></script>
+    <script type="module" src="js/landing-demo.js?v=131"></script>
+    <script type="module" src="js/landing-ai.js?v=131"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

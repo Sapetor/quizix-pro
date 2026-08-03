@@ -2,7 +2,7 @@
  * Editorial landing page behaviors.
  * - Hydrates the live rooms ticker from /api/active-games (hides if empty)
  * - PIN card: decorative cycling animation on the trailing digit
- * - "Entrar al juego" in the hero PIN card routes to the existing join screen
+ * - Publishes the featured live PIN on #join-btn (data-live-pin) for the join form
  */
 import { APIHelper } from './utils/api-helper.js';
 import { logger } from './core/config.js';
@@ -103,6 +103,15 @@ async function renderQrForGame(game) {
     }
 }
 
+// Publish the featured game's PIN on #join-btn so the join screen can prefill it.
+// Only ever a real PIN: the decorative animated digits must never be published.
+function setLiveJoinPin(pin) {
+    const joinBtn = document.getElementById('join-btn');
+    if (!joinBtn) return;
+    if (pin) joinBtn.dataset.livePin = String(pin);
+    else delete joinBtn.dataset.livePin;
+}
+
 async function fetchActiveGames() {
     try {
         const res = await fetch(APIHelper.getApiUrl('api/active-games'));
@@ -113,10 +122,12 @@ async function fetchActiveGames() {
         if (games.length > 0) {
             const featured = games[0];
             renderPinDigits(featured.pin);
+            setLiveJoinPin(featured.pin);
             renderJoiners(featured.playerCount ?? 0);
             await renderQrForGame(featured);
         } else {
             startPinAnim();
+            setLiveJoinPin(null);
             renderJoiners(null);
             renderQrEmpty();
         }
@@ -124,6 +135,7 @@ async function fetchActiveGames() {
         logger.warn('Landing: active games fetch failed', err);
         renderTicker([]);
         startPinAnim();
+        setLiveJoinPin(null);
         renderJoiners(null);
         renderQrEmpty();
     }
@@ -186,16 +198,6 @@ function renderJoiners(count) {
     if (strong) strong.textContent = String(count);
 }
 
-function wireHeroJoin() {
-    const join = document.getElementById('lp-hero-join');
-    if (!join) return;
-    join.addEventListener('click', (e) => {
-        e.preventDefault();
-        const joinBtn = document.getElementById('join-btn') || document.getElementById('join-btn-mobile');
-        if (joinBtn) joinBtn.click();
-    });
-}
-
 function wireSectionLinks() {
     // Smooth-scroll in-page anchors without touching the global router/screen system.
     document.querySelectorAll('#main-menu.landing-v2 a[data-lp-scroll]').forEach(a => {
@@ -233,7 +235,6 @@ export function initLanding() {
         if (landingActive()) fetchActiveGames();
     }, TICKER_REFRESH_MS);
 
-    wireHeroJoin();
     wireSectionLinks();
 }
 

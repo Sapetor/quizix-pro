@@ -61,7 +61,6 @@ class OnboardingTutorial {
             {
                 id: 'host-btn',
                 targetSelector: '#host-btn',
-                mobileSelector: '#host-btn-mobile',
                 requiredScreen: 'main-menu',
                 titleKey: 'onboarding_step1_title',
                 contentKey: 'onboarding_step1_content',
@@ -104,7 +103,6 @@ class OnboardingTutorial {
             {
                 id: 'ai-gen',
                 targetSelector: '#vtoolbar-ai-gen',
-                mobileSelector: '#mobile-quiz-fab',
                 requiredScreen: 'host-screen',
                 titleKey: 'onboarding_step5_title',
                 contentKey: 'onboarding_step5_content',
@@ -136,7 +134,6 @@ class OnboardingTutorial {
             {
                 id: 'join-btn',
                 targetSelector: '#join-btn',
-                mobileSelector: '#join-btn-mobile',
                 requiredScreen: 'main-menu',
                 titleKey: 'onboarding_step8_title',
                 contentKey: 'onboarding_step8_content',

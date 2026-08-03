@@ -60,10 +60,8 @@ export default {
     quiz_title: 'Titre du Quiz',
     add_question: 'Ajouter une Question',
     save_quiz: 'Sauvegarder le Quiz',
-    load_quiz: 'Charger le Quiz',
     import_quiz: 'Importer le Quiz',
     preview_quiz: 'Aperçu du Quiz',
-    tools: 'Outils',
     create_quiz: 'Créez votre Quiz',
     live_preview: 'Aperçu en Direct',
     toggle_live_preview: 'Aperçu en Direct',
@@ -235,8 +233,6 @@ export default {
     unknown: 'Inconnu',
     loading: 'Chargement...',
     view_all_results: 'Voir Tous les Résultats',
-    please_add_question_alert: 'Veuillez ajouter au moins une question avant de commencer le jeu.',
-    confirm_start_without_title: "Votre quiz n'a pas de titre. Commencer quand même ?",
 
     // Tooltip keys
     start_quiz_tooltip: 'Commencer le quiz avec les questions actuelles',
@@ -308,7 +304,6 @@ export default {
     normal: 'Normal',
     settings: 'Paramètres',
     navigate: 'Naviguer',
-    preview: 'Aperçu',
     hide: 'Masquer',
     reset: 'Réinitialiser',
     submit: 'Soumettre',
@@ -567,16 +562,6 @@ export default {
     preview_description: 'Découvrez des questions interactives avec des équations mathématiques, des images et des options à choix multiples',
 
     // Mobile tools menu keys
-    quiz_actions: 'Actions du Quiz',
-    quiz_settings_title: 'Paramètres du Quiz',
-    randomize_questions_short: 'Mélanger les Questions',
-    randomize_answers_short: 'Mélanger les Réponses',
-    manual_short: 'Contrôle de l\'Hôte',
-    power_ups_short: 'Power-Ups',
-    open_saved_quiz: 'Ouvrir un quiz sauvegardé',
-    begin_hosting: "Commencer l'hébergement",
-    save_progress: 'Sauvegarder les progrès',
-    test_questions: 'Tester les questions',
     more_options: "Plus d'Options",
     no_options: 'Aucune option',
 
@@ -828,8 +813,6 @@ export default {
     // Missing validation/status keys
     no_questions_to_preview: 'Aucune question à prévisualiser',
     scroll_to_top: 'En Haut',
-    import: 'Importer',
-    export: 'Exporter',
     to_top: 'En Haut',
 
     // Additional missing keys
@@ -837,7 +820,6 @@ export default {
     status: 'Statut',
     ping: 'Ping',
     quality: 'Qualité',
-    results: 'Résultats',
 
     // Manim Editor & Tutorial
     manim_enter_code_first: 'Please enter Manim code first',

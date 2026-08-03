@@ -63,20 +63,8 @@ export default {
     quiz_title: 'Quiz Title',
     add_question: 'Add Question',
     save_quiz: 'Save Quiz',
-    load_quiz: 'Load Quiz',
     import_quiz: 'Import Quiz',
     preview_quiz: 'Preview Quiz',
-    quiz_actions: 'Quiz Actions',
-    quiz_settings_title: 'Quiz Settings',
-    randomize_questions_short: 'Randomize Questions',
-    randomize_answers_short: 'Randomize Answers',
-    manual_short: 'Host Control',
-    power_ups_short: 'Power-Ups',
-    tools: 'Tools',
-    open_saved_quiz: 'Open saved quiz',
-    begin_hosting: 'Begin hosting',
-    save_progress: 'Save progress',
-    test_questions: 'Test questions',
     more_options: 'More Options',
     no_options: 'No options',
     scroll_to_top: 'To Top',
@@ -319,7 +307,6 @@ export default {
     normal: 'Normal',
     settings: 'Settings',
     navigate: 'Navigate',
-    preview: 'Preview',
     hide: 'Hide',
     reset: 'Reset',
     submit: 'Submit',
@@ -577,9 +564,6 @@ export default {
     preview_description: 'Experience interactive questions with math equations, images, and multiple choice options',
 
     // Mobile editor menu items
-    import: 'Import',
-    export: 'Export',
-    results: 'Results',
     to_top: 'To Top',
 
     // Accessibility labels
@@ -600,8 +584,6 @@ export default {
     unknown: 'Unknown',
     loading: 'Loading...',
     view_all_results: 'View All Results',
-    please_add_question_alert: 'Please add at least one question before starting the game.',
-    confirm_start_without_title: "Your quiz doesn't have a title. Start anyway?",
 
     // Sound settings
     toggle_sound_tooltip: 'Toggle sound',

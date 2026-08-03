@@ -546,9 +546,7 @@ a:focus-visible {
 }
 
 /* Mobile menu buttons focus */
-.mobile-menu-btn:focus-visible,
-.mobile-quiz-action-btn:focus-visible,
-.mobile-quiz-secondary-btn:focus-visible {
+.mobile-menu-btn:focus-visible {
     outline: 3px solid var(--accent-primary);
     outline-offset: 2px;
     box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
@@ -556,8 +554,7 @@ a:focus-visible {
 
 /* FAB (Floating Action Button) focus */
 .fab:focus-visible,
-.mobile-fab:focus-visible,
-#mobile-quiz-fab:focus-visible {
+.mobile-fab:focus-visible {
     outline: 3px solid var(--accent-primary);
     outline-offset: 3px;
     box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.2);

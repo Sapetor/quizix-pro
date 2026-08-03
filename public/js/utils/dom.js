@@ -401,6 +401,23 @@ export function isMobile() {
 }
 
 /**
+ * Phone gate predicate: a coarse PRIMARY pointer AND a phone-width viewport.
+ *
+ * Deliberately NOT isMobile(): that is width-only, so a desktop at 150-200%
+ * zoom (docs/GOTCHAS.md #5) or in a half-snapped window reports <= 768px and
+ * would silently lose the editor. `pointer: coarse` reports the primary input
+ * device, so a mouse-driven desktop stays false at any width, while a
+ * touchscreen laptop (primary pointer = mouse) also stays false.
+ *
+ * Kept byte-identical to the single media query in public/css/mobile-gate.css
+ * so the CSS gate and the JS gate can never disagree.
+ * @returns {boolean} - True on a phone-sized touch viewport
+ */
+export function isPhone() {
+    return window.matchMedia('(pointer: coarse) and (max-width: 768px)').matches;
+}
+
+/**
  * Check if the current device is a tablet (viewport width between 768px and 1024px)
  * @returns {boolean} - True if viewport width is between 768px and 1024px
  */

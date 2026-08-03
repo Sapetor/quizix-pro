@@ -56,10 +56,8 @@ export default {
     quiz_title: 'クイズタイトル',
     add_question: '質問を追加',
     save_quiz: 'クイズを保存',
-    load_quiz: 'クイズを読み込み',
     import_quiz: 'クイズをインポート',
     preview_quiz: 'クイズプレビュー',
-    tools: 'ツール',
     create_quiz: 'クイズを作成',
     live_preview: 'ライブプレビュー',
     toggle_live_preview: 'ライブプレビュー',
@@ -222,8 +220,6 @@ export default {
     unknown: '不明',
     loading: '読み込み中...',
     view_all_results: 'すべての結果を表示',
-    please_add_question_alert: 'ゲームを開始する前に少なくとも１つの質問を追加してください。',
-    confirm_start_without_title: 'あなたのクイズにはタイトルがありません。とにかく開始しますか？',
     start_quiz_tooltip: '現在の質問でクイズを開始',
     toggle_fullscreen_tooltip: 'フルスクリーンモードを切り替え',
     toggle_dark_mode_tooltip: 'ダーク/ライトテーマを切り替え',
@@ -287,7 +283,6 @@ export default {
     normal: '通常',
     settings: '設定',
     navigate: 'ナビゲート',
-    preview: 'プレビュー',
     hide: '非表示',
     reset: 'リセット',
     submit: '送信',
@@ -538,16 +533,6 @@ export default {
     preview_description: '数式、画像、多択問題を使ったインタラクティブな質問を体験しましょう',
 
     // Mobile tools menu keys
-    quiz_actions: 'クイズアクション',
-    quiz_settings_title: 'クイズ設定',
-    randomize_questions_short: '問題をランダム',
-    randomize_answers_short: '回答をランダム',
-    manual_short: 'ホスト操作',
-    power_ups_short: 'パワーアップ',
-    open_saved_quiz: '保存されたクイズを開く',
-    begin_hosting: 'ホストを開始',
-    save_progress: '進捗を保存',
-    test_questions: '問題をテスト',
     more_options: 'その他のオプション',
     no_options: 'オプションなし',
 
@@ -799,8 +784,6 @@ export default {
     // Missing validation/status keys
     no_questions_to_preview: 'プレビューする質問がありません',
     scroll_to_top: 'トップへ',
-    import: 'インポート',
-    export: 'エクスポート',
     to_top: 'トップへ',
     welcome_to: 'ようこそ',
     exit_to_main: 'メインメニューに戻る',
@@ -818,7 +801,6 @@ export default {
     question_will_appear_here: '質問がここに表示されます',
     question_alternatives: '質問の選択肢',
     players_have_answered: '人が回答済み',
-    results: '結果',
 
     // Manim Editor & Tutorial
     manim_enter_code_first: 'Please enter Manim code first',

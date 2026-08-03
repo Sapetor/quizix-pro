@@ -56,10 +56,8 @@ export default {
     quiz_title: 'Tytuł Quizu',
     add_question: 'Dodaj Pytanie',
     save_quiz: 'Zapisz Quiz',
-    load_quiz: 'Wczytaj Quiz',
     import_quiz: 'Importuj Quiz',
     preview_quiz: 'Podgląd Quizu',
-    tools: 'Narzędzia',
     create_quiz: 'Utwórz Swój Quiz',
     live_preview: 'Podgląd na Żywo',
     toggle_live_preview: 'Podgląd na Żywo',
@@ -200,8 +198,6 @@ export default {
     unknown: 'Nieznany',
     loading: 'Ładowanie...',
     view_all_results: 'Zobacz Wszystkie Wyniki',
-    please_add_question_alert: 'Dodaj przynajmniej jedno pytanie przed rozpoczęciem gry.',
-    confirm_start_without_title: 'Twój quiz nie ma tytułu. Rozpocząć mimo to?',
 
     // Tooltip keys
     start_quiz_tooltip: 'Rozpocznij quiz z aktualnymi pytaniami',
@@ -278,7 +274,6 @@ export default {
     normal: 'Normalny',
     settings: 'Ustawienia',
     navigate: 'Nawiguj',
-    preview: 'Podgląd',
     hide: 'Ukryj',
     reset: 'Resetuj',
     submit: 'Prześlij',
@@ -540,16 +535,6 @@ export default {
     numeric_answer: 'Odpowiedź Liczbowa',
 
     // Mobile tools menu keys
-    quiz_actions: 'Akcje Quizu',
-    quiz_settings_title: 'Ustawienia Quizu',
-    randomize_questions_short: 'Losowe Pytania',
-    randomize_answers_short: 'Losowe Odpowiedzi',
-    manual_short: 'Kontrola Hosta',
-    power_ups_short: 'Power-Ups',
-    open_saved_quiz: 'Otwórz zapisany quiz',
-    begin_hosting: 'Rozpocznij prowadzenie',
-    save_progress: 'Zapisz postęp',
-    test_questions: 'Testuj pytania',
     more_options: 'Więcej Opcji',
     no_options: 'Brak opcji',
 
@@ -805,8 +790,6 @@ export default {
     // Missing validation/status keys
     no_questions_to_preview: 'Brak pytań do podglądu',
     scroll_to_top: 'Na Górę',
-    import: 'Importuj',
-    export: 'Eksportuj',
     to_top: 'Na Górę',
     welcome_to: 'Witaj w',
     error_generating: 'Błąd podczas generowania pytań',
@@ -831,7 +814,6 @@ export default {
     failed_load_quiz_list: 'Nie udało się załadować listy quizów',
     failed_load_quiz: 'Nie udało się załadować quizu',
     failed_upload_image: 'Nie udało się przesłać obrazu',
-    results: 'Wyniki',
 
     // Manim Editor & Tutorial
     manim_enter_code_first: 'Please enter Manim code first',

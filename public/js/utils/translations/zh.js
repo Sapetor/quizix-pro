@@ -56,10 +56,8 @@ export default {
     quiz_title: '问答标题',
     add_question: '添加问题',
     save_quiz: '保存问答',
-    load_quiz: '加载问答',
     import_quiz: '导入问答',
     preview_quiz: '预览问答',
-    tools: '工具',
     create_quiz: '创建你的问答',
     live_preview: '实时预览',
     toggle_live_preview: '实时预览',
@@ -217,8 +215,6 @@ export default {
     unknown: '未知',
     loading: '加载中...',
     view_all_results: '查看所有结果',
-    please_add_question_alert: '请在开始游戏前至少添加一个问题。',
-    confirm_start_without_title: '您的测验没有标题。仍要开始吗？',
     start_quiz_tooltip: '用当前问题开始问答',
     toggle_fullscreen_tooltip: '切换全屏模式',
     toggle_dark_mode_tooltip: '切换深色/浅色主题',
@@ -282,7 +278,6 @@ export default {
     normal: '正常',
     settings: '设置',
     navigate: '导航',
-    preview: '预览',
     hide: '隐藏',
     reset: '重置',
     submit: '提交',
@@ -533,16 +528,6 @@ export default {
     preview_description: '体验包含数学方程式、图像和多选项的互动问题',
 
     // Mobile tools menu keys
-    quiz_actions: '测验操作',
-    quiz_settings_title: '测验设置',
-    randomize_questions_short: '随机问题',
-    randomize_answers_short: '随机答案',
-    manual_short: '主持人控制',
-    power_ups_short: '增益道具',
-    open_saved_quiz: '打开已保存的测验',
-    begin_hosting: '开始主持',
-    save_progress: '保存进度',
-    test_questions: '测试问题',
     more_options: '更多选项',
     no_options: '无选项',
 
@@ -794,8 +779,6 @@ export default {
     // Missing validation/status keys
     no_questions_to_preview: '没有可预览的问题',
     scroll_to_top: '回到顶部',
-    import: '导入',
-    export: '导出',
     to_top: '回到顶部',
     welcome_to: '欢迎来到',
     exit_to_main: '返回主菜单',
@@ -816,7 +799,6 @@ export default {
     question_will_appear_here: '问题将显示在这里',
     question_alternatives: '问题选项',
     players_have_answered: '位玩家已回答',
-    results: '结果',
 
     // Manim Editor & Tutorial
     manim_enter_code_first: 'Please enter Manim code first',

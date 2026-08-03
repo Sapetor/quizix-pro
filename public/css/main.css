@@ -93,6 +93,9 @@
 /* Editorial treatment for in-app screens (pilot: lobby + host-game) */
 @import './app-screens.css' layer(app);
 
+/* Mobile gating — phones are join-and-play only (see mobile-gate.css) */
+@import './mobile-gate.css' layer(app);
+
 /* Display utilities - top-priority layer (see utilities.css) */
 @import './utilities.css' layer(utilities);
 
