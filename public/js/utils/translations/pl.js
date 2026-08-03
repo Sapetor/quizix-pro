@@ -1554,4 +1554,17 @@ export default {
     val_option_empty_helper: 'Uzupełnij opcję lub usuń ją przed utworzeniem pokoju',
     editor_saving: 'Zapisywanie…',
     editor_saved: 'Zapisano',
+
+    // Ustawienia gry, dyskusja zespołowa i konsensus
+    game_settings: 'Ustawienia Gry',
+    same_time_for_all: 'Ten Sam Czas dla Wszystkich',
+    rematch: 'Rewanż',
+    team_discussion: 'Dyskusja Zespołowa',
+    discussion_activity: 'Aktywność Dyskusji',
+    current_proposals: 'Bieżące Propozycje',
+    allow_free_chat: 'Zezwól na swobodny czat (dla zaufanych grup)',
+    consensus_of: 'z',
+    threshold: 'próg',
+    unanimous: '100% (Jednomyślnie)',
+    ollama_server_url: 'Serwer Ollama:',
 };

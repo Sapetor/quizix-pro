@@ -1528,4 +1528,17 @@ export default {
     val_option_empty_helper: 'Scrivi l’opzione o eliminala prima di creare la stanza',
     editor_saving: 'Salvataggio…',
     editor_saved: 'Salvato',
+
+    // Impostazioni di gioco, discussione di squadra e consenso
+    game_settings: 'Impostazioni di Gioco',
+    same_time_for_all: 'Stesso Tempo per Tutti',
+    rematch: 'Rivincita',
+    team_discussion: 'Discussione di Squadra',
+    discussion_activity: 'Attività della Discussione',
+    current_proposals: 'Proposte Attuali',
+    allow_free_chat: 'Consenti chat libera (per gruppi fidati)',
+    consensus_of: 'di',
+    threshold: 'soglia',
+    unanimous: '100% (Unanime)',
+    ollama_server_url: 'Server Ollama:',
 };

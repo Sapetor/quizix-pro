@@ -1538,4 +1538,17 @@ export default {
     val_option_empty_helper: 'ルーム作成前に選択肢を入力するか削除してください',
     editor_saving: '保存中…',
     editor_saved: '保存済み',
+
+    // ゲーム設定、チーム討論、合意形成
+    game_settings: 'ゲーム設定',
+    same_time_for_all: '全員同じ制限時間',
+    rematch: '再戦',
+    team_discussion: 'チーム討論',
+    discussion_activity: '討論の状況',
+    current_proposals: '現在の提案',
+    allow_free_chat: '自由なチャットを許可（信頼できるグループ向け）',
+    consensus_of: '/',
+    threshold: 'しきい値',
+    unanimous: '100%（全員一致）',
+    ollama_server_url: 'Ollamaサーバー:',
 };

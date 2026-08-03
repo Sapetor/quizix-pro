@@ -1555,4 +1555,17 @@ export default {
     val_option_empty_helper: 'Escribe la opción o elimínala antes de crear la sala',
     editor_saving: 'Guardando…',
     editor_saved: 'Guardado',
+
+    // Ajustes de juego, discusión en equipo y consenso
+    game_settings: 'Configuración del Juego',
+    same_time_for_all: 'Mismo Tiempo para Todos',
+    rematch: 'Revancha',
+    team_discussion: 'Discusión en Equipo',
+    discussion_activity: 'Actividad de la Discusión',
+    current_proposals: 'Propuestas Actuales',
+    allow_free_chat: 'Permitir chat libre (para grupos de confianza)',
+    consensus_of: 'de',
+    threshold: 'umbral',
+    unanimous: '100% (Unánime)',
+    ollama_server_url: 'Servidor Ollama:',
 };
