@@ -2613,6 +2613,56 @@ body.in-lobby .save-status {
         flex-direction: column;
         gap: 4px;
         flex-shrink: 0;
+        /* Anchors the absolutely-positioned drop line below. */
+        position: relative;
+    }
+    /* ----- Drag to reorder ----- */
+    /* Grip: the only drag affordance touch/pen may start from, so the finger
+       stays free to scroll the list and tap a row. A mouse can drag the whole
+       row. touch-action:none stops the browser claiming the gesture as a
+       scroll once a drag begins on the grip. */
+    .question-sidebar .qs-grip {
+        width: 12px;
+        height: 18px;
+        flex-shrink: 0;
+        cursor: grab;
+        touch-action: none;
+        opacity: 0;
+        background-image: radial-gradient(currentColor 1px, transparent 1px);
+        background-size: 4px 4px;
+        background-position: 1px 3px;
+        background-repeat: repeat;
+        color: var(--ink-4);
+    }
+    .question-sidebar .qs-row:hover .qs-grip,
+    .question-sidebar .qs-row:focus-visible .qs-grip {
+        opacity: 1;
+    }
+    /* No hover on touch, and the grip is the ONLY thing a finger may drag
+       from — so it has to be permanently visible there. */
+    @media (pointer: coarse) {
+        .question-sidebar .qs-grip {
+            opacity: 1;
+        }
+    }
+    .question-sidebar .qs-row--dragging {
+        opacity: 0.45;
+        cursor: grabbing;
+    }
+    .question-sidebar.qs-dragging,
+    .question-sidebar.qs-dragging .qs-row {
+        cursor: grabbing;
+        user-select: none;
+    }
+    .question-sidebar .qs-drop-indicator {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 2px;
+        margin-top: -3px;
+        border-radius: 2px;
+        background: var(--primary);
+        pointer-events: none;
     }
     .question-sidebar .qs-row {
         display: flex;

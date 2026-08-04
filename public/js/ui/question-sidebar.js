@@ -41,6 +41,14 @@ const REFRESH_FIELDS = [
 
 let initialized = false;
 
+// Drag-to-reorder state. `renderSuppressed` freezes the list for the duration
+// of a gesture; `swallowNextClick` stops the click that follows a real drag
+// from also navigating.
+const DRAG_THRESHOLD_PX = 5;
+let drag = null;
+let renderSuppressed = false;
+let swallowNextClick = false;
+
 function getQuestionItems() {
     const container = dom.get('questions-container');
     return container ? Array.from(container.querySelectorAll('.question-item')) : [];
@@ -64,12 +72,14 @@ function buildRowHTML(item, index, warnedIndices) {
     const label = text
         ? `<span class="qs-row-text">${escapeHtml(text)}</span>`
         : '<span class="qs-row-text qs-row-text--empty" data-translate="qs_no_text">Sin texto</span>';
-    return `<button type="button" class="${rowClasses}" data-index="${index}">` +
+    return `<button type="button" class="${rowClasses}" data-index="${index}" ` +
+        'aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown">' +
         `<span class="qs-row-index ed-mono">${String(index + 1).padStart(2, '0')}</span>` +
         `<span class="qs-glyph qs-glyph--${glyph}" aria-hidden="true"></span>` +
         label +
         `<span class="qs-row-time ed-mono">${getTimeLimitSeconds(item)}s</span>` +
         `<span class="qs-warning ed-mono${hasWarning ? '' : ' hidden'}" aria-hidden="true">${hasWarning ? '!' : ''}</span>` +
+        '<span class="qs-grip" aria-hidden="true"></span>' +
         '</button>';
 }
 
@@ -100,6 +110,10 @@ function applyWarningBadges() {
 }
 
 function renderSidebar() {
+    // A drag reads live row rects; re-rendering underneath it (a debounced
+    // edit, a validation pass) would swap the nodes mid-gesture.
+    if (renderSuppressed) return;
+
     const sidebar = dom.get('question-sidebar');
     if (!sidebar) return;
 
@@ -174,6 +188,180 @@ function updatePreviewExtras() {
 }
 
 /**
+ * Convert a drop "gap" into a final index.
+ *
+ * The gap is measured against the list WITH the dragged row still in it
+ * (0..n, "insert before row g"), but the final index is measured against the
+ * list WITHOUT it. Everything below the row therefore shifts up one slot.
+ * Both gaps that touch the row itself (g === from, g === from + 1) mean
+ * "stay put" and collapse to `from`.
+ */
+export function dropGapToFinalIndex(gap, fromIndex) {
+    return gap > fromIndex ? gap - 1 : gap;
+}
+
+/**
+ * Move the question at `fromIndex` to `toIndex`.
+ *
+ * The DOM is the model, so this is literally a node move — no array to keep
+ * in sync, and the live nodes (with their radio-group names and any unsaved
+ * field state) are preserved rather than rebuilt.
+ *
+ * @returns {boolean} whether anything actually moved
+ */
+export function moveQuestion(fromIndex, toIndex) {
+    const container = dom.get('questions-container');
+    if (!container) return false;
+
+    const items = getQuestionItems();
+    const valid = (i) => Number.isInteger(i) && i >= 0 && i < items.length;
+    if (!valid(fromIndex) || !valid(toIndex) || fromIndex === toIndex) return false;
+
+    const node = items[fromIndex];
+    const rest = items.filter((_, i) => i !== fromIndex);
+    // rest[toIndex] === undefined when moving to the end → insertBefore(node,
+    // null) appends, which is exactly what we want.
+    container.insertBefore(node, rest[toIndex] || null);
+
+    // Renumber data-question + headings, then keep the user on the question
+    // they just moved. showQuestion re-syncs the preview and re-runs
+    // validation via its questionShown event.
+    window.game?.quizManager?.updateQuestionsUI?.();
+    window.showQuestion?.(toIndex);
+
+    // A node move fires no `input`, and autosave only listens for input
+    // inside .question-item — without this the reorder is silently lost.
+    window.game?.quizManager?.scheduleAutoSave?.();
+
+    renderSidebar();
+    return true;
+}
+
+/** Rendered sidebar rows, in display order. */
+function getRowElements() {
+    const sidebar = dom.get('question-sidebar');
+    return sidebar ? Array.from(sidebar.querySelectorAll('.qs-row')) : [];
+}
+
+/** Insertion gap (0..n) under the pointer, from the live row rects. */
+function gapFromPointerY(clientY) {
+    const rows = getRowElements();
+    for (let i = 0; i < rows.length; i++) {
+        const rect = rows[i].getBoundingClientRect();
+        if (clientY < rect.top + rect.height / 2) return i;
+    }
+    return rows.length;
+}
+
+/** Position the drop line. Absolutely positioned, so it never shifts rows. */
+function showDropIndicator(gap) {
+    const rowsWrap = dom.get('question-sidebar')?.querySelector('.qs-rows');
+    if (!rowsWrap) return;
+
+    let indicator = rowsWrap.querySelector('.qs-drop-indicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.className = 'qs-drop-indicator';
+        rowsWrap.appendChild(indicator);
+    }
+
+    const rows = getRowElements();
+    const last = rows[rows.length - 1];
+    indicator.style.top = gap < rows.length
+        ? `${rows[gap].offsetTop}px`
+        : `${last ? last.offsetTop + last.offsetHeight : 0}px`;
+}
+
+function endDrag(commit, clientY) {
+    if (!drag) return;
+    const { row, fromIndex, active, pointerId } = drag;
+    const sidebar = dom.get('question-sidebar');
+
+    if (active) {
+        row.classList.remove('qs-row--dragging');
+        sidebar?.classList.remove('qs-dragging');
+        sidebar?.querySelector('.qs-drop-indicator')?.remove();
+        if (sidebar?.hasPointerCapture?.(pointerId)) {
+            sidebar.releasePointerCapture(pointerId);
+        }
+    }
+
+    const gap = active && commit ? gapFromPointerY(clientY) : null;
+    drag = null;
+    renderSuppressed = false;
+    if (!active) return;
+
+    // The click that follows a real drag must not also navigate.
+    swallowNextClick = true;
+    if (!(commit && moveQuestion(fromIndex, dropGapToFinalIndex(gap, fromIndex)))) {
+        renderSidebar();
+    }
+}
+
+function bindReorder(sidebar) {
+    sidebar.addEventListener('pointerdown', (event) => {
+        // A fresh gesture can never be the click we owed from the last one.
+        swallowNextClick = false;
+
+        const row = event.target.closest('.qs-row');
+        if (!row) return;
+
+        // Touch and pen may only drag from the grip: the finger has to stay
+        // free to scroll the list and to tap a row to navigate. A mouse can
+        // drag from anywhere on the row (a plain click still navigates,
+        // because the drag needs DRAG_THRESHOLD_PX of travel to start).
+        if (event.pointerType !== 'mouse' && !event.target.closest('.qs-grip')) return;
+
+        drag = {
+            pointerId: event.pointerId,
+            startY: event.clientY,
+            fromIndex: getRowElements().indexOf(row),
+            row,
+            active: false
+        };
+    });
+
+    sidebar.addEventListener('pointermove', (event) => {
+        if (!drag || event.pointerId !== drag.pointerId) return;
+
+        if (!drag.active) {
+            if (Math.abs(event.clientY - drag.startY) < DRAG_THRESHOLD_PX) return;
+            drag.active = true;
+            renderSuppressed = true;
+            drag.row.classList.add('qs-row--dragging');
+            sidebar.classList.add('qs-dragging');
+            sidebar.setPointerCapture?.(drag.pointerId);
+        }
+
+        event.preventDefault();
+        showDropIndicator(gapFromPointerY(event.clientY));
+    });
+
+    sidebar.addEventListener('pointerup', (event) => {
+        if (drag && event.pointerId === drag.pointerId) endDrag(true, event.clientY);
+    });
+    sidebar.addEventListener('pointercancel', (event) => {
+        if (drag && event.pointerId === drag.pointerId) endDrag(false, event.clientY);
+    });
+
+    // Keyboard equivalent: the rows are buttons, so they already focus.
+    sidebar.addEventListener('keydown', (event) => {
+        if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+
+        const row = event.target.closest?.('.qs-row');
+        if (!row) return;
+
+        const rows = getRowElements();
+        const from = rows.indexOf(row);
+        const to = event.key === 'ArrowUp' ? from - 1 : from + 1;
+        if (from < 0 || to < 0 || to >= rows.length) return;
+
+        event.preventDefault();
+        if (moveQuestion(from, to)) getRowElements()[to]?.focus();
+    });
+}
+
+/**
  * Initialize the sidebar + preview chrome. Idempotent: repeat calls (host
  * screen re-entry) only re-render.
  */
@@ -188,6 +376,10 @@ export function initQuestionSidebar() {
 
     // Delegated clicks: rows navigate, footer button proxies the add action
     sidebar.addEventListener('click', (event) => {
+        if (swallowNextClick) {
+            swallowNextClick = false;
+            return;
+        }
         if (event.target.closest('#sidebar-add-question')) {
             dom.get('toolbar-add-question')?.click();
             return;
@@ -197,6 +389,8 @@ export function initQuestionSidebar() {
             window.showQuestion(parseInt(row.dataset.index, 10));
         }
     });
+
+    bindReorder(sidebar);
 
     // Structural changes → full re-render
     ['questionAdded', 'questionRemoved', 'quizLoaded'].forEach(evt => {
