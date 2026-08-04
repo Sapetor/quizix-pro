@@ -78,6 +78,8 @@ function stepTimeLimit(stepBtn) {
 
 function selectTrueFalse(card) {
     const options = card.closest('.true-false-options');
+    // Poll questions have no correct answer to mark
+    if (options?.classList.contains('poll-mode')) return;
     const select = options?.querySelector('.correct-answer');
     if (!select) return;
     const value = card.dataset.tf === 'false' ? 'false' : 'true';
@@ -162,9 +164,16 @@ export function initEditorFormChrome() {
 
     // Derived PUNTOS follows the difficulty select.
     document.addEventListener('change', (event) => {
-        if (event.target instanceof Element && event.target.matches('.question-difficulty')) {
+        if (!(event.target instanceof Element)) return;
+        if (event.target.matches('.question-difficulty')) {
             const item = event.target.closest('.question-item');
             if (item) syncPointsDisplay(item);
+            return;
+        }
+        // Poll mode greys out the correct-answer picker — there is nothing to pick.
+        if (event.target.matches('.tf-poll')) {
+            const options = event.target.closest('.true-false-options');
+            options?.classList.toggle('poll-mode', event.target.checked);
         }
     });
 

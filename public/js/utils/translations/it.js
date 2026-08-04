@@ -511,7 +511,7 @@ export default {
     exit_to_main: 'Torna al Menu Principale',
     stop_quiz: 'Ferma Quiz',
     end_round: 'Termina Round',
-    back_to_home: "Torna alla Home",
+    back_to_home: 'Torna alla Home',
     confirm_stop_quiz: 'Fermare il quiz e mostrare i risultati?',
     confirm_back_to_home: 'Uscire dal gioco? Tutti i giocatori verranno disconnessi.',
 
@@ -551,6 +551,10 @@ export default {
     sound: 'Suono',
     mute_sound: 'Disattiva suono',
     unmute_sound: 'Attiva suono',
+    // Host "mute all students" control
+    mute_all_students: 'Silenzia studenti',
+    unmute_all_students: 'Riattiva audio studenti',
+    muted_by_host: 'Silenziato dal docente',
 
     // Onboarding tutorial (v2 - rewritten)
     onboarding_step1_title: 'Crea un Quiz',
@@ -568,7 +572,7 @@ export default {
     onboarding_step7_title: 'Avvia il Gioco',
     onboarding_step7_content: 'Pronto a giocare? Crea una lobby e condividi il codice PIN con i tuoi giocatori.',
     onboarding_step8_title: 'Unisciti a un Gioco',
-    onboarding_step8_content: "Preferisci giocare? Inserisci il PIN a 6 cifre di un host per unirti al suo quiz.",
+    onboarding_step8_content: 'Preferisci giocare? Inserisci il PIN a 6 cifre di un host per unirti al suo quiz.',
     onboarding_next: 'Avanti',
     onboarding_back: 'Indietro',
     onboarding_skip: 'Salta Tour',
@@ -1504,6 +1508,10 @@ export default {
     concepts_max: '· max 5',
     correct_pill: '✓ Corretta',
     mark_correct_pill: 'Segna',
+    poll_mode_label: 'Sondaggio — nessuna risposta corretta',
+    poll_mode_hint: 'Gli studenti rispondono Vero o Falso; nessuno è giusto o sbagliato e non vengono assegnati punti.',
+    poll_answer_recorded: 'Risposta registrata — grazie per la partecipazione!',
+    poll_no_correct_answer: 'Sondaggio — nessuna risposta corretta',
     image_label: 'Immagine',
     image_drop_hint: 'trascina o clicca',
     explanation_hint: 'mostrata dopo la risposta',
@@ -1540,5 +1548,5 @@ export default {
     consensus_of: 'di',
     threshold: 'soglia',
     unanimous: '100% (Unanime)',
-    ollama_server_url: 'Server Ollama:',
+    ollama_server_url: 'Server Ollama:'
 };

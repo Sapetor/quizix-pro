@@ -5,6 +5,7 @@
 
 import { escapeHtml } from '../dom.js';
 import { translationManager, getTranslation } from '../translation-manager.js';
+import { countGradedAnswers } from './answer-format.js';
 
 /**
  * SVG icons used in empty states and UI elements
@@ -139,8 +140,7 @@ export function renderResultsList(results, calculateAvgScore, formatDate) {
  */
 export function renderParticipantRow(player, getScoreClass, formatTime) {
     const playerScore = player.score || 0;
-    const totalQuestions = player.answers?.length || 0;
-    const correctAnswers = player.answers?.filter(a => a?.isCorrect).length || 0;
+    const { graded: totalQuestions, correct: correctAnswers } = countGradedAnswers(player.answers);
     const percentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
     const scoreClass = getScoreClass(percentage);
     const timeDisplay = player.completedAt ? formatTime(player.completedAt) : 'N/A';

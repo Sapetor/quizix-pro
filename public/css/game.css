@@ -609,6 +609,31 @@
     justify-content: center;
     gap: 12px;
     margin-bottom: 20px;
+    position: relative;
+}
+
+/* Player mute button — pinned right so it never shifts the centred
+   counter/timer. Icon state is class-based (.iconbtn[data-icon-state]) so
+   theme switching and re-renders can't destroy the inline SVGs.
+
+   ID selector, deliberately: the universal phone touch-target rule in
+   responsive.css (`button:not(.onboarding-dot)…`, specificity (0,3,1)) sets
+   `position: relative`, which would out-cascade a class selector below 768px —
+   i.e. break the pinning on exactly the devices this button exists for. It is
+   not !important, so an ID (1,0,0) wins without adding another !important.
+   Its 44px min-width/min-height floor is welcome and left alone. */
+#player-sound-toggle {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    flex: none;
+}
+#player-sound-toggle svg {
+    width: 22px;
+    height: 22px;
 }
 
 /* Player timer — smaller variant of .timer for mobile player screens.
@@ -1973,6 +1998,23 @@
     animation: fadeInUp 0.6s ease-out 0.3s both; /* Delayed to appear after correct answer */
 }
 
+/* Host reveal for a poll question: no tile lights up, so this states outright
+   that the question had no correct answer rather than leaving a silent screen. */
+.poll-result-notice {
+    margin: 16px auto 0;
+    max-width: 600px;
+    padding: 10px 18px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    background: var(--paper-2);
+    border: 1px dashed var(--line);
+    border-radius: var(--r-lg, 14px);
+}
+
 .explanation-content {
     display: flex;
     align-items: flex-start;
@@ -2609,6 +2651,26 @@
 [data-theme] .feedback-modal.incorrect .feedback-message,
 [data-theme] .feedback-modal.incorrect .feedback-icon {
     color: var(--error-color);
+}
+
+/* Poll state: the response was recorded but carries no verdict, so it uses the
+   same neutral --info-color treatment as the "answer submitted" acknowledgement
+   and never borrows the correct/incorrect hues. */
+.feedback-modal.neutral {
+    border-color: var(--info-color);
+    box-shadow: 0 20px 60px color-mix(in srgb, var(--info-color) 30%, transparent);
+}
+
+.feedback-modal.neutral::before {
+    background: color-mix(in srgb, var(--info-color) 10%, transparent);
+    opacity: 1;
+}
+
+.feedback-modal.neutral .feedback-message,
+.feedback-modal.neutral .feedback-icon,
+[data-theme] .feedback-modal.neutral .feedback-message,
+[data-theme] .feedback-modal.neutral .feedback-icon {
+    color: var(--info-color);
 }
 
 /* Partially correct state (ordering questions with partial credit) */

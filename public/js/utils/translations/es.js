@@ -562,6 +562,10 @@ export default {
     sound: 'Sonido',
     mute_sound: 'Silenciar sonido',
     unmute_sound: 'Activar sonido',
+    // Host "mute all students" control
+    mute_all_students: 'Silenciar alumnos',
+    unmute_all_students: 'Activar sonido de alumnos',
+    muted_by_host: 'Silenciado por el profesor',
 
     // Onboarding tutorial (v2 - rewritten)
     onboarding_step1_title: 'Crear un Quiz',
@@ -1531,6 +1535,10 @@ export default {
     concepts_max: '· máx 5',
     correct_pill: '✓ Correcta',
     mark_correct_pill: 'Marcar',
+    poll_mode_label: 'Encuesta — sin respuesta correcta',
+    poll_mode_hint: 'Los estudiantes responden Verdadero o Falso; nadie acierta ni se equivoca y no se otorgan puntos.',
+    poll_answer_recorded: 'Respuesta registrada — ¡gracias por participar!',
+    poll_no_correct_answer: 'Encuesta — sin respuesta correcta',
     image_label: 'Imagen',
     image_drop_hint: 'arrastra o haz clic',
     explanation_hint: 'se muestra tras responder',
@@ -1567,5 +1575,5 @@ export default {
     consensus_of: 'de',
     threshold: 'umbral',
     unanimous: '100% (Unánime)',
-    ollama_server_url: 'Servidor Ollama:',
+    ollama_server_url: 'Servidor Ollama:'
 };

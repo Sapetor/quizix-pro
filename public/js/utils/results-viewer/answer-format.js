@@ -67,6 +67,8 @@ export function formatAnswerLabel(value, question) {
  */
 export function getCorrectAnswerValue(question) {
     if (!question) return undefined;
+    // Poll questions have no correct answer by design
+    if (question.isPoll === true) return undefined;
 
     switch (question.type) {
         case 'multiple-correct':
@@ -86,6 +88,10 @@ export function getCorrectAnswerValue(question) {
  * @returns {string} Correct answer label, or the translated "unknown" placeholder
  */
 export function resolveCorrectAnswerLabel(question) {
+    // "Unknown" would misread a poll as missing data rather than by design
+    if (question?.isPoll === true) {
+        return getTranslation('poll_no_correct_answer');
+    }
     const value = getCorrectAnswerValue(question);
     if (value === undefined || value === null) {
         return getTranslation('unknown');
@@ -100,6 +106,10 @@ export function resolveCorrectAnswerLabel(question) {
  * nothing at all — players who never reached a question leave a `null`. The
  * verdict is whatever the server recorded during the game; nothing here re-grades
  * an answer (that is `QuestionTypeRegistry.scoreAnswer`'s job, at play time).
+ *
+ * Poll responses carry `isPoll: true` and no verdict at all. Every accuracy
+ * statistic must exclude them — counting an ungraded response as `isCorrect:
+ * false` would report a poll as a question the whole class got wrong.
  * @param {*} raw - Raw entry from player.answers
  * @returns {Object|null} Normalized record, or null when the slot holds no response
  */
@@ -111,7 +121,31 @@ export function normalizeAnswerRecord(raw) {
     return {
         value: raw.answer,
         isCorrect: Boolean(raw.isCorrect),
+        isPoll: raw.isPoll === true,
         points: raw.points || 0,
         timeMs: typeof raw.timeMs === 'number' ? raw.timeMs : null
     };
+}
+
+/**
+ * Count a player's graded questions and how many they got right.
+ *
+ * Poll responses are excluded from BOTH numerator and denominator: they have no
+ * correct answer, so including them would report every poll as a question the
+ * player got wrong and drag their percentage down.
+ * @param {Array} answers - A player's raw `answers` array (may contain nulls)
+ * @returns {{graded: number, correct: number}} Graded question count and correct count
+ */
+export function countGradedAnswers(answers) {
+    const list = Array.isArray(answers) ? answers : [];
+    let graded = 0;
+    let correct = 0;
+
+    list.forEach(raw => {
+        if (raw?.isPoll === true) return;
+        graded++;
+        if (raw?.isCorrect) correct++;
+    });
+
+    return { graded, correct };
 }

@@ -301,7 +301,8 @@ class ResultsService {
                         const correctAnswer = this._formatCorrectAnswer(question);
                         const playerAnswer = this._formatAnswerValue(answer.answer, question);
 
-                        const isCorrectText = answer.isCorrect ? 'Yes' : 'No';
+                        // A poll response is neither right nor wrong
+                        const isCorrectText = answer.isPoll ? 'N/A' : (answer.isCorrect ? 'Yes' : 'No');
                         const timeSeconds = Math.round((answer.timeMs || 0) / 1000);
                         const points = answer.points || 0;
 
@@ -390,7 +391,9 @@ class ResultsService {
 
                     // Handle partial credit for ordering questions
                     let resultSymbol;
-                    if (playerAnswer.isCorrect) {
+                    if (playerAnswer.isPoll) {
+                        resultSymbol = '–'; // poll: no verdict
+                    } else if (playerAnswer.isCorrect) {
                         resultSymbol = '✓';
                     } else if (playerAnswer.partialScore !== undefined && playerAnswer.partialScore > 0) {
                         // Show partial score percentage for ordering questions
@@ -554,6 +557,8 @@ class ResultsService {
      */
     _formatCorrectAnswer(question) {
         if (!question) return 'Unknown';
+        // Poll questions have no correct answer; 'Unknown' would read as missing data
+        if (ScoringService.isPollQuestion(question)) return 'N/A (poll)';
 
         const correct = ScoringService.getCorrectAnswerKey(question, question.type);
         const missing = correct === undefined || correct === null ||

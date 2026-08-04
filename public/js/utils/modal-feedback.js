@@ -197,22 +197,30 @@ export class ModalFeedback {
             this.modal.classList.remove('has-score');
         }
 
-        // Set explanation display - CSS handles visibility via has-explanation class
-        if (this.explanationDisplay) {
-            if (explanation && explanation.trim()) {
-                // Use escapeHtmlPreservingLatex to allow MathJax to render formulas
-                this.explanationDisplay.innerHTML = `<span class="explanation-label">💡</span><span class="explanation-text">${escapeHtmlPreservingLatex(explanation)}</span>`;
+        this.renderExplanation(explanation);
+    }
 
-                // Render MathJax for the explanation text
-                const textSpan = this.explanationDisplay.querySelector('.explanation-text');
-                if (textSpan) {
-                    simpleMathJaxService.render([textSpan]).catch(err => {
-                        logger.debug('MathJax render in modal explanation (non-blocking):', err);
-                    });
-                }
-            } else {
-                this.explanationDisplay.innerHTML = '';
-            }
+    /**
+     * Render the explanation slot. CSS handles visibility via has-explanation.
+     * @param {string} explanation - Explanation text (may be empty/null)
+     */
+    renderExplanation(explanation) {
+        if (!this.explanationDisplay) return;
+
+        if (!explanation || !explanation.trim()) {
+            this.explanationDisplay.innerHTML = '';
+            return;
+        }
+
+        // Use escapeHtmlPreservingLatex to allow MathJax to render formulas
+        this.explanationDisplay.innerHTML = `<span class="explanation-label">💡</span><span class="explanation-text">${escapeHtmlPreservingLatex(explanation)}</span>`;
+
+        // Render MathJax for the explanation text
+        const textSpan = this.explanationDisplay.querySelector('.explanation-text');
+        if (textSpan) {
+            simpleMathJaxService.render([textSpan]).catch(err => {
+                logger.debug('MathJax render in modal explanation (non-blocking):', err);
+            });
         }
     }
 
@@ -411,6 +419,66 @@ export class ModalFeedback {
     }
 
     /**
+     * Show neutral feedback — the response was recorded but is neither right nor
+     * wrong (poll questions). No score, no verdict icon, no result sound.
+     * @param {string} message - Custom message (optional)
+     * @param {number} autoDismissTime - Auto-dismiss time in ms (default: 3000)
+     * @param {string} explanation - Explanation text (optional)
+     */
+    showNeutral(message = null, autoDismissTime = 3000, explanation = null) {
+        if (!this.overlay || !this.modal) {
+            logger.error('❌ Cannot show modal feedback - elements not initialized');
+            return;
+        }
+
+        const wait = this.claimOverlayForResult();
+        if (wait > 0) {
+            clearTimeout(this.deferredResultTimer);
+            this.deferredResultTimer = setTimeout(() => {
+                this.deferredResultTimer = null;
+                this.showNeutral(message, autoDismissTime, explanation);
+            }, wait);
+            return;
+        }
+
+        if (this.currentTimer) {
+            clearTimeout(this.currentTimer);
+            this.currentTimer = null;
+        }
+
+        this.modal.className = 'feedback-modal';
+        this.modal.classList.add('neutral');
+        if (explanation) {
+            this.modal.classList.add('has-explanation');
+        }
+
+        if (this.feedbackIcon) {
+            this.feedbackIcon.textContent = '🗳️';
+        }
+        if (this.feedbackText) {
+            this.feedbackText.textContent = message
+                || getTranslation('poll_answer_recorded')
+                || 'Answer recorded';
+        }
+        // A poll awards nothing, so the score slot stays empty
+        if (this.scoreDisplay) {
+            this.scoreDisplay.textContent = '';
+        }
+        this.modal.classList.remove('has-score');
+        this.renderExplanation(explanation);
+
+        openModal(this.overlay, { mode: MODAL_MODES.CLASS, activeClass: 'active', lockScroll: true });
+
+        if (autoDismissTime > 0) {
+            this.currentTimer = setTimeout(() => {
+                this.hide();
+            }, autoDismissTime);
+        }
+
+        logger.debug('🎭 Modal feedback shown: neutral (poll)');
+    }
+
+    /**
      * Show partially correct answer feedback (for ordering questions with partial credit)
      * @param {string} message - Custom message (optional)
      * @param {number} score - Score to display (optional)
@@ -488,21 +556,7 @@ export class ModalFeedback {
             this.modal.classList.remove('has-score');
         }
 
-        // Set explanation display - CSS handles visibility via has-explanation class
-        if (this.explanationDisplay) {
-            if (explanation && explanation.trim()) {
-                this.explanationDisplay.innerHTML = `<span class="explanation-label">💡</span><span class="explanation-text">${escapeHtmlPreservingLatex(explanation)}</span>`;
-
-                const textSpan = this.explanationDisplay.querySelector('.explanation-text');
-                if (textSpan) {
-                    simpleMathJaxService.render([textSpan]).catch(err => {
-                        logger.debug('MathJax render in modal explanation (non-blocking):', err);
-                    });
-                }
-            } else {
-                this.explanationDisplay.innerHTML = '';
-            }
-        }
+        this.renderExplanation(explanation);
     }
 
     /**

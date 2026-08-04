@@ -1183,7 +1183,37 @@
 #host-game-screen #end-round-container {
     display: flex;
     justify-content: flex-end;
+    gap: 8px;
     padding: 0 56px 8px;
+}
+/* In-question copy of the mute-all toggle: same quiet pill as End Round.
+   The header copy is unreachable while game-state-playing hides the header. */
+#host-game-screen #game-mute-students-btn.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    color: var(--ink-3);
+    border: 1px solid var(--line);
+    box-shadow: none;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 8px 16px;
+    border-radius: 999px;
+    transition: color var(--duration-fast) var(--ease-smooth),
+                border-color var(--duration-fast) var(--ease-smooth);
+}
+#host-game-screen #game-mute-students-btn.btn:hover {
+    background: transparent;
+    color: var(--primary-ink);
+    border-color: var(--primary);
+}
+/* Muted is the "active" state — make it read as engaged, not just toggled. */
+#host-game-screen #game-mute-students-btn.btn[aria-pressed="true"] {
+    color: var(--ink);
+    border-color: var(--ink);
 }
 #host-game-screen #end-round-btn.btn.danger {
     background: transparent;
@@ -4503,4 +4533,47 @@ body.in-lobby .save-status {
         padding: 12px 14px;
         gap: 12px;
     }
+}
+
+/* ==========================================================================
+   POLL MODE — true/false questions with no correct answer
+   The toggle lives inside .true-false-options in the editor and is visible in
+   both editor skins (mobile select-based and desktop card-based). When it is
+   on, the correct-answer picker is inert: dimmed AND pointer-events:none, so
+   the UI cannot claim an answer the saved question does not carry.
+   ========================================================================== */
+.tf-poll-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    cursor: pointer;
+}
+
+.tf-poll-toggle input {
+    margin: 0;
+    cursor: pointer;
+}
+
+.tf-poll-label {
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.tf-poll-hint {
+    margin: 6px 0 0;
+    max-width: 52ch;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.true-false-options.poll-mode .tf-label,
+.true-false-options.poll-mode .correct-answer,
+.true-false-options.poll-mode .tf-cards {
+    opacity: 0.35;
+    pointer-events: none;
 }

@@ -93,8 +93,14 @@ export class AnswerRevealManager {
      * @param {*} correctAnswer - The correct answer
      * @param {string} questionType - Type of question
      */
-    showCorrectAnswerOnClient(correctAnswer, questionType) {
+    showCorrectAnswerOnClient(correctAnswer, questionType, isPoll = false) {
         logger.debug('Showing correct answer on client:', correctAnswer, 'type:', questionType);
+
+        // Poll: mark what the player chose, but nothing is right or wrong here
+        if (isPoll) {
+            this.markPlayerSelections(undefined, questionType);
+            return;
+        }
 
         // Mark player's selected answer(s) before applying correct answer styles
         this.markPlayerSelections(correctAnswer, questionType);

@@ -336,6 +336,96 @@ describe('ScoringService.calculateScore', () => {
         });
     });
 
+    // ── Poll (true/false with no correct answer) ───────────────────────────
+
+    describe('poll questions (isPoll)', () => {
+        /** A poll question: true/false, no correct answer, hard difficulty on purpose
+         *  (a hard question is the most expensive one to accidentally award). */
+        const pollQuestion = (overrides = {}) => ({
+            type: 'true-false',
+            question: 'Do you prefer morning classes?',
+            isPoll: true,
+            difficulty: 'hard',
+            timeLimit: 20,
+            ...overrides
+        });
+
+        test('answering True awards 0 points and no verdict', () => {
+            const now = Date.now();
+            const result = ScoringService.calculateScore(buildScoreParams({
+                answer: true,
+                question: pollQuestion(),
+                questionType: 'true-false',
+                questionStartTime: now - 1000 // fast answer: would earn a big time bonus
+            }));
+
+            expect(result.points).toBe(0);
+            expect(result.isCorrect).toBeNull();
+            expect(result.isCorrect).not.toBe(true);
+        });
+
+        test('answering False is treated identically — neither answer is wrong', () => {
+            const now = Date.now();
+            const params = { questionType: 'true-false', questionStartTime: now - 1000 };
+            const yes = ScoringService.calculateScore(buildScoreParams({
+                ...params, answer: true, question: pollQuestion()
+            }));
+            const no = ScoringService.calculateScore(buildScoreParams({
+                ...params, answer: false, question: pollQuestion()
+            }));
+
+            expect(no.points).toBe(yes.points);
+            expect(no.isCorrect).toBe(yes.isCorrect);
+            expect(no.isCorrect).toBeNull();
+        });
+
+        test('a stale correctAnswer left on the question is ignored', () => {
+            // Toggling poll mode on in the editor can leave the old value behind;
+            // isPoll must win, or the poll would silently start grading again.
+            const now = Date.now();
+            const result = ScoringService.calculateScore(buildScoreParams({
+                answer: true,
+                question: pollQuestion({ correctAnswer: true }),
+                questionType: 'true-false',
+                questionStartTime: now - 1000
+            }));
+
+            expect(result.points).toBe(0);
+            expect(result.isCorrect).toBeNull();
+        });
+
+        test('breakdown is all zeros/identity so no bonus can leak in', () => {
+            const now = Date.now();
+            const result = ScoringService.calculateScore(buildScoreParams({
+                answer: true,
+                question: pollQuestion(),
+                questionType: 'true-false',
+                questionStartTime: now - 1000,
+                doublePointsMultiplier: 2
+            }));
+
+            expect(result.points).toBe(0);
+            expect(result.breakdown.basePoints).toBe(0);
+            expect(result.breakdown.timeBonus).toBe(0);
+            expect(result.breakdown.difficultyMultiplier).toBe(1);
+            expect(result.breakdown.doublePointsMultiplier).toBe(1);
+            expect(result.partialScore).toBeNull();
+        });
+
+        test('a non-poll true/false question is unaffected (isPoll absent)', () => {
+            const now = Date.now();
+            const result = ScoringService.calculateScore(buildScoreParams({
+                answer: true,
+                question: { type: 'true-false', correctAnswer: true, difficulty: 'easy' },
+                questionType: 'true-false',
+                questionStartTime: now - 3000
+            }));
+
+            expect(result.isCorrect).toBe(true);
+            expect(result.points).toBeGreaterThan(0);
+        });
+    });
+
     // ── Multiple-Correct ──────────────────────────────────────────────────
 
     describe('multiple-correct questions', () => {
@@ -1452,6 +1542,163 @@ describe('Power-up scoring integration via Game', () => {
         const player = game.players.get('alice');
         expect(player.powerUps['double-points'].used).toBe(true);
         expect(player.powerUps['double-points'].active).toBe(false);
+    });
+});
+
+// ─── Poll Questions via Game ───────────────────────────────────────────────
+
+describe('Poll question scoring via Game', () => {
+    const pollQuiz = {
+        title: 'Poll Test',
+        powerUpsEnabled: true,
+        questions: [
+            {
+                type: 'true-false',
+                question: 'Do you prefer morning classes?',
+                isPoll: true,
+                difficulty: 'hard',
+                timeLimit: 20
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Graded question',
+                options: ['A', 'B', 'C', 'D'],
+                correctIndex: 0,
+                correctAnswer: 0,
+                difficulty: 'medium',
+                timeLimit: 20
+            }
+        ]
+    };
+
+    test('a poll answer leaves the player score untouched', () => {
+        const game = new Game('host-1', pollQuiz, mockLogger, CONFIG);
+        game.addPlayer('alice', 'Alice');
+
+        game.currentQuestion = 0;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now() - 1000;
+
+        const result = game.submitAnswer('alice', true, 'true-false');
+
+        expect(result.accepted).toBe(true);
+        expect(result.points).toBe(0);
+        expect(result.isCorrect).toBeNull();
+        expect(game.players.get('alice').score).toBe(0);
+    });
+
+    test('the stored answer record is flagged and carries no verdict', () => {
+        const game = new Game('host-1', pollQuiz, mockLogger, CONFIG);
+        game.addPlayer('alice', 'Alice');
+
+        game.currentQuestion = 0;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now() - 2000;
+        game.submitAnswer('alice', false, 'true-false');
+
+        const record = game.players.get('alice').answers[0];
+        expect(record.isPoll).toBe(true);
+        expect(record.isCorrect).toBeNull();
+        expect(record.points).toBe(0);
+        // Timing is still recorded — polls appear in response-time stats
+        expect(typeof record.timeMs).toBe('number');
+    });
+
+    test('a poll does not consume the double-points power-up', () => {
+        const game = new Game('host-1', pollQuiz, mockLogger, CONFIG);
+        game.addPlayer('alice', 'Alice');
+
+        game.currentQuestion = 0;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now() - 1000;
+
+        game.usePowerUp('alice', 'double-points');
+        const pollResult = game.submitAnswer('alice', true, 'true-false');
+
+        expect(pollResult.doublePointsUsed).toBe(false);
+
+        // Still banked, so it doubles the next graded question
+        game.currentQuestion = 1;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now() - 5000;
+        const graded = game.submitAnswer('alice', 0, 'multiple-choice');
+
+        expect(graded.doublePointsUsed).toBe(true);
+        expect(graded.points).toBe(3400); // 1700 × 2
+    });
+
+    test('the leaderboard ranks purely on the graded question', () => {
+        const game = new Game('host-1', pollQuiz, mockLogger, CONFIG);
+        game.addPlayer('alice', 'Alice');
+        game.addPlayer('bob', 'Bob');
+
+        // Both answer the poll, opposite ways
+        game.currentQuestion = 0;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now() - 1000;
+        game.submitAnswer('alice', true, 'true-false');
+        game.submitAnswer('bob', false, 'true-false');
+
+        expect(game.players.get('alice').score).toBe(0);
+        expect(game.players.get('bob').score).toBe(0);
+
+        // Only Bob gets the graded question right
+        game.currentQuestion = 1;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now() - 5000;
+        game.submitAnswer('alice', 1, 'multiple-choice');
+        game.submitAnswer('bob', 0, 'multiple-choice');
+
+        game.updateLeaderboard();
+        expect(game.leaderboard[0].name).toBe('Bob');
+        expect(game.leaderboard[0].score).toBe(1700);
+        expect(game.leaderboard[1].score).toBe(0);
+    });
+
+    test('concept mastery ignores poll questions entirely', () => {
+        const conceptQuiz = {
+            title: 'Concept Poll Test',
+            questions: [
+                {
+                    type: 'true-false',
+                    question: 'Opinion?',
+                    isPoll: true,
+                    difficulty: 'medium',
+                    timeLimit: 20,
+                    concepts: ['thermodynamics']
+                },
+                {
+                    type: 'multiple-choice',
+                    question: 'Graded',
+                    options: ['A', 'B'],
+                    correctIndex: 0,
+                    correctAnswer: 0,
+                    difficulty: 'medium',
+                    timeLimit: 20,
+                    concepts: ['thermodynamics']
+                }
+            ]
+        };
+        const game = new Game('host-1', conceptQuiz, mockLogger, CONFIG);
+        game.addPlayer('alice', 'Alice');
+
+        game.currentQuestion = 0;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now() - 1000;
+        game.submitAnswer('alice', true, 'true-false');
+
+        game.currentQuestion = 1;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now() - 1000;
+        game.submitAnswer('alice', 0, 'multiple-choice');
+
+        const mastery = game.calculatePlayerConceptMastery('alice');
+        const thermo = mastery.concepts.find(c => c.name === 'thermodynamics');
+
+        // 1 graded question, answered correctly — the poll must not make it 1/2
+        expect(thermo.total).toBe(1);
+        expect(thermo.correct).toBe(1);
+        expect(thermo.mastery).toBe(100);
     });
 });
 

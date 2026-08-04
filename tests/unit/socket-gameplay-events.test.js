@@ -174,3 +174,66 @@ describe('gameplay-events: next-question', () => {
         expect(options.gameSessionService.manualAdvanceToNextQuestion).not.toHaveBeenCalled();
     });
 });
+
+describe('gameplay-events: set-players-muted', () => {
+    it('stores the flag on the game and broadcasts to the room', () => {
+        const game = { pin: '123456', playersMuted: false };
+        const { socket, options, h } = setup();
+        options.gameSessionService.findGameByHost.mockReturnValue(game);
+
+        h['set-players-muted']({ muted: true });
+
+        expect(game.playersMuted).toBe(true);
+        const sent = socket.toEmits.find(e => e.event === 'players-muted');
+        expect(sent).toEqual({ room: 'game-123456', event: 'players-muted', data: { muted: true } });
+    });
+
+    it('broadcasts with socket.to() so the host is excluded from its own mute', () => {
+        const game = { pin: '123456', playersMuted: false };
+        const { socket, io, options, h } = setup();
+        options.gameSessionService.findGameByHost.mockReturnValue(game);
+
+        h['set-players-muted']({ muted: true });
+
+        expect(socket.emits.find(e => e.event === 'players-muted')).toBeUndefined();
+        expect(io.toEmits.find(e => e.event === 'players-muted')).toBeUndefined();
+    });
+
+    it('unmutes and broadcasts muted:false', () => {
+        const game = { pin: '123456', playersMuted: true };
+        const { socket, options, h } = setup();
+        options.gameSessionService.findGameByHost.mockReturnValue(game);
+
+        h['set-players-muted']({ muted: false });
+
+        expect(game.playersMuted).toBe(false);
+        expect(socket.toEmits.find(e => e.event === 'players-muted').data).toEqual({ muted: false });
+    });
+
+    it('coerces a missing or non-boolean payload to unmuted', () => {
+        const game = { pin: '123456', playersMuted: true };
+        const { socket, options, h } = setup();
+        options.gameSessionService.findGameByHost.mockReturnValue(game);
+
+        h['set-players-muted']();
+
+        expect(game.playersMuted).toBe(false);
+        expect(socket.toEmits.find(e => e.event === 'players-muted').data).toEqual({ muted: false });
+    });
+
+    it('ignores a sender that is not the host of a game', () => {
+        const { socket, options, h } = setup();
+        options.gameSessionService.findGameByHost.mockReturnValue(null);
+
+        h['set-players-muted']({ muted: true });
+
+        expect(socket.toEmits).toHaveLength(0);
+    });
+
+    it('does nothing when rate limited', () => {
+        const { socket, options, h } = setup({ checkRateLimit: jest.fn(() => false) });
+        h['set-players-muted']({ muted: true });
+        expect(options.gameSessionService.findGameByHost).not.toHaveBeenCalled();
+        expect(socket.toEmits).toHaveLength(0);
+    });
+});

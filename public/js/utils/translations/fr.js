@@ -570,6 +570,10 @@ export default {
     sound: 'Son',
     mute_sound: 'Couper le son',
     unmute_sound: 'Activer le son',
+    // Host "mute all students" control
+    mute_all_students: 'Couper le son des élèves',
+    unmute_all_students: 'Rétablir le son des élèves',
+    muted_by_host: 'Son coupé par l’enseignant',
 
     // Onboarding tutorial (v2 - rewritten)
     onboarding_step1_title: 'Créer un Quiz',
@@ -604,7 +608,7 @@ export default {
     personal_best: 'Record Personnel',
     try_again: 'Réessayer',
     exit: 'Quitter',
-    failed_start_practice: "Échec du démarrage du mode entraînement",
+    failed_start_practice: 'Échec du démarrage du mode entraînement',
     confirm_exit_practice: "Quitter l'entraînement et retourner à l'accueil ?",
     exit_to_home: "Retour à l'accueil",
     load: 'Charger',
@@ -1521,6 +1525,10 @@ export default {
     concepts_max: '· max 5',
     correct_pill: '✓ Correcte',
     mark_correct_pill: 'Marquer',
+    poll_mode_label: 'Sondage — aucune bonne réponse',
+    poll_mode_hint: 'Les élèves répondent Vrai ou Faux ; personne n’a raison ou tort et aucun point n’est attribué.',
+    poll_answer_recorded: 'Réponse enregistrée — merci de votre participation !',
+    poll_no_correct_answer: 'Sondage — aucune bonne réponse',
     image_label: 'Image',
     image_drop_hint: 'glisser ou cliquer',
     explanation_hint: 'affichée après la réponse',
@@ -1557,5 +1565,5 @@ export default {
     consensus_of: 'sur',
     threshold: 'seuil',
     unanimous: '100% (Unanimité)',
-    ollama_server_url: 'Serveur Ollama :',
+    ollama_server_url: 'Serveur Ollama :'
 };

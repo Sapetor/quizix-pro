@@ -239,6 +239,19 @@ class QuestionFlowService {
    * @returns {Object} Correct answer data
    */
     buildCorrectAnswerData(question) {
+        // Poll: there is nothing to reveal. Send explicit nulls so the client
+        // never highlights a tile or claims an answer was right/wrong.
+        if (question.isPoll === true) {
+            return {
+                correctAnswer: null,
+                correctOption: '',
+                questionType: question.type || 'true-false',
+                tolerance: null,
+                explanation: question.explanation || null,
+                isPoll: true
+            };
+        }
+
         const correctAnswer = question.correctAnswer ?? question.correctIndex;
         let correctOption = '';
 
@@ -285,7 +298,8 @@ class QuestionFlowService {
             correctOption: correctOption,
             questionType: question.type || 'multiple-choice',
             tolerance: question.tolerance || null,
-            explanation: question.explanation || null
+            explanation: question.explanation || null,
+            isPoll: false
         };
 
         // For multiple-correct questions, also send the correctAnswers array
@@ -334,6 +348,7 @@ class QuestionFlowService {
             }
 
             io.to(playerId).emit('player-result', {
+                isPoll: correctAnswerData.isPoll === true,
                 isCorrect: playerAnswer ? playerAnswer.isCorrect : false,
                 points: playerAnswer ? playerAnswer.points : 0,
                 partialScore: playerAnswer ? playerAnswer.partialScore : undefined,

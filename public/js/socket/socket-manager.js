@@ -598,6 +598,17 @@ export class SocketManager {
             this.gameManager.updateLiveAnswerCount(data);
         });
 
+        // Host "mute all students" override. Broadcast with socket.to(), so the
+        // host never receives its own toggle and keeps its header sound control.
+        // Also replayed to this socket on join/rejoin, which is how late joiners
+        // and reconnecting players pick up the current state.
+        this.socket.on('players-muted', (data) => {
+            const muted = data?.muted === true;
+            logger.debug('Host mute-all state received:', muted);
+            this.soundManager?.setHostMuted(muted);
+            window.game?.settingsManager?.updateSoundToggleButtons();
+        });
+
         // Answer statistics updates (after question ends)
         this.socket.on('answer-statistics', (data) => {
             logger.debug('Answer statistics received:', data);

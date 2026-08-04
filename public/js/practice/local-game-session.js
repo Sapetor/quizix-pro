@@ -211,6 +211,21 @@ export class LocalGameSession {
         const responseTime = performance.now() - this.questionStartTime;
         const question = this.getCurrentQuestion();
 
+        // Poll: no correct answer, no points, no verdict (mirrors ScoringService)
+        if (question.isPoll === true) {
+            this.playerAnswers.push({
+                questionIndex: this.currentQuestionIndex,
+                answer,
+                isCorrect: null,
+                isPoll: true,
+                points: 0,
+                responseTime
+            });
+            this.eventBus.emit('answer-submitted', { answer });
+            this.revealAnswer(answer, null, 0);
+            return;
+        }
+
         // Score the answer
         const correctAnswer = this.getCorrectAnswer(question);
         const isCorrect = this.scoreAnswer(question.type, answer, correctAnswer, question);
@@ -250,10 +265,12 @@ export class LocalGameSession {
         this.phase = 'revealing';
 
         const question = this.getCurrentQuestion();
-        const correctAnswer = this.getCorrectAnswer(question);
+        const isPoll = question?.isPoll === true;
+        const correctAnswer = isPoll ? null : this.getCorrectAnswer(question);
 
         // Emit player result event
         this.eventBus.emit('player-result', {
+            isPoll,
             correct: typeof isCorrect === 'number' ? isCorrect === 1 : isCorrect,
             partialScore: typeof isCorrect === 'number' ? isCorrect : null,
             points,

@@ -10,6 +10,7 @@ import { uiStateManager } from '../utils/ui-state-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { updateMobileReturnButtonVisibility } from '../utils/globals.js';
 import { escapeHtml, dom, isPhone } from '../utils/dom.js';
+import { setMuteStudentsState } from './header-controller.js';
 import { initQuestionSidebar } from './question-sidebar.js';
 import { initEditorFormChrome } from './editor-form-chrome.js';
 import { initEditorValidation } from '../quiz/editor-validation.js';
@@ -46,6 +47,11 @@ function setLiveGameHeaderState(visible) {
         if (want) el.removeAttribute('hidden');
         else el.setAttribute('hidden', '');
     });
+
+    // Mute-all is per-game-session state: the server creates every game (and
+    // every rematch) with playersMuted false, so the host control resets here,
+    // at the one moment the host enters a live game.
+    if (want) setMuteStudentsState(false);
 }
 
 /**

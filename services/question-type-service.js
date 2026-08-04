@@ -125,6 +125,10 @@ const QUESTION_TYPES = {
 
     'true-false': {
         validate: (data) => {
+            // Poll mode: no correct answer by design
+            if (data.isPoll === true) {
+                return { valid: true };
+            }
             if (data.correctAnswer === undefined || data.correctAnswer === null) {
                 return { valid: false, error: 'Correct answer (True or False) must be selected' };
             }

@@ -9,10 +9,10 @@ const { z } = require('zod');
 // Coercion helpers — quiz files may store strings for booleans/numbers
 // ============================================================================
 
-/** Accepts boolean or "true"/"false" strings */
-const coerceBool = z.preprocess(
+/** Accepts boolean, "true"/"false" strings, or null (poll questions have no answer) */
+const coerceNullableBool = z.preprocess(
     val => val === 'true' ? true : val === 'false' ? false : val,
-    z.boolean()
+    z.boolean().nullable()
 );
 
 /** Accepts number or numeric strings */
@@ -64,14 +64,25 @@ const multipleCorrectQuestionSchema = z.object({
 const trueFalseQuestionSchema = z.object({
     type: z.literal('true-false'),
     question: z.string().min(1, 'Question text is required'),
-    correctAnswer: coerceBool,
+    // Optional at the field level because poll questions have no correct answer;
+    // the refine below still requires it for every non-poll question.
+    correctAnswer: coerceNullableBool.optional(),
+    // Poll mode: students answer True/False but nobody is right or wrong and no
+    // points are awarded. Absent on quizzes saved before poll mode existed.
+    isPoll: z.boolean().optional().default(false),
     difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
     timeLimit: z.number().int().min(5).max(300).optional().default(20),
     explanation: z.string().optional(),
     image: z.string().optional(),
     concepts: z.array(z.string()).max(5).optional().default([]),
     ...videoFields
-});
+}).refine(
+    data => data.isPoll === true || typeof data.correctAnswer === 'boolean',
+    {
+        message: 'Correct answer (True or False) must be selected',
+        path: ['correctAnswer']
+    }
+);
 
 const numericQuestionSchema = z.object({
     type: z.literal('numeric'),

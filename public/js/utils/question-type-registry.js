@@ -521,22 +521,43 @@ const QUESTION_TYPES = {
         },
 
         extractData: (questionElement) => {
+            // Poll mode: students answer True/False but nothing is correct
+            const isPoll = !!questionElement.querySelector('.true-false-options .tf-poll')?.checked;
+            if (isPoll) {
+                return { isPoll: true, correctAnswer: null };
+            }
+
             // Get correct answer from <select class="correct-answer">
             const correctAnswerElement = questionElement.querySelector('.true-false-options .correct-answer');
             const correctAnswer = correctAnswerElement ? correctAnswerElement.value === 'true' : false;
 
-            return { correctAnswer };
+            return { correctAnswer, isPoll: false };
         },
 
         populateQuestion: (questionElement, data) => {
+            const optionsContainer = questionElement.querySelector('.true-false-options');
+            if (!optionsContainer) return;
+
+            const isPoll = data.isPoll === true;
+            const pollCheckbox = optionsContainer.querySelector('.tf-poll');
+            if (pollCheckbox) {
+                pollCheckbox.checked = isPoll;
+            }
+            optionsContainer.classList.toggle('poll-mode', isPoll);
+
             // Set value in <select class="correct-answer">
-            const correctAnswerElement = questionElement.querySelector('.true-false-options .correct-answer');
-            if (correctAnswerElement && data.correctAnswer !== undefined) {
+            const correctAnswerElement = optionsContainer.querySelector('.correct-answer');
+            if (correctAnswerElement && data.correctAnswer !== undefined && data.correctAnswer !== null) {
                 correctAnswerElement.value = data.correctAnswer ? 'true' : 'false';
             }
         },
 
         validate: (data) => {
+            // Poll questions deliberately have no correct answer
+            if (data.isPoll === true) {
+                return { valid: true };
+            }
+
             if (data.correctAnswer === undefined || data.correctAnswer === null) {
                 return { valid: false, error: 'Correct answer (True or False) must be selected' };
             }

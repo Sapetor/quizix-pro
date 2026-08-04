@@ -609,6 +609,7 @@ class GameSessionService {
             }
 
             const resultData = {
+                isPoll: timeoutData.isPoll === true,
                 isCorrect: playerAnswer ? playerAnswer.isCorrect : false,
                 points: playerAnswer ? playerAnswer.points : 0,
                 partialScore: playerAnswer ? playerAnswer.partialScore : undefined,

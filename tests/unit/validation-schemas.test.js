@@ -80,6 +80,54 @@ describe('Validation Schemas', () => {
                 const result = questionSchema.safeParse(question);
                 expect(result.success).toBe(true);
             });
+
+            it('should reject a non-poll question with no correct answer', () => {
+                const question = {
+                    type: 'true-false',
+                    question: 'Is the sky blue?'
+                };
+
+                const result = questionSchema.safeParse(question);
+                expect(result.success).toBe(false);
+            });
+
+            it('should validate a poll question with no correct answer', () => {
+                const question = {
+                    type: 'true-false',
+                    question: 'Do you prefer morning classes?',
+                    isPoll: true
+                };
+
+                const result = questionSchema.safeParse(question);
+                expect(result.success).toBe(true);
+                // isPoll must survive parsing — zod strips undeclared keys, and a
+                // dropped flag would turn the poll back into a graded question
+                expect(result.data.isPoll).toBe(true);
+            });
+
+            it('should accept a poll question with an explicit null answer', () => {
+                const question = {
+                    type: 'true-false',
+                    question: 'Do you prefer morning classes?',
+                    isPoll: true,
+                    correctAnswer: null
+                };
+
+                const result = questionSchema.safeParse(question);
+                expect(result.success).toBe(true);
+            });
+
+            it('should default isPoll to false on legacy questions', () => {
+                const question = {
+                    type: 'true-false',
+                    question: 'Is the sky blue?',
+                    correctAnswer: true
+                };
+
+                const result = questionSchema.safeParse(question);
+                expect(result.success).toBe(true);
+                expect(result.data.isPoll).toBe(false);
+            });
         });
 
         describe('numeric', () => {

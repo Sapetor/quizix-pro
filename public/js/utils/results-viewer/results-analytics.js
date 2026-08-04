@@ -33,6 +33,7 @@ export function calculateQuestionAnalytics(result) {
             type: question.type || 'multiple-choice',
             difficulty: question.difficulty || 'medium',
             correctAnswerLabel: resolveCorrectAnswerLabel(question),
+            isPoll: question.isPoll === true,
 
             // Performance metrics
             totalResponses: 0,
@@ -70,6 +71,10 @@ export function calculateQuestionAnalytics(result) {
                 questionAnalysis.totalTime += answer.timeMs / 1000;
             }
 
+            // A poll response is neither right nor wrong; it never counts as a
+            // correct response and never lands in the "struggling" bucket.
+            if (answer.isPoll || questionAnalysis.isPoll) return;
+
             if (answer.isCorrect) {
                 questionAnalysis.correctResponses++;
                 return;
@@ -87,7 +92,15 @@ export function calculateQuestionAnalytics(result) {
         });
 
         // Calculate derived metrics
-        if (questionAnalysis.totalResponses > 0) {
+        if (questionAnalysis.isPoll) {
+            // A poll has no success rate. It stays numerically 0 so every
+            // `.toFixed()` display site keeps working; readers must branch on
+            // `isPoll` (as flagProblematicQuestion and the summaries below do)
+            // rather than believe the 0.
+            questionAnalysis.successRate = 0;
+            questionAnalysis.averagePoints = 0;
+            questionAnalysis.unanswered = questionAnalysis.totalResponses === 0;
+        } else if (questionAnalysis.totalResponses > 0) {
             questionAnalysis.successRate = (questionAnalysis.correctResponses / questionAnalysis.totalResponses) * 100;
             questionAnalysis.averagePoints = questionAnalysis.totalPoints / questionAnalysis.totalResponses;
         } else {
@@ -96,7 +109,9 @@ export function calculateQuestionAnalytics(result) {
 
         if (questionAnalysis.timedResponses > 0) {
             questionAnalysis.averageTime = questionAnalysis.totalTime / questionAnalysis.timedResponses;
-            questionAnalysis.timeEfficiency = questionAnalysis.successRate / Math.max(questionAnalysis.averageTime, 1);
+            if (!questionAnalysis.isPoll) {
+                questionAnalysis.timeEfficiency = questionAnalysis.successRate / Math.max(questionAnalysis.averageTime, 1);
+            }
         }
 
         flagProblematicQuestion(questionAnalysis);
@@ -111,6 +126,13 @@ export function calculateQuestionAnalytics(result) {
  * @param {Object} analysis - Question analysis object to evaluate
  */
 function flagProblematicQuestion(analysis) {
+    // A poll has no right answer, so no accuracy-based flag can apply to it.
+    if (analysis.isPoll) {
+        analysis.problemFlags = [];
+        analysis.isPotentiallyProblematic = false;
+        return;
+    }
+
     // A question nobody answered carries no evidence about its quality; a 0%
     // success rate here means "no data", not "knowledge gap".
     if (analysis.totalResponses === 0) {
@@ -190,7 +212,9 @@ export function getQuizSummaryStats(questionAnalytics) {
     const problematicCount = questionAnalytics.filter(q => q.isPotentiallyProblematic).length;
 
     // Questions nobody answered would otherwise pull every average toward zero.
-    const answered = questionAnalytics.filter(q => !q.unanswered);
+    // Polls have no success rate at all, so they are excluded for the same reason —
+    // and "hardest question" must never resolve to a question with no right answer.
+    const answered = questionAnalytics.filter(q => !q.unanswered && !q.isPoll);
     const timed = answered.filter(q => q.timedResponses > 0);
 
     const avgSuccessRate = answered.length
@@ -421,9 +445,11 @@ export function createAnalyticsModal(result, analytics, summary, conceptData = n
                         <div class="question-analytics-item clickable ${q.isPotentiallyProblematic ? 'problematic' : ''} ${q.unanswered ? 'unanswered' : ''}" data-question-index="${idx}">
                             <div class="question-header">
                                 <span class="question-number">Q${q.questionNumber}</span>
-                                ${q.unanswered
-        ? `<span class="success-rate unanswered">${getTranslation('analytics_unanswered')}</span>`
-        : `<span class="success-rate ${getSuccessRateClass(q.successRate)}">${q.successRate.toFixed(1)}%</span>`}
+                                ${q.isPoll
+        ? `<span class="success-rate poll">${getTranslation('poll_no_correct_answer')}</span>`
+        : q.unanswered
+            ? `<span class="success-rate unanswered">${getTranslation('analytics_unanswered')}</span>`
+            : `<span class="success-rate ${getSuccessRateClass(q.successRate)}">${q.successRate.toFixed(1)}%</span>`}
                             </div>
                             <div class="qa-question-text">${escapeHtml(q.text)}</div>
                             <div class="question-metrics">
@@ -746,6 +772,7 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
     const qNum = questionAnalysis.questionNumber;
     const qText = questionAnalysis.text || `Question ${qNum}`;
     const qType = questionAnalysis.type || 'multiple-choice';
+    const isPoll = questionAnalysis.isPoll === true;
 
     // The question carries the option list, so answers render as text rather
     // than as the raw indices actually stored in the result file.
@@ -759,20 +786,24 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
     let correctCount = 0;
     let incorrectCount = 0;
     let timedCount = 0;
+    let responseTotal = 0;
 
     playerAnswers.forEach(raw => {
         const pa = normalizeAnswerRecord(raw);
         if (!pa) return;
 
         // Count answers
+        responseTotal++;
         const answerKey = formatAnswerLabel(pa.value, question);
         answerCounts[answerKey] = (answerCounts[answerKey] || 0) + 1;
 
-        // Count correct/incorrect
-        if (pa.isCorrect) {
-            correctCount++;
-        } else {
-            incorrectCount++;
+        // Count correct/incorrect — a poll response is neither
+        if (!isPoll && !pa.isPoll) {
+            if (pa.isCorrect) {
+                correctCount++;
+            } else {
+                incorrectCount++;
+            }
         }
 
         // Time buckets (legacy records have no timing at all)
@@ -786,8 +817,6 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
         else timeBuckets['20s+']++;
     });
 
-    const responseTotal = correctCount + incorrectCount;
-
     // Sort answers by count (descending)
     const sortedAnswers = Object.entries(answerCounts)
         .sort((a, b) => b[1] - a[1]);
@@ -795,13 +824,15 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
     // Build answer distribution HTML
     const answerDistHtml = sortedAnswers.map(([answer, count]) => {
         const percentage = responseTotal > 0 ? ((count / responseTotal) * 100).toFixed(1) : '0.0';
-        const isCorrect = answer === correctLabel;
+        // A poll bar is neither correct nor incorrect — it gets neutral styling
+        const isCorrect = !isPoll && answer === correctLabel;
+        const barClass = isPoll ? 'neutral' : (isCorrect ? 'correct' : 'incorrect');
 
         return `
             <div class="answer-dist-row">
                 <div class="answer-text ${isCorrect ? 'correct' : ''}">${escapeHtml(answer.substring(0, 50))}${answer.length > 50 ? '...' : ''}</div>
                 <div class="answer-bar-container">
-                    <div class="answer-bar ${isCorrect ? 'correct' : 'incorrect'}" style="width: ${percentage}%;"></div>
+                    <div class="answer-bar ${barClass}" style="width: ${percentage}%;"></div>
                 </div>
                 <div class="answer-count">${count} (${percentage}%)</div>
             </div>
@@ -856,22 +887,31 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
                 </div>
 
                 <div class="drilldown-stats">
-                    <div class="drilldown-stat">
-                        <div class="stat-value ${questionAnalysis.successRate >= 60 ? 'good' : 'poor'}">${questionAnalysis.successRate.toFixed(1)}%</div>
-                        <div class="stat-label">${getTranslation('analytics_success_rate')}</div>
-                    </div>
+                    ${isPoll ? `
+                        <div class="drilldown-stat">
+                            <div class="stat-value">${responseTotal}</div>
+                            <div class="stat-label">${getTranslation('analytics_responses')}</div>
+                        </div>
+                    ` : `
+                        <div class="drilldown-stat">
+                            <div class="stat-value ${questionAnalysis.successRate >= 60 ? 'good' : 'poor'}">${questionAnalysis.successRate.toFixed(1)}%</div>
+                            <div class="stat-label">${getTranslation('analytics_success_rate')}</div>
+                        </div>
+                    `}
                     <div class="drilldown-stat">
                         <div class="stat-value">${questionAnalysis.averageTime.toFixed(1)}s</div>
                         <div class="stat-label">${getTranslation('analytics_avg_time')}</div>
                     </div>
-                    <div class="drilldown-stat">
-                        <div class="stat-value correct">${correctCount}</div>
-                        <div class="stat-label">${getTranslation('analytics_correct')}</div>
-                    </div>
-                    <div class="drilldown-stat">
-                        <div class="stat-value incorrect">${incorrectCount}</div>
-                        <div class="stat-label">${getTranslation('analytics_incorrect')}</div>
-                    </div>
+                    ${isPoll ? '' : `
+                        <div class="drilldown-stat">
+                            <div class="stat-value correct">${correctCount}</div>
+                            <div class="stat-label">${getTranslation('analytics_correct')}</div>
+                        </div>
+                        <div class="drilldown-stat">
+                            <div class="stat-value incorrect">${incorrectCount}</div>
+                            <div class="stat-label">${getTranslation('analytics_incorrect')}</div>
+                        </div>
+                    `}
                 </div>
 
                 <div class="drilldown-section">
@@ -890,12 +930,14 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
                     </div>
                 ` : ''}
 
-                <div class="drilldown-section">
-                    <h4>${getTranslation('analytics_common_wrong')}</h4>
-                    <div class="wrong-answers-list">
-                        ${wrongAnswersHtml}
+                ${isPoll ? '' : `
+                    <div class="drilldown-section">
+                        <h4>${getTranslation('analytics_common_wrong')}</h4>
+                        <div class="wrong-answers-list">
+                            ${wrongAnswersHtml}
+                        </div>
                     </div>
-                </div>
+                `}
 
                 ${questionAnalysis.problemFlags && questionAnalysis.problemFlags.length > 0 ? `
                     <div class="drilldown-section">
@@ -1121,6 +1163,8 @@ export function calculateConceptMastery(result) {
     result.questions.forEach((question, qIndex) => {
         const concepts = question.concepts || [];
         if (concepts.length === 0) return;
+        // Poll questions carry no verdict; mastery cannot be measured from them
+        if (question.isPoll === true) return;
 
         // Get performance data for this question
         let correct = 0;

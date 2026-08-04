@@ -180,10 +180,85 @@ describe('calculateQuestionAnalytics — response counting', () => {
     });
 });
 
+describe('poll questions in analytics', () => {
+    const POLL_QUESTION = {
+        questionNumber: 1,
+        text: 'Do you prefer morning classes?',
+        type: 'true-false',
+        isPoll: true,
+        difficulty: 'medium'
+    };
+
+    /** Everyone answered; half said true, half said false. Nobody is "wrong". */
+    const pollResult = {
+        questions: [POLL_QUESTION],
+        results: [
+            { name: 'Alice', answers: [{ answer: true, isCorrect: null, isPoll: true, points: 0, timeMs: 3000 }] },
+            { name: 'Bob', answers: [{ answer: false, isCorrect: null, isPoll: true, points: 0, timeMs: 4000 }] }
+        ]
+    };
+
+    test('a poll has no correct answer label', () => {
+        expect(resolveCorrectAnswerLabel(POLL_QUESTION)).toBe('poll_no_correct_answer');
+        // Never the "unknown" placeholder — that would read as missing data
+        expect(resolveCorrectAnswerLabel(POLL_QUESTION)).not.toBe('unknown');
+    });
+
+    test('nobody is counted correct, wrong, or struggling', () => {
+        const [analysis] = calculateQuestionAnalytics(pollResult);
+
+        expect(analysis.isPoll).toBe(true);
+        expect(analysis.totalResponses).toBe(2);
+        expect(analysis.correctResponses).toBe(0);
+        expect(analysis.strugglingPlayers).toEqual([]);
+        expect(analysis.commonWrongAnswers).toEqual({});
+    });
+
+    test('a poll is never flagged as a problematic question', () => {
+        // successRate is 0 for a poll; without the isPoll guard the "low success"
+        // rule would flag every poll as a class-wide knowledge gap.
+        const [analysis] = calculateQuestionAnalytics(pollResult);
+
+        expect(analysis.problemFlags).toEqual([]);
+        expect(analysis.isPotentiallyProblematic).toBe(false);
+    });
+
+    test('a poll is excluded from the quiz success-rate summary', () => {
+        const mixed = {
+            questions: [POLL_QUESTION, MC_QUESTION],
+            results: [
+                {
+                    name: 'Alice',
+                    answers: [
+                        { answer: true, isCorrect: null, isPoll: true, points: 0, timeMs: 3000 },
+                        ans(1, true) // correct on the graded question
+                    ]
+                }
+            ]
+        };
+
+        const analytics = calculateQuestionAnalytics(mixed);
+        const summary = getQuizSummaryStats(analytics);
+
+        // Only the graded question counts: 100%, not 50% averaged with the poll's 0
+        expect(summary.answeredQuestions).toBe(1);
+        expect(summary.avgSuccessRate).toBe(100);
+        expect(summary.hardestQuestion.number).toBe(2);
+        expect(summary.problematicCount).toBe(0);
+    });
+});
+
 describe('normalizeAnswerRecord', () => {
     test('reads the verdict recorded during the game', () => {
         const record = normalizeAnswerRecord(ans(1, true, 4000, 150));
-        expect(record).toEqual({ value: 1, isCorrect: true, points: 150, timeMs: 4000 });
+        expect(record).toEqual({ value: 1, isCorrect: true, isPoll: false, points: 150, timeMs: 4000 });
+    });
+
+    test('a poll response is flagged and carries no verdict', () => {
+        const record = normalizeAnswerRecord({ answer: true, isCorrect: null, isPoll: true, points: 0, timeMs: 3000 });
+        expect(record.isPoll).toBe(true);
+        expect(record.isCorrect).toBe(false); // normalized, but isPoll is what readers must branch on
+        expect(record.points).toBe(0);
     });
 
     test('an empty slot is not a response', () => {

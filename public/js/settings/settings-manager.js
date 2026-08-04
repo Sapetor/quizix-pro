@@ -323,6 +323,11 @@ export class SettingsManager {
         const soundManager = this._getSoundManager();
         if (!soundManager) return;
 
+        // While the host is force-muting this device the control is inert. The
+        // buttons are also disabled, so this is belt-and-braces against a
+        // programmatic click.
+        if (soundManager.isHostMuted?.()) return;
+
         if (soundManager.isSoundsEnabled()) {
             soundManager.mute();
         } else {
@@ -338,17 +343,28 @@ export class SettingsManager {
     updateSoundToggleButtons() {
         const soundManager = this._getSoundManager();
         const isEnabled = soundManager?.isSoundsEnabled() ?? true;
-        const tooltip = isEnabled ?
-            (translationManager.getTranslationSync('mute_sound') || 'Mute sound') :
-            (translationManager.getTranslationSync('unmute_sound') || 'Unmute sound');
+        const hostMuted = soundManager?.isHostMuted?.() ?? false;
 
-        // Desktop button — use data-icon-state to avoid destroying SVG children
-        const desktopBtn = dom.get('sound-toggle');
-        if (desktopBtn) {
-            desktopBtn.dataset.iconState = isEnabled ? 'on' : 'off';
-            desktopBtn.setAttribute('aria-pressed', isEnabled ? 'true' : 'false');
-            desktopBtn.title = tooltip;
+        let tooltip;
+        if (hostMuted) {
+            tooltip = translationManager.getTranslationSync('muted_by_host') || 'Muted by your teacher';
+        } else {
+            tooltip = isEnabled ?
+                (translationManager.getTranslationSync('mute_sound') || 'Mute sound') :
+                (translationManager.getTranslationSync('unmute_sound') || 'Unmute sound');
         }
+
+        // Every [data-sound-toggle] button (header ··· menu + player game screen).
+        // Uses data-icon-state so the inline SVG children are never destroyed.
+        document.querySelectorAll('[data-sound-toggle]').forEach(btn => {
+            btn.dataset.iconState = isEnabled ? 'on' : 'off';
+            btn.setAttribute('aria-pressed', isEnabled ? 'true' : 'false');
+            btn.setAttribute('aria-label', tooltip);
+            btn.title = tooltip;
+            // Host override wins: the student cannot unmute while it is on.
+            btn.disabled = hostMuted;
+            btn.classList.toggle('host-muted', hostMuted);
+        });
     }
 
     /**
@@ -523,15 +539,9 @@ export class SettingsManager {
             }
         });
 
-        // Sound toggle (desktop)
-        const soundToggleButtons = [
-            dom.get('sound-toggle')
-        ].filter(button => button !== null);
-
-        soundToggleButtons.forEach(soundToggle => {
-            if (soundToggle) {
-                soundToggle.addEventListener('click', () => this.toggleSound());
-            }
+        // Sound toggles: header ··· menu and the player game screen button
+        document.querySelectorAll('[data-sound-toggle]').forEach(soundToggle => {
+            soundToggle.addEventListener('click', () => this.toggleSound());
         });
 
         // Initial sound button state - reads from SoundManager (source of truth)

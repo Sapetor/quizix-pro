@@ -38,6 +38,11 @@ export class SoundManager {
         // Load persisted settings
         this.settings = this.loadSettings();
 
+        // Host "mute all students" override. Deliberately NOT part of `settings`
+        // and never written to localStorage: it is per-game-session state pushed
+        // by the server, and it must not overwrite the student's own preference.
+        this.hostMuted = false;
+
         // Bind methods for event listeners
         this._boundUnlockAudio = this.unlockAudio.bind(this);
 
@@ -61,10 +66,35 @@ export class SoundManager {
     }
 
     /**
-     * Check if sounds are enabled
+     * THE mute gate. Every audible path in this class terminates in either
+     * playAudioFile() (sample playback) or ensureAudioContext() (oscillator
+     * playback via playSound/playEnhancedSound), and both consult this method,
+     * so muting here silences everything — including notes already scheduled
+     * with setTimeout, which re-enter those primitives at fire time.
+     * Do not re-check the flag at call sites.
+     *
+     * Two independent layers are ANDed: the device owner's persisted preference
+     * and the host's mute-all override. Either one off means silence.
      */
     isSoundsEnabled() {
-        return this.settings.soundsEnabled;
+        return this.settings.soundsEnabled && !this.hostMuted;
+    }
+
+    /**
+     * Whether the host is currently forcing this device to be silent.
+     */
+    isHostMuted() {
+        return this.hostMuted;
+    }
+
+    /**
+     * Apply the host's mute-all override. Not persisted — a reload starts from
+     * the student's own preference and the server replays the current state on
+     * join/rejoin.
+     */
+    setHostMuted(muted) {
+        this.hostMuted = !!muted;
+        logger.debug(`Host mute override: ${this.hostMuted}`);
     }
 
     /**
@@ -341,7 +371,7 @@ export class SoundManager {
     }
 
     async playAudioFile(soundKey, volume = 0.1) {
-        if (!this.settings.soundsEnabled) return;
+        if (!this.isSoundsEnabled()) return;
 
         // Get random sound from pool, or fall back to legacy soundFiles
         const soundUrl = this.getRandomSoundFromPool(soundKey) || this.soundFiles[soundKey];
@@ -406,7 +436,7 @@ export class SoundManager {
      * Ensure AudioContext is ready before playing
      */
     ensureAudioContext() {
-        if (!this.settings.soundsEnabled) return false;
+        if (!this.isSoundsEnabled()) return false;
 
         if (!this.audioContext && this.audioContextClass) {
             try {
@@ -513,8 +543,6 @@ export class SoundManager {
      * @param {number} secondsRemaining - Seconds left on timer
      */
     playCountdownTick(secondsRemaining) {
-        if (!this.settings.soundsEnabled) return;
-
         // Only play for 5, 3, 2, 1 seconds
         if (![5, 3, 2, 1].includes(secondsRemaining)) return;
 
@@ -534,10 +562,10 @@ export class SoundManager {
         // Add urgency beeps for final second
         if (secondsRemaining === 1) {
             setTimeout(() => {
-                if (this.settings.soundsEnabled) this.playEnhancedSound(784, 0.1, 'sine', 0.15);
+                this.playEnhancedSound(784, 0.1, 'sine', 0.15);
             }, 200);
             setTimeout(() => {
-                if (this.settings.soundsEnabled) this.playEnhancedSound(880, 0.15, 'sine', 0.18);
+                this.playEnhancedSound(880, 0.15, 'sine', 0.18);
             }, 400);
         }
     }
@@ -546,12 +574,10 @@ export class SoundManager {
      * Play timer expired sound
      */
     playTimerExpired() {
-        if (!this.settings.soundsEnabled) return;
-
         // Descending buzzer-like sound
         this.playEnhancedSound(600, 0.2, 'square', 0.15);
         setTimeout(() => {
-            if (this.settings.soundsEnabled) this.playEnhancedSound(400, 0.3, 'square', 0.12);
+            this.playEnhancedSound(400, 0.3, 'square', 0.12);
         }, 150);
     }
 
@@ -563,8 +589,6 @@ export class SoundManager {
      * Play sound when a player joins the game
      */
     playPlayerJoinSound() {
-        if (!this.settings.soundsEnabled) return;
-
         logger.debug('🔊 Playing player join sound');
 
         // Pleasant ascending chime
@@ -576,7 +600,7 @@ export class SoundManager {
 
         joinNotes.forEach(note => {
             setTimeout(() => {
-                if (this.settings.soundsEnabled) this.playEnhancedSound(note.freq, note.duration, note.type, 0.12);
+                this.playEnhancedSound(note.freq, note.duration, note.type, 0.12);
             }, note.time * 1000);
         });
     }
@@ -585,14 +609,12 @@ export class SoundManager {
      * Play sound when a player leaves the game
      */
     playPlayerLeaveSound() {
-        if (!this.settings.soundsEnabled) return;
-
         logger.debug('🔊 Playing player leave sound');
 
         // Gentle descending tone
         this.playEnhancedSound(500, 0.15, 'sine', 0.08);
         setTimeout(() => {
-            if (this.settings.soundsEnabled) this.playEnhancedSound(400, 0.2, 'sine', 0.06);
+            this.playEnhancedSound(400, 0.2, 'sine', 0.06);
         }, 100);
     }
 
@@ -605,8 +627,6 @@ export class SoundManager {
      * @param {number} position - 1 for first, 2 for second, 3 for third
      */
     playLeaderboardPlacement(position) {
-        if (!this.settings.soundsEnabled) return;
-
         logger.debug(`🔊 Playing placement sound for position ${position}`);
 
         switch (position) {
@@ -638,13 +658,13 @@ export class SoundManager {
 
         melody.forEach(note => {
             setTimeout(() => {
-                if (this.settings.soundsEnabled) this.playEnhancedSound(note.freq, note.duration, 'triangle', 0.18);
+                this.playEnhancedSound(note.freq, note.duration, 'triangle', 0.18);
             }, note.time * 1000);
         });
 
         // Add bass accompaniment
         setTimeout(() => {
-            if (this.settings.soundsEnabled) this.playEnhancedSound(262, 0.6, 'sine', 0.1);
+            this.playEnhancedSound(262, 0.6, 'sine', 0.1);
         }, 200);
     }
 
@@ -659,7 +679,7 @@ export class SoundManager {
 
         melody.forEach(note => {
             setTimeout(() => {
-                if (this.settings.soundsEnabled) this.playEnhancedSound(note.freq, note.duration, 'triangle', 0.14);
+                this.playEnhancedSound(note.freq, note.duration, 'triangle', 0.14);
             }, note.time * 1000);
         });
     }
@@ -674,7 +694,7 @@ export class SoundManager {
 
         melody.forEach(note => {
             setTimeout(() => {
-                if (this.settings.soundsEnabled) this.playEnhancedSound(note.freq, note.duration, 'triangle', 0.12);
+                this.playEnhancedSound(note.freq, note.duration, 'triangle', 0.12);
             }, note.time * 1000);
         });
     }
@@ -697,7 +717,7 @@ export class SoundManager {
 
             notes.forEach(note => {
                 setTimeout(() => {
-                    if (this.settings.soundsEnabled) this.playEnhancedSound(note.freq, note.duration, 'triangle', 0.12);
+                    this.playEnhancedSound(note.freq, note.duration, 'triangle', 0.12);
                 }, note.time * 1000);
             });
         } catch (e) {
@@ -749,12 +769,12 @@ export class SoundManager {
 
         correctMelody.forEach(note => {
             setTimeout(() => {
-                if (this.settings.soundsEnabled) this.playEnhancedSound(note.freq, note.duration, note.type, 0.15);
+                this.playEnhancedSound(note.freq, note.duration, note.type, 0.15);
             }, note.time * 1000);
         });
 
         setTimeout(() => {
-            if (this.settings.soundsEnabled) this.playEnhancedSound(523, 0.6, 'triangle', 0.08);
+            this.playEnhancedSound(523, 0.6, 'triangle', 0.08);
         }, 100);
     }
 
@@ -767,7 +787,7 @@ export class SoundManager {
 
         incorrectTones.forEach(note => {
             setTimeout(() => {
-                if (this.settings.soundsEnabled) this.playEnhancedSound(note.freq, note.duration, note.type, 0.12);
+                this.playEnhancedSound(note.freq, note.duration, note.type, 0.12);
             }, note.time * 1000);
         });
     }
@@ -783,7 +803,7 @@ export class SoundManager {
 
         startMelody.forEach(note => {
             setTimeout(() => {
-                if (this.settings.soundsEnabled) this.playEnhancedSound(note.freq, note.duration, note.type, 0.15);
+                this.playEnhancedSound(note.freq, note.duration, note.type, 0.15);
             }, note.time * 1000);
         });
     }
@@ -809,18 +829,17 @@ export class SoundManager {
 
             fanfareNotes.forEach(note => {
                 setTimeout(() => {
-                    if (this.settings.soundsEnabled) this.playSound(note.freq, note.duration, 'triangle');
+                    this.playSound(note.freq, note.duration, 'triangle');
                 }, note.time * 1000);
             });
 
             setTimeout(() => {
-                if (!this.settings.soundsEnabled) return;
                 this.playSound(523, 1.5, 'sawtooth');
                 setTimeout(() => {
-                    if (this.settings.soundsEnabled) this.playSound(659, 1.0, 'sawtooth');
+                    this.playSound(659, 1.0, 'sawtooth');
                 }, 500);
                 setTimeout(() => {
-                    if (this.settings.soundsEnabled) this.playSound(784, 1.2, 'sawtooth');
+                    this.playSound(784, 1.2, 'sawtooth');
                 }, 1000);
             }, 1500);
 
@@ -837,7 +856,7 @@ export class SoundManager {
      * Check if sounds are enabled and audio is available
      */
     isEnabled() {
-        return this.settings.soundsEnabled && (this.audioContext !== null || this.audioContextClass !== null);
+        return this.isSoundsEnabled() && (this.audioContext !== null || this.audioContextClass !== null);
     }
 
     /**

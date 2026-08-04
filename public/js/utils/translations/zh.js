@@ -536,6 +536,10 @@ export default {
     sound: '声音',
     mute_sound: '静音',
     unmute_sound: '取消静音',
+    // Host "mute all students" control
+    mute_all_students: '静音所有学生',
+    unmute_all_students: '取消学生静音',
+    muted_by_host: '已被老师静音',
 
     // Onboarding tutorial (v2 - rewritten)
     onboarding_step1_title: '创建测验',
@@ -1513,6 +1517,10 @@ export default {
     concepts_max: '· 最多5个',
     correct_pill: '✓ 正确',
     mark_correct_pill: '标记',
+    poll_mode_label: '投票 — 没有正确答案',
+    poll_mode_hint: '学生选择"正确"或"错误"；不判定对错，也不计分。',
+    poll_answer_recorded: '回答已记录 — 感谢参与！',
+    poll_no_correct_answer: '投票 — 没有正确答案',
     image_label: '图片',
     image_drop_hint: '拖放或点击',
     explanation_hint: '回答后显示',
@@ -1549,5 +1557,5 @@ export default {
     consensus_of: '/',
     threshold: '阈值',
     unanimous: '100%（一致通过）',
-    ollama_server_url: 'Ollama 服务器:',
+    ollama_server_url: 'Ollama 服务器:'
 };

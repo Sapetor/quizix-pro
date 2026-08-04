@@ -220,6 +220,11 @@ function registerGameEvents(io, socket, options) {
                 hostSocketId: socket.id
             });
 
+            // game.reset() cleared the host mute override; players keep their socket
+            // connection across a rematch, so tell them explicitly rather than relying
+            // on a rejoin to resync it.
+            socket.to(`game-${game.pin}`).emit('players-muted', { muted: false });
+
             logger.info(`Game ${game.pin} reset for rematch by host`);
         } catch (error) {
             logger.error('Error in rematch-game handler:', error);

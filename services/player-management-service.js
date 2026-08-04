@@ -182,6 +182,10 @@ class PlayerManagementService {
             hostSessionId
         });
 
+        // Late joiners inherit the host's current mute-all state. Always sent (not
+        // only when muted) so a client whose in-memory override is stale gets reset.
+        socket.emit('players-muted', { muted: !!game.playersMuted });
+
         // Broadcast updated player list to all players in the game
         this._broadcastPlayerList(pin, game, io);
 
@@ -501,6 +505,9 @@ class PlayerManagementService {
             gamePin: pin
         });
 
+        // Resync the host mute-all override after a reconnect (see handlePlayerJoin).
+        socket.emit('players-muted', { muted: !!game.playersMuted });
+
         // Send current question/reveal data so the player can participate
         if (game.gameState === 'question') {
             const question = game.quiz.questions[game.currentQuestion];
@@ -557,6 +564,7 @@ class PlayerManagementService {
 
                 const playerAnswer = foundPlayer.answers[game.currentQuestion];
                 socket.emit('player-result', {
+                    isPoll: correctAnswerData.isPoll === true,
                     isCorrect: playerAnswer ? playerAnswer.isCorrect : false,
                     points: playerAnswer ? playerAnswer.points : 0,
                     totalScore: foundPlayer.score,

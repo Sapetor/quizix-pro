@@ -19,6 +19,8 @@ class ScoringService {
      * @param {number} params.doublePointsMultiplier - Power-up multiplier (1 or 2)
      * @param {number} params.questionTimeLimitMs - Question time limit in ms (for proportional decay)
      * @returns {Object} { points, isCorrect, breakdown, partialScore }
+     *                   `isCorrect` is `null` for poll questions — they have no correct
+     *                   answer, so the response is neither right nor wrong.
      */
     static calculateScore({
         answer,
@@ -30,6 +32,23 @@ class ScoringService {
         doublePointsMultiplier = 1,
         questionTimeLimitMs = 0
     }) {
+        // Poll questions have no correct answer: never graded, never scored.
+        // `isCorrect: null` (not `false`) so downstream readers can tell
+        // "ungraded" apart from "answered wrong".
+        if (ScoringService.isPollQuestion(question)) {
+            return {
+                points: 0,
+                isCorrect: null,
+                breakdown: {
+                    basePoints: 0,
+                    timeBonus: 0,
+                    difficultyMultiplier: 1,
+                    doublePointsMultiplier: 1
+                },
+                partialScore: null
+            };
+        }
+
         // Get correct answer key based on question type
         const correctAnswerKey = ScoringService.getCorrectAnswerKey(question, questionType);
 
@@ -152,6 +171,16 @@ class ScoringService {
         return customMultipliers?.[difficulty]
             ?? defaultMultipliers[difficulty]
             ?? 2; // Default fallback
+    }
+
+    /**
+     * Is this a poll question (no correct answer, no points)?
+     * Only true/false questions can be polls; the flag is absent on older quizzes.
+     * @param {Object} question - Question data
+     * @returns {boolean} True when the question is a poll
+     */
+    static isPollQuestion(question) {
+        return question?.isPoll === true;
     }
 
     /**

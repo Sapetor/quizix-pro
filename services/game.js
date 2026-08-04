@@ -65,6 +65,9 @@ class Game {
         // explicit false is an opt-out and must survive.
         this.manualAdvancement = quiz.manualAdvancement ?? true;
         this.powerUpsEnabled = quiz.powerUpsEnabled || false;
+        // Host override that silences game sounds on every PLAYER device.
+        // Per-game-session only — never persisted, and reset on rematch.
+        this.playersMuted = false;
         this.logger = logger;
         this.config = config;
         this.limits = limits || getLimits(); // Use injected limits or get from config
@@ -316,8 +319,10 @@ class Game {
         // Translate shuffled answer indices back to original indices
         const translatedAnswer = this.translateShuffledAnswer(playerId, answer, questionType);
 
-        // Get double points multiplier
-        const doublePointsMultiplier = this.getAndConsumeDoublePoints(playerId);
+        // Poll questions award nothing, so consuming the power-up here would
+        // burn it for no benefit — leave it banked for a scored question.
+        const isPoll = question.isPoll === true;
+        const doublePointsMultiplier = isPoll ? 1 : this.getAndConsumeDoublePoints(playerId);
 
         // Resolve question time limit in ms
         const questionTimeSec = question.timeLimit || question.time
@@ -348,6 +353,12 @@ class Game {
         // Add partialScore for ordering questions (enables "partially correct" feedback)
         if (scoringResult.partialScore !== null) {
             answerData.partialScore = scoringResult.partialScore;
+        }
+
+        // Mark ungraded poll responses so saved results and analytics can exclude
+        // them from accuracy without having to look the question up again.
+        if (isPoll) {
+            answerData.isPoll = true;
         }
 
         player.answers[this.currentQuestion] = answerData;
@@ -741,6 +752,7 @@ class Game {
                     correctAnswer: q.correctAnswer,
                     correctAnswers: q.correctAnswers,
                     correctOrder: q.correctOrder,
+                    isPoll: q.isPoll === true,
                     difficulty: q.difficulty || 'medium',
                     timeLimit: q.timeLimit || q.time,
                     concepts: q.concepts || []
@@ -772,6 +784,8 @@ class Game {
         this.quiz.questions.forEach((question, qIndex) => {
             const concepts = question.concepts || [];
             if (concepts.length === 0) return;
+            // Poll questions carry no verdict — counting them would drag mastery down
+            if (question.isPoll === true) return;
 
             const answer = player.answers[qIndex];
             const isCorrect = answer?.isCorrect || false;
@@ -858,6 +872,7 @@ class Game {
         this.endTime = null;
         this.answerMappings.clear();
         this.resultsSaved = false;
+        this.playersMuted = false;
 
         // Reset each player's score and answers but keep them in the game
         this.players.forEach((player) => {

@@ -3,11 +3,14 @@
  * theme/sound icon state. All DOM-optional (no-ops if nodes absent).
  */
 
+import { translationManager } from '../utils/translation-manager.js';
+
 const EDITOR_BREADCRUMB_TITLE = 'editor-breadcrumb-title';
 const QUIZ_TITLE_INPUT = 'quiz-title';
 const OVERFLOW_TOGGLE = 'utility-overflow-toggle';
 const THEME_TOGGLE = 'theme-toggle';
 const SOUND_TOGGLE = 'sound-toggle';
+const MUTE_STUDENTS_BTN_SELECTOR = '.mute-students-btn';
 
 function el(id) {
   return document.getElementById(id);
@@ -43,6 +46,46 @@ export function setSoundIconState(state) {
   const btn = el(SOUND_TOGGLE);
   if (!btn) return;
   btn.dataset.iconState = state;  // 'on' | 'off'
+}
+
+/**
+ * Render the host's "mute all students" toggles. There are two instances —
+ * one in the header live-game cluster, one next to End Round on the host game
+ * screen (the header is off-screen during questions) — kept in lockstep here.
+ *
+ * Only the label span's text is rewritten — the two inline SVGs are siblings and
+ * are swapped by data-icon-state, so they are never destroyed. The label keeps a
+ * data-translate attribute so a language switch re-renders the correct string.
+ *
+ * @param {boolean} muted - whether players are currently force-muted
+ */
+export function setMuteStudentsState(muted) {
+  const key = muted ? 'unmute_all_students' : 'mute_all_students';
+  const fallback = muted ? 'Unmute students' : 'Mute students';
+  const text = translationManager.getTranslationSync(key) || fallback;
+
+  document.querySelectorAll(MUTE_STUDENTS_BTN_SELECTOR).forEach(btn => {
+    btn.dataset.iconState = muted ? 'off' : 'on';
+    btn.setAttribute('aria-pressed', muted ? 'true' : 'false');
+    btn.setAttribute('data-translate-title', key);
+    btn.setAttribute('data-translate-aria-label', key);
+    btn.setAttribute('aria-label', text);
+    btn.title = text;
+
+    const label = btn.querySelector('.mute-students-btn-label');
+    if (label) {
+      label.setAttribute('data-translate', key);
+      label.textContent = text;
+    }
+  });
+}
+
+/**
+ * Whether the host toggle currently reads as "players muted".
+ */
+export function isMuteStudentsActive() {
+  const btn = document.querySelector(MUTE_STUDENTS_BTN_SELECTOR);
+  return btn?.getAttribute('aria-pressed') === 'true';
 }
 
 export function openOverflowMenu() {

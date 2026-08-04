@@ -25,7 +25,7 @@ import { getItem, setItem, getJSON, setJSON } from '../utils/storage-utils.js';
 import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
 import { openModal, closeModal, createModalBindings } from '../utils/modal-utils.js';
-import { initHeaderController, syncEditorBreadcrumbTitle } from '../ui/header-controller.js';
+import { initHeaderController, syncEditorBreadcrumbTitle, setMuteStudentsState, isMuteStudentsActive } from '../ui/header-controller.js';
 import { initEventBindings } from './event-bindings.js';
 // Results viewer will be lazy loaded when needed
 
@@ -464,6 +464,8 @@ export class QuizGame {
         bindElement('stop-quiz-btn', 'click', () => this.stopQuiz());
         bindElement('back-to-home-btn', 'click', () => this.backToHomeFromGame());
         bindElement('end-round-btn', 'click', () => this.forceEndQuestion());
+        bindElement('mute-students-btn', 'click', () => this.toggleMuteStudents());
+        bindElement('game-mute-students-btn', 'click', () => this.toggleMuteStudents());
 
         // Auto-save setup
         bindElement('quiz-title', 'input', () => {
@@ -846,6 +848,22 @@ export class QuizGame {
             btn.setAttribute('data-translate', 'waiting_for_results');
             btn.textContent = translationManager.getTranslationSync('waiting_for_results');
         }
+    }
+
+    /**
+     * Toggle "mute all students" (host only). Silences game sounds on every
+     * connected PLAYER device; this device is unaffected and keeps using the
+     * header sound toggle.
+     */
+    toggleMuteStudents() {
+        if (!this.socketManager?.socket) return;
+
+        const muted = !isMuteStudentsActive();
+        this.socketManager.socket.emit('set-players-muted', { muted });
+        // The server excludes the sender from the broadcast, so the host gets no
+        // echo — render optimistically. Server state is authoritative for players
+        // and is replayed to them on join/rejoin.
+        setMuteStudentsState(muted);
     }
 
     /**

@@ -552,6 +552,28 @@ body.has-editor-toolbar .app-header .conn { display: none; }
 }
 .app-header .live-game-controls .btn.hidden { display: none; }
 
+/* Mute-all-students toggle: icon + label, icon swapped by data-icon-state so the
+   inline SVG children survive every state change (see .iconbtn rules above). */
+.app-header .live-game-controls .mute-students-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.mute-students-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.mute-students-btn[data-icon-state="on"] .icon-sound-on { display: block; }
+.mute-students-btn[data-icon-state="on"] .icon-sound-off { display: none; }
+.mute-students-btn[data-icon-state="off"] .icon-sound-on { display: none; }
+.mute-students-btn[data-icon-state="off"] .icon-sound-off { display: block; }
+/* Muted is the "active" state — make it read as engaged, not just toggled. */
+.app-header .live-game-controls .mute-students-btn[aria-pressed="true"] {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
 /* Visibility orchestration: in-host-game state */
 body.in-host-game .app-header .conn,
 body.in-host-game .app-header .editor-breadcrumb,

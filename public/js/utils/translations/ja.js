@@ -541,6 +541,10 @@ export default {
     sound: '音声',
     mute_sound: '音声をミュート',
     unmute_sound: '音声をミュート解除',
+    // Host "mute all students" control
+    mute_all_students: '生徒をミュート',
+    unmute_all_students: '生徒のミュートを解除',
+    muted_by_host: '先生によりミュートされています',
 
     // Onboarding tutorial (v2 - rewritten)
     onboarding_step1_title: 'クイズを作成',
@@ -1514,6 +1518,10 @@ export default {
     concepts_max: '· 最大5',
     correct_pill: '✓ 正解',
     mark_correct_pill: '選択',
+    poll_mode_label: 'アンケート — 正解なし',
+    poll_mode_hint: '受講者は「正しい」か「誤り」を選びます。正解・不正解の判定はなく、得点も付きません。',
+    poll_answer_recorded: '回答を記録しました — ご参加ありがとうございます！',
+    poll_no_correct_answer: 'アンケート — 正解なし',
     image_label: '画像',
     image_drop_hint: 'ドラッグまたはクリック',
     explanation_hint: '回答後に表示',
@@ -1550,5 +1558,5 @@ export default {
     consensus_of: '/',
     threshold: 'しきい値',
     unanimous: '100%（全員一致）',
-    ollama_server_url: 'Ollamaサーバー:',
+    ollama_server_url: 'Ollamaサーバー:'
 };

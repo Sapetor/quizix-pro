@@ -449,6 +449,24 @@ export class GameManager {
             const earnedPoints = data.points || 0;
             const explanation = data.explanation || null;
             const partialScore = data.partialScore; // For ordering questions with partial credit
+            const isPoll = data.isPoll === true;
+
+            // Poll: the response was recorded, but there is no verdict to give.
+            // No score, no right/wrong styling, no result sound.
+            if (isPoll) {
+                const displayDurationPoll = explanation ? 0 : TIMING.RESULT_DISPLAY_DURATION;
+                modalFeedback.showNeutral(
+                    getTranslation('poll_answer_recorded'),
+                    displayDurationPoll,
+                    explanation
+                );
+                this.showPlayerAnswerInModal(gameState);
+                // Badge the player's own choice without any right/wrong styling
+                setTimeout(() => {
+                    this.answerRevealManager.showCorrectAnswerOnClient(null, data.questionType || data.type, true);
+                }, 500);
+                return;
+            }
 
             // Determine if this is a partial correct (ordering question with some but not all correct)
             const isPartiallyCorrect = !isCorrect && partialScore !== undefined && partialScore > 0;
@@ -481,12 +499,7 @@ export class GameManager {
             }
 
             // Show the player's submitted answer inside the modal
-            const playerAnswers = this.stateManager.getPlayerAnswers();
-            const storedAnswer = playerAnswers.get(gameState.playerName);
-            if (storedAnswer !== undefined) {
-                const answerText = this.answerRevealManager.formatAnswerForDisplay(storedAnswer);
-                modalFeedback.setPlayerAnswer(answerText);
-            }
+            this.showPlayerAnswerInModal(gameState);
 
             // Show correct answer to ALL players (not just wrong ones) after a short delay
             if (data.correctAnswer !== undefined || data.correctAnswers !== undefined) {
@@ -523,6 +536,16 @@ export class GameManager {
             logger.error('Failed to show player result, using fallback modal');
             modalFeedback.show(false, 'Error displaying result', null, 2000);
         });
+    }
+
+    /**
+     * Show the player's own submitted answer inside the feedback modal.
+     * @param {Object} gameState - Current game state (needs playerName)
+     */
+    showPlayerAnswerInModal(gameState) {
+        const storedAnswer = this.stateManager.getPlayerAnswers().get(gameState.playerName);
+        if (storedAnswer === undefined) return;
+        modalFeedback.setPlayerAnswer(this.answerRevealManager.formatAnswerForDisplay(storedAnswer));
     }
 
     // ==================== ANSWER REVEAL METHODS (delegated to AnswerRevealManager) ====================
@@ -641,6 +664,9 @@ export class GameManager {
         if (existingNumericAnswer) {
             existingNumericAnswer.remove();
         }
+
+        // Clear the poll notice from a previous poll question
+        document.querySelector('.poll-result-notice')?.remove();
 
         logger.debug('🧹 Cleaned game elements for fresh rendering');
     }
@@ -765,7 +791,11 @@ export class GameManager {
 
         const questionType = data.questionType || data.type;
 
-        if (questionType === 'numeric') {
+        if (data.isPoll === true) {
+            // Poll: nothing is correct, so nothing gets highlighted. The response
+            // distribution shown by StatisticsManager is the whole result.
+            this.showPollResultNotice();
+        } else if (questionType === 'numeric') {
             // Show numeric answer in options container (original style)
             this.showNumericCorrectAnswer(data.correctAnswer, data.tolerance);
         } else {
@@ -777,6 +807,22 @@ export class GameManager {
         if (data.explanation) {
             this.showExplanation(data.explanation);
         }
+    }
+
+    /**
+     * Tell the host audience that this question had no correct answer, so the
+     * absence of a highlighted tile reads as "poll" rather than "reveal failed".
+     */
+    showPollResultNotice() {
+        document.querySelector('.poll-result-notice')?.remove();
+
+        const questionDisplay = dom.get('host-question-display');
+        if (!questionDisplay) return;
+
+        const notice = document.createElement('div');
+        notice.className = 'poll-result-notice';
+        notice.textContent = getTranslation('poll_no_correct_answer') || 'Poll — no correct answer';
+        questionDisplay.appendChild(notice);
     }
 
     /**
@@ -1381,7 +1427,7 @@ export class GameManager {
         }
 
         // Remove any lingering dynamic elements from previous game
-        document.querySelectorAll('.correct-answer-display, .numeric-correct-answer-display, .question-explanation-display').forEach(el => el.remove());
+        document.querySelectorAll('.correct-answer-display, .numeric-correct-answer-display, .question-explanation-display, .poll-result-notice').forEach(el => el.remove());
 
         logger.debug('🧹 Cleared all game display content');
     }

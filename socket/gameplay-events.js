@@ -94,6 +94,25 @@ function registerGameplayEvents(io, socket, options) {
         }
     });
 
+    // Host mutes/unmutes game sounds on every PLAYER device.
+    // socket.to() excludes the sender, so the host's own device keeps using its
+    // header sound toggle and is never affected by this control.
+    socket.on('set-players-muted', (data) => {
+        if (!checkRateLimit(socket.id, 'set-players-muted', 3, socket)) return;
+        try {
+            const game = gameSessionService.findGameByHost(socket.id);
+            if (!game) return;
+
+            const muted = data?.muted === true;
+            game.playersMuted = muted;
+            socket.to(`game-${game.pin}`).emit('players-muted', { muted });
+
+            logger.info(`Host ${muted ? 'muted' : 'unmuted'} all players in game ${game.pin}`);
+        } catch (error) {
+            logger.error('Error in set-players-muted handler:', error);
+        }
+    });
+
     socket.on('next-question', () => {
         if (!checkRateLimit(socket.id, 'next-question', 5, socket)) return;
         try {

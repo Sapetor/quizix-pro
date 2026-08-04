@@ -3,6 +3,8 @@
  * Handles search filtering, sorting, date formatting, and score calculations
  */
 
+import { countGradedAnswers } from './answer-format.js';
+
 /**
  * Calculate average score for a result based on correct answer percentage
  * Uses correct answers instead of raw scores to avoid inflation from
@@ -26,11 +28,9 @@ export function calculateAverageScore(result) {
     let totalQuestions = 0;
 
     result.results.forEach(player => {
-        const answers = player.answers || [];
-        const playerQuestions = answers.length;
-        const playerCorrect = answers.filter(a => a?.isCorrect).length;
-        totalCorrect += playerCorrect;
-        totalQuestions += playerQuestions;
+        const { graded, correct } = countGradedAnswers(player.answers);
+        totalCorrect += correct;
+        totalQuestions += graded;
     });
 
     return totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;

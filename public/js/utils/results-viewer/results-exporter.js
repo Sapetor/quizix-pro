@@ -8,6 +8,7 @@ import { resultsManagerService } from '../../services/results-manager-service.js
 import { getTranslation, showErrorAlert, showSuccessAlert } from '../translation-manager.js';
 import { createFormatSelectionModal } from './results-renderer.js';
 import { calculateQuestionAnalytics, getQuizSummaryStats } from './results-analytics.js';
+import { countGradedAnswers } from './answer-format.js';
 
 // jsPDF CDN URL for lazy loading
 const JSPDF_CDN_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
@@ -457,8 +458,7 @@ export class ResultsExporter {
                 const playerHeaders = [getTranslation('export_rank_label'), getTranslation('export_player_label'), getTranslation('export_score_label'), getTranslation('export_correct_answers'), getTranslation('export_total_questions'), getTranslation('export_success_rate_label'), getTranslation('export_completed_at')];
                 const sortedPlayers = [...resultData.results].sort((a, b) => (b.score || 0) - (a.score || 0));
                 const playerRows = sortedPlayers.map((player, idx) => {
-                    const totalQ = player.answers?.length || 0;
-                    const correctQ = player.answers?.filter(a => a?.isCorrect).length || 0;
+                    const { graded: totalQ, correct: correctQ } = countGradedAnswers(player.answers);
                     const rate = totalQ > 0 ? ((correctQ / totalQ) * 100).toFixed(1) : '0';
                     return [
                         idx + 1,

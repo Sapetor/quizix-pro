@@ -176,6 +176,15 @@
     color: white;
 }
 
+/* Poll: there is no correct answer, so there is no rate to colour-code.
+   Distinguished from .unanswered by FORM (solid outline vs dashed). */
+.success-rate.poll {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
 /* No responses at all: a verdict colour would imply a result there isn't one */
 .success-rate.unanswered {
     background: transparent;
@@ -761,6 +770,11 @@
 
 .answer-bar.incorrect {
     background: var(--danger-color);
+}
+
+/* Poll distribution: no bar is right or wrong, so none of them get a verdict hue */
+.answer-bar.neutral {
+    background: var(--info-color);
 }
 
 .answer-count {
