@@ -151,7 +151,12 @@ async function waitForPlayerCount(page, count, timeout = 15000) {
             const list = document.querySelector('#players-list');
             if (!list) return false;
             // Count player items (divs with player names, not empty)
-            const items = list.querySelectorAll('.player-item, .player-card, [class*="player"]');
+            // `:not(.placeholder)` is required: the empty-state chip is a
+            // .player-item too. The `[class*="player"]` catch-all also matched
+            // the .player-avatar/.player-name children inside each chip and so
+            // counted 3 per player, letting this resolve after a single player
+            // had joined. Same fix as visual-regression.spec.js.
+            const items = list.querySelectorAll('.player-item:not(.placeholder), .player-card');
             return items.length >= expected;
         },
         count,

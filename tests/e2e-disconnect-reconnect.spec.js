@@ -107,7 +107,12 @@ async function waitForPlayerCount(page, count, timeout = 15000) {
         (expected) => {
             const list = document.querySelector('#players-list');
             if (!list) return false;
-            const items = list.querySelectorAll('.player-item, .player-card, [class*="player"]');
+            // `:not(.placeholder)` is required: the empty-state chip is a
+            // .player-item too. The `[class*="player"]` catch-all also matched
+            // the .player-avatar/.player-name children inside each chip and so
+            // counted 3 per player, letting this resolve after a single player
+            // had joined. Same fix as visual-regression.spec.js.
+            const items = list.querySelectorAll('.player-item:not(.placeholder), .player-card');
             return items.length >= expected;
         },
         count,
@@ -139,10 +144,25 @@ async function waitForQuestionEnd(page, timeout = 25000) {
     }, null, { timeout });
 }
 
-/** Save reconnection data from a player page */
-async function getReconnectData(page) {
+/**
+ * Save reconnection data from a player page.
+ *
+ * sessionStorage, not localStorage — socket-manager.js writes and reads the
+ * blob there. Reading the wrong store returned null unconditionally.
+ * It lands on the `player-joined` event, which can trail the lobby
+ * transition, so poll rather than read once.
+ */
+async function getReconnectData(page, timeout = 10000) {
+    await page.waitForFunction(() => {
+        const raw = sessionStorage.getItem('quizix_reconnect');
+        if (!raw) return false;
+        try {
+            return !!JSON.parse(raw).sessionToken;
+        } catch { return false; }
+    }, null, { timeout });
+
     return page.evaluate(() => {
-        const raw = localStorage.getItem('quizix_reconnect');
+        const raw = sessionStorage.getItem('quizix_reconnect');
         return raw ? JSON.parse(raw) : null;
     });
 }
@@ -157,7 +177,7 @@ async function reconnectPlayer(browser, device, reconnectData) {
     await page.waitForFunction(() => window.game?.socket?.connected === true, { timeout: 15000 });
 
     await page.evaluate((data) => {
-        localStorage.setItem('quizix_reconnect', JSON.stringify(data));
+        sessionStorage.setItem('quizix_reconnect', JSON.stringify(data));
         window.game.socket.emit('player-rejoin', {
             pin: data.pin,
             sessionToken: data.sessionToken,
