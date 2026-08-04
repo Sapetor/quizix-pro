@@ -19,6 +19,9 @@ const ALL_TYPES_QUIZ = {
         title: 'All Question Types E2E',
         randomizeAnswers: false, // CRITICAL for predictable assertions
         powerUpsEnabled: false,
+        // Manual advancement is the default; this spec is not about advancement,
+        // so opt out and let the timer carry the game through.
+        manualAdvancement: false,
         questions: [
             // Q1: Multiple Choice
             {
@@ -70,6 +73,9 @@ const EDGE_CASE_QUIZ = {
         title: 'Edge Cases E2E',
         randomizeAnswers: false,
         powerUpsEnabled: false,
+        // Manual advancement is the default; this spec is not about advancement,
+        // so opt out and let the timer carry the game through.
+        manualAdvancement: false,
         questions: [
             // Q1: Numeric — tolerance boundary
             {
@@ -128,7 +134,8 @@ async function createContext(browser, device) {
     options.storageState = {
         cookies: [],
         origins: [{
-            origin: 'http://localhost:3000',
+            // localStorage is per-origin: a hardcoded 3000 makes the seed a no-op under PW_PORT.
+            origin: `http://localhost:${process.env.PW_PORT || 3000}`,
             localStorage: [
                 { name: 'language', value: 'en' },
                 { name: 'quiz_onboarding_complete', value: JSON.stringify({ completed: true, version: 3 }) },

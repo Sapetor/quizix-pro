@@ -1176,7 +1176,7 @@ export class QuizGame {
 
             setChecked('qs-randomize-questions', get('randomizeQuestions', 'randomizeQuestions', false));
             setChecked('qs-randomize-answers', get('randomizeAnswers', 'randomizeAnswers', false));
-            setChecked('qs-manual-advancement', get('manualAdvance', 'manualAdvancement', false));
+            setChecked('qs-manual-advancement', get('manualAdvance', 'manualAdvancement', true));
             setChecked('qs-enable-power-ups', get('powerUpsEnabled', 'powerUpsEnabled', false));
 
             const useGlobal = get('useGlobalTime', 'sameTimeForAll', false);
@@ -1272,7 +1272,7 @@ export class QuizGame {
         return {
             randomizeQuestions: dom.get('qs-randomize-questions')?.checked ?? false,
             randomizeAnswers: dom.get('qs-randomize-answers')?.checked ?? false,
-            manualAdvancement: dom.get('qs-manual-advancement')?.checked ?? false,
+            manualAdvancement: dom.get('qs-manual-advancement')?.checked ?? true,
             sameTimeForAll: dom.get('qs-use-global-time')?.checked ?? false,
             questionTime: parseInt(dom.get('qs-global-time')?.value) || 20,
             powerUpsEnabled: dom.get('qs-enable-power-ups')?.checked ?? false,

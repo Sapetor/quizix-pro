@@ -65,7 +65,9 @@ async function createContext(browser, device) {
     options.storageState = {
         cookies: [],
         origins: [{
-            origin: 'http://localhost:3000',
+            // localStorage is per-origin: hardcoding 3000 made the seed a no-op
+            // under PW_PORT, so the onboarding tour reappeared and swallowed clicks.
+            origin: `http://localhost:${process.env.PW_PORT || 3000}`,
             localStorage: [
                 { name: 'language', value: 'en' },
                 { name: 'quiz_onboarding_complete', value: JSON.stringify({ completed: true, version: 3 }) },
@@ -268,10 +270,15 @@ test.describe('E2E Game Flow', () => {
                     // Non-fatal: some UI flows show feedback differently
                 });
 
-                // Wait for auto-advance to complete before next iteration
-                // Server sends: question-end → show-leaderboard (3s) → question-start
+                // Manual advancement is the default, so the game now parks on
+                // the statistics phase until the host clicks through. The last
+                // click reads "Finish Quiz" and ends the game.
+                const nextBtn = hostPage.locator('#next-question-stats');
+                await expect(nextBtn).toBeVisible({ timeout: 20000 });
+                await nextBtn.click();
+
                 if (q < 2) {
-                    // Wait for the leaderboard phase to pass and next question to arrive
+                    // Host click → show-leaderboard (3s) → question-start
                     await p1Page.waitForFunction(
                         (nextQ) => {
                             const el = document.querySelector('#player-question-counter');

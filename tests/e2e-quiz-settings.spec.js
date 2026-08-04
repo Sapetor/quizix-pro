@@ -22,7 +22,8 @@ async function createContext(browser) {
     options.storageState = {
         cookies: [],
         origins: [{
-            origin: 'http://localhost:3000',
+            // localStorage is per-origin: a hardcoded 3000 makes the seed a no-op under PW_PORT.
+            origin: `http://localhost:${process.env.PW_PORT || 3000}`,
             localStorage: [
                 { name: 'language', value: 'en' },
                 { name: 'quiz_onboarding_complete', value: JSON.stringify({ completed: true, version: 3 }) },
@@ -234,17 +235,19 @@ test.describe('Quiz Settings — Advanced Options', () => {
     test('Manual advancement toggle works', async () => {
         await openSettings(page);
 
+        // Manual advancement ships on. The interesting direction is now the
+        // opt-out: unchecking it must survive a modal round-trip.
         const checkbox = page.locator('#modal-manual-advancement');
-        await expect(checkbox).not.toBeChecked();
-
-        await checkbox.check();
-        await expect(checkbox).toBeChecked();
-
-        await closeSettings(page);
-        await openSettings(page);
         await expect(checkbox).toBeChecked();
 
         await checkbox.uncheck();
+        await expect(checkbox).not.toBeChecked();
+
+        await closeSettings(page);
+        await openSettings(page);
+        await expect(checkbox).not.toBeChecked();
+
+        await checkbox.check();
         await closeSettings(page);
     });
 

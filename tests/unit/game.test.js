@@ -105,6 +105,17 @@ describe('Game — construction & initial state', () => {
         expect(game.consensusConfig).toEqual({ threshold: 80, discussionTime: 45, allowChat: true });
     });
 
+    // Manual advancement is the default: a quiz that expresses no preference
+    // pauses after every question and waits for the host. Only an explicit
+    // `false` opts back into timer-based auto-advance.
+    test('defaults manualAdvancement to true when the quiz omits it', () => {
+        expect(makeGame().manualAdvancement).toBe(true);
+    });
+
+    test('an explicit manualAdvancement:false opts out of the default', () => {
+        expect(makeGame({ manualAdvancement: false }).manualAdvancement).toBe(false);
+    });
+
     test('defaults consensus threshold to 66 when unspecified', () => {
         const game = makeGame({ consensusMode: true });
         expect(game.consensusConfig.threshold).toBe(66);

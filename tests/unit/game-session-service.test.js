@@ -458,6 +458,26 @@ describe('GameSessionService — advanceToNextQuestion', () => {
         expect(startQuestion).toHaveBeenCalled();
         expect(game.isAdvancing).toBe(false);
     });
+
+    // The default path: a quiz that says nothing about advancement must stop
+    // and hand control to the host, never run on to the next question.
+    test('a quiz with no stated preference waits for the host instead of advancing', () => {
+        const io = makeIo();
+        const game = svc.createGame('host-1', sampleQuiz());
+        const startQuestion = jest.spyOn(svc, 'startQuestion').mockImplementation(() => {});
+
+        svc.advanceToNextQuestion(game, io);
+        jest.advanceTimersByTime(ANSWER_REVEAL_MS);
+
+        expect(io.to).toHaveBeenCalledWith('host-1');
+        expect(io.emit).toHaveBeenCalledWith('show-next-button', { isLastQuestion: false });
+        expect(io.emit).not.toHaveBeenCalledWith('show-leaderboard', expect.anything());
+
+        // No amount of waiting may start the next question on its own.
+        jest.advanceTimersByTime(CONFIG.TIMING.LEADERBOARD_DISPLAY_TIME * 10);
+        expect(startQuestion).not.toHaveBeenCalled();
+        expect(game.isAdvancing).toBe(false);
+    });
 });
 
 describe('GameSessionService — endGame', () => {

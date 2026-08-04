@@ -19,7 +19,7 @@ export function collectSettings() {
         randomizeAnswers: dom.get('randomize-answers')?.checked ?? false,
         useGlobalTime: dom.get('same-time-all')?.checked ?? false,
         globalTimeLimit: parseInt(dom.get('default-time')?.value) || 20,
-        manualAdvance: dom.get('manual-advancement')?.checked ?? false,
+        manualAdvance: dom.get('manual-advancement')?.checked ?? true,
         consensusMode: dom.get('consensus-mode')?.checked ?? false,
         consensusThreshold: dom.get('consensus-threshold')?.value ?? '66',
         discussionTime: parseInt(dom.get('discussion-time')?.value) || 30,
@@ -43,7 +43,10 @@ export function restoreSettings(settings) {
     setChecked('randomize-answers', settings.randomizeAnswers);
     setChecked('same-time-all', settings.useGlobalTime);
     setValue('default-time', settings.globalTimeLimit ?? 20);
-    setChecked('manual-advancement', settings.manualAdvance);
+    // Quizzes saved before manual advancement became the default carry no
+    // `manualAdvance` key; they inherit the default rather than being
+    // silently switched to auto-advance.
+    setChecked('manual-advancement', settings.manualAdvance ?? true);
     setChecked('consensus-mode', settings.consensusMode);
     setValue('consensus-threshold', settings.consensusThreshold ?? '66');
     setValue('discussion-time', settings.discussionTime ?? 30);

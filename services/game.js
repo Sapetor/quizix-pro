@@ -60,7 +60,10 @@ class Game {
         this.startTime = null;
         this.endTime = null;
         this.createdAt = Date.now(); // Track game creation time for cleanup
-        this.manualAdvancement = quiz.manualAdvancement || false;
+        // Manual advancement is the default: without a stated preference the
+        // game pauses after each question for the host. `??` not `||` — an
+        // explicit false is an opt-out and must survive.
+        this.manualAdvancement = quiz.manualAdvancement ?? true;
         this.powerUpsEnabled = quiz.powerUpsEnabled || false;
         this.logger = logger;
         this.config = config;
