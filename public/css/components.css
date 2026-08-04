@@ -4146,6 +4146,57 @@ html {
     /* Changed from hidden to allow full content display */
 }
 
+/* Reorder controls. These are the primary affordance on a phone: touch drag is
+   not attached there (ordering-drag-drop.js), because dragging has to swallow
+   every touchmove and that makes a long list unscrollable.
+   The universal mobile rule in responsive.css raises these to the 44px floor. */
+.ordering-move-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.ordering-move-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 30px;
+    padding: 0;
+    background: var(--glass-medium);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: calc(0.75rem * var(--global-font-scale));
+    line-height: 1;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.ordering-move-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.ordering-move-btn:not(:disabled):active {
+    background: var(--glass-strong);
+    border-color: var(--color-primary-400);
+}
+
+.ordering-move-btn:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+}
+
+[data-theme="light"] .ordering-move-btn {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #1e293b;
+}
+
 .ordering-display-item::before {
     content: '';
     position: absolute;
@@ -4156,21 +4207,28 @@ html {
     background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.05), transparent);
     opacity: 0;
     transition: opacity 0.3s ease;
+    /* Decorative only. It is positioned and therefore paints over the in-flow
+       children, and a pseudo-element hit test resolves to its originating
+       element — without this the move buttons never receive the click. */
+    pointer-events: none;
 }
 
-.ordering-display-item:hover::before {
-    opacity: 1;
-}
+/* Hover-only: on a touchscreen these stick after a tap. */
+@media (hover: hover) {
+    .ordering-display-item:hover::before {
+        opacity: 1;
+    }
 
-.ordering-display-item:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    border-color: var(--color-primary-400);
-}
+    .ordering-display-item:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        border-color: var(--color-primary-400);
+    }
 
-.ordering-display-item:active {
-    cursor: grabbing;
-    transform: scale(0.98);
+    .ordering-display-item:active {
+        cursor: grabbing;
+        transform: scale(0.98);
+    }
 }
 
 .ordering-display-item.dragging {
@@ -4227,6 +4285,10 @@ html {
 
 .ordering-item-content {
     flex: 1;
+    /* A flex item's min-width is auto, so a long unbroken token would push the
+       move controls off the card instead of wrapping. */
+    min-width: 0;
+    overflow-wrap: anywhere;
     font-size: 16px;
     line-height: 1.5;
     color: var(--text-primary);
@@ -4282,6 +4344,17 @@ html {
         font-size: 15px;
     }
 
+    /* The 44px floor on the buttons comes from the universal rule in
+       responsive.css; only the width has to be widened to match it. */
+    .ordering-move-controls {
+        gap: 8px;
+    }
+
+    .ordering-move-btn {
+        width: var(--button-min-height);
+        font-size: calc(0.8rem * var(--global-font-scale));
+    }
+
     .ordering-handle {
         font-size: 14px;
         padding: 2px 4px;
@@ -4297,6 +4370,14 @@ html {
         max-width: 100%;
         padding: 12px 24px;
         font-size: 15px;
+    }
+}
+
+/* Phone gate — byte-identical to isPhone() in dom.js and mobile-gate.css.
+   Touch drag is not attached there, so do not advertise a grab cursor. */
+@media (pointer: coarse) and (max-width: 768px) {
+    .ordering-display-item {
+        cursor: default;
     }
 }
 
@@ -4401,6 +4482,16 @@ html {
         transform: translateY(0);
         opacity: 1;
     }
+}
+
+/* renderPlayerOptions puts three blocks in here — instruction, list, submit —
+   and the JS visibility contract sets `visible-flex` (display: flex), which
+   laid them out in a ROW: measured 151px for the list inside a 320px container
+   on a 390px phone. They belong stacked. */
+.ordering-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
 }
 
 /* Ordering question instruction for players */

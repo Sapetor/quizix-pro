@@ -856,10 +856,18 @@ const QUESTION_TYPES = {
                 const safeOption = escapeHtmlPreservingLatex(option || '');
                 const bgColor = itemColors[originalIndex % itemColors.length];
                 // FOUC Prevention: Add tex2jax_process class in HTML template
+                // Move buttons are the reorder path that works on every pointer;
+                // drag is a desktop convenience on top (see ordering-drag-drop.js).
                 html += `
                     <div class="ordering-display-item" data-original-index="${originalIndex}" data-order-index="${displayIndex}" style="background: ${bgColor};">
                         <div class="ordering-item-number ed-mono">${displayIndex + 1}</div>
                         <div class="ordering-item-content tex2jax_process">${formatCodeBlocks(safeOption)}</div>
+                        <div class="ordering-move-controls">
+                            <button type="button" class="ordering-move-btn" data-move="up" draggable="false"
+                                aria-label="Move up" data-translate-aria-label="ordering_move_up">&#9650;</button>
+                            <button type="button" class="ordering-move-btn" data-move="down" draggable="false"
+                                aria-label="Move down" data-translate-aria-label="ordering_move_down">&#9660;</button>
+                        </div>
                     </div>
                 `;
             });

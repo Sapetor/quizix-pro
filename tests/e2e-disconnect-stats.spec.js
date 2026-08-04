@@ -158,10 +158,14 @@ test.describe('Disconnect Stats', () => {
             await p2Page.click('#player-multiple-choice .player-option[data-option="1"]');
             await p3Page.click('#player-multiple-choice .player-option[data-option="1"]');
 
-            // Wait for Q1 to end on host
+            // Wait for Q1 to end on host. `counting-only` must be absent:
+            // #answer-statistics is also shown during the question as a live
+            // response counter, so the class check alone fires mid-question.
             await hostPage.waitForFunction(() => {
                 const stats = document.querySelector('#answer-statistics');
-                return stats && !stats.classList.contains('hidden');
+                return stats
+                    && !stats.classList.contains('hidden')
+                    && !stats.classList.contains('counting-only');
             }, null, { timeout: 20000 });
 
             // Save Bob's reconnection data before disconnect
@@ -177,8 +181,15 @@ test.describe('Disconnect Stats', () => {
             // Let Q2 timer expire naturally (10s + transitions).
             // Game ends automatically after last question.
 
-            // Wait for final leaderboard on host
-            await waitForScreen(hostPage, 'leaderboard-screen', 60000);
+            // Wait for the FINAL leaderboard on host. `leaderboard-screen` is
+            // also shown between questions, so waiting on it alone resolves one
+            // question early and the player assertions below then time out
+            // while the game is still running. #final-results is un-hidden
+            // only by showHostFinalResults().
+            await hostPage.waitForFunction(() => {
+                const el = document.querySelector('#final-results');
+                return el && !el.classList.contains('hidden');
+            }, null, { timeout: 60000 });
 
             // --- ASSERT 1: Bob appears in host leaderboard despite being disconnected ---
             const leaderboardText = await hostPage.locator('#leaderboard-list').textContent();

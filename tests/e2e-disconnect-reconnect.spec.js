@@ -136,11 +136,36 @@ async function waitForQuestion(page, questionNumber, timeout = 30000) {
     );
 }
 
-/** Wait for host to show answer statistics (question ended) */
+/**
+ * Wait for host to show answer statistics (question ended).
+ *
+ * `#answer-statistics` is ALSO shown during the question in `counting-only`
+ * mode (live response counter, statistics-manager.js); the class is only
+ * removed when the round ends and the real distribution arrives. Without the
+ * `counting-only` check this resolves the instant the first answer lands — and
+ * once the panel is up it never re-hides, so every later call returns
+ * immediately and the whole spec runs a question ahead of the game. Same trap
+ * already fixed in tests/e2e/visual-regression.spec.js.
+ */
 async function waitForQuestionEnd(page, timeout = 25000) {
     await page.waitForFunction(() => {
         const stats = document.querySelector('#answer-statistics');
-        return stats && !stats.classList.contains('hidden');
+        return stats
+            && !stats.classList.contains('hidden')
+            && !stats.classList.contains('counting-only');
+    }, null, { timeout });
+}
+
+/**
+ * Wait for the host's FINAL results (game over), not the between-question
+ * leaderboard: `leaderboard-screen` is shown after every question, so waiting
+ * on it alone returns one question early. `#final-results` is un-hidden only
+ * by showHostFinalResults().
+ */
+async function waitForHostFinalResults(page, timeout = 60000) {
+    await page.waitForFunction(() => {
+        const el = document.querySelector('#final-results');
+        return el && !el.classList.contains('hidden');
     }, null, { timeout });
 }
 
@@ -592,8 +617,9 @@ test.describe('Disconnect & Reconnect E2E', () => {
             // Bob disconnects
             await p2Page.evaluate(() => window.game.socket.disconnect());
 
-            // Wait for game to finish
-            await waitForScreen(hostPage, 'leaderboard-screen', 60000);
+            // Wait for the game to actually finish (not the between-question
+            // leaderboard), otherwise Bob rejoins a game still in progress.
+            await waitForHostFinalResults(hostPage);
 
             // Bob reconnects to finished game
             const { ctx: bobCtx, page: bobPage } = await reconnectPlayer(browser, DEVICE_GALAXY, bobData);

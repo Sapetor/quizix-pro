@@ -3298,18 +3298,24 @@
 
 /* Immersive Game Mode - Hide non-essential UI during active gameplay */
 .game-state-playing {
-    /* SOLUTION: Remove header from document flow entirely during gameplay */
+    /* Header stays visible through gameplay so the host can reach #stop-quiz-btn
+       ("End game") at any point. It used to be pulled out of flow here
+       (position:absolute; top:-100px), which made that button unreachable for the
+       whole game — see the note at app-screens.css "The header copy is
+       unreachable while game-state-playing hides the header." Mirrors the
+       .game-state-lobby treatment below. The mobile counterpart is the
+       display:none list in the @media (max-width: 768px) block further down,
+       which no longer names `header` either. */
     header {
-        position: absolute !important;
-        top: -100px !important; /* Move completely out of view */
-        left: 0;
-        right: 0;
-        opacity: 0;
-        pointer-events: none;
-        z-index: -1; /* Ensure it's behind everything */
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: all;
         transition: all 0.3s ease-in-out;
     }
-    
+
     /* Hide horizontal toolbar during gameplay */
     .horizontal-toolbar {
         transform: translateY(-100%);
@@ -3342,11 +3348,16 @@
 
 /* Game State: Host transition (before playing state) - Identical to playing state */
 .game-state-transition-host {
-    /* Remove header from document flow entirely during transition */
+    /* Header kept visible here too, matching the playing state above — otherwise
+       it would flash out during the host transition and back in on question-start. */
     header {
-        display: none !important; /* Completely remove header like in playing state */
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        opacity: 1;
+        pointer-events: all;
     }
-    
+
     /* Hide horizontal toolbar during transition */
     .horizontal-toolbar {
         display: none !important;
@@ -3604,7 +3615,17 @@
         
         /* 🎯 ULTRATHINK SMART SOLUTION: Content-aware mobile layout */
 
-        /* Hide interfering elements during mobile gameplay (but NOT feedback modal!) */
+        /* Hide interfering elements during mobile gameplay (but NOT feedback modal!)
+           NOTE: `.container.game-state-playing` is what actually produces mobile
+           immersive mode — <header> lives inside .container (index.html:437-438)
+           while #host-game-screen / #player-game-screen are siblings OUTSIDE it,
+           so hiding .container drops all chrome and leaves the game screen. The
+           `.game-state-playing header` entry below is therefore redundant with its
+           own parent, and `.game-state-playing .host-game-container` (further down)
+           matches nothing at all for the same reason.
+           Phones stay immersive on purpose: #stop-quiz-btn is a HOST control and
+           host-screen is gated off phones (docs/MOBILE_JOIN_ONLY.md), so restoring
+           the header here would cost viewport with no reachable function. */
         .container.game-state-playing,
         .game-state-playing header,
         .game-state-playing .horizontal-toolbar,

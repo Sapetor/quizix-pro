@@ -80,27 +80,28 @@ resolves `quiz.manualAdvancement ?? true`; the three checkboxes ship `checked`;
 `restoreSettings` and the Quick Start loader default to `true`). An explicit
 `false` remains an opt-out. What follows was found but deliberately not fixed.
 
-- [ ] **Players never reach `#player-final-screen` at game end.** Two
-  independent reproductions, both red on `main` before that session and
-  unrelated to advancement:
-  `tests/e2e-disconnect-stats.spec.js` → "Disconnected player stats preserved
-  in final leaderboard", and `tests/e2e-disconnect-reconnect.spec.js` →
-  "reconnect to finished game — receives correct final score". The second only
-  became reachable once the helper bugs below were fixed.
-  The host side is fine — the final leaderboard renders with every player
-  including the disconnected one, so the feature under test works; only the
-  *player* screen transition is missing.
-  Traced so far, no smoking gun: `GameSessionService.endGame` emits `game-end`
-  per player socket id, skipping only `player.disconnected`; the client
-  `game-end` handler in `socket-manager.js` calls `showFinalResults`
-  unconditionally; `LeaderboardManager.showPlayerFinalScreen` has no early
-  return. The two remaining suspects are the `fanfarePlayed` latch at the top
-  of `LeaderboardManager.showFinalResults` (it returns early, *before* the
-  screen switch, if it ever fired once) and whether `io.to(playerId)` still
-  resolves for those sockets. Next step is an instrumented run that records
-  whether the connected player's socket actually receives `game-end` — a
-  `socket.onAny` recorder on the player page is enough to split
-  "never delivered" from "delivered but swallowed".
+- [x] ~~**Players never reach `#player-final-screen` at game end.**~~ RESOLVED
+  2026-08-04: **not a product bug.** An instrumented run (`socket.onAny`
+  recorder plus wrappers on `showScreen`/`showFinalResults`, fresh server on a
+  free port) showed the connected player *does* receive `game-end`, that
+  `fanfarePlayed` was `false` when it arrived, and that the switch to
+  `player-final-screen` fired normally. Both named suspects — the
+  `fanfarePlayed` latch and `io.to(playerId)` resolution — are ruled out by
+  those traces.
+  The two specs were mis-synchronized and timed out while the game was still
+  running, from two bad wait predicates:
+  - `waitForQuestionEnd` keyed on `#answer-statistics` not being `.hidden`, but
+    that panel is *also* shown mid-question in **`counting-only`** mode as the
+    live response counter (`statistics-manager.js:50-55`), so it resolved on
+    the first answer. The identical trap was already fixed in
+    `tests/e2e/visual-regression.spec.js:237-255`; the `e2e-disconnect-*` specs
+    never got it.
+  - "Wait for the game to finish" used `waitForScreen('leaderboard-screen')`,
+    which the host shows after *every* question, so it resolved at the Q1→Q2
+    interlude. In the reconnect spec that meant rejoining a still-live game.
+  Fixed in `tests/e2e-disconnect-reconnect.spec.js` (predicate tightened, plus
+  a new `waitForHostFinalResults` on `#final-results:not(.hidden)`) and
+  `tests/e2e-disconnect-stats.spec.js`. Tests only; no product code changed.
 
 - [ ] **Duplicate keys in every locale file.** Object literals silently keep
   the last definition, so one of each pair is dead code. `en/fr/it/pt` have 2
@@ -134,6 +135,13 @@ resolves `quiz.manualAdvancement ?? true`; the three checkboxes ship `checked`;
   `http://localhost:3000`, so under `PW_PORT` the seed was a no-op, the 8-step
   onboarding tour reappeared, and its overlay swallowed host clicks. Now
   `http://localhost:${process.env.PW_PORT || 3000}`.
+- **`#answer-statistics` is NOT an end-of-question signal.** In `counting-only`
+  mode it doubles as the live response counter during the question
+  (`statistics-manager.js:50-55`), so "wait until it is not `.hidden`" resolves
+  on the first submitted answer. Any such wait must also require
+  `!classList.contains('counting-only')`. Likewise `leaderboard-screen` is shown
+  after *every* question, so it cannot mean "the game is over" — wait on
+  `#final-results:not(.hidden)` instead. Both cost a full session already.
 - **Reconnect data lives in `sessionStorage`**, not `localStorage`
   (`socket-manager.js`). It is written on the `player-joined` event, which can
   trail the lobby transition — poll for it rather than reading once.

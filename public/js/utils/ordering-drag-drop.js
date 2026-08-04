@@ -1,10 +1,17 @@
 /**
  * Ordering Drag-and-Drop Utility
- * Handles drag-and-drop functionality for ordering questions
- * Supports both desktop (mouse) and mobile (touch) interactions
+ * Handles reordering for ordering questions.
+ *
+ * Two input paths, deliberately not the same on every device:
+ *   - mouse drag (HTML5 drag events) everywhere,
+ *   - per-item up/down buttons everywhere.
+ * Touch drag is attached only when the primary pointer is NOT a phone's:
+ * it has to preventDefault() every touchmove to drag, which makes a list
+ * taller than the viewport unscrollable. Phones reorder with the buttons.
  */
 
 import { logger } from '../core/config.js';
+import { isPhone } from './dom.js';
 
 export class OrderingDragDrop {
     static SWAP_ANIMATION_MS = 300;
@@ -39,11 +46,18 @@ export class OrderingDragDrop {
         if (!this.options.enabled) return;
 
         this.setupDragAndDrop();
+        this.container.addEventListener('click', this.handleMoveClick.bind(this));
+        this.updateMoveButtons();
         logger.debug('OrderingDragDrop initialized');
+    }
+
+    getItems() {
+        return Array.from(this.container.querySelectorAll(this.options.itemSelector));
     }
 
     setupDragAndDrop() {
         const items = this.container.querySelectorAll(this.options.itemSelector);
+        const touchDragEnabled = !isPhone();
 
         items.forEach((item, index) => {
             // Set draggable attribute
@@ -58,11 +72,39 @@ export class OrderingDragDrop {
             item.addEventListener('dragenter', this.handleDragEnter.bind(this));
             item.addEventListener('dragleave', this.handleDragLeave.bind(this));
 
-            // Mobile touch events
-            item.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
-            item.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
-            item.addEventListener('touchend', this.handleTouchEnd.bind(this));
+            // Touch drag: everything except phones (see the file header)
+            if (touchDragEnabled) {
+                item.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
+                item.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+                item.addEventListener('touchend', this.handleTouchEnd.bind(this));
+            }
         });
+    }
+
+    /**
+     * Up/down buttons — the reorder path that always works, on any pointer.
+     */
+    handleMoveClick(e) {
+        const button = e.target.closest('.ordering-move-btn');
+        if (!button) return;
+
+        const item = button.closest(this.options.itemSelector);
+        if (!item) return;
+
+        const items = this.getItems();
+        const from = items.indexOf(item);
+        const to = button.dataset.move === 'up' ? from - 1 : from + 1;
+
+        if (from < 0 || to < 0 || to >= items.length) return;
+
+        this.swapItems(from, to);
+
+        // Keep the keyboard on the item the user just moved; the pressed
+        // button is disabled when the item lands on a boundary.
+        const focusTarget = button.disabled
+            ? item.querySelector('.ordering-move-btn:not([disabled])')
+            : button;
+        focusTarget?.focus();
     }
 
     // Desktop drag handlers
@@ -196,7 +238,7 @@ export class OrderingDragDrop {
     swapItems(fromIndex, toIndex) {
         logger.debug(`Swapping items: ${fromIndex} <-> ${toIndex}`);
 
-        const items = Array.from(this.container.querySelectorAll(this.options.itemSelector));
+        const items = this.getItems();
 
         if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 ||
             fromIndex >= items.length || toIndex >= items.length) {
@@ -218,9 +260,11 @@ export class OrderingDragDrop {
             toItem.parentNode.insertBefore(fromItem, toItem);
         }
 
-        // Update indices and position numbers (reuse cached items list)
-        this.updateIndices(items);
-        this.updatePositionNumbers(items);
+        // Re-read the DOM: `items` is the pre-move order and renumbering from
+        // it desynchronises the badges and data-order-index from the list.
+        this.updateIndices();
+        this.updatePositionNumbers();
+        this.updateMoveButtons();
 
         // Remove animation classes after animation completes
         setTimeout(() => {
@@ -235,20 +279,31 @@ export class OrderingDragDrop {
         }
     }
 
-    updateIndices(items) {
-        items ??= this.container.querySelectorAll(this.options.itemSelector);
-        items.forEach((item, index) => {
+    updateIndices() {
+        this.getItems().forEach((item, index) => {
             item.dataset.orderIndex = index;
         });
     }
 
-    updatePositionNumbers(items) {
-        items ??= this.container.querySelectorAll(this.options.itemSelector);
-        items.forEach((item, index) => {
+    updatePositionNumbers() {
+        this.getItems().forEach((item, index) => {
             const numberEl = item.querySelector('.ordering-item-number');
             if (numberEl) {
                 numberEl.textContent = index + 1;
             }
+        });
+    }
+
+    /**
+     * Grey out the moves that would fall off the ends of the list.
+     */
+    updateMoveButtons() {
+        const items = this.getItems();
+        items.forEach((item, index) => {
+            const up = item.querySelector('.ordering-move-btn[data-move="up"]');
+            const down = item.querySelector('.ordering-move-btn[data-move="down"]');
+            if (up) up.disabled = index === 0;
+            if (down) down.disabled = index === items.length - 1;
         });
     }
 
@@ -263,63 +318,4 @@ export class OrderingDragDrop {
         });
     }
 
-    setOrder(indices) {
-        const items = Array.from(this.container.querySelectorAll(this.options.itemSelector));
-        const fragment = document.createDocumentFragment();
-
-        indices.forEach(index => {
-            if (index >= 0 && index < items.length) {
-                fragment.appendChild(items[index]);
-            }
-        });
-
-        this.container.innerHTML = '';
-        this.container.appendChild(fragment);
-        this.updateIndices();
-        this.setupDragAndDrop(); // Re-attach event listeners
-    }
-
-    shuffleOrder() {
-        const items = Array.from(this.container.querySelectorAll(this.options.itemSelector));
-        const indices = items.map((_, i) => i);
-
-        // Fisher-Yates shuffle
-        for (let i = indices.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [indices[i], indices[j]] = [indices[j], indices[i]];
-        }
-
-        this.setOrder(indices);
-
-        logger.debug('Order shuffled:', indices);
-    }
-
-    disable() {
-        this.options.enabled = false;
-        const items = this.container.querySelectorAll(this.options.itemSelector);
-        items.forEach(item => {
-            item.setAttribute('draggable', 'false');
-            item.style.cursor = 'default';
-        });
-    }
-
-    enable() {
-        this.options.enabled = true;
-        const items = this.container.querySelectorAll(this.options.itemSelector);
-        items.forEach(item => {
-            item.setAttribute('draggable', 'true');
-            item.style.cursor = 'grab';
-        });
-    }
-
-    destroy() {
-        const items = this.container.querySelectorAll(this.options.itemSelector);
-        items.forEach(item => {
-            // Remove all event listeners by cloning the node
-            const newItem = item.cloneNode(true);
-            item.parentNode.replaceChild(newItem, item);
-        });
-
-        logger.debug('OrderingDragDrop destroyed');
-    }
 }

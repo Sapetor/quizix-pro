@@ -423,9 +423,10 @@ export class SocketManager {
                 this.gameManager.timer = null;
             }
 
-            // Hide host-only buttons between questions
-            const stopBtnTimeout = this._getElement('stop-quiz-btn');
-            if (stopBtnTimeout) hide(stopBtnTimeout);
+            // Hide End Round between questions — there is no round to end.
+            // #stop-quiz-btn deliberately stays visible: ending the quiz early is
+            // most wanted exactly here, on the results/leaderboard screen where
+            // manual advancement parks the host. It is re-hidden on 'game-end'.
             const endRoundTimeout = this._getElement('end-round-container');
             if (endRoundTimeout) hide(endRoundTimeout);
 
