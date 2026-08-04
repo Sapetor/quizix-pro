@@ -96,11 +96,15 @@
 
 /* Mobile and Small Tablet (768px and below) */
 @media (max-width: 768px) {
-    /* Hide desktop header controls on mobile */
-    .language-selector,
-    #fullscreen-toggle,
-    #theme-toggle,
-    #sound-toggle {
+    /* Hide desktop header controls on mobile.
+       #fullscreen-toggle / #theme-toggle / #sound-toggle are NOT listed here:
+       they are the contents of the ··· overflow menu (#app-header-utilities),
+       and pinning them display:none !important made the menu open empty on
+       phones — the theme toggle became unreachable below 768px while it worked
+       fine at 800px. Their hidden-when-closed state is already handled by
+       `.app-header .app-header-utilities { display: none }` (header.css, the
+       <=899px collapse), so the container rule is the single source of truth. */
+    .language-selector {
         display: none !important;
     }
     

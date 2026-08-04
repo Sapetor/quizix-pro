@@ -1537,4 +1537,17 @@ export default {
     val_option_empty_helper: '创建房间前请填写或删除该选项',
     editor_saving: '保存中…',
     editor_saved: '已保存',
+
+    // 游戏设置、团队讨论与共识
+    game_settings: '游戏设置',
+    same_time_for_all: '所有题目统一时间',
+    rematch: '再来一局',
+    team_discussion: '团队讨论',
+    discussion_activity: '讨论动态',
+    current_proposals: '当前提议',
+    allow_free_chat: '允许自由聊天（适用于可信群组）',
+    consensus_of: '/',
+    threshold: '阈值',
+    unanimous: '100%（一致通过）',
+    ollama_server_url: 'Ollama 服务器:',
 };

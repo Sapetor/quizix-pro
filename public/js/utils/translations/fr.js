@@ -1545,4 +1545,17 @@ export default {
     val_option_empty_helper: 'Écrivez l’option ou supprimez-la avant de créer la salle',
     editor_saving: 'Enregistrement…',
     editor_saved: 'Enregistré',
+
+    // Paramètres du jeu, discussion d'équipe et consensus
+    game_settings: 'Paramètres du Jeu',
+    same_time_for_all: 'Même Temps pour Tous',
+    rematch: 'Revanche',
+    team_discussion: "Discussion d'Équipe",
+    discussion_activity: 'Activité de la Discussion',
+    current_proposals: 'Propositions Actuelles',
+    allow_free_chat: 'Autoriser le chat libre (pour les groupes de confiance)',
+    consensus_of: 'sur',
+    threshold: 'seuil',
+    unanimous: '100% (Unanimité)',
+    ollama_server_url: 'Serveur Ollama :',
 };

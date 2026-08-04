@@ -64,6 +64,9 @@ export class SimpleResultsDownloader {
         try {
             // Clear existing options except the first placeholder
             dropdown.innerHTML = '<option value="" data-translate="select_results">Select results to download...</option>';
+            // The markup above is the English fallback; the page-wide translation
+            // pass already ran, so this rebuild has to translate itself.
+            translationManager.translateContainer(dropdown);
 
             // Fetch available results using the service
             logger.debug('📊 Fetching results via service...');
@@ -111,6 +114,7 @@ export class SimpleResultsDownloader {
             dropdown.appendChild(placeholder);
         } else {
             dropdown.innerHTML = '<option value="" data-translate="select_results">Select results to download...</option>';
+            translationManager.translateContainer(dropdown);
         }
 
         if (results.length === 0) {

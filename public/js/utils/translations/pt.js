@@ -1527,4 +1527,17 @@ export default {
     val_option_empty_helper: 'Escreve a opção ou remove-a antes de criar a sala',
     editor_saving: 'A guardar…',
     editor_saved: 'Guardado',
+
+    // Definições de jogo, discussão em equipa e consenso
+    game_settings: 'Definições do Jogo',
+    same_time_for_all: 'Mesmo Tempo para Todos',
+    rematch: 'Revanche',
+    team_discussion: 'Discussão em Equipa',
+    discussion_activity: 'Atividade da Discussão',
+    current_proposals: 'Propostas Atuais',
+    allow_free_chat: 'Permitir conversa livre (para grupos de confiança)',
+    consensus_of: 'de',
+    threshold: 'limiar',
+    unanimous: '100% (Unânime)',
+    ollama_server_url: 'Servidor Ollama:',
 };

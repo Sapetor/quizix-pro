@@ -1551,4 +1551,18 @@ export default {
     val_option_empty_helper: 'Write the option or remove it before creating the room',
     editor_saving: 'Saving…',
     editor_saved: 'Saved',
+
+    // Game settings, team discussion and consensus (were missing: the markup
+    // fallbacks meant every locale rendered these in English)
+    game_settings: 'Game Settings',
+    same_time_for_all: 'Same Time for All',
+    rematch: 'Rematch',
+    team_discussion: 'Team Discussion',
+    discussion_activity: 'Discussion Activity',
+    current_proposals: 'Current Proposals',
+    allow_free_chat: 'Allow free-form chat (for trusted groups)',
+    consensus_of: 'of',
+    threshold: 'threshold',
+    unanimous: '100% (Unanimous)',
+    ollama_server_url: 'Ollama Server:',
 };

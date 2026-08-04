@@ -1540,4 +1540,17 @@ export default {
     val_option_empty_helper: 'Fülle die Option aus oder entferne sie, bevor der Raum erstellt wird',
     editor_saving: 'Speichern…',
     editor_saved: 'Gespeichert',
+
+    // Spieleinstellungen, Teamdiskussion und Konsens
+    game_settings: 'Spieleinstellungen',
+    same_time_for_all: 'Gleiche Zeit für Alle',
+    rematch: 'Revanche',
+    team_discussion: 'Teamdiskussion',
+    discussion_activity: 'Diskussionsaktivität',
+    current_proposals: 'Aktuelle Vorschläge',
+    allow_free_chat: 'Freien Chat erlauben (für vertrauenswürdige Gruppen)',
+    consensus_of: 'von',
+    threshold: 'Schwelle',
+    unanimous: '100% (Einstimmig)',
+    ollama_server_url: 'Ollama-Server:',
 };
