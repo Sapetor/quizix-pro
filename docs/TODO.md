@@ -14,6 +14,38 @@ editor design pass, mobile selects, upload-GC dotfile guard, theme-drift
 gotcha (now docs/GOTCHAS.md #17). Items below are the residue plus new
 findings from that sweep._
 
+## From the 2026-08-04 header/rematch/console session
+
+- [ ] **`gamePin` is missing from `GameStateManager.getGameState()`** — but
+  `socket-manager.js:146` gates the whole `disconnect` handler on
+  `gameState.gamePin`, which is therefore always `undefined`. Consequence: host
+  reconnect data is **never** stored in `sessionStorage`, and the player
+  reconnection overlay is never shown. Affects every game, not just rematches;
+  pre-existing and unrelated to this session's work. Likely means the reconnect
+  feature is dead in practice — confirm against
+  `tests/e2e-disconnect-reconnect.spec.js`, which passes and so presumably
+  exercises a different path.
+- [ ] **`#answer-options` carries both `visible-block` and `hidden`** during a
+  rematch — the GOTCHAS #6 conflict, where both classes use `!important`.
+  Observed, not yet traced to the writer.
+- [ ] **Visual baselines are stale and may pass silently.**
+  `desktop-*-question-host-*.png` predate both the always-visible header
+  (fde3559) and the removal of `#game-mute-students-btn`. The mute-button delta
+  alone is ~0.6% of a 1280x720 viewport, under the spec's
+  `maxDiffPixelRatio: 0.02`, so the gate can go green on a stale baseline.
+  Regenerate wholesale with `PW_PORT=3210` (GOTCHAS #17).
+- [ ] **Mute-students label reportedly blanks after a rematch — NOT
+  reproduced.** Four real rematch flows (auto-advance, mute-on-before-rematch,
+  End Round forced, manual-advancement) with a `MutationObserver` on the button
+  subtree showed the label always non-empty and `svgs=2` on every mutation.
+  `setMuteStudentsState` (`ui/header-controller.js:62-81`) only ever writes
+  `label.textContent = getTranslationSync(key) || fallback`, and
+  `getTranslationSync` returns `''` only for a falsy key — so that path cannot
+  blank it. To close this, need: the host's language at the time, whether the
+  button was blank vs. showing the raw key `mute_all_students`, and whether the
+  page had been hard-refreshed since 45c757b (which added the label span — a
+  stale service-worker `index.html` would explain it).
+
 ## Polish / small fixes
 
 - [ ] **Add an `ending_round` translation key** (all 9 language files) and use

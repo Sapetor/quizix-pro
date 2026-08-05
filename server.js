@@ -259,6 +259,14 @@ app.use(helmet({
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://cdn.socket.io'],
             scriptSrcAttr: ["'unsafe-inline'"],
+            // canvas-confetti builds its animation worker from an inline Blob, i.e.
+            // `new Worker(URL.createObjectURL(new Blob([code])))`, so worker-src must
+            // allow blob:. Without this directive workers fall back to script-src,
+            // which (correctly) has no blob: — the worker is blocked and every
+            // celebration logs a CSP violation. Declared here rather than adding
+            // blob: to script-src so blob: stays confined to workers and can never
+            // be used to inject a <script src="blob:...">.
+            workerSrc: ["'self'", 'blob:'],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net'],
             imgSrc: ["'self'", 'data:', 'blob:'],

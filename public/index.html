@@ -13,12 +13,19 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=148">
+    <link rel="stylesheet" href="css/main.bundle.css?v=149">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=148" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/core/app.js?v=148" as="script" crossorigin="anonymous">
-    <link rel="preload" href="js/utils/translation-manager.js?v=148" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=149" as="script" crossorigin="anonymous">
+    <!-- app.js and translation-manager.js are never requested by the document; main.js
+         imports them as ES modules. A preload only matches if the URL is identical, and
+         the import specifiers carry no ?v= query — so a versioned `as="script"` preload
+         downloads them a second time and Chrome warns "preloaded but not used".
+         modulepreload + the exact query-less URL is what the module graph actually fetches.
+         Keep them query-less: scripts/cache-bust.js only stamps `rel="preload" ... as="script"`
+         and the server only rewrites `?v=<digits>`, so neither touches these. -->
+    <link rel="modulepreload" href="js/core/app.js">
+    <link rel="modulepreload" href="js/utils/translation-manager.js">
 
     <!-- Optimized font loading for mobile performance -->
     <!-- Font stack: Space Grotesk for display, Inter for body, JetBrains Mono for
@@ -2726,29 +2733,6 @@
                     <span id="disconnected-indicator" class="disconnected-indicator hidden"></span>
                 </div>
                 <div id="end-round-container" class="end-round-container hidden">
-                    <!-- Second instance of the host mute-all toggle: the header copy is
-                         off-screen during questions (game-state-playing hides the header),
-                         so this one keeps the control reachable mid-question. State is
-                         synced across all .mute-students-btn by header-controller. -->
-                    <button id="game-mute-students-btn" class="btn btn-sm mute-students-btn"
-                            data-icon-state="on" aria-pressed="false"
-                            data-translate-title="mute_all_students"
-                            aria-label="Mute all students"
-                            data-translate-aria-label="mute_all_students">
-                        <svg class="icon-sound-on" aria-hidden="true" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                            <path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"></path>
-                        </svg>
-                        <svg class="icon-sound-off" aria-hidden="true" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                            <line x1="22" y1="9" x2="16" y2="15"></line>
-                            <line x1="16" y1="9" x2="22" y2="15"></line>
-                        </svg>
-                        <span class="mute-students-btn-label"
-                              data-translate="mute_all_students">Mute students</span>
-                    </button>
                     <button id="end-round-btn" class="btn danger btn-sm" data-translate="end_round">End Round</button>
                 </div>
                 <!-- Score Breakdown (host-only display) -->
@@ -3816,10 +3800,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=148"></script>
-    <script type="module" src="js/landing.js?v=148"></script>
-    <script type="module" src="js/landing-demo.js?v=148"></script>
-    <script type="module" src="js/landing-ai.js?v=148"></script>
+    <script type="module" src="js/main.js?v=149"></script>
+    <script type="module" src="js/landing.js?v=149"></script>
+    <script type="module" src="js/landing-demo.js?v=149"></script>
+    <script type="module" src="js/landing-ai.js?v=149"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

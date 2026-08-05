@@ -465,7 +465,6 @@ export class QuizGame {
         bindElement('back-to-home-btn', 'click', () => this.backToHomeFromGame());
         bindElement('end-round-btn', 'click', () => this.forceEndQuestion());
         bindElement('mute-students-btn', 'click', () => this.toggleMuteStudents());
-        bindElement('game-mute-students-btn', 'click', () => this.toggleMuteStudents());
 
         // Auto-save setup
         bindElement('quiz-title', 'input', () => {

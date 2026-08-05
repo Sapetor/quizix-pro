@@ -1186,35 +1186,6 @@
     gap: 8px;
     padding: 0 56px 8px;
 }
-/* In-question copy of the mute-all toggle: same quiet pill as End Round.
-   The header copy is unreachable while game-state-playing hides the header. */
-#host-game-screen #game-mute-students-btn.btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    color: var(--ink-3);
-    border: 1px solid var(--line);
-    box-shadow: none;
-    font-family: var(--font-body);
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.02em;
-    padding: 8px 16px;
-    border-radius: 999px;
-    transition: color var(--duration-fast) var(--ease-smooth),
-                border-color var(--duration-fast) var(--ease-smooth);
-}
-#host-game-screen #game-mute-students-btn.btn:hover {
-    background: transparent;
-    color: var(--primary-ink);
-    border-color: var(--primary);
-}
-/* Muted is the "active" state — make it read as engaged, not just toggled. */
-#host-game-screen #game-mute-students-btn.btn[aria-pressed="true"] {
-    color: var(--ink);
-    border-color: var(--ink);
-}
 #host-game-screen #end-round-btn.btn.danger {
     background: transparent;
     color: var(--ink-3);

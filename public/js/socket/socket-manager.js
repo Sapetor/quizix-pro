@@ -520,6 +520,11 @@ export class SocketManager {
         this.socket.on('game-reset', (data) => {
             logger.debug('Game reset for rematch:', data);
 
+            // resetGameState() clears the state manager's identity (isHost,
+            // playerName, gamePin) along with the stale game data, so capture
+            // the name first and restore identity below.
+            const priorName = this.gameManager.playerName || this.currentPlayerName;
+
             // Stop timers and reset game state
             this.gameManager.stopTimer();
             this.gameManager.resetGameState?.();
@@ -531,8 +536,13 @@ export class SocketManager {
 
             window.uiStateManager?.setState?.(uiState);
 
+            // Restore identity: without this the host stays isHost=false and the
+            // next 'game-started' puts the host on the PLAYER game screen, where
+            // no Next-Question control exists — the rematch stalls after Q1.
+            this.gameManager.setGamePin(data.pin);
+            this.gameManager.setPlayerInfo(isHost ? 'Host' : (priorName || ''), isHost);
+
             if (isHost) {
-                this.gameManager.stateManager?.updateState?.({ isHost: true });
                 this.uiManager.updateQuizTitle(data.title);
                 this._lastPlayerCount = data.players?.length || 0;
             } else {

@@ -139,6 +139,13 @@ export class ConnectionStatus {
                 signal: this.createTimeoutSignal(5000) // 5 second timeout
             });
 
+            // Drain the body. Without this the response stream stays open, so the
+            // request is still "in flight" when the 5s timeout signal fires and
+            // aborts it — logged by Chrome as `Fetch failed loading: GET /api/ping`
+            // on every page load. The fetch promise has already resolved by then,
+            // so nothing in the app notices; only the console does.
+            await response.arrayBuffer();
+
             const pingTime = Date.now() - startTime;
             this.lastPingTime = pingTime;
 

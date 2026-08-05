@@ -49,9 +49,9 @@ export function setSoundIconState(state) {
 }
 
 /**
- * Render the host's "mute all students" toggles. There are two instances —
- * one in the header live-game cluster, one next to End Round on the host game
- * screen (the header is off-screen during questions) — kept in lockstep here.
+ * Render the host's "mute all students" toggle in the header live-game cluster.
+ * (The header stays visible through gameplay, so this is the only instance; a
+ * second in-question copy existed only while .game-state-playing hid the header.)
  *
  * Only the label span's text is rewritten — the two inline SVGs are siblings and
  * are swapped by data-icon-state, so they are never destroyed. The label keeps a
