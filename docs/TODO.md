@@ -16,15 +16,16 @@ findings from that sweep._
 
 ## From the 2026-08-04 header/rematch/console session
 
-- [ ] **`gamePin` is missing from `GameStateManager.getGameState()`** — but
-  `socket-manager.js:146` gates the whole `disconnect` handler on
-  `gameState.gamePin`, which is therefore always `undefined`. Consequence: host
-  reconnect data is **never** stored in `sessionStorage`, and the player
-  reconnection overlay is never shown. Affects every game, not just rematches;
-  pre-existing and unrelated to this session's work. Likely means the reconnect
-  feature is dead in practice — confirm against
-  `tests/e2e-disconnect-reconnect.spec.js`, which passes and so presumably
-  exercises a different path.
+- [x] ~~**`gamePin` is missing from `GameStateManager.getGameState()`**~~ FIXED
+  2026-08-04. `socket-manager.js:146` gates the whole `disconnect` handler on
+  `gameState.gamePin`, which was always `undefined`, so host reconnect data was
+  never stored and the player reconnection overlay never shown — in every game.
+  `getGameState()` now returns the field. NOTE this **activated a long-dead code
+  path**: the disconnect handler now actually runs. The 8 disconnect/reconnect
+  e2e tests pass against it, but they passed before the fix too (they exercise
+  the socket-level rejoin, not this client bookkeeping), so the overlay and the
+  `quizix_host_reconnect` sessionStorage write are still comparatively
+  under-tested. Worth a manual host-disconnect check.
 - [ ] **`#answer-options` carries both `visible-block` and `hidden`** during a
   rematch — the GOTCHAS #6 conflict, where both classes use `!important`.
   Observed, not yet traced to the writer.

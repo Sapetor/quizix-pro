@@ -59,6 +59,10 @@ export class GameStateManager {
         return {
             isHost: this.isHost,
             playerName: this.playerName,
+            // Consumed by socket-manager.js's `disconnect` handler, which gates all
+            // of its reconnect bookkeeping on it. Omitting it here silently disabled
+            // host reconnect storage and the player reconnection overlay entirely.
+            gamePin: this.gamePin,
             currentQuestion: this.currentQuestion,
             selectedAnswer: this.selectedAnswer,
             gameEnded: this.gameEnded,

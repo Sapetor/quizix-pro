@@ -17,6 +17,7 @@ describe('GameStateManager initial state', () => {
         expect(s.getGameState()).toEqual({
             isHost: false,
             playerName: '',
+            gamePin: null,
             currentQuestion: null,
             selectedAnswer: null,
             gameEnded: false,
@@ -24,6 +25,17 @@ describe('GameStateManager initial state', () => {
             answerSubmitted: false
         });
         expect(s.getPlayerAnswers().size).toBe(0);
+    });
+
+    // Regression: gamePin was set by setGamePin() but omitted from getGameState(),
+    // so socket-manager.js's `disconnect` handler — which gates ALL of its work on
+    // `gameState.gamePin` — saw undefined in every game. Host reconnect data was
+    // never stored and the player reconnection overlay never shown.
+    test('getGameState exposes gamePin, which the disconnect handler gates on', () => {
+        const s = new GameStateManager();
+        expect(s.getGameState().gamePin).toBeNull();
+        s.setGamePin('123456');
+        expect(s.getGameState().gamePin).toBe('123456');
     });
 });
 
@@ -128,6 +140,7 @@ describe('GameStateManager.reset — the anti-stale-state invariant', () => {
         expect(s.getGameState()).toEqual({
             isHost: false,
             playerName: '',
+            gamePin: null,
             currentQuestion: null,
             selectedAnswer: null,
             gameEnded: false,
