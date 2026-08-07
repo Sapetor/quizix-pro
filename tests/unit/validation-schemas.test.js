@@ -215,6 +215,44 @@ describe('Validation Schemas', () => {
             const result = saveQuizSchema.safeParse(quiz);
             expect(result.success).toBe(false);
         });
+
+        // Regression: settings.scoringConfig used to be stripped by zod's
+        // unknown-key removal, silently discarding the host's scoring setup on
+        // every save. The threshold is saved in raw seconds (see
+        // settings-persistence.collectSettings).
+        it('should preserve settings.scoringConfig through validation', () => {
+            const quiz = {
+                title: 'Scored Quiz',
+                questions: [
+                    { type: 'multiple-choice', question: 'Q?', options: ['A', 'B'], correctIndex: 0 }
+                ],
+                settings: {
+                    scoringConfig: {
+                        timeBonusEnabled: false,
+                        timeBonusThreshold: 3,
+                        difficultyMultipliers: { easy: 1.5, medium: 2, hard: 4 }
+                    }
+                }
+            };
+
+            const result = saveQuizSchema.safeParse(quiz);
+            expect(result.success).toBe(true);
+            expect(result.data.settings.scoringConfig).toEqual(quiz.settings.scoringConfig);
+        });
+
+        it('should not invent a scoringConfig when the quiz has none', () => {
+            const quiz = {
+                title: 'Legacy Quiz',
+                questions: [
+                    { type: 'multiple-choice', question: 'Q?', options: ['A', 'B'], correctIndex: 0 }
+                ],
+                settings: { randomizeQuestions: true }
+            };
+
+            const result = saveQuizSchema.safeParse(quiz);
+            expect(result.success).toBe(true);
+            expect('scoringConfig' in result.data.settings).toBe(false);
+        });
     });
 
     describe('Join Game Schema', () => {

@@ -295,6 +295,8 @@ export class StatisticsManager {
                     statItem.classList.remove('hidden');
                     statItem.classList.add('visible-flex');
                     optionLabel.textContent = translationManager.getOptionLetter(i);
+                    // Drop any data-translate left by a previous true/false question
+                    optionLabel.removeAttribute('data-translate');
                     this.resetStatItemValues(statItem);
                 } else {
                     statItem.classList.add('hidden');
@@ -318,11 +320,14 @@ export class StatisticsManager {
                     statItem.classList.remove('hidden');
                     statItem.classList.add('visible-flex');
                     optionLabel.textContent = tfTexts.true;
+                    // data-translate so a mid-game language switch retranslates it
+                    optionLabel.setAttribute('data-translate', 'true');
                     this.resetStatItemValues(statItem);
                 } else if (i === 1) {
                     statItem.classList.remove('hidden');
                     statItem.classList.add('visible-flex');
                     optionLabel.textContent = tfTexts.false;
+                    optionLabel.setAttribute('data-translate', 'false');
                     this.resetStatItemValues(statItem);
                 } else {
                     statItem.classList.add('hidden');

@@ -288,7 +288,7 @@ export class QuestionUtils {
             
             <div class="answer-options numeric-options" style="display: none;">
                 <label data-translate="correct_answer">Correct Answer</label>
-                <input type="number" class="numeric-answer" data-translate-placeholder="enter_numeric_answer" step="any">
+                <input type="number" class="numeric-answer" data-translate-placeholder="enter_numeric_answer" step="any" autocomplete="off" data-lpignore="true" data-1p-ignore>
                 <label data-translate="tolerance">Tolerance</label>
                 <input type="number" class="numeric-tolerance" placeholder="0.1" step="any" value="0.1">
             </div>

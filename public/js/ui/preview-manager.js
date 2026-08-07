@@ -464,6 +464,10 @@ export class PreviewManager {
 
         if (previewText) {
             previewText.textContent = translationManager.getTranslationSync('no_questions_to_preview') || 'No questions to preview';
+            // Back to a sweep-owned string: hand ownership to the translation
+            // sweep under the key that matches what we just wrote.
+            previewText.setAttribute('data-translate', 'no_questions_to_preview');
+            previewText.removeAttribute('data-translate-dynamic');
         }
         if (counterDisplay) {
             counterDisplay.innerHTML = '<span data-translate="question">Question</span> 0 <span data-translate="of">of</span> 0';
@@ -1287,6 +1291,9 @@ export class PreviewManager {
 
         if (previewText) {
             previewText.textContent = translationManager.getTranslationSync('no_questions_to_preview') || 'No questions to preview';
+            // Idle again: the sweep owns this string (its data-translate key already
+            // is 'no_questions_to_preview').
+            previewText.removeAttribute('data-translate-dynamic');
         }
         if (counterDisplay) {
             counterDisplay.innerHTML = '<span data-translate="question">Question</span> 0 <span data-translate="of">of</span> 0';

@@ -4,8 +4,9 @@ Tracking list for issues found but deliberately not fixed in the session that
 discovered them. Each item says what was observed, why it matters, and where
 to start. Remove items when done.
 
-_Last updated: 2026-08-04 (manual-advancement session; see the last
-section). Previously: 2026-07-26 (multi-agent TODO sweep). All items from the
+_Last updated: 2026-08-06 (six-fix multi-agent session; see the first
+section). Previously: 2026-08-04 (manual-advancement session), 2026-07-26
+(multi-agent TODO sweep). All items from the
 2026-07-26 visual-gate rework list were completed in that sweep: host
 correct-answer reveal, counting-phase answered-count strip, double-modal
 flash, 5.5s reveal window, End Round hardening (latch, rate-limit routing,
@@ -13,6 +14,24 @@ post-end answer rejection, host mid-question rejoin, ordering reveal),
 editor design pass, mobile selects, upload-GC dotfile guard, theme-drift
 gotcha (now docs/GOTCHAS.md #17). Items below are the residue plus new
 findings from that sweep._
+
+## From the 2026-08-06 six-fix session
+
+- [ ] **`powerUpsEnabled` is read from saved quiz settings but never written.**
+  `app.js:1208` populates the quick-start panel from `settings.powerUpsEnabled`
+  (with a legacy top-level fallback), but `collectSettings()` in
+  `public/js/quiz/modules/settings-persistence.js` never collects it, so the
+  editor's power-ups choice does not persist per-quiz through `/api/save-quiz`.
+  Not stripped data — never sent. Decision needed: persist it (add to
+  `collectSettings()`/`restoreSettings()` + `quizSettingsSchema`, mirroring
+  `showLeaderboardBetweenQuestions`) or drop the dead read in quick-start.
+- [ ] **Stale-until-rerender content on in-game language switch** (deliberately
+  left): host MC option letters, leaderboard rows, ordering stat rows keep the
+  old language until the next render. Currently invisible — 'A'–'F' and 'pts'
+  are identical in all 9 locales — but becomes real if any locale ever
+  localizes those tokens. Hook exists (`languageChanged` CustomEvent,
+  `translation-manager.js:302`); the blocker is that none of these keep stored
+  state to re-render from.
 
 ## From the 2026-08-04 header/rematch/console session
 

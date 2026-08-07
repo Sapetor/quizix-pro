@@ -85,6 +85,11 @@ export class PreviewRenderer {
         } else {
             previewElement.innerHTML = `<em>${escapeHtml(translationManager.getTranslationSync('no_question_text'))}</em>`;
         }
+
+        // Content is now JS-owned: stop the translation sweep from replacing it
+        // with the data-translate="select_question_preview" placeholder.
+        // PreviewManager.showEmptySplitPreview() clears the flag again.
+        previewElement.setAttribute('data-translate-dynamic', 'true');
     }
 
     /**
@@ -749,6 +754,9 @@ export class PreviewRenderer {
         const hasLatex = this.hasLatexContent(questionText);
         const formattedText = this.formatCodeBlocks(escapeHtmlPreservingLatex(questionText));
         previewElement.innerHTML = formattedText;
+        // JS-owned content: keep the translation sweep off it (the element carries
+        // data-translate="no_questions_to_preview" as its idle placeholder).
+        previewElement.setAttribute('data-translate-dynamic', 'true');
 
         if (hasLatex) {
             previewElement.setAttribute('data-has-latex', 'true');

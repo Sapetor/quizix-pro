@@ -26,6 +26,7 @@ describe('settings-persistence round-trip', () => {
             <input type="checkbox" id="same-time-all">
             <input type="text" id="default-time" value="20">
             <input type="checkbox" id="manual-advancement">
+            <input type="checkbox" id="show-leaderboard-between">
             <input type="checkbox" id="consensus-mode">
             <input type="text" id="consensus-threshold" value="66">
             <input type="text" id="discussion-time" value="30">
@@ -45,6 +46,7 @@ describe('settings-persistence round-trip', () => {
             useGlobalTime: true,
             globalTimeLimit: 45,
             manualAdvance: true,
+            showLeaderboardBetweenQuestions: false,
             consensusMode: true,
             consensusThreshold: '75',
             discussionTime: 50,

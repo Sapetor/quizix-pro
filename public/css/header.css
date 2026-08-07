@@ -599,6 +599,11 @@ body.in-host-game .app-header .live-game-controls { display: flex; }
   .app-header .live-game-progress { gap: 8px; }
   .app-header .live-game-progress #question-counter { font-size: 12px; }
   body.in-host-game .app-header .brand-name { display: none; }
+  /* .brand aligns on the BASELINE, and .brand-mark's translateY(3px) is the
+     nudge that sits the square on .brand-name's baseline. With the name gone
+     the mark is the only child, so the nudge has nothing to align to and just
+     drops it 3px below the header's centre line. */
+  body.in-host-game .app-header .brand-mark { transform: none; }
 
   /* Editor mode: the right cluster (…/home/lang/CTA/chip) needs the full
      width — drop the breadcrumb and divider, compact the CTA and chip.
@@ -619,4 +624,7 @@ body.in-host-game .app-header .live-game-controls { display: flex; }
 
 @media (max-width: 479px) {
   .brand-name { display: none; }
+  /* Same reason as the in-host-game case above: no name, no baseline to
+     correct for, so the mark must sit on the flex centre line unmodified. */
+  .brand-mark { transform: none; }
 }

@@ -14,7 +14,7 @@ import { SoundManager } from '../audio/sound-manager.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 // AI Generator will be lazy loaded when needed
 import { addQuestion, randomizeAnswers, shuffleArray } from '../utils/question-utils.js';
-import { translationManager, showErrorAlert, createQuestionCounter } from '../utils/translation-manager.js';
+import { translationManager, showErrorAlert } from '../utils/translation-manager.js';
 import { toastNotifications } from '../utils/toast-notifications.js';
 import { connectionStatus } from '../utils/connection-status.js';
 import { APIHelper } from '../utils/api-helper.js';
@@ -42,6 +42,11 @@ export class QuizGame {
         this.socket = io({
             path: cleanPath + '/socket.io',
             transports: isSafari ? ['polling', 'websocket'] : ['websocket', 'polling'],
+            // Without this, engine.io gives up if the FIRST transport fails instead of
+            // falling back to the next one — a websocket blocked by a mobile carrier
+            // proxy or the tunnel then leaves the phone permanently unable to join.
+            // (Option added in engine.io-client 6.6; older clients ignore it.)
+            tryAllTransports: true,
             reconnection: true,
             reconnectionAttempts: 10,
             reconnectionDelay: 1000,
@@ -642,6 +647,8 @@ export class QuizGame {
         const questionTime = parseInt(dom.get('default-time')?.value) || 30;
         const manualAdvancement = dom.get('manual-advancement')?.checked;
         const powerUpsEnabled = dom.get('enable-power-ups')?.checked || false;
+        // Default on: missing checkbox must not silently disable the leaderboard
+        const showLeaderboardBetweenQuestions = dom.get('show-leaderboard-between')?.checked ?? true;
 
         // Get scoring configuration for the live game session (threshold in ms)
         const scoringConfig = readScoringConfigFromDOM(dom);
@@ -670,6 +677,7 @@ export class QuizGame {
                 questions: processedQuestions,
                 manualAdvancement,
                 powerUpsEnabled,
+                showLeaderboardBetweenQuestions,
                 randomizeQuestions,
                 randomizeAnswers: shouldRandomizeAnswers,
                 sameTimeForAll,
@@ -710,11 +718,10 @@ export class QuizGame {
             return;
         }
 
-        if (!this.socketManager.isConnected()) {
-            showErrorAlert('not_connected_refresh');
-            return;
-        }
-
+        // No connection gate here on purpose: a phone arriving from the QR code has
+        // the PIN and name pre-filled, so the tap routinely lands before the socket
+        // has finished connecting. socket.io buffers the join and flushes it on
+        // 'connect'; SocketManager.joinGame() owns the response timeout and retry.
         setItem('quizix_player_name', name);
         this.socketManager.joinGame(pin, name);
     }
@@ -787,6 +794,10 @@ export class QuizGame {
      * Reset game and return to main menu (shared logic for newGame and exitToMainMenu)
      */
     resetAndReturnToMenu() {
+        // Abandon any join still waiting for a server answer, so its timeout does
+        // not raise a "failed to join" alert over the main menu.
+        this.socketManager?.cancelPendingJoin?.();
+
         // Notify server so the game is cleaned up or enters migration state
         if (this.socketManager?.socket) {
             const isHost = this.gameManager.stateManager?.getGameState()?.isHost;
@@ -1195,6 +1206,8 @@ export class QuizGame {
             setChecked('qs-randomize-answers', get('randomizeAnswers', 'randomizeAnswers', false));
             setChecked('qs-manual-advancement', get('manualAdvance', 'manualAdvancement', true));
             setChecked('qs-enable-power-ups', get('powerUpsEnabled', 'powerUpsEnabled', false));
+            setChecked('qs-show-leaderboard-between',
+                get('showLeaderboardBetweenQuestions', 'showLeaderboardBetweenQuestions', true));
 
             const useGlobal = get('useGlobalTime', 'sameTimeForAll', false);
             setChecked('qs-use-global-time', useGlobal);
@@ -1293,6 +1306,7 @@ export class QuizGame {
             sameTimeForAll: dom.get('qs-use-global-time')?.checked ?? false,
             questionTime: parseInt(dom.get('qs-global-time')?.value) || 20,
             powerUpsEnabled: dom.get('qs-enable-power-ups')?.checked ?? false,
+            showLeaderboardBetweenQuestions: dom.get('qs-show-leaderboard-between')?.checked ?? true,
             consensusMode: dom.get('qs-consensus-mode')?.checked ?? false,
             consensusThreshold: dom.get('qs-consensus-threshold')?.value ?? '66',
             discussionTime: parseInt(dom.get('qs-discussion-time')?.value) || 30,
@@ -1391,6 +1405,7 @@ export class QuizGame {
                     questions,
                     manualAdvancement: panel.manualAdvancement,
                     powerUpsEnabled: panel.powerUpsEnabled,
+                    showLeaderboardBetweenQuestions: panel.showLeaderboardBetweenQuestions,
                     randomizeQuestions: panel.randomizeQuestions,
                     randomizeAnswers: panel.randomizeAnswers,
                     sameTimeForAll: panel.sameTimeForAll,
@@ -1519,32 +1534,6 @@ export class QuizGame {
             logger.error('Failed to lazy load Results Viewer:', error);
             // Show fallback error message
             translationManager.showAlert('results_viewer_failed');
-        }
-    }
-
-    /**
-     * Update game translations when language changes
-     */
-    updateGameTranslations() {
-        // Helper to update question counter elements with new translations
-        const updateQuestionCounter = (elementId) => {
-            const element = document.getElementById(elementId);
-            if (!element?.textContent.trim()) return;
-
-            const match = element.textContent.match(/(\d+).*?(\d+)/);
-            if (match) {
-                element.textContent = createQuestionCounter(match[1], match[2]);
-            }
-        };
-
-        // Update all question counter elements
-        ['question-counter', 'player-question-counter', 'preview-question-counter', 'preview-question-counter-display']
-            .forEach(updateQuestionCounter);
-
-        // Update player info if visible
-        const playerInfo = dom.get('player-info');
-        if (playerInfo && this.gameManager.playerName) {
-            playerInfo.textContent = `${translationManager.getTranslationSync('welcome')}, ${this.gameManager.playerName}!`;
         }
     }
 

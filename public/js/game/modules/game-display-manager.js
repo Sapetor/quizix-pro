@@ -220,6 +220,9 @@ export class GameDisplayManager {
         element.classList.remove('MathJax_Processed');
 
         element.innerHTML = this.mathRenderer.formatCodeBlocks(escapeHtmlPreservingLatex(questionText));
+        // Content is now JS-owned: stop the translation sweep from replacing it
+        // with the data-translate placeholder when the language changes.
+        element.setAttribute('data-translate-dynamic', 'true');
         logger.debug('Question text displayed');
 
         // Apply syntax highlighting to code blocks
@@ -240,11 +243,13 @@ export class GameDisplayManager {
         // Clear question text
         if (elements.hostQuestionElement) {
             elements.hostQuestionElement.innerHTML = '';
+            elements.hostQuestionElement.removeAttribute('data-translate-dynamic');
             // Reset MathJax processing classes
             elements.hostQuestionElement.classList.remove('tex2jax_process', 'MathJax_Processed');
         }
         if (elements.questionElement) {
             elements.questionElement.innerHTML = '';
+            elements.questionElement.removeAttribute('data-translate-dynamic');
             // Reset MathJax processing classes
             elements.questionElement.classList.remove('tex2jax_process', 'MathJax_Processed');
         }
@@ -279,6 +284,7 @@ export class GameDisplayManager {
             } else {
                 elements.hostQuestionElement.innerHTML = '';
             }
+            elements.hostQuestionElement.removeAttribute('data-translate-dynamic');
         }
 
         // Clear existing answer displays

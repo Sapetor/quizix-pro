@@ -1136,6 +1136,8 @@ export class GameManager {
             placeholder.className = 'player-item placeholder placeholder-full';
             placeholder.textContent =
                 getTranslation('waiting_for_players') || 'Waiting for players...';
+            // Let the translation sweep retranslate it on a mid-lobby language switch
+            placeholder.setAttribute('data-translate', 'waiting_for_players');
             playersListElement.appendChild(placeholder);
         }
 
@@ -1309,11 +1311,13 @@ export class GameManager {
         if (hostQuestion) {
             hostQuestion.textContent = placeholder;
             hostQuestion.className = '';
+            hostQuestion.removeAttribute('data-translate-dynamic');
         }
         const playerQuestion = document.getElementById('player-question-text');
         if (playerQuestion) {
             playerQuestion.textContent = placeholder;
             playerQuestion.className = '';
+            playerQuestion.removeAttribute('data-translate-dynamic');
         }
 
         // Reset question counters

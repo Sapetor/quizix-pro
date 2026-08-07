@@ -536,6 +536,7 @@ function syncSettingsToModal() {
     // Advanced options
     syncCheckbox('manual-advancement', 'modal-manual-advancement');
     syncCheckbox('enable-power-ups', 'modal-enable-power-ups');
+    syncCheckbox('show-leaderboard-between', 'modal-show-leaderboard-between');
     syncCheckbox('consensus-mode', 'modal-consensus-mode');
     syncInput('consensus-threshold', 'modal-consensus-threshold');
     syncInput('discussion-time', 'modal-discussion-time');
@@ -574,6 +575,7 @@ function syncSettingsFromModal() {
     // Advanced options
     syncCheckbox('modal-manual-advancement', 'manual-advancement');
     syncCheckbox('modal-enable-power-ups', 'enable-power-ups');
+    syncCheckbox('modal-show-leaderboard-between', 'show-leaderboard-between');
     syncCheckbox('modal-consensus-mode', 'consensus-mode');
     syncInput('modal-consensus-threshold', 'consensus-threshold');
     syncInput('modal-discussion-time', 'discussion-time');

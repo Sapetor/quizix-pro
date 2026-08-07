@@ -668,10 +668,15 @@ class GameSessionService {
                     });
                     game.isAdvancing = false;
                 } else {
-                    // Auto-advance mode: show leaderboard then continue
-                    io.to(`game-${game.pin}`).emit('show-leaderboard', {
-                        leaderboard: game.leaderboard.slice(0, 5)
-                    });
+                    // Auto-advance mode: show leaderboard then continue.
+                    // When the host disabled the intermediate leaderboard the
+                    // dwell is kept — it becomes the answer-statistics dwell —
+                    // so auto-advance does not jump straight to the next question.
+                    if (game.showLeaderboardBetweenQuestions) {
+                        io.to(`game-${game.pin}`).emit('show-leaderboard', {
+                            leaderboard: game.leaderboard.slice(0, 5)
+                        });
+                    }
 
                     // Use separate leaderboardTimer to avoid overwriting advanceTimer
                     game.leaderboardTimer = setTimeout(() => {
@@ -729,9 +734,17 @@ class GameSessionService {
 
         io.to(game.hostId).emit('hide-next-button');
 
-        io.to(`game-${game.pin}`).emit('show-leaderboard', {
-            leaderboard: game.leaderboard.slice(0, 5)
-        });
+        if (game.showLeaderboardBetweenQuestions) {
+            io.to(`game-${game.pin}`).emit('show-leaderboard', {
+                leaderboard: game.leaderboard.slice(0, 5)
+            });
+        }
+
+        // With the intermediate leaderboard off there is nothing to dwell on:
+        // the host pressed Next, so advance immediately instead of stalling.
+        const advanceDelay = game.showLeaderboardBetweenQuestions
+            ? this.config.TIMING.LEADERBOARD_DISPLAY_TIME
+            : 0;
 
         // Store timer ID for proper cleanup
         game.advanceTimer = setTimeout(() => {
@@ -750,7 +763,7 @@ class GameSessionService {
                 this.logger.error(`Error in manualAdvanceToNextQuestion for game ${game.pin}:`, error);
                 game.isAdvancing = false;
             }
-        }, this.config.TIMING.LEADERBOARD_DISPLAY_TIME);
+        }, advanceDelay);
     }
 
     /**

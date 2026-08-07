@@ -372,6 +372,14 @@ class TranslationManager {
 
         // Translate elements with data-translate attribute within this container
         container.querySelectorAll('[data-translate]').forEach(element => {
+            // Elements flagged data-translate-dynamic hold JS-rendered content
+            // (e.g. the current question text). Their data-translate value is
+            // only the idle placeholder — overwriting it mid-question wipes the
+            // question. The flag is cleared when the content is cleared.
+            if (element.getAttribute('data-translate-dynamic') === 'true') {
+                return;
+            }
+
             const translationKey = element.getAttribute('data-translate');
             const args = element.getAttribute('data-translate-args');
             const parsedArgs = args ? args.split(',').map(arg => arg.trim()) : [];

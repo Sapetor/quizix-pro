@@ -590,6 +590,8 @@ export default {
     // Power-Ups
     enable_power_ups: 'Ativar Power-Ups (50-50, +10s, 2x Pontos)',
     enable_power_ups_tooltip: 'Permitir que os jogadores usem power-ups durante o jogo',
+    show_leaderboard_between: 'Mostrar a classificação após cada pergunta',
+    show_leaderboard_between_tooltip: 'Mostra a classificação entre perguntas; a classificação final aparece sempre',
     power_ups: 'Power-Ups',
     fifty_fifty: '50-50',
     fifty_fifty_tooltip: 'Remover metade das respostas erradas',

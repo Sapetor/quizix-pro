@@ -20,6 +20,7 @@ export function collectSettings() {
         useGlobalTime: dom.get('same-time-all')?.checked ?? false,
         globalTimeLimit: parseInt(dom.get('default-time')?.value) || 20,
         manualAdvance: dom.get('manual-advancement')?.checked ?? true,
+        showLeaderboardBetweenQuestions: dom.get('show-leaderboard-between')?.checked ?? true,
         consensusMode: dom.get('consensus-mode')?.checked ?? false,
         consensusThreshold: dom.get('consensus-threshold')?.value ?? '66',
         discussionTime: parseInt(dom.get('discussion-time')?.value) || 30,
@@ -47,6 +48,8 @@ export function restoreSettings(settings) {
     // `manualAdvance` key; they inherit the default rather than being
     // silently switched to auto-advance.
     setChecked('manual-advancement', settings.manualAdvance ?? true);
+    // Quizzes saved before this toggle existed keep the old behaviour (shown).
+    setChecked('show-leaderboard-between', settings.showLeaderboardBetweenQuestions ?? true);
     setChecked('consensus-mode', settings.consensusMode);
     setValue('consensus-threshold', settings.consensusThreshold ?? '66');
     setValue('discussion-time', settings.discussionTime ?? 30);

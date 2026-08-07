@@ -13,10 +13,10 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=149">
+    <link rel="stylesheet" href="css/main.bundle.css?v=154">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=149" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=154" as="script" crossorigin="anonymous">
     <!-- app.js and translation-manager.js are never requested by the document; main.js
          imports them as ES modules. A preload only matches if the URL is identical, and
          the import specifiers carry no ?v= query — so a versioned `as="script"` preload
@@ -1561,6 +1561,13 @@
                                                 data-translate="enable_power_ups">Enable Power-Ups (50-50, +10s, 2x
                                                 Points)</span></strong>
                                     </label>
+                                    <label class="show-leaderboard-option"
+                                        style="border: 2px solid #f59e0b; border-radius: 8px; padding: 8px; background: rgba(245, 158, 11, 0.1); margin-top: 8px;">
+                                        <input type="checkbox" id="show-leaderboard-between" checked
+                                            data-translate-title="show_leaderboard_between_tooltip"> <strong>🏆 <span
+                                                data-translate="show_leaderboard_between">Show leaderboard after each
+                                                question</span></strong>
+                                    </label>
                                     <label class="consensus-mode-option"
                                         style="border: 2px solid #10b981; border-radius: 8px; padding: 8px; background: rgba(16, 185, 129, 0.1); margin-top: 8px;">
                                         <input type="checkbox" id="consensus-mode"
@@ -2089,7 +2096,8 @@
                                         <div class="answer-options numeric-options" style="display: none;">
                                             <label data-translate="correct_answer">Correct Answer:</label>
                                             <input type="number" class="numeric-answer"
-                                                placeholder="Enter numeric answer" step="any"
+                                                placeholder="Enter numeric answer" step="any" autocomplete="off"
+                                                data-lpignore="true" data-1p-ignore
                                                 data-translate-placeholder="enter_numeric_answer">
                                             <label data-translate="tolerance">Tolerance (+/-):</label>
                                             <input type="number" class="numeric-tolerance" placeholder="0.1" step="any"
@@ -2487,6 +2495,12 @@
                             50-50 removes two wrong answers, +10s adds extra time, 2x doubles points for one question.
                         </div>
                     </div>
+                    <label class="show-leaderboard-option">
+                        <input type="checkbox" id="modal-show-leaderboard-between" checked
+                            data-translate-title="show_leaderboard_between_tooltip">
+                        <strong>🏆 <span data-translate="show_leaderboard_between">Show leaderboard after each
+                                question</span></strong>
+                    </label>
                     <div class="setting-with-help">
                         <label class="consensus-mode-option">
                             <input type="checkbox" id="modal-consensus-mode"
@@ -2797,7 +2811,8 @@
             <h2 data-translate="join_game">Join Game</h2>
             <input type="text" id="game-pin-input" placeholder="Enter Game PIN" class="input-field"
                 data-translate-placeholder="enter_game_pin" aria-label="Game PIN" data-translate-aria-label="game_pin"
-                inputmode="numeric" pattern="[0-9]{6}" maxlength="6" enterkeyhint="next">
+                inputmode="numeric" pattern="[0-9]{6}" maxlength="6" enterkeyhint="next"
+                autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other">
             <p class="first-game-hint" data-translate="pin_format_hint">Enter the 6-digit PIN shown on the host's screen
             </p>
             <input type="text" id="player-name" placeholder="Your Name" class="input-field"
@@ -3037,6 +3052,7 @@
             <div id="player-numeric" class="player-answer-type hidden">
                 <div class="numeric-input-container">
                     <input type="number" id="numeric-answer-input" placeholder="Enter your answer" step="any"
+                        autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other"
                         data-translate-placeholder="enter_answer" aria-label="Numeric answer"
                         data-translate-aria-label="numeric_answer">
                     <button id="submit-numeric" class="btn primary" data-translate="submit_answer">Submit
@@ -3061,7 +3077,7 @@
     <div id="leaderboard-screen" class="screen">
         <div class="leaderboard-container">
             <div class="leaderboard-header">
-                <h2 data-translate="leaderboard_title"><span aria-hidden="true">🏆</span> Leaderboard</h2>
+                <h2><span aria-hidden="true">🏆</span> <span data-translate="leaderboard_title">Leaderboard</span></h2>
                 <div class="leaderboard-controls">
                     <button id="next-question" class="btn primary" style="display: none;"
                         data-translate="next_question">Next Question</button>
@@ -3089,14 +3105,14 @@
 
     <div id="player-final-screen" class="screen">
         <div class="player-final-container">
-            <h2 data-translate="quiz_complete"><span aria-hidden="true">🎉</span> Quiz Complete!</h2>
+            <h2><span aria-hidden="true">🎉</span> <span data-translate="quiz_complete">Quiz Complete!</span></h2>
             <div id="player-final-rank" class="player-rank ed-mono" role="status" aria-live="polite">
                 <h3 data-translate="your_final_rank">Your Final Rank</h3>
                 <div id="final-position" class="final-position">#1</div>
                 <div id="final-score" class="final-score ed-mono">0 <span data-translate="points">points</span></div>
             </div>
             <div id="top-players" class="top-players">
-                <h3 data-translate="top_players"><span aria-hidden="true">🏆</span> Top Players</h3>
+                <h3><span aria-hidden="true">🏆</span> <span data-translate="top_players">Top Players</span></h3>
                 <div id="final-leaderboard" class="final-leaderboard" role="list" aria-label="Top players"
                     data-translate-aria-label="top_players"></div>
             </div>
@@ -3179,6 +3195,10 @@
                     <label class="qs-toggle">
                         <input type="checkbox" id="qs-enable-power-ups">
                         <span data-translate="enable_power_ups">Power-ups</span>
+                    </label>
+                    <label class="qs-toggle">
+                        <input type="checkbox" id="qs-show-leaderboard-between" checked>
+                        <span data-translate="show_leaderboard_between">Leaderboard After Each Question</span>
                     </label>
                     <label class="qs-toggle">
                         <input type="checkbox" id="qs-consensus-mode">
@@ -3796,14 +3816,16 @@ class GraphScene(Scene):
     </div>
 
     <!-- Socket.IO CDN for better WSL compatibility - fallback to local if CDN fails -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"
+    <!-- Matches the server's socket.io 4.8.1 (and its engine.io 6.6 client, which is
+         where the tryAllTransports fallback in app.js takes effect). -->
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=149"></script>
-    <script type="module" src="js/landing.js?v=149"></script>
-    <script type="module" src="js/landing-demo.js?v=149"></script>
-    <script type="module" src="js/landing-ai.js?v=149"></script>
+    <script type="module" src="js/main.js?v=154"></script>
+    <script type="module" src="js/landing.js?v=154"></script>
+    <script type="module" src="js/landing-demo.js?v=154"></script>
+    <script type="module" src="js/landing-ai.js?v=154"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

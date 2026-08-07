@@ -584,6 +584,8 @@ export default {
     // Power-Ups
     enable_power_ups: '启用道具（50-50、+10秒、2倍积分）',
     enable_power_ups_tooltip: '允许玩家在游戏中使用道具',
+    show_leaderboard_between: '每题结束后显示排行榜',
+    show_leaderboard_between_tooltip: '在题目之间显示排名；最终排行榜始终会显示',
     power_ups: '道具',
     fifty_fifty: '50-50',
     fifty_fifty_tooltip: '移除一半错误答案',

@@ -9,6 +9,12 @@ import { logger, UI, TIMING } from '../core/config.js';
 import { uiStateManager } from '../utils/ui-state-manager.js';
 import { show, hide } from '../utils/dom.js';
 
+// How long to wait for the server's answer to 'player-join' before resending it.
+// Covers the slow case (phone still opening the socket over the tunnel) plus one
+// round trip. Two attempts, so the player waits at most ~2x this before the error.
+const JOIN_RESPONSE_TIMEOUT_MS = 6000;
+const JOIN_MAX_ATTEMPTS = 2;
+
 const RECONNECT_KEY = 'quizix_reconnect';
 const DEVICE_ID_KEY = 'quizix_device_id';
 const SESSION_BINDING_KEY = 'quizix_session_binding';
@@ -46,6 +52,7 @@ export class SocketManager {
         this.currentPlayerName = null; // Store current player name for language updates
         this.abortController = new AbortController(); // For cleanup of event listeners
         this._isReconnecting = false; // Guard: prevent session-check during socket reconnects
+        this._pendingJoin = null; // In-flight player-join attempt: { pin, playerName, attempts, timerId }
 
         // Cached DOM element references (lazy-loaded)
         this._cachedElements = {};
@@ -232,6 +239,7 @@ export class SocketManager {
 
         this.socket.on('player-joined', (data) => {
             logger.debug('Player joined:', data);
+            this.cancelPendingJoin();
             logger.debug('data.players:', data.players);
             logger.debug('data keys:', Object.keys(data));
 
@@ -583,6 +591,12 @@ export class SocketManager {
             logger.warn('Rate limited:', data);
             const message = this._resolveServerMessage(data, 'error_rate_limited');
 
+            // A throttled join was answered, just not accepted — stop the retry
+            // timer rather than firing another join into the same limiter.
+            if (data?.event === 'player-join') {
+                this.cancelPendingJoin();
+            }
+
             // Only answer submission belongs in the player's answer-feedback modal.
             // Everything else (host controls like force-end-question, rejoins,
             // power-ups) would otherwise raise a red "wrong answer" modal — on the
@@ -705,6 +719,9 @@ export class SocketManager {
         // Error handling
         this.socket.on('error', (data) => {
             logger.error('Socket error:', data);
+            // The server answered — a rejected join must not be retried (wrong PIN,
+            // game full, game already started all arrive here).
+            this.cancelPendingJoin();
             translationManager.showAlert('error', this._resolveServerMessage(data, 'error_occurred'));
         });
 
@@ -994,12 +1011,78 @@ export class SocketManager {
     }
 
     /**
-     * Join game by PIN
+     * Join game by PIN.
+     *
+     * The emit is safe to make before the socket has connected: socket.io buffers
+     * packets sent while disconnected and flushes them on 'connect'. What it does
+     * NOT do is tell us the join was ever answered — a join emitted onto a socket
+     * the server has already dropped (tunnel/Wi-Fi flap, server restart; the client
+     * only notices at ping timeout) disappears silently. So we wait for the answer
+     * ourselves: 'player-joined' or a server 'error' clears the attempt, otherwise
+     * we resend once and then tell the player it failed.
      */
     joinGame(pin, playerName) {
-        logger.debug('Joining game:', { pin, playerName });
-        const deviceId = getOrCreateDeviceId();
-        this.socket.emit('player-join', { pin, name: playerName, deviceId });
+        logger.debug('Joining game:', { pin, playerName, connected: this.socket.connected });
+        this.cancelPendingJoin();
+        this._pendingJoin = { pin, playerName, attempts: 0 };
+        this._setJoinBusy(true);
+        this._sendJoinAttempt();
+    }
+
+    /**
+     * Emit the pending join and arm the response timeout.
+     */
+    _sendJoinAttempt() {
+        const pending = this._pendingJoin;
+        if (!pending) return;
+
+        pending.attempts++;
+        this.socket.emit('player-join', {
+            pin: pending.pin,
+            name: pending.playerName,
+            deviceId: getOrCreateDeviceId()
+        });
+
+        pending.timerId = setTimeout(() => {
+            if (!this._pendingJoin) return;
+            if (this._pendingJoin.attempts < JOIN_MAX_ATTEMPTS) {
+                logger.warn('No response to player-join, retrying', { pin: pending.pin });
+                this._sendJoinAttempt();
+                return;
+            }
+            logger.error('Join failed: no response from server', { pin: pending.pin });
+            this.cancelPendingJoin();
+            translationManager.showAlert(
+                'error',
+                translationManager.getTranslationSync('error_failed_join') || 'Failed to join game'
+            );
+        }, JOIN_RESPONSE_TIMEOUT_MS);
+    }
+
+    /**
+     * Drop any in-flight join attempt and re-enable the Join button.
+     */
+    cancelPendingJoin() {
+        if (this._pendingJoin?.timerId) {
+            clearTimeout(this._pendingJoin.timerId);
+        }
+        this._pendingJoin = null;
+        this._setJoinBusy(false);
+    }
+
+    /**
+     * Disable the Join button while a join is in flight so repeated taps
+     * (common on phones when nothing visibly happens) do not stack attempts.
+     */
+    _setJoinBusy(busy) {
+        const button = this._getElement('join-game');
+        if (!button) return;
+        button.disabled = busy;
+        if (busy) {
+            button.setAttribute('aria-busy', 'true');
+        } else {
+            button.removeAttribute('aria-busy');
+        }
     }
 
     /**
@@ -1047,8 +1130,11 @@ export class SocketManager {
             // Store the player name for language updates
             this.currentPlayerName = playerName;
 
-            // Remove the data-translate attribute to prevent automatic translation override
-            playerInfo.removeAttribute('data-translate');
+            // JS owns the text now: keep the translation sweep from resetting it to
+            // the data-translate="you_are_in" placeholder. The idle placeholder stays
+            // translatable because the attribute itself is left in place, and the
+            // languageChanged listener re-renders this message in the new language.
+            playerInfo.setAttribute('data-translate-dynamic', 'true');
 
             // Use the already imported translation manager from the top of the file
             const translatedMessage = translationManager.getTranslationSync('you_are_in_name');

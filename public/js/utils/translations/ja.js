@@ -589,6 +589,8 @@ export default {
     // Power-Ups
     enable_power_ups: 'パワーアップを有効にする（50-50、+10秒、2倍ポイント）',
     enable_power_ups_tooltip: 'ゲーム中にプレイヤーがパワーアップを使用できるようにする',
+    show_leaderboard_between: '各問題の後にランキングを表示',
+    show_leaderboard_between_tooltip: '問題の合間にランキングを表示します。最終ランキングは常に表示されます',
     power_ups: 'パワーアップ',
     fifty_fifty: '50-50',
     fifty_fifty_tooltip: '間違った回答の半分を削除',

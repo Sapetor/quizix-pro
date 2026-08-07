@@ -28,11 +28,16 @@ export function syncEditorBreadcrumbTitle() {
   const value = (input.value || '').trim();
   if (value) {
     titleEl.textContent = value;
+    // JS owns the text now: the translation sweep must not reset it to the
+    // data-translate="header_untitled_quiz" placeholder on a language switch.
+    titleEl.setAttribute('data-translate-dynamic', 'true');
   } else {
-    // Keep whatever translation text is already there (data-translate="header_untitled_quiz")
-    // Re-write it to its translated value if empty, so we don't leave stale content.
-    const fallback = titleEl.getAttribute('data-translate-fallback') || titleEl.textContent || 'Untitled quiz';
-    titleEl.textContent = fallback;
+    // Genuinely untitled: hand the element back to the sweep and write the
+    // placeholder in the current language.
+    titleEl.removeAttribute('data-translate-dynamic');
+    const key = titleEl.getAttribute('data-translate');
+    const translated = key ? translationManager.getTranslationSync(key) : '';
+    titleEl.textContent = (translated && translated !== key) ? translated : 'Untitled quiz';
   }
 }
 

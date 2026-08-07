@@ -65,6 +65,9 @@ class Game {
         // explicit false is an opt-out and must survive.
         this.manualAdvancement = quiz.manualAdvancement ?? true;
         this.powerUpsEnabled = quiz.powerUpsEnabled || false;
+        // Intermediate (between-question) leaderboard. `??` not `||` — an
+        // explicit false is an opt-out. The final leaderboard always shows.
+        this.showLeaderboardBetweenQuestions = quiz.showLeaderboardBetweenQuestions ?? true;
         // Host override that silences game sounds on every PLAYER device.
         // Per-game-session only — never persisted, and reset on rematch.
         this.playersMuted = false;

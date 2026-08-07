@@ -524,13 +524,25 @@ export class UIManager {
         // block is gone (it sat outside both cards on bare canvas).
         const titleElement = dom.get('lobby-breadcrumb-title');
         logger.debug('updateQuizTitle called with:', title);
-        if (titleElement && title) {
-            // Remove translation attribute to prevent override
-            titleElement.removeAttribute('data-translate');
+        if (!titleElement) {
+            logger.warn('Failed to update quiz title - element missing');
+            return;
+        }
+        if (title) {
+            // JS owns the text now: keep the translation sweep from resetting it to
+            // the data-translate="quiz_title" placeholder on a language switch.
+            titleElement.setAttribute('data-translate-dynamic', 'true');
             titleElement.textContent = title;
             logger.debug('Updated quiz title in lobby header:', title);
         } else {
-            logger.warn('Failed to update quiz title - element or title missing');
+            // No title: hand the element back to the sweep and retranslate it.
+            titleElement.removeAttribute('data-translate-dynamic');
+            const key = titleElement.getAttribute('data-translate');
+            const translated = key ? translationManager.getTranslationSync(key) : '';
+            if (translated && translated !== key) {
+                titleElement.textContent = translated;
+            }
+            logger.warn('updateQuizTitle called without a title - showing placeholder');
         }
     }
 

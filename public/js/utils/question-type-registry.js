@@ -581,8 +581,8 @@ const QUESTION_TYPES = {
                 : { true: translationManager.getTranslationSync?.('true') || 'True', false: translationManager.getTranslationSync?.('false') || 'False' };
             container.innerHTML = `
                 <div class="true-false-options">
-                    <div class="tf-option true-btn" data-answer="true"><span class="option-text ed-serif">${tfText.true}</span></div>
-                    <div class="tf-option false-btn" data-answer="false"><span class="option-text ed-serif">${tfText.false}</span></div>
+                    <div class="tf-option true-btn" data-answer="true"><span class="option-text ed-serif" data-translate="true">${tfText.true}</span></div>
+                    <div class="tf-option false-btn" data-answer="false"><span class="option-text ed-serif" data-translate="false">${tfText.false}</span></div>
                 </div>
             `;
             container.classList.remove('hidden');

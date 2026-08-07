@@ -123,17 +123,35 @@ const questionSchema = z.discriminatedUnion('type', [
 // Quiz Schemas
 // ============================================================================
 
+// Per-quiz scoring setup. Shape mirrors readScoringConfigFromDOM() in
+// public/js/utils/scoring-config.js and what services/scoring-service.js reads.
+// Shared by the saved-quiz settings and the host-join socket payload; note the
+// threshold is seconds when saved to a file and milliseconds over the socket.
+// Every key stays optional with no default so a quiz without a scoring config
+// does not gain a spurious one.
+const scoringConfigSchema = z.object({
+    timeBonusEnabled: z.boolean().optional(),
+    timeBonusThreshold: z.number().min(0).optional(),
+    difficultyMultipliers: z.object({
+        easy: z.number().optional(),
+        medium: z.number().optional(),
+        hard: z.number().optional()
+    }).optional()
+}).optional();
+
 const quizSettingsSchema = z.object({
     randomizeQuestions: z.boolean().optional().default(false),
     randomizeAnswers: z.boolean().optional().default(false),
     useGlobalTime: z.boolean().optional().default(false),
     globalTimeLimit: z.number().int().min(5).max(300).optional().default(20),
     manualAdvance: z.boolean().optional().default(true),
+    showLeaderboardBetweenQuestions: z.boolean().optional().default(true),
     // Consensus mode settings
     consensusMode: z.boolean().optional().default(false),
     consensusThreshold: z.enum(['50', '66', '75', '100']).optional().default('66'),
     discussionTime: z.number().int().min(10).max(300).optional().default(30),
-    allowChat: z.boolean().optional().default(false)
+    allowChat: z.boolean().optional().default(false),
+    scoringConfig: scoringConfigSchema
 }).optional();
 
 const saveQuizSchema = z.object({
@@ -390,22 +408,13 @@ const exportFormatSchema = z.object({
 // ============================================================================
 
 // Host events (from client to server)
-const scoringConfigSchema = z.object({
-    timeBonusEnabled: z.boolean().optional(),
-    timeBonusThreshold: z.number().min(0).optional(),
-    difficultyMultipliers: z.object({
-        easy: z.number().optional(),
-        medium: z.number().optional(),
-        hard: z.number().optional()
-    }).optional()
-}).optional();
-
 const hostJoinSchema = z.object({
     quiz: z.object({
         title: z.string().min(1),
         questions: z.array(questionSchema).min(1),
         manualAdvancement: z.boolean().optional(),
         powerUpsEnabled: z.boolean().optional().default(false),
+        showLeaderboardBetweenQuestions: z.boolean().optional().default(true),
         randomizeQuestions: z.boolean().optional(),
         randomizeAnswers: z.boolean().optional(),
         sameTimeForAll: z.boolean().optional(),

@@ -903,7 +903,29 @@
         overflow-y: auto; /* Enable scrolling only when needed */
         overflow-x: hidden; /* Prevent horizontal scroll */
     }
-    
+
+    /* Multiple-correct submit stays reachable on phones.
+       Problem: with 4+ ticked-checkbox options the Submit button sits below the
+       fold, nothing hints it exists, and players sit on the options believing
+       ticking a box submitted the answer.
+       Sticky, not fixed and not a scroll hint: #player-multiple-correct is a
+       DIRECT child of .player-game-container above (index.html:3012), which is
+       the phone scrollport (overflow-y: auto). So the button's sticky range is
+       exactly the option list — it pins to the bottom of the scrollport while
+       any option is on screen and drops back to its natural place once the list
+       bottom is reached. No JS, no observer lifecycle, no new copy to translate,
+       and the action is always *reachable*, not merely advertised.
+       z-index keeps it above the option rows it floats over; the shadow makes
+       the float read as a float. Bottom offset resolves against the scrollport's
+       padding edge, which already carries env(safe-area-inset-bottom) above, so
+       the button clears the home indicator. */
+    #submit-multiple {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        box-shadow: var(--shadow-lg);
+    }
+
     /* PIN Display */
     .pin-display {
         font-size: 2.5rem;
@@ -2422,6 +2444,14 @@
         border-radius: 8px !important;
     }
 
+    /* Header pills DO have a complete design rule (header.css: border-radius
+       999px); the rule above is !important, so these must be too, and they
+       out-specify it so the 8px box stays for every other .btn. */
+    .app-header #start-hosting-header-small.btn,
+    .app-header .live-game-controls .btn {
+        border-radius: 999px !important;
+    }
+
     /* Onboarding dots - keep small with invisible touch targets */
     .onboarding-dot {
         width: 8px !important;
@@ -2688,6 +2718,21 @@
    Heights stay >=44px via its min-height.
    ============================================ */
 @media (max-width: 639px) {
+    /* The same universal rule also forces min-width: 44px on every header
+       control. A control that only centres on the cross axis (align-items,
+       no justify-content) then has its content pinned to the main-axis start
+       inside the inflated box: with the name hidden, #user-chip is a 26px
+       avatar + 8px padding = 36px of content in a 44px round chip, so the
+       avatar renders 4px left of centre. Same shape of defect on .lang-pill
+       once .language-name is hidden. Centre both axes explicitly.
+       Nothing else declares justify-content on these two, so ID/class
+       specificity here is already decisive — no !important needed. */
+    .app-header #user-chip,
+    .app-header #language-selector .lang-pill {
+        justify-content: center;
+        align-items: center;
+    }
+
     .app-header #user-chip {
         padding: 4px !important;
     }
