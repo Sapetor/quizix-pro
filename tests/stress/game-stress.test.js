@@ -21,6 +21,14 @@ const TEST_QUIZ = {
     title: 'Stress Test Quiz',
     randomizeAnswers: false,
     powerUpsEnabled: true,
+    // REQUIRED. services/game.js resolves `quiz.manualAdvancement ?? true`, so
+    // omitting this silently opts every scenario into manual advancement: the
+    // server then waits for the host's `next-question` that these tests never
+    // send, and each one dies on "Timeout waiting for question-start". That is
+    // what broke 7 of the 8 tests here when manual advancement became the
+    // default. The one test that passed was the one explicitly setting it.
+    // The dedicated manual-advancement test below sets its own quiz to true.
+    manualAdvancement: false,
     questions: [
         {
             question: 'What is 2+2?',
@@ -112,12 +120,23 @@ function waitForEvent(socket, eventName, timeout = 15000) {
  * @param {number} count - number of sockets
  * @returns {Promise<Socket[]>}
  */
+/**
+ * Where the sockets connect. Defaults to the in-process test server on
+ * 127.0.0.1; set STRESS_TARGET to aim the whole suite at an already-running
+ * deployment instead, e.g.
+ *   STRESS_TARGET=https://quiz.smplecht.uk npm run test:stress
+ * That measures the real path (TLS + Cloudflare tunnel + server) rather than
+ * loopback. When STRESS_TARGET is set no local server is started.
+ */
+const STRESS_TARGET = process.env.STRESS_TARGET || null;
+const targetUrl = (port) => STRESS_TARGET || `http://127.0.0.1:${port}`;
+
 function createPlayers(port, count) {
     const sockets = [];
     const connectPromises = [];
 
     for (let i = 0; i < count; i++) {
-        const socket = ioClient(`http://127.0.0.1:${port}`, {
+        const socket = ioClient(targetUrl(port), {
             forceNew: true,
             transports: ['websocket']
         });
@@ -164,7 +183,15 @@ async function createHostAndGame(port, quiz = TEST_QUIZ) {
     const [hostSocket] = await createPlayers(port, 1);
     hostSocket.emit('host-join', { quiz });
     const gameCreated = await waitForEvent(hostSocket, 'game-created');
-    return { hostSocket, pin: gameCreated.pin, gameId: gameCreated.gameId };
+    // hostToken must be carried to any later `host-rejoin`: socket/player-events.js
+    // rejects a rejoin whose token does not match game.hostToken, so that a player
+    // who merely knows the PIN cannot hijack the game.
+    return {
+        hostSocket,
+        pin: gameCreated.pin,
+        gameId: gameCreated.gameId,
+        hostToken: gameCreated.hostToken
+    };
 }
 
 /**
@@ -238,6 +265,11 @@ describe('Socket Stress Tests', () => {
     let port;
 
     beforeAll(async () => {
+        if (STRESS_TARGET) {
+            // Aiming at a running deployment — do not start a local server.
+            console.log(`[stress] targeting ${STRESS_TARGET}`);
+            return;
+        }
         testServer = await createTestServer();
         port = testServer.port;
     });
@@ -594,7 +626,7 @@ describe('Socket Stress Tests', () => {
             const hostRejoinPromise = waitForEvent(newHostSocket, 'host-rejoin-success');
             const playerReconnectedPromise = waitForEvent(playerSockets[0], 'host-reconnected');
 
-            newHostSocket.emit('host-rejoin', { pin: host.pin });
+            newHostSocket.emit('host-rejoin', { pin: host.pin, token: host.hostToken });
 
             const [rejoinData] = await Promise.all([hostRejoinPromise, playerReconnectedPromise]);
 
