@@ -378,10 +378,119 @@
 
 #game-lobby .combined-info-card #qr-code-image {
     width: 100%;
+    /* components.css:998 and layout.css:546 cap the image at max-width 200px /
+       max-height 200px (ID specificity, so `width: 100%` above wins but the
+       caps survive). Without these resets the container grows with the size
+       stepper while the code itself stays 200px — the box gets wider, the QR
+       does not. */
+    max-width: 100%;
+    max-height: none;
     height: auto;
     border-radius: var(--r-sm, 10px);
     box-shadow: none;
     background: #fff;
+}
+
+/* --- Host-adjustable QR size (classroom projection) ------------------------
+   The host steps the QR through four widths with the −/+ controls; the chosen
+   step persists in localStorage (ui-manager.applyQRSize). The two larger steps
+   no longer fit beside the 56px PIN in the ~549px card interior, so they drop
+   the row to a single column and the PIN sits under the code. `max-width:100%`
+   on every step keeps a narrow window or a split screen from overflowing the
+   card. The image itself is an SVG (qr-service.js), so it stays pixel-exact at
+   every step instead of resampling soft. */
+#game-lobby .combined-info-card .qr-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+}
+
+#game-lobby .combined-info-card .qr-container {
+    transition: width 200ms ease, max-width 200ms ease;
+}
+
+#game-lobby .combined-info-card .qr-size-1 .qr-container {
+    width: 160px;
+    max-width: 100%;
+}
+#game-lobby .combined-info-card .qr-size-2 .qr-container {
+    width: 220px;
+    max-width: 100%;
+}
+/* The two large steps also clamp against viewport height: at 440px the card is
+   ~700px tall before its own chrome, which does not fit a 1280x800 projector
+   and would push the Start button off-screen. min(px, vh) keeps every step
+   visible on short screens and only bites below ~1080p. */
+#game-lobby .combined-info-card .qr-size-3 .qr-container {
+    width: min(320px, 40vh);
+    max-width: 100%;
+}
+#game-lobby .combined-info-card .qr-size-4 .qr-container {
+    width: min(440px, 50vh);
+    max-width: 100%;
+}
+
+/* Stack once the code is wider than the PIN block can sit beside. */
+#game-lobby .combined-info-card .qr-pin-section.qr-size-3,
+#game-lobby .combined-info-card .qr-pin-section.qr-size-4 {
+    grid-template-columns: 1fr;
+    align-items: start;
+}
+
+#game-lobby .combined-info-card .qr-size-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#game-lobby .combined-info-card .qr-size-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-right: 2px;
+}
+
+#game-lobby .combined-info-card .qr-size-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1;
+    color: var(--ink-2, var(--ink));
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm, 10px);
+    cursor: pointer;
+    transition: border-color 150ms ease, color 150ms ease;
+}
+
+#game-lobby .combined-info-card .qr-size-btn:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary-ink, var(--ink));
+    transform: none;
+    box-shadow: none;
+}
+
+#game-lobby .combined-info-card .qr-size-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #game-lobby .combined-info-card .qr-container {
+        transition: none;
+    }
 }
 
 /* Horizontal rule separating QR/PIN from Start button */

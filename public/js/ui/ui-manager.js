@@ -10,10 +10,18 @@ import { uiStateManager } from '../utils/ui-state-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { updateMobileReturnButtonVisibility } from '../utils/globals.js';
 import { escapeHtml, dom, isPhone } from '../utils/dom.js';
+import { getItem, setItem } from '../utils/storage-utils.js';
 import { setMuteStudentsState } from './header-controller.js';
 import { initQuestionSidebar } from './question-sidebar.js';
 import { initEditorFormChrome } from './editor-form-chrome.js';
 import { initEditorValidation } from '../quiz/editor-validation.js';
+
+// Lobby QR sizing. The four widths themselves live in CSS (.qr-size-1..4 in
+// app-screens.css); step 2 is the historical 220px default. Persisted so a host
+// who sized the code for their projector keeps it for the next game.
+const QR_SIZE_STEPS = 4;
+const QR_SIZE_DEFAULT = 2;
+const QR_SIZE_STORAGE_KEY = 'quizix_lobby_qr_size';
 
 /**
  * Toggle editor header state (toolbar and breadcrumb visibility)
@@ -546,7 +554,48 @@ export class UIManager {
         }
     }
 
+    /**
+     * Apply a QR size step (1..QR_SIZE_STEPS) to the lobby and remember it.
+     * The widths live in CSS (.qr-size-N in app-screens.css).
+     */
+    applyQRSize(step) {
+        const section = document.querySelector('#game-lobby .qr-pin-section');
+        if (!section) return;
+
+        const clamped = Math.min(QR_SIZE_STEPS, Math.max(1, Number(step) || QR_SIZE_DEFAULT));
+        for (let i = 1; i <= QR_SIZE_STEPS; i++) {
+            section.classList.toggle(`qr-size-${i}`, i === clamped);
+        }
+        this.qrSize = clamped;
+        setItem(QR_SIZE_STORAGE_KEY, String(clamped));
+
+        const smaller = dom.get('qr-size-smaller');
+        const larger = dom.get('qr-size-larger');
+        if (smaller) smaller.disabled = clamped === 1;
+        if (larger) larger.disabled = clamped === QR_SIZE_STEPS;
+    }
+
+    /**
+     * Wire the lobby QR −/+ controls once and restore the host's stored size.
+     * Called from loadQRCode, i.e. every time the lobby is populated.
+     */
+    setupQRSizeControls() {
+        if (!this.qrSizeControlsReady) {
+            const smaller = dom.get('qr-size-smaller');
+            const larger = dom.get('qr-size-larger');
+            if (!smaller || !larger) return;
+
+            smaller.addEventListener('click', () => this.applyQRSize(this.qrSize - 1));
+            larger.addEventListener('click', () => this.applyQRSize(this.qrSize + 1));
+            this.qrSizeControlsReady = true;
+        }
+
+        this.applyQRSize(parseInt(getItem(QR_SIZE_STORAGE_KEY, ''), 10) || QR_SIZE_DEFAULT);
+    }
+
     async loadQRCode(pin) {
+        this.setupQRSizeControls();
+
         try {
             const data = await APIHelper.fetchAPIJSON(`api/qr/${pin}`);
 

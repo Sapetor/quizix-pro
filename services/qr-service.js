@@ -290,21 +290,28 @@ class QRService {
             return cached.data;
         }
 
-        // 600, not 300: the lobby QR container is 220px with 10px padding, so
-        // the image paints at 200 CSS px — 400 device px on the 2x displays and
-        // projectors this gets scanned from, which a 300px source cannot cover
-        // without resampling the module edges soft. A QR is 2-colour, so the
-        // larger PNG costs little.
-        const qrCodeDataUrl = await QRCode.toDataURL(gameUrl, {
-            width: 600,
+        // SVG, not PNG: the host can now enlarge the lobby QR up to 440 CSS px for
+        // projection (see .qr-size-* in app-screens.css), which is 880 device px on a
+        // 2x display — past the resolution of any fixed-size raster we would pick, so
+        // the modules would resample soft exactly when they need to be scannable from
+        // the back of the room. The renderer emits a viewBox + shape-rendering
+        // ="crispEdges" path, so it is pixel-exact at every size and smaller on the
+        // wire than the 600px PNG it replaces. Consumers set it as an <img> src
+        // (ui-manager.loadQRCode, landing.js), which is allowed by img-src 'data:'.
+        // `width` only stamps width/height attributes next to the viewBox — the
+        // markup stays vector. It is there so the <img> has an unambiguous
+        // intrinsic size for the `width:100%; height:auto` sizing the lobby and
+        // landing page use; a viewBox-only SVG leaves that to UA defaults.
+        const qrSvg = await QRCode.toString(gameUrl, {
+            type: 'svg',
+            width: 512,
             margin: 2,
             color: {
                 dark: '#000000',
                 light: '#FFFFFF'
-            },
-            quality: 0.92,
-            type: 'image/png'
+            }
         });
+        const qrCodeDataUrl = `data:image/svg+xml;base64,${Buffer.from(qrSvg, 'utf8').toString('base64')}`;
 
         const responseData = {
             qrCode: qrCodeDataUrl,

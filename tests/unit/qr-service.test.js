@@ -7,7 +7,7 @@ const os = require('os');
 
 // Mock QRCode module
 jest.mock('qrcode', () => ({
-    toDataURL: jest.fn().mockResolvedValue('data:image/png;base64,MOCKQRCODE')
+    toString: jest.fn().mockResolvedValue('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"></svg>')
 }));
 
 // Mock os module
@@ -363,10 +363,11 @@ describe('QRService', () => {
             });
         });
 
-        test('should generate QR code for valid game', async () => {
+        // SVG, so the host can enlarge the lobby QR for projection without resampling.
+        test('should generate a vector QR code for valid game', async () => {
             const result = await qrService.generateQRCode('123456', mockGame, mockReq);
 
-            expect(result.qrCode).toContain('data:image/png');
+            expect(result.qrCode).toContain('data:image/svg+xml;base64,');
             expect(result.pin).toBe('123456');
             expect(result.gameUrl).toContain('pin=123456');
         });
@@ -382,8 +383,8 @@ describe('QRService', () => {
             await qrService.generateQRCode('123456', mockGame, mockReq);
             await qrService.generateQRCode('123456', mockGame, mockReq);
 
-            // QRCode.toDataURL should only be called once due to caching
-            expect(QRCode.toDataURL).toHaveBeenCalledTimes(1);
+            // QRCode.toString should only be called once due to caching
+            expect(QRCode.toString).toHaveBeenCalledTimes(1);
         });
 
         test('should serve from cache on second request', async () => {
@@ -417,7 +418,7 @@ describe('QRService', () => {
             const firstResult = await qrService.generateQRCode('123456', mockGame, firstReq);
             const secondResult = await qrService.generateQRCode('123456', mockGame, secondReq);
 
-            expect(QRCode.toDataURL).toHaveBeenCalledTimes(2);
+            expect(QRCode.toString).toHaveBeenCalledTimes(2);
             expect(firstResult.gameUrl).toBe('http://192.168.1.50:3000/?pin=123456');
             expect(secondResult.gameUrl).toBe('http://10.0.0.5:3000/?pin=123456');
         });

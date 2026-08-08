@@ -794,7 +794,13 @@ export function updateMobileReturnButtonVisibility(currentScreen) {
 
     if (desktopReturnButton) {
         if (shouldShow) {
-            show(desktopReturnButton, 'visible-inline-block');
+            // MUST stay a flex display: `.iconbtn` centres its icon with
+            // justify-content/align-items, and `.visible-inline-block`
+            // (display: inline-block !important, utilities layer) silently
+            // kills both. The 18px SVG is `display: block`, so `text-align:
+            // center` cannot centre it either — it pins to the content-box
+            // left edge, ~12px off centre inside the 44px phone touch target.
+            show(desktopReturnButton, 'visible-flex');
         } else {
             hide(desktopReturnButton);
         }

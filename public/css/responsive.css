@@ -2595,6 +2595,27 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         transition: var(--theme-transition-fast);
     }
+
+    /* Icon buttons are bare by design (header.css `.iconbtn`: border: none,
+       background: none). The bare `button` rules above are (0,1,1) and land
+       later in the bundle than `.iconbtn` (0,1,0), so on phones they repaint
+       every ···/home/sound icon as a raised bordered card — which is what
+       reads as a "segmented group" next to the genuinely outlined .lang-pill
+       and #user-chip. `.iconbtn:not(:disabled)` is (0,2,0) and wins without
+       !important. Border-box sizing means dropping the 1px border does not
+       resize the 44px touch target. */
+    .iconbtn:not(:disabled),
+    .iconbtn:not(:disabled):hover {
+        border: none;
+        box-shadow: none;
+    }
+
+    /* Touch devices keep :hover latched after a tap, so the -1px lift above
+       would leave a tapped icon parked above its own centre. `:not(:active)`
+       so the generic `button:active` press feedback still fires. */
+    .iconbtn:not(:disabled):hover:not(:active) {
+        transform: none;
+    }
 }
 
 /* ============================================

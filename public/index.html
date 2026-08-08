@@ -13,10 +13,10 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=154">
+    <link rel="stylesheet" href="css/main.bundle.css?v=159">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=154" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=159" as="script" crossorigin="anonymous">
     <!-- app.js and translation-manager.js are never requested by the document; main.js
          imports them as ES modules. A preload only matches if the URL is identical, and
          the import specifiers carry no ?v= query — so a versioned `as="script"` preload
@@ -2621,10 +2621,26 @@
                         </div>
                         <div class="card-content combined-content">
                             <!-- QR Code and PIN Section -->
-                            <div class="qr-pin-section">
-                                <div id="qr-code-container" class="qr-container">
-                                    <div class="qr-loading" data-translate="generating_qr">Generating QR Code...</div>
-                                    <img id="qr-code-image" class="hidden" alt="QR Code to join game">
+                            <div class="qr-pin-section qr-size-2">
+                                <div class="qr-block">
+                                    <div id="qr-code-container" class="qr-container">
+                                        <div class="qr-loading" data-translate="generating_qr">Generating QR Code...</div>
+                                        <img id="qr-code-image" class="hidden" alt="QR Code to join game">
+                                    </div>
+                                    <!-- Projection sizing: the host enlarges the QR so students at the
+                                         back of the room can scan it. Size persists in localStorage. -->
+                                    <div class="qr-size-controls" role="group" aria-label="QR code size"
+                                        data-translate-aria-label="qr_size">
+                                        <span class="qr-size-label ed-mono" data-translate="qr_size">QR size</span>
+                                        <button type="button" id="qr-size-smaller" class="qr-size-btn ed-mono"
+                                            aria-label="Make QR code smaller" title="Make QR code smaller"
+                                            data-translate-aria-label="qr_size_smaller"
+                                            data-translate-title="qr_size_smaller">&minus;</button>
+                                        <button type="button" id="qr-size-larger" class="qr-size-btn ed-mono"
+                                            aria-label="Make QR code bigger" title="Make QR code bigger"
+                                            data-translate-aria-label="qr_size_larger"
+                                            data-translate-title="qr_size_larger">+</button>
+                                    </div>
                                 </div>
                                 <div class="pin-section">
                                     <div id="game-pin" class="pin-display ed-mono" role="button" tabindex="0"
@@ -3822,10 +3838,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=154"></script>
-    <script type="module" src="js/landing.js?v=154"></script>
-    <script type="module" src="js/landing-demo.js?v=154"></script>
-    <script type="module" src="js/landing-ai.js?v=154"></script>
+    <script type="module" src="js/main.js?v=159"></script>
+    <script type="module" src="js/landing.js?v=159"></script>
+    <script type="module" src="js/landing-demo.js?v=159"></script>
+    <script type="module" src="js/landing-ai.js?v=159"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and
