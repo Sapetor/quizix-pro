@@ -1309,7 +1309,7 @@
     transition: color var(--duration-fast) var(--ease-smooth),
                 border-color var(--duration-fast) var(--ease-smooth);
 }
-#host-game-screen #end-round-btn.btn.danger:hover {
+#host-game-screen #end-round-btn.btn.danger:not(:disabled):hover {
     background: transparent;
     color: var(--primary-ink);
     border-color: var(--primary);

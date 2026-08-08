@@ -206,11 +206,8 @@ class QuestionFlowService {
                 // Build correct answer data
                 const correctAnswerData = this.buildCorrectAnswerData(question);
 
-                // Emit question timeout with early end flag
-                io.to(`game-${game.pin}`).emit('question-timeout', {
-                    ...correctAnswerData,
-                    earlyEnd: true
-                });
+                // Emit question timeout
+                io.to(`game-${game.pin}`).emit('question-timeout', correctAnswerData);
 
                 // Get and emit answer statistics to host (only if host connected)
                 if (game.hostId) {

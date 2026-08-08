@@ -528,7 +528,7 @@ describe('QuestionFlowService', () => {
 
             expect(game.endQuestion).toHaveBeenCalled();
             expect(io.emit).toHaveBeenCalledWith('question-timeout', expect.objectContaining({
-                earlyEnd: true
+                questionType: expect.any(String)
             }));
         });
     });

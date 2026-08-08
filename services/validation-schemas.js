@@ -517,18 +517,6 @@ const playerJoinedEventSchema = z.object({
     }))
 });
 
-const questionStartEventSchema = z.object({
-    questionIndex: z.number().int().min(0),
-    totalQuestions: z.number().int().min(1),
-    question: z.object({
-        question: z.string(),
-        type: z.string(),
-        options: z.array(z.string()).optional(),
-        time: z.number().optional()
-    }),
-    timeLimit: z.number().int()
-});
-
 const answerResultEventSchema = z.object({
     correct: z.boolean(),
     points: z.number().int(),
@@ -597,7 +585,6 @@ function validateSocketEvent(eventName, data) {
         // Server to client
         'game-created': gameCreatedEventSchema,
         'player-joined': playerJoinedEventSchema,
-        'question-start': questionStartEventSchema,
         'answer-result': answerResultEventSchema,
         'question-end': questionEndEventSchema,
         'game-end': gameEndEventSchema,
@@ -692,7 +679,6 @@ module.exports = {
     releaseSessionSchema,
     gameCreatedEventSchema,
     playerJoinedEventSchema,
-    questionStartEventSchema,
     answerResultEventSchema,
     questionEndEventSchema,
     gameEndEventSchema,

@@ -9,7 +9,7 @@ import { logger } from '../../core/config.js';
 import { MathRenderer } from '../../utils/math-renderer.js';
 import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
 import { imagePathResolver } from '../../utils/image-path-resolver.js';
-import { escapeHtml, escapeHtmlPreservingLatex } from '../../utils/dom.js';
+import { escapeHtml, escapeHtmlPreservingLatex, hide } from '../../utils/dom.js';
 
 export class GameDisplayManager {
     constructor(uiManager) {
@@ -302,7 +302,9 @@ export class GameDisplayManager {
         // Clear host options container
         if (elements.hostOptionsContainer) {
             elements.hostOptionsContainer.innerHTML = '';
-            elements.hostOptionsContainer.classList.add('hidden');
+            // hide() also strips the visible-* classes; a bare classList.add('hidden')
+            // left the container with both `hidden` and `visible-block` (GOTCHAS #6).
+            hide(elements.hostOptionsContainer);
         }
 
         // Reset host multiple choice container

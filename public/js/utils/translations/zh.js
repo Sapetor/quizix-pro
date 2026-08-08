@@ -23,10 +23,8 @@ export default {
     error_password_too_short: '密码至少需要 8 个字符。',
     error_password_too_long: '密码过长。',
     error_invalid_credentials: '用户名或密码无效。',
-    error_rate_limited: '尝试次数过多,请一分钟后再试。',
     error_signup_failed: '注册失败。',
     error_login_failed: '登录失败。',
-    error_auth_required: '必须登录才能执行此操作。',
     error_quiz_forbidden: '您无权访问此测验。',
     error_quiz_not_owner: '您不是此测验的所有者。',
     error_quiz_legacy_public: '此测验是公开的,无法设为私密。',
@@ -1202,17 +1200,6 @@ export default {
     export_session_comparison_report: 'Session Comparison Report',
     export_sessions_compared: 'Sessions Compared',
     export_overall_trend: 'Overall Trend',
-
-    // Comparison PDF export strings
-    export_avg_participants: 'Average Participants',
-    export_improving: 'Improving',
-    export_declining: 'Declining',
-    export_stable: 'Stable',
-    export_session_details: 'Session Details',
-    export_question_trends: 'Question Performance Trends',
-    export_session_label: 'Session {0}',
-    export_question_num_header: 'Question #',
-    export_question_text_header: 'Question Text',
 
     // Help & Tour
     help_and_tour: '帮助与导览',

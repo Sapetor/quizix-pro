@@ -45,9 +45,12 @@ findings from that sweep._
   the socket-level rejoin, not this client bookkeeping), so the overlay and the
   `quizix_host_reconnect` sessionStorage write are still comparatively
   under-tested. Worth a manual host-disconnect check.
-- [ ] **`#answer-options` carries both `visible-block` and `hidden`** during a
+- [x] **`#answer-options` carries both `visible-block` and `hidden`** during a
   rematch — the GOTCHAS #6 conflict, where both classes use `!important`.
-  Observed, not yet traced to the writer.
+  Writer traced: `GameDisplayManager.clearHostQuestionContent()` did a bare
+  `classList.add('hidden')` on top of the `visible-block` left by
+  `question-renderer.js` `show(hostOptionsContainer, 'visible-block')`. Now uses
+  the `hide()` helper. Pinned by `tests/unit/answer-options-visibility.dom.test.js`.
 - [ ] **Visual baselines are stale and may pass silently.**
   `desktop-*-question-host-*.png` predate both the always-visible header
   (fde3559) and the removal of `#game-mute-students-btn`. The mute-button delta
@@ -97,24 +100,31 @@ From the 2026-07-26 audit; the severe ones were fixed in the sweep.
 - [ ] **No confirmation on End Round**, while the adjacent "End game"
   (`#stop-quiz-btn`) has one. The new click-latch reduces accidental damage;
   decide whether a confirm is still wanted.
-- [ ] **Dead payload fields**: `earlyEnd: true` (question-flow-service) has no
+- [x] ~~**Dead payload fields**: `earlyEnd: true` (question-flow-service) has no
   client consumer; `explanationVideo` is sent on the timeout path but not the
-  early-end path — also unconsumed. Remove both or make paths match before
-  something starts reading them.
-- [ ] **Dead validation plumbing**: `services/validation-schemas.js` has a
+  early-end path — also unconsumed.~~ REMOVED — both fields deleted from the
+  `question-timeout` payloads; the two paths now agree.
+- [x] ~~**Dead validation plumbing**: `services/validation-schemas.js` has a
   `question-start` outbound schema matching no real emitter, and
-  `validateSocketEvent` has zero callers. Delete or wire up.
+  `validateSocketEvent` has zero callers.~~ PARTLY DONE — the `question-start`
+  outbound schema is deleted. `validateSocketEvent` is NOT dead: it is the
+  body of `validateAndHandle`, which every socket module uses; kept. The other
+  server→client schemas (`game-created`, `player-joined`, `answer-result`,
+  `question-end`, `game-end`) are equally unreachable and still there.
 
 ## Pre-existing issues surfaced (not introduced) by the sweep
 
-- [ ] **Result modal covers the leaderboard when a question has an
+- [x] ~~**Result modal covers the leaderboard when a question has an
   explanation** — `displayDuration` is 0 in that case so the modal stays up
   until the next question. Unchanged by the new 5.5s reveal window (which
-  otherwise fixed the overlap for plain questions).
-- [ ] **Practice mode never shows the submission confirmation** — nothing on
-  the practice event bus listens for `answer-submitted`. Harmless now that
-  the confirmation is deferred anyway; delete the practice-side emit or wire
-  the listener.
+  otherwise fixed the overlap for plain questions).~~ RESOLVED —
+  `LeaderboardManager.showLeaderboard` now dismisses the feedback overlay
+  before switching screens; the explanation still gets the full reveal
+  window / manual-advance dwell, it just stops outliving it.
+- [x] ~~**Practice mode never shows the submission confirmation** — nothing on
+  the practice event bus listens for `answer-submitted`.~~ RESOLVED — the two
+  dead `eventBus.emit('answer-submitted')` calls in `local-game-session.js`
+  are deleted (the confirmation is deferred anyway).
 - [ ] **`variables.css` global font-scale table (~lines 505–600) should be
   retired in its own pass.** It is a block of `!important` font-sizes keyed
   on generic selectors (`.quiz-editor-section label`,
@@ -122,8 +132,10 @@ From the 2026-07-26 audit; the severe ones were fixed in the sweep.
   every new consumer must counter it with its own `!important` +
   `calc(… * var(--global-font-scale))` to keep the A/A+/A++ accessibility
   toggle working. The editor design pass hit this three times.
-- [ ] **`#end-round-btn` recolors on hover while disabled** — the
-  `.danger:hover` rule lacks `:not(:disabled)`. Cosmetic.
+- [x] ~~**`#end-round-btn` recolors on hover while disabled** — the
+  `.danger:hover` rule lacks `:not(:disabled)`.~~ FIXED in
+  `public/css/app-screens.css` (`#host-game-screen #end-round-btn.btn.danger`
+  hover rule).
 
 ## From the 2026-08-04 manual-advancement session
 
@@ -155,17 +167,19 @@ resolves `quiz.manualAdvancement ?? true`; the three checkboxes ship `checked`;
   a new `waitForHostFinalResults` on `#final-results:not(.hidden)`) and
   `tests/e2e-disconnect-stats.spec.js`. Tests only; no product code changed.
 
-- [ ] **Duplicate keys in every locale file.** Object literals silently keep
-  the last definition, so one of each pair is dead code. `en/fr/it/pt` have 2
-  (`error_rate_limited`, `error_auth_required`); `es/de/ja/pl/zh` have those
-  plus 9 `export_*` keys (`export_avg_participants`, `export_declining`,
-  `export_improving`, `export_question_num_header`,
-  `export_question_text_header`, `export_question_trends`,
-  `export_session_details`, `export_session_label`, `export_stable`).
-  Predates all of this. Check which of each pair currently wins before
-  deleting — the survivor is the one users see.
-  Find them with:
-  `grep -oP '^\s{4}\K[a-z0-9_]+(?=:)' <file> | sort | uniq -d`
+- [x] ~~**Duplicate keys in every locale file.**~~ DONE 2026-08-08 — all 9
+  files de-duplicated (71 lines); the surviving (last) definition was kept in
+  every case, so runtime behavior is unchanged. Verified per file: same key
+  set, zero value diffs vs. HEAD.
+- [ ] **`error_rate_limited` / `error_auth_required` are untranslated English
+  in all 8 non-English locales.** Surfaced by the dedup above: each locale had
+  a properly localized auth-modal pair (e.g. es "Demasiados intentos…") that
+  was *shadowed* by a later English server-message pair ("Too many requests.
+  Please slow down." / "Authentication required") — so users have been seeing
+  the English strings all along, and the localized values were dead code (now
+  deleted). Fix by splitting the two use cases into distinct keys (e.g.
+  `error_auth_rate_limited` vs `error_rate_limited`) and re-translating the
+  server-message pair in the 8 locales.
 
 ### Testing gotchas that cost real time — read before running e2e
 

@@ -23,10 +23,8 @@ export default {
     error_password_too_short: 'Hasło musi mieć co najmniej 8 znaków.',
     error_password_too_long: 'Hasło jest za długie.',
     error_invalid_credentials: 'Nieprawidłowa nazwa użytkownika lub hasło.',
-    error_rate_limited: 'Za dużo prób. Spróbuj ponownie za minutę.',
     error_signup_failed: 'Rejestracja nie powiodła się.',
     error_login_failed: 'Logowanie nie powiodło się.',
-    error_auth_required: 'Musisz być zalogowany, aby to zrobić.',
     error_quiz_forbidden: 'Nie masz dostępu do tego quizu.',
     error_quiz_not_owner: 'Nie jesteś właścicielem tego quizu.',
     error_quiz_legacy_public: 'Ten quiz jest publiczny i nie może zostać prywatny.',
@@ -1217,17 +1215,6 @@ export default {
     export_session_comparison_report: 'Session Comparison Report',
     export_sessions_compared: 'Sessions Compared',
     export_overall_trend: 'Overall Trend',
-
-    // Comparison PDF export strings
-    export_avg_participants: 'Average Participants',
-    export_improving: 'Improving',
-    export_declining: 'Declining',
-    export_stable: 'Stable',
-    export_session_details: 'Session Details',
-    export_question_trends: 'Question Performance Trends',
-    export_session_label: 'Session {0}',
-    export_question_num_header: 'Question #',
-    export_question_text_header: 'Question Text',
 
     // Help & Tour
     help_and_tour: 'Pomoc i Przewodnik',

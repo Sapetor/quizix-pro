@@ -8,6 +8,7 @@ import { getTranslation, translationManager } from '../../utils/translation-mana
 import { logger, ANIMATION, TIMING, COLORS } from '../../core/config.js';
 import { dom, escapeHtml } from '../../utils/dom.js';
 import { simpleResultsDownloader } from '../../utils/simple-results-downloader.js';
+import { modalFeedback } from '../../utils/modal-feedback.js';
 
 export class LeaderboardManager {
     /**
@@ -55,6 +56,8 @@ export class LeaderboardManager {
      * @param {Array} leaderboard - Array of player scores
      */
     showLeaderboard(leaderboard) {
+        this.dismissResultModal();
+
         this.updateLeaderboardDisplay(leaderboard);
 
         const gameState = this.stateManager.getGameState();
@@ -68,8 +71,26 @@ export class LeaderboardManager {
      * @param {Function} saveResultsCallback - Callback to save results
      * @param {Object|null} conceptMastery - Personal concept mastery data for player
      */
+    /**
+     * Dismiss the per-question result modal before showing a results screen.
+     * The modal is a full-screen overlay outside the screen system, so a
+     * screen change alone does not clear it. With an explanation it is shown
+     * with displayDuration 0 (GameManager.showPlayerResult) — "stay until the
+     * next question" — and would otherwise sit on top of the leaderboard or
+     * final-results screen. clearContent() also cancels any deferred render
+     * queued behind the submission modal's minimum-visible timer, which would
+     * otherwise reopen the overlay on top of the new screen. Same teardown
+     * idiom as game-manager.js.
+     */
+    dismissResultModal() {
+        modalFeedback.hide();
+        modalFeedback.clearContent();
+    }
+
     showFinalResults(leaderboard, socket, saveResultsCallback, conceptMastery = null) {
         logger.debug('showFinalResults called with leaderboard:', leaderboard);
+
+        this.dismissResultModal();
 
         if (this.fanfarePlayed) {
             logger.debug('Fanfare already played, skipping');

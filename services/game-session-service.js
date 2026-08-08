@@ -566,8 +566,7 @@ class GameSessionService {
             correctOption: correctOption,
             questionType: question.type || 'multiple-choice',
             tolerance: question.tolerance || null,
-            explanation: question.explanation || null,
-            explanationVideo: question.explanationVideo || null
+            explanation: question.explanation || null
         };
 
         // For multiple-correct questions, also send the correctAnswers array

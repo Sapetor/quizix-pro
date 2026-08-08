@@ -13,10 +13,10 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=159">
+    <link rel="stylesheet" href="css/main.bundle.css?v=160">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=159" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=160" as="script" crossorigin="anonymous">
     <!-- app.js and translation-manager.js are never requested by the document; main.js
          imports them as ES modules. A preload only matches if the URL is identical, and
          the import specifiers carry no ?v= query — so a versioned `as="script"` preload
@@ -3838,10 +3838,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=159"></script>
-    <script type="module" src="js/landing.js?v=159"></script>
-    <script type="module" src="js/landing-demo.js?v=159"></script>
-    <script type="module" src="js/landing-ai.js?v=159"></script>
+    <script type="module" src="js/main.js?v=160"></script>
+    <script type="module" src="js/landing.js?v=160"></script>
+    <script type="module" src="js/landing-demo.js?v=160"></script>
+    <script type="module" src="js/landing-ai.js?v=160"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

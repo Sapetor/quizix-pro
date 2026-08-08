@@ -221,7 +221,6 @@ export class LocalGameSession {
                 points: 0,
                 responseTime
             });
-            this.eventBus.emit('answer-submitted', { answer });
             this.revealAnswer(answer, null, 0);
             return;
         }
@@ -246,9 +245,6 @@ export class LocalGameSession {
             responseTime,
             breakdown: result.breakdown
         });
-
-        // Emit answer submitted event
-        this.eventBus.emit('answer-submitted', { answer });
 
         // Reveal the answer with breakdown
         this.revealAnswer(answer, isCorrect, points, result.breakdown);

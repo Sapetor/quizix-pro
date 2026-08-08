@@ -23,10 +23,8 @@ export default {
     error_password_too_short: 'パスワードは8文字以上にしてください。',
     error_password_too_long: 'パスワードが長すぎます。',
     error_invalid_credentials: 'ユーザー名またはパスワードが正しくありません。',
-    error_rate_limited: '試行回数が多すぎます。1分後に再度お試しください。',
     error_signup_failed: '登録に失敗しました。',
     error_login_failed: 'ログインに失敗しました。',
-    error_auth_required: 'この操作にはログインが必要です。',
     error_quiz_forbidden: 'このクイズにアクセスする権限がありません。',
     error_quiz_not_owner: 'このクイズの所有者ではありません。',
     error_quiz_legacy_public: 'このクイズは公開されており、非公開にはできません。',
@@ -1204,17 +1202,6 @@ export default {
     export_session_comparison_report: 'Session Comparison Report',
     export_sessions_compared: 'Sessions Compared',
     export_overall_trend: 'Overall Trend',
-
-    // Comparison PDF export strings
-    export_avg_participants: 'Average Participants',
-    export_improving: 'Improving',
-    export_declining: 'Declining',
-    export_stable: 'Stable',
-    export_session_details: 'Session Details',
-    export_question_trends: 'Question Performance Trends',
-    export_session_label: 'Session {0}',
-    export_question_num_header: 'Question #',
-    export_question_text_header: 'Question Text',
 
     // Help & Tour
     help_and_tour: 'ヘルプとツアー',
