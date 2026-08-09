@@ -721,7 +721,10 @@
     /* !important + the scale multiplier: the .fs-4xl utility in variables.css
        forces 1.5rem !important on #current-question, which capped the projected
        question at 24px. Keeps the A/A+/A++ toggle working. */
-    font-size: calc(clamp(32px, 3.6vw, 52px) * var(--global-font-scale)) !important;
+    /* Scales on BOTH axes: vw alone let a long stem clip at 1080p, where the
+       question row is flex-shrunk to leave the options on screen. The vh term
+       is what keeps a dense question (long text + image) inside that row. */
+    font-size: calc(clamp(24px, min(3.2vw, 4.0vh), 44px) * var(--global-font-scale)) !important;
     line-height: 1.12;
     letter-spacing: -0.03em;
     color: var(--ink);
@@ -737,6 +740,100 @@
     border: none;
     border-radius: 0;
     padding: 0;
+}
+
+/* Dense-content fit ---------------------------------------------------------
+   A question with an image + long text + long alternatives used to overflow
+   the viewport: the image had a fixed 400px cap, everything stacked, and the
+   page just grew past the fold so the host could not see the alternatives.
+
+   The fix bounds the game column to the space under the sticky header. Inside
+   it the question row is the only flexible block, so it absorbs the shrink and
+   the options grid keeps its place on screen. If even the compacted blocks
+   exceed the viewport the container scrolls rather than the page.
+
+   .container wraps only the header during a game and carries 12px vertical
+   padding — dead space here, and it would throw off the calc below. */
+body.in-host-game .container {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+/* 65px/45px = .app-header-inner height + the .app-header 1px bottom border */
+#host-game-screen .host-game-container {
+    height: calc(100dvh - 65px);
+    overflow-y: auto;
+}
+:root:fullscreen body.in-host-game #host-game-screen .host-game-container {
+    height: calc(100dvh - 45px);
+}
+#host-game-screen #host-question-display {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+#host-game-screen .question-image-container {
+    margin: 0 auto 16px;
+}
+#host-game-screen .question-image-container img {
+    max-height: min(400px, 32vh);
+}
+#host-game-screen .question-video-container .question-video-player {
+    max-height: min(300px, 32vh);
+}
+
+/* Side-by-side media on wide screens: the image sits beside the question text
+   instead of above it, recovering its full height for the options below.
+   :not(.hidden) keeps the row from engaging on questions without media. */
+@media (min-width: 900px) {
+    #host-game-screen .player-question-area:has(.question-image-container:not(.hidden)),
+    #host-game-screen .player-question-area:has(.question-video-container:not(.hidden)) {
+        display: flex;
+        /* `safe` keeps the row's top reachable if it ever scrolls internally */
+        align-items: safe center;
+        justify-content: center;
+        gap: 40px;
+        padding: 32px 56px 16px;
+    }
+    #host-game-screen .player-question-area:has(.question-image-container:not(.hidden)) .question-image-container,
+    #host-game-screen .player-question-area:has(.question-video-container:not(.hidden)) .question-video-container {
+        flex: 0 1 auto;
+        max-width: 44%;
+        min-width: 0;
+        margin: 0;
+        /* stretch to the (flex-shrunk) row height so the img's 100% cap below
+           tracks the space actually available, not a guessed vh figure */
+        align-self: stretch;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 0;
+    }
+    /* <picture> (WebP fallback wrapper) must not break the % height chain */
+    #host-game-screen .player-question-area .question-image-container picture {
+        display: contents;
+    }
+    #host-game-screen .player-question-area:has(.question-image-container:not(.hidden)) .question-image-container img {
+        max-height: min(480px, 100%);
+    }
+    #host-game-screen .player-question-area:has(.question-video-container:not(.hidden)) .question-video-player {
+        max-height: min(360px, 44vh);
+    }
+    #host-game-screen .player-question-area:has(.question-image-container:not(.hidden)) #current-question,
+    #host-game-screen .player-question-area:has(.question-video-container:not(.hidden)) #current-question {
+        flex: 1 1 0;
+        min-width: 0;
+        margin: 0;
+        text-align: left;
+    }
+}
+
+/* Stage mode: in browser fullscreen the header is already a slim strip
+   (header.css) — compact the timer row too so the extra height goes to
+   content, not chrome. */
+:root:fullscreen body.in-host-game #host-game-screen .question-header {
+    padding: 4px 32px;
+    min-height: 40px;
 }
 
 /* Options with distribution overlay --------------------------------------- */
@@ -1030,6 +1127,48 @@
 }
 #host-game-screen .option-display:hover {
     transform: translateY(-2px);
+}
+
+/* Short-viewport density: on laptop-height windows (≲820px) the full-size
+   tiles + timer row leave too little room for a long stem with media, so the
+   fixed blocks compact and the question row keeps the recovered height.
+   Placed after the base tile rules — same specificity, later wins. */
+@media (max-height: 820px) {
+    #host-game-screen .option-display,
+    [data-theme="light"] #host-game-screen .option-display,
+    [data-theme="dark"] #host-game-screen .option-display {
+        padding: 14px 84px 14px 20px;
+        min-height: 56px;
+    }
+    #host-game-screen #host-multiple-choice .player-options:has(.option-display),
+    #host-game-screen #answer-options:has(.option-display) {
+        gap: 10px;
+    }
+    #host-game-screen #host-multiple-choice,
+    #host-game-screen .player-answer-type,
+    [data-theme="light"] #host-game-screen .player-answer-type,
+    [data-theme="dark"] #host-game-screen .player-answer-type {
+        padding: 8px 56px 20px;
+    }
+    #host-game-screen .question-header {
+        padding: 6px 32px;
+        min-height: 44px;
+    }
+    #host-game-screen .question-header #timer,
+    [data-theme="light"] #host-game-screen .question-header #timer,
+    [data-theme="dark"] #host-game-screen .question-header #timer {
+        font-size: 16px;
+        padding: 4px 12px;
+    }
+    /* theme + :has variants: the base (theme-prefixed) and side-by-side
+       (:has) rules both out-specify a bare selector here */
+    #host-game-screen .player-question-area,
+    [data-theme="light"] #host-game-screen .player-question-area,
+    [data-theme="dark"] #host-game-screen .player-question-area,
+    #host-game-screen .player-question-area:has(.question-image-container:not(.hidden)),
+    #host-game-screen .player-question-area:has(.question-video-container:not(.hidden)) {
+        padding: 24px 48px 12px;
+    }
 }
 
 /* Ordering reveal. game-manager.revealHostOrdering() reorders the host tiles

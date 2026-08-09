@@ -13,10 +13,10 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=160">
+    <link rel="stylesheet" href="css/main.bundle.css?v=172">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=160" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=172" as="script" crossorigin="anonymous">
     <!-- app.js and translation-manager.js are never requested by the document; main.js
          imports them as ES modules. A preload only matches if the URL is identical, and
          the import specifiers carry no ?v= query — so a versioned `as="script"` preload
@@ -688,6 +688,20 @@
                             </svg>
                             <span id="mute-students-label" class="mute-students-btn-label"
                                   data-translate="mute_all_students">Mute students</span>
+                        </button>
+                        <!-- Fullscreen during the game: the header utilities cluster
+                             (which holds #fullscreen-toggle) is hidden by
+                             body.in-host-game, so the live game needs its own control.
+                             Entering fullscreen also triggers stage mode (CSS
+                             :root:fullscreen rules in header.css / app-screens.css). -->
+                        <button id="host-fullscreen-btn" class="btn btn-ghost btn-sm host-fullscreen-btn"
+                                data-translate-title="toggle_fullscreen_tooltip"
+                                aria-label="Toggle fullscreen"
+                                data-translate-aria-label="toggle_fullscreen_tooltip">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5"></path>
+                            </svg>
                         </button>
                         <button id="stop-quiz-btn" class="btn btn-ink btn-sm"
                                 data-translate="header_end_game">End game</button>
@@ -3838,10 +3852,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=160"></script>
-    <script type="module" src="js/landing.js?v=160"></script>
-    <script type="module" src="js/landing-demo.js?v=160"></script>
-    <script type="module" src="js/landing-ai.js?v=160"></script>
+    <script type="module" src="js/main.js?v=172"></script>
+    <script type="module" src="js/landing.js?v=172"></script>
+    <script type="module" src="js/landing-demo.js?v=172"></script>
+    <script type="module" src="js/landing-ai.js?v=172"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

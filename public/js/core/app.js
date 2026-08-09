@@ -507,6 +507,16 @@ export class QuizGame {
                 this.toggleFullscreen();
             }
         });
+
+        // Same toggle from the live-game controls cluster — the header
+        // utilities (with #fullscreen-toggle) are hidden while in-host-game.
+        bindElement('host-fullscreen-btn', 'click', () => {
+            if (this.settingsManager.toggleFullscreen) {
+                this.settingsManager.toggleFullscreen();
+            } else {
+                this.toggleFullscreen();
+            }
+        });
     }
 
     /**

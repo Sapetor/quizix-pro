@@ -574,6 +574,35 @@ body.has-editor-toolbar .app-header .conn { display: none; }
   color: var(--ink);
 }
 
+/* Icon-only fullscreen button in the live-game cluster */
+.app-header .live-game-controls .host-fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 9px;
+}
+.app-header .live-game-controls .host-fullscreen-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+/* ----- Stage mode: browser fullscreen while hosting a live game -----
+   Purely state-derived (:fullscreen matches the documentElement that
+   settings-manager/app.js fullscreen-toggle request), so exiting fullscreen
+   or leaving the game screen restores the header with no JS bookkeeping.
+   Slims the header to a strip: PIN + progress + game controls only. */
+:root:fullscreen body.in-host-game .app-header-inner {
+  height: 44px;
+}
+:root:fullscreen body.in-host-game .app-header .brand,
+:root:fullscreen body.in-host-game .app-header .divider,
+:root:fullscreen body.in-host-game .app-header .language-selector {
+  display: none;
+}
+:root:fullscreen body.in-host-game .app-header .live-game-pin-value {
+  font-size: 18px;
+}
+
 /* Visibility orchestration: in-host-game state */
 body.in-host-game .app-header .conn,
 body.in-host-game .app-header .editor-breadcrumb,
