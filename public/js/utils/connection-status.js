@@ -8,6 +8,9 @@ import { translationManager } from './translation-manager.js';
 import { APIHelper } from './api-helper.js';
 
 export class ConnectionStatus {
+    /** Consecutive failed probes required before the badge shows Offline. */
+    static FAILURE_THRESHOLD = 2;
+
     constructor() {
         this.isOnline = navigator.onLine;
         this.connectionQuality = 'unknown';
@@ -15,6 +18,14 @@ export class ConnectionStatus {
         this.pingInterval = null;
         this.socket = null;
         this.callbacks = new Set();
+
+        // A live socket.io connection is authoritative proof we are online: the
+        // HTTP probe may fail or time out while the socket is happily carrying
+        // answers. null = no socket attached (probe is the only signal).
+        this.socketConnected = null;
+        // Number of consecutive probe failures before the badge degrades. One
+        // dropped/aborted probe is not evidence of an outage.
+        this.consecutiveFailures = 0;
 
         // Initialize UI elements
         this.initializeUI();
@@ -118,6 +129,13 @@ export class ConnectionStatus {
      * Handle network state changes
      */
     handleNetworkChange(isOnline) {
+        // navigator's offline event is not authoritative while the socket is
+        // demonstrably delivering events (common false positive on VPN/LAN).
+        if (!isOnline && this.socketConnected === true) {
+            logger.debug('Ignoring offline event: socket is still connected');
+            return;
+        }
+
         this.isOnline = isOnline;
         this.updateUI();
         this.notifyCallbacks();
@@ -129,11 +147,12 @@ export class ConnectionStatus {
      * Perform connection quality check
      */
     async checkConnection() {
+        const pingUrl = APIHelper.getApiUrl('api/ping');
         const startTime = Date.now();
 
         try {
             // Ping the server with a lightweight request
-            const response = await fetch(APIHelper.getApiUrl('api/ping'), {
+            const response = await fetch(pingUrl, {
                 method: 'GET',
                 cache: 'no-cache',
                 signal: this.createTimeoutSignal(5000) // 5 second timeout
@@ -146,39 +165,101 @@ export class ConnectionStatus {
             // so nothing in the app notices; only the console does.
             await response.arrayBuffer();
 
-            const pingTime = Date.now() - startTime;
-            this.lastPingTime = pingTime;
-
             if (response.ok) {
-                this.isOnline = true;
-                this.connectionQuality = this.calculateQuality(pingTime);
+                this.recordSuccess(this.measureNetworkTime(pingUrl, Date.now() - startTime));
             } else {
-                this.isOnline = false;
-                this.connectionQuality = 'poor';
+                this.recordFailure(`ping returned HTTP ${response.status}`);
             }
         } catch (_error) {
-            // Fallback: try a simple connectivity check
+            // Fallback: try a simple connectivity check. It gets its own start
+            // time — reusing startTime here charged the failed primary attempt
+            // (up to its full 5s timeout) to the fallback's latency reading,
+            // which is where the bogus 3000ms+ "latency" on a healthy LAN
+            // came from.
+            const fallbackStart = Date.now();
             try {
                 const fallbackResponse = await fetch(window.location.origin, {
                     method: 'HEAD',
                     cache: 'no-cache',
-                    signal: AbortSignal.timeout(3000)
+                    signal: this.createTimeoutSignal(3000)
                 });
 
-                const pingTime = Date.now() - startTime;
-                this.lastPingTime = pingTime;
-                this.isOnline = fallbackResponse.ok;
-                this.connectionQuality = fallbackResponse.ok ? this.calculateQuality(pingTime) : 'poor';
+                if (fallbackResponse.ok) {
+                    this.recordSuccess(Date.now() - fallbackStart);
+                } else {
+                    this.recordFailure(`fallback returned HTTP ${fallbackResponse.status}`);
+                }
             } catch (fallbackError) {
-                this.isOnline = false;
-                this.connectionQuality = 'offline';
-                this.lastPingTime = null;
-                logger.warn('Connection check failed:', fallbackError.message);
+                this.recordFailure(fallbackError.message);
             }
         }
 
         this.updateUI();
         this.notifyCallbacks();
+    }
+
+    /**
+     * Read the browser's own network timing for the probe request.
+     *
+     * Date.now() around `await fetch(...)` measures wall-clock time including
+     * however long the main thread was blocked before the continuation could
+     * run — during a question transition (MathJax typeset, leaderboard render)
+     * that is seconds, none of it network. PerformanceResourceTiming.duration
+     * is recorded by the network stack and is immune to that.
+     *
+     * @param {string} url - Probe URL (may be relative)
+     * @param {number} wallTimeMs - Fallback measurement
+     * @returns {number} Latency in ms
+     */
+    measureNetworkTime(url, wallTimeMs) {
+        try {
+            const absolute = new URL(url, window.location.href).href;
+            const entries = performance.getEntriesByName(absolute, 'resource');
+            const last = entries[entries.length - 1];
+            if (last && last.duration > 0) {
+                return Math.round(last.duration);
+            }
+        } catch (_error) {
+            // Resource timing unavailable (buffer full, cross-origin, old browser)
+        }
+        return wallTimeMs;
+    }
+
+    /**
+     * Record a successful probe.
+     */
+    recordSuccess(pingTime) {
+        this.consecutiveFailures = 0;
+        this.lastPingTime = pingTime;
+        this.isOnline = true;
+        this.connectionQuality = this.calculateQuality(pingTime);
+    }
+
+    /**
+     * Record a failed probe. The badge only degrades when the socket is not
+     * connected AND the failure repeats — a single aborted probe during a busy
+     * render used to flip a working game to "Offline".
+     */
+    recordFailure(reason) {
+        this.consecutiveFailures++;
+        logger.warn(`Connection check failed (${this.consecutiveFailures}):`, reason);
+
+        if (this.socketConnected === true) {
+            // Socket is live; the probe result says nothing about connectivity.
+            // Drop the stale latency reading rather than display a bad one.
+            this.lastPingTime = null;
+            this.isOnline = true;
+            this.connectionQuality = 'unknown';
+            return;
+        }
+
+        if (this.consecutiveFailures < ConnectionStatus.FAILURE_THRESHOLD) {
+            return;
+        }
+
+        this.isOnline = false;
+        this.connectionQuality = 'offline';
+        this.lastPingTime = null;
     }
 
     /**
@@ -227,7 +308,8 @@ export class ConnectionStatus {
             'good': 'connection_good',
             'fair': 'connection_fair',
             'poor': 'connection_poor',
-            'offline': 'offline'
+            'offline': 'offline',
+            'unknown': 'connected'
         };
         const key = qualityMap[this.connectionQuality];
         return key ? translationManager.getTranslationSync(key) : translationManager.getTranslationSync('offline');
@@ -269,20 +351,22 @@ export class ConnectionStatus {
      */
     setSocket(socket) {
         this.socket = socket;
+        if (!socket) return;
 
-        if (socket) {
-            socket.on('connect', () => {
-                this.handleNetworkChange(true);
-            });
+        this.socketConnected = socket.connected === true;
 
-            socket.on('disconnect', () => {
-                this.handleNetworkChange(false);
-            });
+        socket.on('connect', () => {
+            this.socketConnected = true;
+            this.consecutiveFailures = 0;
+            this.handleNetworkChange(true);
+        });
 
-            socket.on('reconnect', () => {
-                this.checkConnection();
-            });
-        }
+        socket.on('disconnect', () => {
+            this.socketConnected = false;
+            this.lastPingTime = null;
+            this.connectionQuality = 'offline';
+            this.handleNetworkChange(false);
+        });
     }
 
     /**

@@ -273,6 +273,7 @@ export default {
     question_number: '質問番号',
     leaderboard_title: 'リーダーボード',
     cancel: 'キャンセル',
+    confirm_ok: 'OK',
     save: '保存',
     edit: '編集',
     close: '閉じる',
@@ -1538,8 +1539,8 @@ export default {
     val_pill_one: '1件の注意 · 表示',
     val_pill_many: '{0}件の注意 · 表示',
     val_option_empty_helper: 'ルーム作成前に選択肢を入力するか削除してください',
-    editor_saving: '保存中…',
-    editor_saved: '保存済み',
+    editor_saving: '下書きを保存中…',
+    editor_saved: '下書きをローカルに保存 ·',
 
     // ゲーム設定、チーム討論、合意形成
     game_settings: 'ゲーム設定',

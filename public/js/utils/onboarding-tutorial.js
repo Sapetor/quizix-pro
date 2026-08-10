@@ -628,7 +628,9 @@ class OnboardingTutorial {
         const dots = this.tooltip.querySelectorAll('.onboarding-dot');
 
         if (skipBtn) {
-            skipBtn.addEventListener('click', () => this.end(false));
+            // Skipping is a deliberate "not now" — persist it so the tour does not
+            // reappear on every visit. Replay via Settings → Restart Tour.
+            skipBtn.addEventListener('click', () => this.end(true));
         }
 
         if (nextBtn) {

@@ -279,6 +279,7 @@ export default {
     question_number: 'Número de Pregunta',
     leaderboard_title: 'Tabla de Clasificación',
     cancel: 'Cancelar',
+    confirm_ok: 'Aceptar',
     save: 'Guardar',
     edit: 'Editar',
     close: 'Cerrar',
@@ -1556,8 +1557,8 @@ export default {
     val_pill_one: '1 aviso · ver',
     val_pill_many: '{0} avisos · ver',
     val_option_empty_helper: 'Escribe la opción o elimínala antes de crear la sala',
-    editor_saving: 'Guardando…',
-    editor_saved: 'Guardado',
+    editor_saving: 'Guardando borrador…',
+    editor_saved: 'Borrador guardado localmente ·',
 
     // Ajustes de juego, discusión en equipo y consenso
     game_settings: 'Configuración del Juego',

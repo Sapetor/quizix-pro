@@ -221,6 +221,7 @@ export default [
             'tests/unit/header-controller.test.js',
             'tests/unit/client-scoring.test.js',
             'tests/unit/api-helper.test.js',
+            'tests/unit/connection-status.test.js',
             'tests/unit/game-state-manager.test.js',
             'tests/unit/player-interaction-manager.test.js',
             'tests/unit/translations-parity.test.js'
@@ -231,7 +232,9 @@ export default [
                 Event: 'readonly',
                 KeyboardEvent: 'readonly',
                 document: 'readonly',
-                jest: 'readonly'
+                jest: 'readonly',
+                global: 'readonly',
+                performance: 'readonly'
             }
         }
     },

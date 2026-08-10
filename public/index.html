@@ -13,10 +13,10 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=172">
+    <link rel="stylesheet" href="css/main.bundle.css?v=174">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=172" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=174" as="script" crossorigin="anonymous">
     <!-- app.js and translation-manager.js are never requested by the document; main.js
          imports them as ES modules. A preload only matches if the URL is identical, and
          the import specifiers carry no ?v= query — so a versioned `as="script"` preload
@@ -472,9 +472,15 @@
                         <span class="lobby-breadcrumb-title ed-serif" id="lobby-breadcrumb-title"
                               data-translate="quiz_title">Quiz Title</span>
                     </div>
-                    <!-- Autosave stamp (Stage D fills "Saving… / SAVED HH:MM"; ed-mono opts out
-                         of the critical-CSS Inter override) -->
+                    <!-- Autosave stamp (Stage D fills "Saving draft… / DRAFT SAVED LOCALLY HH:MM";
+                         ed-mono opts out of the critical-CSS Inter override). The autosave is a
+                         localStorage draft only — the button next to it is the real server save. -->
                     <span class="save-status ed-mono" id="save-status" aria-live="polite"></span>
+                    <!-- Explicit server save. Same handler as #toolbar-save / #vtoolbar-save;
+                         it exists because the icon-only controls were undiscoverable. -->
+                    <button class="btn header-save-quiz" id="header-save-quiz"
+                            data-translate="save_quiz" data-translate-title="save_quiz_tooltip"
+                            aria-label="Save quiz" data-translate-aria-label="save_quiz_tooltip">Save Quiz</button>
                     <!-- Connection status pill (main-menu state) -->
                     <div class="conn" id="header-conn-pill">
                         <span class="dot" aria-hidden="true"></span>
@@ -877,7 +883,7 @@
                                 </div>
                                 <div class="lp-pin-name">
                                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 13c1-2.5 3-3.5 5-3.5s4 1 5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-                                    <input type="text" data-translate-placeholder="landing_pin_name_placeholder" placeholder="Tu nombre en el aula" aria-label="Player name" />
+                                    <input type="text" id="lp-pin-name-input" data-translate-placeholder="landing_pin_name_placeholder" placeholder="Tu nombre en el aula" aria-label="Player name" />
                                 </div>
                                 <button id="join-btn" class="lp-pin-join" type="button">
                                     <span data-translate="landing_pin_join">Entrar al juego</span>
@@ -3852,10 +3858,10 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=172"></script>
-    <script type="module" src="js/landing.js?v=172"></script>
-    <script type="module" src="js/landing-demo.js?v=172"></script>
-    <script type="module" src="js/landing-ai.js?v=172"></script>
+    <script type="module" src="js/main.js?v=174"></script>
+    <script type="module" src="js/landing.js?v=174"></script>
+    <script type="module" src="js/landing-demo.js?v=174"></script>
+    <script type="module" src="js/landing-ai.js?v=174"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
     <script>
         // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and

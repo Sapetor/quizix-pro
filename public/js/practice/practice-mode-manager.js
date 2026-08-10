@@ -11,6 +11,7 @@ import { getTranslation } from '../utils/translation-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
 import { dom, escapeHtml } from '../utils/dom.js';
 import { readScoringConfigFromDOM } from '../utils/scoring-config.js';
+import { confirmModal } from '../utils/modal-utils.js';
 
 export class PracticeModeManager {
     /**
@@ -436,9 +437,13 @@ export class PracticeModeManager {
     /**
      * Show confirmation dialog before exiting practice mode
      */
-    confirmExit() {
+    async confirmExit() {
         const message = getTranslation('confirm_exit_practice') || 'Exit practice and return to home?';
-        if (confirm(message)) {
+        const confirmed = await confirmModal(message, {
+            confirmText: getTranslation('confirm_ok') || 'OK',
+            cancelText: getTranslation('cancel') || 'Cancel'
+        });
+        if (confirmed) {
             this.exitPracticeMode();
         }
     }

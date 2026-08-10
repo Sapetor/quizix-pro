@@ -24,7 +24,7 @@ import { readScoringConfigFromDOM } from '../utils/scoring-config.js';
 import { getItem, setItem, getJSON, setJSON } from '../utils/storage-utils.js';
 import { PracticeModeManager } from '../practice/practice-mode-manager.js';
 import { SocketEventBus } from '../events/socket-event-bus.js';
-import { openModal, closeModal, createModalBindings } from '../utils/modal-utils.js';
+import { openModal, closeModal, createModalBindings, confirmModal } from '../utils/modal-utils.js';
 import { initHeaderController, syncEditorBreadcrumbTitle, setMuteStudentsState, isMuteStudentsActive } from '../ui/header-controller.js';
 import { initEventBindings } from './event-bindings.js';
 // Results viewer will be lazy loaded when needed
@@ -370,6 +370,10 @@ export class QuizGame {
             const livePin = event.currentTarget?.dataset?.livePin;
             const pinInput = dom.get('game-pin-input');
             if (livePin && pinInput && !pinInput.value) pinInput.value = livePin;
+            // Carry the name typed on the hero card so the player doesn't retype it.
+            const heroName = dom.get('lp-pin-name-input')?.value.trim();
+            const nameInput = dom.get('player-name');
+            if (heroName && nameInput && !nameInput.value) nameInput.value = heroName;
             this.uiManager.showScreen('join-screen');
         });
 
@@ -889,9 +893,12 @@ export class QuizGame {
     /**
      * Stop the quiz early and show final results (host only)
      */
-    stopQuiz() {
+    async stopQuiz() {
         const message = translationManager.getTranslationSync('confirm_stop_quiz') || 'Stop the quiz and show results?';
-        if (!confirm(message)) return;
+        if (!await confirmModal(message, {
+            confirmText: translationManager.getTranslationSync('confirm_ok') || 'OK',
+            cancelText: translationManager.getTranslationSync('cancel') || 'Cancel'
+        })) return;
         if (this.socketManager?.socket) {
             this.socketManager.socket.emit('stop-quiz');
         }
@@ -901,9 +908,12 @@ export class QuizGame {
      * Leave the game and return to home (host only).
      * Uses the migration path so players can follow to the next game.
      */
-    backToHomeFromGame() {
+    async backToHomeFromGame() {
         const message = translationManager.getTranslationSync('confirm_back_to_home') || 'Leave the game? Players will wait for your next game.';
-        if (!confirm(message)) return;
+        if (!await confirmModal(message, {
+            confirmText: translationManager.getTranslationSync('confirm_ok') || 'OK',
+            cancelText: translationManager.getTranslationSync('cancel') || 'Cancel'
+        })) return;
         this.resetAndReturnToMenu();
         logger.debug('Host left game via backToHome — migration path');
     }
@@ -1021,6 +1031,7 @@ export class QuizGame {
         const toolbarButtons = [
             { id: 'toolbar-add-question', handler: () => this.addQuestionAndScrollToIt() },
             { id: 'toolbar-save', handler: () => this.quizManager.saveQuiz() },
+            { id: 'header-save-quiz', handler: () => this.quizManager.saveQuiz() },
             { id: 'toolbar-load', handler: () => this.quizManager.showLoadQuizModal() },
             { id: 'toolbar-ai-gen', handler: () => this.openAIGeneratorModal() },
             { id: 'toolbar-import', handler: () => this.quizManager.importQuiz() },

@@ -1385,7 +1385,8 @@ export class QuizManager {
                 logger.debug('Auto-saved quiz data');
             }
         }
-        // Header autosave stamp (editor-validation.js): "GUARDADO HH:MM"
+        // Header autosave stamp (editor-validation.js): "DRAFT SAVED LOCALLY · HH:MM".
+        // Local draft only — the server save is the explicit #header-save-quiz button.
         document.dispatchEvent(new CustomEvent('editorAutosaveDone'));
     }
 

@@ -10,6 +10,7 @@ import { logger } from '../core/config.js';
 import { authManager } from '../utils/auth-manager.js';
 import { translationManager } from '../utils/translation-manager.js';
 import { openAuthModal } from './auth-modal.js';
+import { confirmModal } from '../utils/modal-utils.js';
 
 function t(key, fallback) {
     const res = translationManager.getTranslationSync(key);
@@ -43,7 +44,11 @@ function renderChip(chip) {
 async function onChipClick() {
     if (authManager.isAuthenticated) {
         const msg = t('auth_logout_confirm', 'Log out?');
-        if (window.confirm(`${msg} (${authManager.user.username})`)) {
+        const confirmed = await confirmModal(`${msg} (${authManager.user.username})`, {
+            confirmText: t('confirm_ok', 'OK'),
+            cancelText: t('cancel', 'Cancel')
+        });
+        if (confirmed) {
             await authManager.logout();
         }
     } else {

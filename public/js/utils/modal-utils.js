@@ -282,6 +282,82 @@ export function getModal(modalId) {
     return modal;
 }
 
+/**
+ * Styled replacement for window.confirm().
+ * Native dialogs get auto-dismissed by automation and some webviews, which makes
+ * the triggering buttons look dead — this uses the app's own modal markup.
+ * @param {string} message - Text to show (escaped, never treated as HTML)
+ * @param {Object} options
+ * @param {string} options.confirmText - Confirm button label (default 'OK')
+ * @param {string} options.cancelText - Cancel button label (default 'Cancel')
+ * @param {boolean} options.danger - Style the confirm button as destructive
+ * @returns {Promise<boolean>} Resolves true when confirmed, false otherwise
+ */
+export function confirmModal(message, options = {}) {
+    const {
+        confirmText = 'OK',
+        cancelText = 'Cancel',
+        danger = false
+    } = options;
+
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+
+        const content = document.createElement('div');
+        content.className = 'modal-content';
+        content.style.maxWidth = 'min(420px, 95vw)';
+
+        const text = document.createElement('p');
+        text.textContent = message;
+        content.appendChild(text);
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+        actions.style.marginTop = '20px';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'btn secondary';
+        cancelBtn.textContent = cancelText;
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.className = danger ? 'btn danger' : 'btn primary';
+        confirmBtn.textContent = confirmText;
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(confirmBtn);
+        content.appendChild(actions);
+        modal.appendChild(content);
+
+        let escapeHandler = null;
+        const finish = (result) => {
+            document.removeEventListener('keydown', escapeHandler);
+            modal.remove();
+            unlockBodyScroll();
+            resolve(result);
+        };
+
+        escapeHandler = (e) => {
+            if (e.key === 'Escape') finish(false);
+        };
+
+        cancelBtn.addEventListener('click', () => finish(false));
+        confirmBtn.addEventListener('click', () => finish(true));
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) finish(false);
+        });
+        document.addEventListener('keydown', escapeHandler);
+
+        document.body.appendChild(modal);
+        lockBodyScroll();
+        confirmBtn.focus();
+    });
+}
+
 export default {
     MODAL_MODES,
     openModal,
@@ -295,5 +371,6 @@ export default {
     unbindEscapeClose,
     createModalBindings,
     preventContentClose,
-    getModal
+    getModal,
+    confirmModal
 };

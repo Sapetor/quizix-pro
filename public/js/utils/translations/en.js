@@ -297,6 +297,7 @@ export default {
     question_number: 'Question Number',
     leaderboard_title: 'Leaderboard',
     cancel: 'Cancel',
+    confirm_ok: 'OK',
     save: 'Save',
     edit: 'Edit',
     close: 'Close',
@@ -1562,8 +1563,8 @@ export default {
     val_pill_one: '1 warning · view',
     val_pill_many: '{0} warnings · view',
     val_option_empty_helper: 'Write the option or remove it before creating the room',
-    editor_saving: 'Saving…',
-    editor_saved: 'Saved',
+    editor_saving: 'Saving draft…',
+    editor_saved: 'Draft saved locally ·',
 
     // Game settings, team discussion and consensus (were missing: the markup
     // fallbacks meant every locale rendered these in English)

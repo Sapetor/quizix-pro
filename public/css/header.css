@@ -433,6 +433,34 @@ body .app-header.overflow-open .app-header-utilities {
 /* Hide conn pill when editor toolbar shown (breadcrumb takes its place) */
 body.has-editor-toolbar .app-header .conn { display: none; }
 
+/* ----- Explicit "Save quiz" button (editor only) -----
+   The autosave stamp next to it only writes a localStorage draft, so the
+   editor needs a visible server-save affordance; the icon-only toolbar
+   buttons were not being found. Desktop editor only — phones are join-only. */
+.app-header .header-save-quiz { display: none; }
+@media (min-width: 769px) {
+  body.has-editor-toolbar .app-header .header-save-quiz {
+    /* Same pill face as the live-game header buttons (.live-game-controls .btn). */
+    display: inline-flex;
+    flex-shrink: 0;
+    white-space: nowrap;
+    min-height: 0;
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 13px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--paper);
+    border: 1px solid var(--ink);
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  body.has-editor-toolbar .app-header .header-save-quiz:hover {
+    opacity: 0.86;
+  }
+}
+
 /* ----- Live-game header cluster (host-game-screen active) ----- */
 .app-header .live-game-cluster {
   display: flex;

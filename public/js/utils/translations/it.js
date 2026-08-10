@@ -268,6 +268,7 @@ export default {
     question_number: 'Numero Domanda',
     leaderboard_title: 'Classifica',
     cancel: 'Annulla',
+    confirm_ok: 'OK',
     save: 'Salva',
     edit: 'Modifica',
     close: 'Chiudi',
@@ -1539,8 +1540,8 @@ export default {
     val_pill_one: '1 avviso · vedi',
     val_pill_many: '{0} avvisi · vedi',
     val_option_empty_helper: 'Scrivi l’opzione o eliminala prima di creare la stanza',
-    editor_saving: 'Salvataggio…',
-    editor_saved: 'Salvato',
+    editor_saving: 'Salvataggio bozza…',
+    editor_saved: 'Bozza salvata in locale ·',
 
     // Impostazioni di gioco, discussione di squadra e consenso
     game_settings: 'Impostazioni di Gioco',

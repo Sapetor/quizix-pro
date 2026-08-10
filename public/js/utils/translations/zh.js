@@ -268,6 +268,7 @@ export default {
     question_number: '问题编号',
     leaderboard_title: '排行榜',
     cancel: '取消',
+    confirm_ok: '确定',
     save: '保存',
     edit: '编辑',
     close: '关闭',
@@ -1537,8 +1538,8 @@ export default {
     val_pill_one: '1 条提醒 · 查看',
     val_pill_many: '{0} 条提醒 · 查看',
     val_option_empty_helper: '创建房间前请填写或删除该选项',
-    editor_saving: '保存中…',
-    editor_saved: '已保存',
+    editor_saving: '正在保存草稿…',
+    editor_saved: '草稿已保存到本地 ·',
 
     // 游戏设置、团队讨论与共识
     game_settings: '游戏设置',

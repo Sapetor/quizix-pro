@@ -438,7 +438,7 @@ export class ResultsViewer {
     // ========================================
 
     async handleSwipeDelete(filename) {
-        if (!translationManager.showConfirm('confirm_delete_result')) {
+        if (!await translationManager.showConfirm('confirm_delete_result')) {
             this.swipeToDelete.refresh();
             return;
         }
@@ -454,7 +454,7 @@ export class ResultsViewer {
     }
 
     async quickDelete(filename) {
-        if (!translationManager.showConfirm('confirm_delete_result')) {
+        if (!await translationManager.showConfirm('confirm_delete_result')) {
             return;
         }
 

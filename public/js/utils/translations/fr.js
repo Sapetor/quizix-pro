@@ -294,6 +294,7 @@ export default {
     question_number: 'Numéro de Question',
     leaderboard_title: 'Classement',
     cancel: 'Annuler',
+    confirm_ok: 'OK',
     save: 'Enregistrer',
     edit: 'Modifier',
     close: 'Fermer',
@@ -1556,8 +1557,8 @@ export default {
     val_pill_one: '1 alerte · voir',
     val_pill_many: '{0} alertes · voir',
     val_option_empty_helper: 'Écrivez l’option ou supprimez-la avant de créer la salle',
-    editor_saving: 'Enregistrement…',
-    editor_saved: 'Enregistré',
+    editor_saving: 'Enregistrement du brouillon…',
+    editor_saved: 'Brouillon enregistré en local ·',
 
     // Paramètres du jeu, discussion d'équipe et consensus
     game_settings: 'Paramètres du Jeu',

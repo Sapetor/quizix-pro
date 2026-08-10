@@ -13,6 +13,7 @@ import { debounce } from '../utils/dom.js';
 import { FolderTree } from './components/folder-tree.js';
 import { ContextMenu } from './components/context-menu.js';
 import { PasswordModal } from './components/password-modal.js';
+import { confirmModal } from '../utils/modal-utils.js';
 
 const SHOW_ONLY_MINE_KEY = 'file-manager-show-only-mine';
 
@@ -652,7 +653,12 @@ export class FileManager {
             ? (t('confirm_delete_folder') || `Delete folder "${name}" and all its contents?`)
             : (t('confirm_delete_quiz') || `Delete quiz "${name}"?`);
 
-        if (!confirm(message.replace('{name}', name))) {
+        const confirmed = await confirmModal(message.replace('{name}', name), {
+            confirmText: t('delete') || 'Delete',
+            cancelText: t('cancel') || 'Cancel',
+            danger: true
+        });
+        if (!confirmed) {
             return;
         }
 

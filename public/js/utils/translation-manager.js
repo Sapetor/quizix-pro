@@ -7,6 +7,7 @@
 import { logger, LANGUAGES } from '../core/config.js';
 import { toastNotifications } from './toast-notifications.js';
 import { getItem, setItem } from './storage-utils.js';
+import { confirmModal } from './modal-utils.js';
 
 class TranslationManager {
     constructor() {
@@ -245,7 +246,10 @@ class TranslationManager {
      */
     showConfirm(translationKey, ...params) {
         const message = this.getTranslationSync(translationKey, params);
-        return confirm(message);
+        return confirmModal(message, {
+            confirmText: this.getTranslationSync('confirm_ok') || 'OK',
+            cancelText: this.getTranslationSync('cancel') || 'Cancel'
+        });
     }
 
     /**

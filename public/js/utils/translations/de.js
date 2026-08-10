@@ -282,6 +282,7 @@ export default {
     question_number: 'Fragennummer',
     leaderboard_title: 'Bestenliste',
     cancel: 'Abbrechen',
+    confirm_ok: 'OK',
     save: 'Speichern',
     edit: 'Bearbeiten',
     close: 'Schließen',
@@ -1541,8 +1542,8 @@ export default {
     val_pill_one: '1 Hinweis · ansehen',
     val_pill_many: '{0} Hinweise · ansehen',
     val_option_empty_helper: 'Fülle die Option aus oder entferne sie, bevor der Raum erstellt wird',
-    editor_saving: 'Speichern…',
-    editor_saved: 'Gespeichert',
+    editor_saving: 'Entwurf wird gespeichert…',
+    editor_saved: 'Entwurf lokal gespeichert ·',
 
     // Spieleinstellungen, Teamdiskussion und Konsens
     game_settings: 'Spieleinstellungen',

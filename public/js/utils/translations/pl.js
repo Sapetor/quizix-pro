@@ -261,6 +261,7 @@ export default {
     question_number: 'Numer Pytania',
     leaderboard_title: 'Ranking',
     cancel: 'Anuluj',
+    confirm_ok: 'OK',
     save: 'Zapisz',
     edit: 'Edytuj',
     close: 'Zamknij',
@@ -1554,8 +1555,8 @@ export default {
     val_pill_one: '1 uwaga · zobacz',
     val_pill_many: '{0} uwag · zobacz',
     val_option_empty_helper: 'Uzupełnij opcję lub usuń ją przed utworzeniem pokoju',
-    editor_saving: 'Zapisywanie…',
-    editor_saved: 'Zapisano',
+    editor_saving: 'Zapisywanie szkicu…',
+    editor_saved: 'Szkic zapisany lokalnie ·',
 
     // Ustawienia gry, dyskusja zespołowa i konsensus
     game_settings: 'Ustawienia Gry',

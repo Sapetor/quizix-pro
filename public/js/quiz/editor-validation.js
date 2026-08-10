@@ -329,9 +329,9 @@ function initSaveStatus() {
         const el = dom.get('save-status');
         if (el) el.textContent = t('editor_saving');
     });
+    // The stamp reports the localStorage DRAFT only, so it is written when a
+    // draft is actually written — not on quizLoaded, which writes nothing.
     document.addEventListener('editorAutosaveDone', setSaveStatusSaved);
-    // A loaded quiz is by definition its saved state.
-    document.addEventListener('quizLoaded', setSaveStatusSaved);
 }
 
 // ---------------------------------------------------------------------------
