@@ -72,4 +72,4 @@ test-screenshots/
 /manim-tutorial-modal.png
 /onboarding-step1.png
 # Stray spreadsheets dropped at the repo root
-/*.xlsx
+/*.xlsx.artifacts/
