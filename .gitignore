@@ -73,3 +73,4 @@ test-screenshots/
 /onboarding-step1.png
 # Stray spreadsheets dropped at the repo root
 /*.xlsx.artifacts/
+__pycache__/
