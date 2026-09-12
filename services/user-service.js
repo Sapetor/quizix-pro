@@ -202,6 +202,14 @@ class UserService {
         return this._publicUser(user);
     }
 
+    /**
+     * True once at least one account exists. In-memory: `data` is loaded at
+     * startup and every write goes through this process.
+     */
+    hasUsers() {
+        return !!this.data && Object.keys(this.data.usernameIndex).length > 0;
+    }
+
     getUser(id) {
         if (!id || !this.data) return null;
         const user = this.data.users[id];

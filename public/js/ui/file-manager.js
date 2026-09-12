@@ -334,7 +334,14 @@ export class FileManager {
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                throw new Error(err.messageKey || err.error || 'Failed to change visibility');
+                // Prefer the translated messageKey; getTranslationSync echoes the key
+                // back when no translation exists, so fall through to the server's
+                // human-readable error in that case.
+                const translated = err.messageKey ? t(err.messageKey) : '';
+                const message = (translated && translated !== err.messageKey)
+                    ? translated
+                    : (err.error || 'Failed to change visibility');
+                throw new Error(message);
             }
             await this.loadTree();
         } catch (err) {

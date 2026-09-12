@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <base href="/">
+    <!-- Server injects the asset version here; js/core/boot-service-worker.js reads it.
+         Left un-rewritten when index.html is served raw by express.static. -->
+    <meta name="app-version" content="__SW_VERSION__">
     <title>FrogQuiz</title>
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
@@ -13,10 +16,10 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=176">
+    <link rel="stylesheet" href="css/main.bundle.css?v=177">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=176" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=177" as="script" crossorigin="anonymous">
     <!-- app.js and translation-manager.js are never requested by the document; main.js
          imports them as ES modules. A preload only matches if the URL is identical, and
          the import specifiers carry no ?v= query — so a versioned `as="script"` preload
@@ -106,12 +109,17 @@
         }
     </style>
     <!-- CSS loaded via preload above for better performance -->
+    <!-- Pre-paint boot: theme/font-scale FOUC prevention + MathJax config.
+         MUST stay parser-blocking (no defer, no async) so the theme custom
+         properties are set before first paint, and MUST stay ahead of the async
+         MathJax tag below so window.MathJax is configured before MathJax runs. -->
+    <script src="js/core/boot-head.js?v=177"></script>
     <!-- CDN MathJax with fallback for WSL/Windows environment -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
         onerror="console.warn('MathJax CDN failed, app will function without LaTeX rendering')"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <!-- SheetJS for Excel file processing -->
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- SheetJS for Excel file processing - vendored 0.20.3, see public/libs/sheetjs/README.md -->
+    <script defer src="libs/sheetjs/xlsx.full.min.js"></script>
     <!-- Chart.js for results analytics visualizations - Fixed for ES6 compatibility -->
     <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <!-- jsPDF loaded on-demand when PDF export is requested -->
@@ -119,297 +127,6 @@
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script>
-        // FOUC Prevention: Set font scale and theme immediately from localStorage
-        (function () {
-
-            const savedFontSize = localStorage.getItem('globalFontSize') || 'medium';
-            const scaleValues = { small: 0.9, medium: 1.0, large: 1.3, xlarge: 1.6 };
-            document.documentElement.style.setProperty('--global-font-scale', scaleValues[savedFontSize]);
-
-            // Get theme from unified quizSettings storage
-            let initialTheme = 'light'; // default
-            const savedQuizSettings = localStorage.getItem('quizSettings');
-            if (savedQuizSettings) {
-                try {
-                    const settings = JSON.parse(savedQuizSettings);
-                    initialTheme = settings.theme || 'light';
-                } catch (e) {
-                    // Fallback to old storage format if parsing fails
-                    initialTheme = localStorage.getItem('theme') || 'light';
-                }
-            } else {
-                // Fallback to old storage format if quizSettings doesn't exist
-                initialTheme = localStorage.getItem('theme') || 'light';
-            }
-
-            // Apply theme immediately to prevent color shift
-            document.documentElement.setAttribute('data-theme', initialTheme);
-
-            // FOUC: Editor Layout Split Ratio
-            const savedRatioStr = localStorage.getItem('splitRatio');
-            let ratio = 70; // Default fallback to 70/30
-            if (savedRatioStr) {
-                const parsed = parseFloat(savedRatioStr);
-                // MIN_RATIO and MAX_RATIO from split-layout-manager.js
-                if (!isNaN(parsed) && parsed >= 20 && parsed <= 85) {
-                    ratio = parsed;
-                }
-            }
-            document.documentElement.style.setProperty('--split-left', `${ratio}fr`);
-            document.documentElement.style.setProperty('--split-right', `${100 - ratio}fr`);
-
-            // FOUC: Editor Mode
-            let initialEditorMode = 'basic';
-            if (savedQuizSettings) {
-                try {
-                    const settings = JSON.parse(savedQuizSettings);
-                    if (settings.editorMode) initialEditorMode = settings.editorMode;
-                } catch (e) {
-                    // Ignore parse errors
-                }
-            }
-
-            // Set theme, layout attributes, and update icons when DOM is ready
-            document.addEventListener('DOMContentLoaded', () => {
-                if (document.body) {
-                    document.body.setAttribute('data-theme', initialTheme);
-                    document.body.setAttribute('data-editor-mode', initialEditorMode);
-                    // Ensure both html and body have the same theme for consistent CSS matching
-                    document.documentElement.setAttribute('data-theme', initialTheme);
-                }
-
-
-                // Initialize theme icon state (SVG swap is driven by data-icon-state; see header.css)
-                const themeToggle = document.getElementById('theme-toggle');
-                if (themeToggle) {
-                    themeToggle.dataset.iconState = initialTheme === 'dark' ? 'dark' : 'light';
-                    themeToggle.setAttribute('aria-pressed', initialTheme === 'dark' ? 'true' : 'false');
-                }
-
-                const fontIcon = document.getElementById('font-size-icon');
-
-                if (fontIcon) {
-                    const icons = { small: 'A⁻', medium: 'A', large: 'A⁺', xlarge: 'A⁺⁺' };
-                    fontIcon.textContent = icons[savedFontSize] || 'A';
-                }
-
-                // Synchronous language pre-set to avoid flash of wrong language
-                const savedLang = localStorage.getItem('language');
-                if (savedLang) {
-                    const langMap = {
-                        es: ['🇪🇸','Español'], en: ['🇺🇸','English'],
-                        fr: ['🇫🇷','Français'], de: ['🇩🇪','Deutsch'],
-                        it: ['🇮🇹','Italiano'], pt: ['🇵🇹','Português'],
-                        pl: ['🇵🇱','Polski'], ja: ['🇯🇵','日本語'],
-                        zh: ['🇨🇳','中文']
-                    };
-                    const info = langMap[savedLang];
-                    if (info) {
-                        document.querySelectorAll('.language-dropdown-selected').forEach(sel => {
-                            const f = sel.querySelector('.language-flag');
-                            const n = sel.querySelector('.language-name');
-                            if (f) f.textContent = info[0];
-                            if (n) n.textContent = info[1];
-                        });
-                    }
-                }
-
-                // Safety net: show body after max 3s even if JS init stalls
-                setTimeout(() => {
-                    if (document.body && !document.body.classList.contains('loaded')) {
-                        document.body.classList.add('loaded');
-                    }
-                }, 3000);
-            });
-        })();
-
-        // Single writer for the data-theme attributes. Defined here (not in a
-        // module) because the pre-module fallback below needs it too.
-        // `.theme-switching` suppresses every CSS transition for the frame in
-        // which the theme flips — crossfading ~2100 elements' `color` costs
-        // 4 dropped frames per toggle (see the THEME SWAP GUARD note in
-        // css/main.css). Class and attribute land in the same style recalc,
-        // so no transition is ever generated.
-        window.applyThemeAttributes = function (theme) {
-            const html = document.documentElement;
-            html.classList.add('theme-switching');
-            html.setAttribute('data-theme', theme);
-            if (document.body) document.body.setAttribute('data-theme', theme);
-            requestAnimationFrame(function () {
-                requestAnimationFrame(function () {
-                    html.classList.remove('theme-switching');
-                });
-            });
-        };
-
-        // Fallback theme toggle function for immediate use
-        window.toggleTheme = function () {
-            const body = document.body;
-            if (!body) return; // Safety check
-
-            const currentTheme = body.getAttribute('data-theme') || 'light';
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-            // Set theme on both html and body for consistent CSS matching
-            window.applyThemeAttributes(newTheme);
-
-            // Update the theme button's icon state and aria-pressed
-            // (SVG swap is driven by CSS via [data-icon-state]; header-controller.js
-            // also observes data-theme, but we update the button here for immediate feedback)
-            const themeToggle = document.getElementById('theme-toggle');
-            if (themeToggle) {
-                themeToggle.dataset.iconState = newTheme;
-                themeToggle.setAttribute('aria-pressed', newTheme === 'dark' ? 'true' : 'false');
-            }
-
-            localStorage.setItem('theme', newTheme);
-        };
-
-        // Fallback font size toggle
-        window.toggleGlobalFontSize = function () {
-            const scales = ['small', 'medium', 'large', 'xlarge'];
-            const currentScale = localStorage.getItem('globalFontSize') || 'medium';
-            const currentIndex = scales.indexOf(currentScale);
-            const nextIndex = (currentIndex + 1) % scales.length;
-            const newScale = scales[nextIndex];
-
-            const scaleValues = { small: 0.9, medium: 1.0, large: 1.3, xlarge: 1.6 };
-            document.documentElement.style.setProperty('--global-font-scale', scaleValues[newScale]);
-            localStorage.setItem('globalFontSize', newScale);
-
-            const fontIcon = document.getElementById('font-size-icon');
-            if (fontIcon) {
-                const icons = { small: 'A⁻', medium: 'A', large: 'A⁺', xlarge: 'A⁺⁺' };
-                fontIcon.textContent = icons[newScale] || 'A';
-            }
-        };
-
-        // REMOVED: F5 prevention was causing infinite reload loop
-
-        // Function to mark MathJax as ready for our application
-        function markMathJaxReady() {
-            window.mathJaxReady = true;
-
-            // FOUC Prevention: Add ready class and remove loading
-            const addReadyClass = () => {
-                if (document.body) {
-                    document.body.classList.remove('loading');
-                    document.body.classList.add('mathjax-ready');
-                }
-            };
-
-            if (document.body) {
-                addReadyClass();
-            } else {
-                document.addEventListener('DOMContentLoaded', addReadyClass);
-            }
-
-            // Dispatch custom event for SimpleMathJaxService
-            document.dispatchEvent(new CustomEvent('mathjax-ready'));
-        }
-
-        // MathJax configuration object
-        const mathJaxConfig = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                packages: { '[+]': ['ams', 'newcommand', 'configmacros'] },
-                processEscapes: true,
-                processEnvironments: true,
-                tags: 'none',
-                autoload: {
-                    color: [],
-                    colorv2: ['color']
-                }
-            },
-            chtml: {
-                scale: window.innerWidth <= 768 ? 0.9 : 1, // Smaller scale on mobile for better fit
-                minScale: 0.5,
-                matchFontHeight: false,
-                displayAlign: 'center',
-                displayIndent: '0em',
-                fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2',
-                // Mobile optimizations
-                adaptiveCSS: true,
-                mathmlSpacing: false,
-                exFactor: window.innerWidth <= 768 ? 0.45 : 0.5 // Tighter spacing on mobile
-            },
-            startup: {
-                ready: () => {
-                    MathJax.startup.defaultReady();
-                    // Faster ready signal on mobile, slower on desktop for stability
-                    const readyDelay = window.innerWidth <= 768 ? 50 : 100;
-                    setTimeout(markMathJaxReady, readyDelay);
-                }
-            },
-            options: {
-                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-                includeHtmlTags: { br: '\n', wbr: '', '#comment': '' },
-                processHtmlClass: 'tex2jax_process',
-                ignoreHtmlClass: 'tex2jax_ignore',
-                renderActions: {
-                    addMenu: [0, '', '']
-                }
-            },
-            loader: {
-                load: ['[tex]/ams', '[tex]/newcommand', '[tex]/configmacros']
-            }
-        };
-
-        // Handle cached MathJax - smart reload for reliability while preserving mobile cache benefits
-        if (window.MathJax) {
-            // Clear cached MathJax and reload fresh
-            delete window.MathJax;
-            window.mathJaxReady = false;
-
-            // Remove existing script
-            const existingScript = document.getElementById('MathJax-script');
-            if (existingScript) existingScript.remove();
-
-            // Wait for DOM to be fully ready before reloading MathJax
-            const reloadMathJax = () => {
-                // Ensure there's a stylesheet for MathJax to insert CSS rules into
-                if (!document.querySelector('style[id*="MathJax"]')) {
-                    const mathJaxStyle = document.createElement('style');
-                    mathJaxStyle.id = 'MathJax-styles';
-                    mathJaxStyle.textContent = '/* MathJax CSS insertion point */';
-                    document.head.appendChild(mathJaxStyle);
-                }
-
-                const newScript = document.createElement('script');
-                newScript.id = 'MathJax-script';
-                newScript.async = true;
-                // Use version-based cache busting instead of timestamp for better mobile caching
-                const version = '3.2.2'; // MathJax version for cache busting
-                const sessionId = sessionStorage.getItem('mathJaxSessionId') || Date.now().toString();
-                sessionStorage.setItem('mathJaxSessionId', sessionId);
-                newScript.src = `https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js?v=${version}&sid=${sessionId}`;
-
-                window.MathJax = mathJaxConfig;
-                document.head.appendChild(newScript);
-            };
-
-            // Ensure DOM and stylesheets are ready
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', reloadMathJax);
-            } else {
-                // DOM is ready, but wait a moment for stylesheets
-                setTimeout(reloadMathJax, 100);
-            }
-
-        } else {
-            // Fresh MathJax initialization
-            window.MathJax = mathJaxConfig;
-        }
-
-        // Fallback: Ensure content is visible even if MathJax fails
-        setTimeout(() => {
-            if (!document.body.classList.contains('mathjax-ready')) {
-                document.body.classList.add('mathjax-ready');
-            }
-        }, 3000);
-    </script>
 
 
     <style>
@@ -3858,126 +3575,12 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=176"></script>
-    <script type="module" src="js/landing.js?v=176"></script>
-    <script type="module" src="js/landing-demo.js?v=176"></script>
-    <script type="module" src="js/landing-ai.js?v=176"></script>
+    <script type="module" src="js/main.js?v=177"></script>
+    <script type="module" src="js/landing.js?v=177"></script>
+    <script type="module" src="js/landing-demo.js?v=177"></script>
+    <script type="module" src="js/landing-ai.js?v=177"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
-    <script>
-        // App version. The server replaces __SW_VERSION__ with ASSET_VERSION here and
-        // derives sw.js's CACHE_VERSION from that same value, so there is nothing to
-        // fetch or parse. (This previously scraped sw.js for `CACHE_VERSION = '...'`,
-        // which stopped matching once sw.js computed that constant instead of assigning
-        // a literal — leaving the UI permanently showing "Unknown".)
-        // Un-replaced means index.html was served statically, not via the Express route.
-        const APP_VERSION_RAW = '__SW_VERSION__';
-        const APP_VERSION = APP_VERSION_RAW.startsWith('__') ? 'dev' : APP_VERSION_RAW;
-
-        window.addEventListener('load', () => {
-            const versionText = document.getElementById('app-version-text');
-            if (versionText) {
-                versionText.textContent = APP_VERSION;
-            }
-        });
-
-        // Service Worker registration (secure contexts only)
-        if ('serviceWorker' in navigator && window.isSecureContext) {
-            window.addEventListener('load', () => {
-                const basePath = document.querySelector('base')?.getAttribute('href') || '/';
-                const swPath = basePath + 'sw.js';
-                const SW_VERSION = APP_VERSION_RAW;
-                const storedVersion = localStorage.getItem('quizix-sw-version');
-
-                // Detect stale SWs - check registrations (not just controller,
-                // because hard refresh sets controller to null while SW stays registered)
-                navigator.serviceWorker.getRegistrations().then(regs => {
-                    if (regs.length > 0 && storedVersion !== SW_VERSION) {
-                        console.log('[App] Stale service worker detected, cleaning up...');
-                        return Promise.all(regs.map(r => r.unregister()))
-                            .then(() => caches.keys())
-                            .then(names => Promise.all(names.map(n => caches.delete(n))))
-                            .then(() => {
-                                localStorage.setItem('quizix-sw-version', SW_VERSION);
-                                console.log('[App] Cleanup done, re-registering SW (no reload needed)');
-                                registerServiceWorker();
-                            });
-                    }
-                    localStorage.setItem('quizix-sw-version', SW_VERSION);
-                    registerServiceWorker();
-                });
-
-                function registerServiceWorker() {
-                    const forceWorkerActivation = (worker) => {
-                        if (!worker || !navigator.serviceWorker.controller) {
-                            return;
-                        }
-
-                        console.log('[App] Activating waiting service worker immediately');
-                        worker.postMessage({ type: 'SKIP_WAITING' });
-                    };
-
-                    // Only reload for SW updates, NOT for initial activation.
-                    // On first visit the SW activates via skipWaiting+clients.claim which
-                    // fires controllerchange — reloading here causes a visible blink.
-                    const hadControllerOnLoad = !!navigator.serviceWorker.controller;
-                    let refreshing = false;
-                    navigator.serviceWorker.addEventListener('controllerchange', () => {
-                        if (refreshing) return;
-                        if (!hadControllerOnLoad) {
-                            // First-ever activation — no need to reload, page already has fresh content
-                            console.log('[App] Initial service worker activated (no reload needed)');
-                            return;
-                        }
-                        refreshing = true;
-                        console.log('[App] Service worker updated, reloading for fresh content...');
-                        window.location.reload();
-                    });
-
-                    navigator.serviceWorker.register(swPath, { scope: basePath, updateViaCache: 'none' })
-                        .then((registration) => {
-                            console.log('[App] Service Worker registered with scope:', registration.scope);
-
-                            if (registration.waiting) {
-                                forceWorkerActivation(registration.waiting);
-                            }
-
-                            registration.addEventListener('updatefound', () => {
-                                const installingWorker = registration.installing;
-                                if (!installingWorker) {
-                                    return;
-                                }
-
-                                installingWorker.addEventListener('statechange', () => {
-                                    if (installingWorker.state === 'installed') {
-                                        forceWorkerActivation(installingWorker);
-                                    }
-                                });
-                            });
-
-                            const checkForUpdates = () => registration.update()
-                                .catch((error) => console.warn('[App] Service Worker update check failed:', error));
-
-                            document.addEventListener('visibilitychange', () => {
-                                if (document.visibilityState === 'visible') {
-                                    checkForUpdates();
-                                }
-                            });
-
-                            window.addEventListener('focus', checkForUpdates);
-                            setInterval(checkForUpdates, 60 * 60 * 1000);
-                            checkForUpdates();
-                        })
-                        .catch((error) => {
-                            console.warn('[App] Service Worker registration failed:', error);
-                        });
-                }
-            });
-        } else if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                console.warn('[App] Insecure context detected. Service workers are disabled on plain-HTTP LAN URLs, so this session relies on no-store HTTP headers. Use HTTPS to remove the browser security warning.');
-            });
-        }
-    </script>
+    <script defer src="js/core/boot-service-worker.js?v=177"></script>
 
     <!-- Language Picker Overlay (First Visit) -->
     <div id="language-picker-overlay" class="language-picker-overlay hidden">

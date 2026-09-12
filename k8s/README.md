@@ -406,9 +406,24 @@ kubectl run restore -n quizix --image=busybox --restart=Never --rm -it \
 
 ## Security Considerations
 
-1. **Non-root User**: Containers run as user 1001
-2. **Read-only Root Filesystem**: Disabled (needs write for node_modules)
-3. **Dropped Capabilities**: All capabilities dropped
+1. **Non-root User**: Pod `securityContext` sets `runAsNonRoot: true` with
+   uid/gid 1001, the user both Dockerfiles create (`addgroup -g 1001 -S nodejs`,
+   `adduser -S nodejs -u 1001`). `fsGroup: 1001` makes a freshly provisioned PVC
+   group-writable for it.
+2. **Read-only Root Filesystem**: Enabled on the app container. Writable paths
+   are the three PVC mounts (`/app/quizzes`, `/app/results`,
+   `/app/public/uploads`) and an `emptyDir` at `/tmp` for `os.tmpdir()`.
+   `atomic-write.js` writes its temp file beside the destination, so it stays
+   inside a PVC. Turning on `MANIM_ENABLED` needs a re-check: Manim also writes
+   to HOME and to font caches, which no mount covers.
+3. **Dropped Capabilities**: `capabilities.drop: [ALL]` plus
+   `allowPrivilegeEscalation: false` and `seccompProfile: RuntimeDefault` on
+   both containers. The server listens on 3000, so no bind capability is needed.
+   The `init-dirs` init container overrides `runAsNonRoot` to run as uid 0 with
+   only CHOWN and FOWNER added, because `chown -R`/`chmod -R` on files it does
+   not own requires them. A cluster enforcing the restricted Pod Security
+   Standard will reject that container: delete it and rely on `fsGroup`, which
+   works on CSI drivers that honour it.
 4. **Network Policies**: Consider adding for production
 5. **RBAC**: Use least-privilege service accounts
 6. **Secrets**: Store API keys in Kubernetes Secrets, not ConfigMaps

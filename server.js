@@ -273,16 +273,23 @@ app.use(helmet({
         // script/style/connect/object origins and locks base-uri. The primary XSS fix
         // is source-side escaping of quiz-authored content (see dom.js escapeHtmlPreservingLatex
         // usage in the question/preview render paths); this CSP is the backstop.
-        // NOTE: index.html relies on ~55 inline event-handler attributes (onclick/onchange),
-        // so script-src-attr must allow 'unsafe-inline' or the UI breaks. Removing those
-        // inline handlers in favor of addEventListener would let us tighten this back to
-        // 'none' — a worthwhile follow-up.
+        // script-src no longer allows 'unsafe-inline': index.html's two inline <script>
+        // blocks were moved to public/js/core/boot-head.js and boot-service-worker.js,
+        // so an injected <script>...</script> body is now refused by the browser.
+        // script-src-attr KEEPS 'unsafe-inline'. index.html still binds 36 inline
+        // event-handler attributes (onclick/onchange/oninput) on production paths.
+        // Removing them was evaluated and declined for now: 10 of the 11 affected UI
+        // clusters have no end-to-end coverage, and index.html's socket.io tag uses an
+        // onerror attribute as the only fallback when the CDN is unreachable. Converting
+        // them to addEventListener is what would let this directive go to 'none'.
+        // Note the two directives are independent — a nonce on script-src does not
+        // relax or replace script-src-attr.
         // useDefaults:false so the exact policy is emitted — notably WITHOUT
         // upgrade-insecure-requests, which would break plain-HTTP LAN deployments.
         useDefaults: false,
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://cdn.socket.io'],
+            scriptSrc: ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://cdn.socket.io'],
             scriptSrcAttr: ["'unsafe-inline'"],
             // canvas-confetti builds its animation worker from an inline Blob, i.e.
             // `new Worker(URL.createObjectURL(new Blob([code])))`, so worker-src must
@@ -405,6 +412,29 @@ app.get('/js/*', createJsFileHandler(logger, isProduction, __dirname));
 // `npm start` does not set NODE_ENV, so gating on !isProduction served the
 // repo's debug HTML tools on every ordinary LAN run.
 if (enableDebugRoutes) {
+    // All four debug tools carry large inline <script> BLOCKS (not just handler
+    // attributes), so the global script-src — which no longer allows
+    // 'unsafe-inline' — refuses them and the tools render as dead pages.
+    // Rather than externalise ~1070 lines of throwaway debug JS, relax the
+    // directive for this mount alone. The blast radius is nil in any deployment:
+    // this mount only exists when ENABLE_DEBUG_ROUTES=true, and `debug/` is both
+    // .dockerignore'd and absent from the Dockerfiles' COPY allowlist, so it is
+    // never present in an image. Delete this override the day the tools stop
+    // using inline blocks.
+    app.use('/debug', helmet.contentSecurityPolicy({
+        useDefaults: false,
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'],
+            scriptSrcAttr: ["'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net'],
+            imgSrc: ["'self'", 'data:', 'blob:'],
+            connectSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"]
+        }
+    }));
     app.use('/debug', express.static('debug', createDebugStaticConfig()));
 }
 

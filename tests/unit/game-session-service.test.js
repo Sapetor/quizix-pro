@@ -82,6 +82,18 @@ describe('GameSessionService — construction', () => {
     });
 });
 
+describe('GameSessionService — periodic cleanup timers', () => {
+    test('stopPeriodicCleanup clears both the interval and the initial 5-minute timeout', () => {
+        const spy = jest.spyOn(svc, 'cleanupStaleGames').mockImplementation(() => {});
+
+        svc.stopPeriodicCleanup();
+        jest.advanceTimersByTime(60 * 60 * 1000);
+
+        expect(spy).not.toHaveBeenCalled();
+        expect(jest.getTimerCount()).toBe(0);
+    });
+});
+
 describe('GameSessionService — createGame & lookup', () => {
     test('creates a game and indexes it by pin and host id', () => {
         const game = svc.createGame('host-1', sampleQuiz());

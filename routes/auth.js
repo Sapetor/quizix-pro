@@ -1,7 +1,9 @@
 /**
  * Auth Routes
  *
- * POST /api/auth/signup  — create account, issue session cookie
+ * POST /api/auth/signup  — create account, issue session cookie.
+ *                          Open only while the instance has zero accounts;
+ *                          afterwards 403 unless ALLOW_SIGNUP=true.
  * POST /api/auth/login   — authenticate, issue session cookie
  * POST /api/auth/logout  — clear session cookie
  * GET  /api/auth/me      — return { user } or { user: null }
@@ -37,6 +39,17 @@ function createAuthRoutes({
     }
 
     router.post('/signup', validateBody(signupSchema), async (req, res) => {
+        // First user becomes the owner: signup is open only while the instance
+        // has no accounts. After that it takes ALLOW_SIGNUP=true to reopen it.
+        // Checked before createUser so a refused request does no PBKDF2 work.
+        if (process.env.ALLOW_SIGNUP !== 'true' && userService.hasUsers()) {
+            logger.debug('Signup refused: instance already has an account and ALLOW_SIGNUP is not "true"');
+            return res.status(403).json({
+                error: 'Signup is closed on this instance.',
+                messageKey: 'error_signup_disabled'
+            });
+        }
+
         const ip = clientIp(req);
         if (userService.isRateLimited(ip)) {
             return res.status(429).json({

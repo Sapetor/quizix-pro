@@ -188,6 +188,35 @@ chown -R 1001:1001 /opt/quizix-data
 
 (`deploy-to-server.sh` uses `$HOME/quizix-data` instead of `/opt/quizix-data`.)
 
+## Container hardening
+
+All three deployment paths now drop capabilities and block privilege
+escalation. The server listens on port 3000 (`server.js:744`), so no capability
+is needed to bind it.
+
+| Setting | docker-compose.yml | docker-compose.server.yml | k8s/01-quizix-pro.yaml |
+|---------|--------------------|---------------------------|------------------------|
+| No new privileges | `security_opt` | `security_opt` | `allowPrivilegeEscalation: false` |
+| Capabilities | `cap_drop: ALL` | `cap_drop: ALL` | `capabilities.drop: [ALL]` |
+| Process cap | `pids_limit: 256` | `deploy.resources.limits.pids: 256` | not set (no pod-level equivalent) |
+| Memory / CPU | 2g / 2 CPUs | 512M / 0.5 CPU | 512Mi / 500m |
+| Non-root | image `USER nodejs` | image `USER nodejs` | `runAsNonRoot`, `runAsUser: 1001` |
+| Read-only root | off | off | `readOnlyRootFilesystem: true` |
+| seccomp | Docker default | Docker default | `RuntimeDefault` |
+
+The server compose file keeps its own 512M / 0.5 CPU budget instead of copying
+the 2g / 2 CPU values from `docker-compose.yml`, which sizes a LAN host that
+also runs Manim. Compose maps `pids_limit` and `deploy.resources.limits.pids`
+onto one setting and rejects the file if both are set to different values, so
+the process cap lives in the `deploy` block there.
+
+Read-only root is enabled only in Kubernetes, where every writable path is a
+mount: the three PVCs (`/app/quizzes`, `/app/results`, `/app/public/uploads`)
+plus an `emptyDir` at `/tmp` for `os.tmpdir()`. The compose files leave it off
+because both expose `MANIM_ENABLED`, and a Manim render writes to HOME and to
+font caches that no mount covers. Enabling `MANIM_ENABLED` in the Kubernetes
+ConfigMap requires the same re-check before the pod will render.
+
 ## 🔄 How Auto-Update Works
 
 ### Update Strategy
@@ -314,6 +343,20 @@ GEMINI_API_KEY=your-key-here
 
 `HUGGINGFACE_API_KEY` is not read by the server. The complete, annotated list
 of variables the app actually reads is `.env.example`.
+
+### Account signup: `ALLOW_SIGNUP`
+
+```bash
+# Leave unset for a single-operator deployment.
+# ALLOW_SIGNUP=true
+```
+
+On a fresh instance with no accounts, `POST /api/auth/signup` is open so the
+operator can create the first account. Once any account exists, signup returns
+403 (`error_signup_disabled`) unless this is exactly `"true"`. Existing accounts
+and `login`/`logout` are unaffected either way. Set it to `"true"` only if you
+want anyone who can reach the port to register, which also grants them the
+server-side `CLAUDE_API_KEY` / `GEMINI_API_KEY` generation endpoints.
 
 ### Diagnostic endpoints: `ENABLE_DEBUG_ROUTES`
 

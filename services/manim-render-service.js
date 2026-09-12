@@ -32,6 +32,18 @@ const BLOCKLIST_PATTERNS = [
     { pattern: /http\.client/i,          label: 'http.client' },
 ];
 
+// Environment variables forwarded to the render child. Everything else in
+// process.env stays in the server process: the child runs user-supplied
+// Python, so it must not see the AI provider keys or the session secret.
+// HOME: matplotlib, fontconfig and LaTeX write their caches under it.
+// LANG/LC_ALL: Python's stdio encoding and Manim's console output.
+// TMPDIR: honoured by Python, ffmpeg and LaTeX for scratch files.
+const CHILD_ENV_PASSTHROUGH = ['HOME', 'LANG', 'LC_ALL', 'TMPDIR'];
+
+// Output captured from the render child. Node's default is 1 MiB, which a
+// verbose render overruns; the overflow then aborts the render.
+const CHILD_MAX_BUFFER = 10 * 1024 * 1024;
+
 class ManimRenderService {
     /**
      * @param {object} logger  - Logger with .info/.warn/.error/.debug methods
@@ -94,6 +106,39 @@ class ManimRenderService {
             PYTHONPATH: sitePackages || '',
             PATH: `${path.join(this.venvPath, 'bin')}:${process.env.PATH || ''}`,
         };
+    }
+
+    /**
+     * Build the child process environment: the venv vars plus a small
+     * allowlist, never a copy of the server's environment.
+     * @returns {object}
+     */
+    _childEnv() {
+        const env = {};
+        for (const name of CHILD_ENV_PASSTHROUGH) {
+            if (process.env[name] !== undefined) env[name] = process.env[name];
+        }
+        return { ...env, ...this._venvEnv() };
+    }
+
+    /**
+     * Kill the child and everything it spawned. The child is spawned detached,
+     * so it leads its own process group and a negative pid also reaches the
+     * ffmpeg and LaTeX processes Manim starts.
+     *
+     * @param {import('child_process').ChildProcess} proc
+     */
+    _killProcessGroup(proc) {
+        if (!proc || !proc.pid) return;
+        try {
+            process.kill(-proc.pid, 'SIGKILL');
+        } catch (err) {
+            // ESRCH: the group is already gone, nothing to do. Anything else
+            // (a platform without process groups): fall back to the child.
+            if (err.code !== 'ESRCH') {
+                try { proc.kill('SIGKILL'); } catch (_) { /* already dead */ }
+            }
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -165,7 +210,7 @@ class ManimRenderService {
         return new Promise((resolve) => {
             execFile('python3', ['-m', 'manim', '--version'], {
                 timeout: 5000,
-                env: { ...process.env, ...this._venvEnv() },
+                env: this._childEnv(),
             }, (err, stdout, stderr) => {
                 if (err) {
                     const msg = err.message || String(err);
@@ -256,11 +301,32 @@ class ManimRenderService {
                 const proc = execFile(
                     'python3',
                     args,
-                    { timeout: this.renderTimeout, cwd: tempDir, env: { ...process.env, ...this._venvEnv() } },
+                    {
+                        timeout: this.renderTimeout,
+                        cwd: tempDir,
+                        env: this._childEnv(),
+                        maxBuffer: CHILD_MAX_BUFFER,
+                        // Own process group, so the kill below reaches the
+                        // ffmpeg/LaTeX processes Manim spawns. stdio stays
+                        // piped, so stdout/stderr are collected as before.
+                        detached: true
+                    },
                     (err, stdout, stderr) => {
                         if (err) {
-                            // execFile sets err.killed = true on timeout
-                            if (err.killed || err.signal === 'SIGKILL') {
+                            // The child died, but its descendants may not have.
+                            this._killProcessGroup(proc);
+
+                            // Measured on node v22.16.0: a maxBuffer overflow
+                            // leaves err.killed undefined and reports through
+                            // err.code, so it must be checked before the
+                            // timeout branch, not after.
+                            if (err.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER') {
+                                const overflowErr = new Error(
+                                    `Manim render output exceeded the ${CHILD_MAX_BUFFER}-byte capture limit`
+                                );
+                                overflowErr.messageKey = 'error_manim_render_failed';
+                                reject(overflowErr);
+                            } else if (err.killed || err.signal === 'SIGKILL') {
                                 const timeoutErr = new Error(
                                     `Manim render timed out after ${this.renderTimeout}ms`
                                 );
@@ -284,9 +350,10 @@ class ManimRenderService {
                     }
                 );
 
-                // Ensure SIGKILL on timeout (belt-and-suspenders over execFile's timeout)
+                // Ensure SIGKILL on timeout (belt-and-suspenders over execFile's
+                // timeout, which only signals the child itself)
                 const killTimer = setTimeout(() => {
-                    try { proc.kill('SIGKILL'); } catch (_) { /* already dead */ }
+                    this._killProcessGroup(proc);
                 }, this.renderTimeout + 2000);
 
                 proc.on('close', () => clearTimeout(killTimer));

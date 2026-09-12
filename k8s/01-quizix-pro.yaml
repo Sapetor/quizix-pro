@@ -115,6 +115,19 @@ spec:
       # Give time for graceful shutdown and volume detachment
       terminationGracePeriodSeconds: 60
 
+      # Run as the image's non-root user. Dockerfile and Dockerfile.slim both
+      # create it with `addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001`
+      # and chown the data directories to nodejs:nodejs, so uid and gid are 1001.
+      # fsGroup makes a freshly provisioned PVC group-writable for that uid;
+      # OnRootMismatch skips the recursive relabel when the volume root already
+      # matches, which keeps restarts fast on the 5Gi uploads volume.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        fsGroupChangePolicy: OnRootMismatch
+
       # Uncomment if your Docker Hub repo is private
       # imagePullSecrets:
       #   - name: dockerhub-cred
@@ -126,6 +139,22 @@ spec:
           # Mount paths here must match the app container's below, so the
           # chown lands on the directory the app actually writes.
           command: ['sh', '-c', 'mkdir -p /app/quizzes /app/results /app/public/uploads && chown -R 1001:1001 /app/quizzes /app/results /app/public/uploads && chmod -R 755 /app/quizzes /app/results /app/public/uploads']
+          # chown/chmod on files it does not own needs uid 0 plus CHOWN and
+          # FOWNER, so this container overrides the pod-level runAsNonRoot.
+          # If the cluster enforces the restricted Pod Security Standard it will
+          # reject a uid-0 container: delete this init container and rely on
+          # fsGroup instead, which works on CSI drivers that honour it.
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "FOWNER"]
+            seccompProfile:
+              type: RuntimeDefault
           volumeMounts:
             - name: quizzes
               mountPath: /app/quizzes
@@ -138,6 +167,30 @@ spec:
         - name: quizix-pro
           image: ghcr.io/sapetor/quizix-pro:latest
           imagePullPolicy: Always
+
+          # Every path the server writes is a mount, so /app itself can be
+          # read-only:
+          #   /app/quizzes       quiz JSON, quiz-metadata.json, users.json,
+          #                      quizzes/.session-secret (session-service.js:38)
+          #   /app/results       results JSON (game.js:759,793)
+          #   /app/public/uploads multer images (file-uploads.js:97), the sharp
+          #                      WebP copy, Manim MP4 output
+          #   /tmp               os.tmpdir(), used by the mkdtemp() render dir in
+          #                      manim-render-service.js and by libvips scratch
+          # atomic-write.js writes its temp file next to the destination, so it
+          # stays inside the PVCs. server.js mkdir()s those three paths at
+          # startup; mkdir on an existing directory returns EEXIST rather than
+          # EROFS, and Node's recursive mkdir treats that as success.
+          # If you enable Manim (MANIM_ENABLED=true with the full Dockerfile
+          # image), re-check this: Manim and its Python dependencies also write
+          # to HOME and to font caches, which no mount covers.
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
 
           envFrom:
             - configMapRef:
@@ -185,8 +238,16 @@ spec:
               mountPath: /app/results
             - name: uploads
               mountPath: /app/public/uploads
+            - name: tmp
+              mountPath: /tmp
 
       volumes:
+        # Writable /tmp for the read-only root filesystem above. The size cap
+        # stays under the pod's 1Gi ephemeral-storage limit, which emptyDir
+        # usage counts against.
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
         - name: quizzes
           persistentVolumeClaim:
             claimName: quizix-quizzes

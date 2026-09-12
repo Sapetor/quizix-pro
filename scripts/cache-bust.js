@@ -82,8 +82,11 @@ function updateIndexHtml(version) {
         return `${prefix}${path}${ext}?v=${numericVersion}"${as}`;
     });
 
-    // Add or update version for script src tags
-    const scriptPattern = /(<script type="module" src=")(js\/[^"?]+)(\.js)("|\?v=[\d.]+")>/g;
+    // Add or update version for script src tags. Matches module scripts and plain
+    // classic ones (js/core/boot-head.js is parser-blocking, boot-service-worker.js
+    // is deferred), so any attribute order before src= is accepted. The `js/` prefix
+    // keeps CDN tags out.
+    const scriptPattern = /(<script[^>]*\ssrc=")(js\/[^"?]+)(\.js)("|\?v=[\d.]+")>/g;
     content = content.replace(scriptPattern, (match, prefix, path, ext, suffix) => {
         changes++;
         return `${prefix}${path}${ext}?v=${numericVersion}">`;

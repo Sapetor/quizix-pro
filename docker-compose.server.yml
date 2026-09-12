@@ -40,6 +40,22 @@ services:
 
     network_mode: "bridge"
 
+    # Isolation hardening, mirrored from docker-compose.yml.
+    # The server listens on 3000 (server.js:744), so nothing needs
+    # CAP_NET_BIND_SERVICE and dropping ALL capabilities is safe.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # The process cap lives in the deploy block below: Compose maps pids_limit
+    # and deploy.resources.limits.pids onto the same setting and refuses the
+    # file when both are present with different values.
+    # No mem_limit/cpus either: docker-compose.yml sets 2g/2 CPUs for the LAN
+    # host-network setup, while this file already caps the container at 512M /
+    # 0.5 CPU through deploy.resources. Copying mem_limit would collide with
+    # that limit rather than add to it. Raise the deploy block, not these keys,
+    # if this server runs Manim (MANIM_ENABLED=true) or many concurrent games.
+
     # Health check configuration
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
@@ -54,6 +70,7 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
+          pids: 256
         reservations:
           memory: 256M
           cpus: '0.25'

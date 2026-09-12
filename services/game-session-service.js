@@ -26,6 +26,7 @@ class GameSessionService {
         this.games = new Map();
         this.hostIdToPin = new Map();
         this.cleanupInterval = null;
+        this.initialCleanupTimeout = null;
         this.socketBatchService = null; // Injected via setSocketBatchService()
         this.hostDisconnectTimers = new Map(); // pin -> timerId for host disconnect grace period
         this.migrationTimers = new Map(); // pin -> timerId for pending-migration timeout
@@ -59,7 +60,8 @@ class GameSessionService {
         }, 30 * 60 * 1000);
 
         // Run initial cleanup after 5 minutes
-        setTimeout(() => {
+        this.initialCleanupTimeout = setTimeout(() => {
+            this.initialCleanupTimeout = null;
             this.cleanupStaleGames();
         }, 5 * 60 * 1000);
     }
@@ -71,6 +73,10 @@ class GameSessionService {
         if (this.cleanupInterval) {
             clearInterval(this.cleanupInterval);
             this.cleanupInterval = null;
+        }
+        if (this.initialCleanupTimeout) {
+            clearTimeout(this.initialCleanupTimeout);
+            this.initialCleanupTimeout = null;
         }
     }
 

@@ -1,5 +1,6 @@
 const express = require('express');
 const { getClientIp } = require('../middleware/client-ip');
+const { requireUser } = require('../middleware/attach-user');
 
 /**
  * Manim Animation Routes
@@ -148,7 +149,8 @@ function createManimRoutes({ logger, manimRenderService }) {
 
     // ==================== STATUS ROUTE ====================
 
-    router.get('/manim/status', async (req, res) => {
+    // Authenticated only: the response reports the installed Manim version.
+    router.get('/manim/status', requireUser, async (req, res) => {
         try {
             const availability = await manimRenderService.checkAvailability();
             return res.status(200).json({
