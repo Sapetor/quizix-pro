@@ -8,6 +8,7 @@ import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-han
 import { logger, UI, TIMING } from '../core/config.js';
 import { uiStateManager } from '../utils/ui-state-manager.js';
 import { show, hide } from '../utils/dom.js';
+import { rememberHostToken } from '../services/results-manager-service.js';
 
 // How long to wait for the server's answer to 'player-join' before resending it.
 // Covers the slow case (phone still opening the socket over the tunnel) plus one
@@ -44,11 +45,16 @@ function getOrCreateDeviceId() {
 }
 
 export class SocketManager {
-    constructor(socket, gameManager, uiManager, soundManager) {
+    /**
+     * @param {Object|null} app - QuizGame instance; owns resetAndReturnToMenu(),
+     *   the only correct way to leave a game screen (GOTCHAS #13).
+     */
+    constructor(socket, gameManager, uiManager, soundManager, app = null) {
         this.socket = socket;
         this.gameManager = gameManager;
         this.uiManager = uiManager;
         this.soundManager = soundManager;
+        this.app = app;
         this.currentPlayerName = null; // Store current player name for language updates
         this.abortController = new AbortController(); // For cleanup of event listeners
         this._isReconnecting = false; // Guard: prevent session-check during socket reconnects
@@ -59,6 +65,24 @@ export class SocketManager {
 
         this.initializeSocketListeners();
         this.initializeLanguageListener();
+    }
+
+    /**
+     * Leave the current game the way GOTCHAS #13 requires: the app-level reset,
+     * which notifies the server, stops the timer and clears game state, instead of
+     * a bare showScreen that leaves the timer running and stateManager holding the
+     * pin, host flag and player name. resetAndReturnToMenu lives on QuizGame, not
+     * on GameManager, so the old `this.gameManager.resetAndReturnToMenu` guards
+     * were never true and every caller fell through to the bare showScreen.
+     */
+    _returnToMenu() {
+        if (this.app?.resetAndReturnToMenu) {
+            this.app.resetAndReturnToMenu();
+            return;
+        }
+        this.gameManager.stopTimer();
+        this.gameManager.resetGameState();
+        this.uiManager.showScreen('main-menu');
     }
 
     /**
@@ -178,6 +202,11 @@ export class SocketManager {
             // Secret host reconnect token — required by the server to re-authenticate a
             // host-rejoin during the disconnect grace window (prevents host hijacking)
             this._hostToken = data.hostToken || null;
+            // Also the proof of ownership for this game's results file. Persist it
+            // now, not when the results UI first opens: a host that closes the tab
+            // after the last question would otherwise leave a file whose token
+            // nobody holds, unreadable through the API for good.
+            rememberHostToken(data.pin, this._hostToken);
             this.uiManager.updateGamePin(data.pin);
             this.uiManager.loadQRCode(data.pin);
 
@@ -404,12 +433,15 @@ export class SocketManager {
             const timerDuration = data.remainingTimeMs != null
                 ? data.remainingTimeMs
                 : (timeLimit * 1000);
-            this.gameManager.startTimer(timerDuration);
+            // Lock the answer gate when the local countdown hits zero, so a late tap
+            // cannot emit submit-answer and earn a rejection modal before the result.
+            this.gameManager.startTimer(timerDuration, null, () => this.gameManager.lockAnswers());
         }, 'question-start'));
 
         this.socket.on('question-end', (data) => {
             logger.debug('Question ended:', data);
             this.gameManager.stopTimer();
+            this.gameManager.lockAnswers();
 
             // Hide player timer when question ends
             const playerTimer = document.getElementById('player-timer');
@@ -906,7 +938,9 @@ export class SocketManager {
         // Timer extended by a power-up (server broadcasts new remaining time in ms)
         this.socket.on('timer-extended', (data) => {
             if (data?.remainingMs != null && this.gameManager) {
-                this.gameManager.updateTimerDisplay(data.remainingMs);
+                // syncTimer, not updateTimerDisplay: the display-only call was
+                // overwritten by the running countdown on its next tick.
+                this.gameManager.syncTimer(data.remainingMs);
                 logger.debug('Timer extended:', Math.ceil(data.remainingMs / 1000), 'seconds remaining');
             }
         });
@@ -914,8 +948,8 @@ export class SocketManager {
         // Handle timer resync from server (after tab becomes visible)
         this.socket.on('time-sync', (data) => {
             if (data?.remainingMs != null && this.gameManager) {
-                // updateTimerDisplay expects milliseconds (see TimerManager)
-                this.gameManager.updateTimerDisplay(data.remainingMs);
+                // syncTimer expects milliseconds (see TimerManager.syncRemaining)
+                this.gameManager.syncTimer(data.remainingMs);
                 logger.debug('Timer synced:', Math.ceil(data.remainingMs / 1000), 'seconds remaining');
             }
         });
@@ -979,24 +1013,14 @@ export class SocketManager {
         this.socket.on('session-invalid', () => {
             logger.info('Session invalid, clearing binding');
             localStorage.removeItem(SESSION_BINDING_KEY);
-            if (this.gameManager.resetAndReturnToMenu) {
-                this.gameManager.resetAndReturnToMenu();
-            } else {
-                this.uiManager.showScreen('main-menu');
-            }
+            this._returnToMenu();
         });
 
         // Session released by host — clear binding, return to main menu
         this.socket.on('session-released', () => {
             logger.info('Session released by host');
             localStorage.removeItem(SESSION_BINDING_KEY);
-            if (this.gameManager.resetAndReturnToMenu) {
-                this.gameManager.resetAndReturnToMenu();
-            } else {
-                this.gameManager.stopTimer();
-                this.gameManager.resetGameState();
-                this.uiManager.showScreen('main-menu');
-            }
+            this._returnToMenu();
             if (window.toastNotifications) {
                 window.toastNotifications.show(translationManager.getTranslationSync('host_ended_session') || 'Host ended the session', 'info', 3000);
             }
@@ -1351,10 +1375,16 @@ export class SocketManager {
             }
         }, 10000);
 
-        // Clear timeout when we get a response (success or failure)
-        const clearRejoinTimeout = () => clearTimeout(rejoinTimeout);
-        this.socket.once('rejoin-success', clearRejoinTimeout);
-        this.socket.once('rejoin-failed', clearRejoinTimeout);
+        // Clear the timeout on the first response, and drop BOTH listeners: with a
+        // `once` on each event only the one that fired was removed, so every rejoin
+        // attempt left a dead listener registered for the life of the page.
+        const settleRejoin = () => {
+            clearTimeout(rejoinTimeout);
+            this.socket.off('rejoin-success', settleRejoin);
+            this.socket.off('rejoin-failed', settleRejoin);
+        };
+        this.socket.on('rejoin-success', settleRejoin);
+        this.socket.on('rejoin-failed', settleRejoin);
 
         const emitRejoin = () => {
             this.socket.emit('player-rejoin', {
@@ -1539,11 +1569,7 @@ export class SocketManager {
                 hostSessionId: binding.hostSessionId
             });
             localStorage.removeItem(SESSION_BINDING_KEY);
-            if (this.gameManager.resetAndReturnToMenu) {
-                this.gameManager.resetAndReturnToMenu();
-            } else {
-                this.uiManager.showScreen('main-menu');
-            }
+            this._returnToMenu();
         } catch (e) {
             logger.warn('Failed to leave session:', e);
             localStorage.removeItem(SESSION_BINDING_KEY);

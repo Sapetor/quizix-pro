@@ -33,6 +33,7 @@ export class DiscussionManager {
 
         // Cache DOM elements
         this._cachedElements = {};
+        this._listenersBound = false;
     }
 
     /**
@@ -262,6 +263,16 @@ export class DiscussionManager {
      * Bind event listeners for discussion UI
      */
     _bindEventListeners() {
+        // Global for inline onclick handlers; cleanup() deletes it, so
+        // re-assign it before the bind guard below.
+        window.discussionManager = this;
+
+        // The chat/quick-response elements are static markup in index.html, so
+        // re-binding on a second game would fire every handler twice.
+
+        if (this._listenersBound) return;
+        this._listenersBound = true;
+
         // Quick response buttons
         const quickButtons = document.querySelectorAll('.quick-response-btn');
         quickButtons.forEach(btn => {
@@ -293,9 +304,6 @@ export class DiscussionManager {
                 }
             });
         }
-
-        // Make manager accessible globally for onclick handlers
-        window.discussionManager = this;
     }
 
     /**

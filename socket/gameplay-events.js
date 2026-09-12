@@ -46,12 +46,13 @@ function registerGameplayEvents(io, socket, options) {
     socket.on('use-power-up', (data) => {
         if (!checkRateLimit(socket.id, 'use-power-up', 3, socket)) return;
         try {
-            if (!data || !data.type) {
+            const validated = validateAndHandle(socket, 'use-power-up', data, logger);
+            if (!validated) {
                 socket.emit('power-up-result', { success: false, error: 'Invalid power-up data', messageKey: 'error_invalid_powerup' });
                 return;
             }
 
-            const { type } = data;
+            const { type } = validated;
             const playerData = playerManagementService.getPlayer(socket.id);
             if (!playerData) {
                 socket.emit('power-up-result', { success: false, error: 'Player not found', messageKey: 'error_player_not_found' });
@@ -117,10 +118,10 @@ function registerGameplayEvents(io, socket, options) {
         if (!checkRateLimit(socket.id, 'next-question', 5, socket)) return;
         try {
             const game = gameSessionService.findGameByHost(socket.id);
-            // Reject while a question is actively running — legitimate manual advance
-            // happens from the 'revealing' state. Prevents a stale question timer from
-            // firing into the next question.
-            if (!game || game.gameState === 'question') return;
+            // Only the reveal is a legitimate manual advance. Accepting it in
+            // 'lobby' or 'starting' left the pending game-start timer armed, so it
+            // fired afterwards and advanced a second time, cutting question 1 short.
+            if (!game || game.gameState !== 'revealing') return;
 
             logger.debug(`next-question: game ${game.pin}, question ${game.currentQuestion + 1}/${game.quiz.questions.length}`);
             gameSessionService.manualAdvanceToNextQuestion(game, io);

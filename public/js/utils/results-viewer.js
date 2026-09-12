@@ -11,7 +11,7 @@
 
 import { translationManager, getTranslation, showErrorAlert, showSuccessAlert } from './translation-manager.js';
 import { logger, TIMING } from '../core/config.js';
-import { resultsManagerService } from '../services/results-manager-service.js';
+import { resultsManagerService, hostTokenHeaders, isAccessDenied } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
 import { SwipeToDelete } from './swipe-to-delete.js';
 import { bindElement, dom, show, hide } from './dom.js';
@@ -108,7 +108,9 @@ export class ResultsViewer {
                 this.onResultsUpdated(data);
                 break;
             case 'error':
-                this.showError(`${getTranslation('results_failed_load')}: ${data.message}`);
+                this.showError(isAccessDenied(data)
+                    ? getTranslation('error_access_forbidden')
+                    : `${getTranslation('results_failed_load')}: ${data.message}`);
                 break;
             case 'downloadComplete':
                 showSuccessAlert(`${getTranslation('results_downloaded')}: ${data.downloadFilename}`);
@@ -250,7 +252,11 @@ export class ResultsViewer {
             logger.debug(`Loaded ${results.length} results`);
         } catch (error) {
             logger.error('Error loading results:', error);
-            this.showError(getTranslation('results_failed_load'));
+            // No host token and not signed in: say so instead of leaving the
+            // list blank or letting the rejection go unhandled.
+            this.showError(isAccessDenied(error)
+                ? getTranslation('error_access_forbidden')
+                : getTranslation('results_failed_load'));
         }
     }
 
@@ -260,7 +266,9 @@ export class ResultsViewer {
             showSuccessAlert(getTranslation('results_refreshed_success'));
         } catch (error) {
             logger.error('Error refreshing results:', error);
-            showErrorAlert(getTranslation('results_failed_refresh'));
+            showErrorAlert(isAccessDenied(error)
+                ? getTranslation('error_access_forbidden')
+                : getTranslation('results_failed_refresh'));
         }
     }
 
@@ -392,7 +400,9 @@ export class ResultsViewer {
         let fullResult = result;
         if (!result.results && result.filename) {
             try {
-                const response = await fetch(APIHelper.getApiUrl(`api/results/${result.filename}`));
+                const response = await fetch(APIHelper.getApiUrl(`api/results/${encodeURIComponent(result.filename)}`), {
+                    headers: hostTokenHeaders(result.filename)
+                });
                 if (response.ok) {
                     fullResult = await response.json();
                     fullResult.filename = result.filename;
@@ -510,7 +520,9 @@ export class ResultsViewer {
             // Fetch full data if missing results OR questions (list API may only include partial data)
             if ((!result.results || !result.questions) && result.filename) {
                 try {
-                    const response = await fetch(APIHelper.getApiUrl(`api/results/${result.filename}`));
+                    const response = await fetch(APIHelper.getApiUrl(`api/results/${encodeURIComponent(result.filename)}`), {
+                        headers: hostTokenHeaders(result.filename)
+                    });
                     if (response.ok) {
                         fullResult = await response.json();
                         fullResult.filename = result.filename;
@@ -750,7 +762,9 @@ export class ResultsViewer {
         if (result.questions || !result.filename) return result;
 
         try {
-            const response = await fetch(APIHelper.getApiUrl(`api/results/${result.filename}`));
+            const response = await fetch(APIHelper.getApiUrl(`api/results/${encodeURIComponent(result.filename)}`), {
+                headers: hostTokenHeaders(result.filename)
+            });
             if (response.ok) {
                 const fullResult = await response.json();
                 fullResult.filename = result.filename;
@@ -888,7 +902,9 @@ export class ResultsViewer {
             // Fetch full data for each session
             const resultsPromises = filenames.map(async (filename) => {
                 try {
-                    const response = await fetch(APIHelper.getApiUrl(`api/results/${filename}`));
+                    const response = await fetch(APIHelper.getApiUrl(`api/results/${encodeURIComponent(filename)}`), {
+                        headers: hostTokenHeaders(filename)
+                    });
                     if (response.ok) {
                         const data = await response.json();
                         data.filename = filename;

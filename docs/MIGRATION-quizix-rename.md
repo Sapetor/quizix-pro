@@ -51,7 +51,7 @@ done
 
 # 4. Create the new namespace + PVCs + workload.
 kubectl apply -f k8s/01-quizix-pro.yaml
-kubectl apply -f k8s/02-quizix-ingress.yaml   # (configmap.yaml is optional; 01 already includes one)
+kubectl apply -f k8s/02-quizix-ingress.yaml   # (01 already includes the ConfigMap)
 
 # 5. Scale the new deployment to 0, then copy data INTO the new PVCs.
 kubectl scale deployment quizix-pro -n quizix --replicas=0

@@ -284,6 +284,11 @@ export class QuestionUtils {
                         <span class="tf-card-state tf-card-state--off ed-mono" data-translate="mark_correct_pill">Mark</span>
                     </button>
                 </div>
+                <label class="tf-poll-toggle">
+                    <input type="checkbox" class="tf-poll">
+                    <span class="tf-poll-label ed-mono" data-translate="poll_mode_label">Poll — no correct answer</span>
+                </label>
+                <p class="tf-poll-hint" data-translate="poll_mode_hint">Students answer True or False; nobody is marked right or wrong and no points are awarded.</p>
             </div>
             
             <div class="answer-options numeric-options" style="display: none;">

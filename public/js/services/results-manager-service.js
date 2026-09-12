@@ -7,6 +7,105 @@
 import { logger } from '../core/config.js';
 import { APIHelper } from '../utils/api-helper.js';
 
+/**
+ * Host tokens for past games, keyed by game PIN: { "123456": { token, savedAt } }.
+ *
+ * The server binds a game's results to the host token it minted at game
+ * creation, so an anonymous host proves ownership by presenting that token.
+ * It has to survive closing the tab, so it lives in localStorage, one entry per
+ * PIN so a host keeps access to every game it ran in this browser.
+ */
+const HOST_TOKEN_STORAGE_KEY = 'quizix_host_tokens';
+const MAX_STORED_HOST_TOKENS = 50;
+const MAX_SENT_HOST_TOKENS = 25; // same cap the server applies to the header
+
+function readStoredHostTokens() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(HOST_TOKEN_STORAGE_KEY) || '{}');
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (error) {
+        logger.warn('Could not read stored host tokens:', error);
+        return {};
+    }
+}
+
+/**
+ * Store the host token for one game PIN, keeping the newest entries.
+ */
+export function rememberHostToken(pin, token) {
+    if (!pin || !token) return;
+
+    const stored = readStoredHostTokens();
+    if (stored[pin]?.token === token) return;
+
+    stored[pin] = { token, savedAt: Date.now() };
+    const kept = Object.entries(stored)
+        .sort((a, b) => (b[1]?.savedAt || 0) - (a[1]?.savedAt || 0))
+        .slice(0, MAX_STORED_HOST_TOKENS);
+
+    try {
+        localStorage.setItem(HOST_TOKEN_STORAGE_KEY, JSON.stringify(Object.fromEntries(kept)));
+    } catch (error) {
+        logger.warn('Could not store host token:', error);
+    }
+}
+
+/**
+ * Retry storing the token of the game running in this tab.
+ *
+ * The socket layer stores it as soon as the game is created, so this normally
+ * finds the entry already there. It stays as a second attempt for the case that
+ * write failed (storage full or blocked) and the download tool on the final
+ * leaderboard is the host's last chance to keep access.
+ */
+export function captureLiveHostToken() {
+    const token = window.game?.socketManager?._hostToken;
+    const pin = window.game?.gameManager?.stateManager?.getGameState?.()?.gamePin;
+    rememberHostToken(pin, token);
+}
+
+/**
+ * The host token for one results file, matched by the PIN in its name.
+ */
+export function hostTokenForFilename(filename) {
+    const pin = String(filename || '').match(/^results_(\d+)_/)?.[1];
+    return (pin && readStoredHostTokens()[pin]?.token) || null;
+}
+
+/**
+ * Credential header for a results request: one file sends that game's token,
+ * the listing sends every token this browser still holds (newest first).
+ */
+export function hostTokenHeaders(filename = null) {
+    const tokens = filename
+        ? [hostTokenForFilename(filename)].filter(Boolean)
+        : Object.values(readStoredHostTokens())
+            .sort((a, b) => (b?.savedAt || 0) - (a?.savedAt || 0))
+            .map(entry => entry?.token)
+            .filter(Boolean);
+
+    return tokens.length
+        ? { 'X-Host-Token': tokens.slice(0, MAX_SENT_HOST_TOKENS).join(',') }
+        : {};
+}
+
+/**
+ * Did this request fail because the caller may not see these results?
+ */
+export function isAccessDenied(error) {
+    return error?.status === 401 || error?.status === 403;
+}
+
+/**
+ * Build an Error carrying the HTTP status, so callers can tell "denied" from
+ * "server broke" and show the right thing.
+ */
+function httpError(message, status) {
+    const error = new Error(message);
+    error.status = status;
+    return error;
+}
+
 export class ResultsManagerService {
     constructor() {
         this.resultsCache = new Map();
@@ -118,11 +217,13 @@ export class ResultsManagerService {
 
         try {
             logger.debug('📊 Fetching results from /api/results...');
-            const response = await this.fetchWithRetry(APIHelper.getApiUrl('api/results'));
+            const response = await this.fetchWithRetry(APIHelper.getApiUrl('api/results'), {
+                headers: hostTokenHeaders()
+            });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`Failed to fetch results: ${response.status} - ${errorText}`);
+                throw httpError(`Failed to fetch results: ${response.status} - ${errorText}`, response.status);
             }
 
             const results = await response.json();
@@ -162,10 +263,12 @@ export class ResultsManagerService {
             }
 
             logger.debug(`📊 Fetching detailed result for ${filename}`);
-            const response = await this.fetchWithRetry(APIHelper.getApiUrl(`api/results/${filename}`));
+            const response = await this.fetchWithRetry(APIHelper.getApiUrl(`api/results/${filename}`), {
+                headers: hostTokenHeaders(filename)
+            });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch result details: ${response.status}`);
+                throw httpError(`Failed to fetch result details: ${response.status}`, response.status);
             }
 
             const detailedResult = await response.json();
@@ -198,10 +301,10 @@ export class ResultsManagerService {
                 url = APIHelper.getApiUrl(`api/results/${filename}/export/${type}?type=simple`);
             }
 
-            const response = await this.fetchWithRetry(url);
+            const response = await this.fetchWithRetry(url, { headers: hostTokenHeaders(filename) });
 
             if (!response.ok) {
-                throw new Error(`Failed to export result: ${response.status}`);
+                throw httpError(`Failed to export result: ${response.status}`, response.status);
             }
 
             return response;
@@ -258,12 +361,13 @@ export class ResultsManagerService {
 
             // Include confirm=true parameter required by server for security
             const response = await this.fetchWithRetry(APIHelper.getApiUrl(`api/results/${filename}?confirm=true`), {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: hostTokenHeaders(filename)
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`Failed to delete result: ${response.status} - ${errorText}`);
+                throw httpError(`Failed to delete result: ${response.status} - ${errorText}`, response.status);
             }
 
             // Remove from cache

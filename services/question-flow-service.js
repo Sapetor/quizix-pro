@@ -11,6 +11,92 @@
 // Window over which per-answer host count updates are coalesced into one emit
 const ANSWER_COUNT_FLUSH_MS = 100;
 
+/**
+ * Build the reveal payload for a question. Shared by the early-end path and by
+ * GameSessionService.handleQuestionTimeout so both reveal the same thing —
+ * notably `correctIndex`, which many stored quizzes use instead of
+ * `correctAnswer`.
+ * @param {Object} question - Question data
+ * @returns {Object} Correct answer data
+ */
+function buildCorrectAnswerData(question) {
+    // Poll: there is nothing to reveal. Send explicit nulls so the client
+    // never highlights a tile or claims an answer was right/wrong.
+    if (question.isPoll === true) {
+        return {
+            correctAnswer: null,
+            correctOption: '',
+            questionType: question.type || 'true-false',
+            tolerance: null,
+            explanation: question.explanation || null,
+            isPoll: true
+        };
+    }
+
+    const correctAnswer = question.correctAnswer ?? question.correctIndex;
+    let correctOption = '';
+
+    switch (question.type || 'multiple-choice') {
+        case 'multiple-choice':
+            correctOption = question.options && question.options[correctAnswer]
+                ? question.options[correctAnswer]
+                : '';
+            break;
+
+        case 'multiple-correct':
+            const correctAnswers = question.correctAnswers || [];
+            // Validate indices before accessing options array
+            correctOption = correctAnswers
+                .filter(idx => question.options && idx >= 0 && idx < question.options.length)
+                .map(idx => question.options[idx])
+                .join(', ');
+            break;
+
+        case 'true-false':
+            correctOption = correctAnswer;
+            break;
+
+        case 'numeric':
+            correctOption = correctAnswer.toString();
+            break;
+
+        case 'ordering':
+            const correctOrder = question.correctOrder || [];
+            // Validate indices before accessing options array
+            correctOption = correctOrder
+                .filter(idx => question.options && idx >= 0 && idx < question.options.length)
+                .map(idx => question.options[idx])
+                .join(' → ');
+            break;
+
+        default:
+            correctOption = correctAnswer;
+            break;
+    }
+
+    const data = {
+        correctAnswer: correctAnswer,
+        correctOption: correctOption,
+        questionType: question.type || 'multiple-choice',
+        tolerance: question.tolerance || null,
+        explanation: question.explanation || null,
+        isPoll: false
+    };
+
+    // For multiple-correct questions, also send the correctAnswers array
+    if (question.type === 'multiple-correct') {
+        data.correctAnswers = question.correctAnswers || [];
+    }
+
+    // Ordering needs the canonical index order (not just the joined display
+    // string) so the host reveal can number the item tiles.
+    if (question.type === 'ordering') {
+        data.correctOrder = question.correctOrder || [];
+    }
+
+    return data;
+}
+
 class QuestionFlowService {
     constructor(logger, gameSessionService) {
         this.logger = logger;
@@ -236,81 +322,7 @@ class QuestionFlowService {
    * @returns {Object} Correct answer data
    */
     buildCorrectAnswerData(question) {
-        // Poll: there is nothing to reveal. Send explicit nulls so the client
-        // never highlights a tile or claims an answer was right/wrong.
-        if (question.isPoll === true) {
-            return {
-                correctAnswer: null,
-                correctOption: '',
-                questionType: question.type || 'true-false',
-                tolerance: null,
-                explanation: question.explanation || null,
-                isPoll: true
-            };
-        }
-
-        const correctAnswer = question.correctAnswer ?? question.correctIndex;
-        let correctOption = '';
-
-        switch (question.type || 'multiple-choice') {
-            case 'multiple-choice':
-                correctOption = question.options && question.options[correctAnswer]
-                    ? question.options[correctAnswer]
-                    : '';
-                break;
-
-            case 'multiple-correct':
-                const correctAnswers = question.correctAnswers || [];
-                // Validate indices before accessing options array
-                correctOption = correctAnswers
-                    .filter(idx => question.options && idx >= 0 && idx < question.options.length)
-                    .map(idx => question.options[idx])
-                    .join(', ');
-                break;
-
-            case 'true-false':
-                correctOption = correctAnswer;
-                break;
-
-            case 'numeric':
-                correctOption = correctAnswer.toString();
-                break;
-
-            case 'ordering':
-                const correctOrder = question.correctOrder || [];
-                // Validate indices before accessing options array
-                correctOption = correctOrder
-                    .filter(idx => question.options && idx >= 0 && idx < question.options.length)
-                    .map(idx => question.options[idx])
-                    .join(' → ');
-                break;
-
-            default:
-                correctOption = correctAnswer;
-                break;
-        }
-
-        const data = {
-            correctAnswer: correctAnswer,
-            correctOption: correctOption,
-            questionType: question.type || 'multiple-choice',
-            tolerance: question.tolerance || null,
-            explanation: question.explanation || null,
-            isPoll: false
-        };
-
-        // For multiple-correct questions, also send the correctAnswers array
-        if (question.type === 'multiple-correct') {
-            data.correctAnswers = question.correctAnswers || [];
-        }
-
-        // Ordering needs the canonical index order (not just the joined display
-        // string) so the host reveal can number the item tiles.
-        if (question.type === 'ordering') {
-            data.correctOrder = question.correctOrder || [];
-        }
-
-        return data;
+        return buildCorrectAnswerData(question);
     }
 
     /**
@@ -370,4 +382,4 @@ class QuestionFlowService {
     }
 }
 
-module.exports = { QuestionFlowService };
+module.exports = { QuestionFlowService, buildCorrectAnswerData };

@@ -5,6 +5,7 @@
 const { MetadataService } = require('../../services/metadata-service');
 const fs = require('fs').promises;
 const path = require('path');
+const crypto = require('crypto');
 
 // Mock fs module
 jest.mock('fs', () => ({
@@ -178,12 +179,14 @@ describe('MetadataService', () => {
             // temp file that is then renamed into place.
             expect(fs.writeFile).toHaveBeenCalledTimes(1);
             const [writtenPath, body] = fs.writeFile.mock.calls[0];
-            expect(writtenPath).toBe(path.join('quizzes', 'quiz-metadata.json.tmp'));
+            // Temp name carries a per-call unique suffix, so match the shape.
+            expect(writtenPath.startsWith(path.join('quizzes', 'quiz-metadata.json') + '.')).toBe(true);
+            expect(writtenPath.endsWith('.tmp')).toBe(true);
             expect(() => JSON.parse(body)).not.toThrow();
 
             expect(fs.rename).toHaveBeenCalledTimes(1);
             expect(fs.rename).toHaveBeenCalledWith(
-                path.join('quizzes', 'quiz-metadata.json.tmp'),
+                writtenPath,
                 path.join('quizzes', 'quiz-metadata.json')
             );
         });
@@ -330,6 +333,31 @@ describe('MetadataService', () => {
             const child = await metadataService.createFolder('Child', parent.id);
 
             expect(metadataService.isDescendant(parent.id, child.id)).toBe(false);
+        });
+    });
+
+    describe('password hashing', () => {
+        // Guards the delegation to utils/password-hash: hashes written by the
+        // old inline PBKDF2 call (100000 iterations, 64-byte key, sha512,
+        // 32-byte salt) must still verify.
+        function legacyHash(password) {
+            const salt = crypto.randomBytes(32);
+            const key = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512');
+            return `${salt.toString('hex')}:${key.toString('hex')}`;
+        }
+
+        test('verifies a hash written with the old inline parameters', async () => {
+            const stored = legacyHash('old-secret');
+
+            expect(await metadataService.verifyPassword('old-secret', stored)).toBe(true);
+            expect(await metadataService.verifyPassword('wrong', stored)).toBe(false);
+        });
+
+        test('hashPassword output verifies and matches the salt:hash format', async () => {
+            const stored = await metadataService.hashPassword('new-secret');
+
+            expect(stored).toMatch(/^[0-9a-f]{64}:[0-9a-f]{128}$/);
+            expect(await metadataService.verifyPassword('new-secret', stored)).toBe(true);
         });
     });
 
@@ -531,7 +559,7 @@ describe('MetadataService', () => {
             expect(metadataService.metadata.folders['folder-1'].passwordSetBy).toBeNull();
         });
 
-        test('folder-protected quizzes are hidden from anonymous users', () => {
+        test('folder-protected quizzes are hidden from anonymous and signed-in non-owners', () => {
             metadataService.metadata.folders['folder-1'] = {
                 id: 'folder-1',
                 name: 'Protected Folder',
@@ -543,7 +571,43 @@ describe('MetadataService', () => {
             metadataService.metadata.quizzes['public-open.json'].folderId = 'folder-1';
 
             expect(metadataService.isQuizVisibleToUser('public-open.json', null)).toBe(false);
-            expect(metadataService.isQuizVisibleToUser('public-open.json', 'user-2')).toBe(true);
+            // Signing in must not bypass folder protection.
+            expect(metadataService.isQuizVisibleToUser('public-open.json', 'user-2')).toBe(false);
+        });
+
+        test('the owner of a quiz still sees it inside a protected folder', () => {
+            metadataService.metadata.folders['folder-1'] = {
+                id: 'folder-1',
+                name: 'Protected Folder',
+                parentId: null,
+                passwordHash: 'folder-hash',
+                created: '2026-01-01',
+                sortOrder: 0
+            };
+            metadataService.metadata.quizzes['owned-protected.json'].folderId = 'folder-1';
+
+            expect(metadataService.isQuizVisibleToUser('owned-protected.json', 'user-1')).toBe(true);
+            expect(metadataService.isQuizVisibleToUser('owned-protected.json', 'user-2')).toBe(false);
+            expect(metadataService.isQuizVisibleToUser('owned-protected.json', null)).toBe(false);
+        });
+
+        test('nested protected parent folders hide the quiz from signed-in users', () => {
+            metadataService.metadata.folders['root'] = {
+                id: 'root', name: 'Root', parentId: null,
+                passwordHash: 'folder-hash', created: '2026-01-01', sortOrder: 0
+            };
+            metadataService.metadata.folders['child'] = {
+                id: 'child', name: 'Child', parentId: 'root',
+                passwordHash: null, created: '2026-01-01', sortOrder: 0
+            };
+            metadataService.metadata.quizzes['public-open.json'].folderId = 'child';
+
+            expect(metadataService.isQuizVisibleToUser('public-open.json', 'user-2')).toBe(false);
+        });
+
+        test('quizzes with no metadata entry stay visible (legacy fallback)', () => {
+            expect(metadataService.isQuizVisibleToUser('not-in-metadata.json', null)).toBe(true);
+            expect(metadataService.isQuizVisibleToUser('not-in-metadata.json', 'user-2')).toBe(true);
         });
     });
 });

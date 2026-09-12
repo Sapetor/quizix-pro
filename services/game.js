@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const { ScoringService } = require('./scoring-service');
 const { getLimits } = require('../config/limits');
 const { atomicWriteFile } = require('./atomic-write');
+const { hashHostToken } = require('./results-service');
 
 /**
  * Fisher-Yates shuffle - returns shuffled copy and index mapping
@@ -29,6 +30,11 @@ function shuffleWithMapping(array) {
     return { shuffled, mapping: indices };
 }
 
+// The only power-up keys a client may name. Without this allowlist the type
+// string is used directly as a property key on player.powerUps, so "__proto__"
+// resolves to Object.prototype and the handler writes used/available onto it.
+const POWER_UP_TYPES = new Set(['fifty-fifty', 'extend-time', 'double-points']);
+
 /**
  * Game class representing a single game session
  */
@@ -37,6 +43,10 @@ class Game {
         this.id = uuidv4();
         this.pin = this.generatePin();
         this.hostId = hostId;
+        // Signed-in owner of this game, set by the host-join handler from the
+        // socket's verified session; null when the host is anonymous. Written
+        // into the results file so ownership outlives this object.
+        this.hostUserId = null;
         this.quiz = quiz;
         this.players = new Map();
         this.currentQuestion = -1;
@@ -171,6 +181,10 @@ class Game {
             return { success: false, error: 'Power-ups not enabled for this game', messageKey: 'error_powerup_not_enabled' };
         }
 
+        if (!POWER_UP_TYPES.has(powerUpType)) {
+            return { success: false, error: 'Unknown power-up type', messageKey: 'error_unknown_powerup' };
+        }
+
         const player = this.players.get(playerId);
         if (!player?.powerUps) {
             return { success: false, error: 'Player not found or power-ups not initialized', messageKey: 'error_player_not_found' };
@@ -266,6 +280,9 @@ class Game {
             if (this.advanceTimer) { clearTimeout(this.advanceTimer); this.advanceTimer = null; }
             if (this.leaderboardTimer) { clearTimeout(this.leaderboardTimer); this.leaderboardTimer = null; }
             if (this.answerCountTimer) { clearTimeout(this.answerCountTimer); this.answerCountTimer = null; }
+            // The game-start delay timer also calls startQuestion. Leaving it armed
+            // lets it fire into the question we just advanced to and advance again.
+            if (this.startTimer) { clearTimeout(this.startTimer); this.startTimer = null; }
             this.logger.debug(`Advanced to question ${this.currentQuestion + 1}`);
         } else {
             this.logger.debug('NO MORE QUESTIONS - should end game');
@@ -346,6 +363,10 @@ class Game {
 
         const answerData = {
             answer,
+            // The raw `answer` is an index into this player's shuffled option order.
+            // Reporting (host distribution chart, saved results) must aggregate the
+            // canonical order instead, or every player's shuffle counts separately.
+            translatedAnswer,
             isCorrect: scoringResult.isCorrect,
             points: scoringResult.points,
             timeMs: Date.now() - this.questionStartTime,
@@ -657,7 +678,8 @@ class Game {
             const playerAnswer = player.answers[this.currentQuestion];
             if (playerAnswer) {
                 stats.answeredPlayers++;
-                const answer = playerAnswer.answer;
+                // Canonical (unshuffled) coordinates; older answers predate the field.
+                const answer = playerAnswer.translatedAnswer ?? playerAnswer.answer;
 
                 if (question.type === 'multiple-choice') {
                     if (stats.answerCounts[answer] !== undefined) {
@@ -747,6 +769,11 @@ class Game {
                 startTime: this.startTime,
                 endTime: this.endTime,
                 saved: new Date().toISOString(),
+                // Who may read this file back once the game object is gone:
+                // the signed-in host, or whoever holds the host token. The raw
+                // token never touches disk.
+                hostUserId: this.hostUserId || null,
+                hostTokenHash: hashHostToken(this.hostToken),
                 questions: this.quiz.questions.map((q, index) => ({
                     questionNumber: index + 1,
                     text: q.question || q.text,

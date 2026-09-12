@@ -14,6 +14,7 @@ const fs = require('fs');
  * @param {object} options.socketBatchService - Socket batch service instance
  * @param {string} options.basePath - Base path configuration
  * @param {boolean} options.isProduction - Production environment flag
+ * @param {boolean} options.enableDebugRoutes - Opt-in flag for /metrics, /debug/config and /api/stats/memory
  * @returns {express.Router}
  */
 function createHealthCheckRoutes(options) {
@@ -22,43 +23,52 @@ function createHealthCheckRoutes(options) {
         gameSessionService,
         socketBatchService,
         basePath,
-        isProduction
+        isProduction,
+        enableDebugRoutes = false
     } = options;
 
     const router = express.Router();
 
-    // Liveness probe - simple check if server is running
+    // Liveness probe - simple check if server is running.
+    // Never gated: the container healthcheck and the k8s liveness probe use it.
     router.get('/health', (req, res) => {
         res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
     });
 
-    // Prometheus metrics endpoint
-    router.get('/metrics', async (req, res) => {
-        try {
-            res.set('Content-Type', metricsService.register.contentType);
-            res.end(await metricsService.register.metrics());
-        } catch (error) {
-            res.status(500).end(error.message);
-        }
-    });
-
-    // Diagnostic endpoint to check BASE_PATH configuration
-    router.get('/debug/config', (req, res) => {
-        res.status(200).json({
-            BASE_PATH: basePath,
-            BASE_PATH_raw: JSON.stringify(basePath),
-            BASE_PATH_length: basePath.length,
-            BASE_PATH_type: typeof basePath,
-            BASE_PATH_equals_slash: basePath === '/',
-            BASE_PATH_not_equals_slash: basePath !== '/',
-            NODE_ENV: process.env.NODE_ENV,
-            isProduction: isProduction,
-            staticMountedAt: basePath !== '/' ? basePath : '/ (root)',
-            timestamp: new Date().toISOString()
+    // Prometheus metrics and the BASE_PATH diagnostic are opt-in (ENABLE_DEBUG_ROUTES).
+    // They were registered unconditionally and unauthenticated, and `npm start`
+    // does not set NODE_ENV, so a plain LAN run exposed full process metrics and
+    // the environment dump to anyone who could reach the port.
+    if (enableDebugRoutes) {
+        // Prometheus metrics endpoint
+        router.get('/metrics', async (req, res) => {
+            try {
+                res.set('Content-Type', metricsService.register.contentType);
+                res.end(await metricsService.register.metrics());
+            } catch (error) {
+                res.status(500).end(error.message);
+            }
         });
-    });
 
-    // Readiness probe - check if server is ready to accept traffic
+        // Diagnostic endpoint to check BASE_PATH configuration
+        router.get('/debug/config', (req, res) => {
+            res.status(200).json({
+                BASE_PATH: basePath,
+                BASE_PATH_raw: JSON.stringify(basePath),
+                BASE_PATH_length: basePath.length,
+                BASE_PATH_type: typeof basePath,
+                BASE_PATH_equals_slash: basePath === '/',
+                BASE_PATH_not_equals_slash: basePath !== '/',
+                NODE_ENV: process.env.NODE_ENV,
+                isProduction: isProduction,
+                staticMountedAt: basePath !== '/' ? basePath : '/ (root)',
+                timestamp: new Date().toISOString()
+            });
+        });
+    }
+
+    // Readiness probe - check if server is ready to accept traffic.
+    // Never gated: the k8s readiness probe uses it.
     router.get('/ready', async (req, res) => {
         try {
             // Async directory check helper
@@ -103,26 +113,32 @@ function createHealthCheckRoutes(options) {
             console.error('Readiness check error:', error);
             res.status(503).json({
                 status: 'error',
-                error: error.message,
+                error: 'Readiness check failed',
+                details: isProduction ? undefined : error.message,
                 timestamp: new Date().toISOString()
             });
         }
     });
 
-    // Memory stats endpoint for monitoring and debugging
-    router.get('/api/stats/memory', (req, res) => {
-        const memUsage = process.memoryUsage();
-        res.json({
-            heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB',
-            heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + 'MB',
-            rss: Math.round(memUsage.rss / 1024 / 1024) + 'MB',
-            external: Math.round(memUsage.external / 1024 / 1024) + 'MB',
-            activeGames: gameSessionService.games.size,
-            batchStats: socketBatchService.getStats(),
-            uptime: Math.round(process.uptime()) + 's',
-            timestamp: new Date().toISOString()
+    // Memory stats endpoint for monitoring and debugging. Opt-in
+    // (ENABLE_DEBUG_ROUTES): it is unauthenticated and reports heap, RSS,
+    // uptime and the active game count, so a plain LAN run exposed the
+    // process's memory profile and session load to anyone on the network.
+    if (enableDebugRoutes) {
+        router.get('/api/stats/memory', (req, res) => {
+            const memUsage = process.memoryUsage();
+            res.json({
+                heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB',
+                heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + 'MB',
+                rss: Math.round(memUsage.rss / 1024 / 1024) + 'MB',
+                external: Math.round(memUsage.external / 1024 / 1024) + 'MB',
+                activeGames: gameSessionService.games.size,
+                batchStats: socketBatchService.getStats(),
+                uptime: Math.round(process.uptime()) + 's',
+                timestamp: new Date().toISOString()
+            });
         });
-    });
+    }
 
     return router;
 }

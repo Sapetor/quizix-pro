@@ -1,5 +1,32 @@
 const express = require('express');
+const { z } = require('zod');
 const { getClientIp } = require('../middleware/client-ip');
+const { createSaveQuizRateLimiter } = require('../utils/save-quiz-rate-limiter');
+
+/**
+ * Body shape for POST /api/save-results. The posted body is written straight to
+ * a new file on disk, so every array and string is bounded.
+ */
+const saveResultsSchema = z.object({
+    quizTitle: z.string().min(1).max(200),
+    gamePin: z.string().regex(/^\d{6}$/, 'Game PIN must be 6 digits'),
+    results: z.array(
+        z.object({
+            name: z.string().max(100),
+            score: z.number().optional(),
+            answers: z.array(z.unknown()).max(100).optional()
+        }).passthrough()
+    ).max(500),
+    startTime: z.union([z.string().max(64), z.number()]).optional(),
+    endTime: z.union([z.string().max(64), z.number()]).optional(),
+    questions: z.array(z.object({}).passthrough()).max(100).optional()
+});
+
+// A host holds one token per game it ran. The listing endpoint accepts several
+// so one request can cover a host's own past games; both caps keep a crafted
+// header from turning into unbounded per-request work.
+const MAX_HOST_TOKENS = 25;
+const MAX_HOST_TOKEN_LENGTH = 100;
 
 /**
  * Quiz Management Routes
@@ -42,6 +69,81 @@ function createQuizManagementRoutes(options) {
     } = options;
 
     const router = express.Router();
+
+    // Per-IP cap on results writes. Each request creates a new file, so an
+    // unlimited endpoint is unbounded disk growth. Same limiter the
+    // /api/save-quiz endpoint uses.
+    const saveResultsRateLimiter = createSaveQuizRateLimiter({ logger, getClientIp });
+
+    /**
+     * Reject a folder mutation the requester may not perform.
+     * Returns { status, body } to send, or null when the request is allowed.
+     *
+     * Folders created after ownership tracking carry an ownerId and may only be
+     * changed by their owner. Legacy folders have no ownerId and stay editable
+     * by any signed-in user, so existing data does not become unreachable.
+     */
+    function folderAuthError(req, folderId) {
+        if (!req.user) {
+            return { status: 401, body: { error: 'Authentication required', messageKey: 'error_auth_required' } };
+        }
+        const folder = metadataService.getFolder(folderId);
+        if (folder && folder.ownerId && folder.ownerId !== req.user.id) {
+            return { status: 403, body: { error: 'You do not own this folder', messageKey: 'error_folder_not_owner' } };
+        }
+        return null;
+    }
+
+    /**
+     * Host tokens presented by the requester.
+     *
+     * `Authorization: Bearer <token>` names one game. `X-Host-Token` accepts a
+     * comma-separated list because the results LISTING is one request covering
+     * many past games, and an anonymous host holds one token per game.
+     */
+    function hostTokensFrom(req) {
+        const presented = [];
+        const auth = req.get('authorization') || '';
+        if (/^Bearer /i.test(auth)) presented.push(auth.slice(7));
+        presented.push(...(req.get('x-host-token') || '').split(','));
+
+        return presented
+            .map(token => token.trim())
+            .filter(token => token.length > 0 && token.length <= MAX_HOST_TOKEN_LENGTH)
+            .slice(0, MAX_HOST_TOKENS);
+    }
+
+    /**
+     * Who is asking: the signed-in user, the host tokens they hold, or neither.
+     */
+    function requesterFrom(req) {
+        return { userId: req.user?.id || null, hostTokens: hostTokensFrom(req) };
+    }
+
+    /**
+     * Reject a requester presenting no credentials at all. Returns true when
+     * the response has been sent.
+     */
+    function rejectAnonymous(requester, res) {
+        if (!requester.userId && requester.hostTokens.length === 0) {
+            res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Same-origin check by host equality. A substring test lets
+     * evil-example.com pass for host example.com.
+     */
+    function isSameOrigin(originHeader, hostHeader) {
+        if (!originHeader) return true;
+        try {
+            return new URL(originHeader).host === hostHeader;
+        } catch {
+            return false;
+        }
+    }
 
     // ============================================================================
     // Quiz Loading Endpoints
@@ -104,10 +206,14 @@ function createQuizManagementRoutes(options) {
     // ============================================================================
 
     // Save quiz results
-    router.post('/api/save-results', async (req, res) => {
+    router.post('/api/save-results', saveResultsRateLimiter.middleware, validateBody(saveResultsSchema), async (req, res) => {
         try {
-            const { quizTitle, gamePin, results, startTime, endTime, questions } = req.body;
-            const result = await resultsService.saveResults(quizTitle, gamePin, results, startTime, endTime, questions);
+            const { quizTitle, gamePin, results, startTime, endTime, questions } = req.validatedBody;
+            // Bind the new file to whoever posted it, so they can read it back.
+            const result = await resultsService.saveResults(quizTitle, gamePin, results, startTime, endTime, questions, {
+                userId: req.user?.id || null,
+                hostToken: hostTokensFrom(req)[0] || null
+            });
             res.json(result);
         } catch (error) {
             logger.error('Save results error:', error);
@@ -118,7 +224,10 @@ function createQuizManagementRoutes(options) {
     // Get list of saved quiz results
     router.get('/api/results', async (req, res) => {
         try {
-            const results = await resultsService.listResults();
+            const requester = requesterFrom(req);
+            if (rejectAnonymous(requester, res)) return;
+
+            const results = await resultsService.listResults(requester);
             res.json(results);
         } catch (error) {
             logger.error('Error listing results:', error);
@@ -133,7 +242,7 @@ function createQuizManagementRoutes(options) {
             // Validate origin - must be same host
             const origin = req.get('origin') || req.get('referer');
             const host = req.get('host');
-            if (origin && !origin.includes(host)) {
+            if (!isSameOrigin(origin, host)) {
                 logger.warn(`Rejected cross-origin delete attempt from ${origin}`);
                 return res.status(403).json({ error: 'Cross-origin requests not allowed', messageKey: 'error_cross_origin' });
             }
@@ -148,11 +257,13 @@ function createQuizManagementRoutes(options) {
             // Audit log the deletion
             logger.info(`Result file deletion requested: ${filename} from ${req.ip}`);
 
-            const result = await resultsService.deleteResult(filename);
+            // Same ownership proof as reading: deleting someone else's results
+            // is the more destructive half of the same exposure.
+            const result = await resultsService.deleteResult(filename, requesterFrom(req));
             res.json(result);
         } catch (error) {
             logger.error('Error deleting result file:', error);
-            const statusCode = error.message === 'Result file not found' ? 404 : 400;
+            const statusCode = error.status || (error.message === 'Result file not found' ? 404 : 400);
             res.status(statusCode).json({ error: error.message || 'Failed to delete result file', messageKey: error.messageKey || 'error_failed_delete_result' });
         }
     });
@@ -160,12 +271,15 @@ function createQuizManagementRoutes(options) {
     // Get specific quiz result file
     router.get('/api/results/:filename', async (req, res) => {
         try {
+            const requester = requesterFrom(req);
+            if (rejectAnonymous(requester, res)) return;
+
             const filename = req.params.filename;
-            const data = await resultsService.getResult(filename);
+            const data = await resultsService.getResult(filename, requester);
             res.json(data);
         } catch (error) {
             logger.error('Error retrieving result file:', error);
-            const statusCode = error.message === 'Result file not found' ? 404 : 400;
+            const statusCode = error.status || (error.message === 'Result file not found' ? 404 : 400);
             res.status(statusCode).json({ error: error.message || 'Failed to retrieve result file', messageKey: error.messageKey || 'error_failed_retrieve_result' });
         }
     });
@@ -173,10 +287,13 @@ function createQuizManagementRoutes(options) {
     // Export quiz results in different formats
     router.get('/api/results/:filename/export/:format', async (req, res) => {
         try {
+            const requester = requesterFrom(req);
+            if (rejectAnonymous(requester, res)) return;
+
             const { filename, format } = req.params;
             const exportType = req.query.type || 'analytics';
 
-            const exportData = await resultsService.exportResults(filename, format, exportType);
+            const exportData = await resultsService.exportResults(filename, format, exportType, requester);
 
             // Set response headers - sanitize filename to prevent header injection
             const sanitizedFilename = exportData.filename.replace(/[\r\n"]/g, '_');
@@ -187,7 +304,7 @@ function createQuizManagementRoutes(options) {
             res.send(exportData.content);
         } catch (error) {
             logger.error('Error exporting result file:', error);
-            const statusCode = error.message === 'Result file not found' ? 404 : 400;
+            const statusCode = error.status || (error.message === 'Result file not found' ? 404 : 400);
             res.status(statusCode).json({ error: error.message || 'Failed to export result file', messageKey: error.messageKey || 'error_failed_export_result' });
         }
     });
@@ -273,8 +390,12 @@ function createQuizManagementRoutes(options) {
     // Create a new folder
     router.post('/api/folders', validateBody(schemas.createFolderSchema), async (req, res) => {
         try {
+            if (!req.user) {
+                return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
+            }
+
             const { name, parentId } = req.validatedBody;
-            const folder = await metadataService.createFolder(name, parentId);
+            const folder = await metadataService.createFolder(name, parentId, req.user.id);
             res.status(201).json(folder);
         } catch (error) {
             logger.error('Create folder error:', error);
@@ -286,6 +407,9 @@ function createQuizManagementRoutes(options) {
     router.patch('/api/folders/:id/rename', validateParams(schemas.folderIdParamSchema), validateBody(schemas.renameFolderSchema), async (req, res) => {
         try {
             const { id } = req.validatedParams;
+            const denied = folderAuthError(req, id);
+            if (denied) return res.status(denied.status).json(denied.body);
+
             const { name } = req.validatedBody;
             const folder = await metadataService.renameFolder(id, name);
             res.json(folder);
@@ -300,6 +424,9 @@ function createQuizManagementRoutes(options) {
     router.patch('/api/folders/:id/move', validateParams(schemas.folderIdParamSchema), validateBody(schemas.moveFolderSchema), async (req, res) => {
         try {
             const { id } = req.validatedParams;
+            const denied = folderAuthError(req, id);
+            if (denied) return res.status(denied.status).json(denied.body);
+
             const { parentId } = req.validatedBody;
             const folder = await metadataService.moveFolder(id, parentId);
             res.json(folder);
@@ -328,6 +455,9 @@ function createQuizManagementRoutes(options) {
     router.delete('/api/folders/:id', validateParams(schemas.folderIdParamSchema), async (req, res) => {
         try {
             const { id } = req.validatedParams;
+            const denied = folderAuthError(req, id);
+            if (denied) return res.status(denied.status).json(denied.body);
+
             const deleteContents = req.query.deleteContents === 'true';
 
             // Check if folder requires authentication

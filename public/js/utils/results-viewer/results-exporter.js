@@ -50,6 +50,18 @@ async function loadJsPDF() {
     return jsPDFLoadPromise;
 }
 
+/**
+ * Translate `key`, falling back to English text when the key is not in the
+ * locale files (getTranslationSync echoes unknown keys back).
+ * @param {string} key - Translation key
+ * @param {string} fallback - English text to use when the key is missing
+ * @returns {string} Translated or fallback text
+ */
+function translateOr(key, fallback) {
+    const value = getTranslation(key);
+    return value === key ? fallback : value;
+}
+
 // Question-centric analytics CSV is the default download; the format-selection
 // modal passes an explicit format when the user picks the player-centric one.
 const DEFAULT_EXPORT_FORMAT = 'analytics';
@@ -152,6 +164,7 @@ export class ResultsExporter {
      * @returns {Promise<void>}
      */
     async exportToPDF(resultData) {
+        this._pdfDroppedChars = false;
         try {
             // Lazy-load jsPDF
             const jspdfLib = await loadJsPDF();
@@ -351,6 +364,13 @@ export class ResultsExporter {
             logger.info('PDF report generated:', filename);
             showSuccessAlert(getTranslation('export_pdf_downloaded', [filename]));
 
+            if (this._pdfDroppedChars) {
+                showErrorAlert(translateOr(
+                    'export_pdf_unsupported_characters',
+                    'Some characters cannot be rendered in the PDF. Use the Excel or CSV export for the full text.'
+                ));
+            }
+
         } catch (error) {
             logger.error('Failed to generate PDF:', error);
             showErrorAlert(getTranslation('export_failed_pdf'));
@@ -364,12 +384,24 @@ export class ResultsExporter {
      */
     _sanitizePdfText(text) {
         if (!text) return '';
-        // Remove LaTeX commands and problematic characters
-        return text
-            .replace(/\$[^$]*\$/g, '[math]')  // Replace LaTeX math
-            .replace(/\\[a-zA-Z]+/g, '')       // Remove LaTeX commands
-            .replace(/[^\x20-\x7E]/g, '')      // Remove non-ASCII
-            .trim();
+        const cleaned = text
+            .replace(/\$[^$]*\$/g, '[math]')      // Replace LaTeX math
+            .replace(/\\[a-zA-Z]+/g, '')           // Remove LaTeX commands
+            .replace(/[\u2018\u2019]/g, "'")       // Curly quotes -> ASCII
+            .replace(/[\u201C\u201D]/g, '"')
+            .replace(/[\u2013\u2014]/g, '-')       // En/em dash -> hyphen
+            .replace(/\u2026/g, '...')
+            .replace(/\s+/g, ' ');                 // One PDF line per string
+        // jsPDF's built-in fonts use WinAnsi/Latin-1, so accented Spanish,
+        // French, Portuguese and German text renders as written. Anything
+        // outside that range (CJK, Greek, Cyrillic) needs an embedded Unicode
+        // font; it is dropped here and the flag lets exportToPDF tell the user
+        // to take the Excel/CSV export instead of shipping mangled text.
+        const rendered = cleaned.replace(/[^\x20-\x7E\xA0-\xFF]/g, '');
+        if (rendered.length !== cleaned.length) {
+            this._pdfDroppedChars = true;
+        }
+        return rendered.trim();
     }
 
     /**

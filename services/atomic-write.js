@@ -11,15 +11,28 @@
  */
 
 const fs = require('fs').promises;
+const crypto = require('crypto');
 
 /**
  * @param {string} finalPath - Destination path.
  * @param {string} body - File contents (already serialized).
  */
 async function atomicWriteFile(finalPath, body) {
-    const tmp = `${finalPath}.tmp`;
-    await fs.writeFile(tmp, body, 'utf8');
-    await fs.rename(tmp, finalPath);
+    // Unique per call: a shared `${finalPath}.tmp` lets two concurrent writes to
+    // the same target interleave into one temp file, and the second rename then
+    // promotes the mixed body into place.
+    const tmp = `${finalPath}.${process.pid}.${crypto.randomUUID()}.tmp`;
+    try {
+        await fs.writeFile(tmp, body, 'utf8');
+        await fs.rename(tmp, finalPath);
+    } catch (err) {
+        try {
+            await fs.unlink(tmp);
+        } catch {
+            // Temp file may never have been created; the original error wins.
+        }
+        throw err;
+    }
 }
 
 module.exports = { atomicWriteFile };

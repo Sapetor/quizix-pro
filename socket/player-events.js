@@ -24,7 +24,8 @@ function registerPlayerEvents(io, socket, options) {
                 game,
                 socket,
                 io,
-                deviceId
+                deviceId,
+                questionFlowService
             );
 
             if (!result.success) {
@@ -73,12 +74,15 @@ function registerPlayerEvents(io, socket, options) {
     socket.on('player-rejoin', (data) => {
         if (!checkRateLimit(socket.id, 'player-rejoin', 5, socket)) return;
         try {
-            if (!data || typeof data !== 'object') {
+            const validated = validateAndHandle(socket, 'player-rejoin', data, logger);
+            if (!validated) {
+                // The client waits on rejoin-failed to fall back to a fresh join;
+                // validateAndHandle's 'error' alone would leave it hanging.
                 socket.emit('rejoin-failed', { message: 'Invalid request data' });
                 return;
             }
 
-            const { pin, sessionToken } = data;
+            const { pin, sessionToken } = validated;
             const game = gameSessionService.getGame(pin);
 
             const result = playerManagementService.handlePlayerRejoin(
@@ -118,11 +122,10 @@ function registerPlayerEvents(io, socket, options) {
     socket.on('host-rejoin', (data) => {
         if (!checkRateLimit(socket.id, 'host-rejoin', 5, socket)) return;
         try {
-            if (!data?.pin) {
-                socket.emit('error', { message: 'Missing game PIN' });
-                return;
-            }
-            const game = gameSessionService.getGame(data.pin);
+            const validated = validateAndHandle(socket, 'host-rejoin', data, logger);
+            if (!validated) return;
+
+            const game = gameSessionService.getGame(validated.pin);
             if (!game || !game.hostDisconnected) {
                 socket.emit('error', { message: 'Game not found or not in reconnect state' });
                 return;
@@ -130,7 +133,7 @@ function registerPlayerEvents(io, socket, options) {
 
             // Authenticate the host via the secret reconnect token issued at game
             // creation — prevents any player who knows the PIN from hijacking the game.
-            if (!data.token || data.token !== game.hostToken) {
+            if (validated.token !== game.hostToken) {
                 socket.emit('error', { message: 'Not authorized to rejoin as host', messageKey: 'error_not_authorized_host' });
                 return;
             }
@@ -199,6 +202,25 @@ function registerPlayerEvents(io, socket, options) {
                     connectedPlayers: activePlayers.length,
                     totalPlayers: game.players.size
                 });
+            } else if (game.gameState === 'revealing') {
+                // The reveal's show-next-button went to the dead socket. In
+                // manual-advancement mode (the default) nothing else ever re-sends it,
+                // so the game cannot proceed and players sit on the reveal.
+                const revealedQ = game.quiz?.questions?.[game.currentQuestion];
+                if (revealedQ) {
+                    socket.emit('question-timeout', questionFlowService.buildCorrectAnswerData(revealedQ));
+                    socket.emit('answer-statistics', game.getAnswerStatistics());
+                }
+
+                // isAdvancing is still true while the reveal dwell runs; that pending
+                // timer emits show-next-button to the new hostId on its own. Only
+                // re-send it once the dwell has already passed.
+                if (game.manualAdvancement && !game.isAdvancing) {
+                    const total = game.quiz?.questions?.length || 0;
+                    socket.emit('show-next-button', {
+                        isLastQuestion: (game.currentQuestion + 1) >= total
+                    });
+                }
             }
 
             logger.info(`Host reconnected to game ${game.pin}`);
@@ -231,7 +253,7 @@ function registerPlayerEvents(io, socket, options) {
                 const game = gameSessionService.getGame(session.currentGamePin);
                 if (game && (game.gameState === 'lobby' || game.gameState === 'revealing' || game.gameState === 'question')) {
                     const result = playerManagementService.handlePlayerJoin(
-                        socket.id, session.currentGamePin, entry.name, game, socket, io, deviceId
+                        socket.id, session.currentGamePin, entry.name, game, socket, io, deviceId, questionFlowService
                     );
                     if (!result.success) {
                         socket.join(`session:${hostSessionId}`);
@@ -315,7 +337,9 @@ function registerPlayerEvents(io, socket, options) {
 
             const question = game.quiz.questions[game.currentQuestion];
             const timeLimit = question.timeLimit || question.time || 20;
-            const remainingMs = Math.max(0, (timeLimit * 1000) - (Date.now() - game.questionStartTime));
+            // questionEndsAt is the authoritative deadline (extend-time moves it)
+            const endsAt = game.questionEndsAt || ((game.questionStartTime || Date.now()) + timeLimit * 1000);
+            const remainingMs = Math.max(0, endsAt - Date.now());
 
             socket.emit('time-sync', { remainingMs });
         } catch (error) {
@@ -352,7 +376,18 @@ function registerPlayerEvents(io, socket, options) {
                             // Instead of deleting, transition to pending-migration
                             // so players can be migrated if host creates a new game
                             hostedGame.migrationSource = 'disconnect';
-                            gameSessionService.setPendingMigration(hostedGame, io);
+                            // Nothing else tears this game down: without the expiry
+                            // callback the players' grace timers, their global-registry
+                            // entries and the host session all leak for the life of
+                            // the process (getSessionByHostSocket is a linear scan run
+                            // twice per join, so joins get slower with every leak).
+                            gameSessionService.setPendingMigration(hostedGame, io, (expiredGame) => {
+                                playerManagementService.releaseGamePlayers(expiredGame);
+                                const hostSession = playerManagementService.getSessionByHostSocket(socket.id);
+                                if (hostSession) {
+                                    playerManagementService.destroySession(hostSession.hostSessionId);
+                                }
+                            });
 
                             // Notify players that host is preparing a new game
                             io.to(`game-${hostedGame.pin}`).emit('host-preparing-new-game', { graceMs: 120000 });

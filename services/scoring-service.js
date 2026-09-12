@@ -53,9 +53,12 @@ class ScoringService {
         const correctAnswerKey = ScoringService.getCorrectAnswerKey(question, questionType);
 
         // Calculate tolerance for numeric questions
-        const defaultTolerance = config.SCORING?.DEFAULT_NUMERIC_TOLERANCE || 0.1;
+        // The server defines DEFAULT_TOLERANCE; reading DEFAULT_NUMERIC_TOLERANCE
+        // always missed and silently fell back to 0.1. `??` not `||` because
+        // question-type-service accepts an explicit tolerance of 0 (exact match).
+        const defaultTolerance = config.SCORING?.DEFAULT_TOLERANCE ?? 0.1;
         const options = questionType === 'numeric'
-            ? { tolerance: question.tolerance || defaultTolerance }
+            ? { tolerance: question.tolerance ?? defaultTolerance }
             : {};
 
         // Use QuestionTypeService for answer validation

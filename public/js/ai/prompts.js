@@ -237,7 +237,7 @@ function buildStructureExamples(selectedTypes, contentInfo) {
     }
 
     if (selectedTypes.includes('ordering')) {
-        structureExamples.push('{"question": "Arrange the following steps in the correct order:", "type": "ordering", "options": ["Step A", "Step B", "Step C", "Step D"], "timeLimit": 40, "explanation": "The correct sequence is Step A, Step B, Step C, Step D", "difficulty": "medium"}');
+        structureExamples.push('{"question": "Arrange the following steps in the correct order:", "type": "ordering", "options": ["Step A", "Step B", "Step C", "Step D"], "correctOrder": [0, 1, 2, 3], "timeLimit": 40, "explanation": "The correct sequence is Step A, Step B, Step C, Step D", "difficulty": "medium"}');
     }
 
     return structureExamples;
@@ -285,7 +285,7 @@ export function buildMainPrompt(params) {
         typeDescription += '\n- Some questions should have numeric answers';
     }
     if (selectedTypes.includes('ordering')) {
-        typeDescription += '\n- Some questions should ask to arrange items in correct order. IMPORTANT: List the "options" array IN THE CORRECT ORDER (first item = correct first position). Do NOT include a "correctOrder" field — it will be auto-generated.';
+        typeDescription += '\n- Some questions should ask to arrange items in correct order. IMPORTANT: give "correctOrder" as the option indices in correct sequence, e.g. [2, 0, 1] means the item at index 2 comes first.';
     }
 
     // Build structure examples

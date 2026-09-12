@@ -296,12 +296,11 @@ Located in `tests/unit/`:
 ### Test Considerations
 
 1. Test theme toggles across desktop/mobile
-2. Verify carousel auto-play behavior
-3. Test at 150%+ zoom levels
-4. Validate translations in all 9 languages
-5. Test Socket.IO with concurrent players
-6. Verify LaTeX rendering across browsers
-7. Test mobile gestures on real devices
+2. Test at 150%+ zoom levels
+3. Validate translations in all 9 languages
+4. Test Socket.IO with concurrent players
+5. Verify LaTeX rendering across browsers
+6. Test mobile gestures on real devices
 
 ---
 

@@ -17,6 +17,8 @@ jest.mock('../../services/atomic-write', () => ({
 }));
 
 const { GameSessionService, ANSWER_REVEAL_MS } = require('../../services/game-session-service');
+const { buildCorrectAnswerData } = require('../../services/question-flow-service');
+const crypto = require('crypto');
 
 const CONFIG = {
     TIMING: {
@@ -145,10 +147,26 @@ describe('GameSessionService — generateGamePin', () => {
         existing.pin = '100000';
         svc.games.set('100000', existing);
 
-        // random=0 → 100000 (collision), then random=0.5 → 550000 (free).
-        const spy = jest.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0.5);
+        // First draw collides with the seeded game, second one is free.
+        const spy = jest.spyOn(crypto, 'randomInt')
+            .mockReturnValueOnce(100000)
+            .mockReturnValueOnce(550000);
         expect(svc.generateGamePin()).toBe('550000');
         spy.mockRestore();
+    });
+
+    // PINs are the only thing standing between a stranger on the LAN and a live
+    // classroom game, so they come from the CSPRNG, not Math.random.
+    test('draws from crypto, not Math.random', () => {
+        const mathSpy = jest.spyOn(Math, 'random');
+        const cryptoSpy = jest.spyOn(crypto, 'randomInt');
+
+        svc.generateGamePin();
+
+        expect(cryptoSpy).toHaveBeenCalledWith(100000, 1000000);
+        expect(mathSpy).not.toHaveBeenCalled();
+        mathSpy.mockRestore();
+        cryptoSpy.mockRestore();
     });
 });
 
@@ -379,6 +397,33 @@ describe('GameSessionService — handleQuestionTimeout', () => {
     // Must stay payload-compatible with the early-end path in
     // question-flow-service.buildCorrectAnswerData: the host reveal for ordering
     // needs the canonical index order, not just the joined display string.
+    // A poll has no right answer. The early-end path (buildCorrectAnswerData)
+    // already nulls the reveal; the timeout path must match or a poll that runs
+    // its full timer highlights a tile and marks everyone wrong.
+    test('reveals nothing for a poll question', () => {
+        const io = makeIo();
+        const game = svc.createGame('host-1', sampleQuiz({
+            questions: [{
+                type: 'true-false',
+                question: 'Do you agree?',
+                isPoll: true,
+                correctAnswer: true,
+                timeLimit: 20
+            }]
+        }));
+        game.currentQuestion = 0;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now();
+
+        svc.handleQuestionTimeout(game, io, game.quiz.questions[0]);
+
+        expect(io.emit).toHaveBeenCalledWith('question-timeout', expect.objectContaining({
+            isPoll: true,
+            correctAnswer: null,
+            correctOption: ''
+        }));
+    });
+
     test('sends the correct order array for an ordering question', () => {
         const io = makeIo();
         const game = svc.createGame('host-1', sampleQuiz({
@@ -400,6 +445,53 @@ describe('GameSessionService — handleQuestionTimeout', () => {
             questionType: 'ordering',
             correctOrder: [2, 0, 1]
         }));
+    });
+
+    // 22 quizzes under quizzes/ store the answer as `correctIndex`, several with no
+    // `correctAnswer` at all. The early-end path reads both via
+    // buildCorrectAnswerData; the timeout path used to read only `correctAnswer`
+    // and revealed `undefined` / '' whenever a question ran its full timer.
+    test('reveals a correctIndex-form multiple-choice answer', () => {
+        const io = makeIo();
+        const game = svc.createGame('host-1', sampleQuiz({
+            questions: [{
+                type: 'multiple-choice',
+                question: 'Q1',
+                options: ['A', 'B', 'C', 'D'],
+                correctIndex: 2,
+                timeLimit: 20
+            }]
+        }));
+        game.currentQuestion = 0;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now();
+
+        svc.handleQuestionTimeout(game, io, game.quiz.questions[0]);
+
+        expect(io.emit).toHaveBeenCalledWith('question-timeout', expect.objectContaining({
+            correctAnswer: 2,
+            correctOption: 'C'
+        }));
+    });
+
+    test('sends the same reveal payload as the early-end path', () => {
+        const io = makeIo();
+        const question = {
+            type: 'multiple-correct',
+            question: 'Pick all',
+            options: ['A', 'B', 'C'],
+            correctAnswers: [0, 2],
+            timeLimit: 20
+        };
+        const game = svc.createGame('host-1', sampleQuiz({ questions: [question] }));
+        game.currentQuestion = 0;
+        game.gameState = 'question';
+        game.questionStartTime = Date.now();
+
+        svc.handleQuestionTimeout(game, io, question);
+
+        const emitted = io.emit.mock.calls.find(c => c[0] === 'question-timeout')[1];
+        expect(emitted).toEqual(buildCorrectAnswerData(question));
     });
 });
 

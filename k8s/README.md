@@ -26,7 +26,7 @@ docker push your-registry/quizix-pro:latest
 
 ### 2. Update Deployment Configuration
 
-Edit `k8s/deployment.yaml` and update the image reference:
+Edit `k8s/01-quizix-pro.yaml` and update the image reference:
 
 ```yaml
 image: your-registry/quizix-pro:latest
@@ -35,21 +35,17 @@ image: your-registry/quizix-pro:latest
 ### 3. Deploy to Kubernetes
 
 ```bash
-# Apply all manifests in order
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/pvc.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
+# Namespace, ConfigMap, PVCs, Service, Deployment and PDB are all in one file
+kubectl apply -f k8s/01-quizix-pro.yaml
 
 # Optional: Apply ingress if using external access
-kubectl apply -f k8s/ingress.yaml
+kubectl apply -f k8s/02-quizix-ingress.yaml
 ```
 
-Or apply all at once:
+Or use the helper script (handles ordering and rollout status):
 
 ```bash
-kubectl apply -f k8s/
+./k8s/deploy.sh
 ```
 
 ### 4. Verify Deployment
@@ -95,15 +91,33 @@ Three persistent volumes are configured:
 
 ### Environment Variables
 
-Edit `k8s/configmap.yaml` to customize:
+Edit the `quizix-config` ConfigMap embedded in `k8s/01-quizix-pro.yaml`
+(there is no separate configmap.yaml; the all-in-one manifest is the only
+source, and it is the only file the deploy scripts apply):
 
 ```yaml
 data:
   NODE_ENV: "production"
   PORT: "3000"
+  BASE_PATH: "/quizix/"        # must match the ingress path prefix
+  TRUSTED_PROXY_IPS: ""        # ingress controller pod IPs, see the manifest
+  PUBLIC_ORIGIN: ""            # externally reachable origin, for the join QR
   # Optional: Override network IP detection
-  NETWORK_IP: "your-cluster-ip"
+  # NETWORK_IP: "your-cluster-ip"
 ```
+
+`ENABLE_DEBUG_ROUTES` is deliberately absent. It gates `/metrics`,
+`/debug/config`, `/api/debug/files` and `/api/debug/directory`, all
+unauthenticated, and must stay unset in a cluster. Add
+`ENABLE_DEBUG_ROUTES: "true"` only if you scrape `/metrics` and have a network
+policy restricting who can reach it. `/health` and `/ready` are not gated, so
+the liveness and readiness probes work either way.
+
+`TRUSTED_PROXY_IPS` and `PUBLIC_ORIGIN` ship empty and both need a real value
+on any cluster reached through the ingress: without the first, every request
+resolves to the ingress pod's address and all per-IP rate limits share one
+bucket; without the second, the join QR code encodes the pod IP, which is
+unroutable from outside the cluster.
 
 For sensitive values like API keys, use Kubernetes Secrets:
 
@@ -121,7 +135,7 @@ stringData:
 
 ### Resource Limits
 
-Default resource allocation in `k8s/deployment.yaml`:
+Default resource allocation in `k8s/01-quizix-pro.yaml`:
 
 ```yaml
 resources:
@@ -137,7 +151,7 @@ Adjust based on your expected load.
 
 ### Storage Class
 
-If your cluster requires a specific storage class, update `k8s/pvc.yaml`:
+If your cluster requires a specific storage class, update the PVCs in `k8s/01-quizix-pro.yaml`:
 
 ```yaml
 storageClassName: your-storage-class  # e.g., gp2, standard, local-path
@@ -156,16 +170,16 @@ Then access at: http://localhost:3000
 ### Option 2: Ingress (Production)
 
 1. Install an Ingress controller (nginx, traefik, etc.)
-2. Update `k8s/ingress.yaml` with your domain
+2. Update `k8s/02-quizix-ingress.yaml` with your domain
 3. Apply the ingress manifest
 4. Configure DNS to point to your ingress controller
 
 ### Option 3: LoadBalancer
 
-Uncomment the LoadBalancer service in `k8s/ingress.yaml`:
+Uncomment the LoadBalancer service in `k8s/02-quizix-ingress.yaml`:
 
 ```bash
-kubectl apply -f k8s/ingress.yaml
+kubectl apply -f k8s/02-quizix-ingress.yaml
 kubectl get svc -n quizix quizix-pro-lb
 ```
 
@@ -433,7 +447,7 @@ spec:
 Before deploying to production:
 
 - [ ] Build and push image to private registry
-- [ ] Update image reference in deployment.yaml
+- [ ] Update image reference in 01-quizix-pro.yaml
 - [ ] Configure appropriate resource limits
 - [ ] Set up Ingress with TLS/HTTPS
 - [ ] Configure DNS records

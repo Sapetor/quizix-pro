@@ -24,12 +24,15 @@ Quizix Pro now includes comprehensive mobile-friendly visual enhancements design
 ## Files Added/Modified
 
 ### New Files
-- `public/css/mobile-enhancements.css` - All mobile enhancement styles
+- Mobile enhancement styles live in `public/css/responsive.css`, at the end of
+  the file under the `MOBILE TOUCH FEEDBACK` heading (the standalone
+  `mobile-enhancements.css` file was merged in and removed). That is where
+  `.ripple-effect` and `.focused-mobile` are defined; both were missing until
+  2026-09, so the tap ripple and the focus highlight rendered nothing.
 - `public/js/utils/mobile-enhancements.js` - JavaScript functionality for touch interactions
 - `docs/MOBILE_ENHANCEMENTS.md` - This documentation
 
 ### Modified Files
-- `public/css/main.css` - Added import for mobile enhancements
 - `public/css/toasts.css` - Enhanced mobile toast positioning
 - `public/js/main.js` - Integrated mobile enhancements initialization
 
@@ -261,7 +264,7 @@ The system automatically detects:
    - Verify container element still exists
 
 4. **Toast positioning issues**
-   - Check CSS import order (mobile-enhancements.css after toasts.css)
+   - Check CSS import order in `public/css/main.css` (toasts.css is imported after components.css, and responsive.css after both)
    - Verify viewport height calculations
    - Test with virtual keyboard open
 
@@ -296,7 +299,7 @@ Potential improvements for future versions:
 
 ### Updates Required
 When updating Quizix Pro:
-1. Ensure mobile-enhancements.css import remains in main.css
+1. Ensure the responsive.css import remains in main.css, with `layer(app)`
 2. Verify mobile-enhancements.js import in main.js
 3. Test mobile functionality after major updates
 4. Update version numbers in CSS imports if needed

@@ -72,5 +72,8 @@ test-screenshots/
 /manim-tutorial-modal.png
 /onboarding-step1.png
 # Stray spreadsheets dropped at the repo root
-/*.xlsx.artifacts/
+/*.xlsx
+# Design/concept archives dropped at the repo root (.dockerignore has /*.zip too)
+/*.zip
+.artifacts/
 __pycache__/

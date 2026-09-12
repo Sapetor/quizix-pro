@@ -19,6 +19,11 @@ jest.mock('fs', () => ({
     }
 }));
 
+// Reads are ownership-gated (see results-auth.test.js). These cases exercise
+// listing, parsing and CSV formatting, so they read as a signed-in user; the
+// fixtures carry no owner fields, which makes them legacy records.
+const SIGNED_IN = { userId: 'owner-1', hostTokens: [] };
+
 const mockLogger = {
     debug: jest.fn(),
     info: jest.fn(),
@@ -86,14 +91,19 @@ describe('ResultsService', () => {
                 [{ name: 'Player1', score: 100 }]
             );
 
+            // atomic-write names the temp file `${finalPath}.${pid}.${uuid}.tmp`
+            // so two concurrent writes to the same target cannot share it.
+            const TMP_SUFFIX = /\.\d+\.[0-9a-f-]{36}\.tmp$/;
+
             expect(fs.writeFile).toHaveBeenCalledTimes(1);
             const [writtenPath] = fs.writeFile.mock.calls[0];
-            expect(writtenPath).toMatch(/\.json\.tmp$/);
+            expect(writtenPath).toMatch(TMP_SUFFIX);
+            expect(writtenPath.replace(TMP_SUFFIX, '')).toMatch(/\.json$/);
 
             expect(fs.rename).toHaveBeenCalledTimes(1);
             const [tmpArg, finalArg] = fs.rename.mock.calls[0];
             expect(tmpArg).toBe(writtenPath);
-            expect(finalArg).toBe(writtenPath.replace(/\.tmp$/, ''));
+            expect(finalArg).toBe(writtenPath.replace(TMP_SUFFIX, ''));
         });
 
         test('should include questions data if provided', async () => {
@@ -135,7 +145,7 @@ describe('ResultsService', () => {
                 saved: '2024-01-01'
             }));
 
-            const results = await resultsService.listResults();
+            const results = await resultsService.listResults(SIGNED_IN);
 
             expect(results).toHaveLength(2);
             expect(results[0].quizTitle).toBe('Test');
@@ -144,7 +154,7 @@ describe('ResultsService', () => {
         test('should return empty array if results directory does not exist', async () => {
             fs.access.mockRejectedValue(new Error('ENOENT'));
 
-            const results = await resultsService.listResults();
+            const results = await resultsService.listResults(SIGNED_IN);
 
             expect(results).toEqual([]);
         });
@@ -165,7 +175,7 @@ describe('ResultsService', () => {
                 }));
             });
 
-            const results = await resultsService.listResults();
+            const results = await resultsService.listResults(SIGNED_IN);
 
             expect(results).toHaveLength(1);
         });
@@ -176,21 +186,21 @@ describe('ResultsService', () => {
             fs.access.mockResolvedValue();
             fs.unlink.mockResolvedValue();
 
-            const result = await resultsService.deleteResult('results_123456_1704067200000.json');
+            const result = await resultsService.deleteResult('results_123456_1704067200000.json', SIGNED_IN);
 
             expect(result.success).toBe(true);
             expect(fs.unlink).toHaveBeenCalled();
         });
 
         test('should reject invalid filename format', async () => {
-            await expect(resultsService.deleteResult('invalid.json'))
+            await expect(resultsService.deleteResult('invalid.json', SIGNED_IN))
                 .rejects.toThrow('Invalid filename format');
         });
 
         test('should throw error for non-existent file', async () => {
             fs.access.mockRejectedValue(new Error('ENOENT'));
 
-            await expect(resultsService.deleteResult('results_123456_1704067200000.json'))
+            await expect(resultsService.deleteResult('results_123456_1704067200000.json', SIGNED_IN))
                 .rejects.toThrow('Result file not found');
         });
     });
@@ -201,13 +211,13 @@ describe('ResultsService', () => {
             fs.access.mockResolvedValue();
             fs.readFile.mockResolvedValue(JSON.stringify(resultData));
 
-            const result = await resultsService.getResult('results_123456_1704067200000.json');
+            const result = await resultsService.getResult('results_123456_1704067200000.json', SIGNED_IN);
 
             expect(result).toEqual(resultData);
         });
 
         test('should reject invalid filename format', async () => {
-            await expect(resultsService.getResult('invalid.json'))
+            await expect(resultsService.getResult('invalid.json', SIGNED_IN))
                 .rejects.toThrow('Invalid filename format');
         });
 
@@ -215,7 +225,7 @@ describe('ResultsService', () => {
             fs.access.mockResolvedValue();
             fs.readFile.mockResolvedValue('invalid json');
 
-            await expect(resultsService.getResult('results_123456_1704067200000.json'))
+            await expect(resultsService.getResult('results_123456_1704067200000.json', SIGNED_IN))
                 .rejects.toThrow('Result file is corrupted or invalid JSON');
         });
     });
@@ -246,7 +256,9 @@ describe('ResultsService', () => {
         test('should export as JSON', async () => {
             const result = await resultsService.exportResults(
                 'results_123456_1704067200000.json',
-                'json'
+                'json',
+                'analytics',
+                SIGNED_IN
             );
 
             expect(result.type).toBe('application/json');
@@ -257,7 +269,8 @@ describe('ResultsService', () => {
             const result = await resultsService.exportResults(
                 'results_123456_1704067200000.json',
                 'csv',
-                'simple'
+                'simple',
+                SIGNED_IN
             );
 
             expect(result.type).toBe('text/csv');
@@ -269,7 +282,8 @@ describe('ResultsService', () => {
             const result = await resultsService.exportResults(
                 'results_123456_1704067200000.json',
                 'csv',
-                'analytics'
+                'analytics',
+                SIGNED_IN
             );
 
             expect(result.type).toBe('text/csv');
@@ -280,7 +294,9 @@ describe('ResultsService', () => {
         test('should reject invalid format', async () => {
             await expect(resultsService.exportResults(
                 'results_123456_1704067200000.json',
-                'xml'
+                'xml',
+                'analytics',
+                SIGNED_IN
             )).rejects.toThrow('Unsupported export format');
         });
 
@@ -320,7 +336,7 @@ describe('ResultsService', () => {
                 fs.readFile.mockResolvedValue(JSON.stringify(inflatedScores));
 
                 const result = await resultsService.exportResults(
-                    'results_123456_1704067200000.json', 'csv', 'analytics'
+                    'results_123456_1704067200000.json', 'csv', 'analytics', SIGNED_IN
                 );
 
                 const match = result.content.match(/"Overall Success Rate","([\d.]+)%"/);
@@ -333,7 +349,7 @@ describe('ResultsService', () => {
                 fs.readFile.mockResolvedValue(JSON.stringify(inflatedScores));
 
                 const result = await resultsService.exportResults(
-                    'results_123456_1704067200000.json', 'csv', 'analytics'
+                    'results_123456_1704067200000.json', 'csv', 'analytics', SIGNED_IN
                 );
 
                 // Player1 answered index 1 on Q1 (Paris) and index 0 on Q2 (option B).
@@ -347,7 +363,7 @@ describe('ResultsService', () => {
                 fs.readFile.mockResolvedValue(JSON.stringify(inflatedScores));
 
                 const result = await resultsService.exportResults(
-                    'results_123456_1704067200000.json', 'csv', 'analytics'
+                    'results_123456_1704067200000.json', 'csv', 'analytics', SIGNED_IN
                 );
 
                 expect(result.content).not.toContain('Total Points Possible');

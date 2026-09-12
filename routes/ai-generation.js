@@ -13,26 +13,41 @@ const { getClientIp } = require('../middleware/client-ip');
  * mapping and response extraction stay in the routes because they differ per
  * endpoint. Exported for unit testing.
  *
+ * The request is bounded by an AbortController: without it a hung upstream
+ * holds the Express request, its socket and the response buffer until undici's
+ * own (much longer) default expires, and graceful shutdown waits on it.
+ *
  * @param {Object} opts
  * @param {string} opts.url - Provider endpoint.
  * @param {Object} opts.headers - Request headers.
  * @param {Object} opts.body - Request body (JSON-serialized here).
+ * @param {number} [opts.timeoutMs] - Abort the request after this many ms.
  * @returns {Promise<{ok: true, data: any} | {ok: false, status: number, errorText: string}>}
  */
-async function callProvider({ url, headers, body }) {
-    const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body)
-    });
+const AI_PROVIDER_TIMEOUT_MS = 120000;
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        return { ok: false, status: response.status, errorText };
+async function callProvider({ url, headers, body, timeoutMs = AI_PROVIDER_TIMEOUT_MS }) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body),
+            signal: controller.signal
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            return { ok: false, status: response.status, errorText };
+        }
+
+        const data = await response.json();
+        return { ok: true, data };
+    } finally {
+        clearTimeout(timeoutId);
     }
-
-    const data = await response.json();
-    return { ok: true, data };
 }
 
 /**
@@ -212,13 +227,48 @@ function createAIGenerationRoutes(options) {
     // Ollama endpoint is configurable via OLLAMA_URL env var or runtime API
     let ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
     let ollamaEnabled = process.env.OLLAMA_ENABLED === 'true';
+    // Whether the current ollamaUrl came from POST /ollama/config (untrusted,
+    // set over the network) rather than from OLLAMA_URL / the built-in default
+    // (operator-provided, and normally http://localhost:11434, which the SSRF
+    // checks below would otherwise reject).
+    let ollamaUrlFromRuntimeConfig = false;
+
+    const OLLAMA_MODELS_TIMEOUT_MS = 10000;
+    const OLLAMA_GENERATE_TIMEOUT_MS = 120000;
+
+    /**
+     * Re-validate the currently configured Ollama URL before proxying to it.
+     * Runtime-configured hosts are re-resolved on every call: a DNS name that
+     * resolved publicly when it was stored can point at an internal address
+     * later, and the proxy routes have no auth of their own.
+     * Sends the error response and returns false when the host is not allowed.
+     */
+    async function ollamaTargetAllowed(res) {
+        if (!ollamaUrlFromRuntimeConfig) return true;
+
+        let parsed;
+        try {
+            parsed = new URL(ollamaUrl);
+        } catch {
+            logger.warn(`Blocked Ollama request, unparseable URL: ${ollamaUrl}`);
+            res.status(403).json({ error: 'URL blocked', messageKey: 'error_url_blocked' });
+            return false;
+        }
+
+        if (!['http:', 'https:'].includes(parsed.protocol) || await isBlockedHost(parsed.hostname)) {
+            logger.warn(`Blocked Ollama request to private/internal host: ${ollamaUrl}`);
+            res.status(403).json({ error: 'URL blocked', messageKey: 'error_url_blocked' });
+            return false;
+        }
+        return true;
+    }
 
     // Runtime Ollama configuration endpoints
     router.get('/ollama/config', (req, res) => {
         res.json({ url: ollamaUrl, enabled: ollamaEnabled });
     });
 
-    router.post('/ollama/config', requireUser, (req, res) => {
+    router.post('/ollama/config', requireUser, async (req, res) => {
         const { url, enabled } = req.body;
         if (typeof url === 'string' && url.trim()) {
             let parsed;
@@ -227,12 +277,15 @@ function createAIGenerationRoutes(options) {
             } catch {
                 return res.status(400).json({ error: 'Invalid URL', messageKey: 'error_invalid_url' });
             }
-            // SSRF protection: reject non-http(s) protocols and private/internal hosts
-            if (!['http:', 'https:'].includes(parsed.protocol) || isPrivateIP(parsed.hostname)) {
+            // SSRF protection: reject non-http(s) protocols and private/internal
+            // hosts. isBlockedHost resolves DNS, so a public hostname pointing at
+            // an internal address is rejected too (isPrivateIP alone is literal-only).
+            if (!['http:', 'https:'].includes(parsed.protocol) || await isBlockedHost(parsed.hostname)) {
                 logger.warn(`Blocked Ollama URL config: ${url}`);
                 return res.status(403).json({ error: 'URL blocked', messageKey: 'error_url_blocked' });
             }
             ollamaUrl = url.trim().replace(/\/+$/, ''); // strip trailing slashes
+            ollamaUrlFromRuntimeConfig = true;
             logger.info('Ollama URL updated to:', ollamaUrl);
         }
         if (typeof enabled === 'boolean') {
@@ -247,8 +300,11 @@ function createAIGenerationRoutes(options) {
         if (!ollamaEnabled) {
             return res.json({ models: [] });
         }
+        if (!await ollamaTargetAllowed(res)) return;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), OLLAMA_MODELS_TIMEOUT_MS);
         try {
-            const response = await fetch(`${ollamaUrl}/api/tags`);
+            const response = await fetch(`${ollamaUrl}/api/tags`, { signal: controller.signal });
 
             if (!response.ok) {
                 return res.status(500).json({ error: 'Failed to fetch Ollama models', messageKey: 'error_ollama_fetch_models' });
@@ -267,6 +323,8 @@ function createAIGenerationRoutes(options) {
         } catch (error) {
             logger.error('Ollama models fetch error:', error);
             res.status(500).json({ error: 'Failed to connect to Ollama', messageKey: 'error_ollama_connect' });
+        } finally {
+            clearTimeout(timeoutId);
         }
     });
 
@@ -275,6 +333,9 @@ function createAIGenerationRoutes(options) {
         if (!ollamaEnabled) {
             return res.status(503).json({ error: 'Ollama is disabled', messageKey: 'error_ollama_disabled' });
         }
+        if (!await ollamaTargetAllowed(res)) return;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), OLLAMA_GENERATE_TIMEOUT_MS);
         try {
             const clientIP = getClientIp(req);
             const rateCheck = ollamaLimiter.check(clientIP);
@@ -300,7 +361,8 @@ function createAIGenerationRoutes(options) {
             const response = await fetch(`${ollamaUrl}/api/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model, prompt, stream: stream ?? false, options })
+                body: JSON.stringify({ model, prompt, stream: stream ?? false, options }),
+                signal: controller.signal
             });
 
             if (!response.ok) {
@@ -322,6 +384,8 @@ function createAIGenerationRoutes(options) {
                 messageKey: 'error_ollama_connect',
                 details: isProduction ? undefined : error.message
             });
+        } finally {
+            clearTimeout(timeoutId);
         }
     });
 
@@ -330,18 +394,19 @@ function createAIGenerationRoutes(options) {
         if (!ollamaEnabled) {
             return res.json({ running: false });
         }
+        if (!await ollamaTargetAllowed(res)) return;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
-
             const response = await fetch(`${ollamaUrl}/api/tags`, {
                 signal: controller.signal
             });
-            clearTimeout(timeoutId);
 
             res.json({ running: response.ok });
         } catch {
             res.json({ running: false });
+        } finally {
+            clearTimeout(timeoutId);
         }
     });
 
@@ -846,7 +911,11 @@ function createAIGenerationRoutes(options) {
             }
         } catch (error) {
             logger.error('URL extraction error:', error);
-            res.status(500).json({ error: 'Failed to extract content from URL: ' + error.message, messageKey: 'error_url_extraction_failed' });
+            res.status(500).json({
+                error: 'Failed to extract content from URL',
+                messageKey: 'error_url_extraction_failed',
+                details: isProduction ? undefined : error.message
+            });
         }
     });
 

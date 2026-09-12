@@ -176,12 +176,12 @@ function createJsFileHandler(logger, isProduction, baseDir) {
 
             // Check if file exists before attempting to serve
             if (!fs.existsSync(filePath)) {
+                // The absolute server path stays in the log only — it used to be
+                // echoed to the client, in production too.
                 logger.error(`JavaScript file not found: ${req.path} (${filePath})`);
                 return res.status(404).json({
                     error: 'File not found',
-                    path: req.path,
-                    fullPath: filePath,
-                    exists: false
+                    path: req.path
                 });
             }
 
@@ -198,14 +198,22 @@ function createJsFileHandler(logger, isProduction, baseDir) {
             fs.readFile(filePath, 'utf8', (err, data) => {
                 if (err) {
                     logger.error(`Error reading JS file ${req.path}:`, err);
-                    return res.status(500).json({ error: 'Failed to read file', details: err.message });
+                    return res.status(500).json({
+                        error: 'Failed to read file',
+                        messageKey: 'error_server_error',
+                        details: isProduction ? undefined : err.message
+                    });
                 }
                 res.send(data);
             });
 
         } catch (error) {
             logger.error(`JS file handler error for ${req.path}:`, error);
-            res.status(500).json({ error: 'Server error', details: error.message });
+            res.status(500).json({
+                error: 'Server error',
+                messageKey: 'error_server_error',
+                details: isProduction ? undefined : error.message
+            });
         }
     };
 }

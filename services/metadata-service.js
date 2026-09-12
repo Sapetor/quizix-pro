@@ -9,12 +9,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { atomicWriteFile } = require('./atomic-write');
-
-// Password hashing constants
-const PBKDF2_ITERATIONS = 100000;
-const SALT_LENGTH = 32;
-const KEY_LENGTH = 64;
-const HASH_ALGORITHM = 'sha512';
+const { hashPassword: hashPasswordHash, verifyPassword: verifyPasswordHash } = require('../utils/password-hash');
 
 // Session token constants
 const TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
@@ -210,7 +205,7 @@ class MetadataService {
     /**
      * Create a new folder
      */
-    async createFolder(name, parentId = null) {
+    async createFolder(name, parentId = null, ownerId = null) {
         this.validateFolderName(name);
 
         if (parentId && !this.metadata.folders[parentId]) {
@@ -233,6 +228,7 @@ class MetadataService {
             id,
             name,
             parentId,
+            ownerId,
             passwordHash: null,
             created: new Date().toISOString(),
             sortOrder: siblings.length
@@ -361,6 +357,14 @@ class MetadataService {
 
         this.logger.debug(`Deleted folder: ${folderId}`);
         return { success: true };
+    }
+
+    /**
+     * Get a folder record by id, or undefined.
+     * Used by the routes to enforce folder ownership.
+     */
+    getFolder(folderId) {
+        return this.metadata.folders[folderId];
     }
 
     /**
@@ -590,39 +594,21 @@ class MetadataService {
     // ============================================================================
 
     /**
-     * Hash a password using PBKDF2
+     * Hash a password using PBKDF2.
+     * Delegates to the shared helper so folder/quiz passwords and user account
+     * passwords use one parameter set (100000 iterations, 64-byte key, sha512).
      */
     async hashPassword(password) {
-        const salt = crypto.randomBytes(SALT_LENGTH);
-        const hash = await new Promise((resolve, reject) => {
-            crypto.pbkdf2(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, HASH_ALGORITHM, (err, derivedKey) => {
-                if (err) reject(err);
-                else resolve(derivedKey);
-            });
-        });
-
-        return `${salt.toString('hex')}:${hash.toString('hex')}`;
+        return hashPasswordHash(password);
     }
 
     /**
-     * Verify a password against a hash
+     * Verify a password against a hash.
+     * Delegates to the shared helper, which returns false (instead of throwing
+     * RangeError/TypeError inside timingSafeEqual) on a malformed stored hash.
      */
     async verifyPassword(password, storedHash) {
-        if (!storedHash) return false;
-
-        const [saltHex, hashHex] = storedHash.split(':');
-        const salt = Buffer.from(saltHex, 'hex');
-        const storedHashBuffer = Buffer.from(hashHex, 'hex');
-
-        const derivedKey = await new Promise((resolve, reject) => {
-            crypto.pbkdf2(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, HASH_ALGORITHM, (err, key) => {
-                if (err) reject(err);
-                else resolve(key);
-            });
-        });
-
-        // Timing-safe comparison
-        return crypto.timingSafeEqual(derivedKey, storedHashBuffer);
+        return verifyPasswordHash(password, storedHash);
     }
 
     /**
@@ -882,9 +868,10 @@ class MetadataService {
      * - Private quizzes are only visible to their owner.
      */
     _quizVisibleTo(quiz, userId) {
-        // Folder-level protection is hidden from anonymous users, but still
-        // available to signed-in users through the password flow.
-        if (!userId) {
+        // Folder-level protection applies to everyone except the quiz's own
+        // owner, who reaches it through the ownership path below. Signing in is
+        // not a way past a folder password.
+        if (!userId || userId !== quiz.ownerId) {
             let folderId = quiz.folderId;
             while (folderId) {
                 const folder = this.metadata.folders[folderId];

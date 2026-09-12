@@ -438,7 +438,7 @@ export class PreviewRenderer {
             const formattedContent = `
                 <div class="option-wrapper">
                     <span class="option-shape" data-shape="${shape}">${icon}</span>
-                    <span class="option-text">${this.formatCodeBlocks(option)}</span>
+                    <span class="option-text">${this.formatCodeBlocks(escapeHtmlPreservingLatex(option))}</span>
                 </div>
             `;
 
@@ -494,7 +494,7 @@ export class PreviewRenderer {
                 <label class="option-wrapper">
                     <input type="checkbox" ${isCorrect ? 'checked' : ''} disabled>
                     <span class="option-shape" data-shape="${shape}">${icon}</span>
-                    <span class="option-text">${this.formatCodeBlocks(option)}</span>
+                    <span class="option-text">${this.formatCodeBlocks(escapeHtmlPreservingLatex(option))}</span>
                 </label>
             `;
 
@@ -573,7 +573,7 @@ export class PreviewRenderer {
 
         const itemsHtml = options.map((option, index) => {
             const bgColor = COLORS.ORDERING_ITEM_COLORS[index % COLORS.ORDERING_ITEM_COLORS.length];
-            const formattedContent = this.formatCodeBlocks(option);
+            const formattedContent = this.formatCodeBlocks(escapeHtmlPreservingLatex(option));
             return `
                 <div class="ordering-display-item" data-original-index="${index}" data-order-index="${index}" style="background: ${bgColor};">
                     <div class="ordering-item-number">${index + 1}</div>
@@ -874,7 +874,7 @@ export class PreviewRenderer {
             const formattedContent = `
                 <div class="option-wrapper">
                     <span class="option-shape" data-shape="${shape}">${icon}</span>
-                    <span class="option-text">${this.formatCodeBlocks(option)}</span>
+                    <span class="option-text">${this.formatCodeBlocks(escapeHtmlPreservingLatex(option))}</span>
                 </div>
             `;
 
@@ -936,7 +936,7 @@ export class PreviewRenderer {
             const formattedContent = `
                 <div class="option-wrapper">
                     <span class="option-shape" data-shape="${shape}">${icon}</span>
-                    <span class="option-text">${this.formatCodeBlocks(option)}</span>
+                    <span class="option-text">${this.formatCodeBlocks(escapeHtmlPreservingLatex(option))}</span>
                 </div>
             `;
 

@@ -1,6 +1,6 @@
 # Quizix Pro Docker Deployment Guide
 
-This guide provides instructions for deploying Quizix Pro in a Docker container with local network access and GitLab connectivity.
+This guide provides instructions for deploying Quizix Pro in a Docker container with local network access.
 
 ## Quick Start
 
@@ -18,7 +18,6 @@ This guide provides instructions for deploying Quizix Pro in a Docker container 
 - Docker Engine 20.10+
 - Docker Compose 2.0+
 - Local network access
-- GitLab instance (optional)
 
 ## Configuration
 
@@ -31,48 +30,27 @@ This guide provides instructions for deploying Quizix Pro in a Docker container 
 
 2. Edit `.env` to match your environment:
    ```bash
-   # GitLab Configuration
-   GITLAB_URL=http://your-gitlab-server:8080
-   GITLAB_TOKEN=your-gitlab-token
+   # Public URL, when behind a reverse proxy or tunnel
+   PUBLIC_ORIGIN=https://quiz.example.com
+   ALLOWED_ORIGINS=https://quiz.example.com
 
-   # Network Configuration
-   CORS_ORIGINS=http://192.168.1.*,http://10.0.0.*
+   # Proxy whose client-IP header is trusted (docker bridge gateway)
+   TRUSTED_PROXY_IPS=172.17.0.1
 
    # AI Integration (optional - for server-side API key)
    CLAUDE_API_KEY=sk-ant-xxxxx
    CLAUDE_MODEL=claude-sonnet-4-5
    ```
 
-### GitLab Integration
-
-#### Option 1: HTTP Access
-```bash
-# In .env file
-GITLAB_URL=http://gitlab.local:8080
-GITLAB_TOKEN=your-personal-access-token
-```
-
-#### Option 2: SSH Access
-```bash
-# In .env file
-GITLAB_URL=ssh://git@gitlab.local:2222
-GITLAB_SSH_KEY=/app/.ssh/id_rsa
-```
-
-For SSH access, mount your SSH key:
-```yaml
-# Add to docker-compose.yml volumes section
-volumes:
-  - ~/.ssh/id_rsa:/app/.ssh/id_rsa:ro
-```
+   `.env.example` is the complete annotated list of variables the server
+   reads. Anything not listed there is ignored.
 
 ### Network Configuration
 
 The Docker setup creates a custom bridge network that allows:
 
-1. **Container-to-GitLab communication**
-2. **Host network access on port 3000**
-3. **Isolated container environment**
+1. **Host network access on port 3000**
+2. **Isolated container environment**
 
 #### Default Network Settings
 - Subnet: `172.20.0.0/16`
@@ -104,7 +82,7 @@ networks:
 # Check status
 ./docker-build.sh status
 
-# Test GitLab connectivity
+# Check the running container's /health endpoint
 ./docker-build.sh test
 ```
 
@@ -155,54 +133,6 @@ sudo firewall-cmd --add-port=3000/tcp --permanent
 sudo firewall-cmd --reload
 ```
 
-## GitLab Connectivity
-
-### Testing GitLab Connection
-
-```bash
-# From host
-curl -f http://your-gitlab-server:8080
-
-# From container
-docker exec quizix-pro-app curl -f http://your-gitlab-server:8080
-```
-
-### Common GitLab Issues
-
-#### 1. GitLab Not Reachable
-```bash
-# Check if GitLab is accessible from host
-ping gitlab.local
-
-# Check DNS resolution in container
-docker exec quizix-pro-app nslookup gitlab.local
-
-# Add to docker-compose.yml if needed:
-extra_hosts:
-  - "gitlab.local:192.168.1.100"  # Your GitLab IP
-```
-
-#### 2. SSL Certificate Issues
-```bash
-# For self-signed certificates, add to .env:
-NODE_TLS_REJECT_UNAUTHORIZED=0
-
-# Or mount custom CA certificates:
-volumes:
-  - /etc/ssl/certs:/etc/ssl/certs:ro
-```
-
-#### 3. Authentication Issues
-```bash
-# Test GitLab token
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-     http://your-gitlab-server/api/v4/user
-
-# Check token permissions in GitLab:
-# - API access
-# - Repository access
-```
-
 ## Data Persistence
 
 ### Volume Mounts
@@ -211,10 +141,18 @@ The container uses several volumes for data persistence:
 
 ```yaml
 volumes:
-  - ./results:/app/results        # Quiz results
-  - ./uploads:/app/uploads        # File uploads
-  - quiz_data:/app/public/uploads # Runtime data
+  - quizzes-data:/app/quizzes        # Quiz library + users.json + .session-secret
+  - results-data:/app/results        # Saved game results
+  - uploads-data:/app/public/uploads # Uploaded images
 ```
+
+The upload mount path is `/app/public/uploads`, not `/app/uploads`. That is
+where the app writes (Dockerfile creates `public/uploads`). A container mounted
+at `/app/uploads` keeps no uploads at all across a redeploy.
+
+`/app/quizzes` holds `users.json` and `.session-secret` as well as the quiz
+files, so skipping that mount loses every account and invalidates all sessions
+on redeploy.
 
 ### Backup Strategy
 
@@ -223,10 +161,13 @@ volumes:
 docker exec quizix-pro-app tar -czf /tmp/results-backup.tar.gz /app/results
 docker cp quizix-pro-app:/tmp/results-backup.tar.gz ./backup/
 
-# Backup entire data
-docker-compose down
-tar -czf quizix-backup-$(date +%Y%m%d).tar.gz results/ uploads/
-docker-compose up -d
+# Backup the named volumes
+docker compose down
+for v in quizzes-data results-data uploads-data; do
+  docker run --rm -v "quizix-pro_$v:/data" -v "$PWD:/backup" alpine \
+    tar -czf "/backup/quizix-$v-$(date +%Y%m%d).tar.gz" -C /data .
+done
+docker compose up -d
 ```
 
 ## Monitoring and Troubleshooting
@@ -283,8 +224,8 @@ ports:
 
 #### 2. Permission Issues
 ```bash
-# Fix file permissions
-sudo chown -R 1001:1001 results/ uploads/
+# Fix file permissions (bind mounts only; named volumes inherit from the image)
+sudo chown -R 1001:1001 quizzes/ results/ public/uploads/
 
 # Check container user
 docker exec quizix-pro-app id
@@ -393,10 +334,9 @@ docker-compose down -v
 
 ### Getting Help
 
-1. Check logs first: `docker-compose logs`
+1. Check logs first: `docker compose logs`
 2. Verify network connectivity
-3. Test GitLab access separately
-4. Check resource usage
+3. Check resource usage
 
 ### Useful Commands Reference
 
@@ -408,7 +348,7 @@ docker exec -it quizix-pro-app sh
 docker network inspect quizix-pro_quizix-network
 
 # Volume inspection
-docker volume inspect quizix-pro_quiz_data
+docker volume inspect quizix-pro_quizzes-data quizix-pro_results-data quizix-pro_uploads-data
 
 # Image information
 docker image inspect quizix-pro:latest

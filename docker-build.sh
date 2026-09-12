@@ -137,29 +137,6 @@ show_status() {
     fi
 }
 
-# Test GitLab connectivity
-test_gitlab_connectivity() {
-    log_info "Testing GitLab connectivity..."
-    
-    # Check if GITLAB_URL is set in environment
-    if [ -f .env ]; then
-        GITLAB_URL=$(grep GITLAB_URL .env | cut -d '=' -f2)
-    fi
-    
-    if [ -z "$GITLAB_URL" ]; then
-        log_warning "GITLAB_URL not configured. Skipping connectivity test."
-        return 0
-    fi
-    
-    log_info "Testing connection to: $GITLAB_URL"
-    
-    if docker exec $CONTAINER_NAME curl -f --connect-timeout 5 "$GITLAB_URL" > /dev/null 2>&1; then
-        log_success "GitLab connectivity test passed"
-    else
-        log_warning "GitLab connectivity test failed. Check network configuration."
-    fi
-}
-
 # Main execution
 main() {
     log_info "Starting Quizix Pro Docker deployment..."
@@ -183,16 +160,13 @@ main() {
     sleep 5
     wait_for_health
     
-    # Test GitLab connectivity
-    test_gitlab_connectivity
-    
     # Show status
     show_status
     
     log_success "Quizix Pro deployment completed!"
     echo ""
     echo "Next steps:"
-    echo "1. Edit .env file to configure GitLab URL and other settings"
+    echo "1. Edit .env to set PUBLIC_ORIGIN / ALLOWED_ORIGINS if behind a proxy"
     echo "2. Access the application via your local network"
     echo "3. Check logs with: $COMPOSE_CMD logs -f"
     echo "4. Stop with: $COMPOSE_CMD down"
@@ -214,14 +188,14 @@ case "${1:-deploy}" in
         ;;
     "test")
         check_compose
-        test_gitlab_connectivity
+        wait_for_health
         ;;
     "help")
         echo "Usage: $0 [build|deploy|status|test|help]"
         echo "  build  - Build Docker image only"
         echo "  deploy - Full build and deployment (default)"
         echo "  status - Show application status"
-        echo "  test   - Test GitLab connectivity"
+        echo "  test   - Check the running container's /health endpoint"
         echo "  help   - Show this help"
         ;;
     *)

@@ -86,7 +86,7 @@ export class QuizGame {
         this.previewManager = new PreviewManager(this.mathRenderer);
         this.gameManager = new GameManager(this.socket, this.uiManager, this.soundManager);
         this.quizManager = new QuizManager(this.uiManager);
-        this.socketManager = new SocketManager(this.socket, this.gameManager, this.uiManager, this.soundManager);
+        this.socketManager = new SocketManager(this.socket, this.gameManager, this.uiManager, this.soundManager, this);
 
         // Update GameManager with SocketManager reference
         this.gameManager.setSocketManager(this.socketManager);
@@ -95,7 +95,7 @@ export class QuizGame {
         this.socketEventBus = new SocketEventBus(this.socketManager, this.socket);
 
         // Initialize practice mode manager
-        this.practiceModeManager = new PracticeModeManager(this.gameManager, this.uiManager);
+        this.practiceModeManager = new PracticeModeManager(this.gameManager, this.uiManager, this);
 
         // Initialize connection status monitoring
         connectionStatus.setSocket(this.socket);
@@ -490,17 +490,10 @@ export class QuizGame {
             }
         }, { signal: this.abortController.signal });
 
-        // Numeric answer input
-        bindElement('numeric-answer-input', 'keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.gameManager.submitNumericAnswer();
-            }
-        });
-
-        // Multiple correct answer submission
-        bindElement('submit-multiple', 'click', () => {
-            this.gameManager.submitMultipleCorrectAnswer();
-        });
+        // Note: #numeric-answer-input Enter and #submit-multiple click are bound by
+        // PlayerInteractionManager.setupEventListeners(). Binding them here too ran
+        // each submission twice, and on the validation-failure path the second run
+        // cancelled the first error banner's removal timeout, leaving it on screen.
 
         // Theme toggle is now handled by SettingsManager.initializeEventListeners()
         // Removed conflicting fallback event listener
@@ -982,7 +975,7 @@ export class QuizGame {
 
                     questionHTML += `
                         <div class="preview-option ${isCorrect ? 'correct' : ''}">
-                            ${String.fromCharCode(65 + optIndex)}. ${this.mathRenderer.formatCodeBlocks(option)}
+                            ${String.fromCharCode(65 + optIndex)}. ${this.mathRenderer.formatCodeBlocks(escapeHtmlPreservingLatex(option))}
                         </div>
                     `;
                 });

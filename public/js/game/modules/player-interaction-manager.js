@@ -26,8 +26,10 @@ export class PlayerInteractionManager {
         this._handleOptionClick = this._handleOptionClick.bind(this);
         this._handleNumericKeypress = this._handleNumericKeypress.bind(this);
 
-        // Track timeout IDs for cleanup
-        this._errorTimeoutId = null;
+        // Every error banner currently on screen, with its own removal timeout.
+        // A single shared timeout id let a second banner cancel the first one's
+        // removal, leaving that fixed-position banner on screen until reload.
+        this._errorBanners = [];
     }
 
     /**
@@ -244,6 +246,37 @@ export class PlayerInteractionManager {
     }
 
     /**
+     * Close the answer gate at round end (local timer expiry or the server's
+     * question-end). Without this, a tap between timer zero and the arrival of
+     * player-result still emitted submit-answer, the server rejected it, and the
+     * player saw a red rejection modal just before their real result.
+     * The disabled flags are undone by GameDisplayManager.clearClientSelections()
+     * on the next question.
+     */
+    lockAnswers() {
+        const gameState = this.gameStateManager.getGameState();
+        if (gameState.isHost) return;
+
+        this.gameStateManager.markAnswerSubmitted();
+
+        const elements = this.gameDisplayManager.getClientElements();
+        [...elements.multipleChoiceOptions, ...elements.trueFalseOptions].forEach(option => {
+            option.disabled = true;
+            option.classList.add('disabled');
+        });
+        elements.checkboxOptions.forEach(option => {
+            const checkbox = option.querySelector('input[type="checkbox"]');
+            if (checkbox) checkbox.disabled = true;
+            option.classList.add('disabled');
+        });
+        if (elements.numericInput) elements.numericInput.disabled = true;
+        if (elements.submitButton) elements.submitButton.disabled = true;
+        if (elements.multipleSubmitButton) elements.multipleSubmitButton.disabled = true;
+
+        logger.debug('Answer input locked for this question');
+    }
+
+    /**
      * Format answer for display
      */
     formatAnswerForDisplay(answer) {
@@ -268,12 +301,6 @@ export class PlayerInteractionManager {
      */
     showError(message) {
         logger.error('Player interaction error:', message);
-
-        // Clear any existing error timeout
-        if (this._errorTimeoutId) {
-            clearTimeout(this._errorTimeoutId);
-            this._errorTimeoutId = null;
-        }
 
         // Create error element
         const errorElement = document.createElement('div');
@@ -302,24 +329,33 @@ export class PlayerInteractionManager {
 
         document.body.appendChild(errorElement);
 
-        // Remove after delay (tracked for cleanup)
-        this._errorTimeoutId = setTimeout(() => {
-            this._errorTimeoutId = null;
-            if (document.body.contains(errorElement)) {
-                errorElement.remove();
-            }
+        // Remove after delay; each banner owns its own timeout (tracked for cleanup)
+        const banner = { element: errorElement, timeoutId: null };
+        banner.timeoutId = setTimeout(() => {
+            this._removeErrorBanner(banner);
         }, 3000);
+        this._errorBanners.push(banner);
+    }
+
+    /**
+     * Remove one error banner and forget it
+     * @param {{element: HTMLElement, timeoutId: number|null}} banner
+     */
+    _removeErrorBanner(banner) {
+        clearTimeout(banner.timeoutId);
+        banner.element.remove();
+        const index = this._errorBanners.indexOf(banner);
+        if (index !== -1) {
+            this._errorBanners.splice(index, 1);
+        }
     }
 
     /**
      * Cleanup resources
      */
     cleanup() {
-        // Clear error timeout
-        if (this._errorTimeoutId) {
-            clearTimeout(this._errorTimeoutId);
-            this._errorTimeoutId = null;
-        }
+        // Clear every pending error banner and its timeout
+        [...this._errorBanners].forEach(banner => this._removeErrorBanner(banner));
 
         // Remove event listeners
         this.removeEventListeners();

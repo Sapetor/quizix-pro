@@ -66,8 +66,8 @@ git push
 
 **Option A: Direct kubectl**
 ```bash
-kubectl apply -f k8s/deployment.yaml
-kubectl rollout status deployment/quizix-pro
+kubectl apply -f k8s/01-quizix-pro.yaml
+kubectl rollout status deployment/quizix-pro -n quizix
 ```
 
 **Option B: GitOps (ArgoCD/Flux)**
@@ -91,6 +91,102 @@ curl https://your-domain.com/health
 # Access the app
 open https://your-domain.com
 ```
+
+## 🐳 Docker Compose Volume Migration (one-time, breaking)
+
+`docker-compose.server.yml` previously mounted:
+
+```yaml
+volumes:
+  - ./results:/app/results          # host bind
+  - ./uploads:/app/uploads          # host bind, and the WRONG path: the app
+                                    # writes /app/public/uploads, so this
+                                    # directory was always empty
+  - quiz_data:/app/public/uploads   # named volume, the real upload store
+```
+
+It now mounts three named volumes:
+
+```yaml
+volumes:
+  - quizzes-data:/app/quizzes
+  - results-data:/app/results
+  - uploads-data:/app/public/uploads
+```
+
+On a server that already runs the old file, `docker compose up -d` starts
+against **empty** volumes. The old data is not deleted, it is orphaned: results
+stay in `./results` on the host and uploads stay in the `quiz_data` volume.
+Copy them across **before** the first start on the new file.
+
+Compose prefixes volume names with the project name, which defaults to the
+directory name. Substitute yours if it differs:
+
+```bash
+PROJECT=quizix-pro   # check with: docker volume ls
+
+# 1. Stop the old stack.
+docker compose -f docker-compose.server.yml down
+
+# 2. Create the new volumes so they exist before anything writes to them.
+docker volume create ${PROJECT}_quizzes-data
+docker volume create ${PROJECT}_results-data
+docker volume create ${PROJECT}_uploads-data
+
+# 3. Uploads: old named volume -> new named volume.
+docker run --rm \
+  -v ${PROJECT}_quiz_data:/from:ro \
+  -v ${PROJECT}_uploads-data:/to \
+  alpine sh -c 'cp -a /from/. /to/'
+
+# 4. Results: old host bind -> new named volume.
+docker run --rm \
+  -v "$PWD/results":/from:ro \
+  -v ${PROJECT}_results-data:/to \
+  alpine sh -c 'cp -a /from/. /to/'
+
+# 5. Quizzes: there was NO quizzes mount before, so the quiz library,
+#    quizzes/users.json and quizzes/.session-secret lived inside the container
+#    layer and were destroyed on every redeploy. If the old container is still
+#    present, recover them now; otherwise seed from the repo.
+docker cp quizix-pro-app:/app/quizzes/. ./quizzes-recovered/ 2>/dev/null \
+  && docker run --rm \
+       -v "$PWD/quizzes-recovered":/from:ro \
+       -v ${PROJECT}_quizzes-data:/to \
+       alpine sh -c 'cp -a /from/. /to/'
+
+# 6. The app runs as uid/gid 1001; copied files must be writable by it.
+docker run --rm \
+  -v ${PROJECT}_quizzes-data:/q \
+  -v ${PROJECT}_results-data:/r \
+  -v ${PROJECT}_uploads-data:/u \
+  alpine chown -R 1001:1001 /q /r /u
+
+# 7. Start the new stack and verify.
+docker compose -f docker-compose.server.yml up -d
+docker compose -f docker-compose.server.yml exec quizix-pro ls /app/quizzes /app/public/uploads
+```
+
+Keep `./results` and the `quiz_data` volume until you have confirmed the new
+stack serves the old data. Remove the stale volume only afterwards:
+`docker volume rm ${PROJECT}_quiz_data`.
+
+### Script-based deploys changed mount paths too
+
+`.gitlab-ci.yml` and `deploy-to-server.sh` used to mount uploads at
+`/app/uploads` (a path the app never writes) and mounted no quizzes volume at
+all. They now use `/app/public/uploads` and add `<data-dir>/quizzes`. On an
+existing server the previous upload directory is empty, so nothing is lost, but
+the quiz library and accounts that lived in the container layer must be copied
+out of the old container before it is replaced:
+
+```bash
+docker cp quizix-pro-app:/app/quizzes/. /opt/quizix-data/quizzes/    # GitLab CI path
+docker cp quizix-pro-app:/app/public/uploads/. /opt/quizix-data/uploads/
+chown -R 1001:1001 /opt/quizix-data
+```
+
+(`deploy-to-server.sh` uses `$HOME/quizix-data` instead of `/opt/quizix-data`.)
 
 ## 🔄 How Auto-Update Works
 
@@ -214,8 +310,41 @@ PORT=3000
 ```bash
 CLAUDE_API_KEY=your-key-here
 GEMINI_API_KEY=your-key-here
-HUGGINGFACE_API_KEY=your-key-here
 ```
+
+`HUGGINGFACE_API_KEY` is not read by the server. The complete, annotated list
+of variables the app actually reads is `.env.example`.
+
+### Diagnostic endpoints: `ENABLE_DEBUG_ROUTES`
+
+```bash
+# Leave UNSET in production.
+# ENABLE_DEBUG_ROUTES=true
+```
+
+Four unauthenticated endpoints are now off unless this is exactly `"true"`:
+
+| Endpoint | What it exposes |
+|----------|-----------------|
+| `/metrics` | Full Prometheus process metrics |
+| `/debug/config` | BASE_PATH and environment dump |
+| `/api/debug/files` | Filesystem inspection |
+| `/api/debug/directory` | Directory listing |
+
+This gates **development** runs as well. `/metrics` and `/debug/config` were
+previously registered unconditionally, and the two `/api/debug` routes only
+checked `NODE_ENV !== 'production'`; since `npm start` sets no `NODE_ENV`, a
+plain LAN run served all four. Any script or dashboard that scrapes `/metrics`
+gets a 404 until the variable is set on that deployment.
+
+There is no Prometheus scrape target, `ServiceMonitor`, or
+`prometheus.io/scrape` annotation anywhere in this repository, so nothing in
+the shipped manifests breaks. If you added scraping outside the repo, add
+`ENABLE_DEBUG_ROUTES: "true"` to the `quizix-config` ConfigMap in
+`k8s/01-quizix-pro.yaml` and put a network policy in front of the endpoint.
+
+`/health` and `/ready` are not gated, so container healthchecks and the
+Kubernetes liveness/readiness probes are unaffected.
 
 ## 📝 Version History Tracking
 

@@ -86,7 +86,7 @@ class PlayerManagementService {
    * @param {Object} io - Socket.IO instance
    * @returns {Object} Result object with success status and optional error message
    */
-    handlePlayerJoin(socketId, pin, name, game, socket, io, deviceId = null) {
+    handlePlayerJoin(socketId, pin, name, game, socket, io, deviceId = null, questionFlowService = null) {
     // Validate input
         if (!pin || !name || typeof pin !== 'string' || typeof name !== 'string') {
             return {
@@ -130,6 +130,31 @@ class PlayerManagementService {
                 success: false,
                 error: 'Game already started',
                 messageKey: 'error_game_already_started'
+            };
+        }
+
+        // A returning device must resume its own disconnected entry. Without this,
+        // session-check auto-join added a second roster row at score 0 while the
+        // scored row stayed in game.players, so the final leaderboard showed the
+        // name twice and totalPlayers double-counted the human.
+        const returning = this._findResumablePlayer(game, name, deviceId);
+        if (returning) {
+            return this.handlePlayerRejoin(
+                socketId, pin, returning.sessionToken, game, socket, io, questionFlowService
+            );
+        }
+
+        // Same case-insensitive duplicate check handlePlayerNameChange applies.
+        // Two students on the same name are indistinguishable on the roster,
+        // leaderboard and export.
+        const trimmedName = name.trim();
+        const nameTaken = Array.from(game.players.values())
+            .some(p => p.name.toLowerCase() === trimmedName.toLowerCase());
+        if (nameTaken) {
+            return {
+                success: false,
+                error: 'Name is already taken',
+                messageKey: 'error_name_already_taken'
             };
         }
 
@@ -235,7 +260,9 @@ class PlayerManagementService {
                     options = question.options;
                 }
 
-                const remainingTimeMs = Math.max(0, (timeLimit * 1000) - (Date.now() - game.questionStartTime));
+                // questionEndsAt is the authoritative deadline (extend-time moves it)
+                const endsAt = game.questionEndsAt || ((game.questionStartTime || Date.now()) + timeLimit * 1000);
+                const remainingTimeMs = Math.max(0, endsAt - Date.now());
 
                 socket.emit('question-start', {
                     ...baseQuestionData,
@@ -264,6 +291,28 @@ class PlayerManagementService {
             success: true,
             playerCount: currentPlayers.length
         };
+    }
+
+    /**
+     * Find the disconnected entry a joining device should resume, if any.
+     * The device binding wins; the name is only used when neither the request nor
+     * the candidate carries one, so a name typed by somebody else can never claim
+     * a bound player's score.
+     * @param {Object} game - Game instance
+     * @param {string} name - Name supplied by the joining client
+     * @param {string|null} deviceId - Device binding supplied by the joining client
+     * @returns {Object|null} The player entry to resume, or null
+     */
+    _findResumablePlayer(game, name, deviceId) {
+        const candidates = Array.from(game.players.values())
+            .filter(p => p.disconnected && p.sessionToken);
+
+        if (deviceId) {
+            return candidates.find(p => p.deviceId === deviceId) || null;
+        }
+
+        const trimmedName = String(name).trim().toLowerCase();
+        return candidates.find(p => !p.deviceId && p.name.toLowerCase() === trimmedName) || null;
     }
 
     /**
@@ -546,7 +595,9 @@ class PlayerManagementService {
                     options = question.options;
                 }
 
-                const remainingTimeMs = Math.max(0, (timeLimit * 1000) - (Date.now() - game.questionStartTime));
+                // questionEndsAt is the authoritative deadline (extend-time moves it)
+                const endsAt = game.questionEndsAt || ((game.questionStartTime || Date.now()) + timeLimit * 1000);
+                const remainingTimeMs = Math.max(0, endsAt - Date.now());
                 const alreadyAnswered = !!foundPlayer.answers[game.currentQuestion];
 
                 socket.emit('question-start', {
@@ -630,10 +681,22 @@ class PlayerManagementService {
             reason: 'Host disconnected'
         });
 
-        // Drop any pending roster broadcast — the room is going away
+        this.releaseGamePlayers(game);
+
+        // Clean up game resources
+        game.cleanup();
+    }
+
+    /**
+     * Drop every server-side reference to a game's players: the pending roster
+     * broadcast, each player's disconnect grace timer, and their entries in the
+     * global registry. Must run on every path that tears a game down, or the
+     * timers keep firing and the registry grows for the life of the process.
+     * @param {Object} game - Game instance
+     */
+    releaseGamePlayers(game) {
         this.clearPendingPlayerListBroadcast(game.pin);
 
-        // Clear any pending disconnect grace period timers for this game's players
         for (const player of game.players.values()) {
             if (player.sessionToken && this.disconnectTimers.has(player.sessionToken)) {
                 clearTimeout(this.disconnectTimers.get(player.sessionToken));
@@ -641,14 +704,9 @@ class PlayerManagementService {
             }
         }
 
-        // Clean up player references from global registry
         for (const playerId of game.players.keys()) {
             this.players.delete(playerId);
-            this.logger.debug(`Removed player ${playerId} from global registry (host disconnect)`);
         }
-
-        // Clean up game resources
-        game.cleanup();
     }
 
     /**

@@ -12,6 +12,7 @@ export default [
             'test-results/**',
             'playwright-report/**',
             'coverage/**',
+            '.claude/**',
             '*.min.js'
         ]
     },
@@ -204,7 +205,12 @@ export default [
                 HTMLElement: 'readonly',
                 localStorage: 'readonly',
                 sessionStorage: 'readonly',
-                requestAnimationFrame: 'readonly'
+                requestAnimationFrame: 'readonly',
+                navigator: 'readonly',
+                fetch: 'readonly',
+                URL: 'readonly',
+                AbortController: 'readonly',
+                AbortSignal: 'readonly'
             }
         },
         rules: {

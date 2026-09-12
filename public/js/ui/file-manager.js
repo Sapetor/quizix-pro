@@ -13,12 +13,92 @@ import { debounce } from '../utils/dom.js';
 import { FolderTree } from './components/folder-tree.js';
 import { ContextMenu } from './components/context-menu.js';
 import { PasswordModal } from './components/password-modal.js';
-import { confirmModal } from '../utils/modal-utils.js';
+import { confirmModal, lockBodyScroll, unlockBodyScroll } from '../utils/modal-utils.js';
 
 const SHOW_ONLY_MINE_KEY = 'file-manager-show-only-mine';
 
 // Helper for shorter translation calls
 const t = (key) => translationManager.getTranslationSync(key);
+
+/**
+ * Styled replacement for window.prompt(), mirroring confirmModal() from
+ * modal-utils. Native prompts are suppressed in some mobile browsers and return
+ * null there, which silently no-ops folder create/rename/move.
+ * @param {string} message - Text to show (escaped, never treated as HTML)
+ * @param {Object} [options]
+ * @param {string} [options.defaultValue] - Prefilled input value
+ * @returns {Promise<string|null>} Entered text, or null when cancelled
+ */
+function promptModal(message, { defaultValue = '' } = {}) {
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+
+        const content = document.createElement('div');
+        content.className = 'modal-content';
+        content.style.maxWidth = 'min(420px, 95vw)';
+
+        const text = document.createElement('p');
+        text.textContent = message;
+        // The move dialog passes a newline-separated folder list.
+        text.style.whiteSpace = 'pre-line';
+        content.appendChild(text);
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = defaultValue;
+        input.style.width = '100%';
+        content.appendChild(input);
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+        actions.style.marginTop = '20px';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'btn secondary';
+        cancelBtn.textContent = t('cancel');
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.className = 'btn primary';
+        confirmBtn.textContent = t('confirm_ok');
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(confirmBtn);
+        content.appendChild(actions);
+        modal.appendChild(content);
+
+        let escapeHandler = null;
+        const finish = (result) => {
+            document.removeEventListener('keydown', escapeHandler);
+            modal.remove();
+            unlockBodyScroll();
+            resolve(result);
+        };
+
+        escapeHandler = (e) => {
+            if (e.key === 'Escape') finish(null);
+        };
+
+        cancelBtn.addEventListener('click', () => finish(null));
+        confirmBtn.addEventListener('click', () => finish(input.value));
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') finish(input.value);
+        });
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) finish(null);
+        });
+        document.addEventListener('keydown', escapeHandler);
+
+        document.body.appendChild(modal);
+        lockBodyScroll();
+        input.focus();
+        input.select();
+    });
+}
 
 export class FileManager {
     constructor(options = {}) {
@@ -410,7 +490,7 @@ export class FileManager {
      * Create a new folder
      */
     async createFolder(parentId = null) {
-        const name = prompt(t('enter_folder_name') || 'Enter folder name:');
+        const name = await promptModal(t('enter_folder_name'));
         if (!name || !name.trim()) return;
 
         try {
@@ -438,7 +518,7 @@ export class FileManager {
      */
     async renameItem(type, id, data) {
         const currentName = type === 'folder' ? data.name : (data.displayName || id.replace('.json', ''));
-        const newName = prompt(t('enter_new_name') || 'Enter new name:', currentName);
+        const newName = await promptModal(t('enter_new_name'), { defaultValue: currentName });
 
         if (!newName || !newName.trim() || newName === currentName) return;
 
@@ -446,13 +526,13 @@ export class FileManager {
             let response;
 
             if (type === 'folder') {
-                response = await APIHelper.fetchAPI(`api/folders/${id}/rename`, {
+                response = await APIHelper.fetchAPI(`api/folders/${encodeURIComponent(id)}/rename`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: newName.trim() })
                 });
             } else {
-                response = await APIHelper.fetchAPI(`api/quiz-metadata/${id}`, {
+                response = await APIHelper.fetchAPI(`api/quiz-metadata/${encodeURIComponent(id)}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ displayName: newName.trim() })
@@ -485,8 +565,8 @@ export class FileManager {
             options.push(`${i + 1}. ${f.path}`);
         });
 
-        const selection = prompt(
-            `${t('move_to') || 'Move to'}:\n\n${options.join('\n')}\n\n${t('enter_number') || 'Enter number (0 for root)'}:`
+        const selection = await promptModal(
+            `${t('move_to')}\n\n${options.join('\n')}\n\n${t('enter_number')}`
         );
 
         if (selection === null) return;
@@ -503,13 +583,13 @@ export class FileManager {
             let response;
 
             if (type === 'folder') {
-                response = await APIHelper.fetchAPI(`api/folders/${id}/move`, {
+                response = await APIHelper.fetchAPI(`api/folders/${encodeURIComponent(id)}/move`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ parentId: targetFolderId })
                 });
             } else {
-                response = await APIHelper.fetchAPI(`api/quiz-metadata/${id}`, {
+                response = await APIHelper.fetchAPI(`api/quiz-metadata/${encodeURIComponent(id)}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ folderId: targetFolderId })
@@ -562,8 +642,8 @@ export class FileManager {
             const password = await this.passwordModal.promptNewPassword(name);
 
             const endpoint = type === 'folder'
-                ? `api/folders/${id}/password`
-                : `api/quiz-metadata/${id}/password`;
+                ? `api/folders/${encodeURIComponent(id)}/password`
+                : `api/quiz-metadata/${encodeURIComponent(id)}/password`;
 
             const response = await APIHelper.fetchAPI(endpoint, {
                 method: 'POST',
@@ -617,8 +697,8 @@ export class FileManager {
 
             // Password verified, now remove it
             const endpoint = type === 'folder'
-                ? `api/folders/${id}/password`
-                : `api/quiz-metadata/${id}/password`;
+                ? `api/folders/${encodeURIComponent(id)}/password`
+                : `api/quiz-metadata/${encodeURIComponent(id)}/password`;
 
             const response = await APIHelper.fetchAPI(endpoint, {
                 method: 'POST',
@@ -699,12 +779,12 @@ export class FileManager {
 
                 let response;
                 if (type === 'folder') {
-                    response = await APIHelper.fetchAPI(`api/folders/${id}?deleteContents=true`, {
+                    response = await APIHelper.fetchAPI(`api/folders/${encodeURIComponent(id)}?deleteContents=true`, {
                         method: 'DELETE',
                         headers
                     });
                 } else {
-                    response = await APIHelper.fetchAPI(`api/quiz/${id}?confirm=true`, {
+                    response = await APIHelper.fetchAPI(`api/quiz/${encodeURIComponent(id)}?confirm=true`, {
                         method: 'DELETE',
                         headers
                     });
@@ -741,7 +821,7 @@ export class FileManager {
         // Check if authentication is required
         let requiresAuth = false;
         try {
-            const authResponse = await APIHelper.fetchAPI(`api/requires-auth/${type}/${id}`);
+            const authResponse = await APIHelper.fetchAPI(`api/requires-auth/${encodeURIComponent(type)}/${encodeURIComponent(id)}`);
             if (authResponse.ok) {
                 const authData = await authResponse.json();
                 requiresAuth = authData.requiresAuth;
@@ -815,7 +895,7 @@ export class FileManager {
      */
     async registerNewQuiz(filename, title) {
         try {
-            await APIHelper.fetchAPI(`api/quiz-metadata/${filename}`, {
+            await APIHelper.fetchAPI(`api/quiz-metadata/${encodeURIComponent(filename)}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ displayName: title })

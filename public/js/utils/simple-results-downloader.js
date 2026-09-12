@@ -5,7 +5,7 @@
 
 import { translationManager, showErrorAlert, showSuccessAlert } from './translation-manager.js';
 import { logger } from '../core/config.js';
-import { resultsManagerService } from '../services/results-manager-service.js';
+import { resultsManagerService, captureLiveHostToken, hostTokenHeaders, isAccessDenied } from '../services/results-manager-service.js';
 import { APIHelper } from './api-helper.js';
 import { show, hide } from './dom.js';
 
@@ -83,12 +83,15 @@ export class SimpleResultsDownloader {
 
         } catch (error) {
             logger.error('❌ Error initializing results dropdown:', error);
-            showErrorAlert('failed_fetch_results');
+            const denied = isAccessDenied(error);
+            showErrorAlert(denied ? 'error_access_forbidden' : 'failed_fetch_results');
 
             // Show error in dropdown
             const errorOption = document.createElement('option');
             errorOption.value = '';
-            errorOption.textContent = translationManager.getTranslationSync('error_loading_results') || 'Error loading results';
+            errorOption.textContent = denied
+                ? (translationManager.getTranslationSync('error_access_forbidden') || 'Access forbidden')
+                : (translationManager.getTranslationSync('error_loading_results') || 'Error loading results');
             errorOption.disabled = true;
             dropdown.appendChild(errorOption);
 
@@ -168,9 +171,15 @@ export class SimpleResultsDownloader {
             logger.debug(`📊 Downloading result: ${filename}`);
 
             // Simple direct API call - no over-engineered service layer
-            const response = await fetch(APIHelper.getApiUrl(`api/results/${filename}/export/csv`));
+            const response = await fetch(APIHelper.getApiUrl(`api/results/${filename}/export/csv`), {
+                headers: hostTokenHeaders(filename)
+            });
 
             if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    showErrorAlert(translationManager.getTranslationSync('error_access_forbidden') || 'Access forbidden');
+                    return;
+                }
                 throw new Error(`Download failed: ${response.status}`);
             }
 
@@ -220,6 +229,10 @@ export class SimpleResultsDownloader {
      */
     async showDownloadTool() {
         logger.debug('📊 showDownloadTool called');
+        // The final leaderboard is the one moment the host token and the PIN of
+        // the finished game are both live in this tab. Persist it now so the
+        // host can still open these results after closing the tab.
+        captureLiveHostToken();
         const downloadSection = document.querySelector('.download-results');
         if (downloadSection) {
             show(downloadSection, 'visible-block');

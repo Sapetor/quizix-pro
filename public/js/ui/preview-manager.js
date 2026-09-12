@@ -752,25 +752,25 @@ export class PreviewManager {
                         </div>
 
                         <div id="mobile-preview-answer-area" class="preview-answer-area mobile-answers">
-                            <div class="preview-answer-type preview-multiple-choice" style="display: none;">
+                            <div class="preview-answer-type preview-multiple-choice hidden">
                                 <div class="preview-options mobile-options" id="mobile-preview-options"></div>
                             </div>
 
-                            <div class="preview-answer-type preview-multiple-correct" style="display: none;">
+                            <div class="preview-answer-type preview-multiple-correct hidden">
                                 <div class="preview-checkbox-options mobile-checkbox-options" id="mobile-preview-checkbox-options"></div>
                             </div>
 
-                            <div class="preview-answer-type preview-true-false" style="display: none;">
+                            <div class="preview-answer-type preview-true-false hidden">
                                 <div class="preview-tf-options mobile-tf-options" id="mobile-preview-tf-options"></div>
                             </div>
 
-                            <div class="preview-answer-type preview-numeric" style="display: none;">
+                            <div class="preview-answer-type preview-numeric hidden">
                                 <div class="preview-numeric-input mobile-numeric" id="mobile-preview-numeric">
                                     <input type="number" placeholder="Enter your answer" readonly>
                                 </div>
                             </div>
 
-                            <div class="preview-answer-type preview-ordering" style="display: none;">
+                            <div class="preview-answer-type preview-ordering hidden">
                                 <div class="preview-ordering-display mobile-ordering" id="mobile-preview-ordering"></div>
                             </div>
                         </div>

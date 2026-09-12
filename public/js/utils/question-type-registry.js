@@ -37,6 +37,99 @@ function shuffleArray(array) {
     return shuffled;
 }
 
+// Option shapes repeat every four rows, matching the render helpers below.
+const OPTION_SHAPES = ['triangle', 'diamond', 'circle', 'square'];
+const OPTION_ICONS = ['▲', '◆', '●', '■'];
+
+/**
+ * Grow a multiple-choice / multiple-correct option list to `count` rows.
+ * The editor markup ships four rows; questions arriving from an import or from
+ * the AI generator may carry more, and writing only into the existing rows
+ * dropped the rest on load and on the next save.
+ * @param {HTMLElement} optionsContainer - `.multiple-choice-options` or `.multiple-correct-options`
+ * @param {number} count - Number of rows required
+ */
+function growOptionWrappers(optionsContainer, count) {
+    const wrappers = optionsContainer.querySelectorAll('.option-wrapper');
+    if (wrappers.length === 0 || wrappers.length >= count) return;
+
+    const lastWrapper = wrappers[wrappers.length - 1];
+    const list = lastWrapper.parentElement;
+
+    for (let index = wrappers.length; index < count; index++) {
+        const row = lastWrapper.cloneNode(true);
+        row.dataset.option = String(index);
+
+        const marker = row.querySelector('.correct-option');
+        if (marker) {
+            marker.checked = false;
+            marker.dataset.option = String(index);
+        }
+
+        const input = row.querySelector('.option');
+        if (input) {
+            input.value = '';
+            // The cloned translate key would rewrite the placeholder to "Option D".
+            input.removeAttribute('data-translate-placeholder');
+            input.placeholder = `Option ${String.fromCharCode(65 + index)}`;
+        }
+
+        const shape = row.querySelector('.option-shape');
+        if (shape) {
+            shape.dataset.shape = OPTION_SHAPES[index % OPTION_SHAPES.length];
+            shape.textContent = OPTION_ICONS[index % OPTION_ICONS.length];
+        }
+
+        list.appendChild(row);
+    }
+}
+
+/**
+ * Grow an ordering item list to `count` rows (same reason as growOptionWrappers).
+ * @param {HTMLElement} optionsContainer - `.ordering-options`
+ * @param {number} count - Number of rows required
+ */
+function growOrderingItems(optionsContainer, count) {
+    const items = optionsContainer.querySelectorAll('.ordering-item');
+    if (items.length === 0 || items.length >= count) return;
+
+    const lastItem = items[items.length - 1];
+    const list = lastItem.parentElement;
+
+    for (let index = items.length; index < count; index++) {
+        const row = lastItem.cloneNode(true);
+        row.dataset.order = String(index);
+
+        const input = row.querySelector('.ordering-option');
+        if (input) {
+            input.value = '';
+            input.dataset.option = String(index);
+            input.removeAttribute('data-translate-placeholder');
+            input.placeholder = `Item ${index + 1}`;
+        }
+
+        const number = row.querySelector('.ordering-number');
+        if (number) {
+            number.textContent = String(index + 1);
+        }
+
+        list.appendChild(row);
+    }
+}
+
+/**
+ * Is `order` a permutation of 0..length-1?
+ * @param {*} order - Candidate order array
+ * @param {number} length - Expected length
+ * @returns {boolean} True when usable as an answer key
+ */
+function isPermutation(order, length) {
+    if (!Array.isArray(order) || order.length !== length) return false;
+    const seen = new Set(order);
+    if (seen.size !== length) return false;
+    return order.every(index => Number.isInteger(index) && index >= 0 && index < length);
+}
+
 /**
  * Question type definitions
  */
@@ -116,6 +209,7 @@ const QUESTION_TYPES = {
             const optionsContainer = questionElement.querySelector('.multiple-choice-options');
             if (!optionsContainer) return;
 
+            growOptionWrappers(optionsContainer, data.options.length);
             const optionInputs = optionsContainer.querySelectorAll('.option');
 
             // Support both field names — correctIndex is editor canonical, correctAnswer is server/AI canonical
@@ -347,6 +441,7 @@ const QUESTION_TYPES = {
             const optionsContainer = questionElement.querySelector('.multiple-correct-options');
             if (!optionsContainer) return;
 
+            growOptionWrappers(optionsContainer, data.options.length);
             const optionInputs = optionsContainer.querySelectorAll('.option');
             const correctCheckboxes = optionsContainer.querySelectorAll('.correct-option');
 
@@ -752,9 +847,20 @@ const QUESTION_TYPES = {
             const optionsContainer = questionElement.querySelector('.ordering-options');
             if (!optionsContainer) return;
 
+            const options = Array.isArray(data.options) ? data.options : [];
+            growOrderingItems(optionsContainer, options.length);
             const optionInputs = optionsContainer.querySelectorAll('.ordering-option');
 
-            data.options.forEach((optionText, index) => {
+            // The editor stores items already in their correct sequence, which is
+            // why extractData regenerates correctOrder as the identity. A real
+            // permutation (AI output, imported JSON) has to be applied here or the
+            // answer key is lost on the next save. Anything that is not a
+            // permutation of 0..n-1 is ignored, keeping the given option order.
+            const ordered = isPermutation(data.correctOrder, options.length)
+                ? data.correctOrder.map(index => options[index])
+                : options;
+
+            ordered.forEach((optionText, index) => {
                 if (optionInputs[index]) {
                     optionInputs[index].value = optionText;
                 }

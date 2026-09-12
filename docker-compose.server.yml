@@ -1,7 +1,6 @@
 # Quizix Pro Docker Compose Configuration
-# For deployment ON the GitLab server machine
-
-version: '3.8'
+# For deployment on a standalone server (bridge networking, port published).
+# For the LAN / host-networking setup, use docker-compose.yml instead.
 
 services:
   quizix-pro:
@@ -12,29 +11,35 @@ services:
     image: quizix-pro:latest
     container_name: quizix-pro-app
     restart: unless-stopped
-    
-    # Environment configuration for server deployment
+
     environment:
       - NODE_ENV=production
-      - DEBUG_ENABLED=false
-      - DEBUG_CURRENT_LEVEL=1
-      # GitLab connectivity (localhost since on same machine)
-      - GITLAB_URL=https://localhost:8080
-      - GITLAB_TOKEN=${GITLAB_TOKEN:-}
-    
+      - PORT=3000
+      - BASE_PATH=/
+      # Public URL when fronted by a reverse proxy or tunnel. Without it the QR
+      # code and join links fall back to the container's detected IP.
+      # - PUBLIC_ORIGIN=https://quiz.example.com
+      # Exact CORS allow-list; pair with PUBLIC_ORIGIN or Socket.IO rejects it.
+      # - ALLOWED_ORIGINS=https://quiz.example.com
+      # Behind a bridge network the client IP is the bridge gateway unless the
+      # gateway address is trusted here.
+      # - TRUSTED_PROXY_IPS=172.17.0.1
+      # Expensive/abusable subsystems off by default; opt in explicitly.
+      - OLLAMA_ENABLED=${OLLAMA_ENABLED:-false}
+      - MANIM_ENABLED=${MANIM_ENABLED:-false}
+
     # Port mapping for network access
     ports:
       - "3000:3000"
-    
+
     # Volume mounts for persistent data
     volumes:
-      - ./results:/app/results
-      - ./uploads:/app/uploads
-      - quiz_data:/app/public/uploads
-    
-    # Use host network for GitLab access
+      - quizzes-data:/app/quizzes
+      - results-data:/app/results
+      - uploads-data:/app/public/uploads
+
     network_mode: "bridge"
-    
+
     # Health check configuration
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
@@ -42,7 +47,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    
+
     # Resource limits
     deploy:
       resources:
@@ -55,5 +60,9 @@ services:
 
 # Named volumes for data persistence
 volumes:
-  quiz_data:
+  quizzes-data:
+    driver: local
+  results-data:
+    driver: local
+  uploads-data:
     driver: local

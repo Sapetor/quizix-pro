@@ -18,10 +18,13 @@ export class PracticeModeManager {
      * Create a PracticeModeManager
      * @param {Object} gameManager - GameManager instance
      * @param {Object} uiManager - UIManager instance
+     * @param {Object|null} app - QuizGame instance; owns resetAndReturnToMenu(),
+     *   the only correct way to leave a game screen (GOTCHAS #13)
      */
-    constructor(gameManager, uiManager) {
+    constructor(gameManager, uiManager, app = null) {
         this.gameManager = gameManager;
         this.uiManager = uiManager;
+        this.app = app;
 
         /** @type {LocalEventBus|null} */
         this.eventBus = null;
@@ -397,8 +400,14 @@ export class PracticeModeManager {
             resultsContainer.classList.add('hidden');
         }
 
-        // Return to main menu (correct screen ID is 'main-menu', not 'main')
-        if (this.uiManager) {
+        // Return to main menu through the app-level reset (GOTCHAS #13); the bare
+        // showScreen it replaces left the timer running and the state manager
+        // holding the previous session's values.
+        if (this.app?.resetAndReturnToMenu) {
+            this.app.resetAndReturnToMenu();
+        } else if (this.uiManager) {
+            this.gameManager?.stopTimer();
+            this.gameManager?.resetGameState();
             this.uiManager.showScreen('main-menu');
         }
     }
@@ -467,6 +476,11 @@ export class PracticeModeManager {
             if (this.gameManager.timerManager) {
                 this.gameManager.timerManager.cleanup();
             }
+            // Practice never went through the multiplayer teardown, so the one-shot
+            // fanfarePlayed latch in LeaderboardManager stayed set and suppressed the
+            // final-results screen of the next real game. resetGameState() clears it
+            // along with the rest of the per-game state.
+            this.gameManager.resetGameState();
         }
 
         // Clean up game session

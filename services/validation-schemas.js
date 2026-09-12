@@ -172,11 +172,15 @@ const contentFlagsSchema = z.object({
     language: z.string().nullable().optional().default(null)
 }).optional().nullable();
 
+// Model ids are interpolated into the provider request URL (Gemini) — keep them
+// to a plain id so a crafted value can't traverse to another API path.
+const modelIdSchema = z.string().regex(/^[A-Za-z0-9._-]+$/, 'Invalid model id');
+
 const claudeGenerateSchema = z.object({
     prompt: z.string().min(10, 'Prompt must be at least 10 characters'),
     apiKey: z.string().optional(),
     numQuestions: z.number().int().min(1).max(50).optional().default(5),
-    model: z.string().optional().default('claude-sonnet-4-5'),
+    model: modelIdSchema.optional().default('claude-sonnet-4-5'),
     contentFlags: contentFlagsSchema
 });
 
@@ -184,7 +188,7 @@ const geminiGenerateSchema = z.object({
     prompt: z.string().min(10, 'Prompt must be at least 10 characters'),
     apiKey: z.string().optional(),
     numQuestions: z.number().int().min(1).max(50).optional().default(5),
-    model: z.string().optional().default('gemini-2.5-flash'),
+    model: modelIdSchema.optional().default('gemini-2.5-flash'),
     contentFlags: contentFlagsSchema
 });
 
@@ -202,7 +206,7 @@ const aiCompleteSchema = z.object({
     provider: z.enum(['claude', 'gemini']),
     prompt: z.string().min(1, 'Prompt is required'),
     system: z.string().min(1, 'System prompt is required'),
-    model: z.string().optional(),
+    model: modelIdSchema.optional(),
     apiKey: z.string().optional(),
     maxTokens: z.number().int().min(100).max(32000).optional().default(4096)
 });
@@ -454,14 +458,35 @@ const endQuestionEarlySchema = z.object({
     pin: z.string().regex(/^\d{6}$/)
 });
 
+// Bounded on both branches: the answer is serialized into the results file at
+// game end, so an unbounded array or a huge number is a disk-size problem as
+// well as a parsing one. 1000 is far above any real option/ordering index.
 const socketSubmitAnswerSchema = z.object({
     answer: z.union([
-        z.number(),
+        z.number().int().min(0).max(1000),
         z.boolean(),
-        z.string(),
-        z.array(z.number())
+        z.string().max(200),
+        z.array(z.number().int().min(0).max(1000)).max(100)
     ]),
-    type: z.string().optional()
+    type: z.string().max(50).optional()
+});
+
+// The type is used as a property key on player.powerUps — an enum, never a free
+// string, or "__proto__" reaches Object.prototype.
+const usePowerUpSchema = z.object({
+    type: z.enum(['fifty-fifty', 'extend-time', 'double-points'])
+});
+
+// Tokens are compared against the stored value, so the format is not the
+// security boundary; these bounds only stop an oversized payload.
+const playerRejoinSchema = z.object({
+    pin: z.string().regex(/^\d{6}$/),
+    sessionToken: z.string().min(1).max(200)
+});
+
+const hostRejoinSchema = z.object({
+    pin: z.string().regex(/^\d{6}$/),
+    token: z.string().min(1).max(200)
 });
 
 const kickPlayerSchema = z.object({
@@ -573,6 +598,9 @@ function validateSocketEvent(eventName, data) {
         'next-question': nextQuestionSchema,
         'end-question-early': endQuestionEarlySchema,
         'submit-answer': socketSubmitAnswerSchema,
+        'use-power-up': usePowerUpSchema,
+        'player-rejoin': playerRejoinSchema,
+        'host-rejoin': hostRejoinSchema,
         'kick-player': kickPlayerSchema,
         // Consensus mode events
         'propose-answer': proposeAnswerSchema,
@@ -668,6 +696,9 @@ module.exports = {
     nextQuestionSchema,
     endQuestionEarlySchema,
     socketSubmitAnswerSchema,
+    usePowerUpSchema,
+    playerRejoinSchema,
+    hostRejoinSchema,
     kickPlayerSchema,
     // Consensus mode schemas
     proposeAnswerSchema,

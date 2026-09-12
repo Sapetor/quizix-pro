@@ -2,9 +2,15 @@
  * Unit tests for socket/game-events.js
  *
  * Exercises the game-lifecycle handlers (host-join, start-game, stop-quiz,
- * host-leave-game, rematch-game, host-starting-new-game) through the fake
- * socket/io. Validation is REAL (validateAndHandle -> zod schemas); the
- * game/player/question services are jest mocks.
+ * rematch-game, host-starting-new-game) through the fake socket/io. Validation
+ * is REAL (validateAndHandle -> zod schemas); the game/player/question services
+ * are jest mocks.
+ *
+ * The host-leave-game handler was removed: no client emitted it, and the
+ * teardown it ran (handleHostDisconnect -> releaseGamePlayers, then deleteGame)
+ * now runs on the live host-disconnect path. That teardown is asserted by
+ * socket-player-events.test.js, 'cleans up immediately when the host
+ * disconnects from the lobby'.
  */
 
 const { registerGameEvents } = require('../../socket/game-events');
@@ -173,22 +179,9 @@ describe('game-events: stop-quiz', () => {
 });
 
 describe('game-events: host-leave-game', () => {
-    it('disconnects players and deletes the game', () => {
-        const game = { pin: '123456' };
-        const { io, options, h } = setup();
-        options.gameSessionService.findGameByHost.mockReturnValue(game);
-
-        h['host-leave-game']();
-
-        expect(options.playerManagementService.handleHostDisconnect).toHaveBeenCalledWith(game, io);
-        expect(options.gameSessionService.deleteGame).toHaveBeenCalledWith('123456');
-    });
-
-    it('does nothing when no game is hosted', () => {
-        const { options, h } = setup();
-        options.gameSessionService.findGameByHost.mockReturnValue(null);
-        h['host-leave-game']();
-        expect(options.playerManagementService.handleHostDisconnect).not.toHaveBeenCalled();
+    it('is no longer registered', () => {
+        const { h } = setup();
+        expect(h['host-leave-game']).toBeUndefined();
     });
 });
 

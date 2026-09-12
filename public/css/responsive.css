@@ -246,22 +246,6 @@
         justify-content: center;
     }
     
-    /* Compact carousel styling */
-    .quick-start-carousel {
-        padding: 6px 20px 4px 20px !important; /* Further reduced from 8px 20px 6px 20px */
-        margin-bottom: 4px !important; /* Reduced from 6px */
-    }
-    
-    /* Reduce carousel track height */
-    .carousel-track {
-        min-height: auto !important;
-    }
-    
-    .carousel-container {
-        max-width: 100% !important;
-        margin: 0 !important;
-    }
-    
     /* Remove carousel frames entirely on mobile for cleaner look */
     .slide-visual {
         display: none !important;
@@ -1315,7 +1299,6 @@
     }
 }
 
-
 /* === MOBILE TOUCH ENHANCEMENTS === */
 /* Simple, clean mobile touch feedback */
 
@@ -1389,48 +1372,6 @@
     .desktop-only {
         display: none !important;
     }
-}
-
-/* ============================================
-   SWIPEABLE CAROUSEL (AIRBNB-STYLE)
-   ============================================ */
-
-.quick-start-carousel {
-    padding: 8px; /* Further reduced from 12px for mobile */
-    margin-bottom: auto; /* Push bottom controls to bottom */
-}
-
-.quick-start-carousel h3 {
-    text-align: center;
-    margin-bottom: 12px; /* Further reduced from 16px */
-    color: var(--text-primary);
-    font-size: 1.1em; /* Significantly reduced from 1.4em */
-    font-weight: 600;
-}
-
-.carousel-container {
-    position: relative;
-    width: 100%;
-    max-width: 500px;
-    margin: 0 auto;
-}
-
-.carousel-track {
-    display: flex;
-    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
-    will-change: transform;
-}
-
-.carousel-slide {
-    min-width: 100%;
-    padding: 0 12px;
-    box-sizing: border-box;
-    opacity: 0.7;
-    transition: opacity 0.3s ease;
-}
-
-.carousel-slide.active {
-    opacity: 1;
 }
 
 /* Slide Visual (like Airbnb's image frame) */
@@ -1521,172 +1462,6 @@
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* Quickstart Carousel Navigation Container */
-.carousel-navigation-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 8px;
-    margin-bottom: 8px;
-}
-
-/* Quickstart Carousel Arrows */
-.carousel-nav {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(8px);
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    user-select: none;
-}
-
-.carousel-nav:hover {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.4);
-    color: white;
-    transform: scale(1.05);
-}
-
-/* Carousel Dots (like Airbnb) - Updated to match preview carousel */
-.carousel-dots {
-    display: flex;
-    justify-content: center;
-    gap: 1.2rem; /* Same spacing as preview carousel */
-    padding: 0.5rem 1rem;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 25px; /* Same rounded shape as preview carousel */
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: fit-content;
-}
-
-.carousel-dot {
-    width: 6px; /* Refined size, closer to bottom carousel */
-    height: 6px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255, 255, 255, 0.4);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    padding: 12px; /* Larger touch area */
-    margin: -12px; /* Maintain layout */
-    box-shadow: none; /* Clean, minimal appearance */
-}
-
-.carousel-dot.active {
-    background: var(--accent-primary);
-    transform: scale(1.3);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--accent-primary) 40%, transparent);
-}
-
-.carousel-dot:hover {
-    background: color-mix(in srgb, var(--accent-primary) 70%, transparent);
-    transform: scale(1.15);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--accent-primary) 30%, transparent);
-}
-
-/* Mobile-specific carousel dots - ensure visibility */
-@media (max-width: 768px) {
-    .carousel-dots {
-        margin-top: 10px !important;
-        margin-bottom: 8px;
-        gap: 1.8rem !important; /* Increase spacing between dots to make them less close */
-    }
-    
-    .carousel-dot {
-        width: 10px !important; /* Original top carousel size */
-        height: 10px !important;
-        border-radius: 50% !important;
-        padding: 0 !important; /* Original had no padding */
-        margin: 0 !important; /* Original had no margin */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Original shadow */
-        touch-action: manipulation; /* Better touch interaction */
-    }
-    
-    .carousel-dot.active {
-        background: var(--accent-primary) !important;
-        transform: scale(1.3); /* Slightly larger active state */
-    }
-    
-    /* Nuclear option - override everything for carousel dots */
-    .carousel-dots .carousel-dot,
-    button.carousel-dot,
-    .carousel-dot[data-slide] {
-        width: 10px !important; /* Original size */
-        height: 10px !important;
-        border-radius: 50% !important;
-        padding: 0 !important; /* Original no padding */
-        margin: 0 !important; /* Original no margin */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Original shadow */
-        min-width: unset !important;
-        min-height: unset !important;
-        font-size: 0px !important;
-        line-height: 0 !important;
-        /* MOB-2: Enable invisible touch target positioning */
-        position: relative !important;
-    }
-
-    /* MOB-2: Invisible 44x44px touch targets for carousel dots */
-    .carousel-dots .carousel-dot::before,
-    button.carousel-dot::before,
-    .carousel-dot[data-slide]::before {
-        content: '' !important;
-        position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: 44px !important;
-        height: 44px !important;
-        min-width: 44px !important;
-        min-height: 44px !important;
-        border-radius: 50% !important;
-        /* Invisible but captures touch events */
-        background: transparent !important;
-    }
-}
-
-/* Light theme carousel navigation - matching preview carousel */
-[data-theme="light"] .carousel-nav {
-    border: 1px solid rgba(30, 41, 59, 0.2);
-    background: rgba(255, 255, 255, 0.8);
-    color: rgba(30, 41, 59, 0.8);
-}
-
-[data-theme="light"] .carousel-nav:hover {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.4);
-    color: #3b82f6;
-}
-
-/* Light theme carousel dots - matching preview carousel */
-[data-theme="light"] .carousel-dots {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(30, 41, 59, 0.1);
-}
-
-[data-theme="light"] .carousel-dot {
-    background: rgba(30, 41, 59, 0.3);
-}
-
-[data-theme="light"] .carousel-dot:hover {
-    background: color-mix(in srgb, var(--accent-primary) 70%, transparent);
-}
-
-[data-theme="light"] .carousel-dot.active {
-    background: var(--accent-primary);
 }
 
 /* ============================================
@@ -1824,36 +1599,6 @@
 }
 
 /* ============================================
-   TOUCH AND SWIPE INTERACTIONS
-   ============================================ */
-
-@media (max-width: 768px) {
-    .carousel-container {
-        overflow: hidden;
-        touch-action: pan-y;
-    }
-    
-    .carousel-track {
-        cursor: grab;
-        -webkit-user-select: none;
-        user-select: none;
-    }
-    
-    .carousel-track:active {
-        cursor: grabbing;
-    }
-    
-    /* Smooth scrolling for mobile */
-    .carousel-track {
-        scroll-snap-type: x mandatory;
-    }
-    
-    .carousel-slide {
-        scroll-snap-align: center;
-    }
-}
-
-/* ============================================
    MOBILE-ONLY ELEMENTS
    ============================================ */
 
@@ -1926,11 +1671,6 @@
     #main-menu .user-manual {
         display: block;
     }
-    
-    /* Hide carousel on tablets */
-    .quick-start-carousel {
-        display: none;
-    }
 }
 
 /* Mobile editor - use desktop styles with better backgrounds for visibility */
@@ -1998,21 +1738,6 @@
         gap: 1rem;
     }
     
-    .preview-carousel-container {
-        position: relative;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .preview-carousel {
-        position: relative;
-        width: 220px;
-        height: 320px;
-        overflow: hidden;
-    }
-    
     .preview-phone-frame {
         position: absolute;
         top: 0;
@@ -2065,101 +1790,6 @@
         border-radius: 12px;
     }
     
-    /* Preview Carousel Navigation - Separate from quickstart guide */
-    .preview-carousel-navigation {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 1rem;
-        margin-top: 1rem;
-        position: relative;
-        z-index: 10;
-    }
-    
-    .preview-carousel-nav {
-        width: 44px; /* Larger touch targets for mobile */
-        height: 44px;
-        border-radius: 50%;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background: rgba(255, 255, 255, 0.05);
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 1.2rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        backdrop-filter: blur(8px);
-        -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
-        touch-action: manipulation; /* Improve touch responsiveness */
-        user-select: none; /* Prevent text selection */
-    }
-    
-    .preview-carousel-nav:hover {
-        background: rgba(59, 130, 246, 0.2);
-        border-color: rgba(59, 130, 246, 0.4);
-        color: white;
-        transform: scale(1.05);
-    }
-    
-    /* Preview Carousel Dots - Matching top carousel exactly */
-    .preview-carousel-dots {
-        display: flex;
-        justify-content: center;
-        gap: 1.8rem; /* Same spacing as top carousel mobile */
-        padding: 0.5rem 1rem; /* Same padding as top carousel */
-        background: rgba(0, 0, 0, 0.4);
-        border-radius: 25px; /* Same radius as top carousel */
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        width: fit-content;
-    }
-    
-    .preview-carousel-dot {
-        width: 10px; /* Original top carousel size */
-        height: 10px;
-        border-radius: 50%;
-        border: none;
-        background: rgba(255, 255, 255, 0.4);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        padding: 0; /* Original no padding */
-        margin: 0; /* Original no margin */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Original shadow */
-        -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
-        user-select: none;
-        /* MOB-2: Enable invisible touch target positioning */
-        position: relative;
-    }
-
-    /* MOB-2: Invisible 44x44px touch targets for preview carousel dots */
-    .preview-carousel-dot::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 44px;
-        height: 44px;
-        min-width: 44px;
-        min-height: 44px;
-        border-radius: 50%;
-        background: transparent;
-    }
-    
-    .preview-carousel-dot.active {
-        background: var(--accent-primary);
-        transform: scale(1.3);
-        box-shadow: 0 0 12px color-mix(in srgb, var(--accent-primary) 40%, transparent);
-    }
-
-    .preview-carousel-dot:hover {
-        background: color-mix(in srgb, var(--accent-primary) 70%, transparent);
-        transform: scale(1.15);
-        box-shadow: 0 0 8px color-mix(in srgb, var(--accent-primary) 30%, transparent);
-    }
-    
     /* Light theme adaptations */
     [data-theme="light"] .mobile-preview-showcase {
         background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
@@ -2181,167 +1811,6 @@
     
     [data-theme="light"] .preview-screen {
         background: #ffffff;
-    }
-    
-    [data-theme="light"] .preview-carousel-nav {
-        border: 1px solid rgba(30, 41, 59, 0.2);
-        background: rgba(255, 255, 255, 0.8);
-        color: rgba(30, 41, 59, 0.8);
-    }
-    
-    [data-theme="light"] .preview-carousel-nav:hover {
-        background: rgba(59, 130, 246, 0.1);
-        border-color: rgba(59, 130, 246, 0.4);
-        color: #3b82f6;
-    }
-    
-    [data-theme="light"] .preview-carousel-dots {
-        background: rgba(255, 255, 255, 0.9) !important; /* Same as top carousel light theme */
-        border: 1px solid rgba(30, 41, 59, 0.1) !important;
-    }
-    
-    [data-theme="light"] .preview-carousel-dot {
-        background: rgba(30, 41, 59, 0.3);
-    }
-    
-    [data-theme="light"] .preview-carousel-dot:hover {
-        background: color-mix(in srgb, var(--accent-primary) 70%, transparent);
-    }
-
-    [data-theme="light"] .preview-carousel-dot.active {
-        background: var(--accent-primary);
-    }
-    
-    /* Nuclear option for preview carousel dots - Ultra high specificity */
-    .mobile-preview-showcase .preview-carousel-dots .preview-carousel-dot,
-    .mobile-preview-showcase button.preview-carousel-dot,
-    .mobile-preview-showcase .preview-carousel-dot[data-slide],
-    .mobile-preview-showcase .preview-carousel-dot[data-index],
-    div.mobile-preview-showcase .preview-carousel-dots button.preview-carousel-dot,
-    div.mobile-preview-showcase button.preview-carousel-dot[data-index] {
-        width: 10px !important; /* Original top carousel size */
-        height: 10px !important;
-        border-radius: 50% !important;
-        padding: 0 !important; /* Original no padding */
-        margin: 0 !important; /* Original no margin */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Original shadow */
-        min-width: unset !important;
-        min-height: unset !important;
-        font-size: 0px !important;
-        line-height: 0 !important;
-        border: none !important;
-        background: rgba(255, 255, 255, 0.4) !important;
-        transform: none !important; /* Reset any transforms */
-        /* MOB-2: Enable invisible touch target positioning */
-        position: relative !important;
-    }
-
-    /* MOB-2: Invisible 44x44px touch targets for preview carousel dots (nuclear option) */
-    .mobile-preview-showcase .preview-carousel-dots .preview-carousel-dot::before,
-    .mobile-preview-showcase button.preview-carousel-dot::before,
-    .mobile-preview-showcase .preview-carousel-dot[data-slide]::before,
-    .mobile-preview-showcase .preview-carousel-dot[data-index]::before,
-    div.mobile-preview-showcase .preview-carousel-dots button.preview-carousel-dot::before,
-    div.mobile-preview-showcase button.preview-carousel-dot[data-index]::before {
-        content: '' !important;
-        position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: 44px !important;
-        height: 44px !important;
-        min-width: 44px !important;
-        min-height: 44px !important;
-        border-radius: 50% !important;
-        background: transparent !important;
-    }
-    
-    /* Active state for preview carousel dots - Ultra high specificity */
-    .mobile-preview-showcase .preview-carousel-dots .preview-carousel-dot.active,
-    .mobile-preview-showcase button.preview-carousel-dot.active,
-    .mobile-preview-showcase .preview-carousel-dot[data-slide].active,
-    .mobile-preview-showcase .preview-carousel-dot[data-index].active,
-    div.mobile-preview-showcase .preview-carousel-dots button.preview-carousel-dot.active,
-    div.mobile-preview-showcase button.preview-carousel-dot[data-index].active {
-        background: var(--accent-primary) !important; /* Accent for active only */
-        transform: scale(1.3) !important;
-        width: 10px !important; /* Original size when active */
-        height: 10px !important;
-        box-shadow: 0 0 12px color-mix(in srgb, var(--accent-primary) 40%, transparent) !important; /* Original active shadow */
-    }
-    
-    /* Extreme override for bottom carousel - Force original appearance */
-    button.preview-carousel-dot[data-index] {
-        width: 10px !important;
-        height: 10px !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
-        background: rgba(255, 255, 255, 0.4) !important;
-        /* MOB-2: Enable invisible touch target positioning */
-        position: relative !important;
-    }
-
-    /* MOB-2: Invisible 44x44px touch targets for bottom carousel dots */
-    button.preview-carousel-dot[data-index]::before {
-        content: '' !important;
-        position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: 44px !important;
-        height: 44px !important;
-        min-width: 44px !important;
-        min-height: 44px !important;
-        border-radius: 50% !important;
-        background: transparent !important;
-    }
-
-    button.preview-carousel-dot[data-index].active {
-        background: var(--accent-primary) !important;
-        box-shadow: 0 0 12px color-mix(in srgb, var(--accent-primary) 40%, transparent) !important;
-        transform: scale(1.3) !important;
-    }
-    
-    /* Extreme override - Force all button elements in preview carousel */
-    .mobile-preview-showcase .preview-carousel-navigation button[class*="preview-carousel-dot"] {
-        width: 10px !important; /* Original size */
-        height: 10px !important;
-        min-width: 10px !important;
-        min-height: 10px !important;
-        max-width: 10px !important;
-        max-height: 10px !important;
-        border-radius: 50% !important;
-        padding: 0 !important; /* Original no padding */
-        margin: 0 !important; /* Original no margin */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Original shadow */
-        background: rgba(255, 255, 255, 0.4) !important;
-        border: none !important;
-        font-size: 0 !important;
-        line-height: 0 !important;
-        /* MOB-2: Enable invisible touch target positioning */
-        position: relative !important;
-    }
-
-    .mobile-preview-showcase .preview-carousel-navigation button[class*="preview-carousel-dot"].active {
-        background: var(--accent-primary) !important;
-        transform: scale(1.3) !important;
-    }
-
-    /* MOB-2: Invisible 44x44px touch targets for preview carousel dots */
-    .mobile-preview-showcase .preview-carousel-navigation button[class*="preview-carousel-dot"]::before {
-        content: '' !important;
-        position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: 44px !important;
-        height: 44px !important;
-        min-width: 44px !important;
-        min-height: 44px !important;
-        border-radius: 50% !important;
-        /* Invisible but captures touch events */
-        background: transparent !important;
     }
 }
 
@@ -2424,7 +1893,6 @@
     .player-option,
     .checkbox-option,
     .tf-option,
-    .carousel-nav,
     .nav-btn {
         min-height: var(--button-min-height) !important; /* Scales with font for accessibility */
         min-width: var(--button-min-height) !important;
@@ -2438,8 +1906,7 @@
        and the answer surfaces (.player-option/.checkbox-option/.tf-option),
        which do. */
     .btn,
-    .nav-btn,
-    .carousel-nav {
+    .nav-btn {
         padding: 12px 16px !important;
         border-radius: 8px !important;
     }
@@ -2525,7 +1992,6 @@
     .sound-toggle,
     .language-selector,
     .preview-nav-btn,
-    .carousel-nav-btn,
     .close-btn {
         min-height: var(--button-min-height) !important; /* Scales with font for accessibility */
         min-width: var(--button-min-height) !important;
@@ -2770,5 +2236,78 @@
     /* Label alone is enough at this width */
     .app-header #start-hosting-header-small.btn svg {
         display: none;
+    }
+}
+
+/* ============================================
+   MOBILE TOUCH FEEDBACK
+   ============================================
+
+   These two classes are created by public/js/utils/mobile-enhancements.js and
+   had no CSS anywhere, so neither painted anything:
+
+     .ripple-effect   handleTouchStart() appends a <span class="ripple-effect">
+                      to the tapped .player-option / .checkbox-option /
+                      .tf-option / .btn with inline left/top set to the touch
+                      point, then removes it after 600ms.
+     .focused-mobile  setupAccessibilityEnhancements() adds it on focusin and
+                      removes it on focusout, for the same four selectors.
+
+   Layer: this file is imported with layer(app) from main.css, same layer as
+   components.css, so ordinary source order and specificity decide. Do not
+   move these into an unlayered block: an unlayered rule outranks every layered
+   one and would break the cascade documented at the top of main.css.
+
+   Colour: the ripple uses currentColor, not the brand green. A green wash on
+   an answer option would read as "this answer is correct". */
+
+.ripple-effect {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    /* Centre the circle on the left/top the JS wrote inline. Done with
+       negative margins so the transform stays free for the scale animation. */
+    margin: -6px 0 0 -6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.3;
+    pointer-events: none;
+    transform: scale(0);
+    animation: rippleExpand 0.6s ease-out forwards;
+}
+
+@keyframes rippleExpand {
+    from {
+        transform: scale(0);
+        opacity: 0.3;
+    }
+    to {
+        transform: scale(14);
+        opacity: 0;
+    }
+}
+
+/* Containment, scoped with :has() so it applies only while a ripple exists.
+   Without a positioned ancestor the inline left/top would resolve against the
+   wrong box; without the clip the expanding circle paints over neighbours. */
+.player-option:has(> .ripple-effect),
+.checkbox-option:has(> .ripple-effect),
+.tf-option:has(> .ripple-effect),
+.btn:has(> .ripple-effect) {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Keyboard/AT focus highlight on touch devices. Outline only: a box-shadow
+   here would replace whatever shadow the element already carries. */
+.focused-mobile {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ripple-effect {
+        animation: none;
+        opacity: 0;
     }
 }

@@ -877,7 +877,7 @@ export function createQuestionDrilldownModal(questionAnalysis, question, playerA
 
             <div class="drilldown-body">
                 <div class="drilldown-question-text">
-                    <span class="question-type-badge">${qType}</span>
+                    <span class="question-type-badge">${escapeHtml(qType)}</span>
                     ${escapeHtml(qText)}
                 </div>
 

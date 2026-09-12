@@ -57,9 +57,16 @@ const { ManimRenderService } = require('./services/manim-render-service');
 const { UploadGCService } = require('./services/upload-gc-service');
 const { createSaveQuizRateLimiter } = require('./utils/save-quiz-rate-limiter');
 const { registerSocketHandlers } = require('./socket');
+const { createSocketUserBinding } = require('./socket/game-events');
 
 // Detect production environment
 const isProduction = process.env.NODE_ENV === 'production';
+
+// Debug and diagnostic endpoints are opt-in, not "anything that isn't production".
+// `npm start` does not set NODE_ENV, so gating on !isProduction left /metrics,
+// /debug/config, /api/debug/files and /api/debug/directory live on every
+// ordinary LAN run. Set ENABLE_DEBUG_ROUTES=true to turn them back on.
+const enableDebugRoutes = process.env.ENABLE_DEBUG_ROUTES === 'true';
 
 // Base path configuration for Kubernetes/path-based routing
 // Auto-detect: production uses /quizix/, development uses /
@@ -223,6 +230,11 @@ const io = socketIo(server, {
     allowUpgrades: true
 });
 
+// Attach the signed-in user to every socket, the same way attach-user attaches
+// it to every HTTP request. Sockets without a valid session cookie connect
+// normally with no user, which is how anonymous hosting and playing work.
+io.use(createSocketUserBinding({ sessionService, userService, logger }));
+
 // Initialize Socket.IO event batching service for high-frequency events
 // Batches answer-statistics, player-answered, and leaderboard-update events
 const socketBatchService = new SocketBatchService(io, logger, {
@@ -241,6 +253,19 @@ const checkRateLimit = socketRateLimiter.checkRateLimit.bind(socketRateLimiter);
 
 // Initialize graceful shutdown handler
 const gracefulShutdownHandler = new GracefulShutdown(logger, { forceTimeout: 10000 });
+
+// Build a `ws://host` / `wss://host` CSP source from the request's own Host
+// header, so the websocket allowance is exactly this deployment's origin
+// (LAN IP, localhost, or the tunnel hostname) instead of every host on the web.
+// Host is character-checked because a ';' or ',' in it would make helmet throw
+// while assembling the header; an unusable Host falls back to 'self'.
+const HOST_HEADER_PATTERN = /^[A-Za-z0-9.:[\]-]+$/;
+function websocketSelfSource(scheme) {
+    return (req) => {
+        const host = req.headers.host;
+        return HOST_HEADER_PATTERN.test(host || '') ? `${scheme}://${host}` : "'self'";
+    };
+}
 
 app.use(helmet({
     contentSecurityPolicy: {
@@ -276,7 +301,11 @@ app.use(helmet({
             // Omitting them makes the worker's fetch throw, respondWith() reject, and all
             // CDN assets (MathJax included) fail with ERR_FAILED on every SW-controlled load.
             // Keep this list in sync with CACHEABLE_CDN_HOSTS in public/sw.js.
-            connectSrc: ["'self'", 'ws:', 'wss:', 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
+            // ws:/wss: used to be allowed wholesale, which let injected script open a
+            // socket to any host. Socket.IO only ever talks to this app's own origin,
+            // so emit the request's own Host as the single allowed websocket source
+            // ('self' does not cover the ws:/wss: schemes in every browser).
+            connectSrc: ["'self'", websocketSelfSource('ws'), websocketSelfSource('wss'), 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
             objectSrc: ["'none'"],
             baseUri: ["'self'"]
         }
@@ -372,19 +401,26 @@ app.use(createStaticErrorHandler(logger));
 // Special handling for JavaScript files to prevent 500 errors
 app.get('/js/*', createJsFileHandler(logger, isProduction, __dirname));
 
-// Serve debug tools from debug directory (development only)
-if (!isProduction) {
+// Serve debug tools from the debug directory. Opt-in via ENABLE_DEBUG_ROUTES:
+// `npm start` does not set NODE_ENV, so gating on !isProduction served the
+// repo's debug HTML tools on every ordinary LAN run.
+if (enableDebugRoutes) {
     app.use('/debug', express.static('debug', createDebugStaticConfig()));
 }
 
-// Ensure directories exist (async startup)
+// Ensure directories exist (async startup).
+// Failing here means quiz/result/upload writes will fail later, so stop now
+// rather than leaving an escaped rejection for the process-level handler.
 (async () => {
     const dirsToCreate = ['quizzes', 'results', 'public/uploads'];
     for (const dir of dirsToCreate) {
         await fs.promises.mkdir(dir, { recursive: true });
     }
     logger.debug('Required directories verified');
-})();
+})().catch(err => {
+    logger.error('Failed to create required directories:', err);
+    process.exit(1);
+});
 
 // Dynamic index.html serving with environment-specific base path
 // This route serves index.html with the correct <base> tag for the environment
@@ -554,8 +590,8 @@ app.use(createQuizManagementRoutes({
 }));
 
 
-// Debug endpoint to check file existence (disabled in production)
-if (!isProduction) {
+// Debug endpoints to inspect the filesystem. Opt-in via ENABLE_DEBUG_ROUTES.
+if (enableDebugRoutes) {
     app.get('/api/debug/files', (req, res) => {
         const checkFiles = [
             'js/main.js',
@@ -622,7 +658,7 @@ if (!isProduction) {
             contents: fs.existsSync(publicDir) ? listDirectory(publicDir) : null
         });
     });
-} // End of !isProduction debug endpoints block
+} // End of ENABLE_DEBUG_ROUTES debug endpoints block
 
 // Simple ping endpoint for connection status monitoring
 app.get('/api/ping', (req, res) => {
@@ -677,8 +713,33 @@ app.use(createHealthCheckRoutes({
     gameSessionService,
     socketBatchService,
     basePath: BASE_PATH,
-    isProduction
+    isProduction,
+    enableDebugRoutes
 }));
+
+// Terminal error handler. Must be registered after every route: without it,
+// body-parser SyntaxErrors and serve-static errors fall through to Express's
+// built-in handler, which renders an HTML stack trace whenever NODE_ENV is not
+// 'production' and never produces the {error, messageKey} shape clients expect.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+    const rawStatus = err.status || err.statusCode;
+    // Only trust a sane HTTP error code; res.status() throws on anything else.
+    const status = Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus <= 599
+        ? rawStatus
+        : 500;
+    logger.error(`Unhandled request error (${status}) ${req.method} ${req.path}:`, err);
+
+    if (res.headersSent) {
+        return req.socket.destroy();
+    }
+
+    res.status(status).json({
+        error: status >= 500 ? 'Internal server error' : 'Request failed',
+        messageKey: status >= 500 ? 'error_server_error' : 'error_invalid_request',
+        details: isProduction ? undefined : err.message
+    });
+});
 
 const PORT = process.env.PORT || 3000;
 const NETWORK_IP = process.env.NETWORK_IP;

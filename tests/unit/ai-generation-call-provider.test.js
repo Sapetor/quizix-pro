@@ -34,7 +34,8 @@ describe('callProvider', () => {
             {
                 method: 'POST',
                 headers: { 'x-api-key': 'k' },
-                body: JSON.stringify({ model: 'm' })
+                body: JSON.stringify({ model: 'm' }),
+                signal: expect.any(AbortSignal)
             }
         );
     });

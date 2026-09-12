@@ -14,6 +14,28 @@ data:
   # BASE_PATH must match the ingress path prefix in 02-quizix-ingress.yaml.
   # Set explicitly (the server's built-in production default is a legacy value).
   BASE_PATH: "/quizix/"
+
+  # MUST BE SET for correct per-IP rate limiting.
+  # middleware/client-ip.js only honours the CF-Connecting-IP header when the
+  # TCP peer is loopback or listed here. Behind 02-quizix-ingress.yaml the peer
+  # is the ingress-nginx pod, so while this is empty every request resolves to
+  # the same req.ip and all per-IP rate limits share one bucket.
+  # Set it to the ingress controller pod address(es), comma-separated:
+  #   kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller \
+  #     -o jsonpath='{range .items[*]}{.status.podIP}{","}{end}'
+  # Pod IPs change on restart, so prefer a stable value if your CNI allows it.
+  TRUSTED_PROXY_IPS: ""
+
+  # MUST BE SET for the join QR code to be scannable.
+  # services/qr-service.js:217 uses this verbatim; without it the QR falls back
+  # to the container's detected pod IP, which is unroutable outside the cluster.
+  # Origin ONLY (scheme + host [+ port]); BASE_PATH is appended, so do not
+  # include /quizix here. Example: http://10.80.21.11 or https://quiz.example.com
+  PUBLIC_ORIGIN: ""
+
+  # If PUBLIC_ORIGIN is set, list the same origin(s) here or Socket.IO's CORS
+  # check rejects the connection. Setting this drops the built-in wildcards.
+  # ALLOWED_ORIGINS: "https://quiz.example.com"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -101,14 +123,16 @@ spec:
       initContainers:
         - name: init-dirs
           image: gcr.io/google-containers/busybox:1.27
-          command: ['sh', '-c', 'mkdir -p /app/quizzes /app/results /app/uploads && chown -R 1001:1001 /app/quizzes /app/results /app/uploads && chmod -R 755 /app/quizzes /app/results /app/uploads']
+          # Mount paths here must match the app container's below, so the
+          # chown lands on the directory the app actually writes.
+          command: ['sh', '-c', 'mkdir -p /app/quizzes /app/results /app/public/uploads && chown -R 1001:1001 /app/quizzes /app/results /app/public/uploads && chmod -R 755 /app/quizzes /app/results /app/public/uploads']
           volumeMounts:
             - name: quizzes
               mountPath: /app/quizzes
             - name: results
               mountPath: /app/results
             - name: uploads
-              mountPath: /app/uploads
+              mountPath: /app/public/uploads
 
       containers:
         - name: quizix-pro

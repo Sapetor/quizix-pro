@@ -6,6 +6,10 @@ const fs = require('fs');
 const sharp = require('sharp');
 const { getClientIp } = require('../middleware/client-ip');
 
+// Same guard the other route modules use to decide whether raw error text may
+// go back to the client.
+const isProduction = process.env.NODE_ENV === 'production';
+
 /**
  * File Upload Routes
  * Handles image, PDF, DOCX, and PPTX uploads with processing
@@ -57,8 +61,9 @@ function createFileUploadRoutes(options) {
         return { allowed: true, remaining: UPLOAD_MAX_REQUESTS_PER_MINUTE - limit.count };
     }
 
-    // Cleanup stale rate limit entries every 5 minutes
-    setInterval(() => {
+    // Cleanup stale rate limit entries every 5 minutes.
+    // unref'd so the sweep never keeps the process alive on shutdown.
+    const uploadRateLimitSweep = setInterval(() => {
         const now = Date.now();
         for (const [ip, limit] of uploadRateLimits.entries()) {
             if (now > limit.resetTime + 60000) {
@@ -66,6 +71,7 @@ function createFileUploadRoutes(options) {
             }
         }
     }, 5 * 60 * 1000);
+    if (uploadRateLimitSweep.unref) uploadRateLimitSweep.unref();
 
     // Guard placed BEFORE multer so a rejected request never touches disk.
     function uploadRateLimit(req, res, next) {
@@ -84,13 +90,22 @@ function createFileUploadRoutes(options) {
 
     // ==================== IMAGE UPLOAD ====================
 
+    const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+
     const storage = multer.diskStorage({
         destination: (req, file, cb) => {
             cb(null, 'public/uploads/');
         },
         filename: (req, file, cb) => {
             const randomBytes = crypto.randomBytes(16).toString('hex');
-            cb(null, Date.now() + '-' + randomBytes + path.extname(file.originalname));
+            // Never take the extension verbatim from the client: public/uploads is
+            // served statically, so an ".html" (or ".svg") name whose bytes still
+            // pass the image magic-byte check below would be served as markup on
+            // this origin — stored XSS. Only image extensions are allowed through;
+            // anything else is stored as .png (browsers decode <img> by content).
+            const ext = path.extname(file.originalname).toLowerCase();
+            const safeExt = ALLOWED_IMAGE_EXTENSIONS.includes(ext) ? ext : '.png';
+            cb(null, Date.now() + '-' + randomBytes + safeExt);
         }
     });
 
@@ -241,14 +256,17 @@ function createFileUploadRoutes(options) {
         }
     });
 
-    // Helper to add timeout to async operations
+    // Helper to add timeout to async operations.
+    // The timer is cleared once the race settles; without that every extraction
+    // left a live 30-60s timer behind after the parse had already resolved.
     function withTimeout(promise, timeoutMs, errorMessage) {
+        let timeoutId;
         return Promise.race([
             promise,
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
-            )
-        ]);
+            new Promise((_, reject) => {
+                timeoutId = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
+            })
+        ]).finally(() => clearTimeout(timeoutId));
     }
 
     router.post('/api/extract-pdf', uploadRateLimit, pdfUpload.single('pdf'), async (req, res) => {
@@ -304,7 +322,11 @@ function createFileUploadRoutes(options) {
                 return res.status(408).json({ error: error.message, messageKey: 'error_pdf_timeout' });
             }
 
-            res.status(500).json({ error: 'Failed to extract text from PDF: ' + error.message, messageKey: 'error_pdf_extraction_failed' });
+            res.status(500).json({
+                error: 'Failed to extract text from PDF',
+                messageKey: 'error_pdf_extraction_failed',
+                details: isProduction ? undefined : error.message
+            });
         }
     });
 
@@ -365,7 +387,11 @@ function createFileUploadRoutes(options) {
                 return res.status(408).json({ error: error.message, messageKey: 'error_docx_timeout' });
             }
 
-            res.status(500).json({ error: 'Failed to extract text from DOCX: ' + error.message, messageKey: 'error_docx_extraction_failed' });
+            res.status(500).json({
+                error: 'Failed to extract text from DOCX',
+                messageKey: 'error_docx_extraction_failed',
+                details: isProduction ? undefined : error.message
+            });
         }
     });
 
@@ -427,7 +453,11 @@ function createFileUploadRoutes(options) {
                 return res.status(408).json({ error: error.message, messageKey: 'error_pptx_timeout' });
             }
 
-            res.status(500).json({ error: 'Failed to extract text from PowerPoint: ' + error.message, messageKey: 'error_pptx_extraction_failed' });
+            res.status(500).json({
+                error: 'Failed to extract text from PowerPoint',
+                messageKey: 'error_pptx_extraction_failed',
+                details: isProduction ? undefined : error.message
+            });
         }
     });
 

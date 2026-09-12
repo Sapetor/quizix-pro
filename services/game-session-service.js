@@ -8,8 +8,10 @@
  * - Game cleanup and resource management
  */
 
+const crypto = require('crypto');
 const { getLimits, isMobileMode } = require('../config/limits');
 const { Game, shuffleWithMapping } = require('./game');
+const { buildCorrectAnswerData } = require('./question-flow-service');
 
 // How long the answer reveal stays on screen — correct answer plus the host's
 // answer distribution — before the leaderboard replaces it. Deliberately longer
@@ -79,7 +81,7 @@ class GameSessionService {
     generateGamePin() {
         let pin;
         do {
-            pin = Math.floor(100000 + Math.random() * 900000).toString();
+            pin = crypto.randomInt(100000, 1000000).toString();
         } while (this.games.has(pin));
         return pin;
     }
@@ -139,7 +141,7 @@ class GameSessionService {
         game.pin = this.generateGamePin();
         // Secret host reconnect token — required by host-rejoin to prevent hijacking.
         // Stays stable across reconnects (never rotated).
-        game.hostToken = require('crypto').randomUUID();
+        game.hostToken = crypto.randomUUID();
         this.games.set(game.pin, game);
         this.hostIdToPin.set(hostId, game.pin);
         this.logger.info(`Game created with PIN: ${game.pin} (${this.games.size}/${this.limits.MAX_CONCURRENT_GAMES} games)`);
@@ -210,9 +212,12 @@ class GameSessionService {
      * Players wait up to 2 minutes for the host to create a new game.
      * @param {Object} game - Game instance
      * @param {Object} io - Socket.IO instance
+     * @param {Function} [onExpire] - Called with the game when the migration window
+     *        closes, before the game is deleted. The caller owns the player/session
+     *        cleanup that this service has no reference to.
      * @returns {{ pin: string, migrationToken: string }}
      */
-    setPendingMigration(game, io) {
+    setPendingMigration(game, io, onExpire = null) {
         // End any active question
         game.endQuestion();
         if (game.questionTimer) { clearTimeout(game.questionTimer); game.questionTimer = null; }
@@ -223,8 +228,7 @@ class GameSessionService {
 
         // Transition state
         game.gameState = 'pending-migration';
-        const { randomUUID } = require('crypto');
-        game.migrationToken = randomUUID();
+        game.migrationToken = crypto.randomUUID();
 
         // Disassociate host from game (prevents cleanupOrphanedGames from finding it)
         this.hostIdToPin.delete(game.hostId);
@@ -238,6 +242,13 @@ class GameSessionService {
                     reason: 'Host did not start a new game',
                     messageKey: 'error_host_disconnected'
                 });
+                if (onExpire) {
+                    try {
+                        onExpire(game);
+                    } catch (error) {
+                        this.logger.error(`Error in migration-expiry cleanup for game ${game.pin}:`, error);
+                    }
+                }
                 this.deleteGame(game.pin);
                 this.logger.info(`Migration timeout expired for game ${game.pin}`);
             }
@@ -530,56 +541,10 @@ class GameSessionService {
             return;
         }
 
-        const correctAnswer = question.correctAnswer;
-        let correctOption = '';
-
-        switch (question.type || 'multiple-choice') {
-            case 'multiple-choice':
-                correctOption = question.options && question.options[correctAnswer] ? question.options[correctAnswer] : '';
-                break;
-            case 'multiple-correct':
-                const correctAnswers = question.correctAnswers || [];
-                // Validate indices before accessing options array
-                correctOption = correctAnswers
-                    .filter(idx => question.options && idx >= 0 && idx < question.options.length)
-                    .map(idx => question.options[idx])
-                    .join(', ');
-                break;
-            case 'true-false':
-                correctOption = correctAnswer;
-                break;
-            case 'numeric':
-                correctOption = correctAnswer.toString();
-                break;
-            case 'ordering':
-                const correctOrder = question.correctOrder || [];
-                // Validate indices before accessing options array
-                correctOption = correctOrder
-                    .filter(idx => question.options && idx >= 0 && idx < question.options.length)
-                    .map(idx => question.options[idx])
-                    .join(' -> ');
-                break;
-        }
-
-        const timeoutData = {
-            correctAnswer: correctAnswer,
-            correctOption: correctOption,
-            questionType: question.type || 'multiple-choice',
-            tolerance: question.tolerance || null,
-            explanation: question.explanation || null
-        };
-
-        // For multiple-correct questions, also send the correctAnswers array
-        if (question.type === 'multiple-correct') {
-            timeoutData.correctAnswers = question.correctAnswers || [];
-        }
-
-        // Keep the ordering payload identical to the early-end path
-        // (question-flow-service.buildCorrectAnswerData): the host reveal numbers
-        // the item tiles from the canonical index order.
-        if (question.type === 'ordering') {
-            timeoutData.correctOrder = question.correctOrder || [];
-        }
+        // Same reveal payload as the early-end path. The removed inline switch read
+        // only `correctAnswer`/`correctAnswers`, so the 22 stored quizzes that use
+        // `correctIndex` revealed `undefined` whenever a question ran its full timer.
+        const timeoutData = buildCorrectAnswerData(question);
 
         io.to(`game-${game.pin}`).emit('question-timeout', timeoutData);
 

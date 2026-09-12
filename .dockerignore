@@ -57,3 +57,17 @@ Thumbs.db
 tmp
 temp
 *.tmp
+
+# Generated / local artifacts (never needed in the build context)
+coverage
+test-screenshots
+playwright-report
+test-results
+.playwright-mcp
+.artifacts
+debug
+design_handoff_landing
+results
+tools
+/*.png
+/*.zip

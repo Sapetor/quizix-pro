@@ -315,9 +315,15 @@ function runValidation() {
 // Autosave stamp (#save-status in the app header)
 // ---------------------------------------------------------------------------
 
-function setSaveStatusSaved() {
+function setSaveStatusSaved(event) {
     const el = dom.get('save-status');
     if (!el) return;
+    // autoSaveQuiz reports whether localStorage actually took the draft; a
+    // rejected write (quota) must not be stamped as saved.
+    if (event?.detail?.saved === false) {
+        el.textContent = t('error_file_not_saved');
+        return;
+    }
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');

@@ -99,7 +99,10 @@
 /* Display utilities - top-priority layer (see utilities.css) */
 @import './utilities.css' layer(utilities);
 
-/* Mobile enhancements consolidated into responsive.css */
+/* Mobile enhancements (the old standalone mobile-enhancements.css) live in
+ * responsive.css, at the end, under "MOBILE TOUCH FEEDBACK". They are imported
+ * by the responsive.css line above, inside layer(app); there is no separate
+ * import here. */
 
 /*
  * THEME SWAP GUARD (must stay in the `guards` layer, declared FIRST above).
@@ -146,7 +149,7 @@
  * responsive.css (400 lines) - Media queries and mobile
  * animations.css (200 lines) - Keyframes and transitions
  * 
- * (mobile enhancements consolidated into responsive.css)
+ * (mobile enhancements live at the end of responsive.css)
  * 
  * Total: ~3,700 lines (was 4,733 - 22% reduction through optimization)
  */

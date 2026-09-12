@@ -339,6 +339,16 @@ export class ConsensusManager {
      * Bind event listeners for consensus UI
      */
     bindEventListeners() {
+        // Global for inline onclick handlers; cleanup() deletes it, so
+        // re-assign it before the bind guard below.
+        window.consensusManager = this;
+
+        // #lock-consensus-btn is static markup; re-binding on a second game
+        // would emit 'lock-consensus' once per game played.
+
+        if (this._listenersBound) return;
+        this._listenersBound = true;
+
         // Lock consensus button (host only)
         const lockBtn = this._getElement('lock-consensus-btn');
         if (lockBtn) {
@@ -348,9 +358,6 @@ export class ConsensusManager {
                 }
             });
         }
-
-        // Make this manager accessible globally for onclick handlers
-        window.consensusManager = this;
     }
 
     /**

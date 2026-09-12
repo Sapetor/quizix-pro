@@ -57,7 +57,12 @@ export function readScoringConfigFromDOM(dom, { prefix = '', thresholdToMs = tru
  * @returns {number}
  */
 export function getDifficultyMultiplier(difficulty, multipliers = DEFAULT_DIFFICULTY_MULTIPLIERS) {
-    return multipliers?.[difficulty] ?? DEFAULT_DIFFICULTY_MULTIPLIER;
+    // Two steps, like the server: a custom map that omits a difficulty falls back
+    // to that difficulty's default, not to the flat DEFAULT_DIFFICULTY_MULTIPLIER.
+    // Skipping the middle step made the preview award 300 where the server gave 200.
+    return multipliers?.[difficulty]
+        ?? DEFAULT_DIFFICULTY_MULTIPLIERS[difficulty]
+        ?? DEFAULT_DIFFICULTY_MULTIPLIER;
 }
 
 /**

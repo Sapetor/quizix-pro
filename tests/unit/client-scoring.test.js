@@ -59,6 +59,13 @@ describe('getDifficultyMultiplier', () => {
     test('custom multipliers win', () => {
         expect(getDifficultyMultiplier('easy', { easy: 1.5 })).toBe(1.5);
     });
+    // Server chain: custom ?? defaults[difficulty] ?? 2. Skipping the middle step
+    // made the client preview show 300 for a hard question the server scored 200.
+    test('a partial custom map falls through to that difficulty default, not the flat 2', () => {
+        expect(getDifficultyMultiplier('hard', { easy: 1.5 })).toBe(3);
+        expect(getDifficultyMultiplier('easy', { hard: 4 })).toBe(1);
+        expect(getDifficultyMultiplier('unknown', { easy: 1.5 })).toBe(2);
+    });
 });
 
 describe('calculateTimeBonus', () => {

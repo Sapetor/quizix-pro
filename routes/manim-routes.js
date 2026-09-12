@@ -45,7 +45,8 @@ function createManimRoutes({ logger, manimRenderService }) {
         return { allowed: true, remaining: RENDER_MAX_REQUESTS_PER_MINUTE - limit.count };
     }
 
-    // Cleanup stale rate limit entries every 5 minutes
+    // Cleanup stale rate limit entries every 5 minutes.
+    // unref'd so the sweep never keeps the process alive on shutdown.
     const cleanupInterval = setInterval(() => {
         const now = Date.now();
         for (const [ip, limit] of renderRateLimits.entries()) {
@@ -54,6 +55,7 @@ function createManimRoutes({ logger, manimRenderService }) {
             }
         }
     }, 5 * 60 * 1000);
+    if (cleanupInterval.unref) cleanupInterval.unref();
 
     // ==================== HELPERS ====================
 

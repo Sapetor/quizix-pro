@@ -14,6 +14,15 @@ import { getTranslation } from '../../utils/translation-manager.js';
 import { logger } from '../../core/config.js';
 import { modalFeedback } from '../../utils/modal-feedback.js';
 
+// Scoped to the live player containers: the editor split-preview and the preview
+// modal render 8 more `.player-option` tiles and 8 more `.checkbox-option` labels,
+// all of them before the player's own buttons in document order, so an unscoped
+// query indexes 0-3 into editor markup the player never sees. Same fix and reason
+// as `#host-game-screen .option-display` in game-manager.js highlightCorrectAnswers().
+const PLAYER_OPTION_SELECTOR = '#player-multiple-choice .player-option';
+const PLAYER_CHECKBOX_SELECTOR = '#player-multiple-correct .checkbox-option';
+const PLAYER_TF_SELECTOR = '#player-true-false .tf-option';
+
 export class AnswerRevealManager {
     /**
      * Create an AnswerRevealManager
@@ -107,7 +116,7 @@ export class AnswerRevealManager {
 
         // Handle multiple-correct questions
         if (questionType === 'multiple-correct' && Array.isArray(correctAnswer)) {
-            const checkboxOptions = document.querySelectorAll('.checkbox-option');
+            const checkboxOptions = document.querySelectorAll(PLAYER_CHECKBOX_SELECTOR);
             correctAnswer.forEach(index => {
                 if (checkboxOptions[index]) {
                     this.applyCorrectAnswerStyle(checkboxOptions[index]);
@@ -118,7 +127,7 @@ export class AnswerRevealManager {
         }
 
         // Handle multiple choice options
-        const options = document.querySelectorAll('.player-option');
+        const options = document.querySelectorAll(PLAYER_OPTION_SELECTOR);
         if (typeof correctAnswer === 'number' && options[correctAnswer]) {
             this.applyCorrectAnswerStyle(options[correctAnswer]);
             logger.debug('Highlighted correct option:', correctAnswer);
@@ -127,7 +136,8 @@ export class AnswerRevealManager {
         // Handle true/false options
         const tfAnswerStr = (typeof correctAnswer === 'boolean') ? String(correctAnswer) : correctAnswer;
         if (tfAnswerStr === 'true' || tfAnswerStr === 'false') {
-            const correctTFOption = document.querySelector(`.tf-option[data-answer="${tfAnswerStr}"]`);
+            const correctTFOption = document.querySelector(
+                `${PLAYER_TF_SELECTOR}[data-answer="${tfAnswerStr}"]`);
             if (correctTFOption) {
                 this.applyCorrectAnswerStyle(correctTFOption);
                 logger.debug('Highlighted correct T/F option:', tfAnswerStr);
@@ -147,7 +157,7 @@ export class AnswerRevealManager {
 
         if (questionType === 'multiple-correct') {
             const correctSet = new Set(Array.isArray(correctAnswer) ? correctAnswer : []);
-            const checkboxOptions = document.querySelectorAll('.checkbox-option');
+            const checkboxOptions = document.querySelectorAll(PLAYER_CHECKBOX_SELECTOR);
             checkboxOptions.forEach((option, index) => {
                 const checkbox = option.querySelector('input[type="checkbox"]');
                 const isChecked = checkbox?.checked;
@@ -163,7 +173,8 @@ export class AnswerRevealManager {
         }
 
         // MC and T/F: find the .selected element
-        const selectedOption = document.querySelector('.player-option.selected, .tf-option.selected');
+        const selectedOption = document.querySelector(
+            `${PLAYER_OPTION_SELECTOR}.selected, ${PLAYER_TF_SELECTOR}.selected`);
         if (!selectedOption) return;
 
         selectedOption.classList.add('player-answered');

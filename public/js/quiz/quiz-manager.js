@@ -412,7 +412,7 @@ export class QuizManager {
         // Validate questions
         const validationErrors = this.validateQuestions(questions);
         if (validationErrors.length > 0) {
-            translationManager.showAlert('error', validationErrors.join('\\n'));
+            translationManager.showAlert('error', validationErrors.join('\n'));
             return;
         }
 
@@ -938,7 +938,7 @@ export class QuizManager {
             logger.debug('Starting bulletproof quiz loading for:', filename);
 
             // Basic fetch and structure check only
-            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${filename}`));
+            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${encodeURIComponent(filename)}`));
             const data = await response.json();
 
             if (response.ok && data && data.questions && Array.isArray(data.questions)) {
@@ -1106,9 +1106,11 @@ export class QuizManager {
 
             // ========== NICE-TO-HAVE OPERATIONS (don't let these break the flow) ==========
 
-            // Restore saved game settings to host screen UI
+            // Restore saved game settings to host screen UI. Quizzes without a
+            // settings block (imports, older files) reset the UI to defaults
+            // instead of inheriting whatever the previous quiz left there.
             this.errorHandler.safeExecute(
-                () => this.restoreSettings(quizData.settings),
+                () => this.restoreSettings(quizData.settings || {}),
                 { operation: 'restoreSettings' }
             );
 
@@ -1373,6 +1375,7 @@ export class QuizManager {
     autoSaveQuiz() {
         const title = dom.get('quiz-title')?.value?.trim();
         const questions = this.collectQuestions();
+        let saved = true;
 
         if (title || questions.length > 0) {
             const autoSaveData = {
@@ -1381,13 +1384,19 @@ export class QuizManager {
                 timestamp: Date.now()
             };
 
-            if (setJSON('quizAutoSave', autoSaveData)) {
+            saved = setJSON('quizAutoSave', autoSaveData);
+            if (saved) {
                 logger.debug('Auto-saved quiz data');
+            } else {
+                // setJSON swallows QuotaExceededError (AI diagram data: URIs blow
+                // the quota fast), so the stamp must report the miss instead of
+                // claiming a draft that was never written.
+                logger.warn('Auto-save failed: localStorage rejected the draft');
             }
         }
         // Header autosave stamp (editor-validation.js): "DRAFT SAVED LOCALLY · HH:MM".
         // Local draft only — the server save is the explicit #header-save-quiz button.
-        document.dispatchEvent(new CustomEvent('editorAutosaveDone'));
+        document.dispatchEvent(new CustomEvent('editorAutosaveDone', { detail: { saved } }));
     }
 
     /**

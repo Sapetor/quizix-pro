@@ -184,6 +184,28 @@ describe('PlayerManagementService', () => {
         });
     });
 
+    describe('mid-game join timer sync', () => {
+        // extend-time moves game.questionEndsAt without touching questionStartTime,
+        // so a late joiner must read the deadline, not startTime + timeLimit.
+        test('remaining time follows questionEndsAt after the timer was extended', () => {
+            const socket = createMockSocket();
+            const io = createMockIO();
+            const game = createMockGame('question');
+            game.quiz = {
+                questions: [{ type: 'multiple-choice', question: 'Q1', options: ['A', 'B'], correctAnswer: 0, timeLimit: 20 }]
+            };
+            game.answerMappings = new Map();
+            game.questionStartTime = Date.now();
+            game.questionEndsAt = game.questionStartTime + 30000; // 20s + 10s extension
+
+            playerService.handlePlayerJoin(socket.id, '123456', 'Late', game, socket, io);
+
+            const questionStart = socket.emit.mock.calls.find(c => c[0] === 'question-start');
+            expect(questionStart).toBeDefined();
+            expect(questionStart[1].remainingTimeMs).toBeGreaterThan(20000);
+        });
+    });
+
     describe('handlePlayerDisconnect', () => {
         test('should remove player from game and registry', () => {
             const socket = createMockSocket();
@@ -792,6 +814,108 @@ describe('PlayerManagementService', () => {
             expect(playerService.hostSessions.has(s1.hostSessionId)).toBe(false);
             expect(playerService.hostSessions.has(s2.hostSessionId)).toBe(true);
             expect(s2.playerRegistry.size).toBe(1);
+        });
+    });
+
+    // session-check auto-joins a returning device through handlePlayerJoin. Without
+    // a lookup for that device's existing (disconnected) entry the human became a
+    // second roster row at score 0 while their scored row stayed in game.players,
+    // so the final leaderboard showed the name twice.
+    describe('handlePlayerJoin resumes a disconnected entry', () => {
+        function gameWithDisconnected(overrides = {}) {
+            const game = createMockGame('question');
+            game.quiz = {
+                questions: [{ type: 'multiple-choice', question: 'Q1', options: ['A', 'B'], correctAnswer: 0, timeLimit: 20 }]
+            };
+            game.answerMappings = new Map();
+            game.questionStartTime = Date.now();
+            game.players.set('old-sock', {
+                id: 'old-sock',
+                name: 'Alice',
+                score: 450,
+                answers: [],
+                disconnected: true,
+                disconnectedAt: Date.now(),
+                sessionToken: 'tok-alice',
+                deviceId: 'dev-1',
+                ...overrides
+            });
+            return game;
+        }
+
+        test('matches on deviceId and rejoins instead of adding a second row', () => {
+            const socket = createMockSocket('new-sock');
+            const io = createMockIO();
+            const game = gameWithDisconnected();
+
+            const result = playerService.handlePlayerJoin(
+                'new-sock', '123456', 'Alice', game, socket, io, 'dev-1'
+            );
+
+            expect(result.success).toBe(true);
+            expect(game.players.size).toBe(1);
+            expect(game.addPlayer).not.toHaveBeenCalled();
+            expect(game.players.get('new-sock').score).toBe(450);
+            expect(socket.emit).toHaveBeenCalledWith('rejoin-success', expect.any(Object));
+        });
+
+        test('matches on name when neither side carries a device binding', () => {
+            const socket = createMockSocket('new-sock');
+            const io = createMockIO();
+            const game = gameWithDisconnected({ deviceId: undefined });
+
+            const result = playerService.handlePlayerJoin(
+                'new-sock', '123456', 'alice', game, socket, io
+            );
+
+            expect(result.success).toBe(true);
+            expect(game.players.size).toBe(1);
+            expect(game.players.get('new-sock').score).toBe(450);
+        });
+
+        test('a different device does not inherit a bound player by name alone', () => {
+            const socket = createMockSocket('new-sock');
+            const io = createMockIO();
+            const game = gameWithDisconnected();
+
+            const result = playerService.handlePlayerJoin(
+                'new-sock', '123456', 'Alice', game, socket, io, 'dev-2'
+            );
+
+            expect(result.success).toBe(false);
+            expect(result.messageKey).toBe('error_name_already_taken');
+            expect(game.players.size).toBe(1);
+        });
+    });
+
+    // handlePlayerNameChange already rejects duplicates; join did not, so two
+    // students typing the same name both got in and the host could not tell them
+    // apart on the roster, leaderboard or export.
+    describe('handlePlayerJoin duplicate names', () => {
+        test('rejects a name already on the roster (case-insensitive)', () => {
+            const io = createMockIO();
+            const game = createMockGame();
+            const first = createMockSocket('sock-1');
+            const second = createMockSocket('sock-2');
+
+            expect(playerService.handlePlayerJoin('sock-1', '123456', 'Alice', game, first, io).success).toBe(true);
+
+            const result = playerService.handlePlayerJoin('sock-2', '123456', 'ALICE', game, second, io);
+
+            expect(result.success).toBe(false);
+            expect(result.messageKey).toBe('error_name_already_taken');
+            expect(game.players.size).toBe(1);
+        });
+
+        test('still accepts a distinct name', () => {
+            const io = createMockIO();
+            const game = createMockGame();
+
+            playerService.handlePlayerJoin('sock-1', '123456', 'Alice', game, createMockSocket('sock-1'), io);
+            const result = playerService.handlePlayerJoin('sock-2', '123456', 'Bob', game, createMockSocket('sock-2'), io);
+
+            expect(result.success).toBe(true);
+            expect(game.players.size).toBe(2);
         });
     });
 });

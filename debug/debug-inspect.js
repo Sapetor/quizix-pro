@@ -1,75 +1,66 @@
+/**
+ * Dump the computed styles of every element matching a selector, in a phone
+ * viewport. Useful for tracking down which rule wins on mobile.
+ *
+ * Usage: node debug/debug-inspect.js '<css-selector>' [url]
+ *   node debug/debug-inspect.js '.player-option'
+ *   node debug/debug-inspect.js '#mobile-preview-container .question-item' http://localhost:3010
+ *
+ * (Previously hard-coded .carousel-dot / .preview-carousel-dot. Both the
+ * carousel JS and its markup were removed, so the selector is now an argument.)
+ */
 const { chromium } = require('playwright');
 
+const selector = process.argv[2];
+const url = process.argv[3] || 'http://localhost:3000';
+
+if (!selector) {
+  console.error("Usage: node debug/debug-inspect.js '<css-selector>' [url]");
+  process.exit(1);
+}
+
+const PROPS = ['width', 'height', 'background', 'padding', 'margin', 'display', 'position'];
+
 (async () => {
-  const browser = await chromium.launch({ 
+  const browser = await chromium.launch({
     headless: false,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
-  
+
   const context = await browser.newContext({
     viewport: { width: 375, height: 667 },
     userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15'
   });
-  
+
   const page = await context.newPage();
-  
+
   try {
-    console.log('Navigating to localhost:3000...');
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
-    
+    console.log(`Navigating to ${url}...`);
+    await page.goto(url, { waitUntil: 'networkidle' });
     await page.waitForTimeout(3000);
-    
-    // Get computed styles for both carousel types
-    console.log('Inspecting top carousel dots...');
-    const topDots = await page.locator('.carousel-dot').first();
-    if (await topDots.isVisible()) {
-      const topStyles = await topDots.evaluate(el => {
+
+    const matches = await page.locator(selector).all();
+    console.log(`${matches.length} element(s) match ${selector}`);
+
+    for (let i = 0; i < matches.length; i++) {
+      const info = await matches[i].evaluate((el, props) => {
         const computed = window.getComputedStyle(el);
+        const styles = {};
+        props.forEach(p => { styles[p] = computed[p]; });
         return {
-          width: computed.width,
-          height: computed.height,
-          background: computed.background,
-          padding: computed.padding,
-          margin: computed.margin,
           className: el.className,
-          inlineStyle: el.style.cssText
+          inlineStyle: el.style.cssText,
+          dataAttributes: Array.from(el.attributes)
+            .filter(attr => attr.name.startsWith('data-'))
+            .map(attr => `${attr.name}="${attr.value}"`)
+            .join(' '),
+          styles
         };
-      });
-      console.log('Top carousel dot styles:', JSON.stringify(topStyles, null, 2));
+      }, PROPS);
+      console.log(`[${i}]`, JSON.stringify(info, null, 2));
     }
-    
-    console.log('Inspecting bottom carousel dots...');
-    const bottomDots = await page.locator('.preview-carousel-dot').first();
-    if (await bottomDots.isVisible()) {
-      const bottomStyles = await bottomDots.evaluate(el => {
-        const computed = window.getComputedStyle(el);
-        return {
-          width: computed.width,
-          height: computed.height,
-          background: computed.background,
-          padding: computed.padding,
-          margin: computed.margin,
-          className: el.className,
-          inlineStyle: el.style.cssText
-        };
-      });
-      console.log('Bottom carousel dot styles:', JSON.stringify(bottomStyles, null, 2));
-    }
-    
-    // Check if there are any inline styles being applied
-    const allBottomDots = await page.locator('.preview-carousel-dot').all();
-    for (let i = 0; i < allBottomDots.length; i++) {
-      const dotInfo = await allBottomDots[i].evaluate((el, index) => ({
-        index,
-        className: el.className,
-        inlineStyle: el.style.cssText,
-        dataAttributes: Array.from(el.attributes).filter(attr => attr.name.startsWith('data-')).map(attr => `${attr.name}="${attr.value}"`).join(' ')
-      }), i);
-      console.log(`Bottom dot ${i}:`, JSON.stringify(dotInfo, null, 2));
-    }
-    
+
     await page.waitForTimeout(10000);
-    
   } catch (error) {
     console.error('Error:', error);
   } finally {

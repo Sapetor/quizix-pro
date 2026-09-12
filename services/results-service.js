@@ -6,8 +6,45 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const crypto = require('crypto');
 const { atomicWriteFile } = require('./atomic-write');
 const { ScoringService } = require('./scoring-service');
+
+/**
+ * Hash a host token for storage beside a results file.
+ *
+ * Host tokens are crypto.randomUUID() values (122 random bits), so a plain
+ * SHA-256 digest is enough to keep the raw token off disk — there is no
+ * guessable input to brute-force. The password helper (PBKDF2, 100k
+ * iterations) is for low-entropy secrets and would cost one full derivation
+ * per stored file on every results listing.
+ *
+ * @param {string} token - Raw host token
+ * @returns {string|null} Hex digest, or null for a missing/empty token
+ */
+function hashHostToken(token) {
+    if (typeof token !== 'string' || token.length === 0) return null;
+    return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+/**
+ * Constant-time comparison of a stored digest against a presented token.
+ */
+function hostTokenMatches(storedHash, token) {
+    const candidate = hashHostToken(token);
+    if (!storedHash || !candidate || storedHash.length !== candidate.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(storedHash), Buffer.from(candidate));
+}
+
+/**
+ * Error for a requester who may not see this result.
+ */
+function forbidden() {
+    const err = new Error('You do not have access to these results');
+    err.messageKey = 'error_access_forbidden';
+    err.status = 403;
+    return err;
+}
 
 class ResultsService {
     constructor(logger, resultsDir = 'results') {
@@ -43,9 +80,36 @@ class ResultsService {
     }
 
     /**
-     * Save quiz results
+     * May this requester read this result record?
+     *
+     * Access is bound to the game, not to the port: the signed-in user who
+     * hosted it, or a caller holding the host token minted for that game
+     * (anonymous hosting). Records written before ownership was tracked carry
+     * neither field and stay readable by any signed-in user, so existing data
+     * does not become unreachable.
+     *
+     * @param {Object} data - Parsed result record
+     * @param {Object} requester - { userId, hostTokens }
+     * @returns {boolean}
      */
-    async saveResults(quizTitle, gamePin, results, startTime, endTime, questions) {
+    canAccess(data, requester = {}) {
+        const userId = requester.userId || null;
+        const hostTokens = requester.hostTokens || [];
+        const ownerId = data?.hostUserId || null;
+        const tokenHash = data?.hostTokenHash || null;
+
+        if (ownerId && userId && ownerId === userId) return true;
+        if (tokenHash && hostTokens.some(token => hostTokenMatches(tokenHash, token))) return true;
+        if (!ownerId && !tokenHash) return !!userId;
+        return false;
+    }
+
+    /**
+     * Save quiz results
+     * @param {Object} owner - { userId, hostToken } identifying who may read
+     *                         this result back. The token is hashed, never stored raw.
+     */
+    async saveResults(quizTitle, gamePin, results, startTime, endTime, questions, owner = {}) {
         if (!quizTitle || !gamePin || !results) {
             const err = new Error('Invalid results data');
             err.messageKey = 'error_invalid_results_data';
@@ -67,7 +131,9 @@ class ResultsService {
             results,
             startTime,
             endTime,
-            saved: new Date().toISOString()
+            saved: new Date().toISOString(),
+            hostUserId: owner.userId || null,
+            hostTokenHash: hashHostToken(owner.hostToken)
         };
 
         // Include questions data if provided for enhanced analytics
@@ -90,7 +156,7 @@ class ResultsService {
     /**
      * List all results
      */
-    async listResults() {
+    async listResults(requester = {}) {
         try {
             await fs.access(this.resultsDir);
         } catch {
@@ -107,6 +173,8 @@ class ResultsService {
                 const stats = await fs.stat(filePath);
                 const content = await fs.readFile(filePath, 'utf8');
                 const data = JSON.parse(content);
+
+                if (!this.canAccess(data, requester)) return null;
 
                 // Drop the heavy per-player `results` array from the listing
                 // payload (unbounded growth); expose summary fields instead.
@@ -162,7 +230,7 @@ class ResultsService {
     /**
      * Delete a result file
      */
-    async deleteResult(filename) {
+    async deleteResult(filename, requester = {}) {
         if (!this.validateFilename(filename)) {
             const err = new Error('Invalid filename format');
             err.messageKey = 'error_invalid_filename';
@@ -177,6 +245,18 @@ class ResultsService {
             const err = new Error('Result file not found');
             err.messageKey = 'error_result_not_found';
             throw err;
+        }
+
+        // Deleting is destructive, so it needs the same ownership proof as
+        // reading. A corrupted file cannot be checked; treat it as ownerless.
+        let data = {};
+        try {
+            data = JSON.parse(await fs.readFile(filePath, 'utf8'));
+        } catch {
+            this.logger.warn(`Result file ${filename} is unreadable; deleting requires a signed-in user`);
+        }
+        if (!this.canAccess(data, requester)) {
+            throw forbidden();
         }
 
         await fs.unlink(filePath);
@@ -191,7 +271,7 @@ class ResultsService {
     /**
      * Get a specific result file
      */
-    async getResult(filename) {
+    async getResult(filename, requester = {}) {
         if (!this.validateFilename(filename)) {
             const err = new Error('Invalid filename format');
             err.messageKey = 'error_invalid_filename';
@@ -208,22 +288,28 @@ class ResultsService {
             throw err;
         }
 
+        let data;
         try {
             const content = await fs.readFile(filePath, 'utf8');
-            const data = JSON.parse(content);
-            return data;
+            data = JSON.parse(content);
         } catch (parseError) {
             this.logger.error(`Failed to parse result file ${filename}:`, parseError);
             const err = new Error('Result file is corrupted or invalid JSON');
             err.messageKey = 'error_result_corrupted';
             throw err;
         }
+
+        if (!this.canAccess(data, requester)) {
+            throw forbidden();
+        }
+
+        return data;
     }
 
     /**
      * Export results in various formats
      */
-    async exportResults(filename, format, exportType = 'analytics') {
+    async exportResults(filename, format, exportType = 'analytics', requester = {}) {
         if (!this.validateFilename(filename)) {
             const err = new Error('Invalid filename format');
             err.messageKey = 'error_invalid_filename';
@@ -263,6 +349,10 @@ class ResultsService {
             throw err;
         }
 
+        if (!this.canAccess(data, requester)) {
+            throw forbidden();
+        }
+
         if (format.toLowerCase() === 'csv') {
             return {
                 type: 'text/csv',
@@ -299,7 +389,7 @@ class ResultsService {
                         const question = questions[qIndex];
                         const questionText = question ? (question.text || question.question || `Question ${qIndex + 1}`) : `Question ${qIndex + 1}`;
                         const correctAnswer = this._formatCorrectAnswer(question);
-                        const playerAnswer = this._formatAnswerValue(answer.answer, question);
+                        const playerAnswer = this._formatAnswerValue(answer.translatedAnswer ?? answer.answer, question);
 
                         // A poll response is neither right nor wrong
                         const isCorrectText = answer.isPoll ? 'N/A' : (answer.isCorrect ? 'Yes' : 'No');
@@ -383,7 +473,7 @@ class ResultsService {
                 const playerAnswer = player.answers && player.answers[qIndex];
 
                 if (playerAnswer) {
-                    const displayAnswer = this._formatAnswerValue(playerAnswer.answer, question);
+                    const displayAnswer = this._formatAnswerValue(playerAnswer.translatedAnswer ?? playerAnswer.answer, question);
 
                     row.push(this._sanitizeCsvValue(displayAnswer));
                     row.push(Math.round((playerAnswer.timeMs || 0) / 1000));
@@ -613,4 +703,4 @@ class ResultsService {
     }
 }
 
-module.exports = { ResultsService };
+module.exports = { ResultsService, hashHostToken };

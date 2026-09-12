@@ -9,6 +9,7 @@
 
 import { translationManager, showErrorAlert, showSuccessAlert } from '../../utils/translation-manager.js';
 import { dom } from '../../utils/dom.js';
+import { collectSettings } from './settings-persistence.js';
 
 /**
  * Import quiz from file (opens the hidden file input)
@@ -45,7 +46,7 @@ export async function handleFileImport(manager, event) {
         // Validate questions
         const validationErrors = manager.validateQuestions(quizData.questions);
         if (validationErrors.length > 0) {
-            translationManager.showAlert('error', translationManager.getTranslationSync('invalid_quiz_questions') + '\\n' + validationErrors.join('\\n'));
+            translationManager.showAlert('error', translationManager.getTranslationSync('invalid_quiz_questions') + '\n' + validationErrors.join('\n'));
             return;
         }
 
@@ -82,6 +83,9 @@ export async function exportQuiz(manager) {
     const quizData = {
         title: title,
         questions: questions,
+        // Settings ride along with the quiz: an export without them is imported
+        // against whatever the host UI last held and baked in on the next save.
+        settings: collectSettings(),
         createdAt: new Date().toISOString()
     };
 
@@ -90,9 +94,15 @@ export async function exportQuiz(manager) {
         const dataBlob = new Blob([dataStr], { type: 'application/json' });
 
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+        const objectUrl = URL.createObjectURL(dataBlob);
+        link.href = objectUrl;
+        // Unicode letters/digits survive the slug, so accented and non-Latin
+        // titles stay readable instead of collapsing into underscores.
+        link.download = `${title.replace(/[^\p{L}\p{N}]+/gu, '_').toLowerCase()}.json`;
         link.click();
+        // Revoked after the click has been dispatched, not during it: some
+        // browsers abort a download whose blob URL is revoked synchronously.
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
 
         showSuccessAlert('quiz_exported_successfully');
     }, {

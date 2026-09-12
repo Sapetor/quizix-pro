@@ -309,6 +309,13 @@ export class GameManager {
     }
 
     /**
+     * Close the answer gate at round end (see PlayerInteractionManager.lockAnswers)
+     */
+    lockAnswers() {
+        this.interactionManager.lockAnswers();
+    }
+
+    /**
      * Submit numeric answer
      */
     submitNumericAnswer() {
@@ -1196,6 +1203,14 @@ export class GameManager {
     }
 
     /**
+     * Apply the server's authoritative remaining time (time-sync, timer-extended).
+     * Use this, not updateTimerDisplay, for anything that must survive the next tick.
+     */
+    syncTimer(remainingMs) {
+        this.timerManager.syncRemaining(remainingMs);
+    }
+
+    /**
      * Start game timer with countdown sounds
      * (countdown/expired sounds are owned by TimerManager, wired via soundManager)
      */
@@ -1361,21 +1376,24 @@ export class GameManager {
         const hostOptions = document.getElementById('answer-options');
         if (hostOptions) hostOptions.innerHTML = '';
 
-        // Reset player multiple-choice options (clear selection state, keep structure)
-        document.querySelectorAll('.player-option').forEach(opt => {
+        // Reset player multiple-choice options (clear selection state, keep structure).
+        // All three option queries below are scoped to the live player containers —
+        // the editor preview markup uses the same classes and would otherwise be
+        // restyled and (for checkboxes) unchecked whenever a game is cleared.
+        document.querySelectorAll('#player-multiple-choice .player-option').forEach(opt => {
             opt.classList.remove('selected', 'correct', 'incorrect', 'disabled', 'power-up-hidden', 'player-answered', 'player-answered-wrong');
             opt.removeAttribute('data-player-badge');
             opt.style.pointerEvents = '';
         });
 
         // Reset true/false options
-        document.querySelectorAll('.tf-option').forEach(opt => {
+        document.querySelectorAll('#player-true-false .tf-option').forEach(opt => {
             opt.classList.remove('selected', 'correct', 'incorrect', 'disabled', 'player-answered', 'player-answered-wrong');
             opt.removeAttribute('data-player-badge');
         });
 
         // Reset multiple-correct checkboxes
-        document.querySelectorAll('.checkbox-option').forEach(opt => {
+        document.querySelectorAll('#player-multiple-correct .checkbox-option').forEach(opt => {
             opt.classList.remove('selected', 'correct', 'incorrect', 'player-answered', 'player-answered-wrong');
             opt.removeAttribute('data-player-badge');
             const checkbox = opt.querySelector('input[type="checkbox"]');

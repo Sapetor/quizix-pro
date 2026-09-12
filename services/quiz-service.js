@@ -9,6 +9,19 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { atomicWriteFile } = require('./atomic-write');
 
+/**
+ * Files that live in the quizzes directory but are not quizzes: the auth store,
+ * the folder/ownership metadata store, and any dotfile (e.g. .session-secret).
+ * They must never be readable, writable or deletable through the quiz routes.
+ * Compared case-insensitively because the directory sits on a case-insensitive
+ * filesystem in the Windows/WSL deployment.
+ */
+const RESERVED_FILENAMES = new Set(['users.json', 'quiz-metadata.json']);
+
+function isReservedFilename(filename) {
+    return filename.startsWith('.') || RESERVED_FILENAMES.has(filename.toLowerCase());
+}
+
 class QuizService {
     constructor(logger, wslMonitor, quizzesDir = 'quizzes') {
         this.logger = logger;
@@ -111,6 +124,11 @@ class QuizService {
 
         // Determine filename: reuse existing if valid and the file exists, otherwise generate new
         let filename;
+        if (existingFilename && isReservedFilename(existingFilename)) {
+            const err = new Error('Invalid filename');
+            err.messageKey = 'error_invalid_filename';
+            throw err;
+        }
         if (existingFilename && this.validateFilename(existingFilename) && existingFilename.endsWith('.json')) {
             const existingPath = path.join(this.quizzesDir, existingFilename);
             try {
@@ -171,11 +189,11 @@ class QuizService {
      */
     async listQuizzes() {
         // Read directory with WSL performance monitoring.
-        // Exclude metadata + users files so they don't generate parse-error log noise.
+        // Exclude the reserved store files so they don't generate parse-error log noise.
         const files = (await this.wslMonitor.trackFileOperation(
             () => fs.readdir(this.quizzesDir),
             'Quiz directory listing'
-        )).filter(f => f.endsWith('.json') && f !== 'quiz-metadata.json' && f !== 'users.json');
+        )).filter(f => f.endsWith('.json') && !isReservedFilename(f));
 
         // Evict cache entries for files that no longer exist on disk
         const currentFiles = new Set(files);
@@ -225,7 +243,7 @@ class QuizService {
      * @returns {string} Resolved file path
      */
     resolveQuizPath(filename) {
-        if (!this.validateFilename(filename) || !filename.endsWith('.json')) {
+        if (!this.validateFilename(filename) || !filename.endsWith('.json') || isReservedFilename(filename)) {
             const err = new Error('Invalid filename');
             err.messageKey = 'error_invalid_filename';
             throw err;

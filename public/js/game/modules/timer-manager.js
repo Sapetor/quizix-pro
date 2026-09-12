@@ -21,6 +21,9 @@ export class TimerManager {
         this.totalDuration = 0;
         this.timeRemaining = 0;
         this.soundManager = soundManager;
+        this.paused = false;      // true only between pause() and resume()
+        this.onTick = null;       // kept so resume() restarts with the same callbacks
+        this.onComplete = null;
     }
 
     /**
@@ -41,6 +44,8 @@ export class TimerManager {
 
             this.totalDuration = duration;
             this.timeRemaining = duration;
+            this.onTick = onTick;
+            this.onComplete = onComplete;
             this.updateTimerDisplay(this.timeRemaining);
 
             // Play countdown sound, then call initial tick if provided
@@ -49,34 +54,7 @@ export class TimerManager {
                 onTick(this.timeRemaining);
             }
 
-            this.timer = setInterval(() => {
-                this.timeRemaining -= 1000;
-                this.updateTimerDisplay(this.timeRemaining);
-
-                // Play countdown sound, then call tick callback if provided
-                this.playCountdownSound(this.timeRemaining);
-                if (onTick) {
-                    onTick(this.timeRemaining);
-                }
-
-                if (this.timeRemaining <= 0) {
-                    logger.debug('Timer finished');
-                    this.stopTimer();
-
-                    // Play timer-expired sound, then call completion callback
-                    if (this.soundManager?.isSoundsEnabled()) {
-                        this.soundManager.playTimerExpired();
-                    }
-                    if (onComplete) {
-                        onComplete();
-                    }
-                }
-            }, 1000);
-
-            // Track timer for cleanup
-            if (this.timer) {
-                this.trackedTimers.add(this.timer);
-            }
+            this.startInterval();
 
         }, {
             type: 'timer_management',
@@ -86,6 +64,90 @@ export class TimerManager {
             logger.error('Failed to start timer, using static display');
             this.setStaticTimerDisplay(Math.ceil(duration / 1000));
         });
+    }
+
+    /**
+     * Start the 1s countdown interval from the current timeRemaining.
+     * Split out of startTimer so resume() can restart the same countdown with
+     * the callbacks the caller originally passed.
+     */
+    startInterval() {
+        this.timer = setInterval(() => {
+            this.timeRemaining -= 1000;
+            this.updateTimerDisplay(this.timeRemaining);
+
+            // Play countdown sound, then call tick callback if provided
+            this.playCountdownSound(this.timeRemaining);
+            if (this.onTick) {
+                this.onTick(this.timeRemaining);
+            }
+
+            if (this.timeRemaining <= 0) {
+                logger.debug('Timer finished');
+                const onComplete = this.onComplete;
+                this.stopTimer();
+
+                // Play timer-expired sound, then call completion callback
+                if (this.soundManager?.isSoundsEnabled()) {
+                    this.soundManager.playTimerExpired();
+                }
+                if (onComplete) {
+                    onComplete();
+                }
+            }
+        }, 1000);
+
+        // Track timer for cleanup
+        if (this.timer) {
+            this.trackedTimers.add(this.timer);
+        }
+    }
+
+    /**
+     * Apply the server's authoritative remaining time (time-sync, timer-extended).
+     * Writes timeRemaining, not just the display: updateTimerDisplay() alone is
+     * overwritten one second later by the interval, which keeps counting down from
+     * the old value, so a display-only resync had no lasting effect.
+     * @param {number} remainingMs - Remaining time in milliseconds
+     */
+    syncRemaining(remainingMs) {
+        if (typeof remainingMs !== 'number' || isNaN(remainingMs)) {
+            logger.warn('Ignoring invalid timer sync value:', remainingMs);
+            return;
+        }
+
+        this.timeRemaining = Math.max(0, remainingMs);
+        // Keep the host timer-bar percentage <= 100 when the server reports more
+        // time than this client started with (extend-time power-up).
+        if (this.timeRemaining > this.totalDuration) {
+            this.totalDuration = this.timeRemaining;
+        }
+        this.updateTimerDisplay(this.timeRemaining);
+
+        logger.debug('Timer synced to', Math.ceil(this.timeRemaining / 1000), 'seconds');
+    }
+
+    /**
+     * Pause the countdown while the tab is hidden. Background tabs throttle
+     * setInterval, so a running countdown drifts; resume() restarts it and the
+     * server's time-sync corrects the value.
+     */
+    pause() {
+        if (!this.timer) return;
+        this.stopTimer();
+        this.paused = true;
+    }
+
+    /**
+     * Resume a countdown paused by pause(). Does nothing if the question ended
+     * while the tab was hidden, because stopTimer() clears the paused flag.
+     */
+    resume() {
+        if (!this.paused) return;
+        this.paused = false;
+        if (this.timeRemaining > 0) {
+            this.startInterval();
+        }
     }
 
     /**
@@ -103,6 +165,7 @@ export class TimerManager {
      * Stop the current timer
      */
     stopTimer() {
+        this.paused = false;
         if (this.timer) {
             clearInterval(this.timer);
             this.trackedTimers.delete(this.timer);

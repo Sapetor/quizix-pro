@@ -4,7 +4,6 @@
 
 const { QuizService } = require('../../services/quiz-service');
 const fs = require('fs').promises;
-const path = require('path');
 
 // Mock dependencies
 const mockLogger = {
@@ -92,12 +91,13 @@ describe('QuizService', () => {
             // direct write to the final destination.
             expect(fs.writeFile).toHaveBeenCalledTimes(1);
             const [writtenPath] = fs.writeFile.mock.calls[0];
-            expect(writtenPath).toMatch(/\.json\.tmp$/);
+            // Temp name carries a per-call unique suffix, so match the shape.
+            expect(writtenPath).toMatch(/\.json\..+\.tmp$/);
 
             expect(fs.rename).toHaveBeenCalledTimes(1);
             const [tmpArg, finalArg] = fs.rename.mock.calls[0];
             expect(tmpArg).toBe(writtenPath);
-            expect(finalArg).toBe(writtenPath.replace(/\.tmp$/, ''));
+            expect(finalArg).toMatch(/^quizzes[\\/]atomic_quiz_\d+\.json$/);
         });
 
         test('should reject empty title', async () => {
@@ -261,6 +261,77 @@ describe('QuizService', () => {
 
             await expect(quizService.loadQuiz('nonexistent.json'))
                 .rejects.toThrow('Quiz not found');
+        });
+    });
+
+    describe('reserved store files', () => {
+        // quizzes/ also holds the auth store (users.json), the metadata store
+        // (quiz-metadata.json) and dotfiles such as .session-secret. None of
+        // them may be reachable through the quiz read/write paths.
+        const RESERVED = ['users.json', 'quiz-metadata.json', '.session-secret', '.backup.json'];
+
+        test('resolveQuizPath rejects reserved names', () => {
+            for (const name of RESERVED) {
+                expect(() => quizService.resolveQuizPath(name)).toThrow('Invalid filename');
+            }
+            expect(() => quizService.resolveQuizPath('USERS.JSON')).toThrow('Invalid filename');
+        });
+
+        test('resolveQuizPath throws the shared messageKey for reserved names', () => {
+            try {
+                quizService.resolveQuizPath('users.json');
+                throw new Error('expected throw');
+            } catch (err) {
+                expect(err.messageKey).toBe('error_invalid_filename');
+            }
+        });
+
+        test('loadQuiz refuses to read the auth store', async () => {
+            fs.access.mockResolvedValue();
+            fs.readFile.mockResolvedValue('{"users":[]}');
+
+            await expect(quizService.loadQuiz('users.json')).rejects.toThrow('Invalid filename');
+            expect(fs.readFile).not.toHaveBeenCalled();
+        });
+
+        test('deleteQuiz refuses to unlink the auth store', async () => {
+            fs.access.mockResolvedValue();
+            fs.unlink.mockResolvedValue();
+
+            await expect(quizService.deleteQuiz('users.json')).rejects.toThrow('Invalid filename');
+            expect(fs.unlink).not.toHaveBeenCalled();
+        });
+
+        test('saveQuiz refuses to overwrite a reserved existing file', async () => {
+            fs.access.mockResolvedValue();
+
+            await expect(
+                quizService.saveQuiz('Evil', [{ question: 'Q?' }], 'users.json')
+            ).rejects.toThrow('Invalid filename');
+            expect(fs.writeFile).not.toHaveBeenCalled();
+            expect(fs.rename).not.toHaveBeenCalled();
+        });
+
+        test('saveQuiz refuses to overwrite the metadata store', async () => {
+            fs.access.mockResolvedValue();
+
+            await expect(
+                quizService.saveQuiz('Evil', [{ question: 'Q?' }], 'quiz-metadata.json')
+            ).rejects.toThrow('Invalid filename');
+            expect(fs.writeFile).not.toHaveBeenCalled();
+        });
+
+        test('listQuizzes skips reserved files and dotfiles', async () => {
+            fs.readdir.mockResolvedValue(['quiz1.json', 'users.json', 'quiz-metadata.json', '.hidden.json']);
+            fs.stat.mockResolvedValue({ mtimeMs: 1 });
+            fs.readFile.mockResolvedValue(JSON.stringify({
+                title: 'Quiz 1', questions: [], created: '2024-01-01', id: 'id1'
+            }));
+
+            const quizzes = await quizService.listQuizzes();
+
+            expect(quizzes).toHaveLength(1);
+            expect(quizzes[0].filename).toBe('quiz1.json');
         });
     });
 

@@ -5,6 +5,35 @@
 
 const { validateAndHandle } = require('../services/validation-schemas');
 
+/**
+ * Connection middleware that binds the signed-in user to a socket.
+ *
+ * The HTTP path does this per request (middleware/attach-user); sockets need
+ * their own pass because a game is created over the socket and records
+ * `hostUserId`, which is what lets that host read its own results from another
+ * browser or after clearing site data. Same cookie reader, same verifier and
+ * same user lookup as the HTTP path.
+ *
+ * It never rejects a connection: a missing, malformed, expired or
+ * no-longer-valid cookie leaves `socket.data.user` null and the socket connects
+ * as an anonymous host. Socket.IO re-runs it on every reconnection, so the
+ * binding follows the new socket.
+ */
+function createSocketUserBinding({ sessionService, userService, logger }) {
+    return function bindSocketUser(socket, next) {
+        socket.data.user = null;
+        try {
+            const raw = sessionService.readCookieFromHeader(socket.handshake?.headers?.cookie);
+            const session = raw ? sessionService.verifySession(raw) : null;
+            const user = session ? userService.getUser(session.uid) : null;
+            if (user) socket.data.user = user;
+        } catch (err) {
+            logger.warn('Socket user binding failed, continuing anonymously:', err.message);
+        }
+        next();
+    };
+}
+
 function registerGameEvents(io, socket, options) {
     const { gameSessionService, playerManagementService, questionFlowService, checkRateLimit, logger } = options;
 
@@ -32,6 +61,10 @@ function registerGameEvents(io, socket, options) {
 
             // Create new game
             const game = gameSessionService.createGame(socket.id, quiz);
+            // Record the signed-in host (null when hosting anonymously). It is
+            // written into the results file at game end and is the only access
+            // path that survives changing browser or clearing site data.
+            game.hostUserId = socket.data?.user?.id || null;
 
             // Create or reuse host session (pass hostSessionId from client for reconnect continuity)
             const session = playerManagementService.createOrGetSession(socket.id, validated.hostSessionId || null);
@@ -171,21 +204,6 @@ function registerGameEvents(io, socket, options) {
         }
     });
 
-    // Handle host-leave-game - host leaves, all players disconnected
-    socket.on('host-leave-game', () => {
-        if (!checkRateLimit(socket.id, 'host-leave-game', 3, socket)) return;
-        try {
-            const game = gameSessionService.findGameByHost(socket.id);
-            if (!game) return;
-
-            playerManagementService.handleHostDisconnect(game, io);
-            gameSessionService.deleteGame(game.pin);
-            logger.info(`Host left game ${game.pin}`);
-        } catch (error) {
-            logger.error('Error in host-leave-game handler:', error);
-        }
-    });
-
     // Handle rematch - reset game with same PIN, keep players, allow new joins
     socket.on('rematch-game', () => {
         if (!checkRateLimit(socket.id, 'rematch-game', 3, socket)) return;
@@ -258,4 +276,4 @@ function registerGameEvents(io, socket, options) {
     });
 }
 
-module.exports = { registerGameEvents };
+module.exports = { registerGameEvents, createSocketUserBinding };

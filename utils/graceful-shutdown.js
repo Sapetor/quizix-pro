@@ -122,9 +122,12 @@ class GracefulShutdown {
             this.shutdown('uncaughtException');
         });
 
+        // Log only. Turning any escaped promise rejection into a full shutdown
+        // meant one failed request could take the whole server down; an
+        // uncaughtException still shuts down, because the process state after
+        // one is not trustworthy.
         process.on('unhandledRejection', (reason, promise) => {
             this.logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-            this.shutdown('unhandledRejection');
         });
 
         // Handle Windows-specific signals

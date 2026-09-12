@@ -32,7 +32,7 @@ describe('player-events: player-join', () => {
         h['player-join']({ pin: '123456', name: 'Al' });
 
         expect(options.playerManagementService.handlePlayerJoin).toHaveBeenCalledWith(
-            'player-sock', '123456', 'Al', game, socket, io, undefined
+            'player-sock', '123456', 'Al', game, socket, io, undefined, options.questionFlowService
         );
         expect(findEmit(socket.emits, 'error')).toBeFalsy();
     });
@@ -224,6 +224,71 @@ describe('player-events: host-rejoin', () => {
         });
     });
 
+    // In manual-advancement mode the show-next-button went to the host's dead
+    // socket. Without a replay the reconnected host has no way to advance and the
+    // players sit on the reveal until the game is abandoned.
+    function revealingGame() {
+        const game = disconnectedGame();
+        game.gameState = 'revealing';
+        game.manualAdvancement = true;
+        game.isAdvancing = false;
+        game.quiz = {
+            title: 'Q',
+            questions: [
+                { type: 'multiple-choice', question: 'Q1?', options: ['A', 'B'], correctAnswer: 0, timeLimit: 20 },
+                { type: 'true-false', question: 'Q2?', correctAnswer: true, timeLimit: 20 }
+            ]
+        };
+        game.getAnswerStatistics = jest.fn(() => ({ totalPlayers: 1, answeredPlayers: 1, answerCounts: {} }));
+        return game;
+    }
+
+    it('replays the reveal and the next button when rejoining mid-reveal', () => {
+        const game = revealingGame();
+        const { socket, options, h } = setup();
+        options.gameSessionService.getGame.mockReturnValue(game);
+
+        h['host-rejoin']({ pin: '123456', token: 'secret' });
+
+        expect(findEmit(socket.emits, 'question-timeout')).toBeTruthy();
+        expect(findEmit(socket.emits, 'answer-statistics')).toBeTruthy();
+        expect(findEmit(socket.emits, 'show-next-button').data).toEqual({ isLastQuestion: false });
+    });
+
+    it('marks the last question when rejoining on the final reveal', () => {
+        const game = revealingGame();
+        game.currentQuestion = 1;
+        const { socket, options, h } = setup();
+        options.gameSessionService.getGame.mockReturnValue(game);
+
+        h['host-rejoin']({ pin: '123456', token: 'secret' });
+
+        expect(findEmit(socket.emits, 'show-next-button').data).toEqual({ isLastQuestion: true });
+    });
+
+    it('withholds the next button while the reveal dwell is still running', () => {
+        const game = revealingGame();
+        game.isAdvancing = true; // pending advanceTimer will emit it to the new hostId
+        const { socket, options, h } = setup();
+        options.gameSessionService.getGame.mockReturnValue(game);
+
+        h['host-rejoin']({ pin: '123456', token: 'secret' });
+
+        expect(findEmit(socket.emits, 'question-timeout')).toBeTruthy();
+        expect(findEmit(socket.emits, 'show-next-button')).toBeFalsy();
+    });
+
+    it('does not send a next button when advancement is automatic', () => {
+        const game = revealingGame();
+        game.manualAdvancement = false;
+        const { socket, options, h } = setup();
+        options.gameSessionService.getGame.mockReturnValue(game);
+
+        h['host-rejoin']({ pin: '123456', token: 'secret' });
+
+        expect(findEmit(socket.emits, 'show-next-button')).toBeFalsy();
+    });
+
     it('does not replay question-start when the game is not in a question', () => {
         const game = disconnectedGame();
         game.gameState = 'lobby';
@@ -269,7 +334,7 @@ describe('player-events: session-check', () => {
         h['session-check']({ deviceId: UUID_A, hostSessionId: UUID_B });
 
         expect(options.playerManagementService.handlePlayerJoin).toHaveBeenCalledWith(
-            'player-sock', '123456', 'Al', game, expect.anything(), expect.anything(), UUID_A
+            'player-sock', '123456', 'Al', game, expect.anything(), expect.anything(), UUID_A, options.questionFlowService
         );
     });
 });

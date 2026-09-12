@@ -430,7 +430,7 @@ export function showImageErrorMessage(imagePreview, imageData) {
 
     errorMsg.innerHTML = `
         <div style="margin-bottom: 6px;">📷 ${translationManager.getTranslationSync('image_not_found')}</div>
-        <div style="font-size: 0.75rem; opacity: 0.7;">${imageData}</div>
+        <div style="font-size: 0.75rem; opacity: 0.7;">${escapeHtml(imageData)}</div>
         <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 3px;">${translationManager.getTranslationSync('image_remove_or_upload')}</div>
     `;
 }

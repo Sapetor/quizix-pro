@@ -31,6 +31,12 @@ export class GameStateManager {
         this.resultShown = false;
         this.answerSubmitted = false;
 
+        // Drop the previous question's stored answer. showPlayerAnswerInModal()
+        // reads this map by player name, so a question the player skips would
+        // otherwise show the answer from the question before it, formatted with
+        // the new question's type. This is the only per-question reset of the map.
+        this.clearPlayerAnswers();
+
         // Timer management is now handled by TimerManager
 
         // Set host/player mode based on player name

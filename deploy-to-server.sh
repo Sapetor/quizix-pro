@@ -135,20 +135,27 @@ deploy_image_transfer() {
         docker stop quizix-pro-app 2>/dev/null || true
         docker rm quizix-pro-app 2>/dev/null || true
         
-        # Run container
+        # Create the data directories BEFORE mounting them, owned by uid/gid
+        # 1001 (the 'nodejs' user the image runs as, Dockerfile:39-40,67) or the
+        # app cannot write into the bind mounts.
+        mkdir -p \$HOME/quizix-data/quizzes \$HOME/quizix-data/results \$HOME/quizix-data/uploads
+        sudo chown -R 1001:1001 \$HOME/quizix-data 2>/dev/null || chown -R 1001:1001 \$HOME/quizix-data || true
+
+        # Run container.
+        # Mount paths must match where the app actually writes:
+        #   /app/quizzes         quiz library + users.json + .session-secret
+        #   /app/results         saved game results
+        #   /app/public/uploads  uploaded images (NOT /app/uploads)
         docker run -d \\
             --name quizix-pro-app \\
             --restart unless-stopped \\
             -p 3000:3000 \\
             -e NODE_ENV=production \\
-            -e DEBUG_ENABLED=false \\
-            -e GITLAB_URL=https://localhost:8080 \\
+            -e BASE_PATH=/ \\
+            -v \$HOME/quizix-data/quizzes:/app/quizzes \\
             -v \$HOME/quizix-data/results:/app/results \\
-            -v \$HOME/quizix-data/uploads:/app/uploads \\
+            -v \$HOME/quizix-data/uploads:/app/public/uploads \\
             quizix-pro:latest
-        
-        # Create data directories
-        mkdir -p \$HOME/quizix-data/{results,uploads}
         
         # Show status
         docker ps | grep quizix-pro

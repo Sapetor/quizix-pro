@@ -502,15 +502,6 @@ select:focus-visible {
     box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
 }
 
-/* Carousel navigation focus */
-.carousel-nav:focus-visible,
-.carousel-nav-btn:focus-visible,
-.carousel-dot:focus-visible {
-    outline: 3px solid var(--accent-primary);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
-}
-
 /* Quiz item cards focus (keyboard navigable) */
 .quiz-item:focus-visible,
 .result-item:focus-visible {
@@ -806,7 +797,6 @@ button:disabled:focus-visible {
     text-align: left;
     word-break: break-word;
 }
-
 
 /* Override all colorful preview rules to use neutral styling - MAXIMUM SPECIFICITY */
 /* Consolidated checkbox option styling for all preview contexts */
@@ -1245,7 +1235,6 @@ button:disabled:focus-visible {
     min-height: auto !important;
     height: auto !important;
 }
-
 
 /* AI Generator Modal - Light mode text readability fixes */
 [data-theme="light"] .ai-generator-modal,
@@ -3931,25 +3920,6 @@ textarea:focus {
 /* Smooth scroll behavior */
 html {
     scroll-behavior: smooth;
-}
-
-/* Enhanced carousel navigation */
-.carousel-nav,
-.carousel-nav-btn {
-    transition: var(--theme-transition-smooth);
-    position: relative;
-}
-
-.carousel-nav:hover,
-.carousel-nav-btn:hover {
-    transform: scale(1.15);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-}
-
-.carousel-nav:active,
-.carousel-nav-btn:active {
-    transform: scale(0.95);
-    transition: transform 0.1s ease;
 }
 
 /* Floating action button effect */

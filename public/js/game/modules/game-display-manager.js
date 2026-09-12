@@ -36,10 +36,14 @@ export class GameDisplayManager {
             questionText: document.getElementById('player-question-text'),
             questionImage: document.getElementById('player-question-image'),
             questionCounter: document.getElementById('player-question-counter'),
-            optionsContainer: document.querySelector('.player-options'),
-            multipleChoiceOptions: document.querySelectorAll('.player-option'),
-            trueFalseOptions: document.querySelectorAll('.tf-option'),
-            checkboxOptions: document.querySelectorAll('.checkbox-option'),
+            // Scoped to the live player containers: the editor split-preview and
+            // the preview modal carry look-alike `.player-option`/`.checkbox-option`
+            // markup earlier in the document, so an unscoped query would clear and
+            // uncheck editor tiles instead of (and before) the player's own buttons.
+            optionsContainer: document.querySelector('#player-multiple-choice .player-options'),
+            multipleChoiceOptions: document.querySelectorAll('#player-multiple-choice .player-option'),
+            trueFalseOptions: document.querySelectorAll('#player-true-false .tf-option'),
+            checkboxOptions: document.querySelectorAll('#player-multiple-correct .checkbox-option'),
             numericInput: document.getElementById('numeric-answer-input'),
             submitButton: document.getElementById('submit-numeric'),
             multipleSubmitButton: document.getElementById('submit-multiple')

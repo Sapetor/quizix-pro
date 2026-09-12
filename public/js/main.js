@@ -14,8 +14,6 @@ import { browserOptimizer } from './utils/browser-optimizer.js'; // Browser-spec
 import { contentDensityManager } from './utils/content-density-manager.js'; // Smart content spacing and sizing
 import { mobileLayoutManager } from './utils/mobile-layout-manager.js'; // Smart mobile layout for different content types
 import './utils/mobile-enhancements.js'; // Mobile UX enhancements and touch interactions
-import './utils/mobile-carousel.js'; // Airbnb-style mobile carousel for main menu
-import './utils/main-menu-carousel.js'; // Main menu preview carousel
 import { onboardingTutorial } from './utils/onboarding-tutorial.js'; // First-time user onboarding
 import { initAuthChip } from './ui/auth-chip.js'; // Optional user accounts (login/signup chip)
 
@@ -91,14 +89,20 @@ function showLanguagePicker() {
 
             overlay.removeEventListener('click', handler);
 
-            // Apply language
-            await translationManager.setLanguage(langCode);
-            translationManager.translatePage();
-            updateLanguageDropdownDisplay(langCode);
+            // Apply language. The listener is already removed, so a rejection
+            // here would strand the user on the overlay forever — always hide
+            // it and resolve.
+            try {
+                await translationManager.setLanguage(langCode);
+                translationManager.translatePage();
+                updateLanguageDropdownDisplay(langCode);
+                logger.debug('Language picker: user selected', langCode);
+            } catch (error) {
+                logger.warn('Language picker: failed to apply language', error);
+            }
 
             // Hide overlay
             overlay.classList.add('hidden');
-            logger.debug('Language picker: user selected', langCode);
             resolve();
         };
         overlay.addEventListener('click', handler);
@@ -298,20 +302,21 @@ window.addEventListener('beforeunload', () => {
 // Also handle visibility change (tab switching, minimizing)
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        logger.debug('Page hidden - performing partial cleanup...');
+        logger.debug('Page hidden - pausing game timer...');
         try {
-            if (window.game?.gameManager && typeof window.game.gameManager.clearTimerTracked === 'function' && window.game.gameManager.timer) {
-                // Clear main game timer to prevent unnecessary ticking when page is hidden
-                window.game.gameManager.clearTimerTracked(window.game.gameManager.timer);
-                window.game.gameManager.timer = null;
-            }
+            // The countdown interval lives on TimerManager, not on GameManager —
+            // gameManager.timer is never set, so the old guard never fired and the
+            // timer kept ticking (throttled, hence drifting) in the hidden tab.
+            window.game?.gameManager?.timerManager?.pause();
         } catch (error) {
-            logger.error('Error during partial cleanup:', error);
+            logger.error('Error pausing game timer:', error);
         }
     } else {
-        // Tab became visible again — request time sync from server
-        logger.debug('Page visible - requesting time sync...');
+        // Tab became visible again — restart the countdown and ask the server for
+        // the authoritative remaining time (handled by the 'time-sync' listener).
+        logger.debug('Page visible - resuming timer and requesting time sync...');
         try {
+            window.game?.gameManager?.timerManager?.resume();
             if (window.game?.socket?.connected) {
                 window.game.socket.emit('request-time-sync');
             }

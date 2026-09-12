@@ -8,7 +8,12 @@
 
 import { dom } from '../../utils/dom.js';
 import { logger } from '../../core/config.js';
-import { readScoringConfigFromDOM } from '../../utils/scoring-config.js';
+import {
+    readScoringConfigFromDOM,
+    DEFAULT_DIFFICULTY_MULTIPLIERS,
+    DEFAULT_TIME_BONUS_ENABLED,
+    DEFAULT_TIME_BONUS_THRESHOLD
+} from '../../utils/scoring-config.js';
 
 /**
  * Collect game settings from host screen UI elements
@@ -35,6 +40,10 @@ export function collectSettings() {
  * Restore saved game settings to host screen UI elements
  */
 export function restoreSettings(settings) {
+    // null/undefined means "no restore requested" and leaves the UI alone.
+    // A loaded quiz that carries no settings block must still reset the host UI,
+    // so populateQuizBuilder passes {} — every field below falls back to its
+    // default, which is what an imported quiz should start from.
     if (!settings) return;
 
     const setChecked = (id, val) => { const el = dom.get(id); if (el) el.checked = !!val; };
@@ -56,17 +65,13 @@ export function restoreSettings(settings) {
     setChecked('allow-chat', settings.allowChat);
 
     // Restore scoring config (backward-compatible: missing = defaults)
-    const sc = settings.scoringConfig;
-    if (sc) {
-        setChecked('time-bonus-enabled', sc.timeBonusEnabled ?? true);
-        setValue('time-bonus-threshold', sc.timeBonusThreshold ?? 0);
-        const dm = sc.difficultyMultipliers;
-        if (dm) {
-            setValue('easy-multiplier', dm.easy ?? 1);
-            setValue('medium-multiplier', dm.medium ?? 2);
-            setValue('hard-multiplier', dm.hard ?? 3);
-        }
-    }
+    const sc = settings.scoringConfig || {};
+    setChecked('time-bonus-enabled', sc.timeBonusEnabled ?? DEFAULT_TIME_BONUS_ENABLED);
+    setValue('time-bonus-threshold', sc.timeBonusThreshold ?? DEFAULT_TIME_BONUS_THRESHOLD);
+    const dm = sc.difficultyMultipliers || {};
+    setValue('easy-multiplier', dm.easy ?? DEFAULT_DIFFICULTY_MULTIPLIERS.easy);
+    setValue('medium-multiplier', dm.medium ?? DEFAULT_DIFFICULTY_MULTIPLIERS.medium);
+    setValue('hard-multiplier', dm.hard ?? DEFAULT_DIFFICULTY_MULTIPLIERS.hard);
 
     logger.debug('Game settings restored from quiz file');
 }
