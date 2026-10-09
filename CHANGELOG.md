@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production dependency audit (`npm audit --omit=dev`) went from 14 findings (1 low, 5 moderate, 8 high) to 3 moderate. Version ranges raised: express 4.22.3, multer 2.4.0, mammoth 1.13.0, sharp 0.35.5, uuid 11.1.1. The socket.io, engine.io, ws, undici, proxy-addr and compression entries cleared through `npm audit fix`.
 - officeparser removed. It pulled pdfjs-dist (GHSA-hq66-cqwq-w95j), tesseract.js and file-type, about 88 MB, into an unauthenticated upload route. PPTX text is now read with jszip.
 - pdf-parse 1.1.4 removed. It bundled pdf.js 1.10 (2017), invisible to npm audit. `/api/extract-pdf` now uses pdfjs-dist 6.4.299 directly with `isEvalSupported: false`. Non-PDF input returns 400 instead of 500; the unused `info` field and the 501 "not installed" branch are gone. `engines.node` raised to >=22.13.0, as pdfjs-dist requires. Adds about 69 MB (pdfjs-dist 35 MB, optional @napi-rs/canvas 34 MB).
+- PDF extraction runs in a worker thread (`utils/pdf-text-worker.mjs`) with a 256 MB heap cap, at most 2 at a time (503 beyond that), and stops after 500 pages or 1,000,000 characters. On timeout the worker is terminated; before, `withTimeout` answered 408 while pdf.js kept parsing on the main thread.
 - The 3 remaining moderate findings are one chain: sprintf-js through argparse through mammoth. Only mammoth's CLI requires argparse; accepted.
 - Earlier on this branch (commit fc2ff1c): SheetJS vendored, signup gated, manim and container hardening, `unsafe-inline` dropped from the CSP.
 
@@ -32,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `package-lock.json` also moved dev dependencies (@babel 7.29, postcss 8.5.28, js-yaml 4.3.2, others). The rebuilt CSS bundle drops `-webkit-print-color-adjust` and `-webkit-mask-image` prefixes.
 
 ### Tests
-- Added `tests/unit/end-round-consensus-lock.test.js` (5 cases) and `tests/unit/pptx-extraction.test.js` (6 cases, in process, including a deflated 30 MB slide and 40k unclosed tags) and `tests/unit/pdf-extraction.test.js` (3 cases, child process because pdfjs-dist is ESM-only). `npm test`: 74 suites, 1294 tests pass.
+- Added `tests/unit/end-round-consensus-lock.test.js` (5 cases) and `tests/unit/pptx-extraction.test.js` (6 cases, in process, including a deflated 30 MB slide and 40k unclosed tags) and `tests/unit/pdf-extraction.test.js` (5 cases, child process because pdfjs-dist is ESM-only). `npm test`: 74 suites, 1296 tests pass.
 - `tests/e2e-disconnect-overlay.spec.js` corrected to start the game before disconnecting; 4/4 pass on a clean port, 12/12 with `--repeat-each 3`. With the rejoin fix disabled, the auto-rejoin case failed 4/4.
 - `tests/e2e/analytics-modal.spec.js`: 4/4 pass.
 - Visual baselines: both snapshot directories regenerated (45 + 7 PNGs). `visual-regression.spec.js` fixture sets `manualAdvancement: false`; `visual-static.spec.js` caps the `networkidle` wait at 5 s. `npm run test:visual` passes 7/7. The three final-screen baselines are fully masked by the confetti mask and compare nothing.

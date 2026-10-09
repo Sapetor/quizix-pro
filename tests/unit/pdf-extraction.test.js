@@ -20,6 +20,13 @@ app.use(createFileUploadRoutes({
     CONFIG: { LIMITS: { MAX_FILE_SIZE: 5 * 1024 * 1024 } }
 }));
 const server = app.listen(0, '127.0.0.1', () => console.log('PORT ' + server.address().port));
+const slowApp = express();
+slowApp.use(createFileUploadRoutes({
+    logger: { debug: noop, info: noop, warn: noop, error: noop },
+    CONFIG: { LIMITS: { MAX_FILE_SIZE: 5 * 1024 * 1024 } },
+    pdfTimeoutMs: 1
+}));
+const slowServer = slowApp.listen(0, '127.0.0.1', () => console.log('SLOWPORT ' + slowServer.address().port));
 `;
 
 // Minimal valid PDF: one Helvetica text line per page, correct xref offsets.
@@ -54,14 +61,19 @@ function buildPdf(pageTexts) {
 describe('POST /api/extract-pdf', () => {
     let child;
     let baseUrl;
+    let slowUrl;
 
     beforeAll(() => new Promise((resolve, reject) => {
         child = spawn(process.execPath, ['-e', SERVER_SCRIPT], { stdio: ['ignore', 'pipe', 'inherit'] });
         child.on('error', reject);
+        let output = '';
         child.stdout.on('data', (chunk) => {
-            const match = /PORT (\d+)/.exec(chunk.toString());
-            if (match) {
-                baseUrl = `http://127.0.0.1:${match[1]}`;
+            output += chunk.toString();
+            const port = /(?:^|\n)PORT (\d+)/.exec(output);
+            const slowPort = /SLOWPORT (\d+)/.exec(output);
+            if (port && slowPort) {
+                baseUrl = `http://127.0.0.1:${port[1]}`;
+                slowUrl = `http://127.0.0.1:${slowPort[1]}`;
                 resolve();
             }
         });
@@ -69,10 +81,10 @@ describe('POST /api/extract-pdf', () => {
 
     afterAll(() => child.kill());
 
-    async function upload(buffer) {
+    async function upload(buffer, url = baseUrl) {
         const form = new FormData();
         form.append('pdf', new Blob([buffer], { type: 'application/pdf' }), 'notes.pdf');
-        const res = await fetch(`${baseUrl}/api/extract-pdf`, { method: 'POST', body: form });
+        const res = await fetch(`${url}/api/extract-pdf`, { method: 'POST', body: form });
         return { status: res.status, body: await res.json() };
     }
 
@@ -98,5 +110,25 @@ describe('POST /api/extract-pdf', () => {
 
         expect(status).toBe(400);
         expect(body.messageKey).toBe('error_pdf_extraction_failed');
+    });
+
+    test('stops extracting after 500 pages', async () => {
+        const pageTexts = Array.from({ length: 600 }, (_, i) => `Page marker ${i + 1} end`);
+        const { status, body } = await upload(buildPdf(pageTexts));
+
+        expect(status).toBe(200);
+        expect(body.pages).toBe(600);
+        expect(body.text).toContain('Page marker 500 end');
+        expect(body.text).not.toContain('Page marker 501 end');
+    }, 30000);
+
+    test('returns 408 when extraction exceeds the timeout, and keeps serving', async () => {
+        const slow = await upload(buildPdf(['Timeout case']), slowUrl);
+        expect(slow.status).toBe(408);
+        expect(slow.body.messageKey).toBe('error_pdf_timeout');
+
+        const next = await upload(buildPdf(['After timeout']));
+        expect(next.status).toBe(200);
+        expect(next.body.text).toContain('After timeout');
     });
 });

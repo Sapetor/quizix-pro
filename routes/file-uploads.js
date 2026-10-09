@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
 const JSZip = require('jszip');
+const { Worker } = require('worker_threads');
 const { getClientIp } = require('../middleware/client-ip');
 
 // Same guard the other route modules use to decide whether raw error text may
@@ -27,29 +28,36 @@ function decodeXmlText(text) {
  * Throws if the buffer is not a zip or has no slides.
  * @returns {Promise<{text: string, slideCount: number}>}
  */
-// pdfjs-dist is ESM-only, so it is loaded with import() on first use.
-// isEvalSupported: false keeps pdf.js from compiling font programs with new Function.
-async function extractPdfText(buffer) {
-    const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    const loadingTask = getDocument({
-        data: new Uint8Array(buffer),
-        isEvalSupported: false,
-        disableFontFace: true,
-        useSystemFonts: false,
-        verbosity: 0
+// A PDF under the upload cap can still declare thousands of pages or inflate
+// its streams far past 10 MB, so extraction runs in a capped, killable worker.
+const PDF_WORKER_PATH = path.join(__dirname, '..', 'utils', 'pdf-text-worker.mjs');
+const PDF_MAX_PAGES = 500;
+const PDF_MAX_CHARS = 1000000;
+const PDF_WORKER_HEAP_MB = 256;
+const PDF_MAX_CONCURRENT = 2;
+let activePdfWorkers = 0;
+
+function extractPdfText(buffer, timeoutMs) {
+    return new Promise((resolve, reject) => {
+        activePdfWorkers++;
+        const worker = new Worker(PDF_WORKER_PATH, {
+            workerData: { data: new Uint8Array(buffer), maxPages: PDF_MAX_PAGES, maxChars: PDF_MAX_CHARS },
+            resourceLimits: { maxOldGenerationSizeMb: PDF_WORKER_HEAP_MB }
+        });
+        let settled = false;
+        const finish = (fn, value) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            activePdfWorkers--;
+            worker.terminate();
+            fn(value);
+        };
+        const timer = setTimeout(() => finish(reject, new Error('PDF parsing timed out. The file may be too complex or corrupted.')), timeoutMs);
+        worker.once('message', result => finish(resolve, result));
+        worker.once('error', error => finish(reject, error));
+        worker.once('exit', code => finish(reject, new Error(`PDF worker exited with code ${code}`)));
     });
-    try {
-        const doc = await loadingTask.promise;
-        const pageTexts = [];
-        for (let n = 1; n <= doc.numPages; n++) {
-            const page = await doc.getPage(n);
-            const { items } = await page.getTextContent();
-            pageTexts.push(items.map(item => item.str + (item.hasEOL ? '\n' : '')).join(''));
-        }
-        return { text: pageTexts.join('\n\n'), pages: doc.numPages };
-    } finally {
-        await loadingTask.destroy();
-    }
 }
 
 // Uploads are capped compressed (multer), so decompressed size needs its own cap.
@@ -108,10 +116,11 @@ async function extractPptxText(buffer) {
  * @param {Object} options - Configuration options
  * @param {Object} options.logger - Logger instance
  * @param {Object} options.CONFIG - Configuration object (requires LIMITS.MAX_FILE_SIZE)
+ * @param {number} [options.pdfTimeoutMs=30000] - PDF extraction timeout; the worker is terminated when it passes
  * @returns {express.Router} Configured router
  */
 function createFileUploadRoutes(options) {
-    const { logger, CONFIG } = options;
+    const { logger, CONFIG, pdfTimeoutMs = 30000 } = options;
 
     if (!logger) {
         throw new Error('logger is required for file upload routes');
@@ -360,8 +369,6 @@ function createFileUploadRoutes(options) {
     }
 
     router.post('/api/extract-pdf', uploadRateLimit, pdfUpload.single('pdf'), async (req, res) => {
-        const PDF_PARSE_TIMEOUT_MS = 30000; // 30 second timeout for PDF parsing
-
         try {
             if (!req.file) {
                 return res.status(400).json({ error: 'No PDF file uploaded', messageKey: 'error_no_pdf_uploaded' });
@@ -377,13 +384,13 @@ function createFileUploadRoutes(options) {
                 });
             }
 
+            if (activePdfWorkers >= PDF_MAX_CONCURRENT) {
+                return res.status(503).json({ error: 'PDF extraction busy, try again shortly', messageKey: 'error_rate_limited' });
+            }
+
             let text, pages;
             try {
-                ({ text, pages } = await withTimeout(
-                    extractPdfText(req.file.buffer),
-                    PDF_PARSE_TIMEOUT_MS,
-                    'PDF parsing timed out. The file may be too complex or corrupted.'
-                ));
+                ({ text, pages } = await extractPdfText(req.file.buffer, pdfTimeoutMs));
             } catch (error) {
                 if (error.message.includes('timed out')) throw error;
                 logger.warn('PDF extraction failed:', error.message);
