@@ -31,6 +31,13 @@ async function buildPptx(slides) {
     return zip.generateAsync({ type: 'nodebuffer' });
 }
 
+// A single slide with arbitrary (possibly hostile) XML, deflated like a real .pptx
+async function buildRawPptx(xml) {
+    const zip = new JSZip();
+    zip.file('ppt/slides/slide1.xml', xml);
+    return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+}
+
 describe('POST /api/extract-pptx', () => {
     let server;
     let baseUrl;
@@ -95,5 +102,23 @@ describe('POST /api/extract-pptx', () => {
 
         expect(status).toBe(400);
         expect(body.messageKey).toBe('error_pptx_extraction_failed');
+    });
+
+    test('rejects a slide that decompresses past the size cap', async () => {
+        // ~30 KB compressed, 30 MB decompressed
+        const { status, body } = await upload(await buildRawPptx(' '.repeat(30 * 1024 * 1024)));
+
+        expect(status).toBe(400);
+        expect(body.messageKey).toBe('error_pptx_extraction_failed');
+    });
+
+    test('parses unclosed paragraph and run tags in linear time', async () => {
+        const n = 40000;
+        const buffer = await buildRawPptx('<a:p '.repeat(n) + '<a:t '.repeat(n));
+        const start = Date.now();
+        const { status } = await upload(buffer);
+
+        expect(status).toBe(200);
+        expect(Date.now() - start).toBeLessThan(1000);
     });
 });

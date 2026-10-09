@@ -27,6 +27,31 @@ function decodeXmlText(text) {
  * Throws if the buffer is not a zip or has no slides.
  * @returns {Promise<{text: string, slideCount: number}>}
  */
+// Uploads are capped compressed (multer), so decompressed size needs its own cap.
+const MAX_SLIDE_XML_BYTES = 5 * 1024 * 1024;
+const MAX_TOTAL_XML_BYTES = 20 * 1024 * 1024;
+
+function readZipEntryCapped(file, maxBytes) {
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        let size = 0;
+        const stream = file.internalStream('uint8array');
+        stream
+            .on('data', (chunk) => {
+                size += chunk.length;
+                if (size > maxBytes) {
+                    stream.pause();
+                    reject(new Error('slide XML exceeds size limit'));
+                    return;
+                }
+                chunks.push(chunk);
+            })
+            .on('error', reject)
+            .on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+            .resume();
+    });
+}
+
 async function extractPptxText(buffer) {
     const zip = await JSZip.loadAsync(buffer);
     const slideFiles = Object.keys(zip.files)
@@ -36,10 +61,14 @@ async function extractPptxText(buffer) {
     if (slideFiles.length === 0) throw new Error('no slides found');
 
     const slideTexts = [];
+    let remaining = MAX_TOTAL_XML_BYTES;
     for (const { name } of slideFiles) {
-        const xml = await zip.file(name).async('string');
-        const paragraphs = (xml.match(/<a:p[\s>][\s\S]*?<\/a:p>/g) || [])
-            .map(p => [...p.matchAll(/<a:t(?:\s[^>]*)?>([^<]*)<\/a:t>/g)].map(m => decodeXmlText(m[1])).join(''))
+        const xml = await readZipEntryCapped(zip.file(name), Math.min(MAX_SLIDE_XML_BYTES, remaining));
+        remaining -= Buffer.byteLength(xml);
+        // Split on </a:p> and bound the attribute match: both keep parsing linear on hostile input.
+        // <a:t> only occurs inside <a:p>, so text before a paragraph's opening tag is not lost.
+        const paragraphs = xml.split('</a:p>').slice(0, -1)
+            .map(p => [...p.matchAll(/<a:t(?:\s[^<>]{0,1000})?>([^<]*)<\/a:t>/g)].map(m => decodeXmlText(m[1])).join(''))
             .filter(p => p.trim());
         slideTexts.push(paragraphs.join('\n'));
     }

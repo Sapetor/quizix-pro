@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Earlier on this branch (commit fc2ff1c): SheetJS vendored, signup gated, manim and container hardening, `unsafe-inline` dropped from the CSP.
 
 ### Fixed
-- PPTX upload returned 500 for every file: `routes/file-uploads.js` called `officeparser.parseOfficeAsync`, which officeparser 6.x does not export. The route now uses `extractPptxText` (jszip): slides in numeric order, one paragraph per line, XML entities decoded, 400 with `error_pptx_extraction_failed` for files that are not PPTX.
+- PPTX upload returned 500 for every file: `routes/file-uploads.js` called `officeparser.parseOfficeAsync`, which officeparser 6.x does not export. The route now uses `extractPptxText` (jszip): slides in numeric order, one paragraph per line, XML entities decoded, 400 with `error_pptx_extraction_failed` for files that are not PPTX or whose slide XML decompresses past 5 MB per slide or 20 MB in total. Parsing is linear in the slide size.
 - `.ppt` removed from the AI generator file picker; no extractor ever parsed it.
 - Consensus mode: End Round now locks consensus first, so the round's team score is awarded. Natural timeout and the all-answered path are unchanged, and a locked round is not awarded twice.
 - Player auto-rejoin after a socket reconnect: `_attemptRejoin` called `socket.connect()` while the manager `reconnect` event had already opened the engine, which sent a second CONNECT packet and closed the transport. It now waits for `connect` and calls `connect()` only from the Rejoin button path.
@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `package-lock.json` also moved dev dependencies (@babel 7.29, postcss 8.5.28, js-yaml 4.3.2, others). The rebuilt CSS bundle drops `-webkit-print-color-adjust` and `-webkit-mask-image` prefixes.
 
 ### Tests
-- Added `tests/unit/end-round-consensus-lock.test.js` (5 cases) and `tests/unit/pptx-extraction.test.js` (4 cases, in process). `npm test`: 73 suites, 1289 tests pass.
+- Added `tests/unit/end-round-consensus-lock.test.js` (5 cases) and `tests/unit/pptx-extraction.test.js` (6 cases, in process, including a deflated 30 MB slide and 40k unclosed tags). `npm test`: 73 suites, 1291 tests pass.
 - `tests/e2e-disconnect-overlay.spec.js` corrected to start the game before disconnecting; 4/4 pass on a clean port, 12/12 with `--repeat-each 3`. With the rejoin fix disabled, the auto-rejoin case failed 4/4.
 - `tests/e2e/analytics-modal.spec.js`: 4/4 pass.
 - Visual baselines: both snapshot directories regenerated (45 + 7 PNGs). `visual-regression.spec.js` fixture sets `manualAdvancement: false`; `visual-static.spec.js` caps the `networkidle` wait at 5 s. `npm run test:visual` passes 7/7. The three final-screen baselines are fully masked by the confetti mask and compare nothing.
