@@ -11,8 +11,16 @@
  */
 
 const { test, expect } = require('@playwright/test');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+
+// GET /api/results rejects callers with neither a session nor a host token.
+// The seeded result is owned by this token (the same ownership an anonymous
+// host gets from game-created), and the browser presents it from localStorage
+// exactly as results-manager-service.js does, so no account is needed.
+const GAME_PIN = '987654';
+const HOST_TOKEN = crypto.randomBytes(24).toString('hex');
 
 // Skip the onboarding overlay and the language dialog; both cover the toolbar
 // and the modals under test. Mirrors createContext() in visual-static.spec.js.
@@ -24,15 +32,17 @@ test.use({
             localStorage: [
                 { name: 'language', value: 'en' },
                 { name: 'quiz_onboarding_complete', value: JSON.stringify({ completed: true, version: 3 }) },
-                { name: 'quiz_player_first_game', value: 'true' }
+                { name: 'quiz_player_first_game', value: 'true' },
+                {
+                    name: 'quizix_host_tokens',
+                    value: JSON.stringify({ [GAME_PIN]: { token: HOST_TOKEN, savedAt: Date.now() } })
+                }
             ]
         }]
     }
 });
 
 const QUIZ_TITLE = 'E2E Analytics Fixture';
-const GAME_PIN = '987654';
-
 const QUESTIONS = [
     {
         questionNumber: 1,
@@ -97,6 +107,7 @@ let seededFilename = null;
 
 test.beforeAll(async ({ request }) => {
     const response = await request.post('/api/save-results', {
+        headers: { Authorization: `Bearer ${HOST_TOKEN}` },
         data: {
             quizTitle: QUIZ_TITLE,
             gamePin: GAME_PIN,

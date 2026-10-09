@@ -21,6 +21,9 @@ const VISUAL_TEST_QUIZ = {
         title: 'Visual Regression Test',
         randomizeAnswers: false,
         powerUpsEnabled: false,
+        // Game defaults to manual advancement (services/game.js); this spec
+        // relies on the auto-advance to reach each leaderboard.
+        manualAdvancement: false,
         questions: [
             {
                 question: 'What is the capital of France?',
