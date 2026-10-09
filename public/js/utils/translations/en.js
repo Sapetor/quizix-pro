@@ -869,7 +869,6 @@ export default {
     error_file_not_saved: 'File could not be saved',
     error_upload_failed: 'Upload failed',
     error_pdf_too_large: 'PDF file is too large',
-    error_pdf_not_available: 'PDF processing not available',
     error_pdf_timeout: 'PDF processing timed out',
     error_docx_not_available: 'Word document processing not available',
     error_docx_timeout: 'Word document processing timed out',

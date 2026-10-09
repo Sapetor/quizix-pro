@@ -863,7 +863,6 @@ export default {
     error_file_not_saved: 'No se pudo guardar el archivo',
     error_upload_failed: 'Error en la carga',
     error_pdf_too_large: 'El archivo PDF es demasiado grande',
-    error_pdf_not_available: 'Procesamiento de PDF no disponible',
     error_pdf_timeout: 'El procesamiento del PDF agotó el tiempo',
     error_docx_not_available: 'Procesamiento de documentos Word no disponible',
     error_docx_timeout: 'El procesamiento del documento Word agotó el tiempo',

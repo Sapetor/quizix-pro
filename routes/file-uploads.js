@@ -27,6 +27,31 @@ function decodeXmlText(text) {
  * Throws if the buffer is not a zip or has no slides.
  * @returns {Promise<{text: string, slideCount: number}>}
  */
+// pdfjs-dist is ESM-only, so it is loaded with import() on first use.
+// isEvalSupported: false keeps pdf.js from compiling font programs with new Function.
+async function extractPdfText(buffer) {
+    const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    const loadingTask = getDocument({
+        data: new Uint8Array(buffer),
+        isEvalSupported: false,
+        disableFontFace: true,
+        useSystemFonts: false,
+        verbosity: 0
+    });
+    try {
+        const doc = await loadingTask.promise;
+        const pageTexts = [];
+        for (let n = 1; n <= doc.numPages; n++) {
+            const page = await doc.getPage(n);
+            const { items } = await page.getTextContent();
+            pageTexts.push(items.map(item => item.str + (item.hasEOL ? '\n' : '')).join(''));
+        }
+        return { text: pageTexts.join('\n\n'), pages: doc.numPages };
+    } finally {
+        await loadingTask.destroy();
+    }
+}
+
 // Uploads are capped compressed (multer), so decompressed size needs its own cap.
 const MAX_SLIDE_XML_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_XML_BYTES = 20 * 1024 * 1024;
@@ -352,33 +377,22 @@ function createFileUploadRoutes(options) {
                 });
             }
 
-            // Dynamic import of pdf-parse (optional dependency)
-            let pdfParse;
+            let text, pages;
             try {
-                pdfParse = require('pdf-parse');
-            } catch (err) {
-                logger.warn('pdf-parse not installed. Run: npm install pdf-parse');
-                return res.status(501).json({
-                    error: 'PDF extraction not available',
-                    messageKey: 'error_pdf_not_available',
-                    message: 'Server does not have PDF parsing capability. Please copy and paste the text content manually.'
-                });
+                ({ text, pages } = await withTimeout(
+                    extractPdfText(req.file.buffer),
+                    PDF_PARSE_TIMEOUT_MS,
+                    'PDF parsing timed out. The file may be too complex or corrupted.'
+                ));
+            } catch (error) {
+                if (error.message.includes('timed out')) throw error;
+                logger.warn('PDF extraction failed:', error.message);
+                return res.status(400).json({ error: 'Failed to extract text from PDF', messageKey: 'error_pdf_extraction_failed' });
             }
 
-            // Parse with timeout to prevent hanging on malformed PDFs
-            const pdfData = await withTimeout(
-                pdfParse(req.file.buffer),
-                PDF_PARSE_TIMEOUT_MS,
-                'PDF parsing timed out. The file may be too complex or corrupted.'
-            );
+            logger.info(`PDF extracted: ${req.file.originalname}, ${pages} pages, ${text.length} chars`);
 
-            logger.info(`PDF extracted: ${req.file.originalname}, ${pdfData.numpages} pages, ${pdfData.text.length} chars`);
-
-            res.json({
-                text: pdfData.text,
-                pages: pdfData.numpages,
-                info: pdfData.info
-            });
+            res.json({ text, pages });
         } catch (error) {
             logger.error('PDF extraction error:', error);
 
