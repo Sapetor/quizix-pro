@@ -122,6 +122,13 @@ describe('POST /api/extract-pdf', () => {
         expect(body.text).not.toContain('Page marker 501 end');
     }, 30000);
 
+    test('allows one extraction in flight per client', async () => {
+        const pdf = buildPdf(Array.from({ length: 600 }, (_, i) => `Page ${i + 1}`));
+        const statuses = (await Promise.all([upload(pdf), upload(pdf)])).map(r => r.status).sort();
+
+        expect(statuses).toEqual([200, 503]);
+    }, 30000);
+
     test('returns 408 when extraction exceeds the timeout, and keeps serving', async () => {
         const slow = await upload(buildPdf(['Timeout case']), slowUrl);
         expect(slow.status).toBe(408);

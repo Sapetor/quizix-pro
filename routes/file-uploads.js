@@ -36,6 +36,8 @@ const PDF_MAX_CHARS = 1000000;
 const PDF_WORKER_HEAP_MB = 256;
 const PDF_MAX_CONCURRENT = 2;
 let activePdfWorkers = 0;
+// One extraction per client, so a single client cannot hold every worker slot.
+const pdfClientsInFlight = new Set();
 
 function extractPdfText(buffer, timeoutMs) {
     return new Promise((resolve, reject) => {
@@ -384,17 +386,21 @@ function createFileUploadRoutes(options) {
                 });
             }
 
-            if (activePdfWorkers >= PDF_MAX_CONCURRENT) {
+            const clientIP = getClientIp(req);
+            if (activePdfWorkers >= PDF_MAX_CONCURRENT || pdfClientsInFlight.has(clientIP)) {
                 return res.status(503).json({ error: 'PDF extraction busy, try again shortly', messageKey: 'error_rate_limited' });
             }
 
             let text, pages;
+            pdfClientsInFlight.add(clientIP);
             try {
                 ({ text, pages } = await extractPdfText(req.file.buffer, pdfTimeoutMs));
             } catch (error) {
                 if (error.message.includes('timed out')) throw error;
                 logger.warn('PDF extraction failed:', error.message);
                 return res.status(400).json({ error: 'Failed to extract text from PDF', messageKey: 'error_pdf_extraction_failed' });
+            } finally {
+                pdfClientsInFlight.delete(clientIP);
             }
 
             logger.info(`PDF extracted: ${req.file.originalname}, ${pages} pages, ${text.length} chars`);
