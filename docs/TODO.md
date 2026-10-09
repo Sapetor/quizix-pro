@@ -4,8 +4,8 @@ Tracking list for issues found but deliberately not fixed in the session that
 discovered them. Each item says what was observed, why it matters, and where
 to start. Remove items when done.
 
-_Last updated: 2026-08-06 (six-fix multi-agent session; see the first
-section). Previously: 2026-08-04 (manual-advancement session), 2026-07-26
+_Last updated: 2026-10-09 (pending-review fix session; see the first
+section). Previously: 2026-08-06 (six-fix multi-agent session), 2026-08-04 (manual-advancement session), 2026-07-26
 (multi-agent TODO sweep). All items from the
 2026-07-26 visual-gate rework list were completed in that sweep: host
 correct-answer reveal, counting-phase answered-count strip, double-modal
@@ -15,16 +15,73 @@ editor design pass, mobile selects, upload-GC dotfile guard, theme-drift
 gotcha (now docs/GOTCHAS.md #17). Items below are the residue plus new
 findings from that sweep._
 
+## From the 2026-10-02 pending-review session
+
+Open items from the dependency, baseline and rejoin work. Items completed in
+the same session are struck through in the sections below.
+
+- [x] ~~**Decide the officeparser version.**~~ DONE 2026-10-09: officeparser
+  removed. `routes/file-uploads.js` reads slide text with jszip
+  (`extractPptxText`), which drops pdfjs-dist (GHSA-hq66-cqwq-w95j),
+  tesseract.js and file-type from the tree (about 88 MB). `.ppt` is no longer
+  offered in the file picker; officeparser never parsed it.
+  `tests/unit/pptx-extraction.test.js` covers slide order past 10, entity
+  decoding and non-PPTX input (400). `npm audit --omit=dev` now reports 3
+  moderate: sprintf-js through argparse through mammoth. Accepted: only
+  mammoth's CLI (`node_modules/mammoth/bin/mammoth`) requires argparse; the
+  server uses the library API.
+- [x] ~~**`package-lock.json` changed beyond the audited production packages.**~~
+  DONE 2026-10-09: dev-dependency movement kept (@babel/* 7.29, postcss
+  8.5.28, js-yaml 4.3.2, others). `npm run build` was rerun; the only CSS
+  change is autoprefixer dropping `-webkit-print-color-adjust` and
+  `-webkit-mask-image` prefixes (unprefixed since Safari 15.4). sharp 0.35 and
+  uuid 11 kept; unit tests pass.
+- [ ] **Landing page never reaches `networkidle`.** Chromium reports
+  `responseReceived` (401) and `dataReceived` for `GET /api/manim/status`
+  (`public/js/quiz/manim-editor.js:29`) but no `loadingFinished`, while curl
+  gets the response in 2 ms. A standalone fetch of the same URL finishes. Cause
+  not found. `bootLanding` in `tests/e2e/visual-static.spec.js` now caps that
+  wait at 5 s, which avoids the 120 s hang without explaining it.
+- [ ] **Final-screen visual baselines compare nothing.** `desktop-final-host`,
+  `desktop-final-player` and `mobile-final-player` are fully magenta because
+  the `body > canvas` confetti mask covers the whole screen. The HEAD baseline
+  for `desktop-final-host` was already like this. Mask only the canvas region
+  that is not covered by content, or stop the confetti before the capture.
+- [ ] **Review the regenerated baselines.** Both snapshot directories were
+  deleted and regenerated (45 + 7 PNGs); `npm run test:visual` passes 7/7
+  without `--update-snapshots`. Only 8 of the 52 PNGs were opened. No phone
+  editor baseline exists in either spec.
+- [ ] **Bump `CACHE_VERSION` in `public/sw.js` on deploy.** `socket-manager.js`
+  changed (rejoin fix). Not bumped here; the value comes from a
+  server-replaced placeholder.
+- [ ] **Lobby disconnect removes the player immediately.** A player who loses
+  the connection in the lobby cannot rejoin (`rejoin-failed`), and the host
+  gets no `host-disconnected` broadcast in the lobby. The reconnection overlay
+  still appears for that player. Design decision: either accept it and skip
+  the overlay in the lobby, or add a grace period.
+- [ ] **Coverage gaps for the End Round work.** Unit tests cover the consensus
+  lock (`tests/unit/end-round-consensus-lock.test.js`, 5 cases). No e2e test
+  checks the End Round label (`ending_round`) or the consensus award in a
+  browser. The fail-first run for the `all-answered` case was not executed:
+  removing the `trigger === 'host'` guard was blocked by the permission
+  classifier, so that case was reasoned, not shown.
+- [ ] **`.quiz-settings` legacy inline styles remain.** The block now has a
+  comment marking it hidden but live. Some inline styles (for example the
+  `global-time-container` `display: none`) may be toggled by JS; no audit of
+  JS reads of those styles was done.
+- [ ] **Deferred from commit fc2ff1c: "the six-option ceiling" and the i18n
+  batch.** The commit message lists both as deferred without defining either.
+  The ceiling is presumably the six-option limit on answer choices (A to F),
+  but the code location and intended change are not recorded. Define the item
+  or drop it. The i18n batch is not specified either.
+
 ## From the 2026-08-06 six-fix session
 
-- [ ] **`powerUpsEnabled` is read from saved quiz settings but never written.**
-  `app.js:1208` populates the quick-start panel from `settings.powerUpsEnabled`
-  (with a legacy top-level fallback), but `collectSettings()` in
-  `public/js/quiz/modules/settings-persistence.js` never collects it, so the
-  editor's power-ups choice does not persist per-quiz through `/api/save-quiz`.
-  Not stripped data — never sent. Decision needed: persist it (add to
-  `collectSettings()`/`restoreSettings()` + `quizSettingsSchema`, mirroring
-  `showLeaderboardBetweenQuestions`) or drop the dead read in quick-start.
+- [x] ~~**`powerUpsEnabled` is read from saved quiz settings but never written.**~~
+  DONE 2026-10-02 (decision: drop the dead read). `app.js` no longer reads
+  `settings.powerUpsEnabled` or the legacy top-level fallback; it calls
+  `setChecked('qs-enable-power-ups', false)` so the quick-start checkbox does
+  not keep the previous quiz's state. Live-game power-up paths are unchanged.
 - [ ] **Stale-until-rerender content on in-game language switch** (deliberately
   left): host MC option letters, leaderboard rows, ordering stat rows keep the
   old language until the next render. Currently invisible — 'A'–'F' and 'pts'
@@ -44,19 +101,24 @@ findings from that sweep._
   e2e tests pass against it, but they passed before the fix too (they exercise
   the socket-level rejoin, not this client bookkeeping), so the overlay and the
   `quizix_host_reconnect` sessionStorage write are still comparatively
-  under-tested. Worth a manual host-disconnect check.
+  under-tested. Worth a manual host-disconnect check. 2026-10-02: partly
+  addressed. `tests/e2e-disconnect-overlay.spec.js` now covers the host-waiting
+  overlay, the player overlay and the auto-rejoin (4/4 on `PW_PORT=3210`, 12/12
+  with `--repeat-each 3`), and `quizix_host_reconnect` is written and consumed in
+  the host test. A manual host-disconnect check is still open.
 - [x] **`#answer-options` carries both `visible-block` and `hidden`** during a
   rematch — the GOTCHAS #6 conflict, where both classes use `!important`.
   Writer traced: `GameDisplayManager.clearHostQuestionContent()` did a bare
   `classList.add('hidden')` on top of the `visible-block` left by
   `question-renderer.js` `show(hostOptionsContainer, 'visible-block')`. Now uses
   the `hide()` helper. Pinned by `tests/unit/answer-options-visibility.dom.test.js`.
-- [ ] **Visual baselines are stale and may pass silently.**
-  `desktop-*-question-host-*.png` predate both the always-visible header
-  (fde3559) and the removal of `#game-mute-students-btn`. The mute-button delta
-  alone is ~0.6% of a 1280x720 viewport, under the spec's
-  `maxDiffPixelRatio: 0.02`, so the gate can go green on a stale baseline.
-  Regenerate wholesale with `PW_PORT=3210` (GOTCHAS #17).
+- [x] ~~**Visual baselines are stale and may pass silently.**~~ DONE 2026-10-02
+  — both snapshot directories were regenerated wholesale on `PW_PORT=3210`
+  (GOTCHAS #17); `npm run test:visual` passes 7/7 without the update flag.
+  Fixes needed on the way: `manualAdvancement: false` in the
+  `visual-regression.spec.js` fixture, and a 5 s cap on the `networkidle`
+  wait in `visual-static.spec.js`. Remaining gaps are listed in the
+  2026-10-02 section (final screens, unviewed PNGs).
 - [ ] **Mute-students label reportedly blanks after a rematch — NOT
   reproduced.** Four real rematch flows (auto-advance, mute-on-before-rematch,
   End Round forced, manual-advancement) with a `MutationObserver` on the button
@@ -71,46 +133,45 @@ findings from that sweep._
 
 ## Polish / small fixes
 
-- [ ] **Add an `ending_round` translation key** (all 9 language files) and use
-  it for the latched End Round button label. The latch currently reuses
-  `waiting_for_results` ("Waiting for results…") because inventing a missing
-  key would render the raw key string. Accurate but wordy.
+- [x] ~~**Add an `ending_round` translation key** (all 9 language files)~~ DONE
+  2026-10-02 — present in all 9 locales; the latched End Round button now uses
+  it instead of `waiting_for_results`.
 
-- [ ] **"Multiple Correct Answers" still ellipsises on 390px phones**
-  ("Multiple Correct Answe…"). The other type/difficulty labels now fit after
-  the selects got their own grid row + 16px font. No layout fits the full
-  195px label at 390px across all 9 locales — needs either a shorter label
-  ("Multi-Select"?) or acceptance.
+- [x] ~~**"Multiple Correct Answers" still ellipsises on 390px phones.**~~ DONE
+  2026-10-02 — `multiple_correct` is now the short "Multi-Select" in en and
+  has short forms in the other 8 locales; the `index.html` option text and the
+  fallbacks in `question-utils.js` and `question-editing.js` match. The long
+  label stays under `question_type_multiple_correct`.
 
-- [ ] **Comment `index.html`'s hidden `.quiz-settings` block as load-bearing.**
-  It is `display:none` at every breakpoint yet is the settings *model*:
-  `#quiz-settings-modal` mirrors into it and `settings-persistence.js` /
-  `app.js` / `statistics-manager.js` read from it. It still carries dead
-  legacy inline styles. A comment marking it "hidden but live — do not
-  delete" is cheap insurance against the next cleanup pass breaking settings.
+- [x] ~~**Comment `index.html`'s hidden `.quiz-settings` block as load-bearing.**~~
+  DONE 2026-10-02 — comment added above the block. Legacy inline styles inside
+  it were left in place (see the 2026-10-02 section).
 
 ## End Round — remaining audit findings
 
 From the 2026-07-26 audit; the severe ones were fixed in the sweep.
 
-- [ ] **Consensus mode: End Round silently forfeits the round's team score**
-  — `endQuestionEarly` never calls `lockConsensus`, so `teamPoints` are never
-  awarded. Consistent with natural timeout, but the button sits next to
-  "Lock Consensus" with no warning. Decide: warn, auto-lock, or accept.
-- [ ] **No confirmation on End Round**, while the adjacent "End game"
-  (`#stop-quiz-btn`) has one. The new click-latch reduces accidental damage;
-  decide whether a confirm is still wanted.
+- [x] ~~**Consensus mode: End Round silently forfeits the round's team score**~~
+  DONE 2026-10-02 (decision: auto-lock). `endQuestionEarly` in
+  `services/question-flow-service.js` now calls `ConsensusFlowService.lockConsensus`
+  when the host ends the round and consensus is not yet locked. Natural timeout
+  and the all-answered path are unchanged; a second lock returns null, so no
+  double award. Covered by `tests/unit/end-round-consensus-lock.test.js`.
+- [x] ~~**No confirmation on End Round.**~~ CLOSED 2026-10-02 (decision: none).
+  The click latch limits accidental damage, and consensus mode now locks
+  instead of losing the score.
 - [x] ~~**Dead payload fields**: `earlyEnd: true` (question-flow-service) has no
   client consumer; `explanationVideo` is sent on the timeout path but not the
   early-end path — also unconsumed.~~ REMOVED — both fields deleted from the
   `question-timeout` payloads; the two paths now agree.
 - [x] ~~**Dead validation plumbing**: `services/validation-schemas.js` has a
   `question-start` outbound schema matching no real emitter, and
-  `validateSocketEvent` has zero callers.~~ PARTLY DONE — the `question-start`
-  outbound schema is deleted. `validateSocketEvent` is NOT dead: it is the
-  body of `validateAndHandle`, which every socket module uses; kept. The other
-  server→client schemas (`game-created`, `player-joined`, `answer-result`,
-  `question-end`, `game-end`) are equally unreachable and still there.
+  `validateSocketEvent` has zero callers.~~ DONE — the `question-start`
+  outbound schema is deleted, and so are the other unreachable server→client
+  schemas (`game-created`, `player-joined`, `answer-result`, `question-end`,
+  `game-end`); a repo grep finds no remaining reference to them.
+  `validateSocketEvent` is NOT dead: it is the body of `validateAndHandle`,
+  which every socket module uses; kept.
 
 ## Pre-existing issues surfaced (not introduced) by the sweep
 
@@ -171,7 +232,7 @@ resolves `quiz.manualAdvancement ?? true`; the three checkboxes ship `checked`;
   files de-duplicated (71 lines); the surviving (last) definition was kept in
   every case, so runtime behavior is unchanged. Verified per file: same key
   set, zero value diffs vs. HEAD.
-- [ ] **`error_rate_limited` / `error_auth_required` are untranslated English
+- [x] ~~**`error_rate_limited` / `error_auth_required` are untranslated English
   in all 8 non-English locales.** Surfaced by the dedup above: each locale had
   a properly localized auth-modal pair (e.g. es "Demasiados intentos…") that
   was *shadowed* by a later English server-message pair ("Too many requests.
@@ -179,7 +240,9 @@ resolves `quiz.manualAdvancement ?? true`; the three checkboxes ship `checked`;
   the English strings all along, and the localized values were dead code (now
   deleted). Fix by splitting the two use cases into distinct keys (e.g.
   `error_auth_rate_limited` vs `error_rate_limited`) and re-translating the
-  server-message pair in the 8 locales.
+  server-message pair in the 8 locales.~~ DONE — the auth modal now uses
+  `too_many_attempts`, and `error_rate_limited` / `error_auth_required` are
+  translated in all 8 non-English locales.
 
 ### Testing gotchas that cost real time — read before running e2e
 

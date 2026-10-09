@@ -5,7 +5,38 @@ All notable changes to Quizix Pro will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-01-28
+## [Unreleased] - 2026-10-09
+
+### Security
+- Production dependency audit (`npm audit --omit=dev`) went from 14 findings (1 low, 5 moderate, 8 high) to 3 moderate. Version ranges raised: express 4.22.3, multer 2.4.0, mammoth 1.13.0, sharp 0.35.5, uuid 11.1.1. The socket.io, engine.io, ws, undici, proxy-addr and compression entries cleared through `npm audit fix`.
+- officeparser removed. It pulled pdfjs-dist (GHSA-hq66-cqwq-w95j), tesseract.js and file-type, about 88 MB, into an unauthenticated upload route. PPTX text is now read with jszip.
+- The 3 remaining moderate findings are one chain: sprintf-js through argparse through mammoth. Only mammoth's CLI requires argparse; accepted.
+- Earlier on this branch (commit fc2ff1c): SheetJS vendored, signup gated, manim and container hardening, `unsafe-inline` dropped from the CSP.
+
+### Fixed
+- PPTX upload returned 500 for every file: `routes/file-uploads.js` called `officeparser.parseOfficeAsync`, which officeparser 6.x does not export. The route now uses `extractPptxText` (jszip): slides in numeric order, one paragraph per line, XML entities decoded, 400 with `error_pptx_extraction_failed` for files that are not PPTX.
+- `.ppt` removed from the AI generator file picker; no extractor ever parsed it.
+- Consensus mode: End Round now locks consensus first, so the round's team score is awarded. Natural timeout and the all-answered path are unchanged, and a locked round is not awarded twice.
+- Player auto-rejoin after a socket reconnect: `_attemptRejoin` called `socket.connect()` while the manager `reconnect` event had already opened the engine, which sent a second CONNECT packet and closed the transport. It now waits for `connect` and calls `connect()` only from the Rejoin button path.
+- The End Round button shows `ending_round` while disabled instead of `waiting_for_results`; the key exists in all 9 locales.
+- Quick-start panel no longer reads the never-saved `powerUpsEnabled` setting; the power-ups checkbox is reset to unchecked on each quiz selection.
+- `multiple_correct` label shortened to "Multi-Select" (en) with short forms in the other 8 locales, so it no longer ellipsises on 390px phones. `index.html` option text updated to match.
+
+### Changed
+- Removed the unused outbound socket schemas `game-created`, `player-joined`, `answer-result`, `question-end` and `game-end` from `services/validation-schemas.js`. `validateSocketEvent` stays, since `validateAndHandle` uses it.
+- Added a comment in `public/index.html` marking the hidden `.quiz-settings` block as live (mirrored from `#quiz-settings-modal`, read by `settings-persistence.js`, `app.js` and `statistics-manager.js`).
+- `package-lock.json` also moved dev dependencies (@babel 7.29, postcss 8.5.28, js-yaml 4.3.2, others). The rebuilt CSS bundle drops `-webkit-print-color-adjust` and `-webkit-mask-image` prefixes.
+
+### Tests
+- Added `tests/unit/end-round-consensus-lock.test.js` (5 cases) and `tests/unit/pptx-extraction.test.js` (4 cases, in process). `npm test`: 73 suites, 1289 tests pass.
+- `tests/e2e-disconnect-overlay.spec.js` corrected to start the game before disconnecting; 4/4 pass on a clean port, 12/12 with `--repeat-each 3`. With the rejoin fix disabled, the auto-rejoin case failed 4/4.
+- `tests/e2e/analytics-modal.spec.js`: 4/4 pass.
+- Visual baselines: both snapshot directories regenerated (45 + 7 PNGs). `visual-regression.spec.js` fixture sets `manualAdvancement: false`; `visual-static.spec.js` caps the `networkidle` wait at 5 s. `npm run test:visual` passes 7/7. The three final-screen baselines are fully masked by the confetti mask and compare nothing.
+- Unit suite: 73 suites, 1286 tests pass. `npx eslint .`: 0 errors, 287 warnings.
+
+---
+
+## [2026-01-28]
 
 ### Security
 - **CRITICAL FIX**: Authentication bypass vulnerability patched in `file-manager.js:ensureUnlocked()`. When the `/api/requires-auth` endpoint fails (network error, server error, etc.), the system now **denies access** instead of allowing it. This implements a fail-closed security policy to prevent unauthorized access to password-protected quizzes and folders.
@@ -39,10 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Previous Changes
 
-For changes prior to 2026-01-28, see:
-- [REFACTORING_ROADMAP.md](REFACTORING_ROADMAP.md) - Weeks 1-5 refactoring history
-- [simplify-tasks.md](simplify-tasks.md) - Code simplification phases (SIMP-1 through SIMP-12)
-- [docs/REFACTORING_SUMMARY.md](docs/REFACTORING_SUMMARY.md) - Comprehensive refactoring summary
+Changes before 2026-01-28 are tracked in git history. The refactoring roadmap, simplification task list and refactoring summary that this section used to link do not exist in the repository or in `docs/archive`.
 
 ---
 
