@@ -822,7 +822,7 @@ export class SocketManager {
             sessionStorage.removeItem('quizix_host_reconnect');
 
             // Otherwise attempt player rejoin
-            this._attemptRejoin();
+            this._attemptRejoin({ managerReconnected: true });
         });
 
         this.socket.io.on('reconnect_error', (error) => {
@@ -1352,8 +1352,13 @@ export class SocketManager {
     /**
      * Attempt to rejoin a game using stored session token.
      * Reconnects socket first if disconnected.
+     * @param {Object} [options]
+     * @param {boolean} [options.managerReconnected=false] - true when called from the
+     *   Manager 'reconnect' event. The transport is already open and the socket has
+     *   already sent its namespace CONNECT, so calling socket.connect() again would
+     *   send a second CONNECT, which drops the transport and loops the rejoin.
      */
-    _attemptRejoin() {
+    _attemptRejoin({ managerReconnected = false } = {}) {
         const data = this._getValidReconnectData();
         if (!data) return;
 
@@ -1394,8 +1399,10 @@ export class SocketManager {
         };
 
         if (!this.socket.connected) {
-            this.socket.connect();
             this.socket.once('connect', emitRejoin);
+            if (!managerReconnected) {
+                this.socket.connect();
+            }
         } else {
             emitRejoin();
         }

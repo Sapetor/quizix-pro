@@ -23,7 +23,7 @@ import { manimEditor } from '../manim-editor.js';
 // Shared translation fallback map used for cleaning translation keys from loaded data
 const TRANSLATION_FALLBACKS = {
     'multiple_choice': 'Multiple Choice',
-    'multiple_correct': 'Multiple Correct Answers',
+    'multiple_correct': 'Multi-Select',
     'true_false': 'True/False',
     'numeric': 'Numeric Answer',
     'easy': 'Easy',

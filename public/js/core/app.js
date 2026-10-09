@@ -862,8 +862,8 @@ export class QuizGame {
             btn.setAttribute('aria-busy', 'true');
             // Keep the label translation-managed: data-translate is what
             // translation-manager re-renders on a language switch.
-            btn.setAttribute('data-translate', 'waiting_for_results');
-            btn.textContent = translationManager.getTranslationSync('waiting_for_results');
+            btn.setAttribute('data-translate', 'ending_round');
+            btn.textContent = translationManager.getTranslationSync('ending_round');
         }
     }
 
@@ -1219,7 +1219,8 @@ export class QuizGame {
             setChecked('qs-randomize-questions', get('randomizeQuestions', 'randomizeQuestions', false));
             setChecked('qs-randomize-answers', get('randomizeAnswers', 'randomizeAnswers', false));
             setChecked('qs-manual-advancement', get('manualAdvance', 'manualAdvancement', true));
-            setChecked('qs-enable-power-ups', get('powerUpsEnabled', 'powerUpsEnabled', false));
+            // Power-ups are a per-session choice; quiz files never store them.
+            setChecked('qs-enable-power-ups', false);
             setChecked('qs-show-leaderboard-between',
                 get('showLeaderboardBetweenQuestions', 'showLeaderboardBetweenQuestions', true));
 

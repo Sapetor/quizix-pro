@@ -8,6 +8,8 @@
  * - Player result distribution
  */
 
+const { ConsensusFlowService } = require('./consensus-flow-service');
+
 // Window over which per-answer host count updates are coalesced into one emit
 const ANSWER_COUNT_FLUSH_MS = 100;
 
@@ -101,6 +103,9 @@ class QuestionFlowService {
     constructor(logger, gameSessionService) {
         this.logger = logger;
         this.gameSessionService = gameSessionService;
+        // Stateless; used so End Round locks consensus via the same path as the
+        // host's Lock Consensus button.
+        this.consensusFlowService = new ConsensusFlowService(logger, gameSessionService);
     }
 
     /**
@@ -246,6 +251,13 @@ class QuestionFlowService {
             return;
         }
         game.endingQuestionEarly = true;
+
+        // End Round in consensus mode awards the team points the Lock Consensus
+        // button would have. game.lockConsensus() is single-shot, so a round the
+        // host already locked is not awarded again.
+        if (trigger === 'host' && game.isConsensusMode && !game.consensusLocked) {
+            this.consensusFlowService.lockConsensus(game, io);
+        }
 
         const reason = trigger === 'host' ? 'Host ended the round' : 'All players answered';
         this.logger.debug(`${reason}, ending question early for game ${game.pin}`);

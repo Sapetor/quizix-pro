@@ -127,6 +127,7 @@ export default {
     exit_to_main: 'Retour au Menu Principal',
     stop_quiz: 'Arrêter le Quiz',
     end_round: 'Terminer le Tour',
+    ending_round: 'Fin du tour…',
     back_to_home: "Retour à l'Accueil",
     confirm_stop_quiz: 'Arrêter le quiz et afficher les résultats ?',
     confirm_back_to_home: 'Quitter la partie ? Tous les joueurs seront déconnectés.',
@@ -178,7 +179,7 @@ export default {
     // Question type dropdown keys
     multiple_choice: 'Choix Multiple',
     true_false: 'Vrai/Faux',
-    multiple_correct: 'Réponses Multiples Correctes',
+    multiple_correct: 'Sélection multiple',
     multiple_correct_instruction: 'Sélectionnez toutes les bonnes réponses - plusieurs options peuvent être correctes !',
     numeric: 'Réponse Numérique',
     ordering: 'Classement',
@@ -1053,7 +1054,7 @@ export default {
     error_name_required: 'Name is required',
     error_name_change_started: 'Cannot change name after game has started',
     error_name_already_taken: 'Name is already taken in this game',
-    error_rate_limited: 'Too many requests. Please slow down.',
+    error_rate_limited: 'Trop de requêtes. Veuillez ralentir.',
 
     // Consensus Server Messages
     consensus_not_active: 'Consensus mode is not active',
@@ -1078,7 +1079,7 @@ export default {
     error_cross_origin: 'Cross-origin request blocked',
     error_delete_requires_confirm: 'Delete requires confirmation',
     error_invalid_filename: 'Invalid filename',
-    error_auth_required: 'Authentication required',
+    error_auth_required: 'Authentification requise',
     error_auth_invalid: 'Invalid authentication',
     error_folder_not_owner: 'Vous n\'êtes pas le propriétaire de ce dossier',
     error_only_images: 'Only image files are allowed',

@@ -134,6 +134,7 @@ export default {
     exit_to_main: 'Salir al Menú Principal',
     stop_quiz: 'Detener Quiz',
     end_round: 'Terminar Ronda',
+    ending_round: 'Terminando ronda…',
     back_to_home: 'Volver al Inicio',
     confirm_stop_quiz: '¿Detener el quiz y mostrar resultados?',
     confirm_back_to_home: '¿Salir del juego? Todos los jugadores serán desconectados.',
@@ -158,7 +159,7 @@ export default {
     // Question type dropdown keys (used in editor)
     multiple_choice: 'Opción Múltiple',
     true_false: 'Verdadero/Falso',
-    multiple_correct: 'Múltiples Respuestas Correctas',
+    multiple_correct: 'Selección múltiple',
     multiple_correct_instruction: 'Selecciona todas las respuestas correctas - ¡más de una opción puede ser correcta!',
     numeric: 'Respuesta Numérica',
     ordering: 'Ordenamiento',

@@ -138,6 +138,7 @@ export default {
     exit_to_main: 'Exit to Main Menu',
     stop_quiz: 'Stop Quiz',
     end_round: 'End Round',
+    ending_round: 'Ending round…',
     back_to_home: 'Back to Home',
     confirm_stop_quiz: 'Stop the quiz and show results?',
     confirm_back_to_home: 'Leave the game? All players will be disconnected.',
@@ -209,7 +210,7 @@ export default {
     // Question type dropdown keys (used in editor)
     multiple_choice: 'Multiple Choice',
     true_false: 'True/False',
-    multiple_correct: 'Multiple Correct Answers',
+    multiple_correct: 'Multi-Select',
     multiple_correct_instruction: 'Select all correct answers - more than one option may be correct!',
     numeric: 'Numeric Answer',
     ordering: 'Ordering',

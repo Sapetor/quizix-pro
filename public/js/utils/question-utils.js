@@ -34,7 +34,7 @@ export class QuestionUtils {
                     <span class="qm-label ed-mono" data-translate="type_label">Type</span>
                     <select class="question-type" onchange="updateQuestionType(this)">
                         <option value="multiple-choice" data-translate="multiple_choice">Multiple Choice</option>
-                        <option value="multiple-correct" data-translate="multiple_correct">Multiple Correct Answers</option>
+                        <option value="multiple-correct" data-translate="multiple_correct">Multi-Select</option>
                         <option value="true-false" data-translate="true_false">True/False</option>
                         <option value="numeric" data-translate="numeric_answer">Numeric Answer</option>
                         <option value="ordering" data-translate="ordering">Ordering</option>
