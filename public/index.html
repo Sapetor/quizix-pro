@@ -16,10 +16,10 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=177">
+    <link rel="stylesheet" href="css/main.bundle.css?v=178">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=177" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=178" as="script" crossorigin="anonymous">
     <!-- app.js and translation-manager.js are never requested by the document; main.js
          imports them as ES modules. A preload only matches if the URL is identical, and
          the import specifiers carry no ?v= query — so a versioned `as="script"` preload
@@ -113,7 +113,7 @@
          MUST stay parser-blocking (no defer, no async) so the theme custom
          properties are set before first paint, and MUST stay ahead of the async
          MathJax tag below so window.MathJax is configured before MathJax runs. -->
-    <script src="js/core/boot-head.js?v=177"></script>
+    <script src="js/core/boot-head.js?v=178"></script>
     <!-- CDN MathJax with fallback for WSL/Windows environment -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
         onerror="console.warn('MathJax CDN failed, app will function without LaTeX rendering')"></script>
@@ -3579,12 +3579,12 @@ class GraphScene(Scene):
         onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
         </script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=177"></script>
-    <script type="module" src="js/landing.js?v=177"></script>
-    <script type="module" src="js/landing-demo.js?v=177"></script>
-    <script type="module" src="js/landing-ai.js?v=177"></script>
+    <script type="module" src="js/main.js?v=178"></script>
+    <script type="module" src="js/landing.js?v=178"></script>
+    <script type="module" src="js/landing-demo.js?v=178"></script>
+    <script type="module" src="js/landing-ai.js?v=178"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
-    <script defer src="js/core/boot-service-worker.js?v=177"></script>
+    <script defer src="js/core/boot-service-worker.js?v=178"></script>
 
     <!-- Language Picker Overlay (First Visit) -->
     <div id="language-picker-overlay" class="language-picker-overlay hidden">
