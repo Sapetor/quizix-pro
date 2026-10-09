@@ -42,6 +42,17 @@ the same session are struck through in the sections below.
   gets the response in 2 ms. A standalone fetch of the same URL finishes. Cause
   not found. `bootLanding` in `tests/e2e/visual-static.spec.js` now caps that
   wait at 5 s, which avoids the 120 s hang without explaining it.
+  2026-10-09: worse now. All 5 `visual-static.spec.js` tests time out because
+  `page.goto('/')` never fires `load` (not even `DOMContentLoaded`), at HEAD
+  a40b184 as well as with the dead-code removal applied. A CDP network log
+  shows Chromium emits `requestWillBeSent` for the six classic async/defer
+  scripts (MathJax, confetti, chart.js and highlight.js from CDNs, local
+  `libs/sheetjs/xlsx.full.min.js`, `boot-service-worker.js`) but never sends
+  them: the server log has no request, and curl (also 6 concurrent, gzip)
+  gets each in under 40 ms. Module scripts, CSS and socket.io load. Opening a
+  single one of those URLs in the same Chromium works. Looks like Chromium
+  holding delayable requests behind something in flight; cause not found.
+  `visual-regression.spec.js` (2 tests, full game desktop and mobile) passes.
 - [ ] **Final-screen visual baselines compare nothing.** `desktop-final-host`,
   `desktop-final-player` and `mobile-final-player` are fully magenta because
   the `body > canvas` confetti mask covers the whole screen. The HEAD baseline

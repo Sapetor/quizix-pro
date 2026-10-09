@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `multiple_correct` label shortened to "Multi-Select" (en) with short forms in the other 8 locales, so it no longer ellipsises on 390px phones. `index.html` option text updated to match.
 
 ### Changed
+- Removed dead CSS: about 2,370 lines and 366 selectors with no reference in HTML, JS or server code (keyboard-shortcuts modal, user manual, old connection indicator, font-size buttons, `.fs-*` utilities, preview carousel and device toggle, lobby and mobile-header leftovers), plus 10 keyframes and 4 CSS variables left unused. Classes built at runtime (`toast-${type}`, `qs-glyph--${glyph}`, `qr-size-${n}`, `hljs-*`) are kept.
+- Removed 286 unused translation keys from all 9 locales (1414 -> 1128 each). Keys built at runtime (`question_type_*`, `compare_improving/declining/stable`) are kept.
+- Removed unused exports `closeAuthModal`, `createQuestionCounter`, `validateQuery` and five param schemas, and the opt-in `/api/stats/memory` endpoint, which nothing called or documented. `/debug/config`, `/api/debug/files` and `/api/debug/directory` stay, since DEPLOYMENT.md documents them.
 - Removed the unused outbound socket schemas `game-created`, `player-joined`, `answer-result`, `question-end` and `game-end` from `services/validation-schemas.js`. `validateSocketEvent` stays, since `validateAndHandle` uses it.
 - Added a comment in `public/index.html` marking the hidden `.quiz-settings` block as live (mirrored from `#quiz-settings-modal`, read by `settings-persistence.js`, `app.js` and `statistics-manager.js`).
 - `package-lock.json` also moved dev dependencies (@babel 7.29, postcss 8.5.28, js-yaml 4.3.2, others). The rebuilt CSS bundle drops `-webkit-print-color-adjust` and `-webkit-mask-image` prefixes.
