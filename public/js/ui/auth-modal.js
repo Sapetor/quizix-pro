@@ -176,10 +176,6 @@ export function openAuthModal(initialTab = 'login') {
     }, 50);
 }
 
-export function closeAuthModal() {
-    close();
-}
-
 function close() {
     if (!modalEl) return;
     closeModal(modalEl);

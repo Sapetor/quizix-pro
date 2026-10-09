@@ -740,8 +740,6 @@ gracefulShutdownHandler.registerSignalHandlers();
 // Health check endpoints for Kubernetes (extracted to routes/health-checks.js)
 app.use(createHealthCheckRoutes({
     metricsService,
-    gameSessionService,
-    socketBatchService,
     basePath: BASE_PATH,
     isProduction,
     enableDebugRoutes

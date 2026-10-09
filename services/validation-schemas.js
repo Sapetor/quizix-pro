@@ -298,38 +298,6 @@ function validateParams(schema) {
     };
 }
 
-/**
- * Creates an Express middleware that validates request query against a Zod schema
- * @param {z.ZodSchema} schema - Zod schema to validate against
- * @returns {Function} Express middleware function
- */
-function validateQuery(schema) {
-    return (req, res, next) => {
-        try {
-            const result = schema.safeParse(req.query);
-            if (!result.success) {
-                const errors = result.error.issues.map(err => ({
-                    field: err.path.join('.'),
-                    message: err.message
-                }));
-                return res.status(400).json({
-                    error: 'Invalid query parameters',
-                    messageKey: 'error_invalid_query_parameters',
-                    details: errors
-                });
-            }
-            req.validatedQuery = result.data;
-            next();
-        } catch (error) {
-            return res.status(500).json({
-                error: 'Validation error',
-                messageKey: 'error_validation_error',
-                message: error.message
-            });
-        }
-    };
-}
-
 // ============================================================================
 // File Management Schemas
 // ============================================================================
@@ -387,27 +355,6 @@ const folderIdParamSchema = z.object({
 });
 
 // ============================================================================
-// Param Schemas
-// ============================================================================
-
-const quizFilenameSchema = z.object({
-    filename: z.string().regex(/^[\w\-]+\.json$/, 'Invalid filename format')
-});
-
-const resultFilenameSchema = z.object({
-    filename: z.string().regex(/^results_\d+_\d+\.json$/, 'Invalid result filename format')
-});
-
-const pinSchema = z.object({
-    pin: z.string().regex(/^\d{6}$/, 'PIN must be exactly 6 digits')
-});
-
-const exportFormatSchema = z.object({
-    filename: z.string(),
-    format: z.enum(['csv', 'json'])
-});
-
-// ============================================================================
 // Socket Event Schemas
 // ============================================================================
 
@@ -444,10 +391,6 @@ const playerJoinSchema = z.object({
 // Same name constraints as playerJoinSchema (names render on host/player screens)
 const playerChangeNameSchema = z.object({
     newName: z.string().min(1).max(50)
-});
-
-const startGameSchema = z.object({
-    pin: z.string().regex(/^\d{6}$/)
 });
 
 const nextQuestionSchema = z.object({
@@ -612,10 +555,6 @@ module.exports = {
     aiCompleteSchema,
     joinGameSchema,
     submitAnswerSchema,
-    quizFilenameSchema,
-    resultFilenameSchema,
-    pinSchema,
-    exportFormatSchema,
 
     // File management schemas
     createFolderSchema,
@@ -634,7 +573,6 @@ module.exports = {
     hostJoinSchema,
     playerJoinSchema,
     playerChangeNameSchema,
-    startGameSchema,
     nextQuestionSchema,
     endQuestionEarlySchema,
     socketSubmitAnswerSchema,
@@ -655,7 +593,6 @@ module.exports = {
     // Middleware factories
     validateBody,
     validateParams,
-    validateQuery,
 
     // Socket validation
     validateSocketEvent,

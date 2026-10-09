@@ -511,13 +511,6 @@ export function showSuccessAlert(key, params = []) {
 }
 
 /**
- * Create question counter text "Question X of Y"
- */
-export function createQuestionCounter(current, total) {
-    return `${translationManager.getTranslationSync('question')} ${current} ${translationManager.getTranslationSync('of')} ${total}`;
-}
-
-/**
  * Get True/False button text
  */
 export function getTrueFalseText() {

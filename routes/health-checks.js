@@ -10,18 +10,14 @@ const fs = require('fs');
  * Create health check router
  * @param {object} options - Configuration options
  * @param {object} options.metricsService - Metrics service instance
- * @param {object} options.gameSessionService - Game session service instance
- * @param {object} options.socketBatchService - Socket batch service instance
  * @param {string} options.basePath - Base path configuration
  * @param {boolean} options.isProduction - Production environment flag
- * @param {boolean} options.enableDebugRoutes - Opt-in flag for /metrics, /debug/config and /api/stats/memory
+ * @param {boolean} options.enableDebugRoutes - Opt-in flag for /metrics and /debug/config
  * @returns {express.Router}
  */
 function createHealthCheckRoutes(options) {
     const {
         metricsService,
-        gameSessionService,
-        socketBatchService,
         basePath,
         isProduction,
         enableDebugRoutes = false
@@ -119,26 +115,6 @@ function createHealthCheckRoutes(options) {
             });
         }
     });
-
-    // Memory stats endpoint for monitoring and debugging. Opt-in
-    // (ENABLE_DEBUG_ROUTES): it is unauthenticated and reports heap, RSS,
-    // uptime and the active game count, so a plain LAN run exposed the
-    // process's memory profile and session load to anyone on the network.
-    if (enableDebugRoutes) {
-        router.get('/api/stats/memory', (req, res) => {
-            const memUsage = process.memoryUsage();
-            res.json({
-                heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB',
-                heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + 'MB',
-                rss: Math.round(memUsage.rss / 1024 / 1024) + 'MB',
-                external: Math.round(memUsage.external / 1024 / 1024) + 'MB',
-                activeGames: gameSessionService.games.size,
-                batchStats: socketBatchService.getStats(),
-                uptime: Math.round(process.uptime()) + 's',
-                timestamp: new Date().toISOString()
-            });
-        });
-    }
 
     return router;
 }
