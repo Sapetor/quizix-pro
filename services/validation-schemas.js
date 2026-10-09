@@ -524,59 +524,6 @@ const releaseSessionSchema = z.object({
 });
 
 // Server to client event data schemas
-const gameCreatedEventSchema = z.object({
-    pin: z.string(),
-    title: z.string(),
-    qrCodeDataUrl: z.string().optional(),
-    networkUrl: z.string().optional()
-});
-
-const playerJoinedEventSchema = z.object({
-    playerId: z.string(),
-    playerName: z.string(),
-    playerNumber: z.number().int(),
-    players: z.array(z.object({
-        id: z.string(),
-        name: z.string(),
-        score: z.number()
-    }))
-});
-
-const answerResultEventSchema = z.object({
-    correct: z.boolean(),
-    points: z.number().int(),
-    totalScore: z.number().int(),
-    streak: z.number().int().optional(),
-    correctAnswer: z.union([
-        z.number(),
-        z.boolean(),
-        z.string(),
-        z.array(z.number())
-    ]).optional()
-});
-
-const questionEndEventSchema = z.object({
-    leaderboard: z.array(z.object({
-        name: z.string(),
-        score: z.number()
-    })),
-    statistics: z.object({}).passthrough().optional(),
-    correctAnswer: z.union([
-        z.number(),
-        z.boolean(),
-        z.string(),
-        z.array(z.number())
-    ])
-});
-
-const gameEndEventSchema = z.object({
-    leaderboard: z.array(z.object({
-        name: z.string(),
-        score: z.number()
-    })),
-    statistics: z.object({}).passthrough().optional()
-});
-
 const errorEventSchema = z.object({
     message: z.string(),
     code: z.string().optional()
@@ -611,11 +558,6 @@ function validateSocketEvent(eventName, data) {
         'leave-session': leaveSessionSchema,
         'release-session': releaseSessionSchema,
         // Server to client
-        'game-created': gameCreatedEventSchema,
-        'player-joined': playerJoinedEventSchema,
-        'answer-result': answerResultEventSchema,
-        'question-end': questionEndEventSchema,
-        'game-end': gameEndEventSchema,
         'error': errorEventSchema
     };
 
@@ -708,11 +650,6 @@ module.exports = {
     sessionCheckSchema,
     leaveSessionSchema,
     releaseSessionSchema,
-    gameCreatedEventSchema,
-    playerJoinedEventSchema,
-    answerResultEventSchema,
-    questionEndEventSchema,
-    gameEndEventSchema,
     errorEventSchema,
 
     // Middleware factories

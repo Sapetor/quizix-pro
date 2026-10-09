@@ -1260,6 +1260,10 @@
                                 data-translate-placeholder="quiz_title" aria-label="Quiz title"
                                 data-translate-aria-label="quiz_title">
 
+                            <!-- .quiz-settings is display:none at every breakpoint (see app-screens.css), but it is
+                                 the live settings model: #quiz-settings-modal mirrors into it, and
+                                 settings-persistence.js, app.js and statistics-manager.js read from it.
+                                 Do not delete it. -->
                             <div class="quiz-settings">
                                 <div class="general-options">
                                     <label>
