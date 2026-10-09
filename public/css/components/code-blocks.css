@@ -130,7 +130,6 @@ pre:not(.has-syntax-highlighting) code {
     padding: 48px 40px;
 }
 
-.options-grid:has(pre),
 .options-grid.has-code {
     max-width: 800px;
     gap: 20px;

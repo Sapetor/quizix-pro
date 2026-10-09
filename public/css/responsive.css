@@ -16,11 +16,6 @@
     .mobile-only {
         display: block !important;
     }
-    
-    /* Hide desktop menu on mobile */
-    .desktop-menu {
-        display: none !important;
-    }
 }
 
 /* Additional mobile breakpoints for better device coverage */
@@ -57,9 +52,6 @@
 
 /* Tablet Portrait and Small Desktop (1024px and below) */
 @media (max-width: 1024px) {
-    .left-toolbar {
-        display: none !important;
-    }
     
     /* Toolbar is now in header - no margin adjustments needed */
     
@@ -116,38 +108,7 @@
         box-shadow: none !important;
         padding: 12px 0 6px 0; /* Reduced from 20px 0 10px 0 */
     }
-    
-    /* Style mobile secondary controls as Airbnb-style bottom navigation */
-    .secondary-controls {
-        position: fixed !important;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: var(--bg-primary);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 12px 20px 20px 20px; /* Extra bottom padding for safe area */
-        z-index: 1000;
-        box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.2);
-    }
-    
-    /* Dark theme support for bottom navigation */
-    [data-theme="dark"] .secondary-controls {
-        background: rgba(30, 41, 59, 0.95) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.3);
-    }
-    
-    /* Airbnb-style horizontal layout for bottom controls */
-    .secondary-controls .control-group {
-        display: flex !important;
-        justify-content: space-around !important;
-        align-items: center !important;
-        max-width: 400px;
-        margin: 0 auto;
-        gap: 60px; /* Increase gap for better spacing */
-        padding: 0 20px;
-    }
-    
+
     /* Style language selector for bottom nav */
     .language-selector.mobile-lang {
         background: none !important;
@@ -195,31 +156,9 @@
     }
     
     /* Style theme toggle for bottom nav */
-    .mobile-control-btn {
-        background: none !important;
-        border: none !important;
-        padding: 8px 12px !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        gap: 4px !important;
-        cursor: pointer;
-        color: var(--text-secondary);
-        transition: color 0.2s ease;
-    }
-    
-    .mobile-control-btn:hover {
-        color: var(--text-primary);
-    }
     
     .mobile-control-btn .control-icon {
         font-size: 1.5em !important;
-    }
-    
-    .mobile-control-btn .control-label {
-        font-size: 0.75em !important;
-        font-weight: 500;
-        color: inherit;
     }
     
     /* Container and Layout */
@@ -245,26 +184,7 @@
         flex-direction: column;
         justify-content: center;
     }
-    
-    /* Lift Host/Join buttons higher above bottom navigation */
-    .primary-actions {
-        padding: 16px 20px 16px 20px !important; /* Reduced top/bottom from 20px to 16px */
-        gap: 12px !important; /* Reduced from 15px */
-        margin-bottom: 20px !important; /* Further reduced from 30px */
-        position: relative;
-        z-index: 100;
-    }
-    
-    .large-action-btn {
-        padding: 12px 24px !important; /* Reduced from 16px 28px for compact design */
-        font-size: 1.05em !important; /* Slightly reduced from 1.1em */
-        min-height: var(--button-min-height) !important; /* Scales with font for accessibility */
-        font-weight: 600;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    
+
     /* Fix mobile scrolling - ensure containers allow overflow */
     .host-container,
     #host-screen .host-container,
@@ -934,15 +854,6 @@
         text-align: center;
     }
     
-    .preview-device-toggle {
-        justify-content: center;
-    }
-    
-    .device-btn {
-        padding: 6px 12px;
-        font-size: 0.8rem;
-    }
-    
     /* Answer Statistics */
     .answer-stats {
         padding: 15px;
@@ -962,15 +873,6 @@
         font-size: 0.9rem;
         min-width: 25px;
         height: 25px;
-    }
-    
-    .option-count {
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-    
-    .option-percentage {
-        font-size: 0.8rem;
     }
 }
 
@@ -1081,11 +983,6 @@
         padding: 10px 15px;
     }
     
-    .device-btn {
-        padding: 4px 8px;
-        font-size: 0.7rem;
-    }
-    
     .answer-stats {
         padding: 10px;
         margin-top: 15px;
@@ -1100,14 +997,6 @@
         font-size: 0.8rem;
         min-width: 20px;
         height: 20px;
-    }
-    
-    .option-count {
-        font-size: 1rem;
-    }
-    
-    .option-percentage {
-        font-size: 0.7rem;
     }
 }
 
@@ -1125,7 +1014,6 @@
 /* Print Styles */
 @media print {
     /* Hide interactive elements */
-    .left-toolbar,
     .preview-modal,
     .modal,
     button,
@@ -1139,8 +1027,7 @@
         padding: 0;
     }
     
-    .card,
-    .question-container {
+    .card {
         background: white !important;
         color: black !important;
         border: 1px solid #ccc !important;
@@ -1181,7 +1068,6 @@
         /* Adjust option heights for touch */
         --multiple-choice-option-height: 55px;
         --true-false-option-height: 60px;
-        --numeric-input-height: 48px;
         --checkbox-option-height: 42px;
     }
 }
@@ -1203,7 +1089,6 @@
         /* Larger option heights for desktop */
         --multiple-choice-option-height: 65px;
         --true-false-option-height: 70px;
-        --numeric-input-height: 55px;
         --checkbox-option-height: 50px;
     }
 }
@@ -1216,12 +1101,6 @@
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
     }
-}
-
-/* Dark Mode Media Query Support */
-@media (prefers-color-scheme: dark) {
-    /* Auto dark mode styles can be added here if needed */
-    /* Currently handled by manual theme toggle */
 }
 
 /* Reduced Motion Support */
@@ -1354,88 +1233,10 @@
         display: none;
     }
     
-    #main-menu .user-manual {
-        display: none;
-    }
-    
     /* Hide desktop header controls on mobile */
     .desktop-only {
         display: none !important;
     }
-}
-
-.features-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 16px;
-}
-
-.feature-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9em;
-    color: var(--text-secondary);
-    padding: 8px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* ============================================
-   MOBILE BOTTOM CONTROLS (AIRBNB-STYLE)
-   ============================================ */
-
-.mobile-bottom-controls {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--bg-primary);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 12px 20px; /* Reduced from 20px to 12px top/bottom */
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center; /* Center the buttons horizontally */
-}
-
-/* Main Action Buttons */
-.main-actions {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 0; /* Removed margin since we're centering in container */
-    width: 100%;
-    max-width: 400px; /* Limit maximum width for better centering */
-}
-
-.large-action-btn {
-    flex: 1;
-    padding: 12px 24px; /* Reduced from 16px to 12px top/bottom */
-    font-size: 1.05em; /* Slightly reduced from 1.1em */
-    font-weight: 600;
-    border-radius: 12px;
-    min-height: 44px; /* Add explicit minimum height */
-    display: flex;
-    align-items: center;
-    justify-content: center; /* Center text within button */
-    min-height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Secondary Controls */
-.secondary-controls {
-    display: flex;
-    justify-content: center;
-}
-
-.control-group {
-    display: flex;
-    gap: 16px;
-    align-items: center;
 }
 
 /* Mobile Language Selector */
@@ -1489,32 +1290,9 @@
 }
 
 /* Mobile Control Button */
-.mobile-control-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.mobile-control-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    transform: translateY(-1px);
-}
 
 .mobile-control-btn .control-icon {
     font-size: 1.2em;
-}
-
-.mobile-control-btn .control-label {
-    font-size: 0.75em;
-    color: var(--text-secondary);
 }
 
 /* ============================================
@@ -1523,7 +1301,6 @@
 
 /* Hide mobile elements on desktop */
 @media (min-width: 769px) {
-    .mobile-bottom-controls,
     .mobile-only {
         display: none !important;
     }
@@ -1532,38 +1309,11 @@
     #questions-container {
         display: block !important;
     }
-    
-    /* Ensure desktop menu is visible with proper layout */
-    .desktop-menu.menu-options {
-        display: grid !important; /* Preserve grid layout for centering */
-    }
-    
-    .desktop-menu {
-        display: block !important;
-    }
 }
 
 /* ============================================
    RESPONSIVE ADJUSTMENTS
    ============================================ */
-
-/* Small mobile phones */
-@media (max-width: 375px) {
-    .features-grid {
-        grid-template-columns: 1fr;
-        gap: 8px;
-    }
-    
-    .main-actions {
-        flex-direction: column;
-        gap: 8px;
-    }
-    
-    .control-group {
-        flex-direction: column;
-        gap: 12px;
-    }
-}
 
 /* Large mobile phones */
 @media (min-width: 769px) and (max-width: 1024px) {
@@ -1571,15 +1321,9 @@
     .desktop-only {
         display: block !important;
     }
-    
-    /* Hide mobile bottom controls on tablets */
-    .mobile-bottom-controls {
-        display: none;
-    }
-    
+
     /* Show original menu structure on tablets */
-    #main-menu .menu-options,
-    #main-menu .user-manual {
+    #main-menu .menu-options {
         display: block;
     }
 }
@@ -1607,122 +1351,6 @@
     [data-theme="light"] .quiz-editor-section p {
         color: #1e293b !important; /* Dark text for light mode */
     }
-    
-    
-    /* ============================================
-       MOBILE PREVIEW SHOWCASE
-       ============================================ */
-       
-    .mobile-preview-showcase {
-        padding: 2rem 1rem;
-        margin: 1rem 0 8rem 0; /* Added 8rem bottom margin to prevent clipping */
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .preview-showcase-header {
-        text-align: center;
-        margin-bottom: 1.5rem;
-    }
-    
-    .preview-showcase-header h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        background: linear-gradient(135deg, #3b82f6, #a855f7);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    
-    .preview-showcase-header p {
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 0.9rem;
-        line-height: 1.4;
-    }
-    
-    .preview-showcase-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-    }
-    
-    .preview-phone-frame {
-        position: absolute;
-        top: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 200px;
-        height: 300px;
-        background: linear-gradient(145deg, #1e293b, #334155);
-        border-radius: 20px;
-        padding: 12px;
-        box-shadow: 
-            0 10px 25px rgba(0, 0, 0, 0.3),
-            0 4px 10px rgba(0, 0, 0, 0.2);
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        opacity: 0;
-        transition: all 0.5s ease-in-out;
-        pointer-events: none;
-    }
-    
-    .preview-phone-frame.active {
-        opacity: 1;
-        pointer-events: auto;
-    }
-    
-    .preview-phone-frame::before {
-        content: '';
-        position: absolute;
-        top: 8px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 40px;
-        height: 4px;
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 2px;
-    }
-    
-    .preview-screen {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        background: #0f172a;
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    
-    .preview-screenshot {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 12px;
-    }
-    
-    /* Light theme adaptations */
-    [data-theme="light"] .mobile-preview-showcase {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
-        border: 1px solid rgba(59, 130, 246, 0.2);
-    }
-    
-    [data-theme="light"] .preview-showcase-header p {
-        color: rgba(30, 41, 59, 0.7);
-    }
-    
-    [data-theme="light"] .preview-phone-frame {
-        background: linear-gradient(145deg, #f1f5f9, #e2e8f0);
-        border: 2px solid rgba(59, 130, 246, 0.2);
-    }
-    
-    [data-theme="light"] .preview-phone-frame::before {
-        background: rgba(30, 41, 59, 0.3);
-    }
-    
-    [data-theme="light"] .preview-screen {
-        background: #ffffff;
-    }
 }
 
 /* ============================================
@@ -1735,12 +1363,6 @@
         margin: 15px 0;
         padding: 0 10px;
         gap: 10px;
-    }
-    
-    .qr-code {
-        padding: 12px;
-        max-width: 90vw;
-        box-sizing: border-box;
     }
     
     #qr-code-image {
@@ -1902,7 +1524,6 @@
     .theme-toggle,
     .sound-toggle,
     .language-selector,
-    .preview-nav-btn,
     .close-btn {
         min-height: var(--button-min-height) !important; /* Scales with font for accessibility */
         min-width: var(--button-min-height) !important;
@@ -1913,19 +1534,7 @@
         justify-content: center !important;
     }
 
-    /* Mobile-specific enhancements */
-    .mobile-menu-btn,
-    .mobile-back-btn,
-    .mobile-save-btn {
-        min-height: var(--input-min-height) !important; /* Scales with font for accessibility */
-        min-width: var(--input-min-height) !important;
-        font-size: 16px !important;
-        font-weight: 600 !important;
-        border-radius: 12px !important;
-    }
-
     /* AI Generator and toolbar buttons */
-    .ai-generator-btn,
     .toolbar-btn,
     .quiz-action-btn {
         min-height: var(--button-min-height) !important; /* Scales with font for accessibility */
@@ -1940,16 +1549,8 @@
     .checkbox-option + .checkbox-option {
         margin-top: 8px !important;
     }
-    
-    /* Touch target visual feedback */
-    .touch-highlight:active {
-        background-color: rgba(59, 130, 246, 0.1) !important;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3) !important;
-    }
-    
+
     /* Prevent accidental touches on small elements */
-    .small-text,
-    .helper-text,
     .metadata {
         pointer-events: none;
         user-select: none;

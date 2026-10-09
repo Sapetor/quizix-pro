@@ -50,19 +50,6 @@
 }
 
 /* MathJax rendered state */
-.mathjax-rendered {
-    animation: previewFadeIn 0.3s ease-out;
-}
-
-@keyframes previewFadeIn {
-    from {
-        opacity: 0.7;
-    }
-
-    to {
-        opacity: 1;
-    }
-}
 
 .modal-overlay {
     position: fixed;
@@ -116,35 +103,6 @@
     margin: 0;
     font-size: 1.8rem;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.preview-device-toggle {
-    display: flex;
-    gap: 10px;
-}
-
-.device-btn {
-    background: var(--border-color);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 25px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-    font-weight: 500;
-}
-
-.device-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-}
-
-.device-btn.active {
-    background: rgba(255, 255, 255, 0.9);
-    color: var(--accent-primary);
-    border-color: rgba(255, 255, 255, 0.9);
-    font-weight: bold;
 }
 
 .preview-modal-header .close-btn {
@@ -671,7 +629,6 @@ pre code {
 }
 
 /* True/False and Numeric input areas with code */
-.tf-options:has(pre),
 .numeric-input-container:has(pre) {
     max-width: 600px;
     /* Use same width as normal options */
@@ -783,116 +740,9 @@ pre code {
     gap: 8px;
 }
 
-.settings-btn {
-    padding: 8px 12px;
-    background: var(--bg-glass);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 16px;
-}
-
-/* Rule G corollary 1: a settings affordance is neither a primary action nor
-   correctness, so it gives up green. White on the dark-theme green was 2.28:1. */
-.settings-btn:hover {
-    background: var(--ink-2);
-    color: var(--paper-2);
-}
-
-/* Preview Settings Popup */
-.preview-settings-popup {
-    position: fixed;
-    left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 300px;
-    background: var(--bg-glass);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    z-index: 1000;
-    animation: slideInLeft 0.3s ease;
-}
-
-.settings-popup-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px 10px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.settings-popup-header h4 {
-    margin: 0;
-    color: var(--text-primary);
-    font-size: 1.1rem;
-}
-
-.settings-popup-content {
-    padding: 20px;
-}
-
-.preview-settings-popup .close-btn {
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-    color: var(--text-secondary);
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-}
-
-.preview-settings-popup .close-btn:hover {
-    background: var(--error-color);
-    /* --error-label, not white: dark --error-color #f87171 under white is 2.77:1. */
-    color: var(--error-label);
-}
-
 /* Animation defined in animations.css */
 
-.preview-header-controls {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
 /* Animation defined in animations.css */
-
-.settings-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.settings-row:last-child {
-    margin-bottom: 0;
-}
-
-.settings-row label {
-    min-width: 80px;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
-
-.settings-row input[type="range"] {
-    flex: 1;
-    margin: 0 10px;
-}
-
-.settings-row span {
-    min-width: 50px;
-    font-size: 0.85rem;
-    color: var(--text-primary);
-    text-align: right;
-}
 
 /* Floating Back to Top Button */
 .back-to-top-float {
@@ -930,23 +780,6 @@ pre code {
 }
 
 /* Animation defined in animations.css */
-
-.device-btn {
-    padding: 3px 6px;
-    background: var(--bg-glass-light);
-    border: none;
-    border-radius: var(--border-radius-small);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.1s ease;
-    font-size: 0.7rem;
-    margin: 0 2px;
-}
-
-.device-btn.active {
-    background: rgba(255, 215, 0, 0.3);
-    color: #FFD700;
-}
 
 .nav-btn {
     padding: 4px 8px;

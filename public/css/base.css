@@ -317,8 +317,7 @@ pre code {
 .timer-display,
 .score-display,
 .pin-display,
-.countdown,
-.numeric-value {
+.countdown {
     font-family: var(--font-mono);
     font-weight: 600;
     letter-spacing: 0.05em;

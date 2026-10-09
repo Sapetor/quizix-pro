@@ -70,19 +70,6 @@
   color: var(--ink);
 }
 
-.brand-tag {
-  font-family: var(--font-body);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  padding: 3px 7px;
-  border: 1px solid var(--rule-soft-light);
-  border-radius: 4px;
-  transform: translateY(-3px);
-}
-
 /* One chrome, two hosts: the lobby breadcrumb is geometrically identical to the
    editor's and only omits the "Editor ·" segment, since the quiz title alone is
    the context once the game room is up. Kept as one rule so the two cannot
@@ -650,7 +637,6 @@ body.in-host-game .app-header .live-game-controls { display: flex; }
     padding: 0 16px;
     gap: 12px;
   }
-  .brand-tag { display: none; }
   .app-header .lang-pill .language-name { display: none; }
   .app-header .conn span:not(.dot) { display: none; }
   .app-header .live-game-progress { gap: 8px; }

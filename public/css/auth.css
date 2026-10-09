@@ -196,24 +196,6 @@
     border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
-.quiz-visibility-toggle {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 2px 6px;
-    font-size: 0.9rem;
-    border-radius: 6px;
-    color: var(--text-secondary, #666);
-    transition: background 0.15s, color 0.15s;
-}
-
-.quiz-visibility-toggle:hover,
-.quiz-visibility-toggle:focus {
-    background: var(--bg-hover, rgba(0, 0, 0, 0.06));
-    color: var(--text-primary, #1a1a1a);
-    outline: none;
-}
-
 /* ====================================================================== */
 /*  Dark Theme Adjustments                                                */
 /* ====================================================================== */

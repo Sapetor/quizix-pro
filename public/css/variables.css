@@ -244,7 +244,6 @@
        renders a coherent page instead of a pre-Buzzer slate one. */
     --bg-primary: var(--paper);
     --bg-secondary: rgba(var(--primary-rgb), 0.08);
-    --bg-glass: rgba(255, 255, 255, 0.85);
 
     /* Text Colors */
     --text-primary: var(--ink);
@@ -305,13 +304,11 @@
     --bg-tertiary: var(--card-bg);
     --background-primary: var(--bg-primary);
     --success-green: var(--success-color);
-    --color-primary: var(--color-primary-500);
     --color-danger-500: var(--color-error-500);
     --surface-color: var(--card-bg);
     /* Deprecated: resolves to the same colour as --text-secondary; the distinction is
        silently discarded. 2 consumers in components.css. */
     --text-tertiary: var(--text-secondary);
-    --glass-dark: rgba(0, 0, 0, 0.4);
     /* Deprecated triplet alias. rgba() cannot take a colour, but a custom property
        substitutes textually, so this forwards correctly. 7 consumers outside this file. */
     --accent-primary-rgb: var(--primary-rgb);
@@ -392,7 +389,6 @@
     /* Question type specific adjustments - scale with font for accessibility */
     --multiple-choice-option-height: calc(60px * var(--global-font-scale));
     --true-false-option-height: calc(65px * var(--global-font-scale));
-    --numeric-input-height: calc(50px * var(--global-font-scale));
     --checkbox-option-height: calc(45px * var(--global-font-scale));
 
     /* Interactive element heights - scale with font for accessibility */
@@ -446,7 +442,6 @@
     --error-color: #b91c1c;
     --error-label: #ffffff;
     --info-color: #2563eb;
-    --bg-glass: rgba(255, 255, 255, 0.85);
     --text-contrast: #1e293b;
     --bg-contrast: rgba(255, 255, 255, 0.98);
     
@@ -538,7 +533,6 @@
     --error-color: #f87171;
     --error-label: #14161c;    /* 6.54:1 on the fill; white would be 2.77:1 */
     --info-color: #60a5fa;
-    --bg-glass: rgba(255,255,255,0.08);
     --text-contrast: #f0f6fc;
     --bg-contrast: rgba(15,15,20,0.95);
 
@@ -571,42 +565,29 @@
 /* Optimized utility classes to replace repetitive calc() declarations */
 
 /* Core Font Size Utilities (most common sizes) */
-.fs-xs,   /* 0.7rem - Used 2x */
 .answer-stats .participant-name { 
     font-size: calc(0.7rem * var(--global-font-scale)) !important; 
 }
 
-.fs-sm,   /* 0.8rem - Used 2x */
-.answer-stats .percentage,
-.small-text { 
+.answer-stats .percentage { 
     font-size: calc(0.8rem * var(--global-font-scale)) !important; 
 }
 
-.fs-tiny, /* 0.85rem - Used 2x */
-.quiz-editor-section .counter,
-.small-details { 
+.quiz-editor-section .counter { 
     font-size: calc(0.85rem * var(--global-font-scale)) !important; 
 }
 
-.fs-mini, /* 0.9rem - Used 5x */
 .question-type,
-.difficulty-selector,
 .time-input,
-.helper-text,
 .metadata { 
     font-size: calc(0.9rem * var(--global-font-scale)) !important; 
 }
 
-.fs-base, /* 1rem - Used 5x */
 #preview-question-counter-display,
-#preview-question-counter-display-split,
-.base-text,
-.form-helper,
-.dropdown-items li { 
+#preview-question-counter-display-split { 
     font-size: calc(1rem * var(--global-font-scale)) !important; 
 }
 
-.fs-lg,   /* 1.1rem - Used 17x - MOST COMMON */
 .quiz-editor-section input,
 .quiz-editor-section textarea,
 .quiz-editor-section label,
@@ -614,38 +595,27 @@
 .option,
 #quiz-title,
 .answer-stats *,
-.live-stats *,
 .preview-content .player-option,
 .preview-content .checkbox-option,
 .preview-content .tf-option,
 .preview-content-split .player-option,
 .preview-content-split .checkbox-option,
 .preview-content-split .tf-option,
-.answer-stats .bar-container,
-.live-answer-stats div,
-.split-resize-display { 
+.answer-stats .bar-container { 
     font-size: calc(1.1rem * var(--global-font-scale)) !important; 
 }
 
-.fs-xl,   /* 1.2rem - Used 12x - SECOND MOST COMMON */
 .preview-content *,
 .preview-content-split *,
 #preview-question-text,
 #preview-question-text-split,
 .answer-stats .bar,
-.ai-controls .prompt-example-item,
 .result-card .score,
 .leaderboard-body .score,
 #preview-question-counter-split { 
     font-size: calc(1.2rem * var(--global-font-scale)) !important; 
 }
 
-.fs-med,  /* 1.25rem - Used 1x */
-.medium-text { 
-    font-size: calc(1.25rem * var(--global-font-scale)) !important; 
-}
-
-.fs-2xl,  /* 1.3rem - Used 4x - Host Options */
 #question-counter,
 .host-question-text,
 .results-content .final-score,
@@ -653,66 +623,26 @@
     font-size: calc(1.3rem * var(--global-font-scale)) !important; 
 }
 
-.fs-3xl,  /* 1.4rem - Used 7x - Player Options */
 .quiz-editor-section h2,
 .quiz-editor-section h3,
 .final-results h2,
-.prompt-counter,
 .host-game-container .player-option,
 .host-game-container .tf-option { 
     font-size: calc(1.4rem * var(--global-font-scale)) !important; 
 }
 
-.fs-4xl,  /* 1.5rem - Used 4x */
 #current-question,
-.host-game-question,
 .leaderboard-body .position { 
     font-size: calc(1.5rem * var(--global-font-scale)) !important; 
 }
 
-.fs-5xl,  /* 1.6rem - Used 1x */
 #player-question-text { 
     font-size: calc(1.6rem * var(--global-font-scale)) !important; 
 }
 
-.fs-6xl,  /* 1.8rem - Used 4x */
 .final-results h1,
-.result-card .podium-position,
 .leaderboard-header h3 {
     font-size: calc(1.8rem * var(--global-font-scale)) !important;
-}
-
-.fs-7xl { /* 2.2rem */
-    font-size: calc(2.2rem * var(--global-font-scale)) !important;
-}
-
-.fs-8xl { /* 2.5rem */
-    font-size: calc(2.5rem * var(--global-font-scale)) !important;
-}
-
-.fs-9xl { /* 4rem */
-    font-size: calc(4rem * var(--global-font-scale)) !important;
-}
-
-/* Special utilities for specific cases */
-.fs-rel-sm, /* 0.85em - Used 1x */
-.relative-small { 
-    font-size: calc(0.85em * var(--global-font-scale)) !important; 
-}
-
-.fs-rel-md, /* 1.2em - Used 1x */
-.relative-medium { 
-    font-size: calc(1.2em * var(--global-font-scale)) !important; 
-}
-
-.fs-px-16,  /* 16px - Used 1x */
-.pixel-16 { 
-    font-size: calc(16px * var(--global-font-scale)) !important; 
-}
-
-.fs-px-48,  /* 48px - Used 2x */
-.pixel-48 { 
-    font-size: calc(48px * var(--global-font-scale)) !important; 
 }
 
 /* ===== OPTION COLOR SYSTEM ===== */
@@ -721,7 +651,6 @@
 /* Option A - Blue (nth-child(1), data-option="0") */
 .option-display[data-option="0"],
 .player-option[data-option="0"],
-.player-checkbox-option[data-option="0"],
 #player-multiple-correct .checkbox-option[data-option="0"],
 .option-display[data-multiple="true"][data-option="0"],
 .checkbox-option.preview-checkbox[data-option="0"] {
@@ -733,7 +662,6 @@
 
 .option-display[data-option="0"]:hover,
 .player-option[data-option="0"]:hover,
-.player-checkbox-option[data-option="0"]:hover,
 #player-multiple-correct .checkbox-option[data-option="0"]:hover,
 .checkbox-option.preview-checkbox[data-option="0"]:hover {
     box-shadow: 0 8px 32px var(--option-0-shadow-hover);
@@ -742,7 +670,6 @@
 /* Option B - Green (nth-child(2), data-option="1") */
 .option-display[data-option="1"],
 .player-option[data-option="1"],
-.player-checkbox-option[data-option="1"],
 #player-multiple-correct .checkbox-option[data-option="1"],
 .option-display[data-multiple="true"][data-option="1"],
 .checkbox-option.preview-checkbox[data-option="1"] {
@@ -754,7 +681,6 @@
 
 .option-display[data-option="1"]:hover,
 .player-option[data-option="1"]:hover,
-.player-checkbox-option[data-option="1"]:hover,
 #player-multiple-correct .checkbox-option[data-option="1"]:hover,
 .checkbox-option.preview-checkbox[data-option="1"]:hover {
     box-shadow: 0 8px 32px var(--option-1-shadow-hover);
@@ -763,7 +689,6 @@
 /* Option C - Orange (nth-child(3), data-option="2") */
 .option-display[data-option="2"],
 .player-option[data-option="2"],
-.player-checkbox-option[data-option="2"],
 #player-multiple-correct .checkbox-option[data-option="2"],
 .option-display[data-multiple="true"][data-option="2"],
 .checkbox-option.preview-checkbox[data-option="2"] {
@@ -775,7 +700,6 @@
 
 .option-display[data-option="2"]:hover,
 .player-option[data-option="2"]:hover,
-.player-checkbox-option[data-option="2"]:hover,
 #player-multiple-correct .checkbox-option[data-option="2"]:hover,
 .checkbox-option.preview-checkbox[data-option="2"]:hover {
     box-shadow: 0 8px 32px var(--option-2-shadow-hover);
@@ -784,7 +708,6 @@
 /* Option D - Red (nth-child(4), data-option="3") */
 .option-display[data-option="3"],
 .player-option[data-option="3"],
-.player-checkbox-option[data-option="3"],
 #player-multiple-correct .checkbox-option[data-option="3"],
 .option-display[data-multiple="true"][data-option="3"],
 .checkbox-option.preview-checkbox[data-option="3"] {
@@ -796,7 +719,6 @@
 
 .option-display[data-option="3"]:hover,
 .player-option[data-option="3"]:hover,
-.player-checkbox-option[data-option="3"]:hover,
 #player-multiple-correct .checkbox-option[data-option="3"]:hover,
 .checkbox-option.preview-checkbox[data-option="3"]:hover {
     box-shadow: 0 8px 32px var(--option-3-shadow-hover);
@@ -805,7 +727,6 @@
 /* Option E - Purple (nth-child(5), data-option="4") */
 .option-display[data-option="4"],
 .player-option[data-option="4"],
-.player-checkbox-option[data-option="4"],
 #player-multiple-correct .checkbox-option[data-option="4"],
 .option-display[data-multiple="true"][data-option="4"],
 .checkbox-option.preview-checkbox[data-option="4"] {
@@ -817,7 +738,6 @@
 
 .option-display[data-option="4"]:hover,
 .player-option[data-option="4"]:hover,
-.player-checkbox-option[data-option="4"]:hover,
 #player-multiple-correct .checkbox-option[data-option="4"]:hover,
 .checkbox-option.preview-checkbox[data-option="4"]:hover {
     box-shadow: 0 8px 32px var(--option-4-shadow-hover);
@@ -826,7 +746,6 @@
 /* Option F - Cyan (nth-child(6), data-option="5") */
 .option-display[data-option="5"],
 .player-option[data-option="5"],
-.player-checkbox-option[data-option="5"],
 #player-multiple-correct .checkbox-option[data-option="5"],
 .option-display[data-multiple="true"][data-option="5"],
 .checkbox-option.preview-checkbox[data-option="5"] {
@@ -838,7 +757,6 @@
 
 .option-display[data-option="5"]:hover,
 .player-option[data-option="5"]:hover,
-.player-checkbox-option[data-option="5"]:hover,
 #player-multiple-correct .checkbox-option[data-option="5"]:hover,
 .checkbox-option.preview-checkbox[data-option="5"]:hover {
     box-shadow: 0 8px 32px var(--option-5-shadow-hover);

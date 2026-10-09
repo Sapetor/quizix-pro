@@ -228,37 +228,6 @@
     margin-bottom: 25px;
 }
 
-.content-type-indicator {
-    margin-top: 10px;
-    padding: 12px 16px;
-    background: rgba(102, 126, 234, 0.1);
-    border: 1px solid rgba(102, 126, 234, 0.3);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-}
-
-.content-type-label {
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.content-type-value {
-    background: rgba(102, 126, 234, 0.2);
-    color: #667eea;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-weight: 700;
-    text-transform: capitalize;
-}
-
-.content-type-description {
-    color: var(--text-secondary);
-    font-style: italic;
-}
-
 .file-upload-section {
     margin-top: 15px;
     padding: 15px;

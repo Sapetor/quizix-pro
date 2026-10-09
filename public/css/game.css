@@ -47,13 +47,6 @@
     margin: 20px 0;
 }
 
-.qr-code {
-    background: white;
-    padding: 20px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-soft);
-}
-
 .players-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -153,7 +146,6 @@
 }
 
 /* Options grid with code gets enhanced layout */
-.options-grid:has(pre),
 .options-grid.has-code {
     max-width: 800px; /* Same width as LaTeX questions for consistency */
     gap: 20px; /* More space between options */
@@ -174,7 +166,6 @@
         padding: 48px 40px; /* Same as existing code padding */
     }
     
-    .options-grid:has(pre),
     .options-grid.has-code {
         max-width: 800px; /* Same as base .options-grid */
         gap: 20px; /* More space between options */
@@ -190,13 +181,6 @@
     flex-wrap: wrap;
     gap: 20px;
     min-height: 60px; /* Ensure consistent height */
-}
-
-.host-game-controls {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-shrink: 0;
 }
 
 #question-counter {
@@ -327,15 +311,6 @@
 }
 
 /* Host Answer Options Grid - Vertical Stack */
-.options-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin: 30px 0;
-    max-width: min(800px, 90vw);
-    margin-left: auto;
-    margin-right: auto;
-}
 
 .option-display {
     background: var(--glass-medium);
@@ -956,17 +931,6 @@
 }
 
 /* Game Screen Styles */
-.question-container {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 30px;
-    margin-bottom: 30px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: var(--shadow-soft);
-    text-align: center;
-}
 
 .question-header {
     display: flex;
@@ -1371,7 +1335,6 @@
     padding: 20px;
 }
 
-.numeric-input,
 #numeric-answer-input,
 #preview-numeric-input,
 #preview-numeric-input-split {
@@ -1390,7 +1353,6 @@
     box-shadow: none;
 }
 
-.numeric-input:focus,
 #numeric-answer-input:focus,
 #preview-numeric-input:focus,
 #preview-numeric-input-split:focus {
@@ -1471,36 +1433,7 @@
 /* === HOST MULTIPLE CORRECT COLORFUL OPTIONS === */
 /* Host multiple correct option colors now consolidated in variables.css */
 
-/* Colorful Multiple Correct Player Options */
-.player-checkbox-option {
-    border: 2px solid transparent;
-    border-radius: var(--r-lg, 14px);
-    padding: 16px 20px;
-    font-size: 1.1rem;
-    font-weight: 500;
-    color: white;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    min-height: 60px;
-    text-align: left;
-    position: relative;
-    overflow: visible; /* Was hidden — clipped .player-answered badge */
-    width: 100%;
-    max-width: 550px;
-    gap: 12px;
-}
-
 /* === COLORFUL MULTIPLE CORRECT OPTIONS === */
-/* Player checkbox option colors now consolidated in variables.css */
-
-.player-checkbox-option:hover {
-    transform: translateY(-2px) scale(1.01);
-    filter: brightness(1.1);
-}
-
 /* Player checkbox option hover colors now consolidated in variables.css */
 
 .player-checkbox-option.selected {
@@ -1801,16 +1734,6 @@
 }
 
 /* Alternative section styling when placed after statistics - hide for numeric */
-/* Replaced with HTML element for translation support */
-.question-alternatives-header {
-    display: block;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-bottom: 16px;
-    text-align: center;
-}
-
 /* Hide entire "Question Alternatives" frame when answer-options is hidden (numeric questions) */
 #host-multiple-choice {
     /* Will be overridden by JavaScript for numeric questions */
@@ -2371,24 +2294,6 @@
 /* Result Feedback */
 /* === MODERN ANSWER FEEDBACK SYSTEM === */
 
-/* Main feedback container - positioned overlay */
-.result-feedback {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: var(--paper-2);
-    border: 1px solid var(--line);
-    border-radius: var(--r-lg, 14px);
-    padding: 48px 40px;
-    text-align: center;
-    box-shadow: var(--shadow-card);
-    z-index: 1000;
-    animation: resultPop 0.5s ease-out;
-    min-width: 320px;
-    max-width: 480px;
-}
-
 /* Rule G correctness form: outline + 10% wash, never a filled green.
    The [data-theme] twins are needed because [data-theme="light"] .result-feedback below
    is (0,0,2,0) and would otherwise win on source order. */
@@ -2406,14 +2311,6 @@
     border-color: var(--error-color);
     background: color-mix(in srgb, var(--error-color) 10%, transparent);
     box-shadow: 0 20px 60px color-mix(in srgb, var(--error-color) 30%, transparent);
-}
-
-/* Result text styling */
-.result-text {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 16px;
-    line-height: 1.2;
 }
 
 /* --correct on the 10% wash: 4.73:1 light / 7.49:1 dark (40px/700, floor is 3:1). */
@@ -2502,11 +2399,6 @@
 }
 
 /* Light theme adjustments for feedback */
-[data-theme="light"] .result-feedback {
-    background: rgba(255, 255, 255, 0.95);
-    border-color: rgba(0, 0, 0, 0.2);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-}
 
 [data-theme="light"] .feedback {
     background: rgba(255, 255, 255, 0.9);
@@ -2971,18 +2863,6 @@
     }
 }
 
-/* Animations */
-@keyframes resultPop {
-    0% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.8);
-    }
-    100% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-    }
-}
-
 /* === RESPONSIVE DESIGN FOR GAME SCREENS === */
 @media (max-width: 768px) {
     /* Host Game Screen */
@@ -3039,12 +2919,6 @@
     #timer {
         font-size: 1.4rem;
         padding: 8px 16px;
-    }
-    
-    .options-grid {
-        gap: 12px;
-        margin: 20px 0;
-        max-width: 100%;
     }
     
     .option-display {
@@ -3106,7 +2980,6 @@
         max-width: 100%;
     }
     
-    .options-grid:has(pre),
     .options-grid.has-code {
         max-width: 100%;
         gap: 16px;
@@ -3176,7 +3049,6 @@
     }
     
     /* Numeric Input Mobile */
-    .numeric-input,
     #numeric-answer-input {
         font-size: 1.3rem;
         padding: 14px 20px;
@@ -3283,7 +3155,6 @@
         padding: 16px 12px;
     }
     
-    .options-grid:has(pre),
     .options-grid.has-code {
         gap: 12px;
     }

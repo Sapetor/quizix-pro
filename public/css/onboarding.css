@@ -21,14 +21,6 @@
     pointer-events: auto;
 }
 
-/* Dark backdrop layer */
-.onboarding-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.75);
-    transition: opacity 0.3s ease;
-}
-
 /* Spotlight cutout - positioned dynamically via JS */
 .onboarding-spotlight {
     position: absolute;
