@@ -4,11 +4,47 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
+const JSZip = require('jszip');
 const { getClientIp } = require('../middleware/client-ip');
 
 // Same guard the other route modules use to decide whether raw error text may
 // go back to the client.
 const isProduction = process.env.NODE_ENV === 'production';
+
+const XML_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+
+function decodeXmlText(text) {
+    return text.replace(/&(#x[0-9a-fA-F]+|#\d+|\w+);/g, (match, entity) => {
+        if (entity[0] !== '#') return XML_ENTITIES[entity] ?? match;
+        const code = entity[1] === 'x' ? parseInt(entity.slice(2), 16) : parseInt(entity.slice(1), 10);
+        return String.fromCodePoint(code);
+    });
+}
+
+/**
+ * Extract slide text from a .pptx buffer. A .pptx is a zip whose slides live at
+ * ppt/slides/slideN.xml; text runs are <a:t> elements inside <a:p> paragraphs.
+ * Throws if the buffer is not a zip or has no slides.
+ * @returns {Promise<{text: string, slideCount: number}>}
+ */
+async function extractPptxText(buffer) {
+    const zip = await JSZip.loadAsync(buffer);
+    const slideFiles = Object.keys(zip.files)
+        .map(name => ({ name, n: Number(/^ppt\/slides\/slide(\d+)\.xml$/.exec(name)?.[1]) }))
+        .filter(f => f.n > 0)
+        .sort((a, b) => a.n - b.n);
+    if (slideFiles.length === 0) throw new Error('no slides found');
+
+    const slideTexts = [];
+    for (const { name } of slideFiles) {
+        const xml = await zip.file(name).async('string');
+        const paragraphs = (xml.match(/<a:p[\s>][\s\S]*?<\/a:p>/g) || [])
+            .map(p => [...p.matchAll(/<a:t(?:\s[^>]*)?>([^<]*)<\/a:t>/g)].map(m => decodeXmlText(m[1])).join(''))
+            .filter(p => p.trim());
+        slideTexts.push(paragraphs.join('\n'));
+    }
+    return { text: slideTexts.join('\n\n'), slideCount: slideFiles.length };
+}
 
 /**
  * File Upload Routes
@@ -402,8 +438,7 @@ function createFileUploadRoutes(options) {
         limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit (slides can have images)
         fileFilter: (req, file, cb) => {
             const validMimes = [
-                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                'application/vnd.ms-powerpoint'
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation'
             ];
             cb(null, validMimes.includes(file.mimetype));
         }
@@ -417,30 +452,24 @@ function createFileUploadRoutes(options) {
                 return res.status(400).json({ error: 'No PowerPoint file uploaded', messageKey: 'error_no_pptx_uploaded' });
             }
 
-            // Dynamic import of officeparser
-            let officeparser;
+            let text, slideCount;
             try {
-                officeparser = require('officeparser');
-            } catch (err) {
-                logger.warn('officeparser not installed. Run: npm install officeparser');
-                return res.status(501).json({
-                    error: 'PowerPoint extraction not available',
-                    messageKey: 'error_pptx_not_available',
-                    message: 'Server does not have PowerPoint parsing capability.'
+                ({ text, slideCount } = await withTimeout(
+                    extractPptxText(req.file.buffer),
+                    PPTX_PARSE_TIMEOUT_MS,
+                    'PowerPoint parsing timed out. The file may be too complex.'
+                ));
+            } catch (error) {
+                if (error.message.includes('timed out')) throw error;
+                // Not a zip, or a zip without slides: the upload is not a .pptx
+                logger.warn(`PPTX rejected: ${req.file.originalname}: ${error.message}`);
+                return res.status(400).json({
+                    error: 'Failed to extract text from PowerPoint',
+                    messageKey: 'error_pptx_extraction_failed'
                 });
             }
 
-            // Parse with timeout
-            const text = await withTimeout(
-                officeparser.parseOfficeAsync(req.file.buffer),
-                PPTX_PARSE_TIMEOUT_MS,
-                'PowerPoint parsing timed out. The file may be too complex.'
-            );
-
-            // Estimate slide count from content structure (rough approximation)
-            const slideCount = Math.max(1, Math.floor(text.length / 500));
-
-            logger.info(`PPTX extracted: ${req.file.originalname}, ~${slideCount} slides, ${text.length} chars`);
+            logger.info(`PPTX extracted: ${req.file.originalname}, ${slideCount} slides, ${text.length} chars`);
 
             res.json({
                 text: text,
