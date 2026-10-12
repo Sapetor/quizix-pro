@@ -167,9 +167,8 @@ async function bootLanding(page) {
     await page.waitForFunction(() => !!window.game, { timeout: 15000 });
     // Let async landing hydration (ticker/QR fetch, translations) settle so the
     // page is in its steady empty-server state before we screenshot.
-    // Bounded: Chromium never reports the /api/manim/status fetch
-    // (manim-editor.js) as finished, so 'networkidle' is never reached and an
-    // unbounded wait ran every test into the 120 s timeout.
+    // Bounded so one request that never finishes cannot run every test into
+    // the 120 s timeout (an unread fetch body in manim-editor.js once did).
     await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
     await page.evaluate(() => document.fonts && document.fonts.ready).catch(() => {});
     await page.waitForTimeout(800);

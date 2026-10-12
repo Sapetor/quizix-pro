@@ -28,6 +28,9 @@ export class ManimEditor {
             try {
                 const response = await fetch(APIHelper.getApiUrl('api/manim/status'));
                 if (!response.ok) {
+                    // Release the unread body; otherwise Chromium never marks
+                    // the request finished and the page never goes network-idle.
+                    await response.body?.cancel();
                     this.manimAvailable = false;
                     return false;
                 }

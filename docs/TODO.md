@@ -36,24 +36,17 @@ the same session are struck through in the sections below.
   change is autoprefixer dropping `-webkit-print-color-adjust` and
   `-webkit-mask-image` prefixes (unprefixed since Safari 15.4). sharp 0.35 and
   uuid 11 kept; unit tests pass.
-- [ ] **Landing page never reaches `networkidle`.** Chromium reports
-  `responseReceived` (401) and `dataReceived` for `GET /api/manim/status`
-  (`public/js/quiz/manim-editor.js:29`) but no `loadingFinished`, while curl
-  gets the response in 2 ms. A standalone fetch of the same URL finishes. Cause
-  not found. `bootLanding` in `tests/e2e/visual-static.spec.js` now caps that
-  wait at 5 s, which avoids the 120 s hang without explaining it.
-  2026-10-12: the 2026-10-09 stall (all 5 `visual-static.spec.js` tests time
-  out, `page.goto('/')` never fires `load`) is environmental, not an app bug.
-  `~/.bashrc` exports `DISPLAY=<windows-host-ip>:0.0` for an X server that is
-  not running. With that value, headless Chromium 143 (Playwright 1.57)
-  hangs; which Chromium component waits on the display is not identified.
-  Any `<video>` that preloads never finishes loading (it holds the
-  `load` event and the deferred scripts behind it), and the renderer produces
-  no frames, so `requestAnimationFrame` and screenshots hang even on a blank
-  page. With `DISPLAY` unset or set to WSLg's `:0`, all 5 pass against the
-  existing baselines (`env -u DISPLAY PW_PORT=... npx playwright test
-  tests/e2e/visual-static.spec.js`). Not yet checked whether the
-  `/api/manim/status` hang above has the same cause.
+- [x] ~~**Landing page never reaches `networkidle`.**~~ DONE 2026-10-12.
+  `checkManimStatus()` (`public/js/quiz/manim-editor.js`) returned on the 401
+  without reading the body, and Chromium does not mark a request finished
+  until its body is read or cancelled. It now cancels the body; the landing
+  page reaches `networkidle` in about 0.5 s. The 5 s cap in `bootLanding`
+  stays as a bound. The separate 2026-10-09 stall (all 5 `visual-static`
+  tests timing out before `load`) was environmental: `~/.bashrc` pointed
+  `DISPLAY` at a Windows X server that was not running, and headless
+  Chromium 143 hangs on a display that refuses or drops connections (preloading
+  `<video>` never finishes, no frames are rendered). `~/.bashrc` now sets that
+  `DISPLAY` only when the X server is listening.
 - [ ] **Final-screen visual baselines compare nothing.** `desktop-final-host`,
   `desktop-final-player` and `mobile-final-player` are fully magenta because
   the `body > canvas` confetti mask covers the whole screen. The HEAD baseline
