@@ -67,7 +67,7 @@ function registerGameEvents(io, socket, options) {
             game.hostUserId = socket.data?.user?.id || null;
 
             // Create or reuse host session (pass hostSessionId from client for reconnect continuity)
-            const session = playerManagementService.createOrGetSession(socket.id, validated.hostSessionId || null);
+            const session = playerManagementService.createOrGetSession(socket.id, validated.hostSessionId || null, validated.hostSessionToken || null);
             session.currentGamePin = game.pin;
 
             // Cancel any session grace timer (host returned and created new game)
@@ -83,6 +83,7 @@ function registerGameEvents(io, socket, options) {
                 gameId: game.id,
                 title: quiz.title,
                 hostSessionId: session.hostSessionId,
+                hostSessionToken: session.hostSessionToken,
                 hostToken: game.hostToken
             });
 

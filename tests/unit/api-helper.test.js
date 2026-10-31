@@ -78,3 +78,28 @@ describe('APIHelper.getApiUrl', () => {
         expect(APIHelper.getApiUrl('api/x')).toBe('http://localhost/quizix/api/x');
     });
 });
+
+
+describe('quiz unlock credentials', () => {
+    afterEach(() => {
+        APIHelper.quizUnlockTokens.clear();
+        delete global.fetch;
+    });
+    test('records an unlock token and sends it on subsequent quiz downloads', async () => {
+        global.fetch = jest.fn().mockResolvedValueOnce({
+            ok: true, clone: () => ({ json: async () => ({ token: 'secret', expiresIn: 60000 }) })
+        }).mockResolvedValue({ ok: true });
+        await APIHelper.fetchAPI('api/unlock', {
+            method: 'POST', body: JSON.stringify({ itemId: 'locked.json', itemType: 'quiz' })
+        });
+        await APIHelper.fetchAPI('api/quiz/locked.json');
+        expect(global.fetch.mock.calls[1][1].headers.get('Authorization')).toBe('Bearer secret');
+    });
+    test('never attaches a token to another quiz or after expiry', async () => {
+        global.fetch = jest.fn().mockResolvedValue({ ok: true });
+        APIHelper.quizUnlockTokens.set('locked.json', { token: 'secret', expiresAt: Date.now() - 1 });
+        await APIHelper.fetchAPI('api/quiz/locked.json');
+        await APIHelper.fetchAPI('api/quiz/other.json');
+        for (const [, options] of global.fetch.mock.calls) expect(options.headers).toBeUndefined();
+    });
+});

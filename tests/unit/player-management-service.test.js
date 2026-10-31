@@ -563,7 +563,7 @@ describe('PlayerManagementService', () => {
 
         test('createOrGetSession returns existing session when hostSessionId provided', () => {
             const session1 = playerService.createOrGetSession('host-socket-1');
-            const session2 = playerService.createOrGetSession('host-socket-2', session1.hostSessionId);
+            const session2 = playerService.createOrGetSession('host-socket-2', session1.hostSessionId, session1.hostSessionToken);
             expect(session2).toBe(session1);
             expect(session2.hostSocketId).toBe('host-socket-2');
         });

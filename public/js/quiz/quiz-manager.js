@@ -938,7 +938,7 @@ export class QuizManager {
             logger.debug('Starting bulletproof quiz loading for:', filename);
 
             // Basic fetch and structure check only
-            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${encodeURIComponent(filename)}`));
+            const response = await APIHelper.fetchAPI(`api/quiz/${encodeURIComponent(filename)}`);
             const data = await response.json();
 
             if (response.ok && data && data.questions && Array.isArray(data.questions)) {

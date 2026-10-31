@@ -192,6 +192,13 @@ function createQuizManagementRoutes(options) {
                 return res.status(403).json({ error: 'You do not have access to this quiz', messageKey: 'error_quiz_forbidden' });
             }
 
+            if (metadataService.requiresAuth(filename, 'quiz', req.user?.id || null)) {
+                const auth = req.get('authorization') || '';
+                const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+                if (!token || !metadataService.verifyToken(token, filename, 'quiz')) {
+                    return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
+                }
+            }
             const data = await quizService.loadQuiz(filename);
             res.json(data);
         } catch (error) {
@@ -474,7 +481,7 @@ function createQuizManagementRoutes(options) {
                 }
             }
 
-            const result = await metadataService.deleteFolder(id, deleteContents);
+            const result = await metadataService.deleteFolder(id, deleteContents, req.user.id);
             res.json(result);
         } catch (error) {
             logger.error('Delete folder error:', error);

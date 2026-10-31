@@ -15,7 +15,8 @@ jest.mock('fs', () => ({
         readFile: jest.fn(),
         readdir: jest.fn(),
         access: jest.fn(),
-        mkdir: jest.fn()
+        mkdir: jest.fn(),
+        unlink: jest.fn()
     }
 }));
 

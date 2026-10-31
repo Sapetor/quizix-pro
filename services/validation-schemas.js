@@ -379,7 +379,8 @@ const hostJoinSchema = z.object({
     }),
     previousPin: z.string().regex(/^\d{6}$/).optional(),
     migrationToken: z.string().uuid().optional(),
-    hostSessionId: z.string().uuid().optional()
+    hostSessionId: z.string().uuid().optional(),
+    hostSessionToken: z.string().uuid().optional()
 });
 
 const playerJoinSchema = z.object({

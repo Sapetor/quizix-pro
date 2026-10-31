@@ -320,7 +320,12 @@ class MetadataService {
     /**
      * Delete a folder and optionally its contents
      */
-    async deleteFolder(folderId, deleteContents = false) {
+    /**
+     * Delete a folder. With deleteContents, child folders are removed and child
+     * quiz files are unlinked, except quizzes owned by someone other than
+     * `userId`, which are detached to the deleted folder's parent instead.
+     */
+    async deleteFolder(folderId, deleteContents = false, userId = null) {
         const folder = this.metadata.folders[folderId];
         if (!folder) {
             const err = new Error('Folder not found');
@@ -343,11 +348,25 @@ class MetadataService {
         if (deleteContents) {
             // Recursively delete child folders
             for (const child of childFolders) {
-                await this.deleteFolder(child.id, true);
+                await this.deleteFolder(child.id, true, userId);
             }
 
-            // Delete child quizzes
-            for (const [filename] of childQuizzes) {
+            // Recomputed: child folders detach foreign-owned quizzes into this folder.
+            const remainingQuizzes = Object.entries(this.metadata.quizzes)
+                .filter(([_, q]) => q.folderId === folderId);
+            for (const [filename, quiz] of remainingQuizzes) {
+                if (quiz.ownerId && quiz.ownerId !== userId) {
+                    quiz.folderId = folder.parentId;
+                    continue;
+                }
+                // Keep access controls until the physical file is gone. A failed
+                // unlink must never turn a private file into an ownerless quiz.
+                if (path.basename(filename) !== filename) throw new Error('Invalid filename');
+                try {
+                    await fs.unlink(path.join(this.quizzesDir, filename));
+                } catch (error) {
+                    if (error.code !== 'ENOENT') throw error;
+                }
                 await this.deleteQuizMetadata(filename);
             }
         }

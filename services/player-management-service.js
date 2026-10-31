@@ -883,11 +883,12 @@ class PlayerManagementService {
      * @param {string|null} hostSessionId - Optional existing session ID from client storage
      * @returns {Object} The host session object
      */
-    createOrGetSession(hostSocketId, hostSessionId = null) {
+    createOrGetSession(hostSocketId, hostSessionId = null, hostSessionToken = null) {
         // Try by hostSessionId first (handles reconnect/refresh with new socket)
         if (hostSessionId) {
             const existing = this.hostSessions.get(hostSessionId);
-            if (existing) {
+            if (existing && (existing.hostSocketId === hostSocketId ||
+                (hostSessionToken && existing.hostSessionToken === hostSessionToken))) {
                 existing.hostSocketId = hostSocketId; // Update to new socket
                 return existing;
             }
@@ -901,6 +902,7 @@ class PlayerManagementService {
         const newId = crypto.randomUUID();
         const session = {
             hostSessionId: newId,
+            hostSessionToken: crypto.randomUUID(),
             hostSocketId,
             currentGamePin: null,
             playerRegistry: new Map()

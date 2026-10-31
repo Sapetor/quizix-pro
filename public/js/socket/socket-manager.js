@@ -234,6 +234,7 @@ export class SocketManager {
             if (data.hostSessionId) {
                 try {
                     localStorage.setItem('quizix_host_session_id', data.hostSessionId);
+                    if (data.hostSessionToken) localStorage.setItem('quizix_host_session_token', data.hostSessionToken);
                 } catch (e) {
                     logger.warn('Failed to store host session ID:', e);
                 }
@@ -1250,6 +1251,8 @@ export class SocketManager {
             const hostSessionId = localStorage.getItem('quizix_host_session_id');
             if (hostSessionId) {
                 quizData.hostSessionId = hostSessionId;
+                const token = localStorage.getItem('quizix_host_session_token');
+                if (token) quizData.hostSessionToken = token;
             }
 
             this.socket.emit('host-join', quizData);

@@ -1204,7 +1204,7 @@ export class QuizGame {
         this._quickStartSelectedFile = filename;
 
         try {
-            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${filename}`));
+            const response = await APIHelper.fetchAPI(`api/quiz/${filename}`);
             if (!response.ok) return;
             const data = await response.json();
 
@@ -1396,7 +1396,7 @@ export class QuizGame {
         this.hideQuickStartModal();
 
         try {
-            const response = await fetch(APIHelper.getApiUrl(`api/quiz/${filename}`));
+            const response = await APIHelper.fetchAPI(`api/quiz/${filename}`);
             const data = await response.json();
 
             if (!response.ok || !data?.questions?.length) {

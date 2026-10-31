@@ -188,7 +188,7 @@ describe('folder route authorization', () => {
         });
 
         expect(res.statusCode).toBe(200);
-        expect(deps.metadataService.deleteFolder).toHaveBeenCalledWith(FOLDER_ID, false);
+        expect(deps.metadataService.deleteFolder).toHaveBeenCalledWith(FOLDER_ID, false, 'user-1');
     });
 });
 
@@ -308,5 +308,31 @@ describe('results route authorization', () => {
 
         expect(res.statusCode).toBe(200);
         expect(deps.resultsService.deleteResult).toHaveBeenCalled();
+    });
+});
+
+
+describe('password-protected quiz downloads', () => {
+    function setup() {
+        const deps = makeDeps();
+        deps.quizService = { validateFilename: () => true, loadQuiz: jest.fn(async () => ({ questions: ['secret'] })) };
+        Object.assign(deps.metadataService, {
+            isQuizVisibleToUser: () => true,
+            requiresAuth: () => true,
+            verifyToken: (token, filename, type) => token === 'valid' && filename === 'locked.json' && type === 'quiz'
+        });
+        return { deps, router: createQuizManagementRoutes(deps) };
+    }
+    test.each([{}, { authorization: 'Bearer wrong' }])('denies download without a valid unlock token: %j', async headers => {
+        const { deps, router } = setup();
+        const res = await dispatch(router, { method: 'GET', url: '/api/quiz/locked.json', headers });
+        expect(res.statusCode).toBe(401);
+        expect(deps.quizService.loadQuiz).not.toHaveBeenCalled();
+    });
+    test('allows download after unlocking', async () => {
+        const { router } = setup();
+        const res = await dispatch(router, { method: 'GET', url: '/api/quiz/locked.json', headers: { authorization: 'Bearer valid' } });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.questions).toEqual(['secret']);
     });
 });
