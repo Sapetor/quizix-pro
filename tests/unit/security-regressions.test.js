@@ -73,3 +73,20 @@ test('deleting a folder detaches quizzes owned by someone else instead of destro
         await fs.rm(dir, { recursive: true, force: true });
     }
 });
+
+test('a quiz inside a password-protected folder unlocks with the folder password', async () => {
+    const service = new MetadataService(logger, {}, 'unused');
+    service.saveMetadata = async () => {};
+    service.metadata = {
+        folders: {
+            top: { id: 'top', parentId: null, passwordHash: await service.hashPassword('folder-pw') },
+            sub: { id: 'sub', parentId: 'top' }
+        },
+        quizzes: { 'inner.json': { folderId: 'sub', ownerId: 'owner' } }
+    };
+    expect(service.requiresAuth('inner.json', 'quiz', 'owner')).toBe(true);
+    await expect(service.unlock('inner.json', 'quiz', 'wrong', '10.0.0.1')).rejects.toThrow('Incorrect password');
+    const { token } = await service.unlock('inner.json', 'quiz', 'folder-pw', '10.0.0.1');
+    expect(service.verifyToken(token, 'inner.json', 'quiz')).toBe(true);
+    expect(service.verifyToken(token, 'top', 'folder')).toBe(false);
+});

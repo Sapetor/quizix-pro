@@ -786,7 +786,9 @@ class MetadataService {
                 err.messageKey = 'error_quiz_not_found';
                 throw err;
             }
-            passwordHash = item.passwordHash;
+            // A quiz with no password of its own is gated by its nearest
+            // protected ancestor folder, and unlocks with that folder's password.
+            passwordHash = item.passwordHash || this._protectingFolderHash(item.folderId);
         } else {
             const err = new Error('Invalid item type');
             err.messageKey = 'error_invalid_item_type';
@@ -852,15 +854,23 @@ class MetadataService {
                 return !(userId && quiz.ownerId === userId);
             }
 
-            // Check if any parent folder is protected
-            let folderId = quiz.folderId;
-            while (folderId) {
-                const folder = this.metadata.folders[folderId];
-                if (folder && folder.passwordHash) return true;
-                folderId = folder ? folder.parentId : null;
-            }
+            return !!this._protectingFolderHash(quiz.folderId);
         }
         return false;
+    }
+
+    /**
+     * Password hash of the nearest password-protected folder at or above
+     * `folderId`, or null when no ancestor is protected.
+     */
+    _protectingFolderHash(folderId) {
+        while (folderId) {
+            const folder = this.metadata.folders[folderId];
+            if (!folder) return null;
+            if (folder.passwordHash) return folder.passwordHash;
+            folderId = folder.parentId;
+        }
+        return null;
     }
 
     /**
