@@ -413,8 +413,22 @@ class Game {
             return null;
         }
 
+        // Proposals are keyed by socket id and a rejoin gives the player a new
+        // one, so drop entries whose owner is gone or has left the socket.
+        this._pruneStaleProposals();
         this.proposals.set(playerId, answer);
         return this.getProposalDistribution();
+    }
+
+    /**
+     * Remove proposals whose socket id no longer belongs to a connected player
+     * (rejoined under a new socket id, disconnected, or removed).
+     */
+    _pruneStaleProposals() {
+        for (const id of this.proposals.keys()) {
+            const player = this.players.get(id);
+            if (!player || player.disconnected) this.proposals.delete(id);
+        }
     }
 
     /**
@@ -422,6 +436,7 @@ class Game {
      * @returns {Object} Distribution with counts, players, percentage, and leading answer
      */
     getProposalDistribution() {
+        this._pruneStaleProposals();
         const distribution = {};
         const playersByAnswer = {};
         let totalProposals = 0;
@@ -452,7 +467,8 @@ class Game {
         }
 
         // Calculate consensus percentage for leading answer
-        const totalPlayers = this.players.size;
+        // Disconnected players cannot propose, so they do not count against the threshold
+        const totalPlayers = Array.from(this.players.values()).filter(p => !p.disconnected).length;
         const consensusPercent = totalPlayers > 0
             ? Math.round((maxCount / totalPlayers) * 100)
             : 0;

@@ -457,6 +457,34 @@ describe('Game — consensus mode', () => {
         expect(dist.leadingAnswer).toBe(1);
     });
 
+    test('a proposal made before a rejoin is not counted twice', () => {
+        const game = consensusGame(mcQuestion());
+        game.addPlayer('p1', 'A');
+        game.addPlayer('p2', 'B');
+        game.submitProposal('p1', 1);
+        // rejoin: same player object, new socket id
+        const player = game.players.get('p1');
+        game.players.delete('p1');
+        player.id = 'p1b';
+        game.players.set('p1b', player);
+        const dist = game.submitProposal('p1b', 1);
+        expect(dist.totalProposals).toBe(1);
+        expect(dist.consensusPercent).toBe(50);
+    });
+
+    test('disconnected players are excluded from the threshold denominator and proposals', () => {
+        const game = consensusGame(mcQuestion());
+        ['p1', 'p2', 'p3'].forEach(id => game.addPlayer(id, id));
+        game.submitProposal('p1', 1);
+        game.players.get('p2').disconnected = true;
+        game.players.get('p3').disconnected = true;
+        const dist = game.getProposalDistribution();
+        expect(dist.totalPlayers).toBe(1);
+        expect(dist.consensusPercent).toBe(100);
+        game.players.get('p1').disconnected = true;
+        expect(game.getProposalDistribution().totalProposals).toBe(0);
+    });
+
     test('submitProposal is rejected once consensus is locked', () => {
         const game = consensusGame(mcQuestion());
         game.addPlayer('p1', 'A');
