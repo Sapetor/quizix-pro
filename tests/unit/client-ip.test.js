@@ -75,3 +75,26 @@ describe('getClientIp', () => {
         expect(reqA.ip).toBe(reqB.ip);
     });
 });
+
+const { isDirectLocalClient } = require('../../middleware/client-ip');
+
+describe('isDirectLocalClient', () => {
+    test.each(['127.0.0.1', '::1', '::ffff:127.0.0.1', '10.1.2.3', '172.16.0.5', '172.31.255.1', '192.168.1.20', '::ffff:192.168.1.20', 'fd12::1', 'fe80::1'])(
+        'a direct peer at %s with no proxy headers is local', addr => {
+            expect(isDirectLocalClient({ headers: {}, socket: { remoteAddress: addr } })).toBe(true);
+        });
+
+    test.each(['203.0.113.7', '172.32.0.1', '8.8.8.8', '::ffff:8.8.8.8', '2001:db8::1', undefined])(
+        'a direct peer at %s is not local', addr => {
+            expect(isDirectLocalClient({ headers: {}, socket: { remoteAddress: addr } })).toBe(false);
+        });
+
+    test.each(['cf-connecting-ip', 'x-forwarded-for', 'x-real-ip', 'forwarded'])(
+        'a loopback peer that forwards %s is not local', header => {
+            expect(isDirectLocalClient({ headers: { [header]: '203.0.113.7' }, socket: LOOPBACK })).toBe(false);
+        });
+
+    test('ignores req.ip, which trust proxy may have rewritten', () => {
+        expect(isDirectLocalClient({ headers: {}, ip: '127.0.0.1', socket: { remoteAddress: '203.0.113.7' } })).toBe(false);
+    });
+});

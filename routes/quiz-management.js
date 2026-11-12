@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { getClientIp } = require('../middleware/client-ip');
+const { getClientIp, isDirectLocalClient } = require('../middleware/client-ip');
 const { createSaveQuizRateLimiter } = require('../utils/save-quiz-rate-limiter');
 
 /**
@@ -156,6 +156,16 @@ function createQuizManagementRoutes(options) {
      */
     function isQuizVisible(filename, userId) {
         return metadataService.isQuizVisibleToUser(filename, userId);
+    }
+
+    /**
+     * May this request change an ownerless quiz or see live game PINs?
+     * Signed-in users may; anonymous requests only from a direct LAN client,
+     * which keeps the pre-account LAN workflow and blocks anonymous internet
+     * clients behind a tunnel or proxy.
+     */
+    function isTrustedRequester(req) {
+        return !!req.user || isDirectLocalClient(req);
     }
 
     // List all quizzes (filtered to what the requester may see)
@@ -321,8 +331,14 @@ function createQuizManagementRoutes(options) {
     // ============================================================================
 
     // Get list of active games
+    // The list carries live PINs, so it goes only to direct LAN clients and
+    // signed-in users. Everyone else (anyone reaching the app through a tunnel
+    // or proxy) gets an empty list and joins by PIN or QR code.
     router.get('/api/active-games', (req, res) => {
         try {
+            if (!isTrustedRequester(req)) {
+                return res.json({ games: [] });
+            }
             const allGames = Array.from(gameSessionService.getAllGames().values()).map(game => ({
                 pin: game.pin,
                 title: game.quiz.title || 'Untitled Quiz',
@@ -333,14 +349,7 @@ function createQuizManagementRoutes(options) {
             }));
 
             const activeGames = allGames.filter(game => game.gameState !== 'finished');
-
-            res.json({
-                games: activeGames,
-                debug: {
-                    totalGames: allGames.length,
-                    allGames: allGames
-                }
-            });
+            res.json({ games: activeGames });
         } catch (error) {
             logger.error('Active games fetch error:', error);
             res.status(500).json({ error: 'Failed to fetch active games', messageKey: 'error_failed_fetch_games' });
@@ -505,6 +514,9 @@ function createQuizManagementRoutes(options) {
 
             // If quiz not in metadata, try to register it as an ownerless legacy entry.
             if (!quiz) {
+                if (!isTrustedRequester(req)) {
+                    return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
+                }
                 try {
                     const quizData = await quizService.loadQuiz(filename);
                     quiz = await metadataService.registerQuiz(filename, quizData.title);
@@ -514,10 +526,13 @@ function createQuizManagementRoutes(options) {
             }
 
             // Ownership gate: only the owner may edit the metadata of an owned quiz.
-            // Legacy/ownerless quizzes remain editable by anyone (matching pre-auth behavior).
+            // Ownerless quizzes need a signed-in user or a direct LAN client.
             const userId = req.user?.id || null;
             if (quiz.ownerId && quiz.ownerId !== userId) {
                 return res.status(403).json({ error: 'You do not own this quiz', messageKey: 'error_quiz_not_owner' });
+            }
+            if (!quiz.ownerId && !isTrustedRequester(req)) {
+                return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
             }
 
             // Update display name if provided
@@ -584,13 +599,15 @@ function createQuizManagementRoutes(options) {
             }
 
             // Ownership gate: owned quizzes may only be deleted by their owner.
-            // Legacy/ownerless quizzes remain deletable by anyone.
+            // Ownerless quizzes need a signed-in user or a direct LAN client.
             const quizMeta = metadataService.getQuizMetadata(filename);
             if (quizMeta?.ownerId) {
                 const userId = req.user?.id || null;
                 if (quizMeta.ownerId !== userId) {
                     return res.status(403).json({ error: 'You do not own this quiz', messageKey: 'error_quiz_not_owner' });
                 }
+            } else if (!isTrustedRequester(req)) {
+                return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
             }
 
             // Check if quiz requires authentication

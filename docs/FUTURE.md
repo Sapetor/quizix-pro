@@ -414,8 +414,8 @@ This roadmap transforms Quizix Pro from a desktop-focused application into a tru
 ## 🌐 TODO: Public exposure via Cloudflare Tunnel
 
 Audited 2026-07-24; status rechecked against the code 2026-11-12. The app is written
-for a LAN threat model and a tunnel changes that model. Two of the four items below
-are fixed; items 2 and 4 are still open. How to run behind a tunnel is in
+for a LAN threat model and a tunnel changes that model. All four items below are
+fixed; items 2 and 4 on 2026-11-12. How to run behind a tunnel is in
 [DEPLOYMENT.md](../DEPLOYMENT.md).
 
 1. **Fixed: per-client IPs behind the proxy.** `server.js:202` sets
@@ -426,10 +426,11 @@ are fixed; items 2 and 4 are still open. How to run behind a tunnel is in
    limiter (`utils/socket-rate-limiter.js`) keys on socket id and event, so it never
    depended on the IP.
 
-2. **Open: `/api/active-games` is unauthenticated and returns live PINs**
-   (`routes/quiz-management.js:324-348`), plus a `debug` block listing all games,
-   finished ones included. Publicly reachable, this lets anyone join a running
-   classroom session.
+2. **Fixed: `/api/active-games` returned live PINs to anyone.** The list now goes
+   only to signed-in users and direct LAN clients (`isDirectLocalClient` in
+   `middleware/client-ip.js`: loopback or private TCP peer and no `CF-Connecting-IP`,
+   `X-Forwarded-For`, `X-Real-IP` or `Forwarded` header). Everyone else gets
+   `{"games": []}`. The `debug` block that listed finished games is gone.
 
 3. **Fixed: AI routes and the server key.** Every `/claude/generate`, `/gemini/generate`
    and `/ai/complete` request is rate-limited per client IP whichever key it uses, and
@@ -437,16 +438,15 @@ are fixed; items 2 and 4 are still open. How to run behind a tunnel is in
    (`routes/ai-generation.js:427-449` and the matching blocks below it). A key sent with
    the request is preferred over the server key.
 
-4. **Open: ownerless quizzes are deletable by anyone.** `DELETE /api/quiz/:filename`
-   (`routes/quiz-management.js:572`) checks ownership only when the quiz has an
-   `ownerId`, so a quiz with no owner and no password is deleted by any client that
-   sends `confirm=true`. `/api/quizzes` lists these quizzes to anonymous requesters.
-   Remote data loss for any pre-ownership quiz.
+4. **Fixed: ownerless quizzes were deletable by anyone.** Deleting
+   (`DELETE /api/quiz/:filename`), overwriting (`/api/save-quiz` with `filename`) and
+   renaming or moving (`PATCH /api/quiz-metadata/:filename`) a quiz without an owner
+   now need a signed-in user or a direct LAN client, as in item 2. Anonymous LAN
+   use keeps working; anonymous clients through the tunnel get `401`.
 
-Cheapest mitigation short of code changes: Cloudflare Access on the host-side API paths
-(`/api/save-quiz`, quiz/results DELETE, `/api/*/generate`, `/api/active-games`) with the
-player join path left public. Access does not restore per-client IPs; that came from the
-item 1 code fix.
+Cloudflare Access on the host-side API paths (`/api/save-quiz`, quiz/results DELETE,
+`/api/*/generate`, `/api/active-games`), with the player join path left public, remains
+an optional extra layer.
 
 Already handled, for the record: `/extract-url` SSRF protection is enforced per-hop after
 DNS resolution, helmet is enabled, zod validates request bodies, and upload rate limiting

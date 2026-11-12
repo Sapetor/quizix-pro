@@ -42,4 +42,40 @@ function getClientIp(req) {
     return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
-module.exports = { getClientIp };
+const PROXY_HEADERS = ['cf-connecting-ip', 'x-forwarded-for', 'x-real-ip', 'forwarded'];
+
+function isPrivateAddress(addr) {
+    if (typeof addr !== 'string') return false;
+    const a = addr.toLowerCase();
+    if (a === '::1') return true;
+    const v4 = a.startsWith('::ffff:') ? a.slice(7) : a;
+    const m = v4.match(/^(\d+)\.(\d+)\.\d+\.\d+$/);
+    if (m) {
+        const [o1, o2] = [Number(m[1]), Number(m[2])];
+        return o1 === 127 || o1 === 10 ||
+            (o1 === 172 && o2 >= 16 && o2 <= 31) ||
+            (o1 === 192 && o2 === 168);
+    }
+    return /^f[cd][0-9a-f]{0,2}:/.test(a) || /^fe[89ab][0-9a-f]:/.test(a);
+}
+
+/**
+ * isDirectLocalClient — is the caller on the local network, with no proxy in
+ * between? True when the direct TCP peer is a loopback or private address and
+ * the request carries no forwarding header.
+ *
+ * Uses socket.remoteAddress, not req.ip or getClientIp: through the tunnel the
+ * peer is loopback for every internet client, and behind a Docker or k8s proxy
+ * it is a private address, so the address alone would pass both. Those
+ * requests carry CF-Connecting-IP or X-Forwarded-For. A LAN client could only
+ * add such a header, which makes it look remote, never local.
+ */
+function isDirectLocalClient(req) {
+    const headers = req.headers || {};
+    if (PROXY_HEADERS.some(h => headers[h] !== undefined)) return false;
+    const peer = (req.socket && req.socket.remoteAddress) ||
+        (req.connection && req.connection.remoteAddress);
+    return isPrivateAddress(peer);
+}
+
+module.exports = { getClientIp, isDirectLocalClient };

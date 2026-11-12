@@ -560,7 +560,10 @@ describe('MetadataService', () => {
             expect(metadataService.metadata.folders['folder-1'].passwordSetBy).toBeNull();
         });
 
-        test('folder-protected quizzes are hidden from anonymous and signed-in non-owners', () => {
+        // Folder protection gates the quiz contents through requiresAuth and the
+        // unlock token, not the listing. A hidden quiz cannot be unlocked from the
+        // file browser, so non-owners must still see it (marked protected).
+        test('folder-protected public quizzes are listed for anonymous and signed-in non-owners', () => {
             metadataService.metadata.folders['folder-1'] = {
                 id: 'folder-1',
                 name: 'Protected Folder',
@@ -571,12 +574,13 @@ describe('MetadataService', () => {
             };
             metadataService.metadata.quizzes['public-open.json'].folderId = 'folder-1';
 
-            expect(metadataService.isQuizVisibleToUser('public-open.json', null)).toBe(false);
-            // Signing in must not bypass folder protection.
-            expect(metadataService.isQuizVisibleToUser('public-open.json', 'user-2')).toBe(false);
+            expect(metadataService.isQuizVisibleToUser('public-open.json', null)).toBe(true);
+            expect(metadataService.isQuizVisibleToUser('public-open.json', 'user-2')).toBe(true);
+            expect(metadataService.requiresAuth('public-open.json', 'quiz', null)).toBe(true);
+            expect(metadataService.requiresAuth('public-open.json', 'quiz', 'user-2')).toBe(true);
         });
 
-        test('the owner of a quiz still sees it inside a protected folder', () => {
+        test('a private quiz in a protected folder stays visible only to its owner', () => {
             metadataService.metadata.folders['folder-1'] = {
                 id: 'folder-1',
                 name: 'Protected Folder',
@@ -586,13 +590,14 @@ describe('MetadataService', () => {
                 sortOrder: 0
             };
             metadataService.metadata.quizzes['owned-protected.json'].folderId = 'folder-1';
+            metadataService.metadata.quizzes['owned-protected.json'].visibility = 'private';
 
             expect(metadataService.isQuizVisibleToUser('owned-protected.json', 'user-1')).toBe(true);
             expect(metadataService.isQuizVisibleToUser('owned-protected.json', 'user-2')).toBe(false);
             expect(metadataService.isQuizVisibleToUser('owned-protected.json', null)).toBe(false);
         });
 
-        test('nested protected parent folders hide the quiz from signed-in users', () => {
+        test('the tree lists an ownerless quiz in a nested protected folder as protected', () => {
             metadataService.metadata.folders['root'] = {
                 id: 'root', name: 'Root', parentId: null,
                 passwordHash: 'folder-hash', created: '2026-01-01', sortOrder: 0
@@ -601,9 +606,22 @@ describe('MetadataService', () => {
                 id: 'child', name: 'Child', parentId: 'root',
                 passwordHash: null, created: '2026-01-01', sortOrder: 0
             };
-            metadataService.metadata.quizzes['public-open.json'].folderId = 'child';
+            metadataService.metadata.quizzes['legacy-in-folder.json'] = {
+                filename: 'legacy-in-folder.json', displayName: 'Legacy', folderId: 'child', sortOrder: 0
+            };
 
-            expect(metadataService.isQuizVisibleToUser('public-open.json', 'user-2')).toBe(false);
+            for (const userId of [null, 'user-2']) {
+                const tree = metadataService.getTreeStructure(userId);
+                const root = tree.folders.find(f => f.id === 'root');
+                expect(root).toBeDefined();
+                expect(root.protected).toBe(true);
+                const child = root.children.find(f => f.id === 'child');
+                const node = child.quizzes.find(q => q.filename === 'legacy-in-folder.json');
+                expect(node).toBeDefined();
+                // The client prompts for a password only on nodes marked protected.
+                expect(node.protected).toBe(true);
+                expect(metadataService.requiresAuth('legacy-in-folder.json', 'quiz', userId)).toBe(true);
+            }
         });
 
         test('quizzes with no metadata entry stay visible (legacy fallback)', () => {

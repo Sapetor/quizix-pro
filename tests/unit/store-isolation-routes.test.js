@@ -336,3 +336,132 @@ describe('password-protected quiz downloads', () => {
         expect(res.body.questions).toEqual(['secret']);
     });
 });
+
+// Requests through the tunnel arrive from loopback with CF-Connecting-IP; behind
+// a Docker or k8s proxy they arrive from a private address with X-Forwarded-For.
+// Neither is a direct LAN client.
+const PROXIED = [
+    { 'cf-connecting-ip': '203.0.113.7' },
+    { 'x-forwarded-for': '203.0.113.7' },
+    { forwarded: 'for=203.0.113.7' }
+];
+
+describe('private quiz downloads', () => {
+    test('a valid unlock token does not open another user\'s private quiz', async () => {
+        const deps = makeDeps();
+        deps.quizService = { validateFilename: () => true, loadQuiz: jest.fn(async () => ({ questions: ['secret'] })) };
+        Object.assign(deps.metadataService, {
+            isQuizVisibleToUser: () => false,
+            requiresAuth: () => true,
+            verifyToken: () => true
+        });
+        const router = createQuizManagementRoutes(deps);
+        const res = await dispatch(router, {
+            method: 'GET', url: '/api/quiz/private.json', headers: { authorization: 'Bearer valid' }, user: { id: 'user-2' }
+        });
+        expect(res.statusCode).toBe(403);
+        expect(deps.quizService.loadQuiz).not.toHaveBeenCalled();
+    });
+});
+
+describe('active games listing', () => {
+    function setup() {
+        const games = new Map([
+            ['123456', { pin: '123456', quiz: { title: 'Live', questions: [1, 2] }, players: new Map(), gameState: 'lobby' }],
+            ['654321', { pin: '654321', quiz: { title: 'Done', questions: [1] }, players: new Map(), gameState: 'finished' }]
+        ]);
+        const deps = makeDeps({ gameSessionService: { getAllGames: () => games, getGame: () => null } });
+        return createQuizManagementRoutes(deps);
+    }
+
+    test('lists unfinished games to a direct LAN client, without a debug block', async () => {
+        const res = await dispatch(setup(), { method: 'GET', url: '/api/active-games' });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.games.map(g => g.pin)).toEqual(['123456']);
+        expect(res.body.debug).toBeUndefined();
+    });
+
+    test.each(PROXIED)('returns an empty list to an anonymous proxied client: %j', async headers => {
+        const res = await dispatch(setup(), { method: 'GET', url: '/api/active-games', headers });
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual({ games: [] });
+    });
+
+    test('returns an empty list to a direct client with a public address', async () => {
+        const router = setup();
+        const req = { method: 'GET', url: '/api/active-games', headers: {}, query: {}, socket: { remoteAddress: '203.0.113.7' }, get: () => undefined };
+        const res = makeRes();
+        await new Promise((resolve, reject) => { res._resolve = resolve; router(req, res, err => (err ? reject(err) : resolve(res))); });
+        expect(res.body).toEqual({ games: [] });
+    });
+
+    test('lists games to a signed-in user behind the tunnel', async () => {
+        const res = await dispatch(setup(), {
+            method: 'GET', url: '/api/active-games', headers: PROXIED[0], user: { id: 'user-1' }
+        });
+        expect(res.body.games.map(g => g.pin)).toEqual(['123456']);
+    });
+});
+
+describe('ownerless quiz changes', () => {
+    function setup() {
+        const deps = makeDeps();
+        deps.quizService.deleteQuiz = jest.fn(async () => {});
+        Object.assign(deps.metadataService, {
+            getQuizMetadata: jest.fn(() => ({ displayName: 'Legacy', folderId: null })),
+            deleteQuizMetadata: jest.fn(async () => {}),
+            setQuizDisplayName: jest.fn(async () => {})
+        });
+        return { deps, router: createQuizManagementRoutes(deps) };
+    }
+
+    test.each(PROXIED)('an anonymous proxied client cannot delete an ownerless quiz: %j', async headers => {
+        const { deps, router } = setup();
+        const res = await dispatch(router, {
+            method: 'DELETE', url: '/api/quiz/legacy.json?confirm=true', query: { confirm: 'true' }, headers
+        });
+        expect(res.statusCode).toBe(401);
+        expect(res.body.messageKey).toBe('error_auth_required');
+        expect(deps.quizService.deleteQuiz).not.toHaveBeenCalled();
+    });
+
+    test('a direct LAN client can still delete an ownerless quiz', async () => {
+        const { deps, router } = setup();
+        const res = await dispatch(router, {
+            method: 'DELETE', url: '/api/quiz/legacy.json?confirm=true', query: { confirm: 'true' }
+        });
+        expect(res.statusCode).toBe(200);
+        expect(deps.quizService.deleteQuiz).toHaveBeenCalledWith('legacy.json');
+    });
+
+    test('a signed-in user behind the tunnel can delete an ownerless quiz', async () => {
+        const { deps, router } = setup();
+        const res = await dispatch(router, {
+            method: 'DELETE', url: '/api/quiz/legacy.json?confirm=true', query: { confirm: 'true' },
+            headers: PROXIED[0], user: { id: 'user-1' }
+        });
+        expect(res.statusCode).toBe(200);
+        expect(deps.quizService.deleteQuiz).toHaveBeenCalled();
+    });
+
+    test('an anonymous proxied client cannot rename or move an ownerless quiz', async () => {
+        const { deps, router } = setup();
+        const res = await dispatch(router, {
+            method: 'PATCH', url: '/api/quiz-metadata/legacy.json', body: { displayName: 'Renamed' }, headers: PROXIED[0]
+        });
+        expect(res.statusCode).toBe(401);
+        expect(deps.metadataService.setQuizDisplayName).not.toHaveBeenCalled();
+    });
+});
+
+test('an anonymous proxied client cannot register an unknown quiz through the metadata route', async () => {
+    const deps = makeDeps();
+    deps.quizService.loadQuiz = jest.fn(async () => ({ title: 'x' }));
+    deps.metadataService.registerQuiz = jest.fn(async () => ({}));
+    const router = createQuizManagementRoutes(deps);
+    const res = await dispatch(router, {
+        method: 'PATCH', url: '/api/quiz-metadata/unknown.json', body: { displayName: 'x' }, headers: PROXIED[1]
+    });
+    expect(res.statusCode).toBe(401);
+    expect(deps.metadataService.registerQuiz).not.toHaveBeenCalled();
+});

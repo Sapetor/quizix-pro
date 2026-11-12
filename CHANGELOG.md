@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2026-11-12
 
 ### Security
+- `/api/active-games` returns live PINs only to signed-in users and direct LAN clients, meaning a loopback or private TCP peer with no `CF-Connecting-IP`, `X-Forwarded-For`, `X-Real-IP` or `Forwarded` header (`isDirectLocalClient` in `middleware/client-ip.js`). Other requests get `{"games": []}`. The `debug` block listing all games is removed.
+- Deleting, overwriting through `/api/save-quiz`, or renaming and moving a quiz that has no owner now needs a signed-in user or a direct LAN client; anonymous requests through a tunnel or proxy get `401`. Before, anyone could delete the ownerless quizzes.
 - `GET /api/quiz/:filename` now requires the unlock bearer token for password-protected quizzes; before, it ignored protection. The client records unlock tokens in APIHelper and attaches them to quiz downloads (62ffbf7).
 - A host session is reused only with the secret `hostSessionToken` sent to the host in `game-created`. Before, the session ID alone was enough, and players receive it in `session-waiting` (62ffbf7).
 - Deleting a folder with its contents now unlinks the quiz files before the metadata, and a failed unlink aborts. Before, the files stayed on disk as ownerless public quizzes. Quizzes owned by another user are moved to the parent folder instead of deleted (62ffbf7).
@@ -20,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Earlier on this branch (commit fc2ff1c): SheetJS vendored, signup gated, manim and container hardening, `unsafe-inline` dropped from the CSP.
 
 ### Fixed
+- Folder passwords now work for users other than the quiz's owner. Since 81ad42c, quizzes inside a password-protected folder were hidden from listings and returned 403 to everyone but their owner, so the unlock flow from 05d92bf could not be reached; ownerless quizzes there were hidden from everyone. They are now listed and marked protected (including under a protected ancestor folder), and loading one needs the unlock token. Private quizzes of other users stay hidden, token or not.
+- After saving, the file browser reloads its tree even when the follow-up metadata request fails.
 - `checkManimStatus()` now cancels the body of a non-OK response. The unread body kept the landing page from reaching network idle, so `bootLanding` waited out its 5 s cap on every boot (776b9fa).
 - PPTX upload returned 500 for every file: `routes/file-uploads.js` called `officeparser.parseOfficeAsync`, which officeparser 6.x does not export. The route now uses `extractPptxText` (jszip): slides in numeric order, one paragraph per line, XML entities decoded, 400 with `error_pptx_extraction_failed` for files that are not PPTX or whose slide XML decompresses past 5 MB per slide or 20 MB in total. Parsing is linear in the slide size.
 - `.ppt` removed from the AI generator file picker; no extractor ever parsed it.
@@ -48,9 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Audited against the code: README, root and `public/css` CLAUDE.md, DEPLOYMENT, DOCKER, DOCKER-STANDALONE, K8S quick reference, `k8s/*.md`, `public/sounds/README.md`, `tools/luna-e2e/README.md` and every file in `docs/` except `CAPACITY.md` (measurements kept as recorded) and `STATUSLINE-SETUP.md`. Not audited: `docs/archive`, `docs/superpowers`, `design_handoff_landing`, `tests/agentic/flows`. Corrected file paths, line references, function names, npm scripts, limits and counts.
 - `docs/API_REFERENCE.md`: added accounts, folders, metadata, debug, Gemini, Ollama, extraction and Manim routes; documented auth, rate limits and status codes per route; rewrote the Socket.IO event list, most of whose event names did not exist in the code.
 - `DEPLOYMENT.md`: new section on running behind a reverse proxy or Cloudflare Tunnel (`NODE_ENV`, `BASE_PATH=/`, `PUBLIC_ORIGIN`, `ALLOWED_ORIGINS`, `TRUSTED_PROXY_IPS`). Docker and Kubernetes docs corrected against the Dockerfiles, compose files and `k8s/` manifests.
-- `docs/FUTURE.md`: the tunnel exposure audit now records items 1 (client IPs) and 3 (AI rate limits and server key) as fixed and items 2 (`/api/active-games`) and 4 (ownerless quiz deletion) as open. Roadmap phases carry dated status notes.
+- `docs/FUTURE.md`: the tunnel exposure audit records all four items as fixed: 1 (client IPs) and 3 (AI rate limits and server key) earlier, 2 (`/api/active-games`) and 4 (ownerless quiz deletion) by the Security entries above. Roadmap phases carry dated status notes.
 - `docs/SCORING_SYSTEM.md`: the time bonus decays over the question's time limit (a419083), not a fixed 10 s; examples recomputed. Poll and consensus scoring added.
-- README: Node 22.13.0 or later (`engines`), the full environment-variable table, AI key precedence, and the open security items before public exposure.
+- README: Node 22.13.0 or later (`engines`), the full environment-variable table, AI key precedence, and what anonymous clients behind a tunnel can and cannot do.
 - `.env.example`: a key sent with the request is used in preference to the server key, not the reverse.
 
 ---

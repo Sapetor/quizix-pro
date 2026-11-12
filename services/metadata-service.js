@@ -895,20 +895,12 @@ class MetadataService {
      * - Legacy/ownerless quizzes (no ownerId) are always visible.
      * - Public quizzes are always visible.
      * - Private quizzes are only visible to their owner.
+     *
+     * Folder passwords do not hide a quiz: it is listed, marked protected, and
+     * its contents are gated by requiresAuth and an unlock token. Hiding it left
+     * non-owners no way to reach the password prompt.
      */
     _quizVisibleTo(quiz, userId) {
-        // Folder-level protection applies to everyone except the quiz's own
-        // owner, who reaches it through the ownership path below. Signing in is
-        // not a way past a folder password.
-        if (!userId || userId !== quiz.ownerId) {
-            let folderId = quiz.folderId;
-            while (folderId) {
-                const folder = this.metadata.folders[folderId];
-                if (folder && folder.passwordHash) return false;
-                folderId = folder ? folder.parentId : null;
-            }
-        }
-
         if (!quiz.ownerId) return true;                 // legacy public
         if (quiz.visibility !== 'private') return true; // explicitly public
         return !!userId && userId === quiz.ownerId;
@@ -928,12 +920,12 @@ class MetadataService {
      * Map a metadata quiz entry to the tree node shape, including an `owned`
      * flag that the frontend uses to render the visibility toggle.
      */
-    _quizToTreeNode(filename, quiz, folder, userId) {
+    _quizToTreeNode(filename, quiz, userId) {
         return {
             type: 'quiz',
             filename,
             displayName: quiz.displayName,
-            protected: (!!quiz.ownerId && !!quiz.passwordHash) || !!(folder && folder.passwordHash),
+            protected: (!!quiz.ownerId && !!quiz.passwordHash) || !!this._protectingFolderHash(quiz.folderId),
             created: quiz.created,
             ownerId: quiz.ownerId || null,
             visibility: quiz.ownerId ? (quiz.visibility || 'private') : 'public',
@@ -951,11 +943,11 @@ class MetadataService {
      * quizzes owned by someone else.
      */
     getTreeStructure(userId = null) {
-        const visibleQuizzesInFolder = (folderId, folder) => {
+        const visibleQuizzesInFolder = (folderId) => {
             return Object.entries(this.metadata.quizzes)
                 .filter(([_, q]) => q.folderId === folderId && this._quizVisibleTo(q, userId))
                 .sort(([_, a], [__, b]) => a.sortOrder - b.sortOrder)
-                .map(([filename, quiz]) => this._quizToTreeNode(filename, quiz, folder, userId));
+                .map(([filename, quiz]) => this._quizToTreeNode(filename, quiz, userId));
         };
 
         const buildFolderTree = (parentId) => {
@@ -964,7 +956,7 @@ class MetadataService {
                 .sort((a, b) => a.sortOrder - b.sortOrder)
                 .map(folder => {
                     const children = buildFolderTree(folder.id);
-                    const quizzes = visibleQuizzesInFolder(folder.id, folder);
+                    const quizzes = visibleQuizzesInFolder(folder.id);
                     return {
                         type: 'folder',
                         id: folder.id,
@@ -982,7 +974,7 @@ class MetadataService {
         };
 
         const rootFolders = buildFolderTree(null);
-        const rootQuizzes = visibleQuizzesInFolder(null, null);
+        const rootQuizzes = visibleQuizzesInFolder(null);
 
         return {
             folders: rootFolders,

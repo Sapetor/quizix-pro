@@ -501,20 +501,29 @@ On 2026-11-11, through the tunnel, the page loads and the Socket.IO polling hand
 succeeds. The WebSocket upgrade through the tunnel has not been tested
 separately.
 
-### Open security items
+### Public exposure items
 
 [`docs/FUTURE.md`](docs/FUTURE.md), section "TODO: Public exposure via
-Cloudflare Tunnel", lists the audit items for public exposure. The client IP
-and AI rate-limit items are fixed in code. Two remain open:
+Cloudflare Tunnel", lists the audit items for public exposure. All four are
+fixed in code. Two of them depend on telling a direct LAN client from a
+proxied one:
 
-- `/api/active-games` is unauthenticated and returns the PINs of live games, so
-  anyone who can reach the host can join a running session.
-- Ownerless quizzes (no `ownerId`, no password) can be deleted by anyone with
-  `DELETE /api/quiz/:filename?confirm=true`.
+- `/api/active-games` returns live PINs only to signed-in users and direct LAN
+  clients. Other requests get `{"games": []}` and join by PIN or QR code.
+- Deleting, overwriting (`/api/save-quiz` with `filename`) or renaming and
+  moving a quiz that has no owner needs a signed-in user or a direct LAN
+  client; other requests get `401`.
 
-Short of code changes, the mitigation is Cloudflare Access in front of the
-host-side API paths, with the player join path left public. FUTURE.md lists
-the paths.
+A direct LAN client is one whose TCP peer is a loopback or private address
+and whose request has no `CF-Connecting-IP`, `X-Forwarded-For`, `X-Real-IP`
+or `Forwarded` header. cloudflared and the usual reverse proxies add one of
+these headers, so their clients count as remote. A proxy that strips all of
+them would make every client look local.
+
+Both gates also let any signed-in user through, so they hold only while signup
+is closed. Signup is open until the instance has its first account, and after
+that only with `ALLOW_SIGNUP=true`. Create your account before exposing a
+fresh instance, and leave `ALLOW_SIGNUP` unset.
 
 ## 📝 Version History Tracking
 

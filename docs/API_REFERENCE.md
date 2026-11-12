@@ -157,7 +157,7 @@ The body is validated with zod (`saveQuizSchema`): `title` 1 to 200 characters, 
 **Access rules:**
 - Rate limited to 30 requests per minute per client IP (`429`, `retryAfter` in seconds).
 - Setting a `password` requires a signed-in user (`401` otherwise).
-- Overwriting an existing quiz that has an owner requires being that owner (`403`, `error_quiz_not_owner`). Ownerless legacy quizzes can be overwritten by anyone.
+- Overwriting an existing quiz that has an owner requires being that owner (`403`, `error_quiz_not_owner`). Overwriting an ownerless quiz requires a signed-in user or a direct LAN client (`401`, `error_auth_required`; same rule as `DELETE /api/quiz/:filename`).
 - A quiz saved by a signed-in user is owned by that user and starts `private`. A quiz saved anonymously is ownerless and `public`.
 
 **Response:**
@@ -171,7 +171,7 @@ The body is validated with zod (`saveQuizSchema`): `title` 1 to 200 characters, 
 ```
 
 #### GET /api/quizzes
-List the quizzes visible to the requester. Private quizzes, and quizzes inside a password-protected folder, are listed only for the quiz's owner.
+List the quizzes visible to the requester. Private quizzes are listed only for their owner. Quizzes inside a password-protected folder are listed; loading one needs an unlock token.
 
 **Response:**
 ```json
@@ -197,7 +197,7 @@ Load a specific quiz by filename.
 
 **Access rules:**
 - `400` for an invalid filename.
-- `403` (`error_quiz_forbidden`) for a private quiz the requester does not own, and for any quiz inside a password-protected folder unless the requester owns the quiz. This check runs before the token check, so an unlock token does not help a non-owner here.
+- `403` (`error_quiz_forbidden`) for a private quiz the requester does not own. This check runs before the token check, so an unlock token does not open another user's private quiz.
 - `401` (`error_auth_required`) when the quiz is password protected and the request has no valid unlock token in `Authorization: Bearer <token>`. A quiz with its own password is protected for everyone except its owner (passwords on ownerless legacy quizzes are not enforced). A quiz without its own password is protected, for its owner too, when any ancestor folder has a password. See [Authentication](#authentication).
 - `404` when the file does not exist.
 
@@ -217,7 +217,7 @@ Delete a quiz file and its metadata.
 **Access rules, checked in this order:**
 1. `400` for an invalid filename.
 2. `400` (`error_confirm_required`) unless the query string has `confirm=true`.
-3. `403` (`error_quiz_not_owner`) when the quiz has an owner and the requester is not that owner. Ownerless legacy quizzes can be deleted by anyone.
+3. `403` (`error_quiz_not_owner`) when the quiz has an owner and the requester is not that owner. For a quiz with no owner, `401` (`error_auth_required`) unless the requester is signed in or is a direct LAN client (loopback or private peer address and no `CF-Connecting-IP`, `X-Forwarded-For`, `X-Real-IP` or `Forwarded` header).
 4. When the quiz is password protected for this requester: `401` without an `Authorization: Bearer <token>` header, `403` (`error_invalid_token`) when the token is invalid, expired, or was issued for another item.
 
 **Response:** `{ "success": true, "filename": "my_quiz_1705312200000.json" }`. `404` when the file does not exist.
@@ -281,7 +281,7 @@ Update a quiz's display name, folder, or visibility.
 }
 ```
 
-Quizzes with an owner can be edited only by the owner (`403`, `error_quiz_not_owner`). Ownerless legacy quizzes can be edited by anyone, but their visibility cannot be changed (`400`, `error_quiz_legacy_public`).
+Quizzes with an owner can be edited only by the owner (`403`, `error_quiz_not_owner`). Ownerless legacy quizzes can be edited by a signed-in user or a direct LAN client (`401` otherwise, same rule as `DELETE /api/quiz/:filename`), but their visibility cannot be changed (`400`, `error_quiz_legacy_public`).
 
 **Response:** the updated metadata entry.
 
@@ -393,7 +393,7 @@ Requires `confirm=true` (`400`, `error_confirm_required`). When an `Origin` or `
 #### GET /api/active-games
 List games that are not finished (for player discovery).
 
-This route has no authentication and returns every game's PIN, so anyone who can reach the server can list joinable games. The `debug` block repeats all games, including finished ones.
+The list contains live PINs, so it is returned only to signed-in users and to a direct LAN client (loopback or private peer address and no `CF-Connecting-IP`, `X-Forwarded-For`, `X-Real-IP` or `Forwarded` header). Every other request gets `200` with `{"games": []}`.
 
 **Response:**
 ```json
@@ -407,11 +407,7 @@ This route has no authentication and returns every game's PIN, so anyone who can
       "gameState": "lobby",
       "created": "2024-01-15T10:30:00.000Z"
     }
-  ],
-  "debug": {
-    "totalGames": 1,
-    "allGames": [...]
-  }
+  ]
 }
 ```
 
@@ -966,7 +962,7 @@ User accounts (see [User accounts](#user-accounts)) are a separate mechanism: th
 ### Password Protection Features
 
 - **Quiz-level passwords**: Set at creation time via `/api/save-quiz` or later via `/api/quiz-metadata/:filename/password`. Both require a signed-in owner. The owner is not asked for their own quiz password, and passwords on ownerless legacy quizzes are not enforced.
-- **Folder-level passwords**: Set via `/api/folders/:id/password` endpoint. A folder password hides every quiz in that folder and its subfolders from everyone except the quiz's owner (omitted from listings, `403` on load). The owner of a quiz there that has no password of its own needs an unlock token to load it.
+- **Folder-level passwords**: Set via `/api/folders/:id/password` endpoint. A folder password protects every quiz in that folder and its subfolders that has no password of its own. Those quizzes stay in listings, marked `protected`, and loading one needs an unlock token, for its owner too.
 - **Session tokens**: 1-hour expiring tokens after successful unlock
 - **Security model**: PBKDF2-SHA512 hashing with 100,000 iterations
 - **Rate limiting**: 5 unlock attempts per minute per IP address
@@ -1011,7 +1007,7 @@ POST /api/unlock
 }
 ```
 
-A token is valid only for the `itemId` and `itemType` it was issued for. To open a quiz that has no password of its own but sits inside a protected folder, send `itemType: "quiz"`, the quiz filename, and the password of the nearest protected ancestor folder. The returned token is scoped to that quiz. A folder token does not open the quizzes inside it. Because `GET /api/quiz/:filename` hides folder-protected quizzes from non-owners before checking the token, this token currently lets only the quiz's owner load the quiz.
+A token is valid only for the `itemId` and `itemType` it was issued for. To open a quiz that has no password of its own but sits inside a protected folder, send `itemType: "quiz"`, the quiz filename, and the password of the nearest protected ancestor folder. The returned token is scoped to that quiz. A folder token does not open the quizzes inside it.
 
 **Error Responses:**
 - `429`: Too many unlock attempts (rate limit exceeded)

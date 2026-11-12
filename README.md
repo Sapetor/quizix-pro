@@ -124,9 +124,9 @@ Built for LAN use. For remote access, put it behind HTTPS with
 of `npm start`. See [DEPLOYMENT.md](DEPLOYMENT.md) for each, including the variables a tunnel needs
 (`NODE_ENV`, `BASE_PATH=/`, `PUBLIC_ORIGIN`, `ALLOWED_ORIGINS`).
 
-Two security items remain open before public exposure: `/api/active-games` returns live game PINs
-without authentication, and quizzes with no owner and no password can be deleted by anyone. Both
-are tracked under "Public exposure via Cloudflare Tunnel" in [docs/FUTURE.md](docs/FUTURE.md).
+Behind a tunnel or proxy, anonymous clients get an empty `/api/active-games` list and cannot
+delete, overwrite or rename quizzes that have no owner; signed-in users and direct LAN clients can.
+The audit is under "Public exposure via Cloudflare Tunnel" in [docs/FUTURE.md](docs/FUTURE.md).
 
 ## Security notes
 

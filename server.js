@@ -52,7 +52,7 @@ const { createAIGenerationRoutes } = require('./routes/ai-generation');
 const { createManimRoutes } = require('./routes/manim-routes');
 const { createAuthRoutes } = require('./routes/auth');
 const { createAttachUser, requireUser } = require('./middleware/attach-user');
-const { getClientIp } = require('./middleware/client-ip');
+const { getClientIp, isDirectLocalClient } = require('./middleware/client-ip');
 const { ManimRenderService } = require('./services/manim-render-service');
 const { UploadGCService } = require('./services/upload-gc-service');
 const { createSaveQuizRateLimiter } = require('./utils/save-quiz-rate-limiter');
@@ -564,12 +564,15 @@ app.post('/api/save-quiz', saveQuizRateLimiter.middleware, validateBody(saveQuiz
         }
 
         // Ownership gate: don't let a requester overwrite a quiz they don't own.
-        // Mirrors the DELETE /api/quiz/:filename gate; ownerless legacy quizzes
-        // remain overwritable by anyone (consistent with the delete route).
+        // Mirrors the DELETE /api/quiz/:filename gate: overwriting an ownerless
+        // quiz needs a signed-in user or a direct LAN client.
         if (filename) {
             const quizMeta = metadataService.getQuizMetadata(filename);
             if (quizMeta?.ownerId && quizMeta.ownerId !== ownerId) {
                 return res.status(403).json({ error: 'You do not own this quiz', messageKey: 'error_quiz_not_owner' });
+            }
+            if (!quizMeta?.ownerId && !ownerId && !isDirectLocalClient(req)) {
+                return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
             }
         }
 

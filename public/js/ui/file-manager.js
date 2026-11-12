@@ -907,11 +907,12 @@ export class FileManager {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ displayName: title })
             });
-
-            await this.loadTree();
         } catch (error) {
+            // An anonymous request through a tunnel gets 401 here; save-quiz has
+            // already registered the quiz, so the tree still needs reloading.
             logger.warn('Failed to register quiz in metadata:', error);
         }
+        await this.loadTree();
     }
 
     /**
