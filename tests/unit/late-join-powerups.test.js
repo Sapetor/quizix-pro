@@ -128,6 +128,21 @@ describe('power-ups of an entry created during a question', () => {
         expect(game.questionEndsAt).toBe(endsAt + 10000);
     });
 
+    // The stock client extends its countdown locally on click, before the
+    // server answers; a rejected extend-time has to put it back.
+    it('re-sends the unchanged remaining time when extend-time is deferred', () => {
+        ctx = setup();
+        const { game, connect, startQuestion } = ctx;
+        startQuestion(0);
+        jest.advanceTimersByTime(5000);
+        const late = connect('late');
+        late.handlers['player-join']({ pin: game.pin, name: 'Late' });
+
+        expect(usePowerUp(late, 'extend-time').success).toBe(false);
+        const sync = late.emits.filter(e => e.event === 'time-sync').pop();
+        expect(sync.data.remainingMs).toBe(game.questionEndsAt - Date.now());
+    });
+
     it('a player who joined in the lobby can use them in the first question', () => {
         ctx = setup();
         const { game, connect, startQuestion } = ctx;

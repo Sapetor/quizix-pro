@@ -71,6 +71,10 @@ function registerGameplayEvents(io, socket, options) {
             if ((type === 'extend-time' || type === 'fifty-fifty') && game.gameState === 'question' &&
                 joinedQuestionStart && joinedQuestionStart === game.questionStartTime) {
                 socket.emit('power-up-result', { success: false, type, error: 'Power-up not available until the next question', messageKey: 'error_powerup_already_used' });
+                // The client extends its countdown on click; put it back.
+                if (type === 'extend-time' && game.questionEndsAt) {
+                    socket.emit('time-sync', { remainingMs: Math.max(0, game.questionEndsAt - Date.now()) });
+                }
                 return;
             }
 
