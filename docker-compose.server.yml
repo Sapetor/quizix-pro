@@ -41,8 +41,9 @@ services:
     network_mode: "bridge"
 
     # Isolation hardening, mirrored from docker-compose.yml.
-    # The server listens on 3000 (server.js:744), so nothing needs
-    # CAP_NET_BIND_SERVICE and dropping ALL capabilities is safe.
+    # The server listens on PORT (3000, set above; see server.listen in
+    # server.js), so nothing needs CAP_NET_BIND_SERVICE and dropping ALL
+    # capabilities is safe.
     security_opt:
       - no-new-privileges:true
     cap_drop:
