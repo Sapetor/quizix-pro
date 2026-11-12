@@ -9,6 +9,9 @@ export default [
         ignores: [
             'node_modules/**',
             'public/css/main.bundle.css',
+            // Vendored third-party files: `eslint --fix` would rewrite them and
+            // break public/libs/SHA256SUMS.
+            'public/libs/**',
             'test-results/**',
             'playwright-report/**',
             'coverage/**',
