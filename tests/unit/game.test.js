@@ -386,6 +386,26 @@ describe('Game — submitAnswer', () => {
         const res = game.submitAnswer('p1', 3, 'multiple-choice');
         expect(res.isCorrect).toBe(true);
     });
+
+    test('scores a decimal answer to a numeric question whose answer is not an integer', () => {
+        const game = startedGame([{ type: 'numeric', correctAnswer: 2.718, tolerance: 0.01, difficulty: 'easy', timeLimit: 20 }]);
+        const res = game.submitAnswer('p1', 2.718, 'numeric');
+        expect(res.isCorrect).toBe(true);
+        expect(res.points).toBeGreaterThan(0);
+        expect(game.getAnswerStatistics().answerCounts).toEqual({ '2.718': 1 });
+    });
+
+    // The socket schema accepts any bounded number, so a decimal or negative
+    // value can reach a multiple-choice question: wrong, not counted, no throw.
+    test.each([1.5, -1])('scores %p on a shuffled multiple-choice question as wrong', (answer) => {
+        const game = startedGame([mcQuestion({ correctAnswer: 1, correctIndex: 1 })]);
+        game.answerMappings.set('p1', [3, 2, 0, 1]);
+        const res = game.submitAnswer('p1', answer, 'multiple-choice');
+        expect(res).toMatchObject({ accepted: true, isCorrect: false, points: 0 });
+        const stats = game.getAnswerStatistics();
+        expect(stats.answeredPlayers).toBe(1);
+        expect(stats.answerCounts).toEqual({ 0: 0, 1: 0, 2: 0, 3: 0 });
+    });
 });
 
 describe('Game — consensus mode', () => {

@@ -820,7 +820,7 @@ Player submits an answer. Rate limited to 3 per second.
 }
 ```
 
-`answer` is an integer 0 to 1000, a boolean, a string of up to 200 characters, or an array of up to 100 integers. Response time is measured on the server.
+`answer` is a finite number between -1e15 and 1e15 (an option index, or the value typed into a numeric question), a boolean, a string of up to 200 characters, or an array of up to 100 integers from 0 to 1000. Response time is measured on the server.
 
 **Server Events:**
 - `answer-submitted` (to the player): `{ "answer": 1 }`

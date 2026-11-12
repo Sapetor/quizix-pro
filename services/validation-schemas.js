@@ -402,12 +402,15 @@ const endQuestionEarlySchema = z.object({
     pin: z.string().regex(/^\d{6}$/)
 });
 
-// Bounded on both branches: the answer is serialized into the results file at
-// game end, so an unbounded array or a huge number is a disk-size problem as
-// well as a parsing one. 1000 is far above any real option/ordering index.
+// Bounded on every branch: the answer is serialized into the results file at
+// game end. A scalar number is an option index or the value typed into a
+// numeric question, so it may be a decimal, negative or large; z.number()
+// already rejects NaN and Infinity, and the magnitude bound keeps it in the
+// exactly representable integer range. Array members are option/ordering
+// indices, and 1000 is far above any real one.
 const socketSubmitAnswerSchema = z.object({
     answer: z.union([
-        z.number().int().min(0).max(1000),
+        z.number().min(-1e15).max(1e15),
         z.boolean(),
         z.string().max(200),
         z.array(z.number().int().min(0).max(1000)).max(100)

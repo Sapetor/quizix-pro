@@ -415,6 +415,28 @@ describe('Socket Event Validation', () => {
                 });
                 expect(result.valid).toBe(true);
             });
+
+            // The numeric question type sends parseFloat(input) as a number.
+            it.each([2.718, 3.6788, 1948, -5, 0.001, -273.15])(
+                'should accept the numeric-question answer %p unchanged',
+                (answer) => {
+                    const result = validateSocketEvent('submit-answer', { answer, type: 'numeric' });
+                    expect(result.valid).toBe(true);
+                    expect(result.data.answer).toBe(answer);
+                }
+            );
+
+            it.each([1e16, -1e16, Infinity, -Infinity, NaN])(
+                'should reject the non-finite or out-of-range number %p',
+                (answer) => {
+                    expect(validateSocketEvent('submit-answer', { answer }).valid).toBe(false);
+                }
+            );
+
+            it('should still require integer indices inside an array answer', () => {
+                expect(validateSocketEvent('submit-answer', { answer: [0, 1.5] }).valid).toBe(false);
+                expect(validateSocketEvent('submit-answer', { answer: [0, -1] }).valid).toBe(false);
+            });
         });
 
         describe('unknown events', () => {

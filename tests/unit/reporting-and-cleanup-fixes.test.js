@@ -127,10 +127,14 @@ describe('submit-answer payload bounds', () => {
         expect(validateSocketEvent('submit-answer', { answer: Array(100).fill(0) }).valid).toBe(true);
     });
 
-    it('rejects an out-of-range or non-integer numeric answer', () => {
-        expect(validateSocketEvent('submit-answer', { answer: 1001 }).valid).toBe(false);
-        expect(validateSocketEvent('submit-answer', { answer: -1 }).valid).toBe(false);
-        expect(validateSocketEvent('submit-answer', { answer: 1.5 }).valid).toBe(false);
+    // A scalar number is also the answer to a numeric question, which can be
+    // a decimal, negative or large; only its magnitude is bounded.
+    it('rejects a number outside the bounded range and accepts numeric-question values', () => {
+        expect(validateSocketEvent('submit-answer', { answer: 1e16 }).valid).toBe(false);
+        expect(validateSocketEvent('submit-answer', { answer: Infinity }).valid).toBe(false);
+        expect(validateSocketEvent('submit-answer', { answer: 1001 }).valid).toBe(true);
+        expect(validateSocketEvent('submit-answer', { answer: -1 }).valid).toBe(true);
+        expect(validateSocketEvent('submit-answer', { answer: 1.5 }).valid).toBe(true);
         expect(validateSocketEvent('submit-answer', { answer: 3 }).valid).toBe(true);
     });
 });
