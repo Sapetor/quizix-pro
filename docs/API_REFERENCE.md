@@ -157,7 +157,7 @@ The body is validated with zod (`saveQuizSchema`): `title` 1 to 200 characters, 
 **Access rules:**
 - Rate limited to 30 requests per minute per client IP (`429`, `retryAfter` in seconds).
 - Setting a `password` requires a signed-in user (`401` otherwise).
-- Overwriting an existing quiz that has an owner requires being that owner (`403`, `error_quiz_not_owner`). Overwriting an ownerless quiz requires a signed-in user or a direct LAN client (`401`, `error_auth_required`; same rule as `DELETE /api/quiz/:filename`).
+- Overwriting an existing quiz that has an owner requires being that owner (`403`, `error_quiz_not_owner`). Overwriting an ownerless quiz requires a signed-in user or a direct LAN client (`401`, `error_auth_required`; same rule as `DELETE /api/quiz/:filename`). Overwriting a quiz that is password protected for the requester also needs a valid unlock token in `Authorization: Bearer <token>` (`401`, `error_auth_required`).
 - A quiz saved by a signed-in user is owned by that user and starts `private`. A quiz saved anonymously is ownerless and `public`.
 
 **Response:**
@@ -281,7 +281,7 @@ Update a quiz's display name, folder, or visibility.
 }
 ```
 
-Quizzes with an owner can be edited only by the owner (`403`, `error_quiz_not_owner`). Ownerless legacy quizzes can be edited by a signed-in user or a direct LAN client (`401` otherwise, same rule as `DELETE /api/quiz/:filename`), but their visibility cannot be changed (`400`, `error_quiz_legacy_public`).
+Quizzes with an owner can be edited only by the owner (`403`, `error_quiz_not_owner`). Ownerless legacy quizzes can be edited by a signed-in user or a direct LAN client (`401` otherwise, same rule as `DELETE /api/quiz/:filename`), but their visibility cannot be changed (`400`, `error_quiz_legacy_public`). When `requiresAuth` is true for the requester, as for a quiz in a password-protected folder, the request also needs a valid unlock token in `Authorization: Bearer <token>` (`401`, `error_auth_required`). A `displayName` change also sets `title` in the quiz file.
 
 **Response:** the updated metadata entry.
 
