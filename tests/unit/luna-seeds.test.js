@@ -14,6 +14,14 @@ const { ResultsService } = require('../../services/results-service');
 
 const SEEDS_DIR = path.resolve(__dirname, '../../tools/luna-e2e');
 
+// The seed is Python; skip on machines without python3.
+let hasPython = true;
+try {
+    execFileSync('python3', ['--version'], { stdio: 'ignore', timeout: 10000 });
+} catch {
+    hasPython = false;
+}
+
 const SCRIPT = `
 import sys
 sys.path.insert(0, sys.argv[1])
@@ -29,7 +37,7 @@ class FakeApp:
 seeds.SEEDS["results-analytics"](FakeApp(), None, None)
 `;
 
-describe('luna-e2e results-analytics seed', () => {
+(hasPython ? describe : describe.skip)('luna-e2e results-analytics seed', () => {
     let tmpdir;
 
     beforeEach(() => {
