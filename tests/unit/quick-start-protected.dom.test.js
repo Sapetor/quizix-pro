@@ -29,6 +29,7 @@ describe('Quick Start with protected quizzes', () => {
             socketManager: { createGame: jest.fn() },
             _hideQuickStartSettings: QuizGame.prototype._hideQuickStartSettings,
             _ensureQuizUnlocked: QuizGame.prototype._ensureQuizUnlocked,
+            _promptQuizUnlock: QuizGame.prototype._promptQuizUnlock,
             _collectQuickStartSettings: QuizGame.prototype._collectQuickStartSettings,
             _positionQuickStartSettings: jest.fn()
         };
@@ -88,6 +89,37 @@ describe('Quick Start with protected quizzes', () => {
         await QuizGame.prototype.quickStartQuiz.call(game, 'A.json');
 
         expect(prompt).not.toHaveBeenCalled();
+        expect(game.socketManager.createGame).toHaveBeenCalledTimes(1);
+    });
+
+    test('a double click on a protected quiz prompts once and starts the game', async () => {
+        let resolvePw;
+        prompt.mockImplementation(() => new Promise((r) => { resolvePw = r; }));
+        let unlocked = false;
+        const calls = { auth: 0 };
+        jest.spyOn(APIHelper, 'fetchAPI').mockImplementation(async (url) => {
+            await new Promise((r) => setTimeout(r, 5));
+            if (url.startsWith('api/requires-auth')) { calls.auth++; return res(200, { requiresAuth: true }); }
+            if (url === 'api/unlock') {
+                unlocked = true;
+                APIHelper.quizUnlockTokens.set('B.json', { token: 't', expiresAt: Date.now() + 60000 });
+                return res(200, { token: 't' });
+            }
+            return unlocked
+                ? res(200, { title: 'B', questions: [{ type: 'true-false', question: 'q', correctAnswer: true }], settings: {} })
+                : res(401);
+        });
+
+        const a = QuizGame.prototype._onQuickStartQuizSelected.call(game, 'B.json');
+        await new Promise((r) => setTimeout(r, 2));
+        const b = QuizGame.prototype._onQuickStartQuizSelected.call(game, 'B.json');
+        await new Promise((r) => setTimeout(r, 2));
+        const c = QuizGame.prototype.quickStartQuiz.call(game, 'B.json');
+        await new Promise((r) => setTimeout(r, 50));
+        resolvePw('pw');
+        await Promise.all([a, b, c]);
+
+        expect(prompt).toHaveBeenCalledTimes(1);
         expect(game.socketManager.createGame).toHaveBeenCalledTimes(1);
     });
 });

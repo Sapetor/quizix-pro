@@ -1197,6 +1197,8 @@ export class QuizGame {
     async _onQuickStartQuizSelected(filename) {
         this._quickStartSelectedFile = filename;
         const stale = () => this._quickStartSelectedFile !== filename;
+        let loadDone;
+        this._quickStartLoad = { filename, pending: new Promise((r) => { loadDone = r; }) };
 
         try {
             let response = await APIHelper.fetchAPI(`api/quiz/${filename}`);
@@ -1266,6 +1268,8 @@ export class QuizGame {
         } catch (error) {
             logger.error('Failed to load quiz settings for quick start:', error);
             if (!stale()) this._hideQuickStartSettings();
+        } finally {
+            loadDone();
         }
     }
 
@@ -1349,6 +1353,20 @@ export class QuizGame {
         const cached = APIHelper.quizUnlockTokens.get(filename);
         if (cached && cached.expiresAt > Date.now()) return true;
 
+        // One prompt per file: a double click calls this three times.
+        if (!this._unlockInFlight) this._unlockInFlight = new Map();
+        const inFlight = this._unlockInFlight.get(filename);
+        if (inFlight) return inFlight;
+        const run = this._promptQuizUnlock(filename);
+        this._unlockInFlight.set(filename, run);
+        try {
+            return await run;
+        } finally {
+            this._unlockInFlight.delete(filename);
+        }
+    }
+
+    async _promptQuizUnlock(filename) {
         try {
             const authResponse = await APIHelper.fetchAPI(`api/requires-auth/quiz/${filename}`);
             if (!authResponse.ok) return false;
@@ -1409,6 +1427,10 @@ export class QuizGame {
         }
 
         if (!(await this._ensureQuizUnlocked(filename))) return;
+
+        // Let a pending settings load for this file fill the panel first
+        const load = this._quickStartLoad;
+        if (load && load.filename === filename) await load.pending;
 
         this.hideQuickStartModal();
 

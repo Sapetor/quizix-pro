@@ -41,6 +41,7 @@ describe('Quick Start same time for all', () => {
             hideQuickStartModal: jest.fn(),
             socketManager: { createGame: jest.fn() },
             _ensureQuizUnlocked: QuizGame.prototype._ensureQuizUnlocked,
+            _promptQuizUnlock: QuizGame.prototype._promptQuizUnlock,
             _collectQuickStartSettings: QuizGame.prototype._collectQuickStartSettings
         };
     });

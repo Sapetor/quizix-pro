@@ -77,7 +77,11 @@ export class PasswordModal {
         });
 
         // Modal bindings
-        this.bindings = createModalBindings(this.modal, () => this.handleCancel());
+        this.bindings = createModalBindings(this.modal, () => {
+            // Ignore the second click of a double click that opened this modal
+            if (Date.now() - (this.openedAt || 0) < 400) return;
+            this.handleCancel();
+        });
     }
 
     /**
@@ -108,6 +112,7 @@ export class PasswordModal {
             this.modal.querySelector('#password-confirm-input').value = '';
 
             this.isNewPassword = false;
+            this.openedAt = Date.now();
             openModal(this.modal);
 
             // Show error (e.g. after a wrong-password re-prompt) once the modal is visible
@@ -154,6 +159,7 @@ export class PasswordModal {
             this.updateStrength('');
 
             this.isNewPassword = true;
+            this.openedAt = Date.now();
             openModal(this.modal);
 
             // Focus input
