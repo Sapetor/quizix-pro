@@ -774,4 +774,25 @@ describe('Game — saveResults (idempotent, mocked I/O)', () => {
         expect(parsed.results[0]).toMatchObject({ name: 'Alice', score: 250 });
         expect(parsed.questions[0]).toMatchObject({ questionNumber: 1, text: 'Q1?' });
     });
+
+    // A player whose disconnect grace period expired sits in removedPlayers.
+    // The final leaderboard lists them, so the saved file must as well.
+    test('includes players removed after the disconnect grace period', async () => {
+        const game = makeGame({ questions: [mcQuestion()] });
+        game.addPlayer('p1', 'Stay');
+        game.players.get('p1').score = 100;
+        const goneAnswers = { 0: { answer: 1, isCorrect: true, points: 500, timeMs: 1200 } };
+        game.removedPlayers.push({
+            id: 'p2', name: 'Gone', score: 500, answers: goneAnswers,
+            disconnected: true, removedAt: Date.now()
+        });
+
+        await game.saveResults();
+
+        const parsed = JSON.parse(atomicWriteFile.mock.calls[0][1]);
+        expect(parsed.results).toEqual([
+            { name: 'Stay', score: 100, answers: [] },
+            { name: 'Gone', score: 500, answers: goneAnswers }
+        ]);
+    });
 });

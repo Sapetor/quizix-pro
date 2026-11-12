@@ -777,7 +777,9 @@ class Game {
             const results = {
                 quizTitle: this.quiz.title || 'Untitled Quiz',
                 gamePin: this.pin,
-                results: Array.from(this.players.values()).map(player => ({
+                // Same set as the final leaderboard: players removed after the
+                // disconnect grace period keep the score and answers they earned.
+                results: [...this.players.values(), ...this.removedPlayers].map(player => ({
                     name: player.name,
                     score: player.score,
                     answers: player.answers
