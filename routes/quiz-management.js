@@ -129,6 +129,26 @@ function createQuizManagementRoutes(options) {
     }
 
     /**
+     * Reject a change to `folder` that would take its quizzes out from under
+     * a password-protected ancestor folder, unless the request carries the
+     * unlock token of that ancestor. Without this, the owner of an
+     * unprotected subfolder could move it out, or delete it with its
+     * contents, and so remove the protection without the password.
+     */
+    function protectedAncestorError(req, folder) {
+        const protectorId = metadataService.protectingFolderId(folder.parentId);
+        if (!protectorId) return null;
+        const auth = req.get('authorization') || '';
+        if (!auth.startsWith('Bearer ')) {
+            return { status: 401, body: { error: 'Authentication required', messageKey: 'error_auth_required' } };
+        }
+        if (!metadataService.verifyToken(auth.slice(7), protectorId, 'folder')) {
+            return { status: 403, body: { error: 'Invalid or expired authentication token', messageKey: 'error_invalid_token' } };
+        }
+        return null;
+    }
+
+    /**
      * Host tokens presented by the requester.
      *
      * `Authorization: Bearer <token>` names one game. `X-Host-Token` accepts a
@@ -496,6 +516,9 @@ function createQuizManagementRoutes(options) {
             const { parentId } = req.validatedBody;
             const parentDenied = parentFolderAuthError(req, parentId);
             if (parentDenied) return res.status(parentDenied.status).json(parentDenied.body);
+            const existing = metadataService.getFolder(id);
+            const locked = existing && protectedAncestorError(req, existing);
+            if (locked) return res.status(locked.status).json(locked.body);
 
             const folder = await metadataService.moveFolder(id, parentId);
             res.json(folder);
@@ -544,6 +567,15 @@ function createQuizManagementRoutes(options) {
                 if (!metadataService.verifyToken(token, id, 'folder')) {
                     return res.status(403).json({ error: 'Invalid or expired authentication token', messageKey: 'error_invalid_token' });
                 }
+            }
+
+            // A folder with its own password protects its contents itself and
+            // was checked above. Otherwise the contents may be protected by an
+            // ancestor, whose token is then needed to delete them.
+            const folder = metadataService.getFolder(id);
+            if (deleteContents && folder && !folder.passwordHash) {
+                const locked = protectedAncestorError(req, folder);
+                if (locked) return res.status(locked.status).json(locked.body);
             }
 
             const result = await metadataService.deleteFolder(id, deleteContents, req.user.id);

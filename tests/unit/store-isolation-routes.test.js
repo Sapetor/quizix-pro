@@ -73,6 +73,7 @@ function makeDeps(overrides = {}) {
         deleteFolder: jest.fn(async () => ({ success: true })),
         setFolderPassword: jest.fn(async (id, password) => ({ success: true, protected: !!password })),
         requiresAuth: jest.fn(() => false),
+        protectingFolderId: jest.fn(() => null),
         verifyToken: jest.fn(() => true),
         isQuizVisibleToUser: jest.fn(() => true),
         getQuizMetadata: jest.fn(() => null),
@@ -646,5 +647,92 @@ describe('changing a quiz inside a password-protected folder', () => {
         expect(quizUnlockError(metadataService, req({ authorization: 'Bearer wrong' }), 'legacy.json').status).toBe(401);
         expect(quizUnlockError(metadataService, req({ authorization: `Bearer ${token}` }), 'legacy.json')).toBeNull();
         expect(quizUnlockError(metadataService, req(), 'unknown.json')).toBeNull();
+    });
+});
+
+// Folder F (user-1) has a password. Subfolder C (user-2) has none and holds
+// the ownerless quiz q.json, which F's password protects. Moving C out of F
+// or deleting it with its contents would remove that protection, so both
+// need the unlock token of F.
+describe('a subfolder of a password-protected folder', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const F = FOLDER_ID;
+    const C = USER2_FOLDER_ID;
+    let quizzesDir;
+
+    beforeEach(() => {
+        quizzesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'protected-subfolder-'));
+        fs.writeFileSync(path.join(quizzesDir, 'q.json'), '{"title":"Q","questions":[]}');
+    });
+
+    afterEach(() => {
+        fs.rmSync(quizzesDir, { recursive: true, force: true });
+    });
+
+    async function setup() {
+        const metadataService = new MetadataService(makeDeps().logger, {}, quizzesDir);
+        metadataService.saveMetadata = async () => {};
+        metadataService.metadata = {
+            folders: {
+                [F]: { id: F, name: 'Locked', parentId: null, ownerId: 'user-1', passwordHash: await metadataService.hashPassword('folder-pw') },
+                [C]: { id: C, name: 'Inner', parentId: F, ownerId: 'user-2', passwordHash: null }
+            },
+            quizzes: { 'q.json': { displayName: 'Q', folderId: C } }
+        };
+        const router = createQuizManagementRoutes(makeDeps({ metadataService }));
+        return { metadataService, router };
+    }
+
+    const user2 = { id: 'user-2' };
+    const move = (router, headers = {}) => dispatch(router, {
+        method: 'PATCH', url: `/api/folders/${C}/move`, body: { parentId: null }, user: user2, headers
+    });
+    const deleteWithContents = (router, headers = {}) => dispatch(router, {
+        method: 'DELETE', url: `/api/folders/${C}?deleteContents=true`, query: { deleteContents: 'true' }, user: user2, headers
+    });
+
+    test.each([
+        ['no token', {}, 401],
+        ['a wrong token', { authorization: 'Bearer wrong' }, 403]
+    ])('its owner cannot move it out with %s', async (_label, headers, status) => {
+        const { metadataService, router } = await setup();
+        const res = await move(router, headers);
+
+        expect(res.statusCode).toBe(status);
+        expect(metadataService.getFolder(C).parentId).toBe(F);
+        expect(metadataService.requiresAuth('q.json', 'quiz', 'user-2')).toBe(true);
+    });
+
+    test('its owner can move it out with the unlock token of the protected folder', async () => {
+        const { metadataService, router } = await setup();
+        const { token } = await metadataService.unlock(F, 'folder', 'folder-pw', '10.0.0.1');
+        const res = await move(router, { authorization: `Bearer ${token}` });
+
+        expect(res.statusCode).toBe(200);
+        expect(metadataService.getFolder(C).parentId).toBeNull();
+    });
+
+    test.each([
+        ['no token', {}, 401],
+        ['a wrong token', { authorization: 'Bearer wrong' }, 403]
+    ])('its owner cannot delete it with its contents with %s', async (_label, headers, status) => {
+        const { metadataService, router } = await setup();
+        const res = await deleteWithContents(router, headers);
+
+        expect(res.statusCode).toBe(status);
+        expect(fs.existsSync(path.join(quizzesDir, 'q.json'))).toBe(true);
+        expect(metadataService.getQuizMetadata('q.json')).toBeTruthy();
+    });
+
+    test('its owner can delete it with its contents with the unlock token of the protected folder', async () => {
+        const { metadataService, router } = await setup();
+        const { token } = await metadataService.unlock(F, 'folder', 'folder-pw', '10.0.0.1');
+        const res = await deleteWithContents(router, { authorization: `Bearer ${token}` });
+
+        expect(res.statusCode).toBe(200);
+        expect(fs.existsSync(path.join(quizzesDir, 'q.json'))).toBe(false);
+        expect(metadataService.getFolder(C)).toBeUndefined();
     });
 });

@@ -248,7 +248,7 @@ A `parentId` folder with an owner accepts new folders only from that owner (`403
 #### PATCH /api/folders/:id/move
 **Request Body:** `{ "parentId": "folder-uuid-or-null" }`
 
-Rename and move require a signed-in user (`401`). Folders with an owner can be changed only by that owner (`403`, `error_folder_not_owner`); ownerless legacy folders can be changed by any signed-in user. A move also needs the destination `parentId` to be `null`, a folder the requester owns, or an ownerless legacy folder (`403`, `error_folder_not_owner`), as for `POST /api/folders`. Both return the updated folder, or `404` if it does not exist.
+Rename and move require a signed-in user (`401`). Folders with an owner can be changed only by that owner (`403`, `error_folder_not_owner`); ownerless legacy folders can be changed by any signed-in user. A move also needs the destination `parentId` to be `null`, a folder the requester owns, or an ownerless legacy folder (`403`, `error_folder_not_owner`), as for `POST /api/folders`. When an ancestor folder of the moved folder has a password, the move also needs `Authorization: Bearer <token>` from unlocking the nearest such ancestor (`itemType: "folder"`), for its owner too: `401` without the header, `403` (`error_invalid_token`) for an invalid or expired token. Otherwise a move would take the quizzes inside out from under that password. Both return the updated folder, or `404` if it does not exist.
 
 #### POST /api/folders/:id/password
 Set or remove a folder password.
@@ -265,7 +265,7 @@ Delete a folder.
 **Query Parameters:**
 - `deleteContents`: `true` to delete subfolders and quiz files as well. Without it, a non-empty folder returns `400` (`error_folder_not_empty`).
 
-**Access rules:** same owner checks as rename and move. When the folder has a password, the request also needs `Authorization: Bearer <token>` from unlocking that folder: `401` without the header, `403` (`error_invalid_token`) for an invalid or expired token.
+**Access rules:** same owner checks as rename and move. When the folder has a password, the request also needs `Authorization: Bearer <token>` from unlocking that folder: `401` without the header, `403` (`error_invalid_token`) for an invalid or expired token. With `deleteContents=true`, a folder without a password of its own that sits below a password-protected folder needs the token from unlocking the nearest such ancestor instead, with the same `401` and `403` responses.
 
 With `deleteContents=true`, child folders are processed first, then each quiz file is removed from disk before its metadata entry. Quizzes owned by a different user are not deleted; they are moved to the deleted folder's parent. If a file cannot be removed, the operation stops with an error instead of leaving an ownerless copy.
 
@@ -1031,6 +1031,7 @@ The following endpoints require authentication for password-protected items:
 - `GET /api/quiz/:filename` - Load quiz (`401` for a missing or invalid token)
 - `DELETE /api/quiz/:filename` - Delete quiz file (`401` missing token, `403` invalid token)
 - `DELETE /api/folders/:id` - Delete folder (`401` missing token, `403` invalid token)
+- `PATCH /api/folders/:id/move` and `DELETE /api/folders/:id?deleteContents=true` - for a folder below a protected folder, the token of the nearest protected ancestor
 
 **Example with Authentication:**
 ```javascript

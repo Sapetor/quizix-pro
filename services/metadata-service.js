@@ -879,10 +879,19 @@ class MetadataService {
      * `folderId`, or null when no ancestor is protected.
      */
     _protectingFolderHash(folderId) {
+        const protectorId = this.protectingFolderId(folderId);
+        return protectorId ? this.metadata.folders[protectorId].passwordHash : null;
+    }
+
+    /**
+     * Id of the nearest password-protected folder at or above `folderId`, or
+     * null when no ancestor is protected.
+     */
+    protectingFolderId(folderId) {
         while (folderId) {
             const folder = this.metadata.folders[folderId];
             if (!folder) return null;
-            if (folder.passwordHash) return folder.passwordHash;
+            if (folder.passwordHash) return folderId;
             folderId = folder.parentId;
         }
         return null;
