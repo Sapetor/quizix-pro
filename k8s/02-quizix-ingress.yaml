@@ -43,12 +43,18 @@ spec:
 # Option 2: Integrate into your existing lab-apps ingress
 # INSTRUCTIONS:
 # If you prefer to use a single ingress for all apps, add this path to your existing
-# k8s/ingress.yaml file in the 'lab' namespace:
+# k8s/ingress.yaml file in the 'lab' namespace.
+#
+# The pod serves everything at the root and expects the ingress to strip the
+# path prefix, and the prefix must equal BASE_PATH (/quizix/ in the ConfigMap
+# of 01-quizix-pro.yaml, also the server's production default). A plain
+# "path: /quiz" with "pathType: Prefix" forwards /quiz/... unchanged and does
+# not work.
 #
 # In your existing ingress.yaml, add this path under spec.rules[0].http.paths:
 #
-#   - path: /quiz
-#     pathType: Prefix
+#   - path: /quizix(/|$)(.*)
+#     pathType: ImplementationSpecific
 #     backend:
 #       service:
 #         name: quizix-pro
@@ -62,6 +68,14 @@ spec:
 #     nginx.ingress.kubernetes.io/websocket-services: "quizix-pro"
 #     nginx.ingress.kubernetes.io/affinity: "cookie"
 #     nginx.ingress.kubernetes.io/session-cookie-name: "quizix-affinity"
+#     nginx.ingress.kubernetes.io/use-regex: "true"
+#     nginx.ingress.kubernetes.io/rewrite-target: /$2
+#
+# Access at: http://your-cluster-ip/quizix/
+#
+# CAUTION: in ingress-nginx the rewrite-target annotation applies to every path
+# of the Ingress, so the other apps' paths in that ingress are rewritten too.
+# The standalone Ingress above (Option 1) avoids this.
 #
 # IMPORTANT: Quizix Pro service must be in the same namespace as your ingress.
 # If you want to use the 'lab' namespace instead of 'quizix', change the namespace
