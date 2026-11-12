@@ -472,4 +472,38 @@ describe('player-events: disconnect', () => {
         expect(options.playerManagementService.handleHostDisconnect).toHaveBeenCalledWith(hostedGame, expect.anything());
         expect(options.gameSessionService.deleteGame).toHaveBeenCalledWith('123456');
     });
+
+    // Every anonymous host-join creates a host session; a lobby disconnect with
+    // no captured devices left it in hostSessions for the life of the process.
+    it('destroys the host session on a lobby disconnect when no devices are registered', () => {
+        const hostedGame = { pin: '123456', gameState: 'lobby' };
+        const { options, h } = setup();
+        options.playerManagementService.getPlayer.mockReturnValue(null);
+        options.gameSessionService.findGameByHost.mockReturnValue(hostedGame);
+        options.playerManagementService.getSessionByHostSocket.mockReturnValue({
+            hostSessionId: 'hs-1', currentGamePin: '123456', playerRegistry: new Map()
+        });
+
+        h['disconnect']();
+
+        expect(options.playerManagementService.destroySession).toHaveBeenCalledWith('hs-1');
+        expect(options.playerManagementService.sessionGraceTimers.has('hs-1')).toBe(false);
+    });
+
+    it('keeps the host session under a grace timer when devices are registered', () => {
+        jest.useFakeTimers();
+        const hostedGame = { pin: '123456', gameState: 'lobby' };
+        const { options, h } = setup();
+        options.playerManagementService.getPlayer.mockReturnValue(null);
+        options.gameSessionService.findGameByHost.mockReturnValue(hostedGame);
+        options.playerManagementService.getSessionByHostSocket.mockReturnValue({
+            hostSessionId: 'hs-1', currentGamePin: '123456',
+            playerRegistry: new Map([['dev-1', { name: 'Al', socketId: 'p1' }]])
+        });
+
+        h['disconnect']();
+
+        expect(options.playerManagementService.destroySession).not.toHaveBeenCalled();
+        expect(options.playerManagementService.sessionGraceTimers.has('hs-1')).toBe(true);
+    });
 });

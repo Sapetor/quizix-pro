@@ -427,6 +427,10 @@ function registerPlayerEvents(io, socket, options) {
                             logger.info(`Session ${sessionId} destroyed after lobby disconnect grace period`);
                         }, 2 * 60 * 1000);
                         playerManagementService.sessionGraceTimers.set(sessionId, timerId);
+                    } else if (session) {
+                        // No captured devices to hold for the host's return. A host
+                        // that comes back gets a fresh session from host-join.
+                        playerManagementService.destroySession(session.hostSessionId);
                     }
 
                     // Still clean up the game immediately
