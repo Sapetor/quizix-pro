@@ -94,6 +94,32 @@ describe('proposal-update on roster changes in consensus mode', () => {
         expect(dist.totalProposals).toBe(2);
     });
 
+    // removePlayer leaves game.proposals alone, so a leaver's proposal kept
+    // counting: 3 proposals against 2 players gave consensusPercent 150.
+    it('drops the proposal of a player who leaves', () => {
+        const { pms, io, game } = setup();
+        game.submitProposal('p3', 1);
+        pms.handlePlayerDisconnect('p3', game, io, true);
+
+        const data = proposalUpdates(io).pop().data;
+        expect(data.totalProposals).toBe(2);
+        expect(data.consensusPercent).toBe(100);
+    });
+
+    it('drops the proposal of a player removed after the grace period', () => {
+        const { pms, io, game } = setup();
+        game.submitProposal('p3', 2);
+        pms.handlePlayerDisconnect('p3', game, io, false);
+        // Still in the game during the grace period, so the proposal still counts
+        expect(game.getProposalDistribution().totalProposals).toBe(3);
+
+        jest.advanceTimersByTime(2 * 60 * 1000);
+
+        const data = proposalUpdates(io).pop().data;
+        expect(data.totalProposals).toBe(2);
+        expect(data.proposals['2']).toBeUndefined();
+    });
+
     it('is not emitted outside consensus mode or outside a question', () => {
         const plain = setup({ consensusMode: false });
         plain.pms.handlePlayerDisconnect('p3', plain.game, plain.io, true);

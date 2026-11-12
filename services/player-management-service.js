@@ -406,8 +406,10 @@ class PlayerManagementService {
 
                 this.logger.info(`Player ${playerData.name} marked as disconnected in game ${playerData.gamePin} (grace period started)`);
             } else {
-                // Lobby or intentional leave: remove immediately
+                // Lobby or intentional leave: remove immediately. A consensus
+                // proposal from a player no longer in the game must not count.
                 game.removePlayer(socketId);
+                game.proposals?.delete(socketId);
 
                 this._broadcastPlayerList(playerData.gamePin, game, io);
 
@@ -476,6 +478,7 @@ class PlayerManagementService {
                 }
 
                 game.removePlayer(playerId);
+                game.proposals?.delete(playerId);
                 this.players.delete(playerId);
 
                 this._broadcastPlayerList(game.pin, game, io);
