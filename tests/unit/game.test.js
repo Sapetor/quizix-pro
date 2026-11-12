@@ -472,17 +472,45 @@ describe('Game — consensus mode', () => {
         expect(dist.consensusPercent).toBe(50);
     });
 
-    test('disconnected players are excluded from the threshold denominator and proposals', () => {
-        const game = consensusGame(mcQuestion());
+    test('a proposal survives a rejoin under a new socket id without proposing again', () => {
+        const game = consensusGame(mcQuestion({ correctAnswer: 1, correctIndex: 1 }));
         ['p1', 'p2', 'p3'].forEach(id => game.addPlayer(id, id));
         game.submitProposal('p1', 1);
+        game.submitProposal('p2', 1);
+        expect(game.getProposalDistribution().consensusPercent).toBe(67);
+        // socket drop, then rejoin: same player object, new id
+        const player = game.players.get('p2');
+        player.disconnected = true;
+        player.disconnected = false;
+        game.players.delete('p2');
+        player.id = 'p2b';
+        game.players.set('p2b', player);
+        const res = game.lockConsensus();
+        expect(res.answer).toBe(1);
+        expect(res.percentage).toBe(67);
+        expect(res.isCorrect).toBe(true);
+        expect(res.teamPoints).toBeGreaterThan(0);
+    });
+
+    test('a disconnected player keeps the proposal and the denominator until removed', () => {
+        const game = consensusGame(mcQuestion({ correctAnswer: 1, correctIndex: 1 }));
+        ['p1', 'p2', 'p3'].forEach(id => game.addPlayer(id, id));
+        game.submitProposal('p1', 1);
+        game.submitProposal('p2', 1);
         game.players.get('p2').disconnected = true;
-        game.players.get('p3').disconnected = true;
         const dist = game.getProposalDistribution();
-        expect(dist.totalPlayers).toBe(1);
-        expect(dist.consensusPercent).toBe(100);
-        game.players.get('p1').disconnected = true;
-        expect(game.getProposalDistribution().totalProposals).toBe(0);
+        expect(dist.consensusPercent).toBe(67);
+        expect(dist.totalPlayers).toBe(3);
+        expect(dist.proposals[1].players).toEqual(['p1', 'p2']);
+        // removed after the grace period: entry is pruned
+        game.players.delete('p2');
+        expect(game.getProposalDistribution().totalProposals).toBe(1);
+    });
+
+    test('submitProposal returns null for an unknown socket id', () => {
+        const game = consensusGame(mcQuestion());
+        game.addPlayer('p1', 'A');
+        expect(game.submitProposal('nobody', 1)).toBeNull();
     });
 
     test('submitProposal is rejected once consensus is locked', () => {

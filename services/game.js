@@ -413,21 +413,22 @@ class Game {
             return null;
         }
 
-        // Proposals are keyed by socket id and a rejoin gives the player a new
-        // one, so drop entries whose owner is gone or has left the socket.
+        // Proposals are keyed by the player object: a rejoin keeps the object
+        // and only rewrites player.id, so the entry follows the player.
+        const player = this.players.get(playerId);
+        if (!player) return null;
         this._pruneStaleProposals();
-        this.proposals.set(playerId, answer);
+        this.proposals.set(player, answer);
         return this.getProposalDistribution();
     }
 
     /**
-     * Remove proposals whose socket id no longer belongs to a connected player
-     * (rejoined under a new socket id, disconnected, or removed).
+     * Remove proposals whose player was removed from the game (for example
+     * after the rejoin grace period). Disconnected players keep their entry.
      */
     _pruneStaleProposals() {
-        for (const id of this.proposals.keys()) {
-            const player = this.players.get(id);
-            if (!player || player.disconnected) this.proposals.delete(id);
+        for (const player of this.proposals.keys()) {
+            if (this.players.get(player.id) !== player) this.proposals.delete(player);
         }
     }
 
@@ -442,7 +443,7 @@ class Game {
         let totalProposals = 0;
 
         // Count proposals and track players per answer
-        for (const [playerId, answer] of this.proposals) {
+        for (const [player, answer] of this.proposals) {
             if (!distribution[answer]) {
                 distribution[answer] = 0;
                 playersByAnswer[answer] = [];
@@ -450,10 +451,7 @@ class Game {
             distribution[answer]++;
             totalProposals++;
 
-            const player = this.players.get(playerId);
-            if (player) {
-                playersByAnswer[answer].push(player.name);
-            }
+            playersByAnswer[answer].push(player.name);
         }
 
         // Find leading answer
@@ -467,8 +465,9 @@ class Game {
         }
 
         // Calculate consensus percentage for leading answer
-        // Disconnected players cannot propose, so they do not count against the threshold
-        const totalPlayers = Array.from(this.players.values()).filter(p => !p.disconnected).length;
+        // Players still in the roster count, including those inside the rejoin
+        // grace period, so the percentage clients see matches the lock result.
+        const totalPlayers = this.players.size;
         const consensusPercent = totalPlayers > 0
             ? Math.round((maxCount / totalPlayers) * 100)
             : 0;
