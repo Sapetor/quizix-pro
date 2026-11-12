@@ -65,6 +65,20 @@ class PlayerManagementService {
     }
 
     /**
+     * Re-send the consensus proposal distribution after a roster change.
+     * totalPlayers, consensusPercent and the names per answer are read from
+     * game.players, so a leave, removal or rejoin changes them without a new
+     * proposal.
+     * @param {Object} game - Game instance
+     * @param {Object} io - Socket.IO instance
+     */
+    _emitProposalUpdate(game, io) {
+        if (!game.isConsensusMode || game.gameState !== 'question') return;
+        if (typeof game.getProposalDistribution !== 'function') return;
+        io.to(`game-${game.pin}`).emit('proposal-update', game.getProposalDistribution());
+    }
+
+    /**
      * Drop a pending coalesced roster broadcast (game ended or was cleaned up).
      * @param {string} pin - Game PIN
      */
@@ -417,6 +431,8 @@ class PlayerManagementService {
                     totalPlayers: game.players.size
                 });
             }
+
+            this._emitProposalUpdate(game, io);
         }
 
         // Remove from global player registry
@@ -463,6 +479,7 @@ class PlayerManagementService {
                 this.players.delete(playerId);
 
                 this._broadcastPlayerList(game.pin, game, io);
+                this._emitProposalUpdate(game, io);
 
                 this.logger.info(`Player ${player.name} removed after grace period expired in game ${game.pin}`);
                 break;
@@ -556,6 +573,14 @@ class PlayerManagementService {
             const mapping = game.answerMappings.get(foundPlayerId);
             game.answerMappings.delete(foundPlayerId);
             game.answerMappings.set(newSocketId, mapping);
+        }
+
+        // Proposals are keyed by socket id too. Left under the old id, the name
+        // drops out of the distribution and a new proposal is counted twice.
+        if (game.proposals?.has(foundPlayerId)) {
+            const proposal = game.proposals.get(foundPlayerId);
+            game.proposals.delete(foundPlayerId);
+            game.proposals.set(newSocketId, proposal);
         }
 
         // Update global player registry
@@ -674,6 +699,7 @@ class PlayerManagementService {
 
         // Broadcast updated player list
         this._broadcastPlayerList(pin, game, io);
+        this._emitProposalUpdate(game, io);
 
         this.logger.info(`Player ${foundPlayer.name} rejoined game ${pin} (score: ${foundPlayer.score})`);
 
