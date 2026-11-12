@@ -435,7 +435,7 @@ export class LocalGameSession {
      * @returns {number[]} Indices to hide
      */
     calculateHiddenOptions(question) {
-        const correctAnswer = question.correctAnswer;
+        const correctAnswer = this.getCorrectAnswer(question);
         const optionsCount = question.options?.length || 4;
         const wrongIndices = [];
 
