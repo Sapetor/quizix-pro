@@ -14,6 +14,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `tests/e2e/offline-no-cdn.spec.js` hosts a game with every non-local request aborted and fails on any external request; `tests/unit/vendored-libs.test.js` checks references and checksums. Verified in Chromium only. The debug pages under `ENABLE_DEBUG_ROUTES` still reference CDNs.
 
 ### Security
+- Bug hunt of 2026-11-12 (three review agents, each finding checked by a second reviewer, each fix branch reviewed again before merge):
+  - The `/js/*` fallback handler no longer serves files outside `public/js` through raw `..` segments. Before, `GET /js/../../quizzes/.session-secret` returned the file to a client connecting directly to the port. Rotate `quizzes/.session-secret` or `SESSION_SECRET` on instances that were reachable by untrusted clients.
+  - DOCX text extraction runs in a capped, killable worker thread with limits on inflated part size; an unparseable DOCX returns 400 instead of 500.
+  - Quiz load, save and delete require an exact filename match, so a case variant of a filename on a case-insensitive disk no longer bypasses the visibility, password and ownership checks.
+  - /api/extract-url checks the address each connection actually dials, which closes DNS-rebinding access to loopback and private hosts (403 error_url_blocked).
+  - Login and signup count each attempt before the password check, so concurrent bursts are held to 10 per minute per IP; successful sign-ins now count toward the limit.
+  - /api/ollama/generate, /api/ollama/models and /api/ollama/health require a signed-in user or a direct LAN client while Ollama is enabled.
+  - Quiz filenames that name Object.prototype properties (such as __proto__) are rejected.
+  - POST /api/save-results requires a signed-in user, or a host token from a direct LAN client; the body is capped at 1 MB (413), and the results listing reads files in batches of 10.
+  - Changing a quiz inside a password-protected folder (PATCH /api/quiz-metadata/:filename, overwrite through POST /api/save-quiz) requires the quiz unlock token (401 error_auth_required).
+  - A folder password applies to an ownerless quiz that carries a legacy password hash; the folder password unlocks it.
+  - An unlock token is bound to the password hash it was issued for, so a password change or a move under another protected folder invalidates it.
+  - Only the folder owner may set a folder password (403 error_folder_not_owner); legacy ownerless folders stay open to any signed-in user.
+  - A folder can be created or moved only under a parent the requester owns, an ownerless legacy folder, or the root (403 error_folder_not_owner).
+  - Moving a folder out from below a password-protected folder, or deleting such a subfolder with deleteContents=true, requires the unlock token of the nearest protected ancestor (401 or 403 error_invalid_token).
+  - Migration of players from a game left by a disconnected host now requires the host's session or the migration token, so a client that knows the PIN can no longer pull the players into its own game.
+  - A second player-join from the same socket during a question or reveal is rejected, so a crafted client can no longer reset its entry to get fresh power-ups and a new answer slot.
+  - A player entry created during a running question (late join, or leave-game then player-join) cannot use extend-time or 50-50 until the next question, so repeated leave and join cycles no longer extend the timer or reveal options. The power-ups are kept.
+  - The password modal ignores overlay and Escape cancel for 400 ms after opening.
 - `/api/active-games` returns live PINs only to signed-in users and direct LAN clients, meaning a loopback or private TCP peer with no `CF-Connecting-IP`, `X-Forwarded-For`, `X-Real-IP` or `Forwarded` header (`isDirectLocalClient` in `middleware/client-ip.js`). Other requests get `{"games": []}`. The `debug` block listing all games is removed.
 - Deleting, overwriting through `/api/save-quiz`, or renaming and moving a quiz that has no owner now needs a signed-in user or a direct LAN client; anonymous requests through a tunnel or proxy get `401`. Before, anyone could delete the ownerless quizzes.
 - `GET /api/quiz/:filename` now requires the unlock bearer token for password-protected quizzes; before, it ignored protection. The client records unlock tokens in APIHelper and attaches them to quiz downloads (62ffbf7).
@@ -28,6 +47,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Earlier on this branch (commit fc2ff1c): SheetJS vendored, signup gated, manim and container hardening, `unsafe-inline` dropped from the CSP.
 
 ### Fixed
+- Simultaneous first signups on an empty instance create only one account.
+- Expired per-IP auth rate-limit entries are removed instead of accumulating.
+- A newly created empty folder is listed in its owner's quiz tree.
+- Renaming a quiz writes the new title into the quiz file, skips the write when the title is unchanged, and still renames a metadata entry whose file is missing.
+- The analytics CSV quotes question text once and falls back to question.question.
+- Expired unlock-attempt windows are removed by the periodic token cleanup.
+- The luna-e2e results-analytics seed writes the results file directly instead of calling the anonymous save-results route.
+- Leaderboard entries sent to clients contain only id, name and score.
+- Submit-answer accepts decimal, negative and large numeric answers.
+- Results are saved for players removed after the disconnect grace period.
+- Fifty-fifty and saved results honour multiple-choice questions that carry only correctIndex.
+- Consensus proposals are keyed by player, so a rejoin under a new socket id keeps the vote and is not counted twice; disconnected players stay in the consensus denominator until removed.
+- Same Time for All from quick start now applies its time limit to every question.
+- Consensus mode no longer shuffles answer options per player, which had split proposals for the same option across different indices.
+- Host-rejoin is accepted when it arrives before the server sees the old host socket close.
+- Host-rejoin is refused for a game in pending-migration. The host recovers it through host-join with the previous PIN.
+- Results of a started game are saved when it enters pending-migration (e.g. the host returns to the menu or does not come back).
+- Stale-game cleanup counts from the last question start, not game creation, so sessions longer than 2 hours are no longer deleted mid-question.
+- Host sessions are released when the host socket disconnects from the lobby, or after returning to the menu, instead of leaking for the life of the process.
+- A player who rejoins during the reveal with shuffled answers sees the correct option highlighted in their own option order.
+- A host that reconnects on the final results screen gets the final results again, not an empty game screen.
+- In consensus mode the proposal bars update when a player leaves, is removed or rejoins during a question. A rejoined player's proposal is kept under the new connection, and a player who left no longer counts toward consensus.
+- Quick Start settings panel and launch now handle password-protected quizzes (one prompt per file, no hang on double click, cancel and stale responses handled).
+- Quick Start 'same time for all' now writes timeLimit, the field the server reads.
+- The editor restores the global time setting through the real element ids.
+- Consensus discussion messages render from the content field the server sends.
+- AI generator preview card escapes type and difficulty labels and coerces the time limit.
+- Save and Create Game refuse and name a question that has options, ordering items, a numeric answer or an image but no text, instead of dropping it silently.
+- A rejected quiz unlock token is dropped so the next load prompts for the password again; loading a protected quiz after a server restart prompts and retries instead of showing 'Invalid quiz file format'.
+- Deleting a protected item with a stale token prompts again and retries once.
+- Rename, move and visibility changes on quizzes in a password-protected folder send the unlock token; saving over a loaded protected quiz sends the token and retries once on 401.
+- Renaming the open quiz in the file browser updates the editor title.
+- Practice-mode fifty-fifty uses the correctIndex fallback so the correct option is never hidden.
 - Mermaid diagrams in the AI generator: the loader injected an inline module script, which the CSP refused. It now loads the vendored build by URL.
 - The tap ripple and the `focused-mobile` class in `public/js/utils/mobile-enhancements.js` never applied, because both tested `this.isMobile`, which nothing set. They are gated on `isPhone()`. Enter or Space on a quiz option no longer runs the ripple code against the document.
 - `.env.docker`: the `MANIM_RENDER_TIMEOUT` example was `120`, read as milliseconds (0.12 s). It is now `120000`. The compose files still do not forward the variable to the container.
@@ -46,6 +98,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `multiple_correct` label shortened to "Multi-Select" (en) with short forms in the other 8 locales, so it no longer ellipsises on 390px phones. `index.html` option text updated to match.
 
 ### Changed
+- The POST /api/save-quiz handler is in routes/quiz-management.js (createSaveQuizHandler) and is covered by unit tests; server.js mounts it.
+- Docs/API_REFERENCE.md documents the unlock-token rules for quiz overwrite, metadata changes, folder move and folder delete, and the parent-folder ownership rule.
 - Removed the unread `MAX_UPLOAD_SIZE` entries in `config/limits.js`. Image uploads stay capped at 5 MB with and without `MOBILE_MODE` (`CONFIG.LIMITS.MAX_FILE_SIZE` in `server.js`).
 - Removed the unreachable flat quiz list fallback `showFlatListView`, the hidden `#quiz-list` element and four translation keys in all 9 locales. Its CSS selectors remain.
 - The last "QuizMaster Pro" strings (`debug/ui-screenshot-tool.js`, a test fixture) use the Quizix name.
@@ -58,6 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `package-lock.json` also moved dev dependencies (@babel 7.29, postcss 8.5.28, js-yaml 4.3.2, others). The rebuilt CSS bundle drops `-webkit-print-color-adjust` and `-webkit-mask-image` prefixes.
 
 ### Tests
+- After the 2026-11-12 bug-hunt fixes: `npm test` 96 suites, 1537 tests pass; `npx eslint .` 0 errors; offline, service worker, console and analytics Playwright specs 11/11; visual suite 6/7 in a clean checkout, where `load-quiz modal - desktop chrome` fails because its screenshot depends on the number of quizzes on disk.
 - Added `tests/unit/end-round-consensus-lock.test.js` (5 cases) and `tests/unit/pptx-extraction.test.js` (6 cases, in process, including a deflated 30 MB slide and 40k unclosed tags) and `tests/unit/pdf-extraction.test.js` (6 cases, child process because pdfjs-dist is ESM-only). `npm test`: 74 suites, 1297 tests pass.
 - `tests/e2e-disconnect-overlay.spec.js` corrected to start the game before disconnecting; 4/4 pass on a clean port, 12/12 with `--repeat-each 3`. With the rejoin fix disabled, the auto-rejoin case failed 4/4.
 - `tests/e2e/analytics-modal.spec.js`: 4/4 pass.
