@@ -94,7 +94,7 @@ These routes are registered only when the environment variable `ENABLE_DEBUG_ROU
 
 Mounted under `/api/auth`. A successful signup or login sets an HTTP-only session cookie named `quizix_session` (30-day lifetime). Every HTTP request and every Socket.IO connection reads this cookie; `req.user` is `null` when it is absent or invalid. Routes in this document that "require a signed-in user" return `401` with `messageKey: "error_auth_required"` otherwise.
 
-Signup and login share a per-IP limit of 10 failed attempts per minute (`429`, `messageKey: "error_rate_limited"`).
+Signup and login share a per-IP limit of 10 attempts per minute, successful or not, counted when the request arrives (`429`, `messageKey: "error_rate_limited"`). A signup refused because signup is closed is not counted.
 
 #### POST /api/auth/signup
 Create an account and sign in.

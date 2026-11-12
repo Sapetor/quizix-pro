@@ -57,6 +57,9 @@ function createAuthRoutes({
                 messageKey: 'error_rate_limited'
             });
         }
+        // Count the attempt before the awaited hash, so a concurrent burst
+        // cannot pass the check above before any attempt is recorded.
+        userService.recordAuthAttempt(ip);
 
         try {
             const { username, password } = req.validatedBody;
@@ -65,7 +68,6 @@ function createAuthRoutes({
             logger.info(`User signed up: ${user.username}`);
             return res.json({ user });
         } catch (err) {
-            userService.recordAuthAttempt(ip);
             const status = err.status || 400;
             logger.debug(`Signup rejected: ${err.message}`);
             return res.status(status).json({
@@ -83,12 +85,13 @@ function createAuthRoutes({
                 messageKey: 'error_rate_limited'
             });
         }
+        // Count every attempt before the awaited password check (see signup).
+        userService.recordAuthAttempt(ip);
 
         try {
             const { username, password } = req.validatedBody;
             const user = await userService.authenticate(username, password);
             if (!user) {
-                userService.recordAuthAttempt(ip);
                 return res.status(401).json({
                     error: 'Invalid username or password',
                     messageKey: 'error_invalid_credentials'
