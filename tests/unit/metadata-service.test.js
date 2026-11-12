@@ -525,6 +525,29 @@ describe('MetadataService', () => {
             expect(metadataService.verifyToken(token, 'legacy-protected.json', 'quiz')).toBe(true);
         });
 
+        test('an unlock token stops working when the password it was issued for changes', async () => {
+            for (const [id, pw] of [['folder-1', 'pw-one'], ['folder-2', 'pw-two']]) {
+                metadataService.metadata.folders[id] = {
+                    id, name: id, parentId: null, passwordHash: await metadataService.hashPassword(pw),
+                    passwordSetBy: 'user-1', created: '2026-01-01', sortOrder: 0
+                };
+            }
+            metadataService.metadata.quizzes['public-open.json'].folderId = 'folder-1';
+
+            const first = (await metadataService.unlock('public-open.json', 'quiz', 'pw-one', '10.0.0.9')).token;
+            expect(metadataService.verifyToken(first, 'public-open.json', 'quiz')).toBe(true);
+            await metadataService.moveQuizToFolder('public-open.json', 'folder-2');
+            expect(metadataService.verifyToken(first, 'public-open.json', 'quiz')).toBe(false);
+
+            const second = (await metadataService.unlock('public-open.json', 'quiz', 'pw-two', '10.0.0.9')).token;
+            const folderToken = (await metadataService.unlock('folder-2', 'folder', 'pw-two', '10.0.0.9')).token;
+            expect(metadataService.verifyToken(second, 'public-open.json', 'quiz')).toBe(true);
+            expect(metadataService.verifyToken(folderToken, 'folder-2', 'folder')).toBe(true);
+            await metadataService.setFolderPassword('folder-2', 'pw-three', 'user-1');
+            expect(metadataService.verifyToken(second, 'public-open.json', 'quiz')).toBe(false);
+            expect(metadataService.verifyToken(folderToken, 'folder-2', 'folder')).toBe(false);
+        });
+
         test('setFolderPassword requires authentication', async () => {
             metadataService.metadata.folders['folder-1'] = {
                 id: 'folder-1', name: 'Test', parentId: null,

@@ -808,11 +808,14 @@ class MetadataService {
             throw err;
         }
 
-        // Generate session token
+        // Generate session token. It records the hash it was issued against,
+        // so a password change or a move under another protected folder
+        // invalidates it (see verifyToken).
         const token = crypto.randomBytes(TOKEN_LENGTH).toString('hex');
         this.sessionTokens.set(token, {
             itemId,
             itemType,
+            passwordHash,
             expiresAt: Date.now() + TOKEN_EXPIRY_MS
         });
 
@@ -832,7 +835,12 @@ class MetadataService {
             return false;
         }
 
-        return session.itemId === itemId && session.itemType === itemType;
+        if (session.itemId !== itemId || session.itemType !== itemType) return false;
+
+        const item = itemType === 'folder' ? this.metadata.folders[itemId] : this.metadata.quizzes[itemId];
+        if (!item) return false;
+        const currentHash = itemType === 'folder' ? item.passwordHash : this._effectiveQuizHash(item);
+        return !!currentHash && currentHash === session.passwordHash;
     }
 
     /**
