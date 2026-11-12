@@ -35,6 +35,7 @@ Files copied from each tarball, and where they are loaded:
 |---|---|---|---|---|
 | MathJax | `package/es5/tex-mml-chtml.js` | `mathjax/es5/tex-mml-chtml.js` | `300480069078b5892d2363a2b65e2dfbbf30fe5c80f83edbfecf4610fd093862` | `index.html`, `js/core/boot-head.js` |
 | MathJax | `package/es5/input/tex/extensions/` (35 files) | `mathjax/es5/input/tex/extensions/` | `SHA256SUMS` | MathJax, on demand |
+| MathJax | `package/es5/input/mml/entities.js` | `mathjax/es5/input/mml/entities.js` | `90ef0fcf002a37cb6cb3d1f1148cea4bfcbe77f9b298262b260c872a066ef974` | MathJax, on demand |
 | MathJax | `package/es5/output/chtml/fonts/woff-v2/` (23 files) | `mathjax/es5/output/chtml/fonts/woff-v2/` | `SHA256SUMS` | MathJax, on demand |
 | canvas-confetti | `package/dist/confetti.browser.js` | `canvas-confetti/confetti.browser.js` | `eb3a35255ffa9d5d1b05b292f9a3b140a0120dfe3176b0fb1dc4f3e0306ca99c` | `index.html` |
 | Chart.js | `package/dist/chart.umd.js` | `chartjs/chart.umd.js` | `321e3a3fa98da4aaa957d10be57cbb514de0989eed8f9d726b5d05902cd01904` | `index.html` |
@@ -47,10 +48,12 @@ Notes:
 
 - MathJax: the `es5/` layout must be kept. MathJax takes the directory of its
   own script as its root and loads `input/tex/extensions/<name>.js` (the TeX
-  autoloader, for macros such as `\cancel` or `\ce`) and the webfonts from
-  paths relative to it. The speech, SVG-output and accessibility components are
-  not vendored; the app does not load them. `mathjax@3` on the CDN was a
-  floating major version that resolved to 3.2.2.
+  autoloader, for macros such as `\cancel` or `\ce`), `input/mml/entities.js`
+  (named entities it does not know) and the webfonts from paths relative to
+  it. The speech, SVG-output, explorer and semantic-enrichment components are
+  not vendored: they load only from the MathJax context menu, which
+  `boot-head.js` disables. `mathjax@3` on the CDN was a floating major version
+  that resolved to 3.2.2.
 - canvas-confetti: the tarball ships `confetti.browser.js` only. The
   `confetti.browser.min.js` the app used before was minified by jsDelivr.
 - highlight.js: the npm package `highlight.js` has no browser build. The

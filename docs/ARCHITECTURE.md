@@ -314,7 +314,7 @@ Game class tracks and cleans up:
 
 - The CSP set in `server.js` allows no external host in any directive
 - MathJax, Chart.js, highlight.js, canvas-confetti, jsPDF, mermaid, SheetJS and the web fonts are vendored under `public/libs/` at pinned versions with checksums (`public/libs/README.md`); the Socket.IO client is served by the server from its own package
-- The browser requests nothing from another host, so the app runs on a network with no internet access. The exceptions are user-initiated: the cloud AI providers when AI generation is used, and the GitHub links on the landing page
+- Loading the page and hosting or playing a game requests nothing from another host, so the app runs on a network with no internet access. The external URLs left in client code are the GitHub links on the landing page and the cloud AI endpoints in `public/js/ai/ai-provider-service.js` and `public/js/quiz/manim-ai-generator.js`; `connect-src` lists none of those hosts. Cloud AI generation goes through the server (`routes/ai-generation.js`), which then needs internet access
 - `tests/e2e/offline-no-cdn.spec.js` hosts a game with every non-local request aborted; `tests/unit/vendored-libs.test.js` verifies the vendored files
 
 ### API Security
