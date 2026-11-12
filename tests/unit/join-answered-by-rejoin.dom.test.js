@@ -9,6 +9,7 @@
  */
 
 import { SocketManager } from '../../public/js/socket/socket-manager.js';
+import { PowerUpManager } from '../../public/js/game/modules/power-up-manager.js';
 
 function createFakeSocket() {
     return {
@@ -53,5 +54,42 @@ describe('join answered by rejoin-success', () => {
             pin: '123456', playerName: 'Al', sessionToken: 'tok-new'
         });
         expect(uiManager.showScreen).toHaveBeenLastCalledWith('player-game-screen');
+    });
+
+    // game-started (sent first on a resume) shows every power-up as available;
+    // rejoin-success carries the server's state for this player.
+    test('applies the power-up state carried by rejoin-success', () => {
+        document.body.innerHTML = `
+            <div id="power-ups-container" class="hidden">
+                <button data-power-up="fifty-fifty"></button>
+                <button data-power-up="extend-time"></button>
+                <button data-power-up="double-points"></button>
+            </div>`;
+        const socket = createFakeSocket();
+        const powerUpManager = new PowerUpManager();
+        powerUpManager.setSocket(socket);
+        const gameManager = { setPlayerInfo: jest.fn(), setGamePin: jest.fn(), getPowerUpManager: () => powerUpManager };
+        const sm = new SocketManager(socket, gameManager, { showScreen: jest.fn() }, null);
+
+        powerUpManager.initialize(true); // what game-started does
+        socket.handlers['rejoin-success']({
+            playerName: 'Al', score: 0, currentQuestion: 0, gameStatus: 'question', sessionToken: 't', gamePin: '123456',
+            powerUps: {
+                'fifty-fifty': { available: true, used: false },
+                'extend-time': { available: false, used: true },
+                'double-points': { available: false, used: true, active: true }
+            }
+        });
+        void sm;
+
+        const button = (type) => document.querySelector(`[data-power-up="${type}"]`);
+        expect(button('extend-time').disabled).toBe(true);
+        expect(button('extend-time').classList.contains('used')).toBe(true);
+        expect(button('double-points').classList.contains('active')).toBe(true);
+        expect(powerUpManager.isDoublePointsActive()).toBe(true);
+        expect(button('fifty-fifty').classList.contains('used')).toBe(false);
+
+        expect(powerUpManager.usePowerUp('extend-time')).toBe(false);
+        expect(socket.emits.filter(e => e.event === 'use-power-up')).toHaveLength(0);
     });
 });

@@ -211,6 +211,14 @@ class PlayerManagementService {
             // to this socket and resyncs the question state.
             const removedIndex = game.removedPlayers.indexOf(returning);
             if (removedIndex !== -1) {
+                // The slot was freed on removal and may have been taken since.
+                if (game.players.size >= game.limits.MAX_PLAYERS_PER_GAME) {
+                    return {
+                        success: false,
+                        error: `Game is full (max ${game.limits.MAX_PLAYERS_PER_GAME} players)`,
+                        messageKey: 'error_game_full'
+                    };
+                }
                 game.removedPlayers.splice(removedIndex, 1);
                 delete returning.removedAt;
                 game.players.set(returning.id, returning);
@@ -487,8 +495,12 @@ class PlayerManagementService {
             if (player.sessionToken === sessionToken && player.disconnected) {
                 // Keep the whole record for the final leaderboard, the results and
                 // a later join from the same device (see _findResumablePlayer).
-                player.removedAt = Date.now();
-                game.removedPlayers.push(player);
+                // A timer from a finished game can expire in the rematch lobby,
+                // where there is no score to keep and the name must stay free.
+                if (game.gameState !== 'lobby') {
+                    player.removedAt = Date.now();
+                    game.removedPlayers.push(player);
+                }
 
                 // Keep device in session for future game rejoins (don't unregisterDevice)
                 if (player.deviceId) {
@@ -624,7 +636,9 @@ class PlayerManagementService {
             currentQuestion: game.currentQuestion,
             gameStatus: game.gameState,
             sessionToken: sessionToken,
-            gamePin: pin
+            gamePin: pin,
+            // This player's own power-up state, so the client does not offer used ones
+            powerUps: foundPlayer.powerUps || null
         });
 
         // Resync the host mute-all override after a reconnect (see handlePlayerJoin).

@@ -23,6 +23,7 @@ const { PlayerManagementService } = require('../../services/player-management-se
 const { QuestionFlowService } = require('../../services/question-flow-service');
 const { registerPlayerEvents } = require('../../socket/player-events');
 const { registerGameplayEvents } = require('../../socket/gameplay-events');
+const { registerGameEvents } = require('../../socket/game-events');
 const { createFakeSocket, createFakeIo, createFakeLogger } = require('./helpers/socket-fakes');
 
 const CONFIG = {
@@ -84,7 +85,7 @@ function setup(quiz = QUIZ) {
         expect(atomicWriteFile).toHaveBeenCalledTimes(1);
         return JSON.parse(atomicWriteFile.mock.calls[0][1]);
     };
-    return { gameSessionService, playerManagementService, io, game, sockets, connect, join, startQuestion, answer, savedResults };
+    return { options, gameSessionService, playerManagementService, io, game, sockets, connect, join, startQuestion, answer, savedResults };
 }
 
 const last = (socket, event) => socket.emits.filter(e => e.event === event).pop()?.data;
@@ -236,6 +237,102 @@ describe('power-up state of a resumed player', () => {
         again.handlers['use-power-up']({ type: 'fifty-fifty' });
         expect(last(again, 'power-up-result').success).toBe(false);
         expect(game.players.get('p1-new').powerUps['fifty-fifty'].used).toBe(true);
+    });
+
+    // The client resets its power-up bar on leave and game-started shows every
+    // power-up as available; rejoin-success carries the player's own state.
+    it('rejoin-success carries the player\'s own power-up state, double-points still active', () => {
+        ctx = setup({ ...QUIZ, powerUpsEnabled: true });
+        const { connect, join, startQuestion } = ctx;
+        const device = crypto.randomUUID();
+        const p1 = connect('p1');
+        const p2 = connect('p2');
+        join(p1, 'Al', device);
+        join(p2, 'Bo');
+        startQuestion(0);
+        p1.handlers['use-power-up']({ type: 'extend-time' });
+        p1.handlers['use-power-up']({ type: 'double-points' });
+        p1.handlers['leave-game']();
+
+        const again = connect('p1-new');
+        join(again, 'Al', device);
+        expect(last(again, 'rejoin-success').powerUps).toEqual({
+            'fifty-fifty': { available: true, used: false },
+            'extend-time': { available: false, used: true },
+            'double-points': { available: false, used: true, active: true }
+        });
+    });
+
+    // The stock client extends its countdown on click, before the server answers.
+    it('a refused extend-time re-sends the unchanged remaining time', () => {
+        ctx = setup({ ...QUIZ, powerUpsEnabled: true });
+        const { game, connect, join, startQuestion } = ctx;
+        const p1 = connect('p1');
+        join(p1, 'Al');
+        startQuestion(0);
+        p1.handlers['use-power-up']({ type: 'extend-time' });
+        expect(last(p1, 'power-up-result').success).toBe(true);
+        jest.advanceTimersByTime(2000);
+        p1.emits.length = 0;
+
+        p1.handlers['use-power-up']({ type: 'extend-time' });
+        expect(last(p1, 'power-up-result')).toMatchObject({ success: false, messageKey: 'error_powerup_already_used' });
+        expect(last(p1, 'time-sync')).toEqual({ remainingMs: game.questionEndsAt - Date.now() });
+    });
+});
+
+describe('player cap on resume', () => {
+    it('a removed player cannot resume into a roster that is already full', () => {
+        ctx = setup();
+        const { game, connect, join, startQuestion } = ctx;
+        game.limits = { ...game.limits, MAX_PLAYERS_PER_GAME: 2 }; // copy: the limits object is shared
+        const device = crypto.randomUUID();
+        const p1 = connect('p1');
+        const p2 = connect('p2');
+        join(p1, 'Al', device);
+        join(p2, 'Bo');
+        startQuestion(0);
+        p1.handlers['leave-game']();
+
+        const p3 = connect('p3');
+        join(p3, 'Cy');
+        expect(game.players.size).toBe(2);
+
+        const again = connect('p1-new');
+        join(again, 'Al', device);
+        expect(last(again, 'error')).toMatchObject({ messageKey: 'error_game_full' });
+        expect(last(again, 'rejoin-success')).toBeUndefined();
+        expect(game.players.size).toBe(2);
+        expect(game.removedPlayers.map(p => p.name)).toEqual(['Al']);
+    });
+});
+
+describe('grace timer from a finished game', () => {
+    it('fires in the rematch lobby without reserving the name', () => {
+        ctx = setup();
+        const { options, gameSessionService, game, io, connect, join, startQuestion } = ctx;
+        // Game events only: the fake socket keeps one handler per event name.
+        const host = createFakeSocket('host-sock');
+        registerGameEvents(io, host, options);
+        const p1 = connect('p1');
+        const p2 = connect('p2');
+        join(p1, 'Al', crypto.randomUUID());
+        join(p2, 'Bo');
+        startQuestion(0);
+        p1.handlers['disconnect']();
+
+        game.resultsSaved = true; // no results write leaking into the next test
+        gameSessionService.endGame(game, io);
+        host.handlers['rematch-game']();
+        expect(game.gameState).toBe('lobby');
+
+        jest.advanceTimersByTime(2 * 60 * 1000 + 1000);
+        expect(game.removedPlayers).toHaveLength(0);
+        expect([...game.players.values()].map(p => p.name)).toEqual(['Bo']);
+
+        const other = connect('other');
+        join(other, 'Al', crypto.randomUUID());
+        expect(last(other, 'player-joined')).toMatchObject({ playerName: 'Al' });
     });
 });
 

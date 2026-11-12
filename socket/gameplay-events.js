@@ -68,18 +68,18 @@ function registerGameplayEvents(io, socket, options) {
             // Entries created during the running question (late join, or leave-game
             // and player-join again) wait for the next question for these two.
             const joinedQuestionStart = game.players?.get(socket.id)?.joinedQuestionStart;
-            if ((type === 'extend-time' || type === 'fifty-fifty') && game.gameState === 'question' &&
-                joinedQuestionStart && joinedQuestionStart === game.questionStartTime) {
-                socket.emit('power-up-result', { success: false, type, error: 'Power-up not available until the next question', messageKey: 'error_powerup_already_used' });
-                // The client extends its countdown on click; put it back.
-                if (type === 'extend-time' && game.questionEndsAt) {
-                    socket.emit('time-sync', { remainingMs: Math.max(0, game.questionEndsAt - Date.now()) });
-                }
-                return;
-            }
+            const deferred = (type === 'extend-time' || type === 'fifty-fifty') && game.gameState === 'question' &&
+                joinedQuestionStart && joinedQuestionStart === game.questionStartTime;
 
-            const result = game.usePowerUp(socket.id, type);
+            const result = deferred
+                ? { success: false, type, error: 'Power-up not available until the next question', messageKey: 'error_powerup_already_used' }
+                : game.usePowerUp(socket.id, type);
             socket.emit('power-up-result', result);
+
+            // The client extends its countdown on click; put it back on any refusal.
+            if (!result.success && type === 'extend-time' && game.gameState === 'question' && game.questionEndsAt) {
+                socket.emit('time-sync', { remainingMs: Math.max(0, game.questionEndsAt - Date.now()) });
+            }
 
             if (result.success) {
                 // Extend-time extends the authoritative room timer and resyncs everyone

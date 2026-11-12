@@ -855,6 +855,10 @@ export class SocketManager {
             this.gameManager.setPlayerInfo(data.playerName, false);
             this.gameManager.setGamePin(data.gamePin);
             this.currentPlayerName = data.playerName;
+            // A resume after Leave: game-started showed every power-up as unused
+            if (data.powerUps) {
+                this.gameManager.getPowerUpManager?.()?.restoreState({ enabled: true, powerUps: data.powerUps });
+            }
 
             // Refresh reconnection data with fresh timestamp
             try {
