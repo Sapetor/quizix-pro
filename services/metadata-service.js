@@ -889,13 +889,19 @@ class MetadataService {
     }
 
     /**
-     * Cleanup expired tokens
+     * Cleanup expired tokens and expired unlock-attempt windows. An attempt
+     * window is otherwise removed only when the same IP tries again.
      */
     cleanupExpiredTokens() {
         const now = Date.now();
         for (const [token, session] of this.sessionTokens) {
             if (now > session.expiresAt) {
                 this.sessionTokens.delete(token);
+            }
+        }
+        for (const [ip, attempts] of this.unlockAttempts) {
+            if (now - attempts.windowStart > RATE_LIMIT_WINDOW_MS) {
+                this.unlockAttempts.delete(ip);
             }
         }
     }

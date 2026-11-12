@@ -419,6 +419,17 @@ describe('MetadataService', () => {
             const attempts = metadataService.unlockAttempts.get(ip);
             expect(attempts.count).toBe(4);
         });
+
+        // An IP that never retries is otherwise kept forever.
+        test('the periodic token cleanup also drops expired attempt windows', () => {
+            metadataService.unlockAttempts.set('10.0.0.1', { count: 2, windowStart: Date.now() - 2 * 60 * 1000 });
+            metadataService.unlockAttempts.set('10.0.0.2', { count: 2, windowStart: Date.now() });
+
+            metadataService.cleanupExpiredTokens();
+
+            expect(metadataService.unlockAttempts.has('10.0.0.1')).toBe(false);
+            expect(metadataService.unlockAttempts.has('10.0.0.2')).toBe(true);
+        });
     });
 
     describe('quiz password ownership and visibility', () => {
