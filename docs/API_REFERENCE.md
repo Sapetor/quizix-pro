@@ -253,7 +253,7 @@ Set or remove a folder password.
 
 **Request Body:** `{ "password": "secret" }` to set (4 to 100 characters), `{ "password": null }` to remove.
 
-Requires a signed-in user (`401`). Once a folder has a password, only the user who set it can change or remove it (`403`, `error_folder_not_password_owner`).
+Requires a signed-in user (`401`). A folder with an owner accepts this only from its owner (`403`, `error_folder_not_owner`), as for rename and move. Once a folder has a password, only the user who set it can change or remove it (`403`, `error_folder_not_password_owner`).
 
 **Response:** `{ "success": true, "protected": true }`
 

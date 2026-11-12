@@ -69,6 +69,7 @@ function makeDeps(overrides = {}) {
         renameFolder: jest.fn(async (id, name) => ({ id, name })),
         moveFolder: jest.fn(async (id, parentId) => ({ id, parentId })),
         deleteFolder: jest.fn(async () => ({ success: true })),
+        setFolderPassword: jest.fn(async (id, password) => ({ success: true, protected: !!password })),
         requiresAuth: jest.fn(() => false),
         verifyToken: jest.fn(() => true),
         isQuizVisibleToUser: jest.fn(() => true),
@@ -199,6 +200,26 @@ describe('folder route authorization', () => {
 
         expect(res.statusCode).toBe(200);
         expect(deps.metadataService.deleteFolder).toHaveBeenCalledWith(FOLDER_ID, false, 'user-1');
+    });
+
+    test('password rejects a signed-in non-owner', async () => {
+        const res = await dispatch(router, {
+            method: 'POST', url: `/api/folders/${FOLDER_ID}/password`, body: { password: 'secret' }, user: { id: 'user-2' }
+        });
+
+        expect(res.statusCode).toBe(403);
+        expect(res.body.messageKey).toBe('error_folder_not_owner');
+        expect(deps.metadataService.setFolderPassword).not.toHaveBeenCalled();
+    });
+
+    test('password allows the owner, and any signed-in user on a legacy ownerless folder', async () => {
+        for (const [id, userId] of [[FOLDER_ID, 'user-1'], [OTHER_FOLDER_ID, 'user-9']]) {
+            const res = await dispatch(router, {
+                method: 'POST', url: `/api/folders/${id}/password`, body: { password: 'secret' }, user: { id: userId }
+            });
+            expect(res.statusCode).toBe(200);
+            expect(deps.metadataService.setFolderPassword).toHaveBeenCalledWith(id, 'secret', userId);
+        }
     });
 });
 

@@ -490,8 +490,11 @@ function createQuizManagementRoutes(options) {
     router.post('/api/folders/:id/password', validateParams(schemas.folderIdParamSchema), validateBody(schemas.setPasswordSchema), async (req, res) => {
         try {
             const { id } = req.validatedParams;
+            const denied = folderAuthError(req, id);
+            if (denied) return res.status(denied.status).json(denied.body);
+
             const { password } = req.validatedBody;
-            const result = await metadataService.setFolderPassword(id, password, req.user?.id || null);
+            const result = await metadataService.setFolderPassword(id, password, req.user.id);
             res.json(result);
         } catch (error) {
             logger.error('Set folder password error:', error);
