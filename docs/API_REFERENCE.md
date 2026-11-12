@@ -481,14 +481,14 @@ Extraction uses pdfjs-dist in a worker thread with a 256 MB heap cap and a 30-se
 - `400`: no file, a MIME type other than `application/pdf` (`error_upload_failed`), or a file pdf.js cannot parse (`error_pdf_extraction_failed`)
 - `408`: extraction timed out (`error_pdf_timeout`)
 - `413`: file over 10MB
-- `503`: two extractions are already running on the server, or this client IP already has one running (`messageKey: "error_rate_limited"`)
+- `503`: two PDF or DOCX extractions are already running on the server, or this client IP already has one running (`messageKey: "error_rate_limited"`)
 
 #### POST /api/extract-docx
 Extract text from a Word document.
 
 **Request:** `multipart/form-data` with `docx` field. Max file size 10MB. MIME type must be `application/vnd.openxmlformats-officedocument.wordprocessingml.document`; any other type is dropped and the route returns `400` (`error_no_docx_uploaded`).
 
-Parsed with mammoth, 30-second timeout (`408`, `error_docx_timeout`). Returns `501` if mammoth is not installed.
+Parsed with mammoth in a worker thread (`utils/docx-text-worker.js`) with a 256 MB heap cap. The inflated size of the parts mammoth reads is capped at 5MB per part and 20MB in total. A file that is not a DOCX, exceeds a cap or exhausts the worker heap returns `400` (`error_docx_extraction_failed`). 30-second timeout, after which the worker is terminated (`408`, `error_docx_timeout`). The worker slots are shared with PDF extraction: `503` (`error_rate_limited`) when two extractions are already running or this client IP already has one running. Returns `501` if mammoth is not installed.
 
 **Response:** `{ "text": "...", "wordCount": 1234 }`
 

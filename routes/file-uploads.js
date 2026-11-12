@@ -29,37 +29,60 @@ function decodeXmlText(text) {
  * @returns {Promise<{text: string, slideCount: number}>}
  */
 // A PDF under the upload cap can still declare thousands of pages or inflate
-// its streams far past 10 MB, so extraction runs in a capped, killable worker.
+// its streams far past 10 MB, and a DOCX can inflate to far more XML than its
+// compressed size, so both are parsed in a capped, killable worker.
 const PDF_WORKER_PATH = path.join(__dirname, '..', 'utils', 'pdf-text-worker.mjs');
+const DOCX_WORKER_PATH = path.join(__dirname, '..', 'utils', 'docx-text-worker.js');
 const PDF_MAX_PAGES = 500;
 const PDF_MAX_CHARS = 1000000;
-const PDF_WORKER_HEAP_MB = 256;
-const PDF_MAX_CONCURRENT = 2;
-let activePdfWorkers = 0;
+// Inflated size of the XML parts mammoth reads (same caps as the PPTX slides).
+const DOCX_MAX_PART_BYTES = 5 * 1024 * 1024;
+const DOCX_MAX_TOTAL_BYTES = 20 * 1024 * 1024;
+const EXTRACTION_WORKER_HEAP_MB = 256;
+const EXTRACTION_MAX_CONCURRENT = 2;
+let activeExtractionWorkers = 0;
 // One extraction per client, so a single client cannot hold every worker slot.
-const pdfClientsInFlight = new Set();
+const extractionClientsInFlight = new Set();
 
-function extractPdfText(buffer, timeoutMs) {
+function runExtractionWorker(workerPath, workerData, timeoutMs, timeoutMessage) {
     return new Promise((resolve, reject) => {
-        activePdfWorkers++;
-        const worker = new Worker(PDF_WORKER_PATH, {
-            workerData: { data: new Uint8Array(buffer), maxPages: PDF_MAX_PAGES, maxChars: PDF_MAX_CHARS },
-            resourceLimits: { maxOldGenerationSizeMb: PDF_WORKER_HEAP_MB }
+        activeExtractionWorkers++;
+        const worker = new Worker(workerPath, {
+            workerData,
+            resourceLimits: { maxOldGenerationSizeMb: EXTRACTION_WORKER_HEAP_MB }
         });
         let settled = false;
         const finish = (fn, value) => {
             if (settled) return;
             settled = true;
             clearTimeout(timer);
-            activePdfWorkers--;
+            activeExtractionWorkers--;
             worker.terminate();
             fn(value);
         };
-        const timer = setTimeout(() => finish(reject, new Error('PDF parsing timed out. The file may be too complex or corrupted.')), timeoutMs);
+        const timer = setTimeout(() => finish(reject, new Error(timeoutMessage)), timeoutMs);
         worker.once('message', result => finish(resolve, result));
         worker.once('error', error => finish(reject, error));
-        worker.once('exit', code => finish(reject, new Error(`PDF worker exited with code ${code}`)));
+        worker.once('exit', code => finish(reject, new Error(`Extraction worker exited with code ${code}`)));
     });
+}
+
+function extractPdfText(buffer, timeoutMs) {
+    return runExtractionWorker(
+        PDF_WORKER_PATH,
+        { data: new Uint8Array(buffer), maxPages: PDF_MAX_PAGES, maxChars: PDF_MAX_CHARS },
+        timeoutMs,
+        'PDF parsing timed out. The file may be too complex or corrupted.'
+    );
+}
+
+function extractDocxText(buffer, timeoutMs) {
+    return runExtractionWorker(
+        DOCX_WORKER_PATH,
+        { data: new Uint8Array(buffer), maxPartBytes: DOCX_MAX_PART_BYTES, maxTotalBytes: DOCX_MAX_TOTAL_BYTES },
+        timeoutMs,
+        'DOCX parsing timed out. The file may be too complex.'
+    );
 }
 
 // Uploads are capped compressed (multer), so decompressed size needs its own cap.
@@ -119,10 +142,11 @@ async function extractPptxText(buffer) {
  * @param {Object} options.logger - Logger instance
  * @param {Object} options.CONFIG - Configuration object (requires LIMITS.MAX_FILE_SIZE)
  * @param {number} [options.pdfTimeoutMs=30000] - PDF extraction timeout; the worker is terminated when it passes
+ * @param {number} [options.docxTimeoutMs=30000] - DOCX extraction timeout; the worker is terminated when it passes
  * @returns {express.Router} Configured router
  */
 function createFileUploadRoutes(options) {
-    const { logger, CONFIG, pdfTimeoutMs = 30000 } = options;
+    const { logger, CONFIG, pdfTimeoutMs = 30000, docxTimeoutMs = 30000 } = options;
 
     if (!logger) {
         throw new Error('logger is required for file upload routes');
@@ -387,12 +411,12 @@ function createFileUploadRoutes(options) {
             }
 
             const clientIP = getClientIp(req);
-            if (activePdfWorkers >= PDF_MAX_CONCURRENT || pdfClientsInFlight.has(clientIP)) {
+            if (activeExtractionWorkers >= EXTRACTION_MAX_CONCURRENT || extractionClientsInFlight.has(clientIP)) {
                 return res.status(503).json({ error: 'PDF extraction busy, try again shortly', messageKey: 'error_rate_limited' });
             }
 
             let text, pages;
-            pdfClientsInFlight.add(clientIP);
+            extractionClientsInFlight.add(clientIP);
             try {
                 ({ text, pages } = await extractPdfText(req.file.buffer, pdfTimeoutMs));
             } catch (error) {
@@ -400,7 +424,7 @@ function createFileUploadRoutes(options) {
                 logger.warn('PDF extraction failed:', error.message);
                 return res.status(400).json({ error: 'Failed to extract text from PDF', messageKey: 'error_pdf_extraction_failed' });
             } finally {
-                pdfClientsInFlight.delete(clientIP);
+                extractionClientsInFlight.delete(clientIP);
             }
 
             logger.info(`PDF extracted: ${req.file.originalname}, ${pages} pages, ${text.length} chars`);
@@ -436,17 +460,14 @@ function createFileUploadRoutes(options) {
     });
 
     router.post('/api/extract-docx', uploadRateLimit, docxUpload.single('docx'), async (req, res) => {
-        const DOCX_PARSE_TIMEOUT_MS = 30000;
-
         try {
             if (!req.file) {
                 return res.status(400).json({ error: 'No DOCX file uploaded', messageKey: 'error_no_docx_uploaded' });
             }
 
-            // Dynamic import of mammoth
-            let mammoth;
+            // mammoth is loaded by the worker; only check here that it is installed
             try {
-                mammoth = require('mammoth');
+                require.resolve('mammoth');
             } catch (err) {
                 logger.warn('mammoth not installed. Run: npm install mammoth');
                 return res.status(501).json({
@@ -456,14 +477,24 @@ function createFileUploadRoutes(options) {
                 });
             }
 
-            // Parse with timeout
-            const result = await withTimeout(
-                mammoth.extractRawText({ buffer: req.file.buffer }),
-                DOCX_PARSE_TIMEOUT_MS,
-                'DOCX parsing timed out. The file may be too complex.'
-            );
+            const clientIP = getClientIp(req);
+            if (activeExtractionWorkers >= EXTRACTION_MAX_CONCURRENT || extractionClientsInFlight.has(clientIP)) {
+                return res.status(503).json({ error: 'DOCX extraction busy, try again shortly', messageKey: 'error_rate_limited' });
+            }
 
-            const text = result.value || '';
+            let text;
+            extractionClientsInFlight.add(clientIP);
+            try {
+                ({ text } = await extractDocxText(req.file.buffer, docxTimeoutMs));
+            } catch (error) {
+                if (error.message.includes('timed out')) throw error;
+                // Not a DOCX, a part over the inflated-size cap, or the worker ran out of heap
+                logger.warn('DOCX extraction failed:', error.message);
+                return res.status(400).json({ error: 'Failed to extract text from DOCX', messageKey: 'error_docx_extraction_failed' });
+            } finally {
+                extractionClientsInFlight.delete(clientIP);
+            }
+
             const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
 
             logger.info(`DOCX extracted: ${req.file.originalname}, ${wordCount} words`);

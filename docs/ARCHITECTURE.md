@@ -43,7 +43,7 @@ quizix-pro/
 ├── socket/                # Socket.IO event handlers (registered from socket/index.js)
 ├── middleware/            # Express middleware (client IP, user session, caching, static files)
 ├── config/                # Resource limits (config/limits.js)
-├── utils/                 # Server helpers (shutdown, rate limiters, password hashing, PDF worker)
+├── utils/                 # Server helpers (shutdown, rate limiters, password hashing, PDF and DOCX workers)
 ├── scripts/               # Build helpers (cache-bust.js)
 ├── tests/                 # Test suites (unit + integration)
 ├── quizzes/              # Saved quiz files (JSON)
@@ -71,7 +71,7 @@ Other server behaviour:
 - `app.set('trust proxy', 'loopback')`: `req.ip` trusts only a loopback proxy such as a co-located Cloudflare tunnel.
 - `middleware/client-ip.js` (`getClientIp`) is the single source of the caller IP for rate limiting. It reads `CF-Connecting-IP` only when the direct peer is loopback or listed in `TRUSTED_PROXY_IPS`, otherwise it falls back to `req.ip`.
 - Debug and diagnostic endpoints (`/metrics`, `/debug/config`, `/api/debug/files`, `/api/debug/directory` and the `/debug` static tools) are registered only when `ENABLE_DEBUG_ROUTES=true`.
-- Document text extraction (`routes/file-uploads.js`): PDF uses `pdfjs-dist` inside a worker thread (`utils/pdf-text-worker.mjs`) with a heap cap, a timeout, at most 2 concurrent workers and one in-flight request per client; PPTX is read with `jszip`; DOCX uses `mammoth`.
+- Document text extraction (`routes/file-uploads.js`): PDF uses `pdfjs-dist` (`utils/pdf-text-worker.mjs`) and DOCX uses `mammoth` (`utils/docx-text-worker.js`), each inside a worker thread with a heap cap, a timeout, at most 2 concurrent workers in total and one in-flight request per client; PPTX is read with `jszip`.
 - `/sw.js` and `index.html` are served through routes that inject a per-start `ASSET_VERSION` for cache busting.
 
 ### Backend Services
