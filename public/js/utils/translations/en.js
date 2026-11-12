@@ -652,7 +652,7 @@ export default {
     concept_hint: 'Press Enter to add (max 5)',
 
     // Consensus Mode
-    consensus_mode: 'Consensus Mode',
+    consensus_mode: 'Consensus Mode (experimental)',
     consensus_mode_tooltip: 'Team collaboration mode where players vote together',
     consensus_threshold: 'Consensus Threshold',
     threshold_50: '50% - Simple majority',

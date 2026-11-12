@@ -594,7 +594,7 @@ export default {
     true_display: 'Verdadeiro',
 
     // Consensus Mode
-    consensus_mode: 'Modo Consenso',
+    consensus_mode: 'Modo Consenso (experimental)',
     consensus_mode_tooltip: 'Modo de colaboração em equipe onde os jogadores votam juntos',
     consensus_threshold: 'Limite de Consenso',
     threshold_50: '50% - Maioria simples',

@@ -47,6 +47,9 @@ explicitly — auto-detection picks the virtual adapter.
 Questions support LaTeX (`$x^2 + y^2 = z^2$`), images, and syntax-highlighted code blocks.
 To add a new type, see [docs/ADD-QUESTION-TYPE.md](docs/ADD-QUESTION-TYPE.md).
 
+Consensus mode, where players discuss and vote on one team answer, is experimental: it has not
+been used with a real class yet and accepts multiple-choice questions only.
+
 ## AI question generation
 
 Quizzes can be generated from a prompt, a pasted URL, or an uploaded PDF, DOCX or PPTX file.

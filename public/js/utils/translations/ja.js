@@ -593,7 +593,7 @@ export default {
     true_display: '真',
 
     // Consensus Mode
-    consensus_mode: 'コンセンサスモード',
+    consensus_mode: 'コンセンサスモード（実験的）',
     consensus_mode_tooltip: 'プレイヤーが一緒に投票するチーム協力モード',
     consensus_threshold: 'コンセンサス閾値',
     threshold_50: '50% - 単純過半数',

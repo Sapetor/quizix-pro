@@ -600,7 +600,7 @@ export default {
     type: 'Typ',
 
     // Consensus Mode
-    consensus_mode: 'Tryb Konsensusu',
+    consensus_mode: 'Tryb Konsensusu (eksperymentalny)',
     consensus_mode_tooltip: 'Tryb współpracy zespołowej, w którym gracze głosują razem',
     consensus_threshold: 'Próg Konsensusu',
     threshold_50: '50% - Zwykła większość',

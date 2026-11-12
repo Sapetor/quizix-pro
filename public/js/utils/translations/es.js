@@ -612,7 +612,7 @@ export default {
     type: 'Tipo',
 
     // Consensus Mode
-    consensus_mode: 'Modo Consenso',
+    consensus_mode: 'Modo Consenso (experimental)',
     consensus_mode_tooltip: 'Modo de colaboración en equipo donde los jugadores votan juntos',
     consensus_threshold: 'Umbral de Consenso',
     threshold_50: '50% - Mayoría simple',

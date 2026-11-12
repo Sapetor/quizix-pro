@@ -589,7 +589,7 @@ export default {
     true_display: '真',
 
     // Consensus Mode
-    consensus_mode: '共识模式',
+    consensus_mode: '共识模式（实验性）',
     consensus_mode_tooltip: '玩家共同投票的团队协作模式',
     consensus_threshold: '共识阈值',
     threshold_50: '50% - 简单多数',
