@@ -106,7 +106,7 @@ export function buildQuestionCardHtml(question, index, optionsHtml) {
     const difficultyLabel = translationManager.getTranslationSync(difficulty) || difficulty;
 
     // Time limit display
-    const timeLimit = question.timeLimit || 30;
+    const timeLimit = Number(question.timeLimit) || 30;
 
     return `
         <div class="ai-preview-header">
@@ -115,8 +115,8 @@ export function buildQuestionCardHtml(question, index, optionsHtml) {
                 <span class="checkmark"></span>
             </label>
             <div class="ai-preview-badges">
-                <span class="ai-type-badge">${typeLabel}</span>
-                <span class="ai-difficulty-badge" style="background: ${diffColor.bg}; color: ${diffColor.text};">${difficultyLabel}</span>
+                <span class="ai-type-badge">${escapeHtml(typeLabel)}</span>
+                <span class="ai-difficulty-badge" style="background: ${diffColor.bg}; color: ${diffColor.text};">${escapeHtml(difficultyLabel)}</span>
                 <span class="ai-time-badge">⏱️ ${timeLimit}s</span>
             </div>
             <div class="ai-preview-actions">
