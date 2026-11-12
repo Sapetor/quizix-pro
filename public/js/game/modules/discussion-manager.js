@@ -143,7 +143,7 @@ export class DiscussionManager {
             id: data.id || Date.now().toString(),
             playerName: data.playerName,
             type: 'quick',
-            content: data.type,
+            content: data.content,
             targetPlayer: data.targetPlayer,
             timestamp: data.timestamp || Date.now()
         };
@@ -164,7 +164,7 @@ export class DiscussionManager {
             id: data.id || Date.now().toString(),
             playerName: data.playerName,
             type: 'chat',
-            content: data.text,
+            content: data.content,
             timestamp: data.timestamp || Date.now()
         };
 
