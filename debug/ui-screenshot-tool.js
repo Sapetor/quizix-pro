@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * QuizMaster Pro UI Screenshot Tool
+ * Quizix Pro UI Screenshot Tool
  * Captures screenshots of all app screens for visual debugging
  */
 
@@ -44,7 +44,7 @@ async function ensureOutputDir() {
 }
 
 async function captureScreenshots() {
-    console.log('🚀 Starting QuizMaster Pro UI Screenshot Tool...');
+    console.log('🚀 Starting Quizix Pro UI Screenshot Tool...');
     
     await ensureOutputDir();
     
@@ -176,7 +176,7 @@ async function generateHTMLGallery(screenshots) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuizMaster Pro - UI Debug Gallery</title>
+    <title>Quizix Pro - UI Debug Gallery</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -290,7 +290,7 @@ async function generateHTMLGallery(screenshots) {
 </head>
 <body>
     <div class="header">
-        <h1>🎮 QuizMaster Pro - UI Debug Gallery</h1>
+        <h1>🎮 Quizix Pro - UI Debug Gallery</h1>
         <p>Visual debugging interface showing all app screens across different viewports and themes</p>
         <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
     </div>

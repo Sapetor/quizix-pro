@@ -38,8 +38,8 @@ describe('QRService', () => {
 
     describe('constructor', () => {
         test('should set basePath correctly', () => {
-            const service = new QRService(mockLogger, '/quizmaster/');
-            expect(service.basePath).toBe('/quizmaster');
+            const service = new QRService(mockLogger, '/quizix/');
+            expect(service.basePath).toBe('/quizix');
         });
 
         test('should handle root basePath', () => {
@@ -331,7 +331,7 @@ describe('QRService', () => {
         });
 
         test('should include basePath in URL', () => {
-            const serviceWithBasePath = new QRService(mockLogger, '/quizmaster');
+            const serviceWithBasePath = new QRService(mockLogger, '/quizix');
             serviceWithBasePath._isWSL = false;
             delete process.env.RAILWAY_ENVIRONMENT;
 
@@ -341,7 +341,7 @@ describe('QRService', () => {
 
             const url = serviceWithBasePath._getGameUrl('123456', mockReq);
 
-            expect(url).toContain('/quizmaster/');
+            expect(url).toContain('/quizix/');
         });
     });
 

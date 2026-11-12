@@ -10,11 +10,11 @@ maintenance window.
 > bcdfd68, 2026-07-22). The k8s manifests, both compose files,
 > `deploy-to-server.sh`, `.gitlab-ci.yml` and the server's `BASE_PATH` default
 > use the `quizix` names. Whether a given live deployment has been migrated
-> cannot be determined from the repo. Remaining `quizmaster` strings outside
-> `node_modules`, `docs/archive` and `CHANGELOG.md`: `debug/ui-screenshot-tool.js`
-> (4 "QuizMaster Pro" title/log strings) and `tests/unit/qr-service.test.js`
-> (`/quizmaster/` used as an arbitrary base-path fixture). Neither affects a
-> deployment.
+> cannot be determined from the repo. No `quizmaster` strings remain outside
+> `node_modules`, `docs/archive`, `CHANGELOG.md` and this file: the last ones,
+> 4 "QuizMaster Pro" title/log strings in `debug/ui-screenshot-tool.js` and the
+> `/quizmaster/` base-path fixture in `tests/unit/qr-service.test.js`, were
+> renamed on 2026-11-12.
 
 ## What changed
 
