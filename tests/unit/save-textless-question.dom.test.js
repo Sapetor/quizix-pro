@@ -8,6 +8,7 @@
 
 import { QuizManager } from '../../public/js/quiz/quiz-manager.js';
 import { APIHelper } from '../../public/js/utils/api-helper.js';
+import { createQuestionElement } from '../../public/js/utils/question-utils.js';
 import { dom } from '../../public/js/utils/dom.js';
 import { translationManager } from '../../public/js/utils/translation-manager.js';
 import { toastNotifications } from '../../public/js/utils/toast-notifications.js';
@@ -75,5 +76,35 @@ describe('textless questions on save', () => {
         expect(errors).not.toHaveBeenCalled();
         expect(manager.pendingSave.questions).toHaveLength(1);
         expect(manager.showSaveQuizModal).toHaveBeenCalled();
+    });
+
+    test('an ordering question with items and no text blocks the save', async () => {
+        const q = createQuestionElement();
+        q.querySelectorAll('.ordering-option').forEach((o, n) => { o.value = `item ${n}`; });
+        document.body.appendChild(q);
+
+        await manager.saveQuiz();
+
+        expect(manager.pendingSave).toBeNull();
+        expect(translate).toHaveBeenCalledWith('question_missing_text', ['2']);
+    });
+
+    test('a numeric question with an answer and no text blocks the save', async () => {
+        const q = createQuestionElement();
+        q.querySelector('.numeric-answer').value = '42';
+        document.body.appendChild(q);
+
+        await manager.saveQuiz();
+
+        expect(manager.pendingSave).toBeNull();
+        expect(translate).toHaveBeenCalledWith('question_missing_text', ['2']);
+    });
+
+    test('an untouched template question (numeric tolerance default) does not block', async () => {
+        document.body.appendChild(createQuestionElement());
+
+        await manager.saveQuiz();
+
+        expect(errors).not.toHaveBeenCalled();
     });
 });

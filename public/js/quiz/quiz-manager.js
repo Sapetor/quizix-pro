@@ -207,8 +207,8 @@ export class QuizManager {
     }
 
     /**
-     * Show an error and return true when a question has content (options or an
-     * image) but no text. extractQuestionData drops such a question, so a save
+     * Show an error and return true when a question has content (options, ordering
+     * items, a numeric answer or an image) but no text. extractQuestionData drops such a question, so a save
      * or a game start would silently lose it.
      */
     reportTextlessQuestions() {
@@ -217,7 +217,8 @@ export class QuizManager {
             if (el.querySelector('.question-text')?.value?.trim()) return;
             const image = el.querySelector('.question-image');
             const hasImage = !!(image && this.extractImageUrl(image)?.trim());
-            const hasOption = Array.from(el.querySelectorAll('.option')).some(o => o.value?.trim());
+            const hasOption = Array.from(el.querySelectorAll('.option, .ordering-option, .numeric-answer'))
+                .some(o => o.value?.trim());
             if (hasImage || hasOption) positions.push(i + 1);
         });
         if (positions.length === 0) return false;
