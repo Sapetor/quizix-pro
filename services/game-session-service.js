@@ -93,9 +93,10 @@ class GameSessionService {
     }
 
     /**
-   * Clean up stale games (older than maxAge or orphaned)
+   * Clean up stale games (idle longer than maxAge, or orphaned)
    * Called periodically by interval timer to prevent memory buildup
-   * @param {number} maxAgeMs - Maximum age in milliseconds (default 2 hours)
+   * @param {number} maxAgeMs - Maximum idle time in milliseconds (default 2 hours),
+   *        counted from the later of creation and the last question start
    */
     cleanupStaleGames(maxAgeMs = 2 * 60 * 60 * 1000) {
         const now = Date.now();
@@ -103,7 +104,10 @@ class GameSessionService {
 
         for (const [pin, game] of this.games) {
             const age = now - (game.createdAt || now);
-            const isStale = age > maxAgeMs;
+            // A long session keeps starting questions; counting from createdAt
+            // alone deleted games in progress.
+            const lastActivity = Math.max(game.createdAt || now, game.questionStartTime || 0);
+            const isStale = now - lastActivity > maxAgeMs;
             const isOrphanedLobby = game.gameState === 'lobby' && game.players.size === 0 && age > 30 * 60 * 1000; // Empty lobby > 30min
 
             if (isStale || isOrphanedLobby) {

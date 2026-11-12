@@ -280,9 +280,13 @@ describe('game-events: rematch-game', () => {
         const { io, options, h } = setup();
         options.gameSessionService.findGameByHost.mockReturnValue(game);
 
+        game.createdAt = Date.now() - (3 * 60 * 60 * 1000);
         h['rematch-game']();
 
         expect(game.reset).toHaveBeenCalled();
+        // cleanupStaleGames ages a game from createdAt until its first question,
+        // so a rematch lobby of a long session must not count as hours old.
+        expect(Date.now() - game.createdAt).toBeLessThan(60 * 1000);
         const reset = findEmit(io.toEmits, 'game-reset');
         expect(reset.room).toBe('game-123456');
         expect(reset.data.players).toEqual([{ id: 'p1', name: 'Al' }]);

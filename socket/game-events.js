@@ -233,8 +233,10 @@ function registerGameEvents(io, socket, options) {
                 return;
             }
 
-            // Reset the game
+            // Reset the game. createdAt restarts so cleanupStaleGames does not
+            // age the rematch lobby from the first game's creation.
             game.reset();
+            game.createdAt = Date.now();
 
             // Get current player list for the lobby
             const playerList = Array.from(game.players.values()).map(p => ({

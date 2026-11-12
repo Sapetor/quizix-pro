@@ -114,7 +114,7 @@ npm start
 Status (2026-11-12):
 - Games no longer persist indefinitely. `GameSessionService.cleanupStaleGames()`
   (`services/game-session-service.js`) runs every 30 minutes and removes games
-  older than 2 hours and empty lobbies older than 30 minutes.
+  with no new question for 2 hours and empty lobbies older than 30 minutes.
 - The server code (`server.js`, `services/`, `socket/`, `routes/`) has 127
   `.emit(` calls covering 43 distinct event names, not 31.
 - Quiz, results, user and metadata writes are asynchronous (`fs.promises`

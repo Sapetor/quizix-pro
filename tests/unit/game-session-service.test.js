@@ -342,6 +342,28 @@ describe('GameSessionService — cleanupStaleGames', () => {
         expect(svc.games.has(game.pin)).toBe(false);
     });
 
+    // createdAt alone deleted a long class session mid-question, with no event
+    // to anyone. Staleness counts from the last question start.
+    test('keeps a game created 3h ago whose last question started 10 minutes ago', () => {
+        const game = svc.createGame('host-1', sampleQuiz());
+        game.addPlayer('p1', 'Alice');
+        game.gameState = 'question';
+        game.createdAt = Date.now() - (3 * 60 * 60 * 1000);
+        game.questionStartTime = Date.now() - (10 * 60 * 1000);
+        svc.cleanupStaleGames();
+        expect(svc.games.has(game.pin)).toBe(true);
+    });
+
+    test('deletes an in-progress game idle for longer than the max age', () => {
+        const game = svc.createGame('host-1', sampleQuiz());
+        game.addPlayer('p1', 'Alice');
+        game.gameState = 'revealing';
+        game.createdAt = Date.now() - (5 * 60 * 60 * 1000);
+        game.questionStartTime = Date.now() - (3 * 60 * 60 * 1000);
+        svc.cleanupStaleGames();
+        expect(svc.games.has(game.pin)).toBe(false);
+    });
+
     test('keeps a fresh, populated game', () => {
         const game = svc.createGame('host-1', sampleQuiz());
         game.addPlayer('p1', 'Alice');
