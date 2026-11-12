@@ -41,6 +41,7 @@ class UserService {
         this.data = null;
         this._writeChain = Promise.resolve();
         this.authAttempts = new Map();
+        this._lastAuthSweep = Date.now();
     }
 
     async initialize() {
@@ -138,6 +139,15 @@ class UserService {
     recordAuthAttempt(ip) {
         if (!ip) return;
         const now = Date.now();
+        // isRateLimited drops an expired entry only when the same address
+        // returns. Sweep the rest at most once per window so one-off
+        // addresses do not accumulate for the life of the process.
+        if (now - this._lastAuthSweep > RATE_LIMIT_WINDOW_MS) {
+            for (const [key, e] of this.authAttempts) {
+                if (now - e.windowStart > RATE_LIMIT_WINDOW_MS) this.authAttempts.delete(key);
+            }
+            this._lastAuthSweep = now;
+        }
         const entry = this.authAttempts.get(ip);
         if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
             this.authAttempts.set(ip, { count: 1, windowStart: now });

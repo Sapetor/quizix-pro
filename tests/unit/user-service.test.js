@@ -190,5 +190,22 @@ describe('UserService', () => {
             svc.authAttempts.set(ip, { count: 99, windowStart: Date.now() - 10 * 60_000 });
             expect(svc.isRateLimited(ip)).toBe(false);
         });
+
+        test('expired entries of other addresses are swept, live ones kept', () => {
+            const start = Date.now();
+            const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(start);
+            for (let i = 0; i < 50; i++) {
+                svc.recordAuthAttempt(`203.0.113.${i}`);
+            }
+            nowSpy.mockReturnValue(start + 30_000);
+            svc.recordAuthAttempt('198.51.100.1');
+
+            // More than one window later: the 50 one-off addresses have expired.
+            nowSpy.mockReturnValue(start + 61_000 + 1);
+            svc.recordAuthAttempt('198.51.100.2');
+
+            expect([...svc.authAttempts.keys()].sort()).toEqual(['198.51.100.1', '198.51.100.2']);
+            nowSpy.mockRestore();
+        });
     });
 });
