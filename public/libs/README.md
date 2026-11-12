@@ -79,6 +79,24 @@ local file. The 22 woff2 files are the ones those URLs served, renamed
 License text (`OFL.txt`), from `ofl/<family>/OFL.txt` in
 https://github.com/google/fonts.
 
+Google Fonts picks between three builds of these files by user agent, and a
+static stylesheet cannot. The stylesheet text is the same in all three once
+the URLs are rewritten. Compared table by table on 2026-11-12:
+
+- Vendored here: the build served to Chrome and Edge on Windows, and to Chrome
+  and Firefox on Linux and ChromeOS.
+- macOS, iOS and Android were served files without the 7-byte `prep` table
+  (TrueType instructions that turn on dropout control). Two Source Serif 4
+  subsets (latin-ext, vietnamese) also differ in `GPOS`/`GSUB` size. All other
+  tables are identical apart from the `head` checksum. Those platforms now
+  receive the build with `prep`. Their effect there was not checked on a
+  device. In Linux Chromium emulating an iPhone the table changes text
+  advances: `landing-mobile` in `tests/e2e/visual-static.spec.js` moved by 3 %
+  of pixels and its baseline was regenerated.
+- Firefox on Windows was served Inter without its `MVAR` table (the other
+  three families are the vendored files). It now receives Inter with `MVAR`.
+  Not checked in Firefox on Windows.
+
 | Local file | Source |
 |---|---|
 | `fonts/inter/inter-cyrillic-ext.woff2` | https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7SUc.woff2 |
