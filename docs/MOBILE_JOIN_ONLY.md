@@ -83,9 +83,11 @@ earlier `app` layer beats one in `utilities`. That is the point: a stray
 
 ## This is UX gating, NOT security
 
-The server routes are **unchanged and unauthenticated**. `host-join`,
-`start-game`, `/api/save-quiz`, everything in `routes/quiz-management.js` and the
-AI routes are all still reachable. Requesting the desktop site reports a wide
+The gate does not change any server route, and most routes accept **anonymous**
+requests. `host-join`, `start-game`, anonymous `/api/save-quiz`, most of
+`routes/quiz-management.js` and the AI routes are all still reachable. The only
+login checks belong to the optional user accounts (for example folder creation,
+password-protected saves, `/api/manim/render`), not to this gate. Requesting the desktop site reports a wide
 viewport and bypasses the gate entirely, **by design**.
 
 Do not describe this feature as preventing hosting from a phone, and do not
@@ -108,8 +110,11 @@ Hiding `#lp-outro` also hides the site footer — `<footer class="lp-footer">` i
 nested *inside* that section in `index.html`. That is intended for a join-only
 phone landing, but it surprises people, so it is called out here and in the CSS.
 
-The decorative `.lp-pin-name` input is hidden rather than wired up: it has no id
-and no listener, and nothing reads it.
+The `.lp-pin-name` input is hidden on phones by `mobile-gate.css`. Since
+2026-08-10 it has an id (`lp-pin-name-input`) and `app.js` copies its value into
+the join form's name field when `#join-btn` is clicked, so the "no id, nothing
+reads it" comment in `mobile-gate.css` is stale. On a phone the name is typed on
+the join screen instead.
 
 ---
 

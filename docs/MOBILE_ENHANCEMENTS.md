@@ -4,6 +4,19 @@
 
 Quizix Pro now includes comprehensive mobile-friendly visual enhancements designed to improve user experience on mobile devices while maintaining the excellent performance optimizations (50-70% faster loading achieved in Phase 6).
 
+> **Status (2026-11-12):** most of this document describes an API that is not
+> in the code. `public/js/utils/mobile-enhancements.js` (159 lines) only binds a
+> tap ripple and a `focused-mobile` focus class to `.player-option`,
+> `.checkbox-option`, `.tf-option` and `.btn`, and activates the three option
+> classes on Enter/Space. It has no `updateProgress`, `showLoadingSkeleton`,
+> `hideLoadingSkeleton`, `showToast`, `showLoadingOverlay`,
+> `hideLoadingOverlay`, `showGestureHint` or `logPerformanceMetric` method, so
+> the usage examples, the progress indicator, skeletons, gesture hints and the
+> debug mode below do not exist. Both the ripple and the focus class are gated
+> on `this.isMobile`, which nothing sets since commit a1b8203 (2026-01-22)
+> removed the constructor assignment `this.isMobile = window.innerWidth <= 768`;
+> the ripple and the focus class are therefore never applied on any device.
+
 ## What's Been Added
 
 ### Phase 1: Touch Feedback & Micro-interactions ✅
@@ -28,7 +41,9 @@ Quizix Pro now includes comprehensive mobile-friendly visual enhancements design
   the file under the `MOBILE TOUCH FEEDBACK` heading (the standalone
   `mobile-enhancements.css` file was merged in and removed). That is where
   `.ripple-effect` and `.focused-mobile` are defined; both were missing until
-  2026-09, so the tap ripple and the focus highlight rendered nothing.
+  2026-09, so the tap ripple and the focus highlight rendered nothing. As of
+  2026-11-12 they still render nothing, because the JS never adds either class
+  (see the status note above).
 - `public/js/utils/mobile-enhancements.js` - JavaScript functionality for touch interactions
 - `docs/MOBILE_ENHANCEMENTS.md` - This documentation
 
@@ -38,12 +53,14 @@ Quizix Pro now includes comprehensive mobile-friendly visual enhancements design
 
 ## Performance Impact
 
-- **Bundle Size**: +300 CSS lines (~8% increase, total now ~4,000 lines)
+- **Bundle Size**: +300 CSS lines (~8% increase, total now ~4,000 lines). As of 2026-11-12 the `public/css` sources total about 29,600 lines, and the mobile touch block in `responsive.css` is about 75 lines.
 - **Mobile Performance**: Zero impact on your optimized loading times
 - **Memory Usage**: <5MB increase
 - **Compatibility**: 100% compatible with existing 6-color system and themes
 
 ## Usage Examples
+
+Status (2026-11-12): only example 1 matches the code. The methods in examples 2 to 6 are not defined on `window.mobileEnhancements`.
 
 ### 1. Touch Ripple Effects
 Automatically applied to all interactive quiz elements:
@@ -105,6 +122,8 @@ window.mobileEnhancements.showGestureHint(
 ```
 
 ## CSS Classes Available
+
+Status (2026-11-12): of the classes below, only `.ripple-effect` (`responsive.css`), `.loading-spinner` (`components.css`, `modals.css`) and `.swipe-hint` (`modals.css`, `analytics.css`, used by the results list, not by this module) are defined. The others have no rules in `public/css`.
 
 ### Loading States
 ```css

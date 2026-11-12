@@ -2,11 +2,14 @@
 
 > **Partially stale.** This guide predates the join-only mobile scope
 > (`docs/MOBILE_JOIN_ONLY.md`) and some of its references have rotted. Verified
-> 2026-08-02: `window.mobileEnhancements` still exists and the console snippets
-> below still work, but the standalone test page referenced by the old "Method 1"
+> 2026-08-02: `window.mobileEnhancements` still exists, but the standalone test page referenced by the old "Method 1"
 > was deleted, and the `main.css?v=modular-4.4-mobile` filename below is obsolete
 > (the bundle is now `main.bundle.css` with a generated `?v=` stamp). Treat the
 > touch-feedback checklists as current and the file/URL references as suspect.
+> Rechecked 2026-11-12: `MobileEnhancements` has no `updateProgress()` or
+> `showToast()` method and the CSS has no loading skeletons, so those items were
+> removed; toasts come from `window.toastNotifications`
+> (`public/js/utils/toast-notifications.js`).
 
 ## 🧪 Quick Testing Methods
 
@@ -23,8 +26,7 @@
 1. **Button Scale Effect**: Buttons should slightly scale down when pressed (0.96x scale)
 2. **Quiz Option Feedback**: Quiz options should scale to 0.98x and show enhanced shadows when touched
 3. **Smooth Transitions**: All interactions should have smooth 0.2s transitions
-4. **Loading Skeletons**: Animated shimmer effects during loading states
-5. **Better Touch Targets**: Elements should feel more responsive to touch
+4. **Better Touch Targets**: Elements should feel more responsive to touch
 
 ### ⚠️ **Potential Issues**
 1. **No Visual Feedback**: May indicate CSS not loading properly
@@ -46,7 +48,6 @@
 - [ ] Quiz options respond to touch with scale effect
 - [ ] Buttons show press feedback
 - [ ] Smooth animations (not jerky)
-- [ ] Loading skeletons appear during transitions
 - [ ] Better visual contrast and spacing
 - [ ] No JavaScript errors in console
 
@@ -70,17 +71,12 @@ Since we're in WSL, here's how to test without Playwright:
 // 1. Check if mobile enhancements loaded
 console.log('Mobile enhancements:', !!window.mobileEnhancements);
 
-// 2. Test progress indicator
-if (window.mobileEnhancements) {
-    window.mobileEnhancements.updateProgress(3, 10, 'Test');
+// 2. Test toast notification
+if (window.toastNotifications) {
+    window.toastNotifications.show('Test message', 'success');
 }
 
-// 3. Test toast notification
-if (window.mobileEnhancements) {
-    window.mobileEnhancements.showToast('Test message', 'success');
-}
-
-// 4. Check mobile detection
+// 3. Check mobile detection
 console.log('Is mobile:', window.innerWidth <= 768);
 console.log('Touch support:', 'ontouchstart' in window);
 ```
@@ -93,13 +89,13 @@ console.log('Touch support:', 'ontouchstart' in window);
    ```bash
    # Hard refresh the browser
    # Clear browser cache completely
-   # Check if main.css?v=modular-4.4-mobile loads
+   # Check that css/main.bundle.css?v=... loads
    ```
 
 2. **Check CSS Loading**:
    ```javascript
    // In browser console:
-   const link = document.querySelector('link[href*="main.css"]');
+   const link = document.querySelector('link[href*="main.bundle.css"]');
    console.log('CSS loaded:', !!link);
    ```
 
@@ -141,7 +137,6 @@ console.log('Touch support:', 'ontouchstart' in window);
 - ✅ Enhanced quiz option feedback
 - ✅ Better visual hierarchy
 - ✅ Improved touch targets
-- ✅ Loading state indicators
 
 ### Performance Expectations:
 - ✅ No impact on loading speed (50-70% faster maintained)
@@ -155,7 +150,7 @@ console.log('Touch support:', 'ontouchstart' in window);
 **Solution**: 
 1. Hard refresh browser (Ctrl+Shift+R)
 2. Clear cache completely
-3. Check CSS version in HTML matches (v=modular-4.4-mobile)
+3. Check that the page loads `css/main.bundle.css` with a current `?v=` stamp
 4. Verify responsive.css contains mobile enhancements
 
 ### Issue: "Animations are jerky"
@@ -182,12 +177,10 @@ Screen Resolution: [Width x Height]
 CSS Enhancements:
 [ ] Button scale effects working
 [ ] Quiz option touch feedback
-[ ] Loading skeletons visible
 [ ] Smooth transitions
 
 JavaScript Features:
 [ ] Ripple effects (if enabled)
-[ ] Progress indicators
 [ ] Toast notifications
 [ ] Touch event handling
 
@@ -205,4 +198,4 @@ Overall Rating: [1-5 stars]
 
 ---
 
-**Next Steps**: Run the test page first, then test the main application with these guidelines!
+**Next Steps**: Test the main application with these guidelines (the standalone test page no longer exists).

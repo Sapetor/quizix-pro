@@ -11,7 +11,7 @@ Hard-won lessons from debugging Quizix Pro. Consult this when working on the rel
 
 ## Mobile
 
-3. **Mobile carousels** require 150ms delays for DOM population before cloning.
+3. *(Retired.)* The mobile question carousel that needed a 150ms delay before cloning was deleted in July 2026 (commit `7719efb`). The number is kept so references to #5, #12, #13 and #19 stay valid.
 4. **Theme CSS overrides** — mobile rules must match `:not([data-theme="light"])` specificity.
 5. **Test at 150%+ zoom** — buttons and layouts must work.
 
@@ -26,7 +26,7 @@ Hard-won lessons from debugging Quizix Pro. Consult this when working on the rel
 
 ## Question Types
 
-9. **Adding question types** requires 40+ code locations — see `docs/ADD-QUESTION-TYPE.md`.
+9. **Adding question types** touches many files: the registry, the backend service, the save schema and several per-type `switch`/`if` branches. See `docs/ADD-QUESTION-TYPE.md`.
 10. **Question templates exist in TWO places** — `index.html` (initial) and `question-utils.js` (programmatic). Both must stay synchronized. If UI changes on quiz load, check the JS template for differences (see `public/css/CLAUDE.md` for details).
 
 ## Game Lifecycle
@@ -42,7 +42,7 @@ Hard-won lessons from debugging Quizix Pro. Consult this when working on the rel
 
 ## Deployment
 
-16. **Service Worker Cache** — bump `CACHE_VERSION` in `public/sw.js` when deploying JS changes, otherwise browsers serve stale cached files.
+16. **Service Worker Cache** — `CACHE_VERSION` in `public/sw.js` no longer needs a manual bump. The server replaces the `__CACHE_VERSION__` placeholder with a per-start `ASSET_VERSION` on every `/sw.js` request, and `npm run build` (`scripts/cache-bust.js`) refreshes the `BUILD_STAMP` fallback used when `sw.js` is served statically. Restart the server after deploying JS changes so clients pick up the new version.
 
 17. **Visual gate can't see subtle theme drift** — pixelmatch's per-pixel threshold tolerates full-field tint shifts (measured: the old-beige → grey reskin was ~0.025 normalized luma, invisible to any flake-free threshold). A green `npm run test:visual` does NOT prove baselines are current. After any reskin or design-token change, regenerate baselines wholesale: `rm -rf` both `tests/e2e/*-snapshots` dirs, run once with `PW_PORT=3210` to write, run again to verify, then eyeball the new PNGs.
 
@@ -52,4 +52,4 @@ Hard-won lessons from debugging Quizix Pro. Consult this when working on the rel
 
 ## Mobile Gating
 
-19. **Phones are join-and-play only — gate with `isPhone()`, never `isMobile()`** — `isMobile()` (`innerWidth <= 768`) is for LAYOUT only; the gate is `isPhone()` (`pointer: coarse` + `max-width: 768px`), mirrored byte-identically by the single media query in `public/css/mobile-gate.css`. A width-only gate strips the editor from a mouse-driven desktop at 200% zoom or in a half-snapped window (see #5). Only `host-screen` is gated in `showScreen()` — `game-lobby` and `host-game-screen` arrive by server push, and gating those ejects a live host mid-game (see #12/#13). This is UX gating, **not security**: server routes are unauthenticated and "Request desktop site" bypasses it by design. Also: `fullPage: true` screenshots destroy touch emulation in Playwright, so a mobile visual test using it silently photographs the *ungated* desktop UI. Full detail and the un-gating checklist: `docs/MOBILE_JOIN_ONLY.md`.
+19. **Phones are join-and-play only — gate with `isPhone()`, never `isMobile()`** — `isMobile()` (`innerWidth <= 768`) is for LAYOUT only; the gate is `isPhone()` (`pointer: coarse` + `max-width: 768px`), mirrored byte-identically by the single media query in `public/css/mobile-gate.css`. A width-only gate strips the editor from a mouse-driven desktop at 200% zoom or in a half-snapped window (see #5). Only `host-screen` is gated in `showScreen()` — `game-lobby` and `host-game-screen` arrive by server push, and gating those ejects a live host mid-game (see #12/#13). This is UX gating, **not security**: most server routes accept anonymous requests and "Request desktop site" bypasses it by design. Also: `fullPage: true` screenshots destroy touch emulation in Playwright, so a mobile visual test using it silently photographs the *ungated* desktop UI. Full detail and the un-gating checklist: `docs/MOBILE_JOIN_ONLY.md`.

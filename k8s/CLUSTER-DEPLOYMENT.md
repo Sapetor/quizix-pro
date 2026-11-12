@@ -7,14 +7,14 @@ This deployment is configured to match your cluster's patterns and uses the `qui
 This configuration has been adapted to match your cluster's deployment patterns:
 
 ✅ **Single unified YAML** - All resources in one file with `---` separators
-✅ **Path-based routing** - Uses `/quiz` path (not host-based like `quiz.domain.com`)
-✅ **RollingUpdate strategy** - Matches your server deployment pattern
+✅ **Path-based routing** - Uses `/quizix` path (not host-based like `quiz.domain.com`)
+✅ **Recreate strategy** - Old pod stops before the new one starts, so the RWO volumes never need to attach twice
 ✅ **nginx ingress** - Compatible with your existing `lab-apps` ingress
 ✅ **No SSL redirect** - Matches your cluster's HTTP configuration
 ✅ **Simple labels** - Uses `{ app: quizix-pro }` format
 ✅ **ReadWriteOnce PVCs** - Uses cluster default storage class
 ✅ **ConfigMap with envFrom** - Consistent with your server pattern
-✅ **imagePullPolicy** - Ready for both IfNotPresent and Always
+✅ **imagePullPolicy: Always** - `rollout restart` pulls the current `ghcr.io/sapetor/quizix-pro:latest`
 
 **Key additions for Quizix Pro:**
 - 🔌 **Socket.IO support** - Extended timeout (3600s vs your 60s) + WebSocket annotations
@@ -27,8 +27,8 @@ This configuration has been adapted to match your cluster's deployment patterns:
 ### 1. Build Docker Image
 
 ```bash
-# From project root
-docker build -t quizix-pro:latest .
+# From project root (Dockerfile.slim omits Manim and is the image meant for K8s)
+docker build -f Dockerfile.slim -t quizix-pro:latest .
 ```
 
 ### 2. Push to Registry (if using private registry)
@@ -58,6 +58,13 @@ Or use the automated script:
 ./deploy-to-cluster.sh
 ```
 
+The script builds `quizix-pro:latest` with the full `Dockerfile`, asks
+interactively whether to push it, and applies only `01-quizix-pro.yaml`. Apply
+`02-quizix-ingress.yaml` yourself if you use the standalone ingress.
+
+The manifest pins the pod with `nodeSelector: kubernetes.io/hostname:
+k8s-worker-node2`; change it to a node that exists in your cluster.
+
 ### 4. Verify Deployment
 
 ```bash
@@ -82,6 +89,11 @@ kubectl port-forward -n quizix svc/quizix-pro 3000:3000
 ```
 Then visit: http://localhost:3000
 
+With `BASE_PATH: "/quizix/"` the page's asset URLs resolve under `/quizix/`,
+which only the ingress rewrite maps back to the root, so over a plain
+port-forward `/health`, `/ready` and `/api/*` work but the UI does not load its
+assets.
+
 **For external access**, configure ingress in `02-quizix-ingress.yaml`
 
 ## Configuration
@@ -93,8 +105,14 @@ Edit `quizix-config` ConfigMap in `01-quizix-pro.yaml`:
 data:
   NODE_ENV: "production"
   PORT: "3000"
-  # Add more as needed
+  BASE_PATH: "/quizix/"     # must match the ingress path prefix
+  TRUSTED_PROXY_IPS: ""     # ingress controller pod IP(s), for per-client rate limits
+  PUBLIC_ORIGIN: ""         # origin clients reach, used in the join QR code
+  # ALLOWED_ORIGINS: "https://quiz.example.com"
 ```
+
+The comments in the manifest explain each value. `.env.example` lists every
+variable the server reads.
 
 ### Storage
 
@@ -135,16 +153,23 @@ Deploy Quizix Pro with its own ingress:
 kubectl apply -f 02-quizix-ingress.yaml
 ```
 
-Access at: **`http://your-cluster-ip/quiz`**
+Access at: **`http://your-cluster-ip/quizix/`**
 
 This creates a separate ingress in the `quizix` namespace with:
-- Path: `/quiz` → Quizix Pro
+- Path: `/quizix(/|$)(.*)` → Quizix Pro, rewritten to `/$2` (the app serves at the root)
 - Increased timeout (3600s) for Socket.IO WebSocket connections
 - Session affinity for sticky sessions
 
-### Option 2: Integrate into Existing lab-apps Ingress (Recommended)
+### Option 2: Integrate into Existing lab-apps Ingress
 
-Add Quizix Pro to your existing `lab-apps` ingress:
+Add Quizix Pro to your existing `lab-apps` ingress.
+
+**Caution:** the app expects the ingress to strip the path prefix, and the
+prefix must equal `BASE_PATH`. The plain `Prefix` path below forwards
+`/quiz/...` unchanged, so it does not work as written. Stripping the prefix
+needs the `rewrite-target` annotation, and in ingress-nginx that annotation
+applies to every path of the Ingress, including `/lab` and `/api`. Option 1
+avoids this.
 
 **1. Change namespace to `lab` in `01-quizix-pro.yaml`:**
 ```bash
@@ -257,7 +282,8 @@ If using private registry:
 
 - Verify session affinity is enabled in Service (it is by default)
 - Check that WebSocket connections can reach the pod
-- If using Ingress, ensure WebSocket annotations are uncommented
+- If using Ingress, check that the WebSocket and timeout annotations from `02-quizix-ingress.yaml` are present (they are active by default)
+- If `PUBLIC_ORIGIN` is a public hostname, set `ALLOWED_ORIGINS` to the same origin
 
 ## Cleanup
 
@@ -269,7 +295,10 @@ kubectl delete -f 01-quizix-pro.yaml
 kubectl delete namespace quizix
 ```
 
-**Note:** Deleting the namespace will also delete all PVCs and data!
+**Note:** Both commands delete all PVCs and data. `01-quizix-pro.yaml` contains
+the Namespace and the PVCs, so deleting from the file removes them too. To keep
+the data, use `./cleanup.sh`, which deletes the Deployment, Service and
+ConfigMap and preserves the PVCs by default.
 
 ## Scaling
 
@@ -301,6 +330,6 @@ This deployment matches your cluster's patterns:
 - ✅ Simple label format `{ app: name }`
 - ✅ `envFrom` with ConfigMap
 - ✅ `ReadWriteOnce` access mode
-- ✅ `imagePullPolicy: IfNotPresent`
+- ✅ `imagePullPolicy: Always` (image on ghcr.io, so no Docker Hub rate limit)
 - ✅ Includes session affinity for Socket.IO
 - ✅ HTTP health checks (/health, /ready)

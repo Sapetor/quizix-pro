@@ -29,7 +29,9 @@ the same session are struck through in the sections below.
   decoding and non-PPTX input (400). `npm audit --omit=dev` now reports 3
   moderate: sprintf-js through argparse through mammoth. Accepted: only
   mammoth's CLI (`node_modules/mammoth/bin/mammoth`) requires argparse; the
-  server uses the library API.
+  server uses the library API. Note 2026-11-12: pdfjs-dist is back as a direct
+  dependency (`^6.4.299`) since 1322045, which replaced pdf-parse; that commit
+  states 6.4.299 is outside the GHSA-hq66-cqwq-w95j range.
 - [x] ~~**`package-lock.json` changed beyond the audited production packages.**~~
   DONE 2026-10-09: dev-dependency movement kept (@babel/* 7.29, postcss
   8.5.28, js-yaml 4.3.2, others). `npm run build` was rerun; the only CSS
@@ -56,9 +58,13 @@ the same session are struck through in the sections below.
   deleted and regenerated (45 + 7 PNGs); `npm run test:visual` passes 7/7
   without `--update-snapshots`. Only 8 of the 52 PNGs were opened. No phone
   editor baseline exists in either spec.
-- [ ] **Bump `CACHE_VERSION` in `public/sw.js` on deploy.** `socket-manager.js`
+- [x] ~~**Bump `CACHE_VERSION` in `public/sw.js` on deploy.** `socket-manager.js`
   changed (rejoin fix). Not bumped here; the value comes from a
-  server-replaced placeholder.
+  server-replaced placeholder.~~ CLOSED 2026-11-12 (no manual step needed).
+  `server.js` replaces `__CACHE_VERSION__` with `ASSET_VERSION`
+  (`Date.now()` at startup) on every `/sw.js` request, so each server restart
+  invalidates the cache; the static `BUILD_STAMP` fallback was refreshed by
+  `npm run build` in cfe5705.
 - [ ] **Lobby disconnect removes the player immediately.** A player who loses
   the connection in the lobby cannot rejoin (`rejoin-failed`), and the host
   gets no `host-disconnected` broadcast in the lobby. The reconnection overlay

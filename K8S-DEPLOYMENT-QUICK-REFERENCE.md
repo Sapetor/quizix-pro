@@ -13,6 +13,10 @@ npm run build:prod
 - ✅ Updates asset version numbers
 - ✅ Ensures users get latest code
 
+The Docker build stage also runs `npm run build:prod`, and the server stamps
+`index.html` and `sw.js` with a new `ASSET_VERSION` on every start, so a pod
+restart alone invalidates client caches. See `DEPLOYMENT.md`.
+
 ### 2. Verify Build Output
 ```
 ✓ sw.js: v20260122-xxx → v20260123-yyy
@@ -37,9 +41,11 @@ git push
 6. User sees **latest version** ✨
 
 ### Version Display
-- Bottom-right corner shows current version
-- Format: `v20260123-c37241d` (date + git hash)
-- Visible on main menu to verify deployments
+- The landing page footer shows the current version (`#app-version`)
+- Value: the server's `ASSET_VERSION`, a base-36 timestamp generated at each
+  server start, not a date + git hash; `dev` if `index.html` was served
+  without the server's substitution
+- Changes on every pod restart, so it confirms a restart, not a specific build
 
 ## Cache Strategy
 
@@ -47,14 +53,18 @@ git push
 |------|---------|----------|--------------|
 | index.html | ❌ No | 0 | Always fresh |
 | sw.js | ❌ No | 0 | Always fresh |
-| CSS/JS | ✅ Yes | 24-48h | Via version param |
-| Images | ✅ Yes | 1-2h | Via ETag |
+| CSS/JS | HTTPS: revalidate; HTTP: `no-store` | 0 | Via version param + ETag |
+| Images | HTTPS only | 1h desktop, 2h mobile | Via ETag |
 
 ## Troubleshooting
 
 ### ❌ Users see old version after deployment
 
-**Cause**: Forgot to run `npm run build:prod`
+**Cause**: Image not rebuilt and pushed, or pod not restarted. The deployment
+uses `ghcr.io/sapetor/quizix-pro:latest` with `imagePullPolicy: Always`, so a
+new build reaches the cluster only through build, push and
+`kubectl rollout restart deployment/quizix-pro -n quizix`
+(see `k8s/TROUBLESHOOTING.md`). A stale CSS bundle in git also shows up here.
 
 **Fix**:
 ```bash
@@ -69,19 +79,23 @@ git push
 
 **Check current version**:
 ```bash
-grep CACHE_VERSION public/sw.js
+# Build-time fallback stamp
+grep "BUILD_STAMP =" public/sw.js
+
+# Live per-start version served by the pod
+curl -s https://your-domain.com/quizix/sw.js | grep "INJECTED_VERSION ="
 ```
 
-Should show: `v20260123-xxxxx` (recent date)
+The first should show `v20260123-xxxxx` (recent date).
 
 ### ❌ Hard refresh still required
 
 **Verify cache headers**:
 ```bash
-curl -I https://your-domain.com/ | grep Cache-Control
+curl -I https://your-domain.com/quizix/ | grep Cache-Control
 ```
 
-Should show: `Cache-Control: no-cache, no-store, must-revalidate`
+Should show: `Cache-Control: no-store, no-cache, must-revalidate, private`
 
 ## Files Changed in This Update
 
@@ -100,42 +114,42 @@ Should show: `Cache-Control: no-cache, no-store, must-revalidate`
 
 2. **Check version display**:
    - Open http://localhost:3000
-   - Look at bottom-right corner
-   - Should show: `v20260123-xxxxxx`
+   - Look at the landing page footer
+   - Should show the server's per-start `ASSET_VERSION`
 
 3. **Test cache behavior**:
    - Open DevTools → Network
    - Refresh page
-   - Check `index.html` → `no-cache, no-store`
-   - Check `sw.js` → `no-cache`
+   - Check `index.html` → `no-store, no-cache, must-revalidate, private`
+   - Check `sw.js` → `no-store, no-cache, must-revalidate, private`
 
 ## K8s-Specific Notes
 
 ### Ingress Path
-If using path-based routing (e.g., `/quizix/`):
+If using path-based routing (e.g., `/quizix/`), set it in the `quizix-config`
+ConfigMap in `k8s/01-quizix-pro.yaml` (the pod does not read a `.env` file):
 
-**.env file:**
-```bash
-BASE_PATH=/quizix/
+```yaml
+BASE_PATH: "/quizix/"
 ```
 
 ### Health Checks
 ```bash
-# Liveness probe
-curl https://your-domain.com/health
+# Liveness probe (the ingress strips the /quizix prefix)
+curl https://your-domain.com/quizix/health
 
 # Readiness probe
-curl https://your-domain.com/ready
+curl https://your-domain.com/quizix/ready
 ```
 
 ### View Logs
 ```bash
-kubectl logs -l app=quizix-pro --tail=50 -f
+kubectl logs -n quizix -l app=quizix-pro --tail=50 -f
 ```
 
 ### Rollback
 ```bash
-kubectl rollout undo deployment/quizix-pro
+kubectl rollout undo deployment/quizix-pro -n quizix
 ```
 
 ## Success Indicators
@@ -143,7 +157,7 @@ kubectl rollout undo deployment/quizix-pro
 ✅ Build completes without errors
 ✅ Version number changes in sw.js
 ✅ Asset versions increment in index.html
-✅ Version displays in UI bottom-right
+✅ Version displays in the landing page footer
 ✅ No hard refresh needed after deployment
 ✅ Service worker auto-reloads on version change
 
@@ -157,16 +171,16 @@ git commit -m "build: production" && \
 git push
 
 # Check version
-grep CACHE_VERSION public/sw.js
+grep "BUILD_STAMP =" public/sw.js
 
 # Test locally
 npm start
 
 # View K8s pods
-kubectl get pods -l app=quizix-pro
+kubectl get pods -n quizix -l app=quizix-pro
 
 # Watch deployment
-kubectl rollout status deployment/quizix-pro
+kubectl rollout status deployment/quizix-pro -n quizix
 ```
 
 ---

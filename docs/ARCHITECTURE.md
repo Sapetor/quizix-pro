@@ -31,11 +31,19 @@ quizix-pro/
 │   │   ├── audio/         # Sound effects
 │   │   ├── ai/            # AI question generation
 │   │   ├── services/      # Frontend services
+│   │   ├── practice/      # Single-player practice mode
+│   │   ├── events/        # Local/socket event bus adapters
 │   │   └── utils/         # Utilities and helpers
 │   ├── images/            # Media assets
 │   ├── uploads/           # User-uploaded quiz images
 │   └── index.html         # SPA entry point
 ├── services/              # Backend Node.js services
+├── routes/                # Express routers (quiz management, uploads, AI, auth, health, manim)
+├── socket/                # Socket.IO event handlers (registered from socket/index.js)
+├── middleware/            # Express middleware (client IP, user session, caching, static files)
+├── config/                # Resource limits (config/limits.js)
+├── utils/                 # Server helpers (shutdown, rate limiters, password hashing, PDF worker)
+├── scripts/               # Build helpers (cache-bust.js)
 ├── tests/                 # Test suites (unit + integration)
 ├── quizzes/              # Saved quiz files (JSON)
 ├── results/              # Quiz game results archives
@@ -51,18 +59,27 @@ quizix-pro/
 
 ### Core Server (server.js)
 
-~1,229 lines of production-grade Express server:
-- Socket.IO real-time multiplayer (100+ event handlers)
-- RESTful API with 15+ endpoints
-- Multer file upload with security validation
+~885 lines. `server.js` creates the services and wires middleware, routers and Socket.IO; most logic lives elsewhere:
+- Socket.IO real-time multiplayer: handlers in `socket/` (game, player, gameplay and consensus events)
+- REST API: routers in `routes/` plus `POST /api/save-quiz` and `GET /api/ping` in `server.js`
+- Multer file upload with security validation (`routes/file-uploads.js`)
 - Compression middleware for mobile optimization
-- AI integration proxy (Claude, Ollama, HuggingFace)
+- AI integration proxy for Claude, Gemini and Ollama (`routes/ai-generation.js`); OpenAI is called directly from the browser
+
+Other server behaviour:
+- `app.set('trust proxy', 'loopback')`: `req.ip` trusts only a loopback proxy such as a co-located Cloudflare tunnel.
+- `middleware/client-ip.js` (`getClientIp`) is the single source of the caller IP for rate limiting. It reads `CF-Connecting-IP` only when the direct peer is loopback or listed in `TRUSTED_PROXY_IPS`, otherwise it falls back to `req.ip`.
+- Debug and diagnostic endpoints (`/metrics`, `/debug/config`, `/api/debug/files`, `/api/debug/directory` and the `/debug` static tools) are registered only when `ENABLE_DEBUG_ROUTES=true`.
+- Document text extraction (`routes/file-uploads.js`): PDF uses `pdfjs-dist` inside a worker thread (`utils/pdf-text-worker.mjs`) with a heap cap, a timeout, at most 2 concurrent workers and one in-flight request per client; PPTX is read with `jszip`; DOCX uses `mammoth`.
+- `/sw.js` and `index.html` are served through routes that inject a per-start `ASSET_VERSION` for cache busting.
 
 ### Backend Services
 
 | Service | File | Responsibility |
 |---------|------|----------------|
 | QuizService | `services/quiz-service.js` | Quiz CRUD operations |
+| Game | `services/game.js` | Per-game state, timers, answer recording |
+| ScoringService | `services/scoring-service.js` | Points, time bonus, consensus team points |
 | ResultsService | `services/results-service.js` | Results management, CSV/JSON export |
 | QRService | `services/qr-service.js` | QR code generation with caching |
 | CORSValidationService | `services/cors-validation-service.js` | CORS for local/cloud |
@@ -70,6 +87,11 @@ quizix-pro/
 | GameSessionService | `services/game-session-service.js` | Game lifecycle, PIN management |
 | PlayerManagementService | `services/player-management-service.js` | Player join/leave handling |
 | QuestionFlowService | `services/question-flow-service.js` | Answer submission, statistics |
+| ConsensusFlowService | `services/consensus-flow-service.js` | Consensus mode proposals and locking |
+| SocketBatchService | `services/socket-batch-service.js` | Batches high-frequency socket emits |
+| UserService / SessionService | `services/user-service.js`, `services/session-service.js` | Optional user accounts and login sessions |
+| ManimRenderService | `services/manim-render-service.js` | Manim animation rendering |
+| UploadGCService | `services/upload-gc-service.js` | Cleanup of unreferenced uploads |
 | MetadataService | `services/metadata-service.js` | Folders, quiz metadata, passwords |
 | MetricsService | `services/metrics-service.js` | Prometheus metrics |
 
@@ -89,7 +111,8 @@ quizix-pro/
 **File Management:**
 - `GET /api/quiz-tree` - Get folder/quiz tree structure
 - `POST /api/folders` - Create folder
-- `PATCH /api/folders/:id` - Rename folder
+- `PATCH /api/folders/:id/rename` - Rename folder
+- `PATCH /api/folders/:id/move` - Move folder
 - `DELETE /api/folders/:id` - Delete folder
 - `POST /api/unlock` - Verify password, get session token
 
@@ -98,7 +121,9 @@ quizix-pro/
 - `GET /ready` - Kubernetes readiness probe
 - `POST /upload` - Secure image upload
 - `GET /api/qr/:pin` - Generate QR code
-- `POST /api/claude/generate` - AI question generation proxy
+- `POST /api/claude/generate`, `POST /api/gemini/generate`, `/api/ollama/*` - AI question generation proxy
+- `POST /api/extract-pdf`, `/api/extract-docx`, `/api/extract-pptx` - Document text extraction
+- `POST /api/auth/signup`, `/login`, `/logout`, `GET /api/auth/me` - Optional user accounts
 
 See `docs/API_REFERENCE.md` for complete API documentation.
 
@@ -110,11 +135,11 @@ See `docs/API_REFERENCE.md` for complete API documentation.
 
 | Manager | File | Lines | Responsibility |
 |---------|------|-------|----------------|
-| QuizGame | `public/js/core/app.js` | 1,193 | Application initialization |
-| GameManager | `public/js/game/game-manager.js` | 1,772 | Game flow, player interaction |
+| QuizGame | `public/js/core/app.js` | 1,712 | Application initialization |
+| GameManager | `public/js/game/game-manager.js` | 1,714 | Game flow, player interaction |
 | QuizManager | `public/js/quiz/quiz-manager.js` | - | Quiz creation, editing |
 | UIManager | `public/js/ui/ui-manager.js` | - | Screen navigation, modals |
-| SocketManager | `public/js/socket/socket-manager.js` | 633 | WebSocket event handling |
+| SocketManager | `public/js/socket/socket-manager.js` | 1,606 | WebSocket event handling |
 | SettingsManager | `public/js/settings/settings-manager.js` | - | Theme, settings persistence |
 | SoundManager | `public/js/audio/sound-manager.js` | - | Audio effects |
 
@@ -130,6 +155,11 @@ Located in `public/js/game/modules/`:
 | `timer-manager.js` | Question timer logic |
 | `question-renderer.js` | Dynamic question display |
 | `power-up-manager.js` | Power-up logic and UI |
+| `answer-reveal-manager.js` | Correct-answer reveal and player feedback |
+| `leaderboard-manager.js` | Leaderboard display |
+| `statistics-manager.js` | Host answer statistics and score breakdown |
+| `consensus-manager.js` | Consensus mode UI |
+| `discussion-manager.js` | Discussion phase and chat UI |
 
 ### Utility Modules
 
@@ -153,7 +183,7 @@ Located in `public/js/ai/`:
 
 | Module | Purpose |
 |--------|---------|
-| `generator.js` | AI question generation (Claude, Ollama, HuggingFace) |
+| `generator.js` | AI question generation (Claude, Gemini, OpenAI, Ollama) |
 | `prompts.js` | AI prompt templates |
 | `generator-templates.js` | HTML template functions |
 
@@ -181,12 +211,18 @@ Located in `public/js/ai/`:
 | `game.css` | Game-specific styling |
 | `components.css` | Reusable component styles |
 | `animations.css` | Keyframe animations and transitions |
+| `utilities.css` | `.hidden` / `.visible-*` classes, imported last in `layer(utilities)` |
+| `mobile-gate.css` | Phone join-only gate (see `docs/MOBILE_JOIN_ONLY.md`) |
+
+Other modules (header, modals, preview, toolbar, landing, auth, and more) are listed in the `@import` order in `main.css`.
 
 ### Utility Classes
 
-Defined in `base.css`:
+Visibility classes are in `utilities.css` (imported last, in `layer(utilities)`):
 - `.hidden` - Hide element
-- `.visible`, `.visible-flex` - Show element
+- `.visible-flex`, `.visible-block`, `.visible-inline-block` - Show element
+
+Defined in `base.css`:
 - `.correct-answer-highlight` - Correct answer styling
 - `.host-correct-answer` - Host view correct answer
 - `.scale-pulse` - Animation class
@@ -237,6 +273,8 @@ Game class tracks and cleans up:
 - `advanceTimer`
 - `earlyEndTimer`
 - `startTimer`
+- `leaderboardTimer`
+- `answerCountTimer`
 
 ### Best Practices
 
@@ -275,7 +313,8 @@ Game class tracks and cleans up:
 
 - AES-GCM encryption for client-side API keys
 - Server-side API key support via environment variables
-- Rate limiting on Socket.IO events (10/second/client)
+- Rate limiting on Socket.IO events (10/second/client by default)
+- HTTP rate limits key on `getClientIp()` (`middleware/client-ip.js`)
 
 ---
 
@@ -284,14 +323,14 @@ Game class tracks and cleans up:
 ### Unit Tests
 
 Located in `tests/unit/`:
-- 268 tests across 10 test suites
-- ~53% statement coverage
-- Run with `npx jest tests/unit/`
+- 1,307 tests across 75 test suites (measured 2026-11-12)
+- Coverage is collected over `services/` and `socket/`; thresholds are in `jest.config.js`
+- Run with `npm test`
 
 ### Integration Tests
 
-- Playwright tests in `tests/`
-- Debug tools at `/debug/ui-debug-showcase.html`
+- Playwright tests in `tests/` and `tests/e2e/` (visual regression: `npm run test:visual`)
+- Debug tools at `/debug/ui-debug-showcase.html` (only with `ENABLE_DEBUG_ROUTES=true`)
 
 ### Test Considerations
 
@@ -310,8 +349,8 @@ Located in `tests/unit/`:
 
 | Event | Direction | Purpose |
 |-------|-----------|---------|
-| `create-game` | Client→Server | Host creates game |
-| `join-game` | Client→Server | Player joins |
+| `host-join` | Client→Server | Host creates game |
+| `player-join` | Client→Server | Player joins |
 | `start-game` | Client→Server | Host starts game |
 | `submit-answer` | Client→Server | Player submits answer |
 | `next-question` | Client→Server | Advance to next question |
@@ -335,7 +374,7 @@ EN, ES, FR, DE, IT, PT, PL, JA, ZH (9 languages)
 ### Translation Files
 
 Located in `public/js/utils/translations/`:
-- 200+ translation keys
+- About 1,100 translation keys per locale
 - Lazy loading
 - Fallback to English for missing keys
 

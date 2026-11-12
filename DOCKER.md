@@ -45,29 +45,28 @@ This guide provides instructions for deploying Quizix Pro in a Docker container 
    `.env.example` is the complete annotated list of variables the server
    reads. Anything not listed there is ignored.
 
+   The image does not copy `.env` and neither compose file uses `env_file`,
+   so Compose reads `.env` only to fill `${...}` placeholders in the compose
+   file: `OLLAMA_URL`, `OLLAMA_ENABLED` and `MANIM_ENABLED` in
+   `docker-compose.yml`, `OLLAMA_ENABLED` and `MANIM_ENABLED` in
+   `docker-compose.server.yml`. Any other variable, including the ones above,
+   must be added to the service's `environment:` block to reach the app.
+   `TRUSTED_PROXY_IPS=172.17.0.1` applies to the bridge-network
+   `docker-compose.server.yml`; with the host networking of
+   `docker-compose.yml`, a `cloudflared` on the same host connects over
+   loopback and needs no entry.
+
 ### Network Configuration
 
-The Docker setup creates a custom bridge network that allows:
+`docker-compose.yml` (used by `docker-build.sh`) runs the container with
+`network_mode: host`. The container shares the host's network stack, listens
+directly on host port 3000, and detects the real LAN IP for QR codes. There is
+no custom bridge network and no `ports:` mapping in this file.
 
-1. **Host network access on port 3000**
-2. **Isolated container environment**
-
-#### Default Network Settings
-- Subnet: `172.20.0.0/16`
-- Gateway: `172.20.0.1`
-- Bridge name: `quizix-bridge`
-
-#### Customizing Network Settings
-
-Edit `docker-compose.yml`:
-```yaml
-networks:
-  quizix-network:
-    ipam:
-      config:
-        - subnet: 192.168.100.0/24  # Your custom subnet
-          gateway: 192.168.100.1
-```
+`docker-compose.server.yml` uses the default Docker bridge (`network_mode:
+"bridge"`) and publishes `3000:3000`. Behind a bridge, the app sees requests
+from the bridge gateway rather than the client, which is why that file shows
+`TRUSTED_PROXY_IPS` and `PUBLIC_ORIGIN` as commented examples.
 
 ## Deployment Commands
 
@@ -82,9 +81,14 @@ networks:
 # Check status
 ./docker-build.sh status
 
-# Check the running container's /health endpoint
+# Wait for the running container to answer
 ./docker-build.sh test
 ```
+
+`deploy` and `test` probe `/api/ping` with `docker exec quizix-pro-app curl`.
+The Dockerfile installs no `curl`, so that probe can report a timeout even
+when the app is up. Check with `curl http://localhost:3000/health` from the host
+instead.
 
 ### Manual Docker Commands
 ```bash
@@ -179,8 +183,11 @@ The container includes built-in health checks:
 # Check container health
 docker ps --format "table {{.Names}}\t{{.Status}}"
 
-# Manual health check
-docker exec quizix-pro-app curl -f http://localhost:3000/api/ping
+# Manual health check (from the host)
+curl -f http://localhost:3000/health
+
+# Same check from inside the container (the Dockerfile installs no curl)
+docker exec quizix-pro-app node -e "require('http').get('http://localhost:3000/health', r => process.exit(r.statusCode === 200 ? 0 : 1))"
 ```
 
 ### Log Analysis
@@ -191,10 +198,9 @@ docker-compose logs -f quizix-pro
 
 # Last 100 lines
 docker-compose logs --tail=100 quizix-pro
-
-# Application-specific logs
-docker exec quizix-pro-app cat /app/logs/application.log
 ```
+
+The app logs to stdout/stderr only; there is no log file inside the container.
 
 ### Performance Monitoring
 
@@ -217,9 +223,13 @@ docker exec quizix-pro-app df -h
 sudo lsof -i :3000
 sudo netstat -tlnp | grep :3000
 
-# Change port in docker-compose.yml:
+# docker-compose.server.yml (bridge): change the published host port
 ports:
   - "3001:3000"  # Use port 3001 instead
+
+# docker-compose.yml (host networking): there is no port mapping.
+# Set PORT=3001 in the environment block, and change the port in its
+# healthcheck command, which is hard-coded to 3000.
 ```
 
 #### 2. Permission Issues
@@ -233,7 +243,9 @@ docker exec quizix-pro-app id
 
 #### 3. Memory Issues
 ```bash
-# Increase memory limit in docker-compose.yml:
+# docker-compose.yml sets mem_limit: 2g and cpus: "2"; raise those keys.
+
+# docker-compose.server.yml uses the deploy block:
 deploy:
   resources:
     limits:
@@ -246,8 +258,12 @@ deploy:
 
 1. **Restrict CORS origins:**
    ```bash
-   CORS_ORIGINS=http://192.168.1.*  # Only local network
+   ALLOWED_ORIGINS=https://quiz.example.com  # exact origins, comma-separated
    ```
+   Entries are exact origins; wildcards are not supported. Local-network
+   origins (localhost, 10.x, 172.16-31.x, 192.168.x, `*.local`) on ports
+   3000, 3001, 8000, 8080 or the server's own `PORT` stay allowed. Setting the
+   variable drops the built-in cloud-platform wildcards.
 
 2. **Use HTTPS in production:**
    ```yaml
@@ -260,9 +276,9 @@ deploy:
 ### Application Security
 
 1. **Server-side API keys (recommended for production):**
-   ```bash
-   # In .env file - key never exposed to clients
-   CLAUDE_API_KEY=sk-ant-xxxxx
+   ```yaml
+   # In the compose file's environment: block - key never exposed to clients
+   - CLAUDE_API_KEY=sk-ant-xxxxx
    ```
 
 2. **Built-in rate limiting:** Socket.IO events limited to 10/second per client
@@ -271,40 +287,20 @@ deploy:
 
 ### Container Security
 
-1. **Non-root user:** ✅ Already configured
+1. **Non-root user:** ✅ Already configured (`nodejs`, uid/gid 1001)
 2. **Read-only filesystem:** Optional
 3. **Security scanning:**
    ```bash
-   docker scan quizix-pro:latest
+   docker scout cves quizix-pro:latest
    ```
 
 ## Scaling and Load Balancing
 
-### Multiple Instances
-
-```bash
-# Scale to 3 instances
-docker-compose up --scale quizix-pro=3 -d
-
-# With load balancer
-docker-compose -f docker-compose.yml -f docker-compose.scale.yml up -d
-```
-
-### Load Balancer Configuration
-
-Create `docker-compose.scale.yml`:
-```yaml
-version: '3.8'
-services:
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - quizix-pro
-```
+Run a single instance. Game state (active games, players) is held in process
+memory and Socket.IO has no shared adapter, so a second instance would not see
+the first one's games. Both compose files also set a fixed `container_name`,
+and `docker-compose.yml` binds host port 3000 directly, so
+`docker-compose up --scale` fails with either file.
 
 ## Maintenance
 
@@ -344,9 +340,6 @@ docker-compose down -v
 # Container shell access
 docker exec -it quizix-pro-app sh
 
-# Network inspection
-docker network inspect quizix-pro_quizix-network
-
 # Volume inspection
 docker volume inspect quizix-pro_quizzes-data quizix-pro_results-data quizix-pro_uploads-data
 
@@ -356,4 +349,4 @@ docker image inspect quizix-pro:latest
 
 ---
 
-**Note:** This Docker setup is optimized for local network deployment. For internet-facing deployments, additional security measures (SSL certificates, authentication, rate limiting) should be implemented.
+**Note:** This Docker setup is optimized for local network deployment. For internet-facing deployments, additional security measures (SSL certificates, authentication, rate limiting) should be implemented. See "Behind a reverse proxy or Cloudflare Tunnel" in `DEPLOYMENT.md` for the settings a public hostname needs and the security items still open.

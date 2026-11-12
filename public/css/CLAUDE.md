@@ -9,15 +9,26 @@ Quizix Pro uses a modular CSS architecture with the following structure:
 ```
 public/css/
 ├── main.css - Master import file that loads all modules
-├── base.css - CSS variables, reset, typography (Inter font)
+├── main.bundle.css - Built bundle (npm run build), the file the page loads
+├── variables.css - Design tokens (CSS variables, --option-N colors)
+├── base.css - Reset, typography (Inter font), small utility classes
+├── header.css - App header
 ├── layout.css - Grid systems, containers, host layouts
 ├── components.css - Buttons, inputs, cards, form elements
+├── components/code-blocks.css, components/syntax-highlighting.css - Code blocks
 ├── modals.css - Modal dialog systems and overlays
+├── file-manager.css - Quiz file browser
 ├── game.css - Game screens, lobby, leaderboard styling
 ├── preview.css - Live preview system and split-screen layout
 ├── toolbar.css - Left toolbar navigation and controls
-└── responsive.css - Media queries and mobile optimizations
+├── toasts.css, onboarding.css - Toasts and onboarding tour
+├── responsive.css - Media queries and mobile optimizations
+├── animations.css, analytics.css, auth.css, landing.css, app-screens.css
+├── mobile-gate.css - Phone join-only gate (docs/MOBILE_JOIN_ONLY.md)
+└── utilities.css - .hidden / .visible-* classes
 ```
+
+The `@import` order in `main.css` is the load order. Every module except `utilities.css` is imported into `layer(app)`; `utilities.css` is imported last into `layer(utilities)`. For normal declarations the later `utilities` layer wins. For `!important` declarations the layer order reverses, so an `!important` rule in `app` beats an `!important` rule in `utilities` (`mobile-gate.css` relies on this).
 
 ## Critical CSS Specificity Issues
 
@@ -83,9 +94,9 @@ public/css/
 ```
 
 **Key Files with Theme Selectors**:
-- `game.css` lines 497-515: Dark mode code block styles
-- `game.css` lines 455-493: Light mode code block styles
-- `responsive.css` lines 1352-1371: Mobile code block overrides
+- `game.css` lines ~511-550: Dark mode code block styles
+- `game.css` lines ~468-508: Light mode code block styles
+- `responsive.css` lines ~895-913: Mobile code block overrides
 
 ## Checkbox Options Architecture
 
@@ -139,6 +150,7 @@ Multiple correct questions should display as **simple checkbox lists**, NOT styl
 2. **Multiple Correct**: Simple checkbox lists (`.checkbox-option`)
 3. **True/False**: Styled buttons (`.tf-option`)
 4. **Numeric**: Input field
+5. **Ordering**: Numbered item tiles (`.ordering-display-item`)
 
 ### Colorful Preview System (WCAG AA Accessible)
 The preview system includes colorful options for visual distinction.
@@ -190,12 +202,12 @@ CSS changes may not appear due to browser caching. The project uses version-base
 
 **In index.html**:
 ```html
-<link rel="stylesheet" href="css/main.bundle.css?v=11.6">
+<link rel="stylesheet" href="css/main.bundle.css?v=NNN">
 ```
 
-**Important**: Update the version number when making CSS changes:
-1. Edit `public/index.html` (two places: preload and noscript)
-2. Increment version (e.g., `v=11.6` to `v=11.7`)
+No manual version edit is needed:
+1. `npm run build` runs `scripts/cache-bust.js`, which increments the `?v=` numbers in `public/index.html` and refreshes `BUILD_STAMP` in `public/sw.js`
+2. At runtime the server rewrites every `?v=NN` in `index.html` to a per-start `ASSET_VERSION`, so restarting the server also busts the cache
 3. Test with hard refresh or incognito window
 
 ## File Organization Best Practices
@@ -204,7 +216,7 @@ CSS changes may not appear due to browser caching. The project uses version-base
 - Form elements (inputs, buttons, checkboxes)
 - Card layouts
 - UI component styling
-- Checkbox option overrides (due to specificity requirements)
+- Checkbox option base styles (the nth-child color overrides are in `preview.css`)
 
 ### preview.css Focus  
 - Live preview modal
@@ -215,7 +227,7 @@ CSS changes may not appear due to browser caching. The project uses version-base
 ### Avoid Duplication
 - Don't duplicate selectors across files
 - Use `main.css` imports to control load order
-- Components.css loads after preview.css to allow overrides
+- `preview.css` loads after `components.css` (see `main.css`), so a preview rule wins over a component rule of equal specificity
 
 ## Testing Checklist
 
@@ -274,7 +286,7 @@ When modifying checkbox styling:
 1. Check browser console for MathJax errors
 2. Verify `window.MathJax` is loaded
 3. Look for DOM timing issues (elements updated after MathJax call)
-4. Use enhanced retry mechanism in `renderMathJaxWithRetry()`
+4. MathJax rendering is queued through `SimpleMathJaxService` (`public/js/utils/simple-mathjax-service.js`, `render()` / `renderAll()`); the preview calls it from `PreviewRenderer.renderMathJaxForPreview()`
 
 ### Question Navigation Issues
 1. Check `currentPreviewQuestion` index bounds
@@ -289,7 +301,7 @@ When modifying checkbox styling:
 
 ## Maintenance Notes
 
-- Checkbox option styling must be maintained in `components.css` due to specificity requirements
+- Checkbox option styling is split between `components.css` (base) and `preview.css` (nth-child overrides); keep their specificity matched
 - Any changes to preview colorful options must include corresponding overrides for checkbox options
 - Height adjustments should be made via padding changes, not min-height or height properties
 - Always test both split-screen and modal preview modes
@@ -403,12 +415,12 @@ When a UI element disappears after an action:
 
 | File | Contains |
 |------|----------|
-| `public/index.html` | Initial question template (lines ~880-980) |
+| `public/index.html` | Initial question template (`.question-item` from ~line 1421) |
 | `public/js/utils/question-utils.js` | JS template for new questions |
 | `public/css/components.css` | `.question-meta` grid layout |
-| `public/css/responsive.css` | Mobile `.question-meta` overrides |
+| `public/css/responsive.css`, `public/css/app-screens.css` | Mobile and editorial-screen `.question-meta` overrides |
 | `public/css/preview.css` | Preview panel visibility rules |
-| `public/css/layout.css` | `always-preview` mode rules |
+| `public/css/layout.css`, `public/css/app-screens.css` | `always-preview` mode rules |
 
 ## Service Worker Cache Issues
 
@@ -422,9 +434,11 @@ When a UI element disappears after an action:
 
 But the browser still applies the old styles.
 
-**Root Cause**: Service Worker caching. The browser's service worker (`public/sw.js`) caches CSS files aggressively. Even after rebuilding the bundle, browsers serve the cached version.
+**Root Cause**: Service Worker caching. In Feb 2026 the service worker (`public/sw.js`) served CSS from its cache, so browsers kept the old bundle after a rebuild. It now fetches local static assets network-first and uses the cache only as an offline fallback; stale CSS today usually means an old service worker still controls the page or the browser HTTP cache served the file.
 
-### Solution: Bump CACHE_VERSION
+### Solution: Rebuild and restart
+
+Since March 2026 `CACHE_VERSION` in `public/sw.js` is not edited by hand. The server replaces the `__CACHE_VERSION__` placeholder with a per-start `ASSET_VERSION` on every `/sw.js` request, so each server restart installs a new service worker and purges the old cache. `BUILD_STAMP` is only the fallback for a statically served `sw.js`.
 
 After any CSS changes:
 
@@ -433,11 +447,7 @@ After any CSS changes:
    npm run build
    ```
 
-2. **Update service worker cache version** in `public/sw.js`:
-   ```javascript
-   // Change this to force cache invalidation
-   const CACHE_VERSION = 'v20260205-your-change-description';
-   ```
+2. **Restart the server** so `/sw.js` and `index.html` carry a new `ASSET_VERSION`
 
 3. **Hard refresh** the browser (Ctrl+Shift+R) or test in incognito
 
@@ -446,8 +456,8 @@ After any CSS changes:
 When CSS changes don't apply:
 
 1. [ ] Bundle rebuilt? (`npm run build`)
-2. [ ] Cache version bumped? (check `public/sw.js` line 13)
-3. [ ] Browser showing new version? (check footer version string)
+2. [ ] Server restarted after the rebuild? (new `ASSET_VERSION` in the log line `Asset cache-bust version`)
+3. [ ] Browser showing new version? (check the footer version string `#app-version-text`, or the `app-version` meta tag in the served `index.html`)
 4. [ ] Tried hard refresh? (Ctrl+Shift+R)
 5. [ ] Tried incognito window?
 
@@ -459,6 +469,6 @@ When CSS changes don't apply:
 - But browser kept showing `flex-direction: column`
 - Padding from the same rule WAS being applied (partial cache issue)
 
-**Fix:** Updated `CACHE_VERSION` from `v20260204-type-selector-fix` to `v20260205-question-header-fix`
+**Fix (at the time):** Updated `CACHE_VERSION` from `v20260204-type-selector-fix` to `v20260205-question-header-fix`. With the current server-injected version, a server restart has the same effect.
 
-**Key insight:** Service worker cache can cause partial application of CSS rules - some properties update while others don't. Always bump the version after CSS changes.
+**Key insight:** Service worker cache can cause partial application of CSS rules - some properties update while others don't. Always rebuild and restart after CSS changes.

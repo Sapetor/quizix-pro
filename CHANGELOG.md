@@ -5,9 +5,13 @@ All notable changes to Quizix Pro will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-10-09
+## [Unreleased] - 2026-11-12
 
 ### Security
+- `GET /api/quiz/:filename` now requires the unlock bearer token for password-protected quizzes; before, it ignored protection. The client records unlock tokens in APIHelper and attaches them to quiz downloads (62ffbf7).
+- A host session is reused only with the secret `hostSessionToken` sent to the host in `game-created`. Before, the session ID alone was enough, and players receive it in `session-waiting` (62ffbf7).
+- Deleting a folder with its contents now unlinks the quiz files before the metadata, and a failed unlink aborts. Before, the files stayed on disk as ownerless public quizzes. Quizzes owned by another user are moved to the parent folder instead of deleted (62ffbf7).
+- A quiz without its own password inside a password-protected folder can be unlocked with the folder password, which issues a quiz-scoped token (05d92bf).
 - Production dependency audit (`npm audit --omit=dev`) went from 14 findings (1 low, 5 moderate, 8 high) to 3 moderate. Version ranges raised: express 4.22.3, multer 2.4.0, mammoth 1.13.0, sharp 0.35.5, uuid 11.1.1. The socket.io, engine.io, ws, undici, proxy-addr and compression entries cleared through `npm audit fix`.
 - officeparser removed. It pulled pdfjs-dist (GHSA-hq66-cqwq-w95j), tesseract.js and file-type, about 88 MB, into an unauthenticated upload route. PPTX text is now read with jszip.
 - pdf-parse 1.1.4 removed. It bundled pdf.js 1.10 (2017), invisible to npm audit. `/api/extract-pdf` now uses pdfjs-dist 6.4.299 directly with `isEvalSupported: false`. Non-PDF input returns 400 instead of 500; the unused `info` field and the 501 "not installed" branch are gone. `engines.node` raised to >=22.13.0, as pdfjs-dist requires. Adds about 69 MB (pdfjs-dist 35 MB, optional @napi-rs/canvas 34 MB).
@@ -16,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Earlier on this branch (commit fc2ff1c): SheetJS vendored, signup gated, manim and container hardening, `unsafe-inline` dropped from the CSP.
 
 ### Fixed
+- `checkManimStatus()` now cancels the body of a non-OK response. The unread body kept the landing page from reaching network idle, so `bootLanding` waited out its 5 s cap on every boot (776b9fa).
 - PPTX upload returned 500 for every file: `routes/file-uploads.js` called `officeparser.parseOfficeAsync`, which officeparser 6.x does not export. The route now uses `extractPptxText` (jszip): slides in numeric order, one paragraph per line, XML entities decoded, 400 with `error_pptx_extraction_failed` for files that are not PPTX or whose slide XML decompresses past 5 MB per slide or 20 MB in total. Parsing is linear in the slide size.
 - `.ppt` removed from the AI generator file picker; no extractor ever parsed it.
 - Consensus mode: End Round now locks consensus first, so the round's team score is awarded. Natural timeout and the all-answered path are unchanged, and a locked round is not awarded twice.
@@ -38,6 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `tests/e2e/analytics-modal.spec.js`: 4/4 pass.
 - Visual baselines: both snapshot directories regenerated (45 + 7 PNGs). `visual-regression.spec.js` fixture sets `manualAdvancement: false`; `visual-static.spec.js` caps the `networkidle` wait at 5 s. `npm run test:visual` passes 7/7. The three final-screen baselines are fully masked by the confetti mask and compare nothing.
 - Unit suite: 73 suites, 1286 tests pass. `npx eslint .`: 0 errors, 287 warnings.
+
+### Documentation
+- Audited against the code: README, root and `public/css` CLAUDE.md, DEPLOYMENT, DOCKER, DOCKER-STANDALONE, K8S quick reference, `k8s/*.md`, `public/sounds/README.md`, `tools/luna-e2e/README.md` and every file in `docs/` except `CAPACITY.md` (measurements kept as recorded) and `STATUSLINE-SETUP.md`. Not audited: `docs/archive`, `docs/superpowers`, `design_handoff_landing`, `tests/agentic/flows`. Corrected file paths, line references, function names, npm scripts, limits and counts.
+- `docs/API_REFERENCE.md`: added accounts, folders, metadata, debug, Gemini, Ollama, extraction and Manim routes; documented auth, rate limits and status codes per route; rewrote the Socket.IO event list, most of whose event names did not exist in the code.
+- `DEPLOYMENT.md`: new section on running behind a reverse proxy or Cloudflare Tunnel (`NODE_ENV`, `BASE_PATH=/`, `PUBLIC_ORIGIN`, `ALLOWED_ORIGINS`, `TRUSTED_PROXY_IPS`). Docker and Kubernetes docs corrected against the Dockerfiles, compose files and `k8s/` manifests.
+- `docs/FUTURE.md`: the tunnel exposure audit now records items 1 (client IPs) and 3 (AI rate limits and server key) as fixed and items 2 (`/api/active-games`) and 4 (ownerless quiz deletion) as open. Roadmap phases carry dated status notes.
+- `docs/SCORING_SYSTEM.md`: the time bonus decays over the question's time limit (a419083), not a fixed 10 s; examples recomputed. Poll and consensus scoring added.
+- README: Node 22.13.0 or later (`engines`), the full environment-variable table, AI key precedence, and the open security items before public exposure.
+- `.env.example`: a key sent with the request is used in preference to the server key, not the reverse.
 
 ---
 

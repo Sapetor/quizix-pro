@@ -12,6 +12,11 @@ This document outlines future enhancements and optimization strategies for Quizi
 - **Network**: Pre-configured for `0.0.0.0:3000` binding (mobile-friendly)
 - **Dependencies**: All mobile-compatible (Socket.IO, Express, etc.)
 
+Status (2026-11-12): the size figures are out of date. Production dependencies
+(`npm ls --omit=dev`) take about 141 MB on disk, the largest being sharp's
+`@img` binaries (about 48 MB) and `pdfjs-dist` (about 35 MB). A full install
+with dev dependencies is about 258 MB; tracked source files are about 13 MB.
+
 **Current Performance:**
 - **User Capacity**: 10-30 concurrent users comfortably
 - **Battery Life**: 2-4 hours continuous hosting
@@ -106,9 +111,26 @@ npm start
 - **Multiple File Operations**: Quiz saving, results saving, image uploads
 - **No Caching**: Files read from disk repeatedly
 
+Status (2026-11-12):
+- Games no longer persist indefinitely. `GameSessionService.cleanupStaleGames()`
+  (`services/game-session-service.js`) runs every 30 minutes and removes games
+  older than 2 hours and empty lobbies older than 30 minutes.
+- The server code (`server.js`, `services/`, `socket/`, `routes/`) has 127
+  `.emit(` calls covering 43 distinct event names, not 31.
+- Quiz, results, user and metadata writes are asynchronous (`fs.promises`
+  through `services/atomic-write.js`). The remaining synchronous calls are the
+  session-secret file in `services/session-service.js`, `/proc/version` reads
+  at startup, the opt-in debug routes in `server.js`, and one `existsSync` per
+  JS request in `middleware/static-files.js`.
+
 ### Optimization Phases
 
 #### Phase 1: Memory Management (Critical)
+Status (2026-11-12): partly implemented. `config/limits.js` defines
+`MAX_CONCURRENT_GAMES` and `MAX_PLAYERS_PER_GAME` (desktop 100 and 200,
+`MOBILE_MODE=true` 5 and 50), enforced in `GameSessionService.createGame()` and
+`Game.addPlayer()`. Stale-game cleanup exists (see above). There is no memory
+monitoring or GC trigger.
 ```javascript
 // Implementation Goals
 const MAX_CONCURRENT_GAMES = 3;  // Mobile limit
@@ -124,6 +146,11 @@ const GAME_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 ```
 
 #### Phase 2: Socket.IO Optimization
+Status (2026-11-12): not active. `services/socket-batch-service.js` (500 ms
+interval; batches `answer-statistics`, `player-answered`,
+`leaderboard-update`) is constructed in `server.js`, but no game code calls its
+`emit()`; only `cleanupRoom()` is used. HTTP responses are compressed by the
+`compression` middleware; no Socket.IO message compression is configured.
 ```javascript
 // Performance Improvements
 const UPDATE_THROTTLE = 1000; // 1 second batching
@@ -138,6 +165,8 @@ const LIVE_STATS_DEBOUNCE = 500; // Reduce live update frequency
 ```
 
 #### Phase 3: Async File Operations
+Status (2026-11-12): done for quiz, results, user and metadata files (see the
+status note under Current Bottlenecks).
 ```javascript
 // Replace Synchronous Operations
 // Before: fs.writeFileSync(filePath, data);
@@ -152,6 +181,11 @@ const LIVE_STATS_DEBOUNCE = 500; // Reduce live update frequency
 ```
 
 #### Phase 4: Mobile-Specific Adaptations
+Status (2026-11-12): partly implemented. `MOBILE_MODE=true` selects the mobile
+limits in `config/limits.js`; there is no automatic detection. Its
+`MAX_UPLOAD_SIZE` (1 MB) is not read anywhere: the image upload limit is
+`CONFIG.LIMITS.MAX_FILE_SIZE` in `server.js`, 5 MB in both modes. There is no
+per-quiz image limit.
 ```javascript
 // Environment Detection
 const isMobile = process.env.MOBILE_MODE === 'true';
@@ -167,6 +201,10 @@ const MAX_QUESTION_IMAGES = isMobile ? 5 : 20;
 ```
 
 #### Phase 5: Performance Monitoring
+Status (2026-11-12): partly implemented. `services/metrics-service.js` exposes
+Prometheus metrics (prom-client, including default process CPU and memory
+metrics) at `/metrics`, registered only when `ENABLE_DEBUG_ROUTES=true`. There
+is no admin dashboard and no scaling trigger.
 ```javascript
 // Monitoring Features
 - Real-time memory usage monitoring
@@ -192,14 +230,14 @@ const MAX_QUESTION_IMAGES = isMobile ? 5 : 20;
 - Real-time everything
 - No memory restrictions
 - Maximum image upload: 5MB
-- Unlimited concurrent games
+- Unlimited concurrent games (status 2026-11-12: capped at 100 games of up to 200 players by `config/limits.js`)
 
 #### Mobile Version (Optimized)
 - Progressive degradation based on device capabilities
 - Lower memory footprint
 - Simplified real-time features for large groups
-- Maximum image upload: 1MB
-- Limited concurrent games (3-5)
+- Maximum image upload: 1MB (status 2026-11-12: defined in `config/limits.js` but not enforced; uploads stay at 5 MB)
+- Limited concurrent games (3-5) (status 2026-11-12: `MOBILE_MODE=true` sets 5 games of up to 50 players)
 
 #### Universal Approach (Recommended)
 - **Environment Detection**: Automatically detect mobile deployment
@@ -208,27 +246,33 @@ const MAX_QUESTION_IMAGES = isMobile ? 5 : 20;
 
 ## 📋 Development Roadmap
 
+Status of the items below checked against the code on 2026-11-12.
+
 ### Short Term (1-2 months)
-- [ ] Implement memory management system
-- [ ] Add game cleanup and timeout mechanisms
-- [ ] Convert synchronous file operations to async
-- [ ] Add environment detection for mobile vs desktop
+- [ ] Implement memory management system (partial: game and player limits plus stale-game cleanup; no memory monitoring)
+- [x] Add game cleanup and timeout mechanisms (`cleanupStaleGames()` in `services/game-session-service.js`)
+- [x] Convert synchronous file operations to async (data files go through `services/atomic-write.js`)
+- [ ] Add environment detection for mobile vs desktop (partial: manual `MOBILE_MODE=true` switch in `config/limits.js`, no detection)
 
 ### Medium Term (3-6 months)
-- [ ] Optimize Socket.IO broadcasting and message batching
-- [ ] Implement data compression for mobile networks
+- [ ] Optimize Socket.IO broadcasting and message batching (partial: `services/socket-batch-service.js` exists but is not called by game code)
+- [ ] Implement data compression for mobile networks (partial: HTTP `compression` middleware only)
 - [ ] Create mobile-specific UI optimizations
-- [ ] Add performance monitoring dashboard
+- [ ] Add performance monitoring dashboard (partial: opt-in Prometheus `/metrics`, no dashboard)
 
 ### Long Term (6-12 months)
 - [ ] Develop native Android app using NodeJS Mobile
-- [ ] Create Progressive Web App version
+- [ ] Create Progressive Web App version (partial: `public/sw.js` service worker; no web app manifest)
 - [ ] Implement advanced scaling and load balancing
 - [ ] Add cloud deployment with mobile management
 
 ## 🛠 Technical Implementation Notes
 
 ### Code Structure Changes
+Status (2026-11-12): neither `mobile/` nor `monitoring/` exists, and there is no
+`mobile-config.js`. The implemented parts live in `config/limits.js` (limits),
+`services/game-session-service.js` (cleanup) and `services/metrics-service.js`
+(metrics).
 ```
 New directories to add:
 ├── mobile/
@@ -255,7 +299,7 @@ export const MOBILE_CONFIG = {
 ```
 
 ### Testing Requirements
-- [ ] Load testing with 50+ concurrent users
+- [x] Load testing with 50+ concurrent users (`tests/stress/game-stress.test.js` plays a 50-player game, run with `npm run test:stress`; `tests/stress/capacity-probe.js` measures join latency and broadcast spread for a given player count)
 - [ ] Memory usage profiling on mobile devices
 - [ ] Network bandwidth optimization testing
 - [ ] Battery life impact assessment
@@ -284,6 +328,8 @@ export const MOBILE_CONFIG = {
 ## 🎓 Engineering Education Features (Future Ideas)
 
 These innovative features are designed specifically for engineering faculty students, focusing on deeper conceptual understanding rather than rote memorization.
+
+Status (2026-11-12): item 1 is implemented; items 2 to 7 have no code yet.
 
 ### 1. Concept Dependency Heatmap ⭐ HIGH PRIORITY
 **Status**: ✅ IMPLEMENTED (January 2026)
@@ -367,34 +413,40 @@ This roadmap transforms Quizix Pro from a desktop-focused application into a tru
 
 ## 🌐 TODO: Public exposure via Cloudflare Tunnel
 
-Not started. The app is written for a LAN threat model; a tunnel changes that model.
-Audited 2026-07-24 — these four items must be resolved before exposing it publicly.
+Audited 2026-07-24; status rechecked against the code 2026-11-12. The app is written
+for a LAN threat model and a tunnel changes that model. Two of the four items below
+are fixed; items 2 and 4 are still open. How to run behind a tunnel is in
+[DEPLOYMENT.md](../DEPLOYMENT.md).
 
-1. **`trust proxy` is never set.** Behind `cloudflared` every request arrives from
-   loopback, so `req.ip` is identical for all internet clients. That collapses
-   `byokLimiter` / `urlLimiter` / `ollamaLimiter` (`routes/ai-generation.js:143-145`),
-   `uploadRateLimit` (`routes/file-uploads.js:70`) and the socket rate limiter into a
-   single shared bucket — no abuse protection, and one abuser locks out the whole class.
-   Use `app.set('trust proxy', 'loopback')` and read `CF-Connecting-IP`; do **not** use
-   `trust proxy: true`, which makes `X-Forwarded-For` client-spoofable.
+1. **Fixed: per-client IPs behind the proxy.** `server.js:202` sets
+   `app.set('trust proxy', 'loopback')`, and `getClientIp` in `middleware/client-ip.js`
+   uses `CF-Connecting-IP` only when the direct peer is loopback or listed in
+   `TRUSTED_PROXY_IPS`. The AI limiters (`routes/ai-generation.js`), the upload limiter
+   (`routes/file-uploads.js`) and the save-quiz limiter key on that IP. The Socket.IO
+   limiter (`utils/socket-rate-limiter.js`) keys on socket id and event, so it never
+   depended on the IP.
 
-2. **`/api/active-games` is unauthenticated and returns live PINs**
-   (`routes/quiz-management.js:199-217`), plus a `debug` block echoing all games.
-   Publicly reachable, this lets anyone join a running classroom session.
+2. **Open: `/api/active-games` is unauthenticated and returns live PINs**
+   (`routes/quiz-management.js:324-348`), plus a `debug` block listing all games,
+   finished ones included. Publicly reachable, this lets anyone join a running
+   classroom session.
 
-3. **AI routes skip rate limiting when a server key is set.**
-   `routes/ai-generation.js:360` — `if (!serverApiKey && clientApiKey)`. Latent today
-   (no server keys configured), but setting `CLAUDE_API_KEY` or `GEMINI_API_KEY` while
-   the tunnel is up publishes an unauthenticated, unmetered LLM proxy. These routes
-   also carry no `requireUser`.
+3. **Fixed: AI routes and the server key.** Every `/claude/generate`, `/gemini/generate`
+   and `/ai/complete` request is rate-limited per client IP whichever key it uses, and
+   spending the server-side key returns 401 unless the requester is logged in
+   (`routes/ai-generation.js:427-449` and the matching blocks below it). A key sent with
+   the request is preferred over the server key.
 
-4. **Ownerless quizzes are deletable by anyone** (`routes/quiz-management.js:451-453`),
-   and `/api/quizzes` lists them. Remote data loss for any pre-ownership quiz.
+4. **Open: ownerless quizzes are deletable by anyone.** `DELETE /api/quiz/:filename`
+   (`routes/quiz-management.js:572`) checks ownership only when the quiz has an
+   `ownerId`, so a quiz with no owner and no password is deleted by any client that
+   sends `confirm=true`. `/api/quizzes` lists these quizzes to anonymous requesters.
+   Remote data loss for any pre-ownership quiz.
 
 Cheapest mitigation short of code changes: Cloudflare Access on the host-side API paths
 (`/api/save-quiz`, quiz/results DELETE, `/api/*/generate`, `/api/active-games`) with the
-player join path left public. Item 1 still needs the code fix — Access does not restore
-per-client IPs.
+player join path left public. Access does not restore per-client IPs; that came from the
+item 1 code fix.
 
 Already handled, for the record: `/extract-url` SSRF protection is enforced per-hop after
 DNS resolution, helmet is enabled, zod validates request bodies, and upload rate limiting

@@ -2,22 +2,28 @@
 
 This document outlines the migration path from file-based storage to a database system for Quizix Pro.
 
+> **Status (2026-11-12):** not started. `package.json` has no database client
+> (`pg`, `better-sqlite3`, `mongodb`), and none of the files proposed below
+> (`services/database/`, `scripts/migrate-to-database.js`) exist. None of the
+> checklist items at the end are done.
+
 ## Current Architecture
 
 Quizix Pro currently uses file-based storage:
 
 ```
 quizzes/           # Quiz JSON files
-  ├── quiz-1.json
-  ├── quiz-2.json
-  └── ...
+  ├── <safe_title>_<timestamp>.json
+  ├── ...
+  ├── users.json            # user accounts (UserService)
+  └── quiz-metadata.json    # folders, passwords, ownership (MetadataService)
 
 results/           # Game results JSON files
-  ├── result-2024-01-01-12-00-00.json
+  ├── results_<pin>_<timestamp>.json
   └── ...
 
 public/uploads/    # User-uploaded images
-  ├── abc123.png
+  ├── <32 hex chars>.png
   └── ...
 ```
 
@@ -27,7 +33,12 @@ public/uploads/    # User-uploaded images
 |---------|------|---------|
 | QuizService | `services/quiz-service.js` | `quizzes/*.json` |
 | ResultsService | `services/results-service.js` | `results/*.json` |
-| GameSessionService | `services/game-session-service.js` | In-memory + `results/*.json` |
+| GameSessionService | `services/game-session-service.js` | In-memory + `results/*.json` (written by `Game.saveResults()` in `services/game.js`) |
+| UserService | `services/user-service.js` | `quizzes/users.json` |
+| MetadataService | `services/metadata-service.js` | `quizzes/quiz-metadata.json` |
+
+The schemas below cover quizzes, results and uploads; users and quiz metadata
+have no proposed tables yet.
 
 ## Why Migrate?
 
@@ -618,7 +629,7 @@ helm install quizix-db bitnami/postgresql \
 ### Environment Configuration
 
 ```yaml
-# kubernetes/configmap.yaml
+# add to the existing quizix-config ConfigMap in k8s/01-quizix-pro.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -628,7 +639,7 @@ data:
   DATABASE_PRIMARY: "true"
 
 ---
-# kubernetes/secret.yaml
+# new Secret (k8s/ has no Secret manifest yet)
 apiVersion: v1
 kind: Secret
 metadata:

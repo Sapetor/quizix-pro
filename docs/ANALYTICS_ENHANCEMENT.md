@@ -109,7 +109,7 @@ means "no data", not "everyone failed".
 | `quick_wrong` (medium) | avg time < 8s and success < 70% (needs timing) |
 | `common_wrong_answer` (medium) | one wrong option took ≥ 40% of responses |
 
-Flag messages are translated (`analytics_flag_*` keys, all 10 locales).
+Flag messages are translated (`analytics_flag_*` keys, all 9 locales).
 
 ## Concept mastery
 

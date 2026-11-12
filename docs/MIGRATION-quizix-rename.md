@@ -6,6 +6,16 @@ namespace, PVCs, the Docker host data dirs, and the pulled image all keep their
 old names until an operator moves them. Follow the ordered steps below during a
 maintenance window.
 
+> **Status (2026-11-12):** the rename is complete in the repository (commit
+> bcdfd68, 2026-07-22). The k8s manifests, both compose files,
+> `deploy-to-server.sh`, `.gitlab-ci.yml` and the server's `BASE_PATH` default
+> use the `quizix` names. Whether a given live deployment has been migrated
+> cannot be determined from the repo. Remaining `quizmaster` strings outside
+> `node_modules`, `docs/archive` and `CHANGELOG.md`: `debug/ui-screenshot-tool.js`
+> (4 "QuizMaster Pro" title/log strings) and `tests/unit/qr-service.test.js`
+> (`/quizmaster/` used as an arbitrary base-path fixture). Neither affects a
+> deployment.
+
 ## What changed
 
 | Old | New |
@@ -20,8 +30,10 @@ maintenance window.
 | host data dirs `/opt/quizmaster-data`, `$HOME/quizmaster-data` | `/opt/quizix-data`, `$HOME/quizix-data` |
 
 > `BASE_PATH` is now set explicitly in the ConfigMap. The server's built-in
-> production default is still the old value, so do **not** remove the explicit
-> `BASE_PATH: "/quizix/"` from the ConfigMap. Stored image paths are base-relative
+> production default (`server.js`) was changed to `/quizix/` in the same commit,
+> but keep the explicit `BASE_PATH: "/quizix/"` in the ConfigMap: it must match
+> the ingress path, and the built-in default applies only when
+> `NODE_ENV=production`. Stored image paths are base-relative
 > (`/uploads/...`), so changing the prefix does not corrupt existing data.
 
 ---
@@ -95,7 +107,8 @@ docker rm   quizmaster-pro quizmaster-pro-app 2>/dev/null || true
 sudo mv /opt/quizmaster-data /opt/quizix-data 2>/dev/null || true
 mv "$HOME/quizmaster-data"   "$HOME/quizix-data" 2>/dev/null || true
 
-# 3. Retag/pull the new image (CI publishes it under the new name).
+# 3. Pull the new image, or build it locally. Nothing in this repo publishes
+#    ghcr.io/sapetor/quizix-pro: .gitlab-ci.yml pushes to $CI_REGISTRY_IMAGE.
 docker pull ghcr.io/sapetor/quizix-pro:latest 2>/dev/null || \
   docker build -t quizix-pro:latest .
 

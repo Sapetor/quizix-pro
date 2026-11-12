@@ -16,13 +16,24 @@ This command:
 3. ✅ Updates service worker version
 4. ✅ Ensures users get the latest code
 
+Both Dockerfiles also run `npm run build:prod` in their build stage, so an
+image built from the current source always contains a fresh CSS bundle.
+Committing the generated files still matters for `npm start` deployments and
+for the CSS bundle staleness check in CI.
+
 ### What `build:prod` Does
 
 The `build:prod` script runs:
 - `npm run build:css` - Compiles and minifies CSS
 - `npm run cache-bust` - Updates version strings in:
-  - `public/sw.js` - Service worker cache version
+  - `public/sw.js` - the `BUILD_STAMP` fallback version
   - `public/index.html` - CSS/JS query string versions
+
+At runtime the server overrides both: on every start it generates an
+`ASSET_VERSION` (`server.js`), rewrites every `?v=NN` in `index.html` to it,
+and injects it into `sw.js` as the service worker `CACHE_VERSION`. A restart
+therefore invalidates client caches even if `cache-bust` was not run.
+`BUILD_STAMP` is used only when `sw.js` is served without that substitution.
 
 ### Version Format
 
@@ -70,6 +81,12 @@ kubectl apply -f k8s/01-quizix-pro.yaml
 kubectl rollout status deployment/quizix-pro -n quizix
 ```
 
+The manifest runs `ghcr.io/sapetor/quizix-pro:latest` with
+`imagePullPolicy: Always`, so `kubectl apply` alone does not deploy new code
+when the manifest is unchanged. Build and push the image, then run
+`kubectl rollout restart deployment/quizix-pro -n quizix`
+(see "Normal Deployment Workflow" in `k8s/TROUBLESHOOTING.md`).
+
 **Option B: GitOps (ArgoCD/Flux)**
 - Push to deployment branch
 - Wait for automatic sync
@@ -79,17 +96,17 @@ kubectl rollout status deployment/quizix-pro -n quizix
 
 **Check pod status:**
 ```bash
-kubectl get pods -l app=quizix-pro
-kubectl logs -l app=quizix-pro --tail=50
+kubectl get pods -n quizix -l app=quizix-pro
+kubectl logs -n quizix -l app=quizix-pro --tail=50
 ```
 
 **Test the application:**
 ```bash
-# Check health endpoint
-curl https://your-domain.com/health
+# Check health endpoint (the ingress strips the /quizix prefix)
+curl https://your-domain.com/quizix/health
 
 # Access the app
-open https://your-domain.com
+open https://your-domain.com/quizix/
 ```
 
 ## 🐳 Docker Compose Volume Migration (one-time, breaking)
@@ -191,8 +208,9 @@ chown -R 1001:1001 /opt/quizix-data
 ## Container hardening
 
 All three deployment paths now drop capabilities and block privilege
-escalation. The server listens on port 3000 (`server.js:744`), so no capability
-is needed to bind it.
+escalation. The server listens on `PORT`, which every deployment file sets to
+3000 (`server.js`, `server.listen(PORT, '0.0.0.0')`), so no capability is
+needed to bind it.
 
 | Setting | docker-compose.yml | docker-compose.server.yml | k8s/01-quizix-pro.yaml |
 |---------|--------------------|---------------------------|------------------------|
@@ -262,7 +280,10 @@ If yes:
 
 ### Users Still See Old Version
 
-**Cause**: Build not run before deployment
+**Cause**: The new image was not built and pushed, or the pod was not
+restarted. Since the server stamps a new `ASSET_VERSION` at every start, a
+running pod on the new image is enough for clients to update; a stale CSS
+bundle in git also shows up here.
 
 **Solution**:
 ```bash
@@ -286,10 +307,15 @@ git push
 
 **Check service worker version:**
 ```bash
-grep "CACHE_VERSION" public/sw.js
+# Build-time fallback stamp in the source file
+grep "BUILD_STAMP =" public/sw.js
+
+# Version the running server injects (changes on every server start)
+curl -s https://your-domain.com/quizix/sw.js | grep "INJECTED_VERSION ="
 ```
 
-Should show a recent version like `v20260123-a12adf2`
+The first should show a recent stamp like `v20260123-a12adf2`; the second
+shows the server's current `ASSET_VERSION`.
 
 **Force update:**
 1. Open browser DevTools
@@ -304,7 +330,9 @@ Should show a recent version like `v20260123-a12adf2`
 grep "main.bundle.css" public/index.html
 ```
 
-Should show: `main.bundle.css?v=13` (or higher)
+The source file holds a numeric `?v=NN`. The served page replaces it with the
+server's per-start `ASSET_VERSION`, so check the live value with
+`curl -s https://your-domain.com/quizix/ | grep main.bundle.css`.
 
 **Fix:**
 ```bash
@@ -317,11 +345,15 @@ npm run build:prod
 |----------|----------|---------|--------------|
 | index.html | No cache | 0 | Always |
 | sw.js | No cache | 0 | Always |
-| CSS files | Cache | 24-48h | With version |
-| JS files | Cache | 24-48h | With version |
-| Images | Cache | 1-2h | With ETag |
+| CSS files | HTTPS: `max-age=0, must-revalidate`; HTTP: `no-store` | 0 | ETag + version query |
+| JS files | HTTPS: `max-age=0, must-revalidate`; HTTP: `no-store` | 0 | ETag + version query |
+| Images | HTTPS: cache; HTTP: `no-store` | HTTPS: 1h desktop, 2h mobile | ETag |
 | API calls | Network only | N/A | N/A |
 | Uploads | Network only | N/A | N/A |
+
+Source: `middleware/static-files.js`. A request counts as HTTPS when
+`req.secure` is set or `X-Forwarded-Proto` is `https`. On HTTPS the service
+worker does the long-term caching in its own Cache Storage.
 
 ## 🔐 Environment Variables
 
@@ -330,9 +362,18 @@ npm run build:prod
 ```bash
 # .env file
 NODE_ENV=production
-BASE_PATH=/quizix/  # Or your K8s ingress path
+BASE_PATH=/quizix/  # Or your K8s ingress path; use / when served at the root
 PORT=3000
 ```
+
+With `NODE_ENV=production` and no `BASE_PATH`, the server defaults to
+`/quizix/` (`server.js`), so any deployment served at the root must set
+`BASE_PATH=/` explicitly.
+
+`server.js` loads `.env` from the working directory (`dotenv`), which covers
+`npm start`. The Docker images do not copy `.env`, and neither compose file
+uses `env_file`, so in a container only the variables listed in the compose
+file's `environment:` block (or the Kubernetes ConfigMap) are set.
 
 ### Optional (AI Features)
 
@@ -389,16 +430,103 @@ the shipped manifests breaks. If you added scraping outside the repo, add
 `/health` and `/ready` are not gated, so container healthchecks and the
 Kubernetes liveness/readiness probes are unaffected.
 
+## Behind a reverse proxy or Cloudflare Tunnel
+
+This setup runs the app as a plain process (`npm start`) on a host that also
+runs `cloudflared`, and points the tunnel at the app's port. The examples use
+the hostname `quiz.example.com` and port 3400. Any free port works as long as
+`PORT` matches the tunnel's `service` URL.
+
+### Tunnel ingress
+
+In the `cloudflared` config file, route the hostname to the local port:
+
+```yaml
+ingress:
+  - hostname: quiz.example.com
+    service: http://localhost:3400
+  - service: http_status:404
+```
+
+`cloudflared` requires the last ingress rule to be a catch-all, which is what
+the final `http_status:404` line is.
+
+### Environment
+
+Put these in `.env` in the project root (`server.js` loads it with `dotenv`)
+or export them before `npm start`:
+
+```bash
+NODE_ENV=production
+BASE_PATH=/
+PORT=3400
+PUBLIC_ORIGIN=https://quiz.example.com
+ALLOWED_ORIGINS=https://quiz.example.com
+# Leave ENABLE_DEBUG_ROUTES unset.
+```
+
+- `BASE_PATH=/` must be set explicitly. With `NODE_ENV=production` and no
+  `BASE_PATH`, the server defaults to `/quizix/`, the Kubernetes ingress path.
+- `PUBLIC_ORIGIN` makes the QR code and join links use the public URL. Without
+  it, `_getGameUrl` in `services/qr-service.js` falls back to the detected LAN
+  IP, which phones outside the LAN cannot reach. Give the origin only (scheme
+  and host); `BASE_PATH` is appended.
+- `ALLOWED_ORIGINS` lets the Express CORS check and Socket.IO accept the public
+  origin. Setting it also drops the built-in cloud-platform wildcard origins
+  (Vercel, Netlify, Heroku and others) in `services/cors-validation-service.js`.
+  Local-network origins stay allowed.
+- `ENABLE_DEBUG_ROUTES` must stay unset: it turns on four unauthenticated
+  diagnostic endpoints (see above).
+
+### Client IPs and rate limits
+
+`server.js` sets `app.set('trust proxy', 'loopback')`, and
+`middleware/client-ip.js` uses Cloudflare's `CF-Connecting-IP` header only when
+the direct TCP peer is loopback or an address listed in `TRUSTED_PROXY_IPS`.
+A `cloudflared` running on the same host connects over loopback, so per-client
+rate limits work with no extra setting.
+
+If `cloudflared` runs in a container or on another host, its connections come
+from a non-loopback address. Set `TRUSTED_PROXY_IPS` to that source address
+(comma-separated if there are several). Otherwise every request resolves to the
+connector's address and all clients share one rate-limit bucket.
+
+The server binds `0.0.0.0` (`server.js`), so the port is also reachable directly
+from the local network, outside the tunnel and outside any Cloudflare policy.
+Block it in the host firewall if only tunnel traffic should reach it.
+
+### What was verified
+
+On 2026-11-11, through the tunnel, the page loads and the Socket.IO polling handshake
+succeeds. The WebSocket upgrade through the tunnel has not been tested
+separately.
+
+### Open security items
+
+[`docs/FUTURE.md`](docs/FUTURE.md), section "TODO: Public exposure via
+Cloudflare Tunnel", lists the audit items for public exposure. The client IP
+and AI rate-limit items are fixed in code. Two remain open:
+
+- `/api/active-games` is unauthenticated and returns the PINs of live games, so
+  anyone who can reach the host can join a running session.
+- Ownerless quizzes (no `ownerId`, no password) can be deleted by anyone with
+  `DELETE /api/quiz/:filename?confirm=true`.
+
+Short of code changes, the mitigation is Cloudflare Access in front of the
+host-side API paths, with the player join path left public. FUTURE.md lists
+the paths.
+
 ## 📝 Version History Tracking
 
 To track which version is currently deployed:
 
 ```bash
-# Check service worker version
-curl https://your-domain.com/sw.js | grep CACHE_VERSION
+# Check service worker build stamp and the live per-start version
+curl -s https://your-domain.com/quizix/sw.js | grep -E "BUILD_STAMP =|INJECTED_VERSION ="
 
-# Check deployed git hash
-kubectl describe deployment quizix-pro | grep Image
+# Check the image reference (the manifest uses the moving :latest tag, so
+# this shows a tag, not a git hash)
+kubectl describe deployment quizix-pro -n quizix | grep Image
 ```
 
 ## 🎯 Best Practices
@@ -424,14 +552,19 @@ If a deployment has critical issues:
 
 ```bash
 # Rollback to previous deployment
-kubectl rollout undo deployment/quizix-pro
+kubectl rollout undo deployment/quizix-pro -n quizix
 
 # Verify rollback
-kubectl rollout status deployment/quizix-pro
+kubectl rollout status deployment/quizix-pro -n quizix
 ```
+
+The manifest pins `ghcr.io/sapetor/quizix-pro:latest` with
+`imagePullPolicy: Always`, so a rollback to a revision with the same tag pulls
+whatever `:latest` currently points to. Roll back by pushing or referencing an
+older image tag instead.
 
 ## 📞 Support
 
 - Documentation: `/docs/`
 - Issues: GitHub Issues
-- Logs: `kubectl logs -l app=quizix-pro --tail=100 -f`
+- Logs: `kubectl logs -n quizix -l app=quizix-pro --tail=100 -f`

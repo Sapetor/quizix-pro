@@ -47,9 +47,6 @@ sudo ufw default allow outgoing
 sudo ufw allow 22/tcp     # SSH
 sudo ufw allow 3000/tcp   # Quizix Pro
 sudo ufw enable
-
-# Ensure Docker starts on boot
-sudo systemctl enable docker
 ```
 
 ## 3. Install Docker
@@ -67,6 +64,9 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.
 sudo apt update
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 sudo usermod -aG docker $USER
+
+# Ensure Docker starts on boot
+sudo systemctl enable docker
 ```
 
 Log out and back in, then verify:
@@ -149,7 +149,7 @@ If the host accesses the app from a different VLAN (e.g., WiFi laptop reaching a
 ```bash
 cat > ~/update-ip.sh << 'SCRIPT'
 #!/bin/bash
-cd /home/sapet/quizix-pro
+cd "$HOME/quizix-pro"
 IP=$(hostname -I | awk '{print $1}')
 echo "http://${IP}:3000" > SERVER_URL.txt
 git add SERVER_URL.txt
@@ -161,7 +161,7 @@ chmod +x ~/update-ip.sh
 **Add to cron (runs on boot + every hour):**
 
 ```bash
-(crontab -l 2>/dev/null; echo "@reboot sleep 30 && /home/sapet/update-ip.sh"; echo "0 * * * * /home/sapet/update-ip.sh") | crontab -
+(crontab -l 2>/dev/null; echo "@reboot sleep 30 && $HOME/update-ip.sh"; echo "0 * * * * $HOME/update-ip.sh") | crontab -
 ```
 
 **Host workflow:** Bookmark `https://github.com/Sapetor/quizix-pro/blob/main/SERVER_URL.txt` — it always shows the current server URL.
@@ -178,12 +178,14 @@ Look for `Cannot find module` errors — means the Dockerfile is missing a direc
 
 ### CORS errors in browser console
 
-The app allows: `localhost`, `127.0.0.1`, `192.168.x.x`, `10.x.x.x`, `172.16-31.x.x`, and `*.local` hostnames. If accessing from an unexpected origin, set `CORS_ORIGINS` in the environment:
+The app allows: `localhost`, `127.0.0.1`, `192.168.x.x`, `10.x.x.x`, `172.16-31.x.x`, and `*.local` hostnames. If accessing from an unexpected origin, set `ALLOWED_ORIGINS` (exact origins, comma-separated, no wildcards) in the `environment:` block of `docker-compose.yml`:
 
 ```yaml
 environment:
-  - CORS_ORIGINS=http://custom-hostname:3000
+  - ALLOWED_ORIGINS=http://custom-hostname:3000
 ```
+
+For a public hostname through a tunnel, see "Behind a reverse proxy or Cloudflare Tunnel" in `DEPLOYMENT.md`.
 
 ### QR code shows wrong IP
 

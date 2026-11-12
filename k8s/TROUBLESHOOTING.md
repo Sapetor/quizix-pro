@@ -34,8 +34,8 @@ This app uses a simple, robust configuration:
 |---------|-------|-----|
 | `replicas` | 1 | Single instance is sufficient |
 | `strategy` | Recreate | Avoids Multi-Attach errors with RWO volumes |
-| `imagePullPolicy` | IfNotPresent | Avoids Docker Hub rate limits |
-| `nodeSelector` | k8s-worker-node5 | Pins to one node, eliminates volume issues |
+| `imagePullPolicy` | Always | Image is on ghcr.io (no Docker Hub rate limit); `rollout restart` pulls the new `:latest` |
+| `nodeSelector` | k8s-worker-node2 | Pins to one node, eliminates volume issues |
 | `resources` | requests set | Prevents BestEffort QoS (less likely to evict) |
 
 ---
@@ -46,10 +46,10 @@ This app uses a simple, robust configuration:
 
 **Step 1: Build and push new Docker image (from WSL):**
 ```bash
-cd /mnt/c/Users/sapet/quizix-pro
+cd /path/to/quizix-pro   # repository root
 
 # Build the image
-docker build -t ghcr.io/sapetor/quizix-pro:latest .
+docker build -f Dockerfile.slim -t ghcr.io/sapetor/quizix-pro:latest .
 
 # Push to GitHub Container Registry
 docker push ghcr.io/sapetor/quizix-pro:latest
@@ -67,9 +67,9 @@ kubectl get pods -n quizix -w
 
 ### When You Change Kubernetes Manifest
 
-**Step 1: Copy manifest to cluster (from WSL):**
+**Step 1: Copy manifest to cluster (from WSL, in the repository root):**
 ```bash
-scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
+scp k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
 ```
 
 **Step 2: Apply changes (from control plane):**
@@ -85,12 +85,12 @@ kubectl get pods -n quizix -w
 
 ```bash
 # From WSL - build and push
-cd /mnt/c/Users/sapet/quizix-pro
-docker build -t ghcr.io/sapetor/quizix-pro:latest .
+cd /path/to/quizix-pro   # repository root
+docker build -f Dockerfile.slim -t ghcr.io/sapetor/quizix-pro:latest .
 docker push ghcr.io/sapetor/quizix-pro:latest
 
 # Copy manifest
-scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
+scp k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
 
 # From control plane - apply and restart
 ssh labadmin@10.80.21.11
@@ -115,7 +115,9 @@ toomanyrequests: You have reached your unauthenticated pull rate limit
 - Multiple nodes pulling = limit hit quickly
 
 ### Prevention (Already Configured)
-- `imagePullPolicy: IfNotPresent` - only pulls if image not on node
+- Image hosted on ghcr.io instead of Docker Hub (see below), so the Docker Hub
+  limit no longer applies to the app image. The manifest now uses
+  `imagePullPolicy: Always` so that `rollout restart` picks up a new `:latest`.
 - `nodeSelector` - pins to one node, image cached there
 
 ### Fix if Rate Limited
@@ -223,10 +225,10 @@ kubectl get pods -n quizix -w
 
 ## Fix: Apply Updated Manifest
 
-**Step 1: From WSL on your local machine, SCP the manifest to control plane:**
+**Step 1: From WSL on your local machine, in the repository root, SCP the manifest to control plane:**
 
 ```bash
-scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
+scp k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
 ```
 
 **Step 2: Verify the file transferred correctly (on control plane):**
@@ -292,7 +294,7 @@ crictl rm $(crictl ps -a -q --state exited) 2>/dev/null
 
 ## Changing the Pinned Node
 
-The app is pinned to `k8s-worker-node5` by default. To change:
+The app is pinned to `k8s-worker-node2` by default. To change:
 
 1. Check which nodes have disk space:
    ```bash
@@ -361,7 +363,7 @@ kubectl get pvc -n quizix
 
 **Fixes applied:**
 - `strategy: Recreate` - clean shutdown before new pod
-- `imagePullPolicy: IfNotPresent` - use cached images
+- `imagePullPolicy: IfNotPresent` - use cached images (the manifest now uses `Always`; see the table above)
 - `nodeSelector` - pin to one node, no Multi-Attach possible
 - `resources` requests - prevents BestEffort QoS, less likely to evict
 - **Switched to ghcr.io** - no rate limits
@@ -423,7 +425,7 @@ nodeSelector:
 
 Then redeploy:
 ```bash
-scp /mnt/c/Users/sapet/quizix-pro/k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
+scp k8s/01-quizix-pro.yaml labadmin@10.80.21.11:/tmp/
 # On control plane:
 kubectl apply -f /tmp/01-quizix-pro.yaml
 kubectl rollout restart deployment/quizix-pro -n quizix

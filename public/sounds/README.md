@@ -31,10 +31,27 @@ soundPools = {
 | `gameStart` | Quiz game begins |
 | `questionStart` | New question appears |
 | `gameComplete` | Quiz ends |
-| `playerJoin` | Player joins lobby |
-| `playerLeave` | Player leaves game |
-| `timerTick` | Timer countdown (5, 3, 2, 1 seconds) |
-| `timerExpired` | Timer reaches zero |
+| `playerJoin` | Player joins lobby (pool not read, see below) |
+| `playerLeave` | Player leaves game (pool not read, see below) |
+| `timerTick` | Timer countdown (5, 3, 2, 1 seconds) (pool not read, see below) |
+| `timerExpired` | Timer reaches zero (pool not read, see below) |
+
+Only the first five pools are played from files (`playAudioFile()`). The
+`playerJoin`, `playerLeave`, `timerTick` and `timerExpired` pools are declared
+but empty, and their events always play synthesized Web Audio tones
+(`playPlayerJoinSound()`, `playPlayerLeaveSound()`, `playCountdownTick()`,
+`playTimerExpired()`), so adding files to those four pools has no effect.
+
+## Files in this folder
+
+Referenced by a pool: `smw_power-up.wav` (correctAnswer),
+`smb2_bonus_chance_lose.wav` (wrongAnswer), `smb2_bonus_chance_start.wav`
+(gameStart), `smb3_nspade_match.wav` (questionStart), `smw_castle_clear.wav`
+(gameComplete).
+
+Not referenced anywhere in the code: `bell-notification.mp3`,
+`correct-answer.mp3`, `game-complete.mp3`, `question-start.mp3`,
+`wrong-answer.mp3`.
 
 ## File Naming Convention
 
@@ -63,6 +80,8 @@ const sounds = soundManager.getSoundPool('correctAnswer');
 ## Notes
 
 - Sounds are preloaded on first user interaction for instant playback
-- If a pool is empty, the system falls back to synthetic (generated) sounds
+- If a file fails to load or play, the five file-backed events fall back to
+  synthetic (generated) sounds (`playFallbackSound()`). If one of those pools
+  is empty, nothing plays.
 - Keep files small (<500KB) for fast loading
 - Supported formats: WAV (best quality), MP3 (smaller), OGG (good compression)

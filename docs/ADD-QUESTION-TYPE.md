@@ -4,9 +4,9 @@ This guide documents the complete process for adding a new question type, based 
 
 ## Overview
 
-Adding a question type requires changes across **~8 files** spanning frontend, backend, and configuration. This guide provides a checklist to ensure nothing is missed.
+Adding a question type requires changes across **about 20 files plus the 9 locale files** spanning frontend, backend, and configuration. This guide provides a checklist to ensure nothing is missed.
 
-**PHASE 1 UPDATE (Q1 2026):** The rendering pipeline has been consolidated into `QuestionTypeRegistry` (frontend) and `QuestionTypeService` (backend). This reduces the number of locations where rendering/validation logic needs to be added from 40+ to ~8, dramatically simplifying the process.
+**PHASE 1 UPDATE (Q1 2026):** The rendering pipeline has been consolidated into `QuestionTypeRegistry` (frontend) and `QuestionTypeService` (backend). Editor data extraction, editor population, host/player rendering and player answer extraction now go through the registry. Several per-type `switch`/`if` branches remain outside it; they are listed in [Per-type branches outside the registry](#per-type-branches-outside-the-registry). Checked against the code on 2026-11-12.
 
 ---
 
@@ -23,16 +23,18 @@ New way: QuestionTypeRegistry.renderHostOptions() / renderPlayerOptions()
          → Called from question-renderer.js and player-interaction-manager.js
 ```
 
-**New Process: 8 Essential Locations (down from 40+)**
+**Main locations**
 
 1. **QuestionTypeRegistry** - Add type definition with rendering methods
 2. **QuestionTypeService** (backend) - Add validation & scoring
-3. **HTML templates** - Add editor UI and container
-4. **CSS** - Style the editor and display UIs
-5. **Translations** - Add labels for all 9 languages
-6. **PreviewManager** - Extract data for preview
-7. **PreviewRenderer** - Render preview display
-8. **Quiz validation** - Validate the data
+3. **Save schema** (`services/validation-schemas.js`) - Add a Zod schema to the `questionSchema` discriminated union, or saving fails
+4. **HTML templates** - Add editor UI and containers (`index.html` and `question-utils.js`)
+5. **CSS** - Style the editor and display UIs
+6. **Translations** - Add labels for all 9 languages
+7. **PreviewManager** - Add the input class to the live-update matcher
+8. **PreviewRenderer** - Render preview display
+9. **Quiz validation** - Add a case in `QuizManager.validateQuestionType()`
+10. **Per-type branches** - See the list further down
 
 ---
 
@@ -84,7 +86,7 @@ Add your question type definition with these methods:
 
     renderHostOptions: (data, container, helpers) => {
         // Render for host display
-        // helpers = { escapeHtml, formatCodeBlocks, translationManager, COLORS }
+        // helpers = { escapeHtml, escapeHtmlPreservingLatex, formatCodeBlocks, translationManager, COLORS }
     },
 
     renderPlayerOptions: (data, container, helpers) => {
@@ -99,7 +101,8 @@ Add your question type definition with these methods:
 
 **Benefits:**
 - Single source of truth for rendering logic
-- Automatically used by QuestionRenderer and PlayerInteractionManager
+- Automatically used by QuestionRenderer, QuizManager (`extractData`), PreviewManager (`extractData`), the question editor (`populateQuestion`) and PlayerInteractionManager (`extractAnswer`)
+- `GameManager.setupPlayerContainers()` reads `containerIds.player` and `playerSelectors.optionsContainer` through `getPlayerContainerConfig()`
 - Eliminates 40+ lines of setup code
 - Easier to test in isolation
 
@@ -124,9 +127,21 @@ Add validation and scoring (CommonJS format for Node.js):
     scoreAnswer: (playerAnswer, correctAnswer, options = {}) => {
         // Return boolean or 0-1 for partial credit
         return playerAnswer === correctAnswer;
+    },
+
+    normalizeAnswer: (answer) => answer,
+
+    buildStatistics: (answers, question) => {
+        return { type: 'your-type', total: answers.length };
     }
 }
 ```
+
+At runtime only `scoreAnswer` is called, from `ScoringService.calculateScore()` (`services/scoring-service.js`). The existing types also define `normalizeAnswer` and `buildStatistics`; keep them for consistency. Live answer statistics are built in `Game` (`services/game.js`), not here.
+
+**File: `services/validation-schemas.js`**
+
+- [ ] Add a `yourTypeQuestionSchema` with `type: z.literal('your-type')` and add it to the `questionSchema` discriminated union. `POST /api/save-quiz` and `host-join` validate against this union.
 
 ---
 
@@ -134,27 +149,15 @@ Add validation and scoring (CommonJS format for Node.js):
 
 **File: `public/js/utils/question-utils.js`**
 
-- [ ] Add option to `createQuestionElement()` dropdown (~line 36)
-- [ ] Add answer options section in `createQuestionElement()` (~line 103-128)
-- [ ] Add case in `collectQuestions()` data extraction (~line 176-183)
-- [ ] Add validation in `validateQuestions()` (~line 219)
-- [ ] Add case in `populateQuestionData()` for loading saved questions (~line 445-452)
+- [ ] Add option to the type dropdown in `QuestionUtils.generateQuestionHTML()` (~line 40)
+- [ ] Add answer options section in `generateQuestionHTML()` (~line 300). Give it the class `<type>-options` (for example `ordering-options`): `updateQuestionType()` in `public/js/utils/globals.js` shows the section by that class name
+
+Data extraction (`QuizManager.extractQuestionData()`) and loading saved questions (`question-editing.js`) call the registry's `extractData` and `populateQuestion`, so they need no per-type code. `collectQuestions()` and `validateQuestions()` are in `quiz-manager.js` (see section 7).
 
 **Example:**
 ```javascript
 // In dropdown
 <option value="ordering" data-translate="ordering">Ordering</option>
-
-// In collectQuestions
-case 'ordering':
-    const orderingOptions = Array.from(item.querySelectorAll('.ordering-options .ordering-option'))
-        .map(opt => opt.value.trim());
-    if (orderingOptions.every(opt => opt)) {
-        question.options = orderingOptions;
-        question.correctOrder = orderingOptions.map((_, index) => index);
-        questions.push(question);
-    }
-    break;
 ```
 
 ---
@@ -163,8 +166,9 @@ case 'ordering':
 
 **File: `public/index.html`**
 
-- [ ] Add option to default question dropdown (~line 776)
-- [ ] Add answer options section to default question (~line 844-868)
+- [ ] Add option to default question dropdown (~line 1442)
+- [ ] Add answer options section to default question (ordering is at ~line 1848)
+- [ ] Add option to the preview panel type selector `#preview-question-type` (~line 1943)
 
 ⚠️ **Critical:** The default question is hardcoded in HTML. If you miss this, new users won't see the question type on first load.
 
@@ -174,11 +178,11 @@ case 'ordering':
 
 **File: `public/index.html`**
 
-- [ ] Add player container div (~line 1298)
+- [ ] Add player container div (~line 2820)
 
 **Example:**
 ```html
-<div id="player-ordering" class="player-answer-type" style="display: none;">
+<div id="player-ordering" class="player-answer-type hidden">
     <div class="ordering-container">
         <!-- Options dynamically rendered here -->
     </div>
@@ -187,17 +191,12 @@ case 'ordering':
 
 **File: `public/js/game/game-manager.js`**
 
-- [ ] Add entry to `containerMap` in `setupPlayerContainers()` (~line 193)
-- [ ] Add submit method that delegates to interactionManager (~line 340)
+- [ ] No container mapping needed: `setupPlayerContainers()` (~line 235) gets the container from the registry
+- [ ] Add submit method that delegates to interactionManager (~line 328), if the type has a submit button
+- [ ] Add a host correct-answer reveal branch (ordering: `revealHostOrdering()`, ~line 745)
 
 **Example:**
 ```javascript
-// In containerMap
-'ordering': {
-    containerId: 'player-ordering',
-    optionsSelector: '.ordering-container'
-}
-
 // Submit method
 submitOrderingAnswer() {
     this.interactionManager.submitOrderingAnswer();
@@ -216,6 +215,7 @@ When you define `renderHostOptions()`, `renderPlayerOptions()`, and `extractAnsw
 // In question-renderer.js - already refactored to use registry
 const helpers = {
     escapeHtml,
+    escapeHtmlPreservingLatex,
     formatCodeBlocks,
     translationManager,
     COLORS
@@ -224,24 +224,16 @@ QuestionTypeRegistry.renderHostOptions(data.type, data, hostOptionsContainer, he
 QuestionTypeRegistry.renderPlayerOptions(data.type, data, optionsContainer, helpers);
 ```
 
-**No additional code needed in question-renderer.js!**
+**Rendering needs no code in question-renderer.js.** A submit button created by `renderPlayerOptions()` still has to be wired after rendering. For ordering this happens in `QuestionRenderer.initializePlayerOrderingDragDrop()`, which `updatePlayerOptions()` calls when `data.type === 'ordering'`:
 
 **Example:**
 ```javascript
-setupPlayerOrderingOptions(data, optionsContainer) {
-    // Generate HTML with options
-    let html = `...`;
-
-    optionsContainer.innerHTML = html;
-
-    // Wire up submit button
-    const submitButton = document.getElementById('submit-ordering');
-    if (submitButton) {
-        submitButton.disabled = false;
-        this.gameManager.addEventListenerTracked(submitButton, 'click', () => {
-            this.gameManager.submitOrderingAnswer();
-        });
-    }
+// question-renderer.js, inside initializePlayerOrderingDragDrop()
+const submitBtn = document.getElementById('submit-ordering');
+if (submitBtn) {
+    submitBtn.addEventListener('click', () => {
+        this.gameManager.submitOrderingAnswer();
+    });
 }
 ```
 
@@ -249,48 +241,42 @@ setupPlayerOrderingOptions(data, optionsContainer) {
 
 ### 5. Player Interaction
 
-**✓ AUTOMATICALLY HANDLED BY QuestionTypeRegistry.extractAnswer()**
+**Partly handled by QuestionTypeRegistry.extractAnswer()**
 
-When you define `extractAnswer()` in the registry, PlayerInteractionManager automatically calls it:
+`submitAnswerByType()` calls the registry's `extractAnswer()`, but it does so inside a per-type `switch`, each case with its own container id and empty-answer check:
 
 ```javascript
-// In player-interaction-manager.js - already refactored to use registry
-submitAnswerByType(type, directAnswer = null) {
-    const container = document.getElementById(`player-${type}`);
-    const answer = QuestionTypeRegistry.extractAnswer(type, container);
-    // ... validation and submission
+// In player-interaction-manager.js
+case 'ordering': {
+    const container = document.getElementById('player-ordering');
+    const answer = QuestionTypeRegistry.extractAnswer('ordering', container);
+    if (!answer || answer.length === 0) { /* show error */ return; }
+    this.submitAnswer(answer);
+    break;
 }
 ```
 
-**No additional code needed in player-interaction-manager.js!**
-
-The submit button wiring still happens in question-renderer.js after rendering the options - see Section 4.
+- [ ] Add a case to `submitAnswerByType()` (~line 124) and a `submitXxxAnswer()` method, unless the type submits on click through the `'direct'` case
+- [ ] Multiple-correct and numeric submit buttons are static elements bound in `setupEventListeners()` (~line 369); ordering's button is created dynamically and wired in question-renderer.js (Section 4)
 
 ---
 
 ### 6. Server-Side Validation & Scoring
 
-**File: `server.js`**
+`server.js` no longer contains answer handling. Scoring goes through `ScoringService.calculateScore()`, which calls `QuestionTypeService.scoreAnswer()`.
 
-- [ ] Add case in answer validation (~line 1584-1598)
-- [ ] Handle partial credit if applicable (~line 1613-1623)
-- [ ] Update answer statistics display (~line 2113-2116)
+**File: `services/scoring-service.js`**
 
-**Example:**
-```javascript
-case 'ordering':
-    if (Array.isArray(answer) && Array.isArray(question.correctOrder)) {
-        let correctPositions = 0;
-        for (let i = 0; i < answer.length; i++) {
-            if (answer[i] === question.correctOrder[i]) {
-                correctPositions++;
-            }
-        }
-        const percentCorrect = correctPositions / question.correctOrder.length;
-        isCorrect = percentCorrect; // Partial credit as decimal
-    }
-    break;
-```
+- [ ] Add a case in `getCorrectAnswerKey()` if the type stores its answer in a field other than `correctAnswer`
+- [ ] Partial credit is applied only when `question.type === 'ordering'`; extend that condition if the new type returns a 0-1 score
+
+**File: `services/game.js`**
+
+- [ ] Add a branch for the type in the answer statistics (`answerCounts`, ~line 703)
+
+**File: `services/question-flow-service.js`**
+
+- [ ] Add a case for the correct-answer display string (~line 65)
 
 ---
 
@@ -298,8 +284,8 @@ case 'ordering':
 
 **File: `public/js/quiz/quiz-manager.js`**
 
-- [ ] Add data extraction in `extractQuestionData()` (~line 118-129)
-- [ ] Add validation rules (~line 192-198)
+- [ ] Data extraction: none needed, `extractQuestionData()` (~line 294) calls `QuestionTypeRegistry.extractData()`
+- [ ] Add validation rules in `validateQuestionType()` (~line 340)
 
 ---
 
@@ -307,25 +293,25 @@ case 'ordering':
 
 **File: `public/js/ui/preview-manager.js`**
 
-- [ ] Add case in `extractQuestionDataForPreview()` (~line 582-588)
-- [ ] Add `.xxx-option` to input event listener (~line 297)
+- [ ] Data extraction: none needed, `extractQuestionDataForPreview()` (~line 491) calls `QuestionTypeRegistry.extractData()`
+- [ ] Add `.xxx-option` to input event listener (~line 302)
 
 ⚠️ **Critical:** If you miss the input listener, real-time preview won't update as users type.
 
 **File: `public/js/ui/modules/preview-renderer.js`**
 
-- [ ] Add case in `renderSplitAnswerType()` (~line 392-395)
-- [ ] Add case in `renderMobileAnswerType()` (~line 832-834)
-- [ ] Implement `renderSplitXxxPreview()` method (~line 548-592)
-- [ ] Implement `renderMobileXxxPreview()` method (~line 1035-1083)
+- [ ] Add case in `renderSplitAnswerType()` (~line 380-395)
+- [ ] Add entry in the `rendererMap` of `renderMobileAnswerType()` (~line 816)
+- [ ] Implement `renderSplitXxxPreview()` method (ordering: ~line 552)
+- [ ] Implement `renderMobileXxxPreview()` method (ordering: ~line 1024)
 
 **File: `public/index.html`**
 
-- [ ] Add preview container for desktop split-screen (~line 909)
+- [ ] Add preview container for desktop split-screen (~line 2050)
 
 **Example:**
 ```html
-<div id="preview-ordering-split" class="preview-answer-type" style="display: none;">
+<div id="preview-ordering-split" class="preview-answer-type hidden">
     <!-- Dynamically rendered -->
 </div>
 ```
@@ -382,6 +368,28 @@ grep -c "your-new-class" public/css/main.bundle.css
 
 ---
 
+### Per-type branches outside the registry
+
+These files branch on the question type and need a case for the new type (found by searching for `'ordering'`):
+
+| File | Branch |
+|------|--------|
+| `services/validation-schemas.js` | Zod schema in the `questionSchema` union |
+| `services/scoring-service.js` | `getCorrectAnswerKey()`, ordering partial-credit branch |
+| `services/game.js` | Answer statistics `answerCounts` |
+| `services/question-flow-service.js` | Correct-answer display string |
+| `services/results-service.js` | Answer separator in exports (ordering only) |
+| `public/js/quiz/quiz-manager.js` | `validateQuestionType()` |
+| `public/js/game/modules/player-interaction-manager.js` | `submitAnswerByType()` |
+| `public/js/game/game-manager.js` | Submit method, host correct-answer reveal |
+| `public/js/game/modules/statistics-manager.js` | Host answer statistics |
+| `public/js/practice/local-game-session.js` | Correct-answer key for practice scoring |
+| `public/js/ui/question-sidebar.js` | Type abbreviation |
+| `public/js/utils/results-viewer/answer-format.js` | Answer formatting in the results viewer |
+| `public/js/ai/` (`prompts.js`, `generator.js`, `generator-templates.js`, `ai-question-preview.js`, `ai-question-validator.js`) | Prompts, preview and validation, if AI generation should produce the type |
+
+---
+
 ## Common Pitfalls & Issues Found
 
 ### 1. CSS Bundle is Stale
@@ -401,9 +409,9 @@ ls -la public/css/components.css public/css/main.bundle.css
 ### 2. Missing Preview Data Extraction
 **Symptom:** Preview shows "No options available".
 
-**Cause:** `extractQuestionDataForPreview()` missing case for new type.
+**Cause:** The registry's `extractData()` for the new type returns no `options`, or the editor selectors in its `selectors` block do not match the template.
 
-**Fix:** Add case in `preview-manager.js` line ~582.
+**Fix:** Check the registry entry; `extractQuestionDataForPreview()` in `preview-manager.js` (~line 491) only calls the registry.
 
 ---
 
@@ -412,9 +420,7 @@ ls -la public/css/components.css public/css/main.bundle.css
 
 **Cause:** Event listener never attached.
 
-**Fix:** Wire up button in `setupPlayerXxxOptions()` using `gameManager.addEventListenerTracked()`.
-
-**Pattern:** Follow numeric question, NOT bindPlayerEventListeners() approach.
+**Fix:** For a button created by `renderPlayerOptions()`, wire it in `question-renderer.js` after rendering, as ordering does in `initializePlayerOrderingDragDrop()`. Static buttons in `index.html` are bound in `PlayerInteractionManager.setupEventListeners()`.
 
 ---
 
@@ -423,7 +429,7 @@ ls -la public/css/components.css public/css/main.bundle.css
 
 **Cause:** Input class not in event listener matcher.
 
-**Fix:** Add `.xxx-option` to line 297 of `preview-manager.js`:
+**Fix:** Add `.xxx-option` to line ~302 of `preview-manager.js`:
 ```javascript
 if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-tolerance, .ordering-option')) {
 ```
@@ -433,7 +439,7 @@ if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-toleran
 ### 5. Missing from Default Question
 **Symptom:** New users don't see the question type initially.
 
-**Cause:** Default question hardcoded in `index.html` lines 767-870.
+**Cause:** Default question hardcoded in `index.html` (the `.question-item` starting at ~line 1421).
 
 **Fix:** Add option to dropdown AND answer options section.
 
@@ -442,9 +448,9 @@ if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-toleran
 ### 6. Unknown Question Type Error
 **Symptom:** Console error "Unknown question type: xxx".
 
-**Cause:** Missing entry in `containerMap` in `game-manager.js`.
+**Cause:** No registry entry for the type. `setupPlayerContainers()` in `game-manager.js` gets the container from `QuestionTypeRegistry.getPlayerContainerConfig()` and logs this warning when it returns nothing.
 
-**Fix:** Add mapping at line ~193.
+**Fix:** Add the type to `QUESTION_TYPES` in `question-type-registry.js`.
 
 ---
 
@@ -453,7 +459,7 @@ if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-toleran
 
 **Cause:** Missing DOM element in `index.html`.
 
-**Fix:** Add `<div id="player-xxx">` container around line 1298.
+**Fix:** Add `<div id="player-xxx">` container around line 2820.
 
 ---
 
@@ -488,10 +494,9 @@ Then generate dropdowns, validation, etc. from this config.
 
 **Impact:** Confusion about which pattern to follow.
 
-**Observed:**
-- Multiple-correct: Uses `bindPlayerEventListeners()`
-- Numeric: Wires directly in `setupPlayerNumericOptions()`
-- Ordering: Had to follow numeric pattern
+**Observed (current code):**
+- Multiple-correct and numeric: static buttons bound in `PlayerInteractionManager.setupEventListeners()`
+- Ordering: dynamic button wired in `QuestionRenderer.initializePlayerOrderingDragDrop()`
 
 **Recommendation:** Standardize on one pattern or document why both exist.
 
@@ -577,17 +582,20 @@ After implementing a new question type, test:
 |------|---------|----------------|
 | `public/js/utils/question-type-registry.js` | ✅ Rendering (registry-based) | 1 location |
 | `services/question-type-service.js` | ✅ Backend validation & scoring | 1 location |
-| `public/js/utils/question-utils.js` | Question creation/editing | 5 locations |
-| `public/index.html` | DOM structure | 3 locations |
+| `services/validation-schemas.js` | Save/host-join schema | 1 location |
+| `public/js/utils/question-utils.js` | Question template | 2 locations |
+| `public/index.html` | DOM structure | 5 locations |
 | `public/js/game/game-manager.js` | Game orchestration | 2 locations |
-| `public/js/ui/preview-manager.js` | Preview updates | 2 locations |
+| `public/js/game/modules/player-interaction-manager.js` | Answer submission | 1-2 locations |
+| `public/js/game/modules/question-renderer.js` | Submit button wiring | 1 location (if dynamic button) |
+| `public/js/quiz/quiz-manager.js` | Save-time validation | 1 location |
+| `public/js/ui/preview-manager.js` | Preview updates | 1 location |
 | `public/js/ui/modules/preview-renderer.js` | Preview rendering | 4 methods |
 | `public/css/components.css` | Styling | Full section |
 | `public/js/utils/translations/*.js` | i18n | 9 files |
+| Per-type branches table above | Scoring, statistics, results, practice | 1 location each |
 
-**Total: ~8 essential locations (down from 40+)**
-
-**Registry-based rendering automatically eliminates the need for:** changes in `question-renderer.js` (uses `QuestionTypeRegistry.renderHostOptions/renderPlayerOptions()`), `player-interaction-manager.js` (uses `QuestionTypeRegistry.extractAnswer()`), and `server.js` answer handling (uses `QuestionTypeService`).
+**Registry-based rendering removes the need for:** rendering code in `question-renderer.js` (uses `QuestionTypeRegistry.renderHostOptions/renderPlayerOptions()`), per-type extraction in `quiz-manager.js` and `preview-manager.js` (use `extractData()`), container mapping in `game-manager.js`, and answer handling in `server.js` (scoring uses `QuestionTypeService`).
 
 ---
 
@@ -626,7 +634,7 @@ After implementing and testing:
 ## Recommended Improvements
 
 1. ✅ **Create a question type registry** - DONE (QuestionTypeRegistry handles all rendering)
-2. ✅ **Standardize submit button pattern** - DONE (Registry-based, consistent across types)
+2. **Standardize submit button pattern** - Not done: static buttons are bound in `PlayerInteractionManager`, ordering's dynamic button in `QuestionRenderer`
 3. **Generate default question via JS** - Remove HTML hardcoding
 4. **Automate CSS bundle rebuild** - Pre-commit hook or eliminate build step
 5. **Use more defensive preview updates** - Broader class matching or delegation
@@ -645,4 +653,4 @@ After implementing and testing:
   - QuestionTypeRegistry now handles rendering for all question types (frontend)
   - QuestionTypeService provides validation and scoring (backend)
   - File restructuring: generator.js split into 4 files, game-session-service.js split into 3 files
-  - Result: Eliminated 40+ scattered locations, reduced to ~8 essential locations
+  - Result: rendering and extraction are centralized; per-type branches remain in about a dozen files (see the table above)

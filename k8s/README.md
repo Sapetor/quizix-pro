@@ -4,7 +4,7 @@ This guide walks you through deploying Quizix Pro to a Kubernetes cluster.
 
 ## Prerequisites
 
-- Kubernetes cluster (v1.19+)
+- Kubernetes cluster (v1.21+; the manifest uses a `policy/v1` PodDisruptionBudget)
 - `kubectl` configured to access your cluster
 - Docker for building the container image
 - Container registry access (Docker Hub, GCR, ECR, etc.)
@@ -14,8 +14,10 @@ This guide walks you through deploying Quizix Pro to a Kubernetes cluster.
 ### 1. Build the Docker Image
 
 ```bash
-# From the project root directory
-docker build -t quizix-pro:latest .
+# From the project root directory.
+# Dockerfile.slim (no Manim) is the image intended for Kubernetes;
+# use the default Dockerfile only if you need Manim rendering.
+docker build -f Dockerfile.slim -t quizix-pro:latest .
 
 # Tag for your registry
 docker tag quizix-pro:latest your-registry/quizix-pro:latest
@@ -32,6 +34,11 @@ Edit `k8s/01-quizix-pro.yaml` and update the image reference:
 image: your-registry/quizix-pro:latest
 ```
 
+The manifest also pins the pod to one node with
+`nodeSelector: kubernetes.io/hostname: k8s-worker-node2`. Change it to a node
+in your cluster (`kubectl get nodes`) or remove it, otherwise the pod stays
+`Pending`.
+
 ### 3. Deploy to Kubernetes
 
 ```bash
@@ -45,8 +52,12 @@ kubectl apply -f k8s/02-quizix-ingress.yaml
 Or use the helper script (handles ordering and rollout status):
 
 ```bash
-./k8s/deploy.sh
+./k8s/deploy.sh --no-build
 ```
+
+Without `--no-build`, `deploy.sh` first runs `docker build -t quizix-pro:latest .`
+(full Dockerfile) and pushes only with `--push --registry <repo>`. The
+manifest's `image:` line is not changed by the script either way.
 
 ### 4. Verify Deployment
 
@@ -73,7 +84,7 @@ kubectl port-forward -n quizix svc/quizix-pro 3000:3000
 ### Components
 
 1. **Namespace**: Isolated environment (`quizix`)
-2. **ConfigMap**: Application configuration (PORT, NODE_ENV)
+2. **ConfigMap**: Application configuration (NODE_ENV, PORT, BASE_PATH, TRUSTED_PROXY_IPS, PUBLIC_ORIGIN)
 3. **PersistentVolumeClaims**: Storage for quizzes, results, and uploads
 4. **Deployment**: Single replica with health checks
 5. **Service**: ClusterIP with session affinity for Socket.IO
@@ -83,9 +94,9 @@ kubectl port-forward -n quizix svc/quizix-pro 3000:3000
 
 Three persistent volumes are configured:
 
-- **quizzes-pvc** (1Gi): Quiz definitions
-- **results-pvc** (2Gi): Game results
-- **uploads-pvc** (5Gi): Image uploads
+- **quizix-quizzes** (1Gi): Quiz definitions, `users.json`, `.session-secret`
+- **quizix-results** (2Gi): Game results
+- **quizix-uploads** (5Gi): Image uploads
 
 ## Configuration
 
@@ -102,6 +113,7 @@ data:
   BASE_PATH: "/quizix/"        # must match the ingress path prefix
   TRUSTED_PROXY_IPS: ""        # ingress controller pod IPs, see the manifest
   PUBLIC_ORIGIN: ""            # externally reachable origin, for the join QR
+  # ALLOWED_ORIGINS: "https://quiz.example.com"  # same origin as PUBLIC_ORIGIN
   # Optional: Override network IP detection
   # NETWORK_IP: "your-cluster-ip"
 ```
@@ -117,7 +129,10 @@ the liveness and readiness probes work either way.
 on any cluster reached through the ingress: without the first, every request
 resolves to the ingress pod's address and all per-IP rate limits share one
 bucket; without the second, the join QR code encodes the pod IP, which is
-unroutable from outside the cluster.
+unroutable from outside the cluster. When `PUBLIC_ORIGIN` is an origin that
+the built-in CORS rules do not already allow (a public hostname rather than a
+private IP), also set `ALLOWED_ORIGINS` to it, or Socket.IO rejects the
+connection.
 
 For sensitive values like API keys, use Kubernetes Secrets:
 
@@ -131,6 +146,17 @@ type: Opaque
 stringData:
   CLAUDE_API_KEY: "sk-ant-xxxxx"  # Optional: Server-side Claude API key
   CLAUDE_MODEL: "claude-sonnet-4-5"
+```
+
+The Deployment only loads the ConfigMap, so also add the Secret to the
+container's `envFrom` list:
+
+```yaml
+envFrom:
+  - configMapRef:
+      name: quizix-config
+  - secretRef:
+      name: quizix-secrets
 ```
 
 ### Resource Limits
@@ -167,23 +193,26 @@ kubectl port-forward -n quizix svc/quizix-pro 3000:3000
 
 Then access at: http://localhost:3000
 
+With `BASE_PATH: "/quizix/"` the served page has `<base href="/quizix/">`, so
+its asset URLs resolve under `/quizix/`. The pod serves everything at the root
+and relies on the ingress to strip that prefix, so over a plain port-forward
+`/health`, `/ready` and `/api/*` work but the UI does not load its assets.
+
 ### Option 2: Ingress (Production)
 
-1. Install an Ingress controller (nginx, traefik, etc.)
-2. Update `k8s/02-quizix-ingress.yaml` with your domain
-3. Apply the ingress manifest
-4. Configure DNS to point to your ingress controller
+1. Install the ingress-nginx controller (`02-quizix-ingress.yaml` uses
+   `ingressClassName: nginx` and nginx-specific annotations)
+2. Apply `k8s/02-quizix-ingress.yaml`. It has no `host:` rule; it routes the
+   path `/quizix(/|$)(.*)` on any host and rewrites it to `/$2`, so the app is
+   at `http://<ingress-address>/quizix/`. Add a `host:` to the rule if you want
+   to restrict it to one domain.
+3. Keep `BASE_PATH: "/quizix/"` in the ConfigMap matching that path prefix.
+4. Set `PUBLIC_ORIGIN` (and `ALLOWED_ORIGINS` for a public hostname) to the
+   origin clients use.
 
-### Option 3: LoadBalancer
-
-Uncomment the LoadBalancer service in `k8s/02-quizix-ingress.yaml`:
-
-```bash
-kubectl apply -f k8s/02-quizix-ingress.yaml
-kubectl get svc -n quizix quizix-pro-lb
-```
-
-Use the EXTERNAL-IP to access the application.
+There is no LoadBalancer Service in the manifests. To expose the Service
+directly instead, change `quizix-pro` to `type: LoadBalancer` yourself and set
+`BASE_PATH` to `/`, since no ingress strips the `/quizix` prefix on that path.
 
 ## Scaling Considerations
 
@@ -328,7 +357,8 @@ If Socket.IO connections fail:
 
 2. Check ingress annotations for WebSocket support
 
-3. Review CORS settings in `server.js`
+3. Review CORS settings: `ALLOWED_ORIGINS` in the ConfigMap, checked by
+   `services/cors-validation-service.js`
 
 ### Application Errors
 
@@ -389,7 +419,7 @@ kubectl run backup -n quizix --image=busybox --restart=Never --rm -it \
       ]
     }],
     "volumes": [
-      {"name": "data", "persistentVolumeClaim": {"claimName": "quizix-quizzes-pvc"}},
+      {"name": "data", "persistentVolumeClaim": {"claimName": "quizix-quizzes"}},
       {"name": "backup", "hostPath": {"path": "/tmp/backup"}}
     ]
   }

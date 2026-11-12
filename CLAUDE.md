@@ -43,7 +43,7 @@ Break any and you MUST stop and explain the violation:
 ```bash
 npm start       # Production server
 npm run dev     # Development with auto-restart
-npm run build   # Build CSS bundle (REQUIRED after CSS changes)
+npm run build   # Build CSS bundle + stamp asset versions (REQUIRED after CSS changes)
 npm test        # Run unit tests
 ```
 
@@ -96,7 +96,7 @@ import { escapeHtml, escapeHtmlPreservingLatex } from '../utils/dom.js';
 
 ```javascript
 import { unifiedErrorHandler } from '../utils/unified-error-handler.js';
-await unifiedErrorHandler.wrapAsyncOperation(fetchData, 'Loading data');
+await unifiedErrorHandler.wrapAsyncOperation(fetchData, { context: { operation: 'loading-data' } });
 ```
 
 ### 6. Visibility — Use CSS Classes, Not Inline Styles
@@ -125,7 +125,7 @@ These cause the most bugs. Full list with details: **`docs/GOTCHAS.md`**
 - **Screen transitions don't clear DOM** — call `clearGameDisplayContent()` between games
 - **PlayerInteractionManager.setupEventListeners()** — must be called in GameManager constructor
 - **Socket events** — every server `emit()` needs a matching client `on()` handler
-- **Service Worker** — bump `CACHE_VERSION` in `public/sw.js` when deploying JS changes
+- **Service Worker** — no manual `CACHE_VERSION` bump: the server injects a new version into `/sw.js` on every start, and `npm run build` refreshes the `BUILD_STAMP` fallback
 - **`hidden` + `visible-flex` conflict** — always remove one when adding the other (both use `!important`)
 - **Phones are join-and-play only** — gate with `isPhone()` (pointer-based), never `isMobile()` (layout-only); only `host-screen` is gated. See `docs/MOBILE_JOIN_ONLY.md`
 
