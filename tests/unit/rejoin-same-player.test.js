@@ -44,7 +44,7 @@ const QUIZ = {
 
 let ctx;
 
-function setup() {
+function setup(quiz = QUIZ) {
     jest.useFakeTimers();
     atomicWriteFile.mockClear();
     const logger = createFakeLogger();
@@ -59,7 +59,7 @@ function setup() {
         checkRateLimit: () => true,
         logger
     };
-    const game = gameSessionService.createGame('host-sock', QUIZ);
+    const game = gameSessionService.createGame('host-sock', quiz);
     const sockets = [];
     const connect = (id) => {
         const socket = createFakeSocket(id);
@@ -208,6 +208,34 @@ describe('leave-game during a running game', () => {
         join(other, 'al', crypto.randomUUID());
         expect(last(other, 'player-joined')).toMatchObject({ playerName: 'al' });
         expect(last(other, 'error')).toBeUndefined();
+    });
+});
+
+describe('power-up state of a resumed player', () => {
+    it('keeps a used power-up used, and the resume sends game-started before question-start', () => {
+        ctx = setup({ ...QUIZ, powerUpsEnabled: true });
+        const { game, connect, join, startQuestion } = ctx;
+        const device = crypto.randomUUID();
+        const p1 = connect('p1');
+        const p2 = connect('p2');
+        join(p1, 'Al', device);
+        join(p2, 'Bo');
+        startQuestion(0);
+
+        p1.handlers['use-power-up']({ type: 'fifty-fifty' });
+        expect(last(p1, 'power-up-result').success).toBe(true);
+        p1.handlers['leave-game']();
+
+        const again = connect('p1-new');
+        join(again, 'Al', device);
+        const order = again.emits.map(e => e.event);
+        expect(order).toContain('game-started');
+        expect(order.indexOf('game-started')).toBeLessThan(order.indexOf('question-start'));
+        expect(last(again, 'game-started')).toMatchObject({ powerUpsEnabled: true });
+
+        again.handlers['use-power-up']({ type: 'fifty-fifty' });
+        expect(last(again, 'power-up-result').success).toBe(false);
+        expect(game.players.get('p1-new').powerUps['fifty-fifty'].used).toBe(true);
     });
 });
 

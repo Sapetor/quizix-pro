@@ -79,6 +79,28 @@ class PlayerManagementService {
     }
 
     /**
+     * Move a player who joins a running game (question or reveal) to the game
+     * screen with the game's power-up and consensus settings.
+     * @param {Object} socket - The joining player's socket
+     * @param {Object} game - Game instance
+     * @param {string} pin - Game PIN
+     */
+    _emitGameStarted(socket, game, pin) {
+        if (game.gameState !== 'revealing' && game.gameState !== 'question') return;
+        socket.emit('game-started', {
+            gamePin: pin,
+            questionCount: game.quiz.questions.length,
+            manualAdvancement: game.manualAdvancement || false,
+            powerUpsEnabled: game.powerUpsEnabled || false,
+            consensusConfig: game.isConsensusMode ? {
+                enabled: true,
+                threshold: game.consensusConfig.threshold,
+                allowChat: game.consensusConfig.allowChat
+            } : null
+        });
+    }
+
+    /**
      * Send the host the live answer count after a roster change during a question.
      * Disconnected entries are not active; removed ones are not in game.players.
      * @param {Object} game - Game instance
@@ -193,6 +215,10 @@ class PlayerManagementService {
                 delete returning.removedAt;
                 game.players.set(returning.id, returning);
             }
+            // The client reset its game state on leave (power-up bar, consensus
+            // mode) and rejoin-success does not restore it. Sent first, because
+            // game-started clears the question display that question-start fills.
+            this._emitGameStarted(socket, game, pin);
             return this.handlePlayerRejoin(
                 socketId, pin, returning.sessionToken, game, socket, io, questionFlowService
             );
@@ -276,19 +302,7 @@ class PlayerManagementService {
         this._broadcastPlayerList(pin, game, io);
 
         // If joining mid-game, transition player to game screen
-        if (game.gameState === 'revealing' || game.gameState === 'question') {
-            socket.emit('game-started', {
-                gamePin: pin,
-                questionCount: game.quiz.questions.length,
-                manualAdvancement: game.manualAdvancement || false,
-                powerUpsEnabled: game.powerUpsEnabled || false,
-                consensusConfig: game.isConsensusMode ? {
-                    enabled: true,
-                    threshold: game.consensusConfig.threshold,
-                    allowChat: game.consensusConfig.allowChat
-                } : null
-            });
-        }
+        this._emitGameStarted(socket, game, pin);
 
         if (game.gameState === 'question') {
             // Send current question data so the new player can participate immediately
