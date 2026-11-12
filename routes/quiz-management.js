@@ -115,6 +115,20 @@ function createQuizManagementRoutes(options) {
     }
 
     /**
+     * Reject a folder created or moved under `parentId` unless the requester
+     * owns that parent or it is a legacy ownerless folder. A folder under
+     * another user's folder would list that folder's name in the requester's
+     * tree. A missing parent is left to the metadata service (400).
+     */
+    function parentFolderAuthError(req, parentId) {
+        const parent = parentId ? metadataService.getFolder(parentId) : null;
+        if (parent && parent.ownerId && parent.ownerId !== req.user.id) {
+            return { status: 403, body: { error: 'You do not own the destination folder', messageKey: 'error_folder_not_owner' } };
+        }
+        return null;
+    }
+
+    /**
      * Host tokens presented by the requester.
      *
      * `Authorization: Bearer <token>` names one game. `X-Host-Token` accepts a
@@ -444,6 +458,9 @@ function createQuizManagementRoutes(options) {
             }
 
             const { name, parentId } = req.validatedBody;
+            const parentDenied = parentFolderAuthError(req, parentId);
+            if (parentDenied) return res.status(parentDenied.status).json(parentDenied.body);
+
             const folder = await metadataService.createFolder(name, parentId, req.user.id);
             res.status(201).json(folder);
         } catch (error) {
@@ -477,6 +494,9 @@ function createQuizManagementRoutes(options) {
             if (denied) return res.status(denied.status).json(denied.body);
 
             const { parentId } = req.validatedBody;
+            const parentDenied = parentFolderAuthError(req, parentId);
+            if (parentDenied) return res.status(parentDenied.status).json(parentDenied.body);
+
             const folder = await metadataService.moveFolder(id, parentId);
             res.json(folder);
         } catch (error) {

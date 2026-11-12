@@ -238,6 +238,8 @@ Create a folder. Requires a signed-in user, who becomes the folder owner.
 
 **Request Body:** `{ "name": "Algebra", "parentId": null }` (`name` 1 to 100 characters, `parentId` a folder UUID or `null`).
 
+A `parentId` folder with an owner accepts new folders only from that owner (`403`, `error_folder_not_owner`); under an ownerless legacy folder any signed-in user may create one.
+
 **Response:** `201` with the folder object.
 
 #### PATCH /api/folders/:id/rename
@@ -246,7 +248,7 @@ Create a folder. Requires a signed-in user, who becomes the folder owner.
 #### PATCH /api/folders/:id/move
 **Request Body:** `{ "parentId": "folder-uuid-or-null" }`
 
-Rename and move require a signed-in user (`401`). Folders with an owner can be changed only by that owner (`403`, `error_folder_not_owner`); ownerless legacy folders can be changed by any signed-in user. Both return the updated folder, or `404` if it does not exist.
+Rename and move require a signed-in user (`401`). Folders with an owner can be changed only by that owner (`403`, `error_folder_not_owner`); ownerless legacy folders can be changed by any signed-in user. A move also needs the destination `parentId` to be `null`, a folder the requester owns, or an ownerless legacy folder (`403`, `error_folder_not_owner`), as for `POST /api/folders`. Both return the updated folder, or `404` if it does not exist.
 
 #### POST /api/folders/:id/password
 Set or remove a folder password.

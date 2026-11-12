@@ -14,6 +14,7 @@ const { validateBody, validateParams, ...schemas } = require('../../services/val
 
 const FOLDER_ID = '11111111-1111-4111-8111-111111111111';
 const OTHER_FOLDER_ID = '22222222-2222-4222-8222-222222222222';
+const USER2_FOLDER_ID = '33333333-3333-4333-8333-333333333333';
 
 // Requests through the tunnel arrive from loopback with CF-Connecting-IP; behind
 // a Docker or k8s proxy they arrive from a private address with X-Forwarded-For.
@@ -60,7 +61,8 @@ function dispatch(router, { method, url, body = {}, user = null, query = {}, hea
 function makeDeps(overrides = {}) {
     const folders = {
         [FOLDER_ID]: { id: FOLDER_ID, name: 'Owned', parentId: null, ownerId: 'user-1' },
-        [OTHER_FOLDER_ID]: { id: OTHER_FOLDER_ID, name: 'Legacy', parentId: null }
+        [OTHER_FOLDER_ID]: { id: OTHER_FOLDER_ID, name: 'Legacy', parentId: null },
+        [USER2_FOLDER_ID]: { id: USER2_FOLDER_ID, name: 'Second user', parentId: null, ownerId: 'user-2' }
     };
 
     const metadataService = {
@@ -200,6 +202,48 @@ describe('folder route authorization', () => {
 
         expect(res.statusCode).toBe(200);
         expect(deps.metadataService.deleteFolder).toHaveBeenCalledWith(FOLDER_ID, false, 'user-1');
+    });
+
+    // A folder created or moved under another user's folder makes that
+    // folder's name appear in the requester's tree.
+    test('create rejects a parent folder owned by another user', async () => {
+        const res = await dispatch(router, {
+            method: 'POST', url: '/api/folders', body: { name: 'New', parentId: FOLDER_ID }, user: { id: 'user-2' }
+        });
+
+        expect(res.statusCode).toBe(403);
+        expect(res.body.messageKey).toBe('error_folder_not_owner');
+        expect(deps.metadataService.createFolder).not.toHaveBeenCalled();
+    });
+
+    test('create allows the parent owner, and any signed-in user under a legacy ownerless parent', async () => {
+        for (const [parentId, userId] of [[FOLDER_ID, 'user-1'], [OTHER_FOLDER_ID, 'user-2']]) {
+            const res = await dispatch(router, {
+                method: 'POST', url: '/api/folders', body: { name: 'New', parentId }, user: { id: userId }
+            });
+            expect(res.statusCode).toBe(201);
+            expect(deps.metadataService.createFolder).toHaveBeenCalledWith('New', parentId, userId);
+        }
+    });
+
+    test('move rejects a destination folder owned by another user', async () => {
+        const res = await dispatch(router, {
+            method: 'PATCH', url: `/api/folders/${USER2_FOLDER_ID}/move`, body: { parentId: FOLDER_ID }, user: { id: 'user-2' }
+        });
+
+        expect(res.statusCode).toBe(403);
+        expect(res.body.messageKey).toBe('error_folder_not_owner');
+        expect(deps.metadataService.moveFolder).not.toHaveBeenCalled();
+    });
+
+    test('move allows a legacy ownerless destination and the root', async () => {
+        for (const parentId of [OTHER_FOLDER_ID, null]) {
+            const res = await dispatch(router, {
+                method: 'PATCH', url: `/api/folders/${USER2_FOLDER_ID}/move`, body: { parentId }, user: { id: 'user-2' }
+            });
+            expect(res.statusCode).toBe(200);
+            expect(deps.metadataService.moveFolder).toHaveBeenCalledWith(USER2_FOLDER_ID, parentId);
+        }
     });
 
     test('password rejects a signed-in non-owner', async () => {
