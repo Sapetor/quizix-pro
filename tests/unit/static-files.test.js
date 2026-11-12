@@ -75,3 +75,54 @@ describe('Static file cache policy', () => {
         expect(res.headers['Cache-Control']).toBe(NO_STORE_CACHE_CONTROL);
     });
 });
+
+describe('JS fallback handler path containment', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const { createJsFileHandler } = require('../../middleware/static-files');
+    const logger = { debug() {}, info() {}, warn() {}, error() {} };
+    let baseDir;
+    let handler;
+
+    beforeAll(() => {
+        baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'js-handler-'));
+        fs.mkdirSync(path.join(baseDir, 'public', 'js'), { recursive: true });
+        fs.mkdirSync(path.join(baseDir, 'public', 'js-private'));
+        fs.writeFileSync(path.join(baseDir, 'public', 'js', 'a.js'), 'export const a = 1;');
+        fs.writeFileSync(path.join(baseDir, 'public', 'js-private', 'b.js'), 'SIBLING-SECRET');
+        fs.writeFileSync(path.join(baseDir, 'secret.txt'), 'TOP-SECRET');
+        handler = createJsFileHandler(logger, true, baseDir);
+    });
+
+    afterAll(() => fs.rmSync(baseDir, { recursive: true, force: true }));
+
+    // The handler answers asynchronously (fs.readFile), so resolve on json/send.
+    function request(reqPath) {
+        return new Promise((resolve) => {
+            const res = {
+                statusCode: 200,
+                setHeader() {},
+                status(code) { this.statusCode = code; return this; },
+                json(body) { resolve({ status: this.statusCode, body: JSON.stringify(body) }); },
+                send(body) { resolve({ status: this.statusCode, body: String(body) }); }
+            };
+            handler({ path: reqPath }, res, () => resolve({ status: 'next', body: '' }));
+        });
+    }
+
+    test('serves a file inside public/js', async () => {
+        const { status, body } = await request('/js/a.js');
+        expect(status).toBe(200);
+        expect(body).toBe('export const a = 1;');
+    });
+
+    test.each([
+        ['/js/../../secret.txt', 'TOP-SECRET'],
+        ['/js/../js-private/b.js', 'SIBLING-SECRET']
+    ])('refuses %s, which resolves outside public/js', async (reqPath, secret) => {
+        const { status, body } = await request(reqPath);
+        expect(status).toBe(404);
+        expect(body).not.toContain(secret);
+    });
+});

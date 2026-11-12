@@ -171,7 +171,15 @@ function createStaticErrorHandler(logger) {
 function createJsFileHandler(logger, isProduction, baseDir) {
     return (req, res, next) => {
         try {
+            const jsRoot = path.join(baseDir, 'public', 'js');
             const filePath = path.join(baseDir, 'public', req.path);
+            // req.path is not normalised by Express, so raw ".." segments reach
+            // this handler (express.static refuses them and falls through).
+            // Serve nothing that resolves outside public/js.
+            if (!filePath.startsWith(jsRoot + path.sep)) {
+                logger.warn(`JS request outside public/js refused: ${req.path}`);
+                return res.status(404).json({ error: 'File not found' });
+            }
             logger.info(`JS request: ${req.path} -> ${filePath}`);
 
             // Check if file exists before attempting to serve
