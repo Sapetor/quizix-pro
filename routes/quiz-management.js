@@ -570,8 +570,10 @@ function createQuizManagementRoutes(options) {
             const locked = quizUnlockError(metadataService, req, filename);
             if (locked) return res.status(locked.status).json(locked.body);
 
-            // Update display name if provided
+            // Update display name if provided. The title in the quiz file is
+            // renamed too, or the next save from the editor restores the old name.
             if (displayName !== undefined) {
+                await quizService.setQuizTitle(filename, displayName);
                 await metadataService.setQuizDisplayName(filename, displayName);
             }
 

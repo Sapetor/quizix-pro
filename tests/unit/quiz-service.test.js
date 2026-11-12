@@ -273,6 +273,27 @@ describe('QuizService', () => {
         });
     });
 
+    describe('setQuizTitle', () => {
+        test('rewrites the title in the quiz file and keeps the other fields', async () => {
+            const stored = { title: 'Algebra v1', questions: [{ question: 'Q?' }], created: '2026-01-01', id: 'abc' };
+            fs.access.mockResolvedValue();
+            fs.readFile.mockResolvedValue(JSON.stringify(stored));
+            fs.writeFile.mockResolvedValue();
+            fs.rename.mockResolvedValue();
+
+            await quizService.setQuizTitle('algebra.json', 'Algebra final');
+
+            const written = JSON.parse(fs.writeFile.mock.calls[0][1]);
+            expect(written).toEqual({ ...stored, title: 'Algebra final' });
+            expect(fs.rename.mock.calls[0][1]).toBe(require('path').join('quizzes', 'algebra.json'));
+        });
+
+        test('rejects a reserved filename', async () => {
+            await expect(quizService.setQuizTitle('users.json', 'x')).rejects.toThrow('Invalid filename');
+            expect(fs.writeFile).not.toHaveBeenCalled();
+        });
+    });
+
     describe('reserved store files', () => {
         // quizzes/ also holds the auth store (users.json), the metadata store
         // (quiz-metadata.json) and dotfiles such as .session-secret. None of

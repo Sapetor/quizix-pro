@@ -85,7 +85,7 @@ function makeDeps(overrides = {}) {
     };
 
     return {
-        quizService: { validateFilename: () => true, listQuizzes: jest.fn(async () => []), loadQuiz: jest.fn(), deleteQuiz: jest.fn() },
+        quizService: { validateFilename: () => true, listQuizzes: jest.fn(async () => []), loadQuiz: jest.fn(), deleteQuiz: jest.fn(), setQuizTitle: jest.fn(async () => {}) },
         resultsService,
         metadataService,
         gameSessionService: { getAllGames: () => new Map(), getGame: () => null },
@@ -485,6 +485,18 @@ describe('ownerless quiz changes', () => {
         expect(deps.quizService.deleteQuiz).toHaveBeenCalled();
     });
 
+    // The editor overwrites a quiz only when its title matches the loaded
+    // file title, and the save then writes that title back as display name.
+    test('renaming a quiz also renames the title in the quiz file', async () => {
+        const { deps, router } = setup();
+        const res = await dispatch(router, {
+            method: 'PATCH', url: '/api/quiz-metadata/legacy.json', body: { displayName: 'Algebra final' }
+        });
+        expect(res.statusCode).toBe(200);
+        expect(deps.quizService.setQuizTitle).toHaveBeenCalledWith('legacy.json', 'Algebra final');
+        expect(deps.metadataService.setQuizDisplayName).toHaveBeenCalledWith('legacy.json', 'Algebra final');
+    });
+
     test('an anonymous proxied client cannot rename or move an ownerless quiz', async () => {
         const { deps, router } = setup();
         const res = await dispatch(router, {
@@ -492,6 +504,7 @@ describe('ownerless quiz changes', () => {
         });
         expect(res.statusCode).toBe(401);
         expect(deps.metadataService.setQuizDisplayName).not.toHaveBeenCalled();
+        expect(deps.quizService.setQuizTitle).not.toHaveBeenCalled();
     });
 });
 

@@ -369,6 +369,22 @@ class QuizService {
         this.logger.debug(`Quiz deleted successfully: ${filename}`);
         return { success: true, filename };
     }
+
+    /**
+     * Set the title stored in a quiz file. The file browser rename calls this
+     * with the new display name: the editor overwrites a quiz only when its
+     * title still matches the file title, and each save writes the file title
+     * back as the display name.
+     */
+    async setQuizTitle(filename, title) {
+        const quizData = await this.loadQuiz(filename);
+        quizData.title = title;
+        await this.wslMonitor.trackFileOperation(
+            () => atomicWriteFile(this.resolveQuizPath(filename), JSON.stringify(quizData, null, 2)),
+            `Quiz rename: ${filename}`
+        );
+        return quizData;
+    }
 }
 
 module.exports = { QuizService };
