@@ -820,8 +820,10 @@ export class FileManager {
      */
     async ensureUnlocked(type, id, name, errorMessage = '') {
         // Check if we have a valid token
+        // A quiz token also has to still be held by APIHelper, which drops it on a 401.
         const cached = this.sessionTokens.get(id);
-        if (cached && Date.now() < cached.expiresAt) {
+        if (cached && Date.now() < cached.expiresAt
+            && (type !== 'quiz' || APIHelper.quizUnlockTokens.has(id))) {
             return true;
         }
 

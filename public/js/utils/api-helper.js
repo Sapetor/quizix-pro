@@ -27,9 +27,12 @@ export class APIHelper {
         const url = this.getApiUrl(endpoint);
         const method = options.method || 'GET';
         const match = endpoint.replace(/^\//, '').match(/^api\/quiz\/([^?]+)/);
+        let sentUnlockKey = null;
         if (method === 'GET' && match) {
-            const credential = this.quizUnlockTokens.get(decodeURIComponent(match[1]));
+            const unlockKey = decodeURIComponent(match[1]);
+            const credential = this.quizUnlockTokens.get(unlockKey);
             if (credential && credential.expiresAt > Date.now()) {
+                sentUnlockKey = unlockKey;
                 const headers = new Headers(options.headers);
                 if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${credential.token}`);
                 options = { ...options, headers };
@@ -39,6 +42,11 @@ export class APIHelper {
 
         try {
             const response = await fetch(url, options);
+            // The server no longer accepts the token (restart, password change):
+            // drop it so the next load prompts instead of failing again.
+            if (response.status === 401 && sentUnlockKey) {
+                this.quizUnlockTokens.delete(sentUnlockKey);
+            }
             if (response.ok && endpoint.replace(/^\//, '') === 'api/unlock') {
                 const request = JSON.parse(options.body);
                 if (request.itemType === 'quiz') {
