@@ -156,6 +156,19 @@ describe('MetadataService', () => {
                 .rejects.toThrow('already exists');
         });
 
+        // The file browser builds its Move To targets from the tree, so a new
+        // folder that the tree omits cannot receive quizzes.
+        test('a new empty folder is listed for its owner only', async () => {
+            const folder = await metadataService.createFolder('Empty', null, 'user1');
+
+            const own = metadataService.getTreeStructure('user1').folders.find(f => f.id === folder.id);
+            expect(own).toBeDefined();
+            expect(own.owned).toBe(true);
+            for (const userId of ['user2', null]) {
+                expect(metadataService.getTreeStructure(userId).folders.find(f => f.id === folder.id)).toBeUndefined();
+            }
+        });
+
         test('should allow same name in different parents', async () => {
             const parent1 = await metadataService.createFolder('Parent1');
             const parent2 = await metadataService.createFolder('Parent2');

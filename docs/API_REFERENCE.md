@@ -229,7 +229,7 @@ Delete a quiz file and its metadata.
 Folders and per-quiz metadata (display name, folder, visibility, password) are stored in `quizzes/quiz-metadata.json`. Folder IDs are UUIDs; a malformed `:id` returns `400` with `messageKey: "error_invalid_parameters"`.
 
 #### GET /api/quiz-tree
-Folder tree with the quizzes the requester may see. A folder is omitted when no quiz in its subtree is visible to the requester; this also omits newly created empty folders.
+Folder tree with the quizzes the requester may see. A folder is omitted when no quiz in its subtree is visible to the requester, unless the requester owns it, so a newly created empty folder is listed for its owner. Each folder has an `owned` flag.
 
 **Response:** `{ "folders": [...], "quizzes": [...] }`, where `quizzes` are the root-level quizzes and each folder has `children` and `quizzes`.
 

@@ -938,9 +938,9 @@ class MetadataService {
      * may see. Anonymous requesters (userId = null/undefined) see only the
      * public pool.
      *
-     * Folders whose entire visible descendant set is empty are pruned — this
-     * prevents leaking folder names for folders that only contain private
-     * quizzes owned by someone else.
+     * Folders whose entire visible descendant set is empty are pruned, unless
+     * the requester owns them. This prevents leaking folder names for folders
+     * that only contain private quizzes owned by someone else.
      */
     getTreeStructure(userId = null) {
         const visibleQuizzesInFolder = (folderId) => {
@@ -963,14 +963,16 @@ class MetadataService {
                         name: folder.name,
                         protected: !!folder.passwordHash,
                         created: folder.created,
+                        owned: !!userId && folder.ownerId === userId,
                         children,
                         quizzes
                     };
                 })
                 // Prune folders whose entire subtree is empty after filtering.
-                // A folder is kept if it contains any visible quiz or any
-                // non-empty child folder.
-                .filter(f => f.quizzes.length > 0 || f.children.length > 0);
+                // A folder is kept if the requester owns it, or if it contains
+                // any visible quiz or any kept child folder. Without the owner
+                // test a newly created folder never reaches its owner's tree.
+                .filter(f => f.owned || f.quizzes.length > 0 || f.children.length > 0);
         };
 
         const rootFolders = buildFolderTree(null);
