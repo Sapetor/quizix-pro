@@ -8,7 +8,8 @@
  * objects, so no HTTP server is started.
  */
 
-const { createQuizManagementRoutes } = require('../../routes/quiz-management');
+const { createQuizManagementRoutes, quizUnlockError } = require('../../routes/quiz-management');
+const { MetadataService } = require('../../services/metadata-service');
 const { validateBody, validateParams, ...schemas } = require('../../services/validation-schemas');
 
 const FOLDER_ID = '11111111-1111-4111-8111-111111111111';
@@ -504,4 +505,68 @@ test('an anonymous proxied client cannot register an unknown quiz through the me
     });
     expect(res.statusCode).toBe(401);
     expect(deps.metadataService.registerQuiz).not.toHaveBeenCalled();
+});
+
+// Uses the real MetadataService so the route is checked against the real
+// requiresAuth, unlock and verifyToken.
+describe('changing a quiz inside a password-protected folder', () => {
+    async function setup() {
+        const metadataService = new MetadataService(makeDeps().logger, {}, 'unused');
+        metadataService.saveMetadata = async () => {};
+        metadataService.metadata = {
+            folders: {
+                [FOLDER_ID]: { id: FOLDER_ID, name: 'Locked', parentId: null, passwordHash: await metadataService.hashPassword('folder-pw') }
+            },
+            quizzes: { 'legacy.json': { displayName: 'Legacy', folderId: FOLDER_ID } }
+        };
+        const deps = makeDeps({ metadataService });
+        return { metadataService, router: createQuizManagementRoutes(deps) };
+    }
+
+    const patch = (router, body, extra = {}) => dispatch(router, {
+        method: 'PATCH', url: '/api/quiz-metadata/legacy.json', body, ...extra
+    });
+
+    test.each([
+        ['a direct LAN client with no token', {}],
+        ['a direct LAN client with a wrong token', { headers: { authorization: 'Bearer wrong' } }],
+        ['a signed-in user with no token', { user: { id: 'user-2' } }]
+    ])('%s cannot move the quiz out of the folder', async (_label, extra) => {
+        const { metadataService, router } = await setup();
+        const res = await patch(router, { folderId: null }, extra);
+
+        expect(res.statusCode).toBe(401);
+        expect(res.body.messageKey).toBe('error_auth_required');
+        expect(metadataService.getQuizMetadata('legacy.json').folderId).toBe(FOLDER_ID);
+        expect(metadataService.requiresAuth('legacy.json', 'quiz', null)).toBe(true);
+    });
+
+    test('a rename without the token is refused', async () => {
+        const { metadataService, router } = await setup();
+        const res = await patch(router, { displayName: 'Renamed' });
+
+        expect(res.statusCode).toBe(401);
+        expect(metadataService.getQuizMetadata('legacy.json').displayName).toBe('Legacy');
+    });
+
+    test('the token from unlocking with the folder password allows the move', async () => {
+        const { metadataService, router } = await setup();
+        const { token } = await metadataService.unlock('legacy.json', 'quiz', 'folder-pw', '10.0.0.1');
+        const res = await patch(router, { folderId: null }, { headers: { authorization: `Bearer ${token}` } });
+
+        expect(res.statusCode).toBe(200);
+        expect(metadataService.getQuizMetadata('legacy.json').folderId).toBeNull();
+    });
+
+    // POST /api/save-quiz in server.js calls quizUnlockError before overwriting.
+    test('overwriting through save-quiz needs the unlock token', async () => {
+        const { metadataService } = await setup();
+        const req = (headers = {}) => ({ user: null, get: (name) => headers[name.toLowerCase()] });
+        const { token } = await metadataService.unlock('legacy.json', 'quiz', 'folder-pw', '10.0.0.1');
+
+        expect(quizUnlockError(metadataService, req(), 'legacy.json').status).toBe(401);
+        expect(quizUnlockError(metadataService, req({ authorization: 'Bearer wrong' }), 'legacy.json').status).toBe(401);
+        expect(quizUnlockError(metadataService, req({ authorization: `Bearer ${token}` }), 'legacy.json')).toBeNull();
+        expect(quizUnlockError(metadataService, req(), 'unknown.json')).toBeNull();
+    });
 });

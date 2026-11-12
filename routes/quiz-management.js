@@ -34,6 +34,21 @@ const MAX_HOST_TOKENS = 25;
 const MAX_HOST_TOKEN_LENGTH = 100;
 
 /**
+ * Error to send when `filename` is password protected for this requester and
+ * the request carries no valid unlock token, or null when the change may go
+ * ahead. Used before changing a quiz, so that a quiz in a protected folder
+ * cannot be moved out of it, renamed or overwritten without the password.
+ * Exported for the POST /api/save-quiz handler in server.js.
+ */
+function quizUnlockError(metadataService, req, filename) {
+    if (!metadataService.requiresAuth(filename, 'quiz', req.user?.id || null)) return null;
+    const auth = req.get('authorization') || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+    if (token && metadataService.verifyToken(token, filename, 'quiz')) return null;
+    return { status: 401, body: { error: 'Authentication required', messageKey: 'error_auth_required' } };
+}
+
+/**
  * Quiz Management Routes
  *
  * Handles all quiz and folder management operations including:
@@ -552,6 +567,8 @@ function createQuizManagementRoutes(options) {
             if (!quiz.ownerId && !isTrustedRequester(req)) {
                 return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
             }
+            const locked = quizUnlockError(metadataService, req, filename);
+            if (locked) return res.status(locked.status).json(locked.body);
 
             // Update display name if provided
             if (displayName !== undefined) {
@@ -705,4 +722,4 @@ function createQuizManagementRoutes(options) {
     return router;
 }
 
-module.exports = { createQuizManagementRoutes };
+module.exports = { createQuizManagementRoutes, quizUnlockError };

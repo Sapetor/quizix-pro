@@ -46,7 +46,7 @@ const { GracefulShutdown } = require('./utils/graceful-shutdown');
 const { createCacheControlMiddleware } = require('./middleware/cache-control');
 const { createStaticFilesConfig, createStaticErrorHandler, createJsFileHandler, createDebugStaticConfig } = require('./middleware/static-files');
 const { createHealthCheckRoutes } = require('./routes/health-checks');
-const { createQuizManagementRoutes } = require('./routes/quiz-management');
+const { createQuizManagementRoutes, quizUnlockError } = require('./routes/quiz-management');
 const { createFileUploadRoutes } = require('./routes/file-uploads');
 const { createAIGenerationRoutes } = require('./routes/ai-generation');
 const { createManimRoutes } = require('./routes/manim-routes');
@@ -576,6 +576,8 @@ app.post('/api/save-quiz', saveQuizRateLimiter.middleware, validateBody(saveQuiz
             if (!quizMeta?.ownerId && !ownerId && !isDirectLocalClient(req)) {
                 return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
             }
+            const locked = quizUnlockError(metadataService, req, filename);
+            if (locked) return res.status(locked.status).json(locked.body);
         }
 
         // Scope title-conflict detection to the requester's own quizzes
