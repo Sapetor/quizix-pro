@@ -352,6 +352,36 @@ function registerPlayerEvents(io, socket, options) {
         }
     });
 
+    // A host session whose host socket closed: with captured devices keep it for
+    // 2 minutes so the host can come back (host-join cancels the timer), without
+    // them destroy it. A returning host gets a fresh session from host-join.
+    function releaseHostSession(session) {
+        if (!session) return;
+        if (session.playerRegistry.size === 0) {
+            playerManagementService.destroySession(session.hostSessionId);
+            return;
+        }
+        session.currentGamePin = null;
+        const sessionId = session.hostSessionId;
+        const timerId = setTimeout(() => {
+            playerManagementService.sessionGraceTimers.delete(sessionId);
+            const roomName = `session:${sessionId}`;
+            const socketsInRoom = io.sockets.adapter.rooms.get(roomName);
+            if (socketsInRoom) {
+                for (const sid of [...socketsInRoom]) {
+                    const s = io.sockets.sockets.get(sid);
+                    if (s) {
+                        s.emit('session-released');
+                        s.leave(roomName);
+                    }
+                }
+            }
+            playerManagementService.destroySession(sessionId);
+            logger.info(`Session ${sessionId} destroyed after host disconnect grace period`);
+        }, 2 * 60 * 1000);
+        playerManagementService.sessionGraceTimers.set(sessionId, timerId);
+    }
+
     socket.on('disconnect', () => {
         try {
             // Handle player disconnect (non-intentional — grace period for active games)
@@ -404,39 +434,20 @@ function registerPlayerEvents(io, socket, options) {
 
                     logger.info(`Host disconnected from game ${hostedGame.pin} — 30s grace period started`);
                 } else {
-                    // In lobby: check if session has captured players
-                    const session = playerManagementService.getSessionByHostSocket(socket.id);
-                    if (session && session.playerRegistry.size > 0) {
-                        // Session has players — start grace timer instead of immediate cleanup
-                        session.currentGamePin = null;
-                        const sessionId = session.hostSessionId;
-                        const timerId = setTimeout(() => {
-                            playerManagementService.sessionGraceTimers.delete(sessionId);
-                            const roomName = `session:${sessionId}`;
-                            const socketsInRoom = io.sockets.adapter.rooms.get(roomName);
-                            if (socketsInRoom) {
-                                for (const sid of [...socketsInRoom]) {
-                                    const s = io.sockets.sockets.get(sid);
-                                    if (s) {
-                                        s.emit('session-released');
-                                        s.leave(roomName);
-                                    }
-                                }
-                            }
-                            playerManagementService.destroySession(sessionId);
-                            logger.info(`Session ${sessionId} destroyed after lobby disconnect grace period`);
-                        }, 2 * 60 * 1000);
-                        playerManagementService.sessionGraceTimers.set(sessionId, timerId);
-                    } else if (session) {
-                        // No captured devices to hold for the host's return. A host
-                        // that comes back gets a fresh session from host-join.
-                        playerManagementService.destroySession(session.hostSessionId);
-                    }
+                    // In lobby: release the host session (grace timer when it has
+                    // captured devices) and delete the game.
+                    releaseHostSession(playerManagementService.getSessionByHostSocket(socket.id));
 
                     // Still clean up the game immediately
                     playerManagementService.handleHostDisconnect(hostedGame, io);
                     gameSessionService.deleteGame(hostedGame.pin);
                 }
+            } else {
+                // host-starting-new-game cleared the game's hostId, so a host that
+                // went back to the menu hosts no game but still owns its session.
+                // host-join, host-rejoin and createOrGetSession move hostSocketId to
+                // a new socket, so this only matches a session nobody took over.
+                releaseHostSession(playerManagementService.getSessionByHostSocket(socket.id));
             }
 
             // Clean up orphaned games
