@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2026-11-12
 
+### Added
+- Offline classroom use: MathJax 3.2.2, Chart.js 4.4.0, highlight.js 11.9.0 with the atom-one-dark theme, canvas-confetti 1.6.0, jsPDF 2.5.1, mermaid 10.9.8 and the Inter, Space Grotesk, JetBrains Mono and Source Serif 4 web fonts are vendored under `public/libs` at pinned versions (5.8 MB added). The browser contacts no CDN. Versions, sources and sha256 are in `public/libs/README.md` and `public/libs/SHA256SUMS`.
+- The Socket.IO client loads from the app's own `socket.io/socket.io.min.js`, not `cdn.socket.io`, so client and server versions match.
+- CSP: `cdn.jsdelivr.net`, `cdnjs.cloudflare.com`, `cdn.socket.io`, `fonts.googleapis.com` and `fonts.gstatic.com` removed from every directive of the main policy. The service worker's cache-first rule for CDN hosts is now a cache-first rule for same-origin `/libs/` paths.
+- `tests/e2e/offline-no-cdn.spec.js` hosts a game with every non-local request aborted and fails on any external request; `tests/unit/vendored-libs.test.js` checks references and checksums. Verified in Chromium only. The debug pages under `ENABLE_DEBUG_ROUTES` still reference CDNs.
+
 ### Security
 - `/api/active-games` returns live PINs only to signed-in users and direct LAN clients, meaning a loopback or private TCP peer with no `CF-Connecting-IP`, `X-Forwarded-For`, `X-Real-IP` or `Forwarded` header (`isDirectLocalClient` in `middleware/client-ip.js`). Other requests get `{"games": []}`. The `debug` block listing all games is removed.
 - Deleting, overwriting through `/api/save-quiz`, or renaming and moving a quiz that has no owner now needs a signed-in user or a direct LAN client; anonymous requests through a tunnel or proxy get `401`. Before, anyone could delete the ownerless quizzes.
@@ -22,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Earlier on this branch (commit fc2ff1c): SheetJS vendored, signup gated, manim and container hardening, `unsafe-inline` dropped from the CSP.
 
 ### Fixed
+- Mermaid diagrams in the AI generator: the loader injected an inline module script, which the CSP refused. It now loads the vendored build by URL.
+- The tap ripple and the `focused-mobile` class in `public/js/utils/mobile-enhancements.js` never applied, because both tested `this.isMobile`, which nothing set. They are gated on `isPhone()`. Enter or Space on a quiz option no longer runs the ripple code against the document.
+- `.env.docker`: the `MANIM_RENDER_TIMEOUT` example was `120`, read as milliseconds (0.12 s). It is now `120000`. The compose files still do not forward the variable to the container.
+- `k8s/cleanup.sh --delete-data` deletes the PVCs the manifest declares (`quizix-quizzes`, `quizix-results`, `quizix-uploads`). Before, it used `-pvc` names and deleted nothing.
+- `prepare-prod.sh` reads the `BUILD_STAMP` fallback from `public/sw.js`, not a `CACHE_VERSION` line that no longer exists.
+- `docker-build.sh deploy` and `test` probe `/health` with `node` inside the container. Before, they ran `curl`, which neither image installs. Not run against Docker.
 - Folder passwords now work for users other than the quiz's owner. Since 81ad42c, quizzes inside a password-protected folder were hidden from listings and returned 403 to everyone but their owner, so the unlock flow from 05d92bf could not be reached; ownerless quizzes there were hidden from everyone. They are now listed and marked protected (including under a protected ancestor folder), and loading one needs the unlock token. Private quizzes of other users stay hidden, token or not.
 - After saving, the file browser reloads its tree even when the follow-up metadata request fails.
 - `checkManimStatus()` now cancels the body of a non-OK response. The unread body kept the landing page from reaching network idle, so `bootLanding` waited out its 5 s cap on every boot (776b9fa).
@@ -34,6 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `multiple_correct` label shortened to "Multi-Select" (en) with short forms in the other 8 locales, so it no longer ellipsises on 390px phones. `index.html` option text updated to match.
 
 ### Changed
+- Removed the unread `MAX_UPLOAD_SIZE` entries in `config/limits.js`. Image uploads stay capped at 5 MB with and without `MOBILE_MODE` (`CONFIG.LIMITS.MAX_FILE_SIZE` in `server.js`).
+- Removed the unreachable flat quiz list fallback `showFlatListView`, the hidden `#quiz-list` element and four translation keys in all 9 locales. Its CSS selectors remain.
+- The last "QuizMaster Pro" strings (`debug/ui-screenshot-tool.js`, a test fixture) use the Quizix name.
+- `docker-compose.server.yml` and `k8s/02-quizix-ingress.yaml` comments corrected (stale line reference; Option 2 path now `/quizix(/|$)(.*)`).
 - Removed dead CSS: about 2,370 lines and 366 selectors with no reference in HTML, JS or server code (keyboard-shortcuts modal, user manual, old connection indicator, font-size buttons, `.fs-*` utilities, preview carousel and device toggle, lobby and mobile-header leftovers), plus 10 keyframes and 4 CSS variables left unused. Classes built at runtime (`toast-${type}`, `qs-glyph--${glyph}`, `qr-size-${n}`, `hljs-*`) are kept.
 - Removed 286 unused translation keys from all 9 locales (1414 -> 1128 each). Keys built at runtime (`question_type_*`, `compare_improving/declining/stable`) are kept.
 - Removed unused exports `closeAuthModal`, `createQuestionCounter`, `validateQuery` and five param schemas, and the opt-in `/api/stats/memory` endpoint, which nothing called or documented. `/debug/config`, `/api/debug/files` and `/api/debug/directory` stay, since DEPLOYMENT.md documents them.

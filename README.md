@@ -5,7 +5,10 @@ computer, players join from any browser with a PIN, and everyone answers live ag
 timer and leaderboard. Questions render LaTeX, so it works for maths and engineering material
 rather than trivia alone.
 
-Runs entirely on a LAN out of the box. Only the AI question-generation features reach the internet.
+Runs entirely on a LAN out of the box. All browser libraries and fonts are served from
+`public/libs` (versions and checksums in [public/libs/README.md](public/libs/README.md)), so no CDN
+is contacted and the app works with no internet access. Only the AI question-generation features
+reach the internet.
 
 | Lobby — players join by PIN or QR | Live question with LaTeX in every option |
 |---|---|
