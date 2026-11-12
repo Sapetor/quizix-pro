@@ -10,9 +10,13 @@ Runs entirely on a LAN out of the box. All browser libraries and fonts are serve
 is contacted and the app works with no internet access. Only the AI question-generation features
 reach the internet.
 
-| Lobby — players join by PIN or QR | Live question with LaTeX in every option |
+| Host lobby: players join by PIN or QR code |
+|---|
+| ![Host lobby with five joined players, a QR code, the game PIN and the join URL](docs/images/host-lobby.png) |
+
+| Host screen during a question | Player's phone |
 |---|---|
-| ![Game lobby showing joined players, a QR code and the game PIN](public/images/carrousel-main-menu-mobile-1.png) | ![A quadratic-formula question with LaTeX rendered in the prompt and all four answers](public/images/carrousel-main-menu-mobile-2.png) |
+| <img src="docs/images/host-question.png" width="520" alt="Host view of a quadratic-formula question with LaTeX rendered in the prompt and all four answers, a countdown and the number of players who have answered"> | <img src="docs/images/player-question.png" width="200" alt="The same question on a phone, with the four LaTeX answers as tap targets"> |
 
 ## Quickstart
 

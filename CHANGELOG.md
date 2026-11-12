@@ -127,6 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/SCORING_SYSTEM.md`: the time bonus decays over the question's time limit (a419083), not a fixed 10 s; examples recomputed. Poll and consensus scoring added.
 - README: Node 22.13.0 or later (`engines`), the full environment-variable table, AI key precedence, and what anonymous clients behind a tunnel can and cannot do.
 - `.env.example`: a key sent with the request is used in preference to the server key, not the reverse.
+- README: the two screenshots, taken on an older Spanish-language UI, are replaced by three of the current UI in English (host lobby, host question, player phone), stored in `docs/images`. The old files in `public/images` were referenced only by the README and are removed.
 
 ---
 
