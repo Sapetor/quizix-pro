@@ -2,7 +2,7 @@ const express = require('express');
 const dnsModule = require('dns');
 const dns = dnsModule.promises;
 const { requireUser } = require('../middleware/attach-user');
-const { getClientIp } = require('../middleware/client-ip');
+const { getClientIp, isDirectLocalClient } = require('../middleware/client-ip');
 
 /**
  * POST to an upstream AI provider and normalize the outcome.
@@ -294,6 +294,18 @@ function createAIGenerationRoutes(options) {
         return true;
     }
 
+    /**
+     * The Ollama proxy runs prompts on the operator's Ollama, which has no key
+     * of its own. Allow signed-in users and direct LAN clients, as the shared
+     * quiz gates do; refuse anonymous clients behind the tunnel or a proxy.
+     * Sends 401 and returns false when the caller is not allowed.
+     */
+    function ollamaCallerAllowed(req, res) {
+        if (req.user || isDirectLocalClient(req)) return true;
+        res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
+        return false;
+    }
+
     // Runtime Ollama configuration endpoints
     router.get('/ollama/config', (req, res) => {
         res.json({ url: ollamaUrl, enabled: ollamaEnabled });
@@ -331,6 +343,7 @@ function createAIGenerationRoutes(options) {
         if (!ollamaEnabled) {
             return res.json({ models: [] });
         }
+        if (!ollamaCallerAllowed(req, res)) return;
         if (!await ollamaTargetAllowed(res)) return;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), OLLAMA_MODELS_TIMEOUT_MS);
@@ -364,6 +377,7 @@ function createAIGenerationRoutes(options) {
         if (!ollamaEnabled) {
             return res.status(503).json({ error: 'Ollama is disabled', messageKey: 'error_ollama_disabled' });
         }
+        if (!ollamaCallerAllowed(req, res)) return;
         if (!await ollamaTargetAllowed(res)) return;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), OLLAMA_GENERATE_TIMEOUT_MS);
@@ -425,6 +439,7 @@ function createAIGenerationRoutes(options) {
         if (!ollamaEnabled) {
             return res.json({ running: false });
         }
+        if (!ollamaCallerAllowed(req, res)) return;
         if (!await ollamaTargetAllowed(res)) return;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);

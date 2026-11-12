@@ -588,7 +588,7 @@ Change the Ollama URL or enable flag at runtime. Requires a signed-in user.
 A URL whose host resolves to a private or internal address is refused (`403`, `error_url_blocked`). A URL set this way is checked again on every later Ollama request.
 
 #### GET /api/ollama/models
-List available Ollama models. Returns `{ "models": [] }` when Ollama is disabled.
+List available Ollama models. Returns `{ "models": [] }` when Ollama is disabled. While Ollama is enabled, this route, `POST /api/ollama/generate` and `GET /api/ollama/health` require a signed-in user or a direct LAN client; an anonymous request through the tunnel or a proxy gets `401` (`error_auth_required`).
 
 **Response:**
 ```json
@@ -604,7 +604,7 @@ Proxy a generation request to Ollama's `/api/generate`.
 
 **Request Body:** `{ "model": "llama3", "prompt": "...", "stream": false, "options": {} }`. `model` and `prompt` are required (`400`).
 
-Returns `503` (`error_ollama_disabled`) when Ollama is disabled. Otherwise every request is rate limited per client IP to 20 per minute, on a counter separate from the Claude and Gemini routes. No API key is involved. **Response:** Ollama's response body.
+Returns `503` (`error_ollama_disabled`) when Ollama is disabled and `401` (`error_auth_required`) for an anonymous client that is not on the LAN. Otherwise every request is rate limited per client IP to 20 per minute, on a counter separate from the Claude and Gemini routes. No API key is involved. **Response:** Ollama's response body.
 
 #### GET /api/ollama/health
 **Response:** `{ "running": true }`; `false` when disabled or unreachable (3-second timeout).
