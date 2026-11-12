@@ -228,7 +228,10 @@ class Game {
      * @returns {number[]} Indices to hide
      */
     calculateHiddenOptions(question) {
-        const correctAnswer = question.correctAnswer;
+        // Same field priority as scoring: many stored quizzes carry only
+        // correctIndex, and reading correctAnswer alone left every option
+        // eligible for hiding, the correct one included.
+        const correctAnswer = ScoringService.getCorrectAnswerKey(question, 'multiple-choice');
         const optionsCount = question.options?.length || 4;
         const wrongIndices = [];
 
@@ -797,7 +800,8 @@ class Game {
                     text: q.question || q.text,
                     type: q.type || 'multiple-choice',
                     options: q.options,
-                    correctAnswer: q.correctAnswer,
+                    // correctIndex-only multiple-choice questions, as in the reveal payload
+                    correctAnswer: q.correctAnswer ?? q.correctIndex,
                     correctAnswers: q.correctAnswers,
                     correctOrder: q.correctOrder,
                     isPoll: q.isPoll === true,

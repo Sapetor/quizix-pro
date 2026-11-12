@@ -204,6 +204,28 @@ describe('Game — power-ups', () => {
         expect(game.players.get('p1').powerUps['fifty-fifty'].used).toBe(true);
     });
 
+    // Stored quizzes often carry correctIndex without correctAnswer; scoring
+    // reads correctIndex first, so fifty-fifty must protect the same option.
+    test('fifty-fifty never hides the correct option of a correctIndex-only question', () => {
+        const game = makeGame();
+        const question = { type: 'multiple-choice', options: ['A', 'B', 'C', 'D'], correctIndex: 2 };
+        for (let i = 0; i < 200; i++) {
+            const hidden = game.calculateHiddenOptions(question);
+            expect(hidden).toHaveLength(2);
+            expect(hidden).not.toContain(2);
+        }
+    });
+
+    test('fifty-fifty never hides the correct option of a correctAnswer-only question', () => {
+        const game = makeGame();
+        const question = { type: 'multiple-choice', options: ['A', 'B', 'C', 'D'], correctAnswer: 0 };
+        for (let i = 0; i < 200; i++) {
+            const hidden = game.calculateHiddenOptions(question);
+            expect(hidden).toHaveLength(2);
+            expect(hidden).not.toContain(0);
+        }
+    });
+
     test('rejects reusing a spent power-up', () => {
         const game = gameWithPlayer();
         game.usePowerUp('p1', 'extend-time');
@@ -773,6 +795,21 @@ describe('Game — saveResults (idempotent, mocked I/O)', () => {
         expect(parsed.gamePin).toBe(game.pin);
         expect(parsed.results[0]).toMatchObject({ name: 'Alice', score: 250 });
         expect(parsed.questions[0]).toMatchObject({ questionNumber: 1, text: 'Q1?' });
+    });
+
+    test('records the correct answer of a multiple-choice question that stores only correctIndex', async () => {
+        const game = makeGame({
+            questions: [
+                { type: 'multiple-choice', question: 'Q1?', options: ['A', 'B', 'C', 'D'], correctIndex: 2 },
+                mcQuestion({ correctAnswer: 1, correctIndex: 1 }),
+                { type: 'true-false', question: 'Q3?', correctAnswer: false }
+            ]
+        });
+
+        await game.saveResults();
+
+        const parsed = JSON.parse(atomicWriteFile.mock.calls[0][1]);
+        expect(parsed.questions.map(q => q.correctAnswer)).toEqual([2, 1, false]);
     });
 
     // A player whose disconnect grace period expired sits in removedPlayers.
