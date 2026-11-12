@@ -68,6 +68,9 @@ function registerGameEvents(io, socket, options) {
 
             // Create or reuse host session (pass hostSessionId from client for reconnect continuity)
             const session = playerManagementService.createOrGetSession(socket.id, validated.hostSessionId || null, validated.hostSessionToken || null);
+            // The PIN this host session was running before this call. It is the
+            // proof of ownership for a migration that started from a host disconnect.
+            const previousSessionPin = session.currentGamePin;
             session.currentGamePin = game.pin;
 
             // Cancel any session grace timer (host returned and created new game)
@@ -98,8 +101,11 @@ function registerGameEvents(io, socket, options) {
             if (validated.previousPin) {
                 const oldGame = gameSessionService.getGame(validated.previousPin);
                 if (oldGame && oldGame.gameState === 'pending-migration') {
-                    // Verify migration token (skip for disconnect-originated migrations)
-                    const tokenValid = oldGame.migrationSource === 'disconnect'
+                    // A host that dropped never received a migration token, so a
+                    // disconnect-originated migration is authenticated by the host
+                    // session instead (createOrGetSession checked its token above).
+                    // Knowing the PIN alone must not move the players.
+                    const tokenValid = (oldGame.migrationSource === 'disconnect' && previousSessionPin === validated.previousPin)
                         || (validated.migrationToken && validated.migrationToken === oldGame.migrationToken);
 
                     if (tokenValid) {
@@ -108,7 +114,7 @@ function registerGameEvents(io, socket, options) {
                         gameSessionService.deleteGame(validated.previousPin);
                         logger.info(`Migrated ${migratedCount} players from ${validated.previousPin} to ${game.pin}`);
                     } else {
-                        logger.warn(`Migration token mismatch for game ${validated.previousPin}`);
+                        logger.warn(`Migration refused for game ${validated.previousPin}: sender is not its host`);
                     }
                 }
             }

@@ -108,6 +108,63 @@ describe('game-events: host-join', () => {
         expect(err.data.messageKey).toBe('error_failed_create_game');
         expect(options.logger.error).toHaveBeenCalled();
     });
+
+    // A game that entered pending-migration through a host disconnect has no
+    // migration token in the host's hands, so the sender is authenticated by
+    // its host session instead: the session must still point at the old PIN.
+    describe('migration of players from previousPin', () => {
+        const MIGRATION_TOKEN = '11111111-1111-4111-8111-111111111111';
+
+        function arrange({ migrationSource, sessionPin }) {
+            const game = newGame();
+            const oldGame = { pin: '654321', gameState: 'pending-migration', migrationSource, migrationToken: MIGRATION_TOKEN };
+            const ctx = setup();
+            ctx.options.gameSessionService.findGameByHost.mockReturnValue(null);
+            ctx.options.gameSessionService.createGame.mockReturnValue(game);
+            ctx.options.gameSessionService.getGame.mockReturnValue(oldGame);
+            ctx.options.playerManagementService.createOrGetSession.mockReturnValue({ hostSessionId: 'hs', currentGamePin: sessionPin });
+            return { ...ctx, game, oldGame };
+        }
+
+        it('does not migrate after a host disconnect when the sender is not the old game\'s host session', () => {
+            const { options, h } = arrange({ migrationSource: 'disconnect', sessionPin: null });
+
+            h['host-join']({ quiz: validQuiz, previousPin: '654321' });
+
+            expect(options.gameSessionService.createGame).toHaveBeenCalled();
+            expect(options.playerManagementService.migratePlayersToGame).not.toHaveBeenCalled();
+            expect(options.gameSessionService.clearMigrationTimer).not.toHaveBeenCalled();
+            expect(options.gameSessionService.deleteGame).not.toHaveBeenCalledWith('654321');
+        });
+
+        it('migrates after a host disconnect when the host session still points at the old game', () => {
+            const { io, options, h, game, oldGame } = arrange({ migrationSource: 'disconnect', sessionPin: '654321' });
+
+            h['host-join']({ quiz: validQuiz, previousPin: '654321' });
+
+            expect(options.playerManagementService.migratePlayersToGame).toHaveBeenCalledWith(oldGame, game, io);
+            expect(options.gameSessionService.clearMigrationTimer).toHaveBeenCalledWith('654321');
+            expect(options.gameSessionService.deleteGame).toHaveBeenCalledWith('654321');
+        });
+
+        it('still migrates on a matching migration token when the host started the new game', () => {
+            const { io, options, h, game, oldGame } = arrange({ migrationSource: undefined, sessionPin: null });
+
+            h['host-join']({ quiz: validQuiz, previousPin: '654321', migrationToken: MIGRATION_TOKEN });
+
+            expect(options.playerManagementService.migratePlayersToGame).toHaveBeenCalledWith(oldGame, game, io);
+            expect(options.gameSessionService.deleteGame).toHaveBeenCalledWith('654321');
+        });
+
+        it('does not migrate on a wrong migration token', () => {
+            const { options, h } = arrange({ migrationSource: undefined, sessionPin: '654321' });
+
+            h['host-join']({ quiz: validQuiz, previousPin: '654321', migrationToken: '22222222-2222-4222-8222-222222222222' });
+
+            expect(options.playerManagementService.migratePlayersToGame).not.toHaveBeenCalled();
+            expect(options.gameSessionService.deleteGame).not.toHaveBeenCalledWith('654321');
+        });
+    });
 });
 
 describe('game-events: start-game', () => {

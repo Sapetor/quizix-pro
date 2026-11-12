@@ -684,7 +684,7 @@ Host creates a game lobby. Rate limited to 5 per second.
 Game options are top-level keys of `quiz`. All keys except `quiz.title` and `quiz.questions` are optional.
 
 - `hostSessionId` and `hostSessionToken` reuse an existing host session (and the players registered in it). The session is reused only when the socket is the session's current host socket or `hostSessionToken` matches. `hostSessionId` alone is not enough, because players receive it in `session-waiting`.
-- `previousPin` and `migrationToken` move players from a game in pending migration (see `host-starting-new-game`). The token is not checked when the migration started from a host disconnect.
+- `previousPin` and `migrationToken` move players from a game in pending migration (see `host-starting-new-game`). When the migration started from a host disconnect, the host has no token; the players move only if the reused host session (`hostSessionId` and `hostSessionToken`) was running the game at `previousPin`.
 - If this socket already hosts a game, that game is ended (`game-ended` to its room) and deleted.
 
 **Server Response Events:**
