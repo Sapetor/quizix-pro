@@ -125,8 +125,11 @@ function registerPlayerEvents(io, socket, options) {
             const validated = validateAndHandle(socket, 'host-rejoin', data, logger);
             if (!validated) return;
 
+            // hostDisconnected is not required: socket.io's reconnect opens the new
+            // socket before the server sees the old one close. The token below is
+            // the authentication.
             const game = gameSessionService.getGame(validated.pin);
-            if (!game || !game.hostDisconnected) {
+            if (!game) {
                 socket.emit('error', { message: 'Game not found or not in reconnect state' });
                 return;
             }

@@ -149,11 +149,30 @@ describe('player-events: host-rejoin', () => {
         expect(findEmit(socket.emits, 'error')).toBeTruthy();
     });
 
-    it('errors when the game is not in reconnect state', () => {
+    // socket.io's reconnect opens the new socket before the server has seen the
+    // old one close, so hostDisconnected is often still false here. The token
+    // is the authentication; the flag is only timing.
+    it('restores the host when the old socket has not been seen to close yet', () => {
+        const game = { ...disconnectedGame(), hostDisconnected: false, hostDisconnectedAt: null };
         const { socket, options, h } = setup();
-        options.gameSessionService.getGame.mockReturnValue({ pin: '123456', hostDisconnected: false });
+        options.gameSessionService.getGame.mockReturnValue(game);
+
         h['host-rejoin']({ pin: '123456', token: 'secret' });
-        expect(findEmit(socket.emits, 'error')).toBeTruthy();
+
+        expect(game.hostId).toBe('player-sock');
+        expect(options.gameSessionService.updateHostId).toHaveBeenCalledWith('old-host', 'player-sock', '123456');
+        expect(findEmit(socket.emits, 'host-rejoin-success')).toBeTruthy();
+    });
+
+    it('still rejects a wrong token when the old socket has not closed', () => {
+        const game = { ...disconnectedGame(), hostDisconnected: false };
+        const { socket, options, h } = setup();
+        options.gameSessionService.getGame.mockReturnValue(game);
+
+        h['host-rejoin']({ pin: '123456', token: 'WRONG' });
+
+        expect(game.hostId).toBe('old-host');
+        expect(findEmit(socket.emits, 'error').data.messageKey).toBe('error_not_authorized_host');
     });
 
     it('rejects a wrong reconnect token', () => {
