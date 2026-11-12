@@ -422,6 +422,16 @@ export function resolveTimeLimit(questionItem) {
 }
 
 /**
+ * Apply a single time limit to every question (Quick Start "same time for all").
+ * The server schema reads `timeLimit`; a `time` key is stripped.
+ * @param {Array<Object>} questions
+ * @param {number} seconds
+ */
+export function applyGlobalTime(questions, seconds) {
+    questions.forEach(q => { q.timeLimit = seconds; });
+}
+
+/**
  * Add a new question to the quiz builder
  */
 export function addQuestion() {

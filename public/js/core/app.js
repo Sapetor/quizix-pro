@@ -13,7 +13,7 @@ import { SettingsManager } from '../settings/settings-manager.js';
 import { SoundManager } from '../audio/sound-manager.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 // AI Generator will be lazy loaded when needed
-import { addQuestion, randomizeAnswers, shuffleArray } from '../utils/question-utils.js';
+import { addQuestion, applyGlobalTime, randomizeAnswers, shuffleArray } from '../utils/question-utils.js';
 import { translationManager, showErrorAlert } from '../utils/translation-manager.js';
 import { toastNotifications } from '../utils/toast-notifications.js';
 import { connectionStatus } from '../utils/connection-status.js';
@@ -1404,7 +1404,7 @@ export class QuizGame {
 
             if (panel.randomizeQuestions) questions = shuffleArray(questions);
             if (panel.randomizeAnswers) questions = randomizeAnswers(questions);
-            if (panel.sameTimeForAll) questions.forEach(q => { q.time = panel.questionTime; });
+            if (panel.sameTimeForAll) applyGlobalTime(questions, panel.questionTime);
 
             const quizData = {
                 quiz: {
