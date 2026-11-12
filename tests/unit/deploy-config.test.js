@@ -34,4 +34,12 @@ describe('deployment config consistency', () => {
         expect(grep).not.toBeNull();
         expect(read('public/sw.js')).toMatch(new RegExp(grep[1]));
     });
+
+    // Neither Dockerfile installs curl. node is the one binary both images
+    // are certain to have, and it is what their HEALTHCHECK runs.
+    test('docker-build.sh probes the container with node', () => {
+        const probes = [...read('docker-build.sh').matchAll(/docker exec \$CONTAINER_NAME (\S+)/g)]
+            .map((m) => m[1]);
+        expect(probes).toEqual(['node']);
+    });
 });

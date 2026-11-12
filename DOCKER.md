@@ -85,10 +85,9 @@ from the bridge gateway rather than the client, which is why that file shows
 ./docker-build.sh test
 ```
 
-`deploy` and `test` probe `/api/ping` with `docker exec quizix-pro-app curl`.
-The Dockerfile installs no `curl`, so that probe can report a timeout even
-when the app is up. Check with `curl http://localhost:3000/health` from the host
-instead.
+`deploy` and `test` probe `/health` inside the container with
+`docker exec quizix-pro-app node`, the same request the image `HEALTHCHECK`
+makes. They make up to 30 attempts, 2 seconds apart.
 
 ### Manual Docker Commands
 ```bash

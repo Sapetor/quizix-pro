@@ -97,7 +97,8 @@ wait_for_health() {
     local attempt=1
     
     while [ $attempt -le $max_attempts ]; do
-        if docker exec $CONTAINER_NAME curl -f http://localhost:3000/api/ping > /dev/null 2>&1; then
+        # The image has no curl; use node, as the Dockerfile HEALTHCHECK does.
+        if docker exec $CONTAINER_NAME node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))" > /dev/null 2>&1; then
             log_success "Application is healthy and responding"
             return 0
         fi
