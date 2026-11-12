@@ -543,6 +543,46 @@ describe('Game — leaderboard', () => {
         game.updateLeaderboard();
         expect(game.leaderboard[0].name).toBe('Gone');
     });
+
+    test('entries expose only id, name and score (no session token, device id or answers)', () => {
+        const game = makeGame({ powerUpsEnabled: true });
+        game.addPlayer('p1', 'Alice');
+        game.addPlayer('p2', 'Bob');
+        const alice = game.players.get('p1');
+        alice.score = 300;
+        alice.sessionToken = 'token-alice-secret';
+        alice.deviceId = 'device-alice-secret';
+        alice.answers = { 0: { answer: 2, timeMs: 1000 } };
+        game.players.get('p2').sessionToken = 'token-bob-secret';
+        game.removedPlayers.push({ id: 'p3', name: 'Gone', score: 50, answers: { 0: { answer: 1 } }, disconnected: true });
+
+        game.updateLeaderboard();
+
+        expect(game.leaderboard).toHaveLength(3);
+        game.leaderboard.forEach(entry => {
+            expect(Object.keys(entry).sort()).toEqual(['id', 'name', 'score']);
+        });
+        expect(game.leaderboard[0]).toEqual({ id: 'p1', name: 'Alice', score: 300 });
+        const wire = JSON.stringify({ leaderboard: game.leaderboard.slice(0, 5) });
+        expect(wire).not.toContain('secret');
+        expect(wire).not.toContain('answers');
+        expect(wire).not.toContain('powerUps');
+    });
+
+    test('an entry id follows a rejoin that happens after the leaderboard was built', () => {
+        const game = makeGame();
+        game.addPlayer('old-socket', 'Alice');
+        game.players.get('old-socket').score = 100;
+        game.updateLeaderboard();
+
+        // What handlePlayerRejoin does: same player object, new socket id.
+        const alice = game.players.get('old-socket');
+        game.players.delete('old-socket');
+        alice.id = 'new-socket';
+        game.players.set('new-socket', alice);
+
+        expect(game.leaderboard).toEqual([{ id: 'new-socket', name: 'Alice', score: 100 }]);
+    });
 });
 
 describe('Game — answer statistics', () => {

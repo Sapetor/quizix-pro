@@ -608,6 +608,22 @@ class Game {
     }
 
     /**
+     * Ranked list in the shape sent to clients: id, name and score only.
+     * The player objects also hold sessionToken, deviceId, answers and power-up
+     * state; a session token sent to the room lets any player rejoin as another.
+     * Projected on read, so an entry's id still follows a rejoin, which rewrites
+     * player.id on the same object.
+     * @returns {Array<{id: string, name: string, score: number}>}
+     */
+    get leaderboard() {
+        return this._rankedPlayers.map(({ id, name, score }) => ({ id, name, score }));
+    }
+
+    set leaderboard(players) {
+        this._rankedPlayers = players;
+    }
+
+    /**
      * Update the leaderboard
      * Sorts by score (descending), then by total time (ascending) as tiebreaker
      *
