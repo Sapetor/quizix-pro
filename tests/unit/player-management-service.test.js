@@ -1032,4 +1032,44 @@ describe('PlayerManagementService', () => {
             expect(game.answerMappings.size).toBe(0);
         });
     });
+
+    // A connected player's player-result maps the correct index into that
+    // player's shuffled order (emitPlayerResults). The copy sent on rejoin
+    // during the reveal sent the canonical index instead.
+    describe('handlePlayerRejoin during the reveal with shuffled options', () => {
+        const { buildCorrectAnswerData } = require('../../services/question-flow-service');
+        const questionFlowService = { buildCorrectAnswerData };
+
+        function revealingGame(question) {
+            const game = createMockGame('revealing');
+            game.quiz = { randomizeAnswers: true, questions: [question] };
+            // mapping[shuffledIndex] = originalIndex
+            game.answerMappings = new Map([['old-sock', [2, 0, 3, 1]]]);
+            game.players.set('old-sock', {
+                id: 'old-sock', name: 'Alice', score: 0, answers: [], disconnected: true,
+                disconnectedAt: Date.now(), sessionToken: 'tok-alice'
+            });
+            return game;
+        }
+
+        test('maps a multiple-choice correctAnswer into the player\'s order', () => {
+            const socket = createMockSocket('new-sock');
+            const game = revealingGame({ type: 'multiple-choice', question: 'Q1', options: ['A', 'B', 'C', 'D'], correctAnswer: 1, timeLimit: 20 });
+
+            playerService.handlePlayerRejoin('new-sock', '123456', 'tok-alice', game, socket, createMockIO(), questionFlowService);
+
+            const result = socket.emit.mock.calls.find(c => c[0] === 'player-result');
+            expect(result[1].correctAnswer).toBe(3);
+        });
+
+        test('maps multiple-correct correctAnswers into the player\'s order', () => {
+            const socket = createMockSocket('new-sock');
+            const game = revealingGame({ type: 'multiple-correct', question: 'Q1', options: ['A', 'B', 'C', 'D'], correctAnswers: [0, 2], timeLimit: 20 });
+
+            playerService.handlePlayerRejoin('new-sock', '123456', 'tok-alice', game, socket, createMockIO(), questionFlowService);
+
+            const result = socket.emit.mock.calls.find(c => c[0] === 'player-result');
+            expect(result[1].correctAnswers).toEqual([1, 0]);
+        });
+    });
 });

@@ -627,6 +627,20 @@ class PlayerManagementService {
                 const correctAnswerData = questionFlowService.buildCorrectAnswerData(question);
                 socket.emit('question-timeout', correctAnswerData);
 
+                // Same canonical -> displayed mapping as emitPlayerResults; the
+                // mapping was moved to newSocketId above.
+                const mapping = game.answerMappings.get(newSocketId);
+                let correctAnswer = correctAnswerData.correctAnswer;
+                let correctAnswers = correctAnswerData.correctAnswers;
+                if (mapping) {
+                    if (correctAnswerData.questionType === 'multiple-choice' && typeof correctAnswer === 'number') {
+                        correctAnswer = mapping.indexOf(correctAnswer);
+                    }
+                    if (correctAnswerData.questionType === 'multiple-correct' && Array.isArray(correctAnswers)) {
+                        correctAnswers = correctAnswers.map(idx => mapping.indexOf(idx));
+                    }
+                }
+
                 const playerAnswer = foundPlayer.answers[game.currentQuestion];
                 socket.emit('player-result', {
                     isPoll: correctAnswerData.isPoll === true,
@@ -635,8 +649,8 @@ class PlayerManagementService {
                     totalScore: foundPlayer.score,
                     explanation: question.explanation || null,
                     questionType: correctAnswerData.questionType,
-                    correctAnswer: correctAnswerData.correctAnswer,
-                    correctAnswers: correctAnswerData.correctAnswers,
+                    correctAnswer,
+                    correctAnswers,
                     partialScore: playerAnswer ? playerAnswer.partialScore : undefined
                 });
             }
