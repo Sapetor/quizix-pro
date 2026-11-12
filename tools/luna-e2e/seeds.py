@@ -1,6 +1,11 @@
 """Per-flow data seeding, keyed by flow id. Runs after the base seed
 (base seed = one playable quiz 'E2E Test Quiz' + user 'lunatester')."""
 
+import json
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
 LATEX_QUIZ = [
     {"question": "Inline math: what is \\(a^2 + b^2\\) for a right triangle's legs?",
      "type": "multiple-choice",
@@ -63,7 +68,14 @@ def seed_render_audit(app, cfg, flow_dir):
 
 
 def seed_results_analytics(app, cfg, flow_dir):
-    app.save_results(SEEDED_RESULTS)
+    # Written straight to disk: POST /api/save-results refuses a request with
+    # no session and no host token. A record with neither hostUserId nor
+    # hostTokenHash is readable by any signed-in user (ResultsService.canAccess).
+    record = {**SEEDED_RESULTS,
+              "saved": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")}
+    path = Path(app.tmpdir, "results",
+                f"results_{SEEDED_RESULTS['gamePin']}_{int(time.time() * 1000)}.json")
+    path.write_text(json.dumps(record, indent=2))
 
 
 def seed_quiz_management(app, cfg, flow_dir):
