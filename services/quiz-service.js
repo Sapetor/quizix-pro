@@ -130,11 +130,9 @@ class QuizService {
             throw err;
         }
         if (existingFilename && this.validateFilename(existingFilename) && existingFilename.endsWith('.json')) {
-            const existingPath = path.join(this.quizzesDir, existingFilename);
-            try {
-                await fs.access(existingPath);
+            if (await this._quizFileExists(existingFilename)) {
                 filename = existingFilename;
-            } catch {
+            } else {
                 // File doesn't exist on disk, generate a new name
                 const safeTitle = title.replace(/[^a-z0-9\-_]/gi, '_').toLowerCase().substring(0, 50);
                 filename = `${safeTitle}_${Date.now()}.json`;
@@ -252,14 +250,28 @@ class QuizService {
     }
 
     /**
+     * True only when a directory entry has exactly this name. fs.access is not
+     * enough: on a case-insensitive filesystem (drvfs in the WSL deployment)
+     * it succeeds for 'Abc.json' when only 'abc.json' exists, while the
+     * metadata gates look the name up case-sensitively and would treat the
+     * variant as an unknown public quiz.
+     */
+    async _quizFileExists(filename) {
+        try {
+            const entries = await fs.readdir(this.quizzesDir);
+            return Array.isArray(entries) && entries.includes(filename);
+        } catch {
+            return false;
+        }
+    }
+
+    /**
      * Load a specific quiz
      */
     async loadQuiz(filename) {
         const filePath = this.resolveQuizPath(filename);
 
-        try {
-            await fs.access(filePath);
-        } catch {
+        if (!await this._quizFileExists(filename)) {
             const err = new Error('Quiz not found');
             err.messageKey = 'error_quiz_not_found';
             throw err;
@@ -336,9 +348,7 @@ class QuizService {
     async deleteQuiz(filename) {
         const filePath = this.resolveQuizPath(filename);
 
-        try {
-            await fs.access(filePath);
-        } catch {
+        if (!await this._quizFileExists(filename)) {
             const err = new Error('Quiz not found');
             err.messageKey = 'error_quiz_not_found';
             throw err;

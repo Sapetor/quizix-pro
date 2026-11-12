@@ -238,7 +238,7 @@ describe('QuizService', () => {
     describe('loadQuiz', () => {
         test('should load a valid quiz', async () => {
             const quizData = { title: 'Test', questions: [] };
-            fs.access.mockResolvedValue();
+            fs.readdir.mockResolvedValue(['test_quiz.json']);
             fs.readFile.mockResolvedValue(JSON.stringify(quizData));
 
             const result = await quizService.loadQuiz('test_quiz.json');
@@ -257,7 +257,7 @@ describe('QuizService', () => {
         });
 
         test('should throw error for non-existent quiz', async () => {
-            fs.access.mockRejectedValue(new Error('ENOENT'));
+            fs.readdir.mockResolvedValue([]);
 
             await expect(quizService.loadQuiz('nonexistent.json'))
                 .rejects.toThrow('Quiz not found');
@@ -335,9 +335,46 @@ describe('QuizService', () => {
         });
     });
 
+    describe('case variants of an existing filename', () => {
+        // On a case-insensitive quizzes directory (drvfs on WSL) fs.access
+        // succeeds for 'Abc_1.json' when only 'abc_1.json' exists. The
+        // metadata gates key on the exact name, so a variant must not reach
+        // the real file.
+        beforeEach(() => {
+            fs.access.mockResolvedValue();
+            fs.readdir.mockResolvedValue(['abc_1.json']);
+            fs.readFile.mockResolvedValue(JSON.stringify({ title: 'Private', questions: [] }));
+            fs.unlink.mockResolvedValue();
+        });
+
+        test('loadQuiz rejects a case variant with Quiz not found', async () => {
+            await expect(quizService.loadQuiz('Abc_1.json')).rejects.toThrow('Quiz not found');
+            expect(fs.readFile).not.toHaveBeenCalled();
+        });
+
+        test('deleteQuiz rejects a case variant and does not unlink', async () => {
+            await expect(quizService.deleteQuiz('Abc_1.json')).rejects.toThrow('Quiz not found');
+            expect(fs.unlink).not.toHaveBeenCalled();
+        });
+
+        test('saveQuiz with a case-variant existingFilename writes a new file', async () => {
+            const result = await quizService.saveQuiz('Overwrite', [{ question: 'Q?' }], 'Abc_1.json');
+            expect(result.filename).not.toBe('Abc_1.json');
+            expect(result.filename).toMatch(/^overwrite_\d+\.json$/);
+        });
+
+        test('the exact name still loads, deletes and overwrites', async () => {
+            await expect(quizService.loadQuiz('abc_1.json')).resolves.toEqual({ title: 'Private', questions: [] });
+            const saved = await quizService.saveQuiz('Private', [{ question: 'Q?' }], 'abc_1.json');
+            expect(saved.filename).toBe('abc_1.json');
+            await expect(quizService.deleteQuiz('abc_1.json')).resolves.toEqual({ success: true, filename: 'abc_1.json' });
+            expect(fs.unlink).toHaveBeenCalledTimes(1);
+        });
+    });
+
     describe('deleteQuiz', () => {
         test('should delete an existing quiz', async () => {
-            fs.access.mockResolvedValue();
+            fs.readdir.mockResolvedValue(['test_quiz.json']);
             fs.unlink.mockResolvedValue();
 
             const result = await quizService.deleteQuiz('test_quiz.json');
@@ -357,7 +394,7 @@ describe('QuizService', () => {
         });
 
         test('should throw error for non-existent quiz', async () => {
-            fs.access.mockRejectedValue(new Error('ENOENT'));
+            fs.readdir.mockResolvedValue([]);
 
             await expect(quizService.deleteQuiz('nonexistent.json'))
                 .rejects.toThrow('Quiz not found');
