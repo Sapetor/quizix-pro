@@ -842,7 +842,13 @@ export class QuizManager {
             logger.debug('Starting bulletproof quiz loading for:', filename);
 
             // Basic fetch and structure check only
-            const response = await APIHelper.fetchAPI(`api/quiz/${encodeURIComponent(filename)}`);
+            let response = await APIHelper.fetchAPI(`api/quiz/${encodeURIComponent(filename)}`);
+            if (response.status === 401) {
+                // Token rejected (server restart, password change): prompt and retry once
+                const unlocked = await this.fileManager.ensureUnlocked('quiz', filename, filename.replace('.json', ''));
+                if (!unlocked) return;
+                response = await APIHelper.fetchAPI(`api/quiz/${encodeURIComponent(filename)}`);
+            }
             const data = await response.json();
 
             if (response.ok && data && data.questions && Array.isArray(data.questions)) {
