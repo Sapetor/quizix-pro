@@ -102,6 +102,27 @@ describe('signup gate', () => {
         expect(body.user.username).toBe('guest');
     });
 
+    test('concurrent first signups on an empty instance: only one account is created', async () => {
+        const responses = await Promise.all(Array.from({ length: 5 }, (_, i) =>
+            post('/api/auth/signup', { username: `first_${i}`, password: 'correct-horse' })));
+        const statuses = responses.map(r => r.status);
+
+        expect(statuses.filter(s => s === 200)).toHaveLength(1);
+        expect(statuses.filter(s => s === 403)).toHaveLength(4);
+        for (const r of responses.filter(r => r.status === 403)) {
+            expect((await r.json()).messageKey).toBe('error_signup_disabled');
+        }
+        expect(Object.keys(userService.data.users)).toHaveLength(1);
+    });
+
+    test('concurrent signups with ALLOW_SIGNUP=true all succeed', async () => {
+        process.env.ALLOW_SIGNUP = 'true';
+        const responses = await Promise.all(Array.from({ length: 3 }, (_, i) =>
+            post('/api/auth/signup', { username: `guest_${i}`, password: 'correct-horse' })));
+
+        expect(responses.map(r => r.status)).toEqual([200, 200, 200]);
+    });
+
     test('a refused signup never reaches createUser, so no password is hashed', async () => {
         await userService.createUser('owner', 'correct-horse');
         const spy = jest.spyOn(userService, 'createUser');

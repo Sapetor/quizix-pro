@@ -150,7 +150,13 @@ class UserService {
     // Account operations
     // ------------------------------------------------------------------
 
-    async createUser(username, password) {
+    /**
+     * @param {object} [options]
+     * @param {boolean} [options.onlyIfNoUsers] - refuse (403) unless the
+     *        instance has no accounts, checked inside the write lock so
+     *        concurrent first signups cannot all pass.
+     */
+    async createUser(username, password, options = {}) {
         const lower = this._validateUsername(username);
         this._validatePassword(password);
 
@@ -158,6 +164,9 @@ class UserService {
         const passwordHash = await hashPassword(password);
 
         return this._runExclusive(async () => {
+            if (options.onlyIfNoUsers && this.hasUsers()) {
+                throw makeError('Signup is closed on this instance.', 'error_signup_disabled', 403);
+            }
             if (this.data.usernameIndex[lower]) {
                 throw makeError('Username already taken', 'error_username_taken', 409);
             }

@@ -63,7 +63,12 @@ function createAuthRoutes({
 
         try {
             const { username, password } = req.validatedBody;
-            const user = await userService.createUser(username, password);
+            // Repeat the closed-signup check under the user store's write lock:
+            // the check above runs before the await, so concurrent first
+            // signups on an empty instance would all pass it.
+            const user = await userService.createUser(username, password, {
+                onlyIfNoUsers: process.env.ALLOW_SIGNUP !== 'true'
+            });
             setSessionCookie(req, res, user.id);
             logger.info(`User signed up: ${user.username}`);
             return res.json({ user });
