@@ -10,6 +10,9 @@ const crypto = require('crypto');
 const { atomicWriteFile } = require('./atomic-write');
 const { ScoringService } = require('./scoring-service');
 
+// Result files read and parsed concurrently by listResults.
+const LIST_BATCH_SIZE = 10;
+
 /**
  * Hash a host token for storage beside a results file.
  *
@@ -167,7 +170,7 @@ class ResultsService {
         const allFiles = await fs.readdir(this.resultsDir);
         const resultFiles = allFiles.filter(file => file.startsWith('results_') && file.endsWith('.json'));
 
-        const filePromises = resultFiles.map(async (filename) => {
+        const readSummary = async (filename) => {
             try {
                 const filePath = path.join(this.resultsDir, filename);
                 const stats = await fs.stat(filePath);
@@ -193,9 +196,17 @@ class ResultsService {
                 this.logger.error(`Error reading result file ${filename}:`, error);
                 return null;
             }
-        });
+        };
 
-        const files = (await Promise.all(filePromises))
+        // Read in batches so peak memory is LIST_BATCH_SIZE parsed files, not
+        // the whole directory.
+        const summaries = [];
+        for (let i = 0; i < resultFiles.length; i += LIST_BATCH_SIZE) {
+            const batch = resultFiles.slice(i, i + LIST_BATCH_SIZE);
+            summaries.push(...await Promise.all(batch.map(readSummary)));
+        }
+
+        const files = summaries
             .filter(result => result !== null)
             .sort((a, b) => new Date(b.saved) - new Date(a.saved));
 

@@ -181,6 +181,29 @@ describe('ResultsService', () => {
         });
     });
 
+    describe('listResults memory bound', () => {
+        test('reads at most 10 result files at a time', async () => {
+            const names = Array.from({ length: 35 }, (_, i) => `results_${100000 + i}_1.json`);
+            fs.access.mockResolvedValue();
+            fs.readdir.mockResolvedValue(names);
+            fs.stat.mockResolvedValue({ size: 1024, mtime: new Date() });
+            let inFlight = 0;
+            let peak = 0;
+            fs.readFile.mockImplementation(async () => {
+                inFlight++;
+                peak = Math.max(peak, inFlight);
+                await new Promise(resolve => setImmediate(resolve));
+                inFlight--;
+                return JSON.stringify({ quizTitle: 'Test', gamePin: '123456', results: [], saved: '2024-01-01' });
+            });
+
+            const results = await resultsService.listResults(SIGNED_IN);
+
+            expect(results).toHaveLength(35);
+            expect(peak).toBeLessThanOrEqual(10);
+        });
+    });
+
     describe('deleteResult', () => {
         test('should delete existing result file', async () => {
             fs.access.mockResolvedValue();

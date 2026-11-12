@@ -303,7 +303,7 @@ Each result file records who may read it back: the signed-in user who hosted the
 - a session cookie for the user who hosted the game, or
 - the host token, sent as `Authorization: Bearer <hostToken>` or in `X-Host-Token` (comma-separated, up to 25 tokens of at most 100 characters each).
 
-Result files written before ownership tracking have neither field and are readable by any signed-in user. For list, read and export, a request with neither a session nor a host token gets `401` (`error_auth_required`). A request whose credentials do not match, and any delete without matching credentials, gets `403` (`error_access_forbidden`). Games that finish normally are saved by the server; `POST /api/save-results` is the client-side path.
+Result files written before ownership tracking have neither field and are readable by any signed-in user. For list, read and export, a request with neither a session nor a host token gets `401` (`error_auth_required`). A request whose credentials do not match, and any delete without matching credentials, gets `403` (`error_access_forbidden`). Games that finish normally are saved by the server; the web client does not call `POST /api/save-results`.
 
 #### POST /api/save-results
 Save game results to the server.
@@ -326,7 +326,7 @@ Save game results to the server.
 }
 ```
 
-Validated with zod: `quizTitle` 1 to 200 characters, `gamePin` exactly 6 digits, at most 500 `results` entries (each `name` up to 100 characters, up to 100 `answers`), at most 100 `questions`. Rate limited to 30 requests per minute per client IP. The file is bound to the signed-in user, if any, and to the first host token presented.
+Validated with zod: `quizTitle` 1 to 200 characters, `gamePin` exactly 6 digits, at most 500 `results` entries (each `name` up to 100 characters, up to 100 `answers`), at most 100 `questions`. The serialized body may be at most 1 MB (`413`, `error_validation_failed`). Rate limited to 30 requests per minute per client IP. The request needs a session, or a host token sent by a direct LAN client; anything else gets `401` (`error_auth_required`), including an anonymous request with a token that arrives through the tunnel or a proxy. The file is bound to the signed-in user, if any, and to the first host token presented.
 
 **Response:**
 ```json

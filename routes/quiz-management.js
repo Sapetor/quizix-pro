@@ -22,6 +22,11 @@ const saveResultsSchema = z.object({
     questions: z.array(z.object({}).passthrough()).max(100).optional()
 });
 
+// Largest body POST /api/save-results stores, measured as serialized JSON.
+// The schema lets extra keys through on each result and question, so the item
+// counts alone do not bound the file. Real result files are under 100 KB.
+const MAX_RESULTS_BYTES = 1024 * 1024;
+
 // A host holds one token per game it ran. The listing endpoint accepts several
 // so one request can cover a host's own past games; both caps keep a crafted
 // header from turning into unbounded per-request work.
@@ -225,11 +230,24 @@ function createQuizManagementRoutes(options) {
     // Save quiz results
     router.post('/api/save-results', saveResultsRateLimiter.middleware, validateBody(saveResultsSchema), async (req, res) => {
         try {
+            // Every stored record needs an owner: a signed-in user, or a host
+            // token from a direct LAN client. An anonymous client behind the
+            // tunnel or a proxy can invent a token, so a token alone is not
+            // enough there. A record with neither would be listed for every
+            // signed-in user.
+            const requester = requesterFrom(req);
+            if (!requester.userId && !(isDirectLocalClient(req) && requester.hostTokens.length > 0)) {
+                return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
+            }
+            if (Buffer.byteLength(JSON.stringify(req.validatedBody)) > MAX_RESULTS_BYTES) {
+                return res.status(413).json({ error: 'Results data is too large', messageKey: 'error_validation_failed' });
+            }
+
             const { quizTitle, gamePin, results, startTime, endTime, questions } = req.validatedBody;
             // Bind the new file to whoever posted it, so they can read it back.
             const result = await resultsService.saveResults(quizTitle, gamePin, results, startTime, endTime, questions, {
-                userId: req.user?.id || null,
-                hostToken: hostTokensFrom(req)[0] || null
+                userId: requester.userId,
+                hostToken: requester.hostTokens[0] || null
             });
             res.json(result);
         } catch (error) {

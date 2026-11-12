@@ -14,6 +14,15 @@ const { validateBody, validateParams, ...schemas } = require('../../services/val
 const FOLDER_ID = '11111111-1111-4111-8111-111111111111';
 const OTHER_FOLDER_ID = '22222222-2222-4222-8222-222222222222';
 
+// Requests through the tunnel arrive from loopback with CF-Connecting-IP; behind
+// a Docker or k8s proxy they arrive from a private address with X-Forwarded-For.
+// Neither is a direct LAN client.
+const PROXIED = [
+    { 'cf-connecting-ip': '203.0.113.7' },
+    { 'x-forwarded-for': '203.0.113.7' },
+    { forwarded: 'for=203.0.113.7' }
+];
+
 function makeRes() {
     const res = {
         statusCode: 200,
@@ -233,21 +242,61 @@ describe('results route authorization', () => {
         expect(deps.resultsService.saveResults).not.toHaveBeenCalled();
     });
 
-    test('save-results accepts a well-formed body', async () => {
+    const wellFormed = {
+        quizTitle: 'Q',
+        gamePin: '123456',
+        results: [{ name: 'Alice', score: 100, answers: [] }],
+        startTime: '2026-01-01T00:00:00Z',
+        endTime: '2026-01-01T00:10:00Z'
+    };
+
+    test('save-results accepts a well-formed body from a direct LAN client with a host token', async () => {
         const res = await dispatch(router, {
-            method: 'POST',
-            url: '/api/save-results',
-            body: {
-                quizTitle: 'Q',
-                gamePin: '123456',
-                results: [{ name: 'Alice', score: 100, answers: [] }],
-                startTime: '2026-01-01T00:00:00Z',
-                endTime: '2026-01-01T00:10:00Z'
-            }
+            method: 'POST', url: '/api/save-results', body: wellFormed, headers: { 'x-host-token': 'host-token-1' }
         });
 
         expect(res.statusCode).toBe(200);
-        expect(deps.resultsService.saveResults).toHaveBeenCalled();
+        expect(deps.resultsService.saveResults.mock.calls[0][6]).toEqual({ userId: null, hostToken: 'host-token-1' });
+    });
+
+    test('save-results accepts a signed-in user behind the tunnel', async () => {
+        const res = await dispatch(router, {
+            method: 'POST', url: '/api/save-results', body: wellFormed, headers: PROXIED[0], user: { id: 'user-1' }
+        });
+
+        expect(res.statusCode).toBe(200);
+        expect(deps.resultsService.saveResults.mock.calls[0][6]).toEqual({ userId: 'user-1', hostToken: null });
+    });
+
+    test('save-results rejects a request with no session and no host token', async () => {
+        const res = await dispatch(router, { method: 'POST', url: '/api/save-results', body: wellFormed });
+
+        expect(res.statusCode).toBe(401);
+        expect(res.body.messageKey).toBe('error_auth_required');
+        expect(deps.resultsService.saveResults).not.toHaveBeenCalled();
+    });
+
+    test.each(PROXIED)('save-results rejects an anonymous proxied client that presents a token: %j', async proxyHeaders => {
+        const res = await dispatch(router, {
+            method: 'POST', url: '/api/save-results', body: wellFormed,
+            headers: { ...proxyHeaders, 'x-host-token': 'made-up-token' }
+        });
+
+        expect(res.statusCode).toBe(401);
+        expect(deps.resultsService.saveResults).not.toHaveBeenCalled();
+    });
+
+    test('save-results rejects a body over 1 MB', async () => {
+        const res = await dispatch(router, {
+            method: 'POST',
+            url: '/api/save-results',
+            body: { ...wellFormed, results: [{ name: 'Alice', score: 100, padding: 'x'.repeat(2 * 1024 * 1024) }] },
+            user: { id: 'user-1' }
+        });
+
+        expect(res.statusCode).toBe(413);
+        expect(res.body.messageKey).toBe('error_validation_failed');
+        expect(deps.resultsService.saveResults).not.toHaveBeenCalled();
     });
 
     test('save-results is rate limited per IP', async () => {
@@ -336,15 +385,6 @@ describe('password-protected quiz downloads', () => {
         expect(res.body.questions).toEqual(['secret']);
     });
 });
-
-// Requests through the tunnel arrive from loopback with CF-Connecting-IP; behind
-// a Docker or k8s proxy they arrive from a private address with X-Forwarded-For.
-// Neither is a direct LAN client.
-const PROXIED = [
-    { 'cf-connecting-ip': '203.0.113.7' },
-    { 'x-forwarded-for': '203.0.113.7' },
-    { forwarded: 'for=203.0.113.7' }
-];
 
 describe('private quiz downloads', () => {
     test('a valid unlock token does not open another user\'s private quiz', async () => {
