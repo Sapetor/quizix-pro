@@ -38,7 +38,7 @@ const MAX_HOST_TOKEN_LENGTH = 100;
  * the request carries no valid unlock token, or null when the change may go
  * ahead. Used before changing a quiz, so that a quiz in a protected folder
  * cannot be moved out of it, renamed or overwritten without the password.
- * Exported for the POST /api/save-quiz handler in server.js.
+ * Also used by the POST /api/save-quiz handler below.
  */
 function quizUnlockError(metadataService, req, filename) {
     if (!metadataService.requiresAuth(filename, 'quiz', req.user?.id || null)) return null;
@@ -46,6 +46,64 @@ function quizUnlockError(metadataService, req, filename) {
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     if (token && metadataService.verifyToken(token, filename, 'quiz')) return null;
     return { status: 401, body: { error: 'Authentication required', messageKey: 'error_auth_required' } };
+}
+
+/**
+ * Handler for POST /api/save-quiz, mounted in server.js behind the save-quiz
+ * rate limiter and validateBody(saveQuizSchema).
+ * @param {Object} options - { quizService, metadataService, logger }
+ * @returns {Function} Express handler
+ */
+function createSaveQuizHandler({ quizService, metadataService, logger }) {
+    return async (req, res) => {
+        try {
+            const { title, questions, settings, password, filename } = req.validatedBody;
+            const ownerId = req.user?.id || null;
+
+            if (password && !ownerId) {
+                return res.status(401).json({
+                    error: 'Sign in to use quiz passwords',
+                    messageKey: 'error_auth_required'
+                });
+            }
+
+            // Ownership gate: don't let a requester overwrite a quiz they don't own.
+            // Mirrors the DELETE /api/quiz/:filename gate: overwriting an ownerless
+            // quiz needs a signed-in user or a direct LAN client.
+            if (filename) {
+                const quizMeta = metadataService.getQuizMetadata(filename);
+                if (quizMeta?.ownerId && quizMeta.ownerId !== ownerId) {
+                    return res.status(403).json({ error: 'You do not own this quiz', messageKey: 'error_quiz_not_owner' });
+                }
+                if (!quizMeta?.ownerId && !ownerId && !isDirectLocalClient(req)) {
+                    return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
+                }
+                const locked = quizUnlockError(metadataService, req, filename);
+                if (locked) return res.status(locked.status).json(locked.body);
+            }
+
+            // Scope title-conflict detection to the requester's own quizzes
+            // (or the public pool if anonymous) so user A doesn't bump user B's title.
+            const scopedFilenames = metadataService.getQuizFilenamesByOwner(ownerId);
+            const result = await quizService.saveQuiz(title, questions, filename, settings, { scopedFilenames });
+
+            // Register quiz in metadata and optionally set password
+            if (result.filename) {
+                await metadataService.registerQuiz(result.filename, result.title, {
+                    ownerId,
+                    visibility: ownerId ? 'private' : 'public'
+                });
+                if (password) {
+                    await metadataService.setQuizPassword(result.filename, password, ownerId);
+                }
+            }
+
+            res.json(result);
+        } catch (error) {
+            logger.error('Save quiz error:', error);
+            res.status(400).json({ error: error.message || 'Failed to save quiz', messageKey: error.messageKey || 'error_failed_save_quiz' });
+        }
+    };
 }
 
 /**
@@ -784,4 +842,4 @@ function createQuizManagementRoutes(options) {
     return router;
 }
 
-module.exports = { createQuizManagementRoutes, quizUnlockError };
+module.exports = { createQuizManagementRoutes, createSaveQuizHandler, quizUnlockError };

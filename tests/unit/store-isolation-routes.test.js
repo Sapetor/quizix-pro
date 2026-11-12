@@ -8,7 +8,7 @@
  * objects, so no HTTP server is started.
  */
 
-const { createQuizManagementRoutes, quizUnlockError } = require('../../routes/quiz-management');
+const { createQuizManagementRoutes, createSaveQuizHandler, quizUnlockError } = require('../../routes/quiz-management');
 const { MetadataService } = require('../../services/metadata-service');
 const { validateBody, validateParams, ...schemas } = require('../../services/validation-schemas');
 
@@ -758,5 +758,85 @@ describe('a subfolder of a password-protected folder', () => {
         expect(res.statusCode).toBe(200);
         expect(fs.existsSync(path.join(quizzesDir, 'q.json'))).toBe(false);
         expect(metadataService.getFolder(C)).toBeUndefined();
+    });
+});
+
+// POST /api/save-quiz: server.js mounts this handler behind the rate limiter
+// and the schema check, so it is called here with req.validatedBody set.
+describe('save-quiz handler', () => {
+    async function setup() {
+        const metadataService = new MetadataService(makeDeps().logger, {}, 'unused');
+        metadataService.saveMetadata = async () => {};
+        metadataService.metadata = {
+            folders: {
+                [FOLDER_ID]: { id: FOLDER_ID, name: 'Locked', parentId: null, passwordHash: await metadataService.hashPassword('folder-pw') }
+            },
+            quizzes: {
+                'legacy.json': { displayName: 'Legacy', folderId: FOLDER_ID },
+                'open.json': { displayName: 'Open', folderId: null },
+                'owned.json': { displayName: 'Owned', folderId: null, ownerId: 'user-1', visibility: 'private' }
+            }
+        };
+        const quizService = {
+            saveQuiz: jest.fn(async (title, questions, filename) => ({ success: true, filename: filename || 'new.json', title }))
+        };
+        const handler = createSaveQuizHandler({ quizService, metadataService, logger: makeDeps().logger });
+        const save = (body, { user = null, headers = {} } = {}) => {
+            const req = {
+                validatedBody: { title: 'T', questions: [], ...body },
+                user,
+                headers,
+                socket: { remoteAddress: '10.0.0.1' },
+                get: (name) => headers[name.toLowerCase()]
+            };
+            const res = makeRes();
+            return new Promise(resolve => { res._resolve = resolve; handler(req, res); });
+        };
+        return { metadataService, quizService, save };
+    }
+
+    test('overwriting a quiz in a password-protected folder needs the unlock token', async () => {
+        const { metadataService, quizService, save } = await setup();
+
+        const refused = await save({ title: 'Legacy', filename: 'legacy.json' });
+        expect(refused.statusCode).toBe(401);
+        expect(refused.body.messageKey).toBe('error_auth_required');
+        expect(quizService.saveQuiz).not.toHaveBeenCalled();
+
+        const { token } = await metadataService.unlock('legacy.json', 'quiz', 'folder-pw', '10.0.0.1');
+        const allowed = await save({ title: 'Legacy', filename: 'legacy.json' }, { headers: { authorization: `Bearer ${token}` } });
+        expect(allowed.statusCode).toBe(200);
+        expect(quizService.saveQuiz).toHaveBeenCalledTimes(1);
+    });
+
+    test('an anonymous direct LAN client can save a new quiz and overwrite an ownerless one', async () => {
+        const { metadataService, quizService, save } = await setup();
+
+        expect((await save({ title: 'Fresh' })).statusCode).toBe(200);
+        expect(metadataService.getQuizMetadata('new.json').visibility).toBe('public');
+        expect((await save({ title: 'Open', filename: 'open.json' })).statusCode).toBe(200);
+        expect(quizService.saveQuiz).toHaveBeenCalledTimes(2);
+    });
+
+    test.each(PROXIED)('an anonymous proxied client cannot overwrite an ownerless quiz: %j', async headers => {
+        const { quizService, save } = await setup();
+        const res = await save({ title: 'Open', filename: 'open.json' }, { headers });
+        expect(res.statusCode).toBe(401);
+        expect(quizService.saveQuiz).not.toHaveBeenCalled();
+    });
+
+    test('a signed-in non-owner cannot overwrite an owned quiz', async () => {
+        const { quizService, save } = await setup();
+        const res = await save({ title: 'Owned', filename: 'owned.json' }, { user: { id: 'user-2' }, headers: PROXIED[0] });
+        expect(res.statusCode).toBe(403);
+        expect(res.body.messageKey).toBe('error_quiz_not_owner');
+        expect(quizService.saveQuiz).not.toHaveBeenCalled();
+    });
+
+    test('the owner signed in through the tunnel can overwrite an owned quiz', async () => {
+        const { quizService, save } = await setup();
+        const res = await save({ title: 'Owned', filename: 'owned.json' }, { user: { id: 'user-1' }, headers: PROXIED[0] });
+        expect(res.statusCode).toBe(200);
+        expect(quizService.saveQuiz).toHaveBeenCalled();
     });
 });

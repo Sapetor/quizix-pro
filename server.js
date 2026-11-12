@@ -46,13 +46,13 @@ const { GracefulShutdown } = require('./utils/graceful-shutdown');
 const { createCacheControlMiddleware } = require('./middleware/cache-control');
 const { createStaticFilesConfig, createStaticErrorHandler, createJsFileHandler, createDebugStaticConfig } = require('./middleware/static-files');
 const { createHealthCheckRoutes } = require('./routes/health-checks');
-const { createQuizManagementRoutes, quizUnlockError } = require('./routes/quiz-management');
+const { createQuizManagementRoutes, createSaveQuizHandler } = require('./routes/quiz-management');
 const { createFileUploadRoutes } = require('./routes/file-uploads');
 const { createAIGenerationRoutes } = require('./routes/ai-generation');
 const { createManimRoutes } = require('./routes/manim-routes');
 const { createAuthRoutes } = require('./routes/auth');
 const { createAttachUser, requireUser } = require('./middleware/attach-user');
-const { getClientIp, isDirectLocalClient } = require('./middleware/client-ip');
+const { getClientIp } = require('./middleware/client-ip');
 const { ManimRenderService } = require('./services/manim-render-service');
 const { UploadGCService } = require('./services/upload-gc-service');
 const { createSaveQuizRateLimiter } = require('./utils/save-quiz-rate-limiter');
@@ -552,56 +552,10 @@ app.use('/api/auth', createAuthRoutes({
 // so an anonymous client can't flood disk. Same idiom as the upload/AI limiters.
 const saveQuizRateLimiter = createSaveQuizRateLimiter({ logger, getClientIp });
 
-// Save quiz endpoint
-app.post('/api/save-quiz', saveQuizRateLimiter.middleware, validateBody(saveQuizSchema), async (req, res) => {
-    try {
-        const { title, questions, settings, password, filename } = req.validatedBody;
-        const ownerId = req.user?.id || null;
-
-        if (password && !ownerId) {
-            return res.status(401).json({
-                error: 'Sign in to use quiz passwords',
-                messageKey: 'error_auth_required'
-            });
-        }
-
-        // Ownership gate: don't let a requester overwrite a quiz they don't own.
-        // Mirrors the DELETE /api/quiz/:filename gate: overwriting an ownerless
-        // quiz needs a signed-in user or a direct LAN client.
-        if (filename) {
-            const quizMeta = metadataService.getQuizMetadata(filename);
-            if (quizMeta?.ownerId && quizMeta.ownerId !== ownerId) {
-                return res.status(403).json({ error: 'You do not own this quiz', messageKey: 'error_quiz_not_owner' });
-            }
-            if (!quizMeta?.ownerId && !ownerId && !isDirectLocalClient(req)) {
-                return res.status(401).json({ error: 'Authentication required', messageKey: 'error_auth_required' });
-            }
-            const locked = quizUnlockError(metadataService, req, filename);
-            if (locked) return res.status(locked.status).json(locked.body);
-        }
-
-        // Scope title-conflict detection to the requester's own quizzes
-        // (or the public pool if anonymous) so user A doesn't bump user B's title.
-        const scopedFilenames = metadataService.getQuizFilenamesByOwner(ownerId);
-        const result = await quizService.saveQuiz(title, questions, filename, settings, { scopedFilenames });
-
-        // Register quiz in metadata and optionally set password
-        if (result.filename) {
-            await metadataService.registerQuiz(result.filename, result.title, {
-                ownerId,
-                visibility: ownerId ? 'private' : 'public'
-            });
-            if (password) {
-                await metadataService.setQuizPassword(result.filename, password, ownerId);
-            }
-        }
-
-        res.json(result);
-    } catch (error) {
-        logger.error('Save quiz error:', error);
-        res.status(400).json({ error: error.message || 'Failed to save quiz', messageKey: error.messageKey || 'error_failed_save_quiz' });
-    }
-});
+// Save quiz endpoint. The handler is in routes/quiz-management.js so that the
+// unit tests exercise its ownership and unlock-token checks.
+app.post('/api/save-quiz', saveQuizRateLimiter.middleware, validateBody(saveQuizSchema),
+    createSaveQuizHandler({ quizService, metadataService, logger }));
 
 // ============================================================================
 // Quiz Management Routes
