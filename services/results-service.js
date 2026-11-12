@@ -462,7 +462,7 @@ class ResultsService {
 
         // Generate question rows
         data.questions.forEach((question, qIndex) => {
-            const questionText = (question.text || '').replace(/"/g, '""');
+            const questionText = question.text || question.question || '';
             const correctAnswer = this._formatCorrectAnswer(question);
 
             const row = [

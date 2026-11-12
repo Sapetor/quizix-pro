@@ -382,6 +382,24 @@ describe('ResultsService', () => {
                 expect(result.content).toContain('""B"" (1 players)');
             });
 
+            test('question text is quoted once and falls back to question.question', async () => {
+                fs.readFile.mockResolvedValue(JSON.stringify({
+                    ...inflatedScores,
+                    questions: [
+                        { ...inflatedScores.questions[0], text: 'Say "hi"' },
+                        { ...inflatedScores.questions[1], text: undefined, question: 'Older field' }
+                    ]
+                }));
+
+                const result = await resultsService.exportResults(
+                    'results_123456_1704067200000.json', 'csv', 'analytics', SIGNED_IN
+                );
+
+                const rows = result.content.split('\n');
+                expect(rows[1].startsWith('"Say ""hi""",')).toBe(true);
+                expect(rows[2].startsWith('"Older field",')).toBe(true);
+            });
+
             test('drops the meaningless total-points-possible column', async () => {
                 fs.readFile.mockResolvedValue(JSON.stringify(inflatedScores));
 
