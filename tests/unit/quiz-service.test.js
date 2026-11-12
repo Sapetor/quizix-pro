@@ -288,6 +288,15 @@ describe('QuizService', () => {
             expect(fs.rename.mock.calls[0][1]).toBe(require('path').join('quizzes', 'algebra.json'));
         });
 
+        test('does not rewrite the file when the title is unchanged', async () => {
+            fs.access.mockResolvedValue();
+            fs.readFile.mockResolvedValue(JSON.stringify({ title: 'Same', questions: [] }));
+
+            await quizService.setQuizTitle('same.json', 'Same');
+
+            expect(fs.writeFile).not.toHaveBeenCalled();
+        });
+
         test('rejects a reserved filename', async () => {
             await expect(quizService.setQuizTitle('users.json', 'x')).rejects.toThrow('Invalid filename');
             expect(fs.writeFile).not.toHaveBeenCalled();

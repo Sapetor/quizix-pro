@@ -378,6 +378,8 @@ class QuizService {
      */
     async setQuizTitle(filename, title) {
         const quizData = await this.loadQuiz(filename);
+        // The editor PATCHes the saved title after every save; skip that write.
+        if (quizData.title === title) return quizData;
         quizData.title = title;
         await this.wslMonitor.trackFileOperation(
             () => atomicWriteFile(this.resolveQuizPath(filename), JSON.stringify(quizData, null, 2)),
