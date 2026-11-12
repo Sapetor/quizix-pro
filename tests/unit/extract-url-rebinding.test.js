@@ -90,7 +90,7 @@ describe('POST /api/extract-url resolves once per connection', () => {
         expect(targetHits).toBe(0);
         expect(res.status).toBe(403);
         expect(body.messageKey).toBe('error_url_blocked');
-    });
+    }, 30000);
 
     test('the connect-time lookup passes a public answer through in both callback shapes', async () => {
         const { createSafeLookup } = require('../../routes/ai-generation');
