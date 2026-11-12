@@ -13,4 +13,17 @@ describe('deployment config consistency', () => {
         expect(match).not.toBeNull();
         expect(parseInt(match[1], 10)).toBeGreaterThanOrEqual(1000);
     });
+
+    // k8s/cleanup.sh --delete-data skips any PVC name kubectl does not find,
+    // so a name that differs from the manifest deletes nothing.
+    test('k8s/cleanup.sh deletes the PVC names the manifest declares', () => {
+        const manifestNames = [...read('k8s/01-quizix-pro.yaml')
+            .matchAll(/^kind: PersistentVolumeClaim\nmetadata:\n {2}name: (\S+)$/gm)]
+            .map((m) => m[1]);
+        expect(manifestNames).toHaveLength(3);
+
+        const loop = read('k8s/cleanup.sh').match(/^\s*for pvc in (.+); do$/m);
+        expect(loop).not.toBeNull();
+        expect(loop[1].split(/\s+/).sort()).toEqual([...manifestNames].sort());
+    });
 });

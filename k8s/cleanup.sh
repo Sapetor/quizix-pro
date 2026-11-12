@@ -35,9 +35,9 @@ confirm_cleanup() {
 
     if [ "$DELETE_PVC" = true ]; then
         print_warning "PersistentVolumeClaims will be DELETED (data will be lost!):"
-        echo "  - quizix-quizzes-pvc"
-        echo "  - quizix-results-pvc"
-        echo "  - quizix-uploads-pvc"
+        echo "  - quizix-quizzes"
+        echo "  - quizix-results"
+        echo "  - quizix-uploads"
     else
         print_info "PersistentVolumeClaims will be PRESERVED (use --delete-data to remove)"
     fi
@@ -93,7 +93,7 @@ delete_pvcs() {
 
     print_warning "Deleting PersistentVolumeClaims (data will be lost)..."
 
-    for pvc in quizix-quizzes-pvc quizix-results-pvc quizix-uploads-pvc; do
+    for pvc in quizix-quizzes quizix-results quizix-uploads; do
         if kubectl get pvc "$pvc" -n "$NAMESPACE" &> /dev/null; then
             kubectl delete pvc "$pvc" -n "$NAMESPACE"
             print_info "PVC $pvc deleted ✓"
