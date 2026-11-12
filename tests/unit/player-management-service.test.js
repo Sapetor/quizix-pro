@@ -37,6 +37,7 @@ const createMockGame = (state = 'lobby') => ({
     hostId: 'host-socket',
     currentQuestion: 0,
     players: new Map(),
+    removedPlayers: [],
     addPlayer: jest.fn(function(id, name) {
         this.players.set(id, { id, name, score: 0, answers: {} });
         return { success: true, player: { id, name, score: 0, answers: {} } };

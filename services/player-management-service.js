@@ -79,6 +79,22 @@ class PlayerManagementService {
     }
 
     /**
+     * Send the host the live answer count after a roster change during a question.
+     * Disconnected entries are not active; removed ones are not in game.players.
+     * @param {Object} game - Game instance
+     * @param {Object} io - Socket.IO instance
+     */
+    _emitAnswerCount(game, io) {
+        if (game.gameState !== 'question' || !game.hostId) return;
+        const activePlayers = Array.from(game.players.values()).filter(p => !p.disconnected);
+        io.to(game.hostId).emit('answer-count-update', {
+            answeredPlayers: activePlayers.filter(p => p.answers && p.answers[game.currentQuestion]).length,
+            connectedPlayers: activePlayers.length,
+            totalPlayers: game.players.size
+        });
+    }
+
+    /**
      * Drop a pending coalesced roster broadcast (game ended or was cleaned up).
      * @param {string} pin - Game PIN
      */
@@ -161,12 +177,22 @@ class PlayerManagementService {
             };
         }
 
-        // A returning device must resume its own disconnected entry. Without this,
-        // session-check auto-join added a second roster row at score 0 while the
-        // scored row stayed in game.players, so the final leaderboard showed the
-        // name twice and totalPlayers double-counted the human.
+        // A returning device must resume its own disconnected or removed entry.
+        // Without this, the join added a second row at score 0 while the scored
+        // row stayed in game.players or removedPlayers, so the final leaderboard
+        // and the saved results showed the name twice, and a leaver could answer
+        // the current question again.
         const returning = this._findResumablePlayer(game, name, deviceId);
         if (returning) {
+            // A removed record goes back under its old id as a disconnected entry,
+            // so handlePlayerRejoin moves it, its answer mapping and its proposal
+            // to this socket and resyncs the question state.
+            const removedIndex = game.removedPlayers.indexOf(returning);
+            if (removedIndex !== -1) {
+                game.removedPlayers.splice(removedIndex, 1);
+                delete returning.removedAt;
+                game.players.set(returning.id, returning);
+            }
             return this.handlePlayerRejoin(
                 socketId, pin, returning.sessionToken, game, socket, io, questionFlowService
             );
@@ -174,9 +200,10 @@ class PlayerManagementService {
 
         // Same case-insensitive duplicate check handlePlayerNameChange applies.
         // Two students on the same name are indistinguishable on the roster,
-        // leaderboard and export.
+        // leaderboard and export. A removed player's name stays taken, so another
+        // student cannot take over that score by typing the name.
         const trimmedName = name.trim();
-        const nameTaken = Array.from(game.players.values())
+        const nameTaken = [...game.players.values(), ...game.removedPlayers]
             .some(p => p.name.toLowerCase() === trimmedName.toLowerCase());
         if (nameTaken) {
             return {
@@ -307,16 +334,7 @@ class PlayerManagementService {
             }
 
             // Update host answer count since total player count changed
-            if (game.hostId) {
-                const activePlayers = Array.from(game.players.values()).filter(p => !p.disconnected);
-                const answeredPlayers = activePlayers
-                    .filter(p => p.answers && p.answers[game.currentQuestion]).length;
-                io.to(game.hostId).emit('answer-count-update', {
-                    answeredPlayers,
-                    connectedPlayers: activePlayers.length,
-                    totalPlayers: game.players.size
-                });
-            }
+            this._emitAnswerCount(game, io);
         }
 
         this.logger.info(`Player ${name} joined game ${pin} (${currentPlayers.length} players)`);
@@ -328,18 +346,22 @@ class PlayerManagementService {
     }
 
     /**
-     * Find the disconnected entry a joining device should resume, if any.
+     * Find the disconnected or removed entry a joining device should resume, if any.
      * The device binding wins; the name is only used when neither the request nor
      * the candidate carries one, so a name typed by somebody else can never claim
-     * a bound player's score.
+     * a bound player's score. Disconnected entries are checked before removed ones.
+     * A removed record whose old socket id is back on the roster (that socket
+     * joined again under another name) cannot be restored under that id.
      * @param {Object} game - Game instance
      * @param {string} name - Name supplied by the joining client
      * @param {string|null} deviceId - Device binding supplied by the joining client
      * @returns {Object|null} The player entry to resume, or null
      */
     _findResumablePlayer(game, name, deviceId) {
-        const candidates = Array.from(game.players.values())
-            .filter(p => p.disconnected && p.sessionToken);
+        const candidates = [
+            ...Array.from(game.players.values()).filter(p => p.disconnected),
+            ...game.removedPlayers.filter(p => !game.players.has(p.id))
+        ].filter(p => p.sessionToken);
 
         if (deviceId) {
             return candidates.find(p => p.deviceId === deviceId) || null;
@@ -406,8 +428,15 @@ class PlayerManagementService {
 
                 this.logger.info(`Player ${playerData.name} marked as disconnected in game ${playerData.gamePin} (grace period started)`);
             } else {
-                // Lobby or intentional leave: remove immediately. A consensus
-                // proposal from a player no longer in the game must not count.
+                // Lobby leave: delete the entry. Intentional leave from a running
+                // game: keep the whole record in removedPlayers, so it stays in the
+                // results, its name stays taken and a later join resumes it. A
+                // consensus proposal from a player no longer in the game must not count.
+                if (gamePlayer && game.gameState !== 'lobby') {
+                    gamePlayer.disconnected = true;
+                    gamePlayer.removedAt = Date.now();
+                    game.removedPlayers.push(gamePlayer);
+                }
                 game.removePlayer(socketId);
                 game.proposals?.delete(socketId);
 
@@ -420,20 +449,7 @@ class PlayerManagementService {
                 this.logger.info(`Player ${playerData.name} removed from game ${playerData.gamePin}`);
             }
 
-            // Update live answer count if game is in question state
-            if (game.gameState === 'question' && game.hostId) {
-                const activePlayers = Array.from(game.players.values())
-                    .filter(p => !p.disconnected);
-                const answeredPlayers = activePlayers
-                    .filter(player => player.answers && player.answers[game.currentQuestion]).length;
-
-                io.to(game.hostId).emit('answer-count-update', {
-                    answeredPlayers,
-                    connectedPlayers: activePlayers.length,
-                    totalPlayers: game.players.size
-                });
-            }
-
+            this._emitAnswerCount(game, io);
             this._emitProposalUpdate(game, io);
         }
 
@@ -455,15 +471,10 @@ class PlayerManagementService {
         // Find the player by session token
         for (const [playerId, player] of game.players) {
             if (player.sessionToken === sessionToken && player.disconnected) {
-                // Preserve player data for final leaderboard before removal
-                game.removedPlayers.push({
-                    id: playerId,
-                    name: player.name,
-                    score: player.score || 0,
-                    answers: player.answers || {},
-                    disconnected: true,
-                    removedAt: Date.now()
-                });
+                // Keep the whole record for the final leaderboard, the results and
+                // a later join from the same device (see _findResumablePlayer).
+                player.removedAt = Date.now();
+                game.removedPlayers.push(player);
 
                 // Keep device in session for future game rejoins (don't unregisterDevice)
                 if (player.deviceId) {
@@ -702,6 +713,7 @@ class PlayerManagementService {
 
         // Broadcast updated player list
         this._broadcastPlayerList(pin, game, io);
+        this._emitAnswerCount(game, io);
         this._emitProposalUpdate(game, io);
 
         this.logger.info(`Player ${foundPlayer.name} rejoined game ${pin} (score: ${foundPlayer.score})`);
@@ -826,8 +838,8 @@ class PlayerManagementService {
             return { success: true, oldName, newName: trimmedName };
         }
 
-        // Check for duplicate names in the same game
-        const duplicatePlayer = Array.from(game.players.values()).find(
+        // Check for duplicate names in the same game, removed players included
+        const duplicatePlayer = [...game.players.values(), ...game.removedPlayers].find(
             p => p.name.toLowerCase() === trimmedName.toLowerCase() && p.id !== socketId
         );
         if (duplicatePlayer) {

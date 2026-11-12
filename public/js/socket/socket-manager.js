@@ -845,6 +845,9 @@ export class SocketManager {
         // Handle successful rejoin
         this.socket.on('rejoin-success', (data) => {
             logger.info('Rejoin successful:', data);
+            // A join from the join screen is answered this way when the server
+            // resumes this player's entry; its retry must not resend player-join.
+            this.cancelPendingJoin();
             this._hideReconnectionOverlay();
             this._hideRejoinBanner();
 
