@@ -506,6 +506,25 @@ describe('MetadataService', () => {
             expect(metadataService.requiresAuth('legacy-protected.json', 'quiz', 'user-2')).toBe(false);
         });
 
+        // The tree marks such a quiz protected, so the folder gate must apply.
+        test('a legacy ownerless quiz hash does not bypass a protecting folder', async () => {
+            metadataService.metadata.folders['folder-1'] = {
+                id: 'folder-1', name: 'Protected Folder', parentId: null,
+                passwordHash: await metadataService.hashPassword('folder-pw'), created: '2026-01-01', sortOrder: 0
+            };
+            const legacy = metadataService.metadata.quizzes['legacy-protected.json'];
+            legacy.passwordHash = await metadataService.hashPassword('legacy-pw');
+            legacy.folderId = 'folder-1';
+
+            for (const userId of [null, 'user-2']) {
+                expect(metadataService.requiresAuth('legacy-protected.json', 'quiz', userId)).toBe(true);
+            }
+            await expect(metadataService.unlock('legacy-protected.json', 'quiz', 'legacy-pw', '10.0.0.9'))
+                .rejects.toThrow('Incorrect password');
+            const { token } = await metadataService.unlock('legacy-protected.json', 'quiz', 'folder-pw', '10.0.0.9');
+            expect(metadataService.verifyToken(token, 'legacy-protected.json', 'quiz')).toBe(true);
+        });
+
         test('setFolderPassword requires authentication', async () => {
             metadataService.metadata.folders['folder-1'] = {
                 id: 'folder-1', name: 'Test', parentId: null,

@@ -198,7 +198,7 @@ Load a specific quiz by filename.
 **Access rules:**
 - `400` for an invalid filename.
 - `403` (`error_quiz_forbidden`) for a private quiz the requester does not own. This check runs before the token check, so an unlock token does not open another user's private quiz.
-- `401` (`error_auth_required`) when the quiz is password protected and the request has no valid unlock token in `Authorization: Bearer <token>`. A quiz with its own password is protected for everyone except its owner (passwords on ownerless legacy quizzes are not enforced). A quiz without its own password is protected, for its owner too, when any ancestor folder has a password. See [Authentication](#authentication).
+- `401` (`error_auth_required`) when the quiz is password protected and the request has no valid unlock token in `Authorization: Bearer <token>`. A quiz with its own password is protected for everyone except its owner (passwords on ownerless legacy quizzes are not enforced and count as no password). A quiz without its own password is protected, for its owner too, when any ancestor folder has a password. See [Authentication](#authentication).
 - `404` when the file does not exist.
 
 **Response:**
@@ -962,7 +962,7 @@ User accounts (see [User accounts](#user-accounts)) are a separate mechanism: th
 ### Password Protection Features
 
 - **Quiz-level passwords**: Set at creation time via `/api/save-quiz` or later via `/api/quiz-metadata/:filename/password`. Both require a signed-in owner. The owner is not asked for their own quiz password, and passwords on ownerless legacy quizzes are not enforced.
-- **Folder-level passwords**: Set via `/api/folders/:id/password` endpoint. A folder password protects every quiz in that folder and its subfolders that has no password of its own. Those quizzes stay in listings, marked `protected`, and loading one needs an unlock token, for its owner too.
+- **Folder-level passwords**: Set via `/api/folders/:id/password` endpoint. A folder password protects every quiz in that folder and its subfolders that has no password of its own; a password on an ownerless legacy quiz does not count, and such a quiz unlocks with the folder password. Those quizzes stay in listings, marked `protected`, and loading one needs an unlock token, for its owner too.
 - **Session tokens**: 1-hour expiring tokens after successful unlock
 - **Security model**: PBKDF2-SHA512 hashing with 100,000 iterations
 - **Rate limiting**: 5 unlock attempts per minute per IP address

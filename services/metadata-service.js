@@ -786,9 +786,7 @@ class MetadataService {
                 err.messageKey = 'error_quiz_not_found';
                 throw err;
             }
-            // A quiz with no password of its own is gated by its nearest
-            // protected ancestor folder, and unlocks with that folder's password.
-            passwordHash = item.passwordHash || this._protectingFolderHash(item.folderId);
+            passwordHash = this._effectiveQuizHash(item);
         } else {
             const err = new Error('Invalid item type');
             err.messageKey = 'error_invalid_item_type';
@@ -848,15 +846,24 @@ class MetadataService {
             const quiz = this.metadata.quizzes[itemId];
             if (!quiz) return false;
 
-            // Check quiz password
-            if (quiz.passwordHash) {
-                if (!quiz.ownerId) return false; // legacy anonymous passwords are not enforced
+            // An owned quiz's own password is skipped for its owner. A legacy
+            // hash on an ownerless quiz is not enforced, so the folder applies.
+            if (quiz.passwordHash && quiz.ownerId) {
                 return !(userId && quiz.ownerId === userId);
             }
 
             return !!this._protectingFolderHash(quiz.folderId);
         }
         return false;
+    }
+
+    /**
+     * Password hash that unlocks a quiz: its own password when it has an
+     * owner, otherwise that of its nearest protected ancestor folder. A
+     * legacy hash on an ownerless quiz is ignored, as in requiresAuth.
+     */
+    _effectiveQuizHash(quiz) {
+        return (quiz.ownerId && quiz.passwordHash) || this._protectingFolderHash(quiz.folderId);
     }
 
     /**
