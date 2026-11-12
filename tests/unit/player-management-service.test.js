@@ -989,4 +989,47 @@ describe('PlayerManagementService', () => {
             expect(game.players.size).toBe(2);
         });
     });
+
+    // Consensus proposals are stored by the index the player tapped, so players
+    // joining or rejoining mid-question must get the canonical option order.
+    describe('consensus mode with randomizeAnswers', () => {
+        function consensusGame() {
+            const game = createMockGame('question');
+            game.isConsensusMode = true;
+            game.consensusConfig = { threshold: 0.66, allowChat: false };
+            game.quiz = {
+                randomizeAnswers: true,
+                questions: [{ type: 'multiple-choice', question: 'Q1', options: ['A', 'B', 'C', 'D'], correctAnswer: 1, timeLimit: 20 }]
+            };
+            game.answerMappings = new Map();
+            game.questionStartTime = Date.now();
+            return game;
+        }
+
+        test('a late joiner gets unshuffled options and no mapping', () => {
+            const socket = createMockSocket('late');
+            const game = consensusGame();
+
+            playerService.handlePlayerJoin('late', '123456', 'Late', game, socket, createMockIO());
+
+            const questionStart = socket.emit.mock.calls.find(c => c[0] === 'question-start');
+            expect(questionStart[1].options).toEqual(['A', 'B', 'C', 'D']);
+            expect(game.answerMappings.size).toBe(0);
+        });
+
+        test('a rejoining player gets unshuffled options and no mapping', () => {
+            const socket = createMockSocket('new-sock');
+            const game = consensusGame();
+            game.players.set('old-sock', {
+                id: 'old-sock', name: 'Alice', score: 0, answers: [], disconnected: true,
+                disconnectedAt: Date.now(), sessionToken: 'tok-alice'
+            });
+
+            playerService.handlePlayerRejoin('new-sock', '123456', 'tok-alice', game, socket, createMockIO());
+
+            const questionStart = socket.emit.mock.calls.find(c => c[0] === 'question-start');
+            expect(questionStart[1].options).toEqual(['A', 'B', 'C', 'D']);
+            expect(game.answerMappings.size).toBe(0);
+        });
+    });
 });

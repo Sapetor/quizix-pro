@@ -806,7 +806,7 @@ Host only, no payload. Starts the game. Rate limited to 3 per second.
     "options": ["3", "4", "5", "6"]
   }
   ```
-  With `randomizeAnswers`, each player gets an individually shuffled `options` array and the host gets the original order.
+  With `randomizeAnswers`, each player gets an individually shuffled `options` array and the host gets the original order. In consensus mode every player gets the original order, because proposals are compared by index.
 - `answer-count-update` (to host): `{ answeredPlayers, connectedPlayers, totalPlayers }`
 
 #### Client -> Server: `submit-answer`

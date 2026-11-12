@@ -261,7 +261,7 @@ class PlayerManagementService {
                 };
 
                 // Handle answer shuffling for the new player
-                const shouldShuffle = game.quiz.randomizeAnswers &&
+                const shouldShuffle = game.quiz.randomizeAnswers && !game.isConsensusMode &&
                     (questionType === 'multiple-choice' || questionType === 'multiple-correct') &&
                     question.options && question.options.length > 1;
 
@@ -589,7 +589,7 @@ class PlayerManagementService {
                 };
 
                 // Determine answer options (handle shuffling)
-                const shouldShuffle = game.quiz.randomizeAnswers &&
+                const shouldShuffle = game.quiz.randomizeAnswers && !game.isConsensusMode &&
                     (questionType === 'multiple-choice' || questionType === 'multiple-correct') &&
                     question.options && question.options.length > 1;
 

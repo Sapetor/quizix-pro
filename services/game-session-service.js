@@ -401,7 +401,7 @@ class GameSessionService {
         }
 
         // Determine if this question type should have shuffled answers
-        const shouldShuffle = game.quiz.randomizeAnswers &&
+        const shouldShuffle = game.quiz.randomizeAnswers && !game.isConsensusMode &&
             (questionType === 'multiple-choice' || questionType === 'multiple-correct') &&
             question.options && question.options.length > 1;
 

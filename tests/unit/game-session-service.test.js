@@ -367,6 +367,33 @@ describe('GameSessionService — startQuestion', () => {
         }));
     });
 
+    // Proposals are stored by the index the player tapped and never translated,
+    // so all players must share the canonical option order in consensus mode.
+    test('does not shuffle options per player in consensus mode', () => {
+        const io = makeIo();
+        const game = svc.createGame('host-1', sampleQuiz({ randomizeAnswers: true, consensusMode: true }));
+        game.addPlayer('p1', 'Alice');
+        game.addPlayer('p2', 'Bob');
+        game.currentQuestion = 0;
+        svc.startQuestion(game, io);
+
+        expect(game.answerMappings.size).toBe(0);
+        expect(io.to).toHaveBeenCalledWith(`game-${game.pin}`);
+        expect(io.emit).toHaveBeenCalledWith('question-start', expect.objectContaining({
+            options: ['A', 'B', 'C', 'D']
+        }));
+    });
+
+    test('still shuffles options per player outside consensus mode', () => {
+        const io = makeIo();
+        const game = svc.createGame('host-1', sampleQuiz({ randomizeAnswers: true }));
+        game.addPlayer('p1', 'Alice');
+        game.currentQuestion = 0;
+        svc.startQuestion(game, io);
+
+        expect(game.answerMappings.has('p1')).toBe(true);
+    });
+
     test('ends the game if currentQuestion runs off the end', () => {
         const io = makeIo();
         const game = svc.createGame('host-1', sampleQuiz());
