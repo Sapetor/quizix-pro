@@ -175,6 +175,21 @@ describe('player-events: host-rejoin', () => {
         expect(findEmit(socket.emits, 'error').data.messageKey).toBe('error_not_authorized_host');
     });
 
+    // setPendingMigration ended the question and armed a 2-minute delete, so a
+    // "restored" host would lose the game anyway. The host recovers through
+    // host-join with previousPin, which migrates the players.
+    it('errors when the game is in pending-migration', () => {
+        const game = { ...disconnectedGame(), gameState: 'pending-migration', hostId: null };
+        const { socket, options, h } = setup();
+        options.gameSessionService.getGame.mockReturnValue(game);
+
+        h['host-rejoin']({ pin: '123456', token: 'secret' });
+
+        expect(game.hostId).toBeNull();
+        expect(findEmit(socket.emits, 'error')).toBeTruthy();
+        expect(findEmit(socket.emits, 'host-rejoin-success')).toBeFalsy();
+    });
+
     it('rejects a wrong reconnect token', () => {
         const { socket, options, h } = setup();
         options.gameSessionService.getGame.mockReturnValue(disconnectedGame());

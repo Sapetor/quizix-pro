@@ -127,9 +127,11 @@ function registerPlayerEvents(io, socket, options) {
 
             // hostDisconnected is not required: socket.io's reconnect opens the new
             // socket before the server sees the old one close. The token below is
-            // the authentication.
+            // the authentication. A game in pending-migration has ended its question
+            // and will be deleted when the window closes; the host recovers it with
+            // host-join and previousPin instead.
             const game = gameSessionService.getGame(validated.pin);
-            if (!game) {
+            if (!game || game.gameState === 'pending-migration') {
                 socket.emit('error', { message: 'Game not found or not in reconnect state' });
                 return;
             }

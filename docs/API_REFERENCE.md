@@ -708,7 +708,7 @@ Host reconnects to a game after a disconnect.
 
 **Payload:** `{ "pin": "123456", "token": "<hostToken from game-created>" }`
 
-Fails with `error` when the game is not waiting for its host, or when `token` does not match (`error_not_authorized_host`). On success the room gets `host-reconnected` and the host gets `host-rejoin-success` (`{ pin, gameState, currentQuestion, players, leaderboard, quizTitle }`). If a question is running, the host also gets `question-start` (with `remainingTimeMs`) and `answer-count-update`; during a reveal it gets `question-timeout`, `answer-statistics` and, in manual mode, `show-next-button`.
+Fails with `error` when the game does not exist or is in pending migration (the host then recovers the players with `host-join` and `previousPin`), or when `token` does not match (`error_not_authorized_host`). The server does not need to have seen the old host socket close. On success the room gets `host-reconnected` and the host gets `host-rejoin-success` (`{ pin, gameState, currentQuestion, players, leaderboard, quizTitle }`). If a question is running, the host also gets `question-start` (with `remainingTimeMs`) and `answer-count-update`; during a reveal it gets `question-timeout`, `answer-statistics` and, in manual mode, `show-next-button`.
 
 #### Client -> Server: `host-starting-new-game`
 Host only. Moves the current game to pending migration so its players can follow the host into a new game. Players get `host-preparing-new-game` (`{ graceMs: 120000 }`); the host gets `migration-token` (`{ pin, migrationToken }`) to pass in the next `host-join`, and leaves the old room.
