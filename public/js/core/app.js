@@ -639,6 +639,8 @@ export class QuizGame {
             return;
         }
 
+        if (this.quizManager.reportTextlessQuestions()) return;
+
         const questions = this.quizManager.collectQuestions();
         logger.debug('Collected questions:', questions);
         if (questions.length === 0) {

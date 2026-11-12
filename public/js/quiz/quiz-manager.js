@@ -207,6 +207,25 @@ export class QuizManager {
     }
 
     /**
+     * Show an error and return true when a question has content (options or an
+     * image) but no text. extractQuestionData drops such a question, so a save
+     * or a game start would silently lose it.
+     */
+    reportTextlessQuestions() {
+        const positions = [];
+        document.querySelectorAll('.question-item').forEach((el, i) => {
+            if (el.querySelector('.question-text')?.value?.trim()) return;
+            const image = el.querySelector('.question-image');
+            const hasImage = !!(image && this.extractImageUrl(image)?.trim());
+            const hasOption = Array.from(el.querySelectorAll('.option')).some(o => o.value?.trim());
+            if (hasImage || hasOption) positions.push(i + 1);
+        });
+        if (positions.length === 0) return false;
+        showErrorAlert('question_missing_text', [positions.join(', ')]);
+        return true;
+    }
+
+    /**
      * Collect game settings from host screen UI elements
      */
     collectSettings() {
@@ -402,6 +421,8 @@ export class QuizManager {
             showErrorAlert('please_enter_quiz_title');
             return;
         }
+
+        if (this.reportTextlessQuestions()) return;
 
         const questions = this.collectQuestions();
         if (questions.length === 0) {
