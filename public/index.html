@@ -13,10 +13,10 @@
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
-    <link rel="stylesheet" href="css/main.bundle.css?v=181">
+    <link rel="stylesheet" href="css/main.bundle.css?v=182">
 
     <!-- Preload critical JavaScript -->
-    <link rel="preload" href="js/main.js?v=181" as="script" crossorigin="anonymous">
+    <link rel="preload" href="js/main.js?v=182" as="script" crossorigin="anonymous">
     <!-- app.js and translation-manager.js are never requested by the document; main.js
          imports them as ES modules. A preload only matches if the URL is identical, and
          the import specifiers carry no ?v= query — so a versioned `as="script"` preload
@@ -113,7 +113,7 @@
          MUST stay parser-blocking (no defer, no async) so the theme custom
          properties are set before first paint, and MUST stay ahead of the async
          MathJax tag below so window.MathJax is configured before MathJax runs. -->
-    <script src="js/core/boot-head.js?v=181"></script>
+    <script src="js/core/boot-head.js?v=182"></script>
     <!-- Third-party libraries are vendored under libs/ (versions, sources and
          checksums in public/libs/README.md) so the app needs no internet access. -->
     <!-- MathJax 3.2.2. It resolves its TeX extensions and webfonts relative to this
@@ -3577,12 +3577,12 @@ class GraphScene(Scene):
          client where the tryAllTransports fallback in app.js takes effect). -->
     <script src="socket.io/socket.io.min.js"></script>
     <!-- Modular ES6 Structure -->
-    <script type="module" src="js/main.js?v=181"></script>
-    <script type="module" src="js/landing.js?v=181"></script>
-    <script type="module" src="js/landing-demo.js?v=181"></script>
-    <script type="module" src="js/landing-ai.js?v=181"></script>
+    <script type="module" src="js/main.js?v=182"></script>
+    <script type="module" src="js/landing.js?v=182"></script>
+    <script type="module" src="js/landing-demo.js?v=182"></script>
+    <script type="module" src="js/landing-ai.js?v=182"></script>
     <!-- Service Worker Registration for Static Asset Caching -->
-    <script defer src="js/core/boot-service-worker.js?v=181"></script>
+    <script defer src="js/core/boot-service-worker.js?v=182"></script>
 
     <!-- Language Picker Overlay (First Visit) -->
     <div id="language-picker-overlay" class="language-picker-overlay hidden">
