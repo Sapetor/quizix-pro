@@ -130,6 +130,28 @@ describe('host session after host-starting-new-game and disconnect', () => {
         expect(playerManagementService.hostSessions.has(hostSessionId)).toBe(true);
     });
 
+    it('a host back on a new socket after its empty session was destroyed still migrates the players', () => {
+        ctx = setup();
+        const { connect, playerManagementService, gameSessionService } = ctx;
+        const host = connect('host-a');
+        host.handlers['host-join']({ quiz: QUIZ });
+        const { pin, hostSessionId, hostSessionToken } = emitted(host, 'game-created');
+        const player = connect('p1');
+        player.handlers['player-join']({ pin, name: 'Al' });
+
+        host.handlers['host-starting-new-game']();
+        const { migrationToken } = emitted(host, 'migration-token');
+        host.handlers['disconnect']();
+        expect(playerManagementService.hostSessions.has(hostSessionId)).toBe(false);
+
+        const host2 = connect('host-b');
+        host2.handlers['host-join']({ quiz: QUIZ, hostSessionId, hostSessionToken, previousPin: pin, migrationToken });
+        const created = emitted(host2, 'game-created');
+        expect(created.hostSessionId).not.toBe(hostSessionId);
+        expect(gameSessionService.getGame(created.pin).players.has('p1')).toBe(true);
+        expect(gameSessionService.getGame(pin)).toBeUndefined();
+    });
+
     it('a host-join followed by a lobby disconnect still leaves no session', () => {
         ctx = setup();
         const { connect, playerManagementService } = ctx;
