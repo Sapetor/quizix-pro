@@ -232,6 +232,14 @@ class GameSessionService {
         if (game.startTimer) { clearTimeout(game.startTimer); game.startTimer = null; }
         if (game.answerCountTimer) { clearTimeout(game.answerCountTimer); game.answerCountTimer = null; }
 
+        // Both exits (expiry and migration into a new game) delete this game, so
+        // a game that was started is saved now. saveResults is idempotent, so a
+        // finished game already saved by endGame is not written twice.
+        if (game.startTime && !game.resultsSaved) {
+            game.endTime = new Date().toISOString();
+            game.saveResults();
+        }
+
         // Transition state
         game.gameState = 'pending-migration';
         game.migrationToken = crypto.randomUUID();

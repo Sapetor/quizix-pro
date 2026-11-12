@@ -270,6 +270,61 @@ describe('GameSessionService — pending migration (host-disconnect flow)', () =
     });
 });
 
+// Neither exit from pending-migration (2-minute expiry, or migration into the
+// host's new game) ran saveResults, so an interrupted game's answers were lost.
+describe('GameSessionService — pending migration saves results', () => {
+    const { atomicWriteFile } = require('../../services/atomic-write');
+    const fsPromises = require('fs').promises;
+
+    async function flushSave() {
+        for (let i = 0; i < 5; i++) await Promise.resolve();
+    }
+
+    let mkdirSpy;
+
+    beforeEach(() => {
+        atomicWriteFile.mockClear();
+        mkdirSpy = jest.spyOn(fsPromises, 'mkdir').mockResolvedValue(undefined);
+    });
+
+    afterEach(() => {
+        mkdirSpy.mockRestore();
+    });
+
+    test('writes the interrupted game before the expiry deletes it', async () => {
+        const io = makeIo();
+        const game = svc.createGame('host-1', sampleQuiz());
+        game.addPlayer('p1', 'Alice');
+        game.players.get('p1').score = 300;
+        game.startTime = new Date().toISOString();
+        game.currentQuestion = 0;
+        game.gameState = 'question';
+
+        svc.setPendingMigration(game, io);
+        await flushSave();
+        jest.advanceTimersByTime(120000);
+
+        expect(svc.games.has(game.pin)).toBe(false);
+        expect(atomicWriteFile).toHaveBeenCalledTimes(1);
+        const saved = JSON.parse(atomicWriteFile.mock.calls[0][1]);
+        expect(saved.gamePin).toBe(game.pin);
+        expect(saved.results).toEqual([expect.objectContaining({ name: 'Alice', score: 300 })]);
+        expect(saved.endTime).toEqual(expect.any(String));
+    });
+
+    test('writes nothing for a game that never started', async () => {
+        const io = makeIo();
+        const game = svc.createGame('host-1', sampleQuiz());
+        game.addPlayer('p1', 'Alice');
+
+        svc.setPendingMigration(game, io);
+        await flushSave();
+        jest.advanceTimersByTime(120000);
+
+        expect(atomicWriteFile).not.toHaveBeenCalled();
+    });
+});
+
 describe('GameSessionService — cleanupStaleGames', () => {
     test('deletes games older than the max age', () => {
         const game = svc.createGame('host-1', sampleQuiz());
