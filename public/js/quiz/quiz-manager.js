@@ -63,6 +63,9 @@ export class QuizManager {
             setTimeout(initVideo, 0);
         }
 
+        // A rename in the file browser must reach the open editor's title
+        document.addEventListener('quizRenamed', (e) => this.handleQuizRenamed(e.detail));
+
         // Also init video sections for questions added via the "Add Question" button
         document.addEventListener('questionAdded', () => {
             const container = document.getElementById('questions-container');
@@ -195,6 +198,16 @@ export class QuizManager {
         } else {
             logger.error('No quickStart handler available');
         }
+    }
+
+    /**
+     * Keep the editor title in step when the loaded quiz is renamed in the file browser
+     */
+    handleQuizRenamed({ filename, displayName } = {}) {
+        if (!filename || filename !== this._loadedFilename || !displayName) return;
+        const titleInput = dom.get('quiz-title');
+        if (titleInput) titleInput.value = displayName;
+        this._loadedTitle = displayName;
     }
 
     /**
@@ -567,11 +580,26 @@ export class QuizManager {
             return await errorHandler.safeNetworkOperation(async () => {
                 logger.info('Saving quiz:', title, 'with', questions.length, 'questions');
 
-                const response = await APIHelper.fetchAPI('api/save-quiz', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, questions, settings, password: password || null, filename: loadedFilename || undefined })
-                });
+                const post = () => {
+                    const headers = { 'Content-Type': 'application/json' };
+                    const unlock = loadedFilename && APIHelper.quizUnlockTokens.get(loadedFilename);
+                    if (unlock && unlock.expiresAt > Date.now()) headers['Authorization'] = `Bearer ${unlock.token}`;
+                    return APIHelper.fetchAPI('api/save-quiz', {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({ title, questions, settings, password: password || null, filename: loadedFilename || undefined })
+                    });
+                };
+
+                let response = await post();
+                if (response.status === 401 && loadedFilename) {
+                    // Unlock token missing or rejected: prompt once and retry
+                    APIHelper.quizUnlockTokens.delete(loadedFilename);
+                    this.fileManager.sessionTokens?.delete(loadedFilename);
+                    const unlocked = await this.fileManager.ensureUnlocked('quiz', loadedFilename, loadedFilename.replace('.json', ''));
+                    if (!unlocked) return;
+                    response = await post();
+                }
 
                 const data = await response.json();
                 logger.info('Save response:', response.status, data);
