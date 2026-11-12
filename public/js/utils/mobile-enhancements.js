@@ -4,7 +4,7 @@
  */
 
 import { logger } from '../core/config.js';
-import { isMobile } from './dom.js';
+import { isMobile, isPhone } from './dom.js';
 
 class MobileEnhancements {
     constructor() {
@@ -44,7 +44,9 @@ class MobileEnhancements {
     }
 
     handleTouchStart(event) {
-        const element = event.currentTarget;
+        // The keydown listener is bound on document, so currentTarget is the
+        // document there and the option is event.target.
+        const element = event.currentTarget instanceof Element ? event.currentTarget : event.target;
 
         // Remove existing ripple
         const existingRipple = element.querySelector('.ripple-effect');
@@ -53,7 +55,7 @@ class MobileEnhancements {
         }
 
         // Create simple ripple effect
-        if (this.isMobile) {
+        if (isPhone()) {
             const ripple = document.createElement('span');
             ripple.classList.add('ripple-effect');
 
@@ -62,7 +64,8 @@ class MobileEnhancements {
             const x = (event.clientX || (event.touches && event.touches[0] && event.touches[0].clientX)) - rect.left;
             const y = (event.clientY || (event.touches && event.touches[0] && event.touches[0].clientY)) - rect.top;
 
-            if (x !== undefined && y !== undefined) {
+            // Keyboard activation has no touch point: skip the ripple.
+            if (Number.isFinite(x) && Number.isFinite(y)) {
                 ripple.style.left = `${x}px`;
                 ripple.style.top = `${y}px`;
 
@@ -109,7 +112,7 @@ class MobileEnhancements {
     setupAccessibilityEnhancements() {
         // Enhanced focus management for mobile
         document.addEventListener('focusin', (event) => {
-            if (this.isMobile && event.target.matches('.player-option, .checkbox-option, .tf-option, .btn')) {
+            if (isPhone() && event.target.matches('.player-option, .checkbox-option, .tf-option, .btn')) {
                 event.target.classList.add('focused-mobile');
             }
         });

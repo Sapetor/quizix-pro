@@ -5,7 +5,7 @@
 Quizix Pro now includes comprehensive mobile-friendly visual enhancements designed to improve user experience on mobile devices while maintaining the excellent performance optimizations (50-70% faster loading achieved in Phase 6).
 
 > **Status (2026-11-12):** most of this document describes an API that is not
-> in the code. `public/js/utils/mobile-enhancements.js` (159 lines) only binds a
+> in the code. `public/js/utils/mobile-enhancements.js` (162 lines) only binds a
 > tap ripple and a `focused-mobile` focus class to `.player-option`,
 > `.checkbox-option`, `.tf-option` and `.btn`, and activates the three option
 > classes on Enter/Space. It has no `updateProgress`, `showLoadingSkeleton`,
@@ -13,9 +13,12 @@ Quizix Pro now includes comprehensive mobile-friendly visual enhancements design
 > `hideLoadingOverlay`, `showGestureHint` or `logPerformanceMetric` method, so
 > the usage examples, the progress indicator, skeletons, gesture hints and the
 > debug mode below do not exist. Both the ripple and the focus class are gated
-> on `this.isMobile`, which nothing sets since commit a1b8203 (2026-01-22)
-> removed the constructor assignment `this.isMobile = window.innerWidth <= 768`;
-> the ripple and the focus class are therefore never applied on any device.
+> on `isPhone()` from `public/js/utils/dom.js` (coarse primary pointer and
+> viewport width of 768px or less), evaluated when the event fires, so they
+> apply on phones and not on mouse-driven desktops or on tablets wider than
+> 768px. Between commit a1b8203 (2026-01-22) and 2026-11-12 the gate was
+> `this.isMobile`, which nothing set, and neither was applied on any device.
+> Enter/Space activation adds no ripple because it has no touch point.
 
 ## What's Been Added
 
@@ -41,9 +44,9 @@ Quizix Pro now includes comprehensive mobile-friendly visual enhancements design
   the file under the `MOBILE TOUCH FEEDBACK` heading (the standalone
   `mobile-enhancements.css` file was merged in and removed). That is where
   `.ripple-effect` and `.focused-mobile` are defined; both were missing until
-  2026-09, so the tap ripple and the focus highlight rendered nothing. As of
-  2026-11-12 they still render nothing, because the JS never adds either class
-  (see the status note above).
+  2026-09, and until 2026-11-12 the JS never added either class (see the
+  status note above), so the tap ripple and the focus highlight rendered
+  nothing before that date.
 - `public/js/utils/mobile-enhancements.js` - JavaScript functionality for touch interactions
 - `docs/MOBILE_ENHANCEMENTS.md` - This documentation
 

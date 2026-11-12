@@ -71,6 +71,11 @@ Gesture entry points that bypass `showScreen()` carry their own `isPhone()`
 guards: `startHosting()`, `showQuickStartModal()`, `quickStartQuiz()` in
 `public/js/core/app.js`.
 
+Two other `isPhone()` callers are touch behaviour, not part of the gate, and
+stay if hosting is re-enabled: the tap ripple and `focused-mobile` class in
+`public/js/utils/mobile-enhancements.js`, and the touch-drag switch in
+`public/js/utils/ordering-drag-drop.js`.
+
 ### Why `!important` is safe in `mobile-gate.css`
 
 The file is imported with `layer(app)`; `.hidden` / `.visible-flex` /
