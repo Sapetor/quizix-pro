@@ -326,10 +326,13 @@ export class FileManager {
      */
     async toggleQuizVisibility(filename, nextVisibility) {
         try {
+            const node = this._findQuizNode(filename);
+            const headers = await this._quizWriteHeaders(filename, node, node?.displayName || filename.replace('.json', ''));
+            if (!headers) return;
             const res = await fetch(APIHelper.getApiUrl(`api/quiz-metadata/${encodeURIComponent(filename)}`), {
                 method: 'PATCH',
                 credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ visibility: nextVisibility })
             });
             if (!res.ok) {
@@ -348,6 +351,31 @@ export class FileManager {
             logger.error('Toggle visibility failed:', err);
             unifiedErrorHandler.handleError(err, { showToast: true, context: { op: 'toggle-quiz-visibility', filename } });
         }
+    }
+
+    /**
+     * Find a quiz node in the loaded tree by filename
+     */
+    _findQuizNode(filename) {
+        const walk = (quizzes = [], folders = []) =>
+            quizzes.find(q => q.filename === filename)
+            || folders.map(f => walk(f.quizzes, f.children)).find(Boolean);
+        return walk(this.treeData?.quizzes, this.treeData?.folders) || null;
+    }
+
+    /**
+     * Headers for a write on a quiz. A protected quiz (own password or sitting
+     * in a protected folder) needs the unlock token. Returns null when the
+     * user cancels the password prompt.
+     */
+    async _quizWriteHeaders(id, data, name) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (data?.protected) {
+            if (!(await this.ensureUnlocked('quiz', id, name))) return null;
+            const cached = this.sessionTokens.get(id);
+            if (cached) headers['Authorization'] = `Bearer ${cached.token}`;
+        }
+        return headers;
     }
 
     /**
@@ -539,9 +567,11 @@ export class FileManager {
                     body: JSON.stringify({ name: newName.trim() })
                 });
             } else {
+                const headers = await this._quizWriteHeaders(id, data, currentName);
+                if (!headers) return;
                 response = await APIHelper.fetchAPI(`api/quiz-metadata/${encodeURIComponent(id)}`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers,
                     body: JSON.stringify({ displayName: newName.trim() })
                 });
             }
@@ -551,6 +581,9 @@ export class FileManager {
                 throw new Error(error.error || 'Failed to rename');
             }
 
+            if (type !== 'folder') {
+                document.dispatchEvent(new CustomEvent('quizRenamed', { detail: { filename: id, displayName: newName.trim() } }));
+            }
             await this.loadTree();
             this.showToast(t('renamed_successfully') || 'Renamed successfully', 'success');
         } catch (error) {
@@ -596,9 +629,11 @@ export class FileManager {
                     body: JSON.stringify({ parentId: targetFolderId })
                 });
             } else {
+                const headers = await this._quizWriteHeaders(id, data, data?.displayName || id.replace('.json', ''));
+                if (!headers) return;
                 response = await APIHelper.fetchAPI(`api/quiz-metadata/${encodeURIComponent(id)}`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers,
                     body: JSON.stringify({ folderId: targetFolderId })
                 });
             }
@@ -798,8 +833,23 @@ export class FileManager {
                 }
 
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Failed to delete');
+                    let error = await response.json().catch(() => ({}));
+                    if ((response.status === 401 || response.status === 403) && data?.protected
+                        && (response.status === 401 || error.messageKey === 'error_invalid_token')) {
+                        // Token no longer accepted (server restart): drop it, prompt, retry once
+                        this.sessionTokens.delete(id);
+                        APIHelper.quizUnlockTokens.delete(id);
+                        const unlocked = await this.ensureUnlocked(type, id, name);
+                        if (!unlocked) throw new Error('Authentication required');
+                        const fresh = this.sessionTokens.get(id);
+                        if (fresh) headers['Authorization'] = `Bearer ${fresh.token}`;
+                        const url = type === 'folder'
+                            ? `api/folders/${encodeURIComponent(id)}?deleteContents=true`
+                            : `api/quiz/${encodeURIComponent(id)}?confirm=true`;
+                        response = await APIHelper.fetchAPI(url, { method: 'DELETE', headers });
+                        error = response.ok ? null : await response.json().catch(() => ({}));
+                    }
+                    if (error) throw new Error(error.error || 'Failed to delete');
                 }
 
                 // Clear cached token after successful deletion
