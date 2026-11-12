@@ -51,6 +51,12 @@ function registerGameEvents(io, socket, options) {
                 return;
             }
 
+            // Quick start's "Same Time for All": the schema strips a per-question
+            // `time`, so the global value is applied to timeLimit here.
+            if (quiz.sameTimeForAll && quiz.questionTime) {
+                quiz.questions.forEach(q => { q.timeLimit = quiz.questionTime; });
+            }
+
             // Check if host already has an existing game
             const existingGame = gameSessionService.findGameByHost(socket.id);
             if (existingGame) {

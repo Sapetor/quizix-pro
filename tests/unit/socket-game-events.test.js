@@ -165,6 +165,34 @@ describe('game-events: host-join', () => {
             expect(options.gameSessionService.deleteGame).not.toHaveBeenCalledWith('654321');
         });
     });
+
+    // The host-join schema keeps sameTimeForAll and questionTime but drops a
+    // per-question `time`, so the quick-start global time must be applied here.
+    describe('Same Time for All', () => {
+        function hostJoin(quizExtra) {
+            const { options, h } = setup();
+            options.gameSessionService.findGameByHost.mockReturnValue(null);
+            options.gameSessionService.createGame.mockReturnValue(newGame());
+            options.playerManagementService.createOrGetSession.mockReturnValue({ hostSessionId: 'hs', currentGamePin: null });
+            h['host-join']({
+                quiz: {
+                    title: 'My Quiz',
+                    questions: [{ ...validQuestion, timeLimit: 30 }, { ...validQuestion, time: 60 }],
+                    ...quizExtra
+                }
+            });
+            const quiz = options.gameSessionService.createGame.mock.calls[0][1];
+            return quiz.questions.map(q => q.timeLimit);
+        }
+
+        it('sets every question to questionTime when sameTimeForAll is on', () => {
+            expect(hostJoin({ sameTimeForAll: true, questionTime: 45 })).toEqual([45, 45]);
+        });
+
+        it('keeps the per-question limits when sameTimeForAll is off', () => {
+            expect(hostJoin({ sameTimeForAll: false, questionTime: 45 })).toEqual([30, 20]);
+        });
+    });
 });
 
 describe('game-events: start-game', () => {
