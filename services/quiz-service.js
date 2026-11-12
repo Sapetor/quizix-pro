@@ -53,6 +53,13 @@ class QuizService {
             return false;
         }
 
+        // The metadata store keys quizzes by filename on a plain object, where
+        // '__proto__', 'constructor', 'toString' and the like resolve to
+        // Object.prototype members; a write through them would pollute it.
+        if (filename in Object.prototype) {
+            return false;
+        }
+
         return true;
     }
 

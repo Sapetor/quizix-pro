@@ -62,6 +62,15 @@ describe('QuizService', () => {
             expect(quizService.validateFilename('folder\\quiz.json')).toBe(false);
         });
 
+        test('should reject Object.prototype property names', () => {
+            // The metadata store indexes quizzes by filename on a plain object,
+            // so these names would resolve to Object.prototype members.
+            for (const name of ['__proto__', 'constructor', 'toString', 'hasOwnProperty', 'valueOf']) {
+                expect(quizService.validateFilename(name)).toBe(false);
+            }
+            expect(quizService.validateFilename('constructor.json')).toBe(true);
+        });
+
         test('should reject special characters', () => {
             expect(quizService.validateFilename('quiz<>.json')).toBe(false);
             expect(quizService.validateFilename('quiz|test.json')).toBe(false);
