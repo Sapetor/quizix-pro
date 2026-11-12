@@ -8,6 +8,7 @@
 
 import { dom } from '../../utils/dom.js';
 import { logger } from '../../core/config.js';
+import { toggleGlobalTime } from '../../utils/globals.js';
 import {
     readScoringConfigFromDOM,
     DEFAULT_DIFFICULTY_MULTIPLIERS,
@@ -22,8 +23,8 @@ export function collectSettings() {
     return {
         randomizeQuestions: dom.get('randomize-questions')?.checked ?? false,
         randomizeAnswers: dom.get('randomize-answers')?.checked ?? false,
-        useGlobalTime: dom.get('same-time-all')?.checked ?? false,
-        globalTimeLimit: parseInt(dom.get('default-time')?.value) || 20,
+        useGlobalTime: dom.get('use-global-time')?.checked ?? false,
+        globalTimeLimit: parseInt(dom.get('global-time-limit')?.value) || 20,
         manualAdvance: dom.get('manual-advancement')?.checked ?? true,
         showLeaderboardBetweenQuestions: dom.get('show-leaderboard-between')?.checked ?? true,
         consensusMode: dom.get('consensus-mode')?.checked ?? false,
@@ -51,8 +52,11 @@ export function restoreSettings(settings) {
 
     setChecked('randomize-questions', settings.randomizeQuestions);
     setChecked('randomize-answers', settings.randomizeAnswers);
-    setChecked('same-time-all', settings.useGlobalTime);
-    setValue('default-time', settings.globalTimeLimit ?? 20);
+    setChecked('use-global-time', settings.useGlobalTime);
+    setValue('global-time-limit', settings.globalTimeLimit ?? 20);
+    // Assigning .checked fires no change event, so apply the checkbox state to
+    // the global time input and the per-question time inputs here.
+    toggleGlobalTime();
     // Quizzes saved before manual advancement became the default carry no
     // `manualAdvance` key; they inherit the default rather than being
     // silently switched to auto-advance.

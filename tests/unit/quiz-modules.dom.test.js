@@ -7,6 +7,8 @@
  * export producing loadable JSON.
  */
 
+import fs from 'fs';
+import path from 'path';
 import { dom } from '../../public/js/utils/dom.js';
 import { collectSettings, restoreSettings } from '../../public/js/quiz/modules/settings-persistence.js';
 import { updateQuestionsUI } from '../../public/js/quiz/modules/question-editing.js';
@@ -23,8 +25,10 @@ describe('settings-persistence round-trip', () => {
         document.body.innerHTML = `
             <input type="checkbox" id="randomize-questions">
             <input type="checkbox" id="randomize-answers">
-            <input type="checkbox" id="same-time-all">
-            <input type="text" id="default-time" value="20">
+            <input type="checkbox" id="use-global-time">
+            <div id="global-time-container" class="hidden">
+                <input type="text" id="global-time-limit" value="20">
+            </div>
             <input type="checkbox" id="manual-advancement">
             <input type="checkbox" id="show-leaderboard-between">
             <input type="checkbox" id="consensus-mode">
@@ -68,7 +72,7 @@ describe('settings-persistence round-trip', () => {
     test('collectSettings reads current DOM values', () => {
         buildSettingsDom();
         document.getElementById('randomize-questions').checked = true;
-        document.getElementById('default-time').value = '99';
+        document.getElementById('global-time-limit').value = '99';
         document.getElementById('consensus-threshold').value = '80';
 
         const collected = collectSettings();
@@ -81,9 +85,54 @@ describe('settings-persistence round-trip', () => {
 
     test('restoreSettings is a no-op for null/undefined', () => {
         buildSettingsDom();
-        document.getElementById('default-time').value = '33';
+        document.getElementById('global-time-limit').value = '33';
         restoreSettings(null);
-        expect(document.getElementById('default-time').value).toBe('33');
+        expect(document.getElementById('global-time-limit').value).toBe('33');
+    });
+
+    // A quiz without a settings block must not inherit the global time left
+    // checked by the previously edited quiz.
+    test('restoreSettings({}) clears a global time left over from the previous quiz', () => {
+        buildSettingsDom();
+        document.getElementById('use-global-time').checked = true;
+        document.getElementById('global-time-limit').value = '10';
+        document.getElementById('global-time-container').classList.remove('hidden');
+
+        restoreSettings({});
+
+        expect(document.getElementById('use-global-time').checked).toBe(false);
+        expect(document.getElementById('global-time-limit').value).toBe('20');
+        expect(document.getElementById('global-time-container').classList.contains('hidden')).toBe(true);
+    });
+
+    test('restoring an enabled global time shows its input and hides the per-question ones', () => {
+        buildSettingsDom();
+        document.body.insertAdjacentHTML('beforeend', `
+            <div class="question-item">
+                <div class="time-limit-container"><input class="question-time-limit" value="60"></div>
+            </div>
+        `);
+
+        restoreSettings({ useGlobalTime: true, globalTimeLimit: 15 });
+
+        expect(document.getElementById('global-time-container').classList.contains('hidden')).toBe(false);
+        expect(document.querySelector('.time-limit-container').classList.contains('hidden')).toBe(true);
+    });
+
+    // The settings round-trip silently degrades to defaults when an id is
+    // missing from the page, so pin every id against the real markup.
+    test('every element id read or written by the settings module exists in index.html', () => {
+        const html = fs.readFileSync(path.join(__dirname, '../../public/index.html'), 'utf8');
+        const ids = new Set();
+        const spy = jest.spyOn(dom, 'get').mockImplementation((id) => { ids.add(id); return null; });
+
+        collectSettings();
+        restoreSettings({});
+        spy.mockRestore();
+
+        expect(ids.size).toBeGreaterThan(10);
+        const missing = [...ids].filter(id => !html.includes(`id="${id}"`));
+        expect(missing).toEqual([]);
     });
 });
 

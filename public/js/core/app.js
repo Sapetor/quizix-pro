@@ -650,8 +650,6 @@ export class QuizGame {
         // Get quiz settings
         const randomizeQuestions = dom.get('randomize-questions')?.checked;
         const shouldRandomizeAnswers = dom.get('randomize-answers')?.checked;
-        const sameTimeForAll = dom.get('same-time-all')?.checked;
-        const questionTime = parseInt(dom.get('default-time')?.value) || 30;
         const manualAdvancement = dom.get('manual-advancement')?.checked;
         const powerUpsEnabled = dom.get('enable-power-ups')?.checked || false;
         // Default on: missing checkbox must not silently disable the leaderboard
@@ -671,12 +669,8 @@ export class QuizGame {
             processedQuestions = randomizeAnswers(processedQuestions);
         }
 
-        // Apply same time for all questions if selected
-        if (sameTimeForAll) {
-            processedQuestions.forEach(q => {
-                q.time = questionTime;
-            });
-        }
+        // The global time limit is already in each question's timeLimit:
+        // collectQuestions resolves it through resolveTimeLimit.
 
         const quizData = {
             quiz: {
@@ -687,8 +681,6 @@ export class QuizGame {
                 showLeaderboardBetweenQuestions,
                 randomizeQuestions,
                 randomizeAnswers: shouldRandomizeAnswers,
-                sameTimeForAll,
-                questionTime,
                 scoringConfig
             }
         };
