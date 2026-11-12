@@ -1194,11 +1194,26 @@ export class QuizGame {
      */
     async _onQuickStartQuizSelected(filename) {
         this._quickStartSelectedFile = filename;
+        const stale = () => this._quickStartSelectedFile !== filename;
 
         try {
-            const response = await APIHelper.fetchAPI(`api/quiz/${filename}`);
-            if (!response.ok) return;
+            let response = await APIHelper.fetchAPI(`api/quiz/${filename}`);
+            if (response.status === 401) {
+                // Password-protected: unlock, then read the settings with the token
+                if (!(await this._ensureQuizUnlocked(filename))) {
+                    if (!stale()) this._hideQuickStartSettings();
+                    return;
+                }
+                if (stale()) return;
+                response = await APIHelper.fetchAPI(`api/quiz/${filename}`);
+            }
+            if (stale()) return;
+            if (!response.ok) {
+                this._hideQuickStartSettings();
+                return;
+            }
             const data = await response.json();
+            if (stale()) return;
 
             // Read settings from the new `settings` field, falling back to legacy top-level keys
             const s = data.settings || {};
@@ -1248,6 +1263,7 @@ export class QuizGame {
             }
         } catch (error) {
             logger.error('Failed to load quiz settings for quick start:', error);
+            if (!stale()) this._hideQuickStartSettings();
         }
     }
 
@@ -1323,6 +1339,63 @@ export class QuizGame {
     }
 
     /**
+     * Make sure a password-protected quiz can be read: true at once when the
+     * file is unprotected or a cached unlock token is still valid, otherwise
+     * prompt until unlocked. False when cancelled or on any failure.
+     */
+    async _ensureQuizUnlocked(filename) {
+        const cached = APIHelper.quizUnlockTokens.get(filename);
+        if (cached && cached.expiresAt > Date.now()) return true;
+
+        try {
+            const authResponse = await APIHelper.fetchAPI(`api/requires-auth/quiz/${filename}`);
+            if (!authResponse.ok) return false;
+
+            const { requiresAuth } = await authResponse.json();
+            if (!requiresAuth) return true;
+
+            if (!this._passwordModal) {
+                const { PasswordModal } = await import('../ui/components/password-modal.js');
+                this._passwordModal = new PasswordModal();
+            }
+
+            const displayName = filename.replace('.json', '');
+            for (;;) {
+                let password;
+                try {
+                    password = await this._passwordModal.promptPassword(displayName);
+                } catch {
+                    return false; // User cancelled
+                }
+
+                const unlockRes = await APIHelper.fetchAPI('api/unlock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ itemId: filename, itemType: 'quiz', password })
+                });
+
+                if (unlockRes.ok) return true;
+                if (unlockRes.status === 429) {
+                    toastNotifications.show(
+                        translationManager.getTranslationSync('too_many_attempts') || 'Too many attempts.',
+                        'error'
+                    );
+                    return false;
+                }
+                if (unlockRes.status !== 401) return false;
+                toastNotifications.show(
+                    translationManager.getTranslationSync('incorrect_password') || 'Incorrect password',
+                    'error'
+                );
+                // Loop continues, re-prompt
+            }
+        } catch (error) {
+            logger.error('Quick start auth check failed:', error);
+            return false;
+        }
+    }
+
+    /**
      * Quick start a quiz: fetch it and go straight to the game lobby
      */
     async quickStartQuiz(filename) {
@@ -1333,57 +1406,7 @@ export class QuizGame {
             return;
         }
 
-        // Check if quiz requires authentication before proceeding
-        try {
-            const authResponse = await APIHelper.fetchAPI(`api/requires-auth/quiz/${filename}`);
-            if (!authResponse.ok) return;
-
-            const { requiresAuth } = await authResponse.json();
-            if (requiresAuth) {
-                if (!this._passwordModal) {
-                    const { PasswordModal } = await import('../ui/components/password-modal.js');
-                    this._passwordModal = new PasswordModal();
-                }
-
-                const displayName = filename.replace('.json', '');
-                let unlocked = false;
-                while (!unlocked) {
-                    let password;
-                    try {
-                        password = await this._passwordModal.promptPassword(displayName);
-                    } catch {
-                        return; // User cancelled
-                    }
-
-                    const unlockRes = await APIHelper.fetchAPI('api/unlock', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ itemId: filename, itemType: 'quiz', password })
-                    });
-
-                    if (unlockRes.ok) {
-                        unlocked = true;
-                    } else if (unlockRes.status === 429) {
-                        toastNotifications.show(
-                            translationManager.getTranslationSync('too_many_attempts') || 'Too many attempts.',
-                            'error'
-                        );
-                        return;
-                    } else if (unlockRes.status === 401) {
-                        toastNotifications.show(
-                            translationManager.getTranslationSync('incorrect_password') || 'Incorrect password',
-                            'error'
-                        );
-                        // Loop continues — re-prompt
-                    } else {
-                        return;
-                    }
-                }
-            }
-        } catch (error) {
-            logger.error('Quick start auth check failed:', error);
-            return;
-        }
+        if (!(await this._ensureQuizUnlocked(filename))) return;
 
         this.hideQuickStartModal();
 
