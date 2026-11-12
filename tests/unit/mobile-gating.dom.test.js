@@ -4,8 +4,8 @@
  * Phone gate on the quiz editor (UIManager.showScreen).
  *
  * showScreen() is the single choke point that keeps a phone out of the editor;
- * everything else (host buttons, onboarding, the empty-state "create first
- * quiz" button, window.game.showScreen) funnels through it. The gate is
+ * everything else (host buttons, onboarding, window.game.showScreen) funnels
+ * through it. The gate is
  * UX-level and keyed on isPhone() (dom.js — coarse primary pointer AND
  * max-width 768px), so a "Request desktop site" reload bypasses it.
  */

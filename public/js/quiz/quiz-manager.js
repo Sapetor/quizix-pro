@@ -12,7 +12,7 @@ import { imagePathResolver } from '../utils/image-path-resolver.js';
 import { QuestionTypeRegistry } from '../utils/question-type-registry.js';
 import { getJSON, setJSON, removeItem } from '../utils/storage-utils.js';
 import { EventListenerManager } from '../utils/event-listener-manager.js';
-import { dom, escapeHtml, show, hide } from '../utils/dom.js';
+import { dom, show, hide } from '../utils/dom.js';
 import { getFileManager } from '../ui/file-manager.js';
 import { openModal, closeModal } from '../utils/modal-utils.js';
 import { authManager } from '../utils/auth-manager.js';
@@ -595,15 +595,13 @@ export class QuizManager {
         // Set up modal event handlers
         this.setupLoadQuizModalHandlers(modal);
 
-        // Check if tree view container exists (new folder tree UI)
+        // #quiz-tree-container is static markup inside the modal in index.html
         const treeContainer = dom.get('quiz-tree-container');
-        if (treeContainer) {
-            // Use new folder tree view
-            await this.showFolderTreeView(treeContainer, modal);
-        } else {
-            // Fall back to flat list view for backward compatibility
-            await this.showFlatListView(modal);
+        if (!treeContainer) {
+            logger.error('Quiz tree container not found');
+            return;
         }
+        await this.showFolderTreeView(treeContainer, modal);
 
         // Show modal with requestAnimationFrame for smooth transition
         requestAnimationFrame(() => {
@@ -633,122 +631,6 @@ export class QuizManager {
                         <p>${translationManager.getTranslationSync('failed_load_quizzes')}</p>
                     </div>
                 `;
-            }
-        });
-    }
-
-    /**
-     * Show flat list view in load quiz modal (backward compatibility)
-     */
-    async showFlatListView(modal) {
-        // Cache quiz list element for better performance (validate it's still in DOM)
-        if (!this.cachedQuizListElement || !document.contains(this.cachedQuizListElement)) {
-            this.cachedQuizListElement = dom.get('quiz-list');
-        }
-        const quizList = this.cachedQuizListElement;
-
-        // Load quizzes list with performance optimization
-        await this.errorHandler.wrapAsyncOperation(async () => {
-            const response = await fetch(APIHelper.getApiUrl('api/quizzes'));
-            const data = await response.json();
-
-            if (quizList) {
-                // Use DocumentFragment for better performance with multiple DOM operations
-                const fragment = document.createDocumentFragment();
-
-                // Check if data is directly an array or has a quizzes property
-                const quizzes = Array.isArray(data) ? data : data.quizzes;
-
-                if (quizzes && quizzes.length > 0) {
-                    quizzes.forEach(quiz => {
-                        const quizItem = document.createElement('div');
-                        quizItem.className = 'quiz-item';
-                        quizItem.innerHTML = `
-                            <div class="quiz-info">
-                                <h3>${escapeHtml(quiz.title)}</h3>
-                                <p>${quiz.questionCount} ${translationManager.getTranslationSync('questions')} • ${translationManager.getTranslationSync('created')}: ${new Date(quiz.created).toLocaleDateString()}</p>
-                            </div>
-                            <div class="quiz-actions">
-                                <button class="quiz-action-btn load-btn" data-filename="${escapeHtml(quiz.filename)}" title="${translationManager.getTranslationSync('load')}">
-                                    <span class="btn-icon">📂</span>
-                                    <span class="btn-text">${translationManager.getTranslationSync('load')}</span>
-                                </button>
-                                <button class="quiz-action-btn practice-btn" data-filename="${escapeHtml(quiz.filename)}" title="${translationManager.getTranslationSync('practice')}">
-                                    <span class="btn-icon">🎯</span>
-                                    <span class="btn-text">${translationManager.getTranslationSync('practice')}</span>
-                                </button>
-                            </div>
-                        `;
-
-                        // Wire up button handlers
-                        const loadBtn = quizItem.querySelector('.load-btn');
-                        const practiceBtn = quizItem.querySelector('.practice-btn');
-
-                        loadBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            const loadQuiz = this._getLoadQuizHandler();
-                            if (loadQuiz) {
-                                loadQuiz(quiz.filename);
-                            }
-                        });
-
-                        practiceBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            const startPracticeMode = this._getStartPracticeModeHandler();
-                            if (startPracticeMode) {
-                                startPracticeMode(quiz.filename);
-                            }
-                        });
-
-                        fragment.appendChild(quizItem);
-                    });
-                } else {
-                    const noQuizzesDiv = document.createElement('div');
-                    noQuizzesDiv.className = 'no-quizzes empty-state';
-                    noQuizzesDiv.innerHTML = `
-                        <div class="empty-state-icon">
-                            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="12" y="8" width="40" height="48" rx="4" stroke="currentColor" stroke-width="2" opacity="0.4"/>
-                                <line x1="20" y1="20" x2="44" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
-                                <line x1="20" y1="28" x2="38" y2="28" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
-                                <line x1="20" y1="36" x2="42" y2="36" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
-                                <circle cx="48" cy="48" r="12" stroke="currentColor" stroke-width="2" opacity="0.5"/>
-                                <line x1="48" y1="42" x2="48" y2="54" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
-                                <line x1="42" y1="48" x2="54" y2="48" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
-                            </svg>
-                        </div>
-                        <p>${translationManager.getTranslationSync('no_saved_quizzes')}</p>
-                        <div class="empty-state-actions">
-                            <button class="btn primary empty-state-create-btn">${translationManager.getTranslationSync('create_first_quiz')}</button>
-                            <p class="empty-state-hint">${translationManager.getTranslationSync('try_ai_generation')}</p>
-                            <p class="empty-state-hint">${translationManager.getTranslationSync('import_quiz_hint')}</p>
-                        </div>
-                    `;
-                    // Wire up the create button to close dialog and go to editor
-                    const createBtn = noQuizzesDiv.querySelector('.empty-state-create-btn');
-                    createBtn?.addEventListener('click', () => {
-                        const modal = noQuizzesDiv.closest('.modal-overlay, .modal');
-                        if (modal) modal.classList.remove('visible');
-                        if (window.game?.uiManager) window.game.uiManager.showScreen('host-screen');
-                    });
-                    fragment.appendChild(noQuizzesDiv);
-                }
-
-                // Batch DOM update for better performance
-                quizList.innerHTML = '';
-                quizList.appendChild(fragment);
-            }
-        }, {
-            errorType: this.errorHandler.errorTypes.NETWORK,
-            context: { operation: 'loadQuizzes' },
-            fallback: () => {
-                if (quizList) {
-                    quizList.innerHTML = `
-                        <div class="no-quizzes">
-                            <p>${translationManager.getTranslationSync('failed_load_quizzes')}</p>
-                        </div>
-                    `;
-                }
             }
         });
     }

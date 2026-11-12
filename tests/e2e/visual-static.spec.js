@@ -103,7 +103,6 @@ function getDynamicMasks(page, extra = []) {
         '#app-version',
         // Load-quiz modal body: real quiz names from quizzes/ (non-deterministic)
         '#quiz-tree-container',
-        '#quiz-list',
         // Autosave stamp: renders "SAVED HH:MM" off the wall clock, so every
         // regeneration an hour apart rewrote the editor baselines for free.
         '#save-status',

@@ -131,9 +131,8 @@ export class UIManager {
         logger.debug('Switching to screen:', screenId);
 
         // Single choke point for the phone gate. Covers every editor entry point:
-        // #host-btn, #lp-outro-host, #lp-foot-host, the dynamically generated
-        // "Create first quiz" empty-state button in quiz/quiz-manager.js, the
-        // onboarding tutorial's programmatic navigation, and window.game.showScreen().
+        // #host-btn, #lp-outro-host, #lp-foot-host, the onboarding tutorial's
+        // programmatic navigation, and window.game.showScreen().
         // Recursion is bounded: 'join-screen' is not gated.
         //
         // ONLY 'host-screen'. 'game-lobby' and 'host-game-screen' are entered by
