@@ -627,8 +627,13 @@ function createQuizManagementRoutes(options) {
 
             // Update display name if provided. The title in the quiz file is
             // renamed too, or the next save from the editor restores the old name.
+            // A metadata entry whose file is gone keeps the display-name change.
             if (displayName !== undefined) {
-                await quizService.setQuizTitle(filename, displayName);
+                try {
+                    await quizService.setQuizTitle(filename, displayName);
+                } catch (error) {
+                    if (error.messageKey !== 'error_quiz_not_found') throw error;
+                }
                 await metadataService.setQuizDisplayName(filename, displayName);
             }
 

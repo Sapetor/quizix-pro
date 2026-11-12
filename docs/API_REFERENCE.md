@@ -283,7 +283,7 @@ Update a quiz's display name, folder, or visibility.
 }
 ```
 
-Quizzes with an owner can be edited only by the owner (`403`, `error_quiz_not_owner`). Ownerless legacy quizzes can be edited by a signed-in user or a direct LAN client (`401` otherwise, same rule as `DELETE /api/quiz/:filename`), but their visibility cannot be changed (`400`, `error_quiz_legacy_public`). When `requiresAuth` is true for the requester, as for a quiz in a password-protected folder, the request also needs a valid unlock token in `Authorization: Bearer <token>` (`401`, `error_auth_required`). A `displayName` change also sets `title` in the quiz file.
+Quizzes with an owner can be edited only by the owner (`403`, `error_quiz_not_owner`). Ownerless legacy quizzes can be edited by a signed-in user or a direct LAN client (`401` otherwise, same rule as `DELETE /api/quiz/:filename`), but their visibility cannot be changed (`400`, `error_quiz_legacy_public`). When `requiresAuth` is true for the requester, as for a quiz in a password-protected folder, the request also needs a valid unlock token in `Authorization: Bearer <token>` (`401`, `error_auth_required`). A `displayName` change also sets `title` in the quiz file; for a metadata entry whose quiz file is missing, only the display name changes.
 
 **Response:** the updated metadata entry.
 

@@ -563,6 +563,30 @@ describe('ownerless quiz changes', () => {
         expect(deps.metadataService.setQuizDisplayName).toHaveBeenCalledWith('legacy.json', 'Algebra final');
     });
 
+    // quiz-metadata.json can hold entries whose file is gone; renaming one
+    // changed the display name before the title write was added.
+    test('renaming a metadata entry whose quiz file is missing still sets the display name', async () => {
+        const { deps, router } = setup();
+        deps.quizService.setQuizTitle = jest.fn(async () => {
+            throw Object.assign(new Error('Quiz not found'), { messageKey: 'error_quiz_not_found' });
+        });
+        const res = await dispatch(router, {
+            method: 'PATCH', url: '/api/quiz-metadata/legacy.json', body: { displayName: 'Algebra final' }
+        });
+        expect(res.statusCode).toBe(200);
+        expect(deps.metadataService.setQuizDisplayName).toHaveBeenCalledWith('legacy.json', 'Algebra final');
+    });
+
+    test('a failed title write for an existing quiz file stops the rename', async () => {
+        const { deps, router } = setup();
+        deps.quizService.setQuizTitle = jest.fn(async () => { throw new Error('EACCES'); });
+        const res = await dispatch(router, {
+            method: 'PATCH', url: '/api/quiz-metadata/legacy.json', body: { displayName: 'Algebra final' }
+        });
+        expect(res.statusCode).toBe(400);
+        expect(deps.metadataService.setQuizDisplayName).not.toHaveBeenCalled();
+    });
+
     test('an anonymous proxied client cannot rename or move an ownerless quiz', async () => {
         const { deps, router } = setup();
         const res = await dispatch(router, {
