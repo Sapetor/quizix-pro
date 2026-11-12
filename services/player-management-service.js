@@ -133,6 +133,20 @@ class PlayerManagementService {
             };
         }
 
+        // Game.addPlayer overwrites the entry under a socket id, so a second join
+        // from the same socket mid-game would reset the score, answers and
+        // power-ups. In the lobby the replacement is harmless and is what a player
+        // who left via "Return to Menu" without leave-game gets on re-joining.
+        // Checked per game: the global registry can hold a stale entry from a
+        // previous game, and the host-join migration loop joins those sockets.
+        if (game.gameState !== 'lobby' && game.players.has(socketId)) {
+            return {
+                success: false,
+                error: 'Already joined this game',
+                messageKey: 'error_failed_join'
+            };
+        }
+
         // A returning device must resume its own disconnected entry. Without this,
         // session-check auto-join added a second roster row at score 0 while the
         // scored row stayed in game.players, so the final leaderboard showed the

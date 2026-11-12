@@ -918,4 +918,75 @@ describe('PlayerManagementService', () => {
             expect(game.players.size).toBe(2);
         });
     });
+
+    // Game.addPlayer overwrites the entry stored under a socket id. A second
+    // player-join from a socket already in a running game therefore replaced the
+    // player with a new one: unused power-ups and an empty answer slot.
+    describe('handlePlayerJoin from a socket already in the game', () => {
+        const { Game } = require('../../services/game');
+
+        function gameWithCarl(state) {
+            const game = new Game('host-socket', {
+                title: 'Quiz',
+                powerUpsEnabled: true,
+                questions: [{ type: 'multiple-choice', question: 'Q1', options: ['A', 'B'], correctAnswer: 0, timeLimit: 20 }]
+            }, mockLogger, mockConfig);
+            game.pin = '123456';
+            const io = createMockIO();
+            const socket = createMockSocket('sockC');
+            expect(playerService.handlePlayerJoin('sockC', '123456', 'Carl', game, socket, io).success).toBe(true);
+            game.gameState = state;
+            game.currentQuestion = state === 'lobby' ? -1 : 0;
+            game.questionStartTime = Date.now();
+            return { game, io, socket };
+        }
+
+        test('is rejected mid-question and leaves score, answers and power-ups untouched', () => {
+            const { game, io, socket } = gameWithCarl('question');
+            const carl = game.players.get('sockC');
+            carl.score = 500;
+            carl.answers[0] = { answer: 1, isCorrect: false, points: 0 };
+            carl.powerUps['extend-time'].used = true;
+
+            const result = playerService.handlePlayerJoin('sockC', '123456', 'Carl2', game, socket, io);
+
+            expect(result.success).toBe(false);
+            expect(result.messageKey).toBe('error_failed_join');
+            const entry = game.players.get('sockC');
+            expect(game.players.size).toBe(1);
+            expect(entry.name).toBe('Carl');
+            expect(entry.score).toBe(500);
+            expect(entry.answers[0]).toEqual({ answer: 1, isCorrect: false, points: 0 });
+            expect(entry.powerUps['extend-time'].used).toBe(true);
+            expect(playerService.getPlayer('sockC').name).toBe('Carl');
+        });
+
+        test('is rejected during the reveal as well', () => {
+            const { game, io, socket } = gameWithCarl('revealing');
+
+            const result = playerService.handlePlayerJoin('sockC', '123456', 'Carl2', game, socket, io);
+
+            expect(result.success).toBe(false);
+            expect(game.players.get('sockC').name).toBe('Carl');
+        });
+
+        test('still replaces the entry in the lobby, where nothing can be gained', () => {
+            const { game, io, socket } = gameWithCarl('lobby');
+
+            const result = playerService.handlePlayerJoin('sockC', '123456', 'Carl2', game, socket, io);
+
+            expect(result.success).toBe(true);
+            expect(game.players.size).toBe(1);
+            expect(game.players.get('sockC').name).toBe('Carl2');
+        });
+
+        test('a different socket can still join the same game', () => {
+            const { game, io } = gameWithCarl('question');
+
+            const result = playerService.handlePlayerJoin('sockD', '123456', 'Dana', game, createMockSocket('sockD'), io);
+
+            expect(result.success).toBe(true);
+            expect(game.players.size).toBe(2);
+        });
+    });
 });
