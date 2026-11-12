@@ -276,7 +276,7 @@ describe('QuizService', () => {
     describe('setQuizTitle', () => {
         test('rewrites the title in the quiz file and keeps the other fields', async () => {
             const stored = { title: 'Algebra v1', questions: [{ question: 'Q?' }], created: '2026-01-01', id: 'abc' };
-            fs.access.mockResolvedValue();
+            fs.readdir.mockResolvedValue(['algebra.json']);
             fs.readFile.mockResolvedValue(JSON.stringify(stored));
             fs.writeFile.mockResolvedValue();
             fs.rename.mockResolvedValue();
@@ -289,7 +289,7 @@ describe('QuizService', () => {
         });
 
         test('does not rewrite the file when the title is unchanged', async () => {
-            fs.access.mockResolvedValue();
+            fs.readdir.mockResolvedValue(['same.json']);
             fs.readFile.mockResolvedValue(JSON.stringify({ title: 'Same', questions: [] }));
 
             await quizService.setQuizTitle('same.json', 'Same');

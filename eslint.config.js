@@ -187,6 +187,7 @@ export default [
                 setInterval: 'readonly',
                 clearTimeout: 'readonly',
                 clearInterval: 'readonly',
+                setImmediate: 'readonly',
                 // Jest globals
                 describe: 'readonly',
                 it: 'readonly',
@@ -213,7 +214,8 @@ export default [
                 fetch: 'readonly',
                 URL: 'readonly',
                 AbortController: 'readonly',
-                AbortSignal: 'readonly'
+                AbortSignal: 'readonly',
+                Headers: 'readonly'
             }
         },
         rules: {
