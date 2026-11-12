@@ -65,6 +65,15 @@ function registerGameplayEvents(io, socket, options) {
                 return;
             }
 
+            // Entries created during the running question (late join, or leave-game
+            // and player-join again) wait for the next question for these two.
+            const joinedQuestionStart = game.players?.get(socket.id)?.joinedQuestionStart;
+            if ((type === 'extend-time' || type === 'fifty-fifty') && game.gameState === 'question' &&
+                joinedQuestionStart && joinedQuestionStart === game.questionStartTime) {
+                socket.emit('power-up-result', { success: false, type, error: 'Power-up not available until the next question', messageKey: 'error_powerup_already_used' });
+                return;
+            }
+
             const result = game.usePowerUp(socket.id, type);
             socket.emit('power-up-result', result);
 

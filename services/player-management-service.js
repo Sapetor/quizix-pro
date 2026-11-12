@@ -190,6 +190,12 @@ class PlayerManagementService {
             if (deviceId) {
                 player.deviceId = deviceId;
             }
+            // An entry created during a question gets extend-time and 50-50 from
+            // the next question (checked in use-power-up). Otherwise leave-game
+            // followed by player-join gave fresh power-ups on every cycle.
+            if (game.gameState === 'question') {
+                player.joinedQuestionStart = game.questionStartTime;
+            }
         }
 
         this.players.set(socketId, { gamePin: pin, name });
