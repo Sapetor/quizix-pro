@@ -1,5 +1,6 @@
 const express = require('express');
-const dns = require('dns').promises;
+const dnsModule = require('dns');
+const dns = dnsModule.promises;
 const { requireUser } = require('../middleware/attach-user');
 const { getClientIp } = require('../middleware/client-ip');
 
@@ -48,6 +49,36 @@ async function callProvider({ url, headers, body, timeoutMs = AI_PROVIDER_TIMEOU
     } finally {
         clearTimeout(timeoutId);
     }
+}
+
+/**
+ * Build a socket `lookup` for outbound connections that refuses private and
+ * loopback addresses. It runs in the connection itself, so the address that
+ * is checked is the address that is dialled; a separate check followed by a
+ * fetch resolves twice and loses to a rebinding DNS answer. Honours
+ * `options.all`, which net.connect sets when it tries several addresses.
+ * The error carries code ERR_URL_BLOCKED and surfaces as fetch's `cause`.
+ *
+ * @param {(address: string) => boolean} isPrivate - true for a refused address.
+ */
+function createSafeLookup(isPrivate) {
+    return function safeLookup(hostname, options, callback) {
+        if (typeof options === 'function') {
+            callback = options;
+            options = {};
+        }
+        const opts = typeof options === 'number' ? { family: options } : (options || {});
+        dnsModule.lookup(hostname, { ...opts, all: true }, (err, addresses) => {
+            if (err) return callback(err);
+            if (!addresses.length || addresses.some(a => isPrivate(a.address))) {
+                const blocked = new Error(`Blocked private/internal address for ${hostname}`);
+                blocked.code = 'ERR_URL_BLOCKED';
+                return callback(blocked);
+            }
+            if (opts.all) return callback(null, addresses);
+            return callback(null, addresses[0].address, addresses[0].family);
+        });
+    };
 }
 
 /**
@@ -682,6 +713,10 @@ function createAIGenerationRoutes(options) {
 
     // ==================== URL EXTRACTION ROUTE ====================
 
+    // undici Agent whose connections validate their own DNS answer (created on
+    // first use; undici is installed as a dependency of cheerio).
+    let urlFetchDispatcher = null;
+
     router.post('/extract-url', validateBody(extractUrlSchema), async (req, res) => {
         const URL_FETCH_TIMEOUT_MS = 10000;
         const MAX_RESPONSE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -727,6 +762,10 @@ function createAIGenerationRoutes(options) {
             let cheerio;
             try {
                 cheerio = require('cheerio');
+                if (!urlFetchDispatcher) {
+                    const { Agent } = require('undici');
+                    urlFetchDispatcher = new Agent({ connect: { lookup: createSafeLookup(isPrivateIP) } });
+                }
             } catch (err) {
                 logger.warn('cheerio not installed for URL extraction');
                 return res.status(501).json({
@@ -763,10 +802,14 @@ function createAIGenerationRoutes(options) {
                         });
                     }
 
+                    // isBlockedHost above gives the early 403 and covers IP
+                    // literals; the dispatcher re-checks the address the
+                    // connection resolves, which closes DNS rebinding.
                     response = await fetch(currentUrl, {
                         signal: controller.signal,
                         redirect: 'manual',
-                        headers: fetchHeaders
+                        headers: fetchHeaders,
+                        dispatcher: urlFetchDispatcher
                     });
 
                     // Follow 3xx redirects manually so each hop is re-validated
@@ -904,6 +947,15 @@ function createAIGenerationRoutes(options) {
                         error: 'Request timeout',
                         messageKey: 'error_url_timeout',
                         message: 'The URL took too long to respond.'
+                    });
+                }
+
+                if (fetchError.cause?.code === 'ERR_URL_BLOCKED') {
+                    logger.warn(`Blocked private/internal address at connect time: ${url}`);
+                    return res.status(403).json({
+                        error: 'URL blocked',
+                        messageKey: 'error_url_blocked',
+                        message: 'This URL cannot be accessed for security reasons.'
                     });
                 }
 
@@ -1074,4 +1126,4 @@ function createAIGenerationRoutes(options) {
     return router;
 }
 
-module.exports = { createAIGenerationRoutes, callProvider };
+module.exports = { createAIGenerationRoutes, callProvider, createSafeLookup };
