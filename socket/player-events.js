@@ -226,6 +226,10 @@ function registerPlayerEvents(io, socket, options) {
                         isLastQuestion: (game.currentQuestion + 1) >= total
                     });
                 }
+            } else if (game.gameState === 'finished' && game.leaderboard) {
+                // host-rejoin-success moves the host to the game screen; the final
+                // results went to the dead socket, so send them again.
+                socket.emit('game-end', { finalLeaderboard: game.leaderboard });
             }
 
             logger.info(`Host reconnected to game ${game.pin}`);

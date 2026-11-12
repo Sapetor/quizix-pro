@@ -334,6 +334,23 @@ describe('player-events: host-rejoin', () => {
         expect(findEmit(socket.emits, 'question-start')).toBeFalsy();
         expect(findEmit(socket.emits, 'host-rejoin-success')).toBeTruthy();
     });
+
+    // The client shows host-game-screen for every non-lobby state, so a host on
+    // the final results screen was left on an empty game screen.
+    it('re-sends game-end after host-rejoin-success when the game is finished', () => {
+        const game = disconnectedGame();
+        game.gameState = 'finished';
+        game.leaderboard = [{ name: 'Al', score: 10 }];
+        const { socket, options, h } = setup();
+        options.gameSessionService.getGame.mockReturnValue(game);
+
+        h['host-rejoin']({ pin: '123456', token: 'secret' });
+
+        const events = socket.emits.map(e => e.event);
+        expect(events.indexOf('game-end')).toBeGreaterThan(events.indexOf('host-rejoin-success'));
+        expect(findEmit(socket.emits, 'game-end').data).toEqual({ finalLeaderboard: game.leaderboard });
+        expect(findEmit(socket.emits, 'question-start')).toBeFalsy();
+    });
 });
 
 describe('player-events: session-check', () => {
