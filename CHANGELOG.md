@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `tests/e2e/offline-no-cdn.spec.js` hosts a game with every non-local request aborted and fails on any external request; `tests/unit/vendored-libs.test.js` checks references and checksums. Verified in Chromium only. The debug pages under `ENABLE_DEBUG_ROUTES` still reference CDNs.
 
 ### Security
+- Production dependencies updated by `npm audit fix` within their existing ranges (zod 4.6.7, multer 2.5.0, body-parser 1.20.9, qs 6.16.2, undici 7.30.2): `npm audit --omit=dev` reports 0 vulnerabilities. Dev-only tooling still has 20 low and moderate advisories that need breaking upgrades.
 - Bug hunt of 2026-11-12 (three review agents, each finding checked by a second reviewer, each fix branch reviewed again before merge):
   - The `/js/*` fallback handler no longer serves files outside `public/js` through raw `..` segments. Before, `GET /js/../../quizzes/.session-secret` returned the file to a client connecting directly to the port. Rotate `quizzes/.session-secret` or `SESSION_SECRET` on instances that were reachable by untrusted clients.
   - DOCX text extraction runs in a capped, killable worker thread with limits on inflated part size; an unparseable DOCX returns 400 instead of 500.
@@ -47,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Earlier on this branch (commit fc2ff1c): SheetJS vendored, signup gated, manim and container hardening, `unsafe-inline` dropped from the CSP.
 
 ### Fixed
+- A player who leaves or is dropped from a running game and joins again from the same device (or, without a device id, with the same name) resumes their own record: score, answers and power-up state carry over, an answer already given cannot be given again, and the saved results have one row per player. Before, a leave deleted the player from the results, and a new join created a second player at 0 points who could answer the current question again. Names of players who left are reserved for the rest of the game against other devices. A resume is refused when the game is full. A refused extend-time resynchronizes the player's countdown.
 - Simultaneous first signups on an empty instance create only one account.
 - Expired per-IP auth rate-limit entries are removed instead of accumulating.
 - A newly created empty folder is listed in its owner's quiz tree.
@@ -98,6 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `multiple_correct` label shortened to "Multi-Select" (en) with short forms in the other 8 locales, so it no longer ellipsises on 390px phones. `index.html` option text updated to match.
 
 ### Changed
+- Consensus mode is labelled experimental in all nine languages and in the README.
 - The POST /api/save-quiz handler is in routes/quiz-management.js (createSaveQuizHandler) and is covered by unit tests; server.js mounts it.
 - Docs/API_REFERENCE.md documents the unlock-token rules for quiz overwrite, metadata changes, folder move and folder delete, and the parent-folder ownership rule.
 - Removed the unread `MAX_UPLOAD_SIZE` entries in `config/limits.js`. Image uploads stay capped at 5 MB with and without `MOBILE_MODE` (`CONFIG.LIMITS.MAX_FILE_SIZE` in `server.js`).
@@ -112,6 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `package-lock.json` also moved dev dependencies (@babel 7.29, postcss 8.5.28, js-yaml 4.3.2, others). The rebuilt CSS bundle drops `-webkit-print-color-adjust` and `-webkit-mask-image` prefixes.
 
 ### Tests
+- `tests/unit/rejoin-same-player.test.js` (leave and rejoin, grace expiry, name reservation, no token in payloads or results, player cap, rematch lobby) and `tests/unit/join-answered-by-rejoin.dom.test.js`. `npm test`: 98 suites, 1554 tests pass.
 - After the 2026-11-12 bug-hunt fixes: `npm test` 96 suites, 1537 tests pass; `npx eslint .` 0 errors; offline, service worker, console and analytics Playwright specs 11/11; visual suite 6/7 in a clean checkout, where `load-quiz modal - desktop chrome` fails because its screenshot depends on the number of quizzes on disk.
 - Added `tests/unit/end-round-consensus-lock.test.js` (5 cases) and `tests/unit/pptx-extraction.test.js` (6 cases, in process, including a deflated 30 MB slide and 40k unclosed tags) and `tests/unit/pdf-extraction.test.js` (6 cases, child process because pdfjs-dist is ESM-only). `npm test`: 74 suites, 1297 tests pass.
 - `tests/e2e-disconnect-overlay.spec.js` corrected to start the game before disconnecting; 4/4 pass on a clean port, 12/12 with `--repeat-each 3`. With the rejoin fix disabled, the auto-rejoin case failed 4/4.
