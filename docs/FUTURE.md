@@ -182,10 +182,11 @@ status note under Current Bottlenecks).
 
 #### Phase 4: Mobile-Specific Adaptations
 Status (2026-11-12): partly implemented. `MOBILE_MODE=true` selects the mobile
-limits in `config/limits.js`; there is no automatic detection. Its
-`MAX_UPLOAD_SIZE` (1 MB) is not read anywhere: the image upload limit is
-`CONFIG.LIMITS.MAX_FILE_SIZE` in `server.js`, 5 MB in both modes. There is no
-per-quiz image limit.
+limits in `config/limits.js` (concurrent games and players per game); there is
+no automatic detection. Upload size is not tiered: the image upload limit is
+`CONFIG.LIMITS.MAX_FILE_SIZE` in `server.js`, 5 MB in both modes, and the
+unused 1 MB `MAX_UPLOAD_SIZE` entry was removed from `config/limits.js` on
+2026-11-12. There is no per-quiz image limit.
 ```javascript
 // Environment Detection
 const isMobile = process.env.MOBILE_MODE === 'true';
@@ -236,7 +237,7 @@ is no admin dashboard and no scaling trigger.
 - Progressive degradation based on device capabilities
 - Lower memory footprint
 - Simplified real-time features for large groups
-- Maximum image upload: 1MB (status 2026-11-12: defined in `config/limits.js` but not enforced; uploads stay at 5 MB)
+- Maximum image upload: 1MB (status 2026-11-12: not implemented; uploads stay at 5 MB in both modes)
 - Limited concurrent games (3-5) (status 2026-11-12: `MOBILE_MODE=true` sets 5 games of up to 50 players)
 
 #### Universal Approach (Recommended)

@@ -5,18 +5,19 @@
  * Mobile mode is optimized for resource-constrained devices.
  *
  * Set MOBILE_MODE=true in environment for mobile limits.
+ *
+ * Upload size is not tiered: the image upload limit is
+ * CONFIG.LIMITS.MAX_FILE_SIZE in server.js (5 MB) in both modes.
  */
 
 const LIMITS = {
     desktop: {
         MAX_CONCURRENT_GAMES: 100,
-        MAX_PLAYERS_PER_GAME: 200,
-        MAX_UPLOAD_SIZE: 5 * 1024 * 1024  // 5MB
+        MAX_PLAYERS_PER_GAME: 200
     },
     mobile: {
         MAX_CONCURRENT_GAMES: 5,
-        MAX_PLAYERS_PER_GAME: 50,
-        MAX_UPLOAD_SIZE: 1 * 1024 * 1024  // 1MB
+        MAX_PLAYERS_PER_GAME: 50
     }
 };
 
