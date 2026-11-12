@@ -26,4 +26,12 @@ describe('deployment config consistency', () => {
         expect(loop).not.toBeNull();
         expect(loop[1].split(/\s+/).sort()).toEqual([...manifestNames].sort());
     });
+
+    // The server injects the live cache version into /sw.js at start, so the
+    // only version literal in the file is the BUILD_STAMP fallback.
+    test('prepare-prod.sh greps public/sw.js for a line that exists', () => {
+        const grep = read('prepare-prod.sh').match(/grep -o "([^"]+)" public\/sw\.js/);
+        expect(grep).not.toBeNull();
+        expect(read('public/sw.js')).toMatch(new RegExp(grep[1]));
+    });
 });

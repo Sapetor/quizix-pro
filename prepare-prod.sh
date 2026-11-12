@@ -6,7 +6,7 @@
 # Prepares the application for production deployment by:
 # 1. Building optimized CSS bundle
 # 2. Cache-busting version numbers
-# 3. Updating service worker version
+# 3. Refreshing the service worker BUILD_STAMP fallback
 # 4. Staging files for git commit
 #
 # Usage: ./prepare-prod.sh [--skip-git]
@@ -131,11 +131,14 @@ else
     exit 1
 fi
 
-# Check service worker version
-if SW_VERSION=$(grep -o "CACHE_VERSION = '[^']*'" public/sw.js | sed "s/CACHE_VERSION = '//;s/'//"); then
-    print_success "Service worker version: ${SW_VERSION}"
+# Check the service worker BUILD_STAMP fallback that cache-bust just refreshed.
+# The live cache version is not in the file: the server injects ASSET_VERSION
+# into /sw.js on every start.
+SW_VERSION=$(grep -o "BUILD_STAMP = '[^']*'" public/sw.js | sed "s/BUILD_STAMP = '//;s/'//")
+if [ -n "$SW_VERSION" ]; then
+    print_success "Service worker BUILD_STAMP fallback: ${SW_VERSION}"
 else
-    print_warning "Could not extract service worker version"
+    print_warning "Could not extract BUILD_STAMP from public/sw.js"
 fi
 
 # Check index.html version
