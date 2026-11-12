@@ -11,9 +11,6 @@
     <title>FrogQuiz</title>
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
     <!-- Render-blocking CSS — ensures styles apply before first paint (no FOUC) -->
     <link rel="stylesheet" href="css/main.bundle.css?v=180">
@@ -37,22 +34,25 @@
          --font-display and never paints, so the browser never fetched a byte of
          it — but its @font-face blocks still cost 8,360 bytes of render-blocking
          CSS in the Google Fonts response. It stays in the stack as a local-only
-         fallback. -->
+         fallback.
+         The fonts are vendored (public/libs/fonts, see public/libs/README.md) so
+         the app works with no internet access. fonts.css is the stylesheet Google
+         Fonts returned for the families and weights above, with only the src
+         URLs rewritten, and the woff2 files are the ones it pointed at. -->
     <!-- Source Serif 4 (--font-editorial) is requested upright-only; the `ital`
          axis was dropped with the breadcrumb's slant. The `opsz` axis is kept
          DELIBERATELY, and this was measured, so don't "optimise" it away again:
            opsz,wght@8..60,400..600 -> 122,360-byte latin subset
            wght@400;500 (no opsz)   ->  50,824-byte latin subset
          Narrowing the opsz RANGE saves nothing (Google serves the same variable
-         file for any sub-range); only dropping the axis slices it. But dropping
+         file for any sub-range, and that file is the one vendored); only
+         dropping the axis slices it. But dropping
          it also drops automatic optical sizing, which measurably reloosens the
          type — same strings render 1px wider at 15px and 16px wider at 24px,
          which moves the breadcrumb's 280px ellipsis boundary. The face is only
          fetched on the editor/lobby screens (nothing on the landing page uses
          it), so the 71KB buys real rendering quality on the screens that pay it. -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400..600&display=swap"
-        rel="stylesheet">
+    <link href="libs/fonts/fonts.css" rel="stylesheet">
     <style>
         /* Fallback fonts while Inter loads */
         body {
@@ -114,19 +114,21 @@
          properties are set before first paint, and MUST stay ahead of the async
          MathJax tag below so window.MathJax is configured before MathJax runs. -->
     <script src="js/core/boot-head.js?v=180"></script>
-    <!-- CDN MathJax with fallback for WSL/Windows environment -->
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
-        onerror="console.warn('MathJax CDN failed, app will function without LaTeX rendering')"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Third-party libraries are vendored under libs/ (versions, sources and
+         checksums in public/libs/README.md) so the app needs no internet access. -->
+    <!-- MathJax 3.2.2. It resolves its TeX extensions and webfonts relative to this
+         script's URL, so the es5/ directory layout under libs/mathjax must be kept. -->
+    <script id="MathJax-script" async src="libs/mathjax/es5/tex-mml-chtml.js"
+        onerror="console.warn('MathJax failed to load, app will function without LaTeX rendering')"></script>
+    <script defer src="libs/canvas-confetti/confetti.browser.js"></script>
     <!-- SheetJS for Excel file processing - vendored 0.20.3, see public/libs/sheetjs/README.md -->
     <script defer src="libs/sheetjs/xlsx.full.min.js"></script>
     <!-- Chart.js for results analytics visualizations - Fixed for ES6 compatibility -->
-    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script defer src="libs/chartjs/chart.umd.js"></script>
     <!-- jsPDF loaded on-demand when PDF export is requested -->
     <!-- Highlight.js for One Dark Pro syntax highlighting -->
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="libs/highlightjs/styles/atom-one-dark.min.css">
+    <script defer src="libs/highlightjs/highlight.min.js"></script>
 
 
     <style>
@@ -3570,12 +3572,10 @@ class GraphScene(Scene):
         </main>
     </div>
 
-    <!-- Socket.IO CDN for better WSL compatibility - fallback to local if CDN fails -->
-    <!-- Matches the server's socket.io 4.8.1 (and its engine.io 6.6 client, which is
-         where the tryAllTransports fallback in app.js takes effect). -->
-    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"
-        onerror="this.onerror=null; this.src='socket.io/socket.io.js';">
-        </script>
+    <!-- Socket.IO client, served by the socket.io server itself from its own package,
+         so it always matches the server's version (4.8.1, with the engine.io 6.6
+         client where the tryAllTransports fallback in app.js takes effect). -->
+    <script src="socket.io/socket.io.min.js"></script>
     <!-- Modular ES6 Structure -->
     <script type="module" src="js/main.js?v=180"></script>
     <script type="module" src="js/landing.js?v=180"></script>

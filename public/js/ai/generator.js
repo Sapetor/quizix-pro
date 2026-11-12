@@ -709,15 +709,17 @@ export class AIQuestionGenerator {
 
         if (!window.mermaid) {
             logger.debug('Loading Mermaid library...');
-            const script = document.createElement('script');
-            script.type = 'module';
-            script.textContent = `
-                import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-                window.mermaid = mermaid;
-                mermaid.initialize({ startOnLoad: false, theme: 'default' });
-            `;
-            document.head.appendChild(script);
-            await new Promise(resolve => setTimeout(resolve, TIMING.STREAMING_INDICATOR));
+            // Vendored single-file build (see public/libs/README.md); it defines
+            // window.mermaid. Loaded by URL, relative to <base href>: the CSP's
+            // script-src refuses an inline <script> body, module or not.
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'libs/mermaid/mermaid.min.js';
+                script.onload = resolve;
+                script.onerror = () => reject(new Error('Failed to load Mermaid library'));
+                document.head.appendChild(script);
+            });
+            window.mermaid.initialize({ startOnLoad: false, theme: 'default' });
         }
 
         const id = 'mermaid-' + Date.now();

@@ -35,6 +35,7 @@ quizix-pro/
 │   │   ├── events/        # Local/socket event bus adapters
 │   │   └── utils/         # Utilities and helpers
 │   ├── images/            # Media assets
+│   ├── libs/              # Vendored third-party libraries and fonts (see public/libs/README.md)
 │   ├── uploads/           # User-uploaded quiz images
 │   └── index.html         # SPA entry point
 ├── services/              # Backend Node.js services
@@ -309,6 +310,13 @@ Game class tracks and cleans up:
 - Rate limiting: 5 attempts/minute/IP
 - Session tokens: 1-hour expiry
 
+### Content Security Policy and third-party code
+
+- The CSP set in `server.js` allows no external host in any directive
+- MathJax, Chart.js, highlight.js, canvas-confetti, jsPDF, mermaid, SheetJS and the web fonts are vendored under `public/libs/` at pinned versions with checksums (`public/libs/README.md`); the Socket.IO client is served by the server from its own package
+- The browser requests nothing from another host, so the app runs on a network with no internet access. The exceptions are user-initiated: the cloud AI providers when AI generation is used, and the GitHub links on the landing page
+- `tests/e2e/offline-no-cdn.spec.js` hosts a game with every non-local request aborted; `tests/unit/vendored-libs.test.js` verifies the vendored files
+
 ### API Security
 
 - AES-GCM encryption for client-side API keys
@@ -386,5 +394,6 @@ Located in `public/js/utils/translations/`:
 - Static file caching with ETags
 - QR code caching
 - MathJax smart loading (FOUC prevention)
+- Service worker serves the vendored libraries (`/libs/`) cache-first
 - Lazy loading for AI generator and results viewer
 - Gzip compression middleware

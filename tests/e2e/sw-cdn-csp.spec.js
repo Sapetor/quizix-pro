@@ -1,17 +1,21 @@
 const { test, expect } = require('@playwright/test');
 
 /**
- * Regression: the service worker inherits the CSP of its own script (/sw.js).
- * Inside a worker EVERY fetch is governed by connect-src — script-src/font-src
- * do not apply. sw.js routes CACHEABLE_CDN_HOSTS through cacheFirst(), so if
- * connect-src omits those hosts the worker's fetch throws, respondWith()
- * rejects, and every CDN asset fails with ERR_FAILED once the SW controls the
- * page. MathJax is a CDN asset, so LaTeX stops rendering everywhere.
+ * The vendored libraries (public/libs) under a controlling service worker.
+ *
+ * History: these assets used to come from CDNs, which sw.js served cache-first.
+ * A service worker inherits the CSP of its own script (/sw.js), and inside a
+ * worker EVERY fetch is governed by connect-src — script-src/font-src do not
+ * apply. When connect-src omitted the CDN hosts the worker's fetch threw,
+ * respondWith() rejected, and MathJax failed on every SW-controlled load.
+ * The libraries are now same-origin, which connect-src 'self' covers, and sw.js
+ * serves /libs/ cache-first. These tests keep checking the same outcome:
+ * MathJax and its webfonts load once the worker controls the page.
  *
  * The first page load is NOT affected (the SW has not claimed the client yet),
  * so these tests must reload before asserting.
  */
-test.describe('service worker CDN fetches under CSP', () => {
+test.describe('service worker serves the vendored libraries', () => {
     test('MathJax loads and typesets once the service worker controls the page', async ({ page }) => {
         await page.goto('/', { waitUntil: 'load' });
         await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 15000 });
@@ -37,8 +41,28 @@ test.describe('service worker CDN fetches under CSP', () => {
         });
         expect(rendered).toBe(1);
 
-        const cdnFailures = failed.filter(f => /cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|fonts\.(googleapis|gstatic)\.com/.test(f));
-        expect(cdnFailures, `CDN requests blocked by the service worker:\n${cdnFailures.join('\n')}`).toEqual([]);
+        const libFailures = failed.filter(f => /\/libs\//.test(f));
+        expect(libFailures, `Vendored library requests failed under the service worker:\n${libFailures.join('\n')}`).toEqual([]);
+
+        // Nothing the page fetched came from another origin.
+        const crossOrigin = await page.evaluate(() =>
+            window.performance.getEntriesByType('resource')
+                .map(entry => entry.name)
+                .filter(name => /^https?:/i.test(name) && new URL(name).origin !== window.location.origin)
+        );
+        expect(crossOrigin).toEqual([]);
+
+        // sw.js serves /libs/ cache-first, so the reload stored MathJax in its cache.
+        const cachedLibs = await page.evaluate(async () => {
+            const names = (await window.caches.keys()).filter(name => name.startsWith('quizix-static-'));
+            const urls = [];
+            for (const name of names) {
+                const keys = await (await window.caches.open(name)).keys();
+                urls.push(...keys.map(request => new URL(request.url).pathname));
+            }
+            return urls.filter(pathname => pathname.includes('/libs/'));
+        });
+        expect(cachedLibs).toContain('/libs/mathjax/es5/tex-mml-chtml.js');
     });
 
     test('MathJax CHTML webfonts load (glyphs need them, or math falls back to page fonts)', async ({ page }) => {

@@ -279,17 +279,20 @@ app.use(helmet({
         // script-src-attr KEEPS 'unsafe-inline'. index.html still binds 36 inline
         // event-handler attributes (onclick/onchange/oninput) on production paths.
         // Removing them was evaluated and declined for now: 10 of the 11 affected UI
-        // clusters have no end-to-end coverage, and index.html's socket.io tag uses an
-        // onerror attribute as the only fallback when the CDN is unreachable. Converting
-        // them to addEventListener is what would let this directive go to 'none'.
+        // clusters have no end-to-end coverage. Converting them to addEventListener
+        // is what would let this directive go to 'none'.
         // Note the two directives are independent — a nonce on script-src does not
         // relax or replace script-src-attr.
         // useDefaults:false so the exact policy is emitted — notably WITHOUT
         // upgrade-insecure-requests, which would break plain-HTTP LAN deployments.
+        // No external host appears in any directive: every library and font is
+        // vendored under public/libs (see public/libs/README.md) so the app runs
+        // on a network with no internet access. tests/e2e/offline-no-cdn.spec.js
+        // fails if a host is added here.
         useDefaults: false,
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://cdn.socket.io'],
+            scriptSrc: ["'self'"],
             scriptSrcAttr: ["'unsafe-inline'"],
             // canvas-confetti builds its animation worker from an inline Blob, i.e.
             // `new Worker(URL.createObjectURL(new Blob([code])))`, so worker-src must
@@ -299,20 +302,19 @@ app.use(helmet({
             // blob: to script-src so blob: stays confined to workers and can never
             // be used to inject a <script src="blob:...">.
             workerSrc: ["'self'", 'blob:'],
-            styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com'],
-            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net'],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            fontSrc: ["'self'"],
             imgSrc: ["'self'", 'data:', 'blob:'],
-            // The CDN hosts are required by connect-src, not just script-src/font-src:
-            // sw.js serves those hosts cache-first, and a service worker inherits the CSP
-            // of its own script — inside a worker EVERY fetch is a connect-src fetch.
-            // Omitting them makes the worker's fetch throw, respondWith() reject, and all
-            // CDN assets (MathJax included) fail with ERR_FAILED on every SW-controlled load.
-            // Keep this list in sync with CACHEABLE_CDN_HOSTS in public/sw.js.
+            // A service worker inherits the CSP of its own script, and inside a worker
+            // EVERY fetch is a connect-src fetch (script-src/font-src do not apply).
+            // sw.js only fetches this origin, which 'self' covers. If it is ever made
+            // to fetch another host, that host must be added here, or the worker's
+            // fetch throws and the asset fails on every SW-controlled load.
             // ws:/wss: used to be allowed wholesale, which let injected script open a
             // socket to any host. Socket.IO only ever talks to this app's own origin,
             // so emit the request's own Host as the single allowed websocket source
             // ('self' does not cover the ws:/wss: schemes in every browser).
-            connectSrc: ["'self'", websocketSelfSource('ws'), websocketSelfSource('wss'), 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
+            connectSrc: ["'self'", websocketSelfSource('ws'), websocketSelfSource('wss')],
             objectSrc: ["'none'"],
             baseUri: ["'self'"]
         }

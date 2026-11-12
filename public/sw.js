@@ -4,7 +4,8 @@
  *
  * Strategy:
  * - Network-first for local static assets (always fresh on LAN, cache as offline fallback)
- * - Cache-first for CDN resources (MathJax, Chart.js, etc. — slow to fetch, rarely change)
+ * - Cache-first for vendored libraries under libs/ (MathJax, Chart.js, fonts, etc. —
+ *   large and pinned to one version; the cache is replaced on every server start)
  * - Network-only for API calls, Socket.IO, and user uploads
  */
 
@@ -43,13 +44,9 @@ const NETWORK_ONLY_PATTERNS = [
 // Single pattern for cacheable static assets (JS, CSS, images, fonts, audio)
 const CACHEABLE_ASSET_PATTERN = /\.(js|css|png|jpe?g|gif|webp|svg|woff2?|ttf|mp3|wav|ico)(\?.*)?$/;
 
-// CDN hosts we trust and want to cache
-const CACHEABLE_CDN_HOSTS = [
-    'cdn.jsdelivr.net',
-    'cdnjs.cloudflare.com',
-    'fonts.googleapis.com',
-    'fonts.gstatic.com'
-];
+// Vendored third-party libraries (public/libs). Matched anywhere in the path so a
+// BASE_PATH prefix such as /quizix/ is tolerated.
+const VENDORED_LIBS_PATTERN = /\/libs\//;
 
 /**
  * Check if a request should never be cached
@@ -127,8 +124,8 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Cache-first for CDN resources (slow to fetch, rarely change)
-    if (CACHEABLE_CDN_HOSTS.includes(url.host)) {
+    // Cache-first for vendored libraries (large, pinned versions)
+    if (url.origin === self.location.origin && VENDORED_LIBS_PATTERN.test(url.pathname)) {
         event.respondWith(cacheFirst(event.request));
         return;
     }

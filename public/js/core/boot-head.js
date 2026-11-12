@@ -225,7 +225,8 @@ const mathJaxConfig = {
         matchFontHeight: false,
         displayAlign: 'center',
         displayIndent: '0em',
-        fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2',
+        // No fontURL: MathJax derives it from its own script URL
+        // (libs/mathjax/es5/output/chtml/fonts/woff-v2), which follows <base href>.
         // Mobile optimizations
         adaptiveCSS: true,
         mathmlSpacing: false,
@@ -280,7 +281,7 @@ if (window.MathJax) {
         const version = '3.2.2'; // MathJax version for cache busting
         const sessionId = sessionStorage.getItem('mathJaxSessionId') || Date.now().toString();
         sessionStorage.setItem('mathJaxSessionId', sessionId);
-        newScript.src = `https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js?v=${version}&sid=${sessionId}`;
+        newScript.src = `libs/mathjax/es5/tex-mml-chtml.js?v=${version}&sid=${sessionId}`;
 
         window.MathJax = mathJaxConfig;
         document.head.appendChild(newScript);

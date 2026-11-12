@@ -10,8 +10,9 @@ import { createFormatSelectionModal } from './results-renderer.js';
 import { calculateQuestionAnalytics, getQuizSummaryStats } from './results-analytics.js';
 import { countGradedAnswers } from './answer-format.js';
 
-// jsPDF CDN URL for lazy loading
-const JSPDF_CDN_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+// Vendored jsPDF 2.5.1 (see public/libs/README.md), lazy-loaded on first PDF export.
+// Relative to <base href>, like the script tags in index.html.
+const JSPDF_URL = 'libs/jspdf/jspdf.umd.min.js';
 
 // Cache the loading promise to avoid duplicate loads
 let jsPDFLoadPromise = null;
@@ -34,7 +35,7 @@ async function loadJsPDF() {
     // Start loading
     jsPDFLoadPromise = new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = JSPDF_CDN_URL;
+        script.src = JSPDF_URL;
         script.async = true;
         script.onload = () => {
             logger.debug('jsPDF loaded successfully');
